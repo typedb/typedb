@@ -751,10 +751,9 @@ public class SchemaGraph implements Graph {
                 });
             });
             bufferedRuleContains.forEach((label, rules) -> {
-                VertexIID.Type typeIid = getType(label).iid();
                 rules.forEach(rule -> {
                     byte[] typeInRule = join(Encoding.Index.Prefix.TYPE.bytes(),
-                                             typeIid.bytes(),
+                                             getType(label).iid().bytes(),
                                              Encoding.Index.Infix.RULE_CONTAINS.bytes(),
                                              rule.iid().bytes()
                     );
@@ -815,11 +814,11 @@ public class SchemaGraph implements Graph {
         public void deleteRuleContains(RuleStructure rule, ResourceIterator<Label> types) {
             types.forEachRemaining(type -> {
                 Set<RuleStructure> rules = ruleContains.get(type);
-                assert rules != null && rules.contains(rule);
+                if (rules != null) rules.remove(rule);
                 storage().delete(join(
                         Encoding.Index.Prefix.TYPE.bytes(),
                         getType(type).iid().bytes(),
-                        Encoding.Index.Infix.RULE_CONCLUDES_HAS_ATTRIBUTE.bytes(),
+                        Encoding.Index.Infix.RULE_CONTAINS.bytes(),
                         rule.iid().bytes()));
             });
         }

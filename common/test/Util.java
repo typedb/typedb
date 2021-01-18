@@ -51,7 +51,8 @@ public class Util {
         try {
             function.run();
         } catch (Exception e) {
-            fail();
+            // fail but we want to see the exception
+            throw e;
         }
     }
 

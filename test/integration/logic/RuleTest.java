@@ -30,6 +30,8 @@ import grakn.core.concept.thing.Relation;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
+import grakn.core.graph.GraphManager;
+import grakn.core.graph.structure.RuleStructure;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.variable.Variable;
@@ -77,6 +79,10 @@ public class RuleTest {
 
     private long attributeConcludablesCount(Set<Concludable> concludables) {
         return concludables.stream().filter(Concludable::isAttribute).count();
+    }
+
+    private Variable getVariable(Set<Variable> vars, Identifier identifier) {
+        return iterate(vars).filter(v -> v.id().equals(identifier)).next();
     }
 
     @Test
@@ -416,8 +422,7 @@ public class RuleTest {
                             Graql.parsePattern("{ $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
                             Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
                     Conjunction marriageFriendsThen = marriageFriendsRule.then();
-                    Variable marriageFriendsRelation = iterate(marriageFriendsThen.variables())
-                            .filter(v -> v.id().equals(Identifier.Variable.anon(0))).next();
+                    Variable marriageFriendsRelation = getVariable(marriageFriendsThen.variables(), Identifier.Variable.anon(0));
                     assertEquals(set(Label.of("friendship")), marriageFriendsRelation.resolvedTypes());
 
                     Rule allFriendsRule = logicMgr.putRule(
@@ -425,7 +430,7 @@ public class RuleTest {
                             Graql.parsePattern("{ $x isa person; $y isa person; $t type friendship; }").asConjunction(),
                             Graql.parseVariable("(friend: $x, friend: $y) isa $t").asThing());
                     Conjunction allFriendsThen = allFriendsRule.then();
-                    Variable allFriendsRelation = iterate(allFriendsThen.variables()).filter(v -> v.id().equals(Identifier.Variable.anon(0))).next();
+                    Variable allFriendsRelation = getVariable(allFriendsThen.variables(), Identifier.Variable.anon(0));
                     assertEquals(set(Label.of("friendship")), allFriendsRelation.resolvedTypes());
 
                     Rule marriageSameName = logicMgr.putRule(
@@ -433,7 +438,7 @@ public class RuleTest {
                             Graql.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
                             Graql.parseVariable("$y has $a").asThing());
                     Conjunction sameName = marriageSameName.then();
-                    Variable nameAttr = iterate(sameName.variables()).filter(v -> v.id().equals(Identifier.Variable.name("a"))).next();
+                    Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.name("a"));
                     assertEquals(set(Label.of("name")), nameAttr.resolvedTypes());
 
                     txn.commit();
@@ -481,8 +486,7 @@ public class RuleTest {
                             Graql.parsePattern("{ $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
                             Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
                     Conjunction marriageFriendsThen = marriageFriendsRule.then();
-                    Variable marriageFriendsRelation = iterate(marriageFriendsThen.variables())
-                            .filter(v -> v.id().equals(Identifier.Variable.anon(0))).next();
+                    Variable marriageFriendsRelation = getVariable(marriageFriendsThen.variables(), Identifier.Variable.anon(0));
                     assertEquals(set(Label.of("friendship")), marriageFriendsRelation.resolvedTypes());
 
                     Rule allFriendsRule = logicMgr.putRule(
@@ -490,7 +494,7 @@ public class RuleTest {
                             Graql.parsePattern("{ $x isa person; $y isa person; $t type friendship; }").asConjunction(),
                             Graql.parseVariable("(friend: $x, friend: $y) isa $t").asThing());
                     Conjunction allFriendsThen = allFriendsRule.then();
-                    Variable allFriendsRelation = iterate(allFriendsThen.variables()).filter(v -> v.id().equals(Identifier.Variable.anon(0))).next();
+                    Variable allFriendsRelation = getVariable(allFriendsThen.variables(), Identifier.Variable.anon(0));
                     assertEquals(set(Label.of("friendship")), allFriendsRelation.resolvedTypes());
 
                     Rule marriageSameName = logicMgr.putRule(
@@ -498,7 +502,7 @@ public class RuleTest {
                             Graql.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
                             Graql.parseVariable("$y has $a").asThing());
                     Conjunction sameName = marriageSameName.then();
-                    Variable nameAttr = iterate(sameName.variables()).filter(v -> v.id().equals(Identifier.Variable.name("a"))).next();
+                    Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.name("a"));
                     assertEquals(set(Label.of("name")), nameAttr.resolvedTypes());
 
                     txn.commit();
@@ -536,6 +540,14 @@ public class RuleTest {
     // TODO test: adding a new type updates conclusion index
 
     // ------------ mentioned types indexing test (do these belong in higher level test?) ------------
+
+    private void assertIndexTypesContainRule(Set<Label> types, String requiredRule, GraphManager graphMgr) {
+        types.forEach(t -> {
+            Set<String> rules = graphMgr.schema().ruleIndex().rulesContaining(t).map(RuleStructure::label).toSet();
+            assertTrue(rules.contains(requiredRule));
+        });
+    }
+
     @Test
     public void rule_contains_indexes_prevent_undefining_contained_types() throws IOException {
         Util.resetDirectory(directory);
@@ -561,8 +573,7 @@ public class RuleTest {
                             Graql.parsePattern("{ $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
                             Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
                     Conjunction marriageFriendsThen = marriageFriendsRule.then();
-                    Variable marriageFriendsRelation = iterate(marriageFriendsThen.variables())
-                            .filter(v -> v.id().equals(Identifier.Variable.anon(0))).next();
+                    Variable marriageFriendsRelation = getVariable(marriageFriendsThen.variables(), Identifier.Variable.anon(0));
                     assertEquals(set(Label.of("friendship")), marriageFriendsRelation.resolvedTypes());
 
                     Rule marriageSameName = logicMgr.putRule(
@@ -570,7 +581,7 @@ public class RuleTest {
                             Graql.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
                             Graql.parseVariable("$y has $a").asThing());
                     Conjunction sameName = marriageSameName.then();
-                    Variable nameAttr = iterate(sameName.variables()).filter(v -> v.id().equals(Identifier.Variable.name("a"))).next();
+                    Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.name("a"));
                     assertEquals(set(Label.of("name")), nameAttr.resolvedTypes());
 
                     txn.commit();
@@ -594,6 +605,7 @@ public class RuleTest {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     final ConceptManager conceptMgr = txn.concepts();
                     final LogicManager logicMgr = txn.logic();
+                    final GraphManager graphMgr = logicMgr.graph();
 
                     final EntityType person = conceptMgr.putEntityType("person");
                     final RelationType friendship = conceptMgr.putRelationType("friendship");
@@ -608,18 +620,20 @@ public class RuleTest {
                             "marriage-is-friendship",
                             Graql.parsePattern("{ $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
                             Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
-                    Conjunction marriageFriendsThen = marriageFriendsRule.then();
-                    Variable marriageFriendsRelation = iterate(marriageFriendsThen.variables())
-                            .filter(v -> v.id().equals(Identifier.Variable.anon(0))).next();
-                    assertEquals(set(Label.of("friendship")), marriageFriendsRelation.resolvedTypes());
+                    assertIndexTypesContainRule(set(Label.of("person"), Label.of("spouse", "marriage"),
+                                                    Label.of("marriage"), Label.of("friend", "friendship"), Label.of("friendship")),
+                                                marriageFriendsRule.getLabel(),
+                                                graphMgr
+                    );
 
                     Rule marriageSameName = logicMgr.putRule(
                             "marriage-same-name",
                             Graql.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
                             Graql.parseVariable("$y has $a").asThing());
-                    Conjunction sameName = marriageSameName.then();
-                    Variable nameAttr = iterate(sameName.variables()).filter(v -> v.id().equals(Identifier.Variable.name("a"))).next();
-                    assertEquals(set(Label.of("name")), nameAttr.resolvedTypes());
+                    assertIndexTypesContainRule(set(Label.of("person"), Label.of("spouse", "marriage"), Label.of("name")),
+                                                marriageFriendsRule.getLabel(),
+                                                graphMgr
+                    );
 
                     txn.commit();
                 }

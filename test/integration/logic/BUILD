@@ -38,6 +38,7 @@ host_compatible_java_test(
         # Internal dependencies
         "//common",
         "//common/test:util",
+        "//graph",
         "//test/integration/util",
 
         # External dependencies from Grakn Labs

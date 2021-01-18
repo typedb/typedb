@@ -36,8 +36,10 @@ import graql.lang.pattern.variable.BoundVariable;
 import graql.lang.pattern.variable.ThingVariable;
 import graql.lang.pattern.variable.Variable;
 
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grakn.common.collection.Collections.set;
@@ -166,13 +168,22 @@ public abstract class RuleStructureImpl implements RuleStructure {
     }
 
     private ResourceIterator<Label> getTypeLabels(ResourceIterator<BoundVariable> variables) {
-        return variables.flatMap(v -> iterate(v.constraints())).flatMap(c -> iterate(c.variables()))
-                .distinct().filter(Variable::isType).map(var -> var.asType().label()).filter(Optional::isPresent)
+        return variables.flatMap(v -> iterate(connectedVars(v, new HashSet<>())))
+                .distinct().filter(v -> v.isBound() && v.asBound().isType()).map(var -> var.asBound().asType().label()).filter(Optional::isPresent)
                 .map(labelConstraint -> {
                     TypeConstraint.Label label = labelConstraint.get();
                     if (label.scope().isPresent()) return Label.of(label.label(), label.scope().get());
                     else return Label.of(label.label());
                 });
+    }
+
+    private Set<Variable> connectedVars(Variable var, Set<Variable> visited) {
+        Set<Variable> vars = iterate(var.constraints()).flatMap(c -> iterate(c.variables())).map(v -> (Variable)v).toSet();
+        if (visited.containsAll(vars)) return visited;
+        else {
+            visited.addAll(vars);
+            return iterate(vars).flatMap(v -> iterate(connectedVars(v, visited))).toSet();
+        }
     }
 
     public static class Buffered extends RuleStructureImpl {

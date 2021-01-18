@@ -99,6 +99,9 @@ public class LogicManager {
         return typeResolver;
     }
 
+    // For test
+    GraphManager graph() { return graphMgr; }
+
     private Rule fromStructure(RuleStructure ruleStructure) {
         return logicCache.rule().get(ruleStructure.label(), l -> Rule.of(this, ruleStructure));
     }
