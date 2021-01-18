@@ -104,21 +104,7 @@ public abstract class Concludable extends Resolvable {
 
     abstract ResourceIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr);
 
-    public AlphaEquivalence alphaEquals(Concludable that) {
-        if (that.isRelation()) return alphaEquals(that.asRelation());
-        else if (that.isHas()) return alphaEquals(that.asHas());
-        else if (that.isIsa()) return alphaEquals(that.asIsa());
-        else if (that.isAttribute()) return alphaEquals(that.asAttribute());
-        else throw GraknException.of(ILLEGAL_STATE);
-    }
-
-    AlphaEquivalence alphaEquals(Relation that) { return AlphaEquivalence.invalid(); }
-
-    AlphaEquivalence alphaEquals(Has that) { return AlphaEquivalence.invalid(); }
-
-    AlphaEquivalence alphaEquals(Isa that) { return AlphaEquivalence.invalid(); }
-
-    AlphaEquivalence alphaEquals(Attribute that) { return AlphaEquivalence.invalid(); }
+    public abstract AlphaEquivalence alphaEquals(Concludable that);
 
     public boolean isRelation() { return false; }
 
@@ -406,8 +392,9 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
-        AlphaEquivalence alphaEquals(Relation that) {
-            return relation().alphaEquals(that.relation());
+        public AlphaEquivalence alphaEquals(Concludable that) {
+            if (!that.isRelation()) return AlphaEquivalence.invalid();
+            return relation().alphaEquals(that.asRelation().relation());
         }
     }
 
@@ -512,8 +499,9 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
-        AlphaEquivalence alphaEquals(Has that) {
-            return has().alphaEquals(that.has());
+        public AlphaEquivalence alphaEquals(Concludable that) {
+            if (!that.isHas()) return AlphaEquivalence.invalid();
+            return has().alphaEquals(that.asHas().has());
         }
 
     }
@@ -595,8 +583,9 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
-        AlphaEquivalence alphaEquals(Isa that) {
-            return isa().alphaEquals(that.isa());
+        public AlphaEquivalence alphaEquals(Concludable that) {
+            if (!that.isIsa()) return AlphaEquivalence.invalid();
+            return isa().alphaEquals(that.asIsa().isa());
         }
     }
 
@@ -672,8 +661,9 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
-        AlphaEquivalence alphaEquals(Attribute that) {
-            return AlphaEquivalence.valid().validIfAlphaEqual(values, that.values);
+        public AlphaEquivalence alphaEquals(Concludable that) {
+            if (!that.isAttribute()) return AlphaEquivalence.invalid();
+            return AlphaEquivalence.valid().validIfAlphaEqual(values, that.asAttribute().values);
         }
     }
 
