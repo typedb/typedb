@@ -69,7 +69,7 @@ public final class ConceptManager {
             if (!reference.isName()) throw exception(GraknException.of(ILLEGAL_STATE));
             if (vertex.isThing()) map.put(reference.asName(), ThingImpl.of(vertex.asThing()));
             else if (vertex.isType()) map.put(reference.asName(), TypeImpl.of(graphMgr, vertex.asType()));
-            else graphMgr.exception(GraknException.of(ILLEGAL_STATE));
+            else throw exception(GraknException.of(ILLEGAL_STATE));
         });
         return new ConceptMap(map);
     }
@@ -77,25 +77,25 @@ public final class ConceptManager {
     public ThingType getRootThingType() {
         final TypeVertex vertex = graphMgr.schema().rootThingType();
         if (vertex != null) return new ThingTypeImpl.Root(graphMgr, vertex);
-        else throw graphMgr.exception(GraknException.of(ILLEGAL_STATE));
+        else throw exception(GraknException.of(ILLEGAL_STATE));
     }
 
     public EntityType getRootEntityType() {
         final TypeVertex vertex = graphMgr.schema().rootEntityType();
         if (vertex != null) return EntityTypeImpl.of(graphMgr, vertex);
-        else throw graphMgr.exception(GraknException.of(ILLEGAL_STATE));
+        else throw exception(GraknException.of(ILLEGAL_STATE));
     }
 
     public RelationType getRootRelationType() {
         final TypeVertex vertex = graphMgr.schema().rootRelationType();
         if (vertex != null) return RelationTypeImpl.of(graphMgr, vertex);
-        else throw graphMgr.exception(GraknException.of(ILLEGAL_STATE));
+        else throw exception(GraknException.of(ILLEGAL_STATE));
     }
 
     public AttributeType getRootAttributeType() {
         final TypeVertex vertex = graphMgr.schema().rootAttributeType();
         if (vertex != null) return AttributeTypeImpl.of(graphMgr, vertex);
-        else throw graphMgr.exception(GraknException.of(ILLEGAL_STATE));
+        else throw exception(GraknException.of(ILLEGAL_STATE));
     }
 
     public EntityType putEntityType(String label) {
