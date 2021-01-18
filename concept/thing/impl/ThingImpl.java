@@ -70,7 +70,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
             case RELATION:
                 return RelationImpl.of(vertex);
             default:
-                throw GraknException.of(UNRECOGNISED_VALUE);
+                throw vertex.graphs().exception(GraknException.of(UNRECOGNISED_VALUE));
         }
     }
 

@@ -80,17 +80,17 @@ public class Matcher {
     }
 
     public static Matcher.Aggregator create(Reasoner reasoner, GraqlMatch.Aggregate query, Options.Query options) {
-        Matcher matcher = new Matcher(reasoner, query.query(), options);
+        Matcher matcher = new Matcher(reasoner, query.match(), options);
         return new Aggregator(matcher, query);
     }
 
     public static Matcher.Group create(Reasoner reasoner, GraqlMatch.Group query, Options.Query options) {
-        Matcher matcher = new Matcher(reasoner, query.query(), options);
+        Matcher matcher = new Matcher(reasoner, query.match(), options);
         return new Group(matcher, query);
     }
 
     public static Matcher.Group.Aggregator create(Reasoner reasoner, GraqlMatch.Group.Aggregate query, Options.Query options) {
-        Matcher matcher = new Matcher(reasoner, query.group().query(), options);
+        Matcher matcher = new Matcher(reasoner, query.group().match(), options);
         Group group = new Group(matcher, query.group());
         return new Group.Aggregator(group, query);
     }

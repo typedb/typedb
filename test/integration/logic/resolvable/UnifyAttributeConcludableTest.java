@@ -18,7 +18,6 @@
 
 package grakn.core.logic.resolvable;
 
-import grakn.core.Grakn.Transaction;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.concept.Concept;
@@ -38,7 +37,9 @@ import grakn.core.test.integration.util.Util;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.Graql;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -68,8 +69,8 @@ public class UnifyAttributeConcludableTest {
     private static ConceptManager conceptMgr;
     private static LogicManager logicMgr;
 
-    @Before
-    public void setUp() throws IOException {
+    @BeforeClass
+    public static void setUp() throws IOException {
         Util.resetDirectory(directory);
         grakn = RocksGrakn.open(directory);
         grakn.databases().create(database);
@@ -93,15 +94,23 @@ public class UnifyAttributeConcludableTest {
                                                        "").asDefine());
             tx.commit();
         }
-        rocksTransaction = session.transaction(Arguments.Transaction.Type.READ);
+    }
+
+    @AfterClass
+    public static void tearDown() {
+        session.close();
+        grakn.close();
+    }
+
+    @Before
+    public void setUpTransaction() {
+        rocksTransaction = session.transaction(Arguments.Transaction.Type.WRITE);
         conceptMgr = rocksTransaction.concepts();
         logicMgr = rocksTransaction.logic();
     }
 
     @After
-    public void tearDown() {
-        grakn.close();
-    }
+    public void tearDownTransaction() { rocksTransaction.close(); }
 
     private Map<String, Set<String>> getStringMapping(Map<Identifier, Set<Identifier>> map) {
         return map.entrySet().stream().collect(Collectors.toMap(v -> v.getKey().toString(),
@@ -122,12 +131,9 @@ public class UnifyAttributeConcludableTest {
     }
 
     private Rule createRule(String label, String whenConjunctionPattern, String thenThingPattern) {
-        try (Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-            Rule rule = logicMgr.putRule(label, Graql.parsePattern(whenConjunctionPattern).asConjunction(),
-                                         Graql.parseVariable(thenThingPattern).asThing());
-            txn.commit();
-            return rule;
-        }
+        Rule rule = logicMgr.putRule(label, Graql.parsePattern(whenConjunctionPattern).asConjunction(),
+                                     Graql.parseVariable(thenThingPattern).asThing());
+        return rule;
     }
 
     @Test
