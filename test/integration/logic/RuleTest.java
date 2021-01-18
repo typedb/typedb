@@ -94,13 +94,13 @@ public class RuleTest {
             grakn.databases().create(database);
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    final ConceptManager conceptMgr = txn.concepts();
-                    final LogicManager logicMgr = txn.logic();
+                    ConceptManager conceptMgr = txn.concepts();
+                    LogicManager logicMgr = txn.logic();
 
-                    final EntityType person = conceptMgr.putEntityType("person");
-                    final RelationType friendship = conceptMgr.putRelationType("friendship");
+                    EntityType person = conceptMgr.putEntityType("person");
+                    RelationType friendship = conceptMgr.putRelationType("friendship");
                     friendship.setRelates("friend");
-                    final RelationType marriage = conceptMgr.putRelationType("marriage");
+                    RelationType marriage = conceptMgr.putRelationType("marriage");
                     marriage.setRelates("spouse");
                     person.setPlays(friendship.getRelates("friend"));
                     person.setPlays(marriage.getRelates("spouse"));
@@ -111,8 +111,8 @@ public class RuleTest {
                     txn.commit();
                 }
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
-                    final LogicManager logicMgr = txn.logic();
-                    final Rule rule = logicMgr.getRule("marriage-is-friendship");
+                    LogicManager logicMgr = txn.logic();
+                    Rule rule = logicMgr.getRule("marriage-is-friendship");
 
                     assertTrue(rule.conclusion().isRelation());
                     Set<Concludable> bodyConcludables = rule.whenConcludables();
@@ -133,12 +133,12 @@ public class RuleTest {
             grakn.databases().create(database);
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    final ConceptManager conceptMgr = txn.concepts();
-                    final LogicManager logicMgr = txn.logic();
+                    ConceptManager conceptMgr = txn.concepts();
+                    LogicManager logicMgr = txn.logic();
 
-                    final EntityType milk = conceptMgr.putEntityType("milk");
-                    final AttributeType ageInDays = conceptMgr.putAttributeType("age-in-days", AttributeType.ValueType.LONG);
-                    final AttributeType isStillGood = conceptMgr.putAttributeType("is-still-good", AttributeType.ValueType.BOOLEAN);
+                    EntityType milk = conceptMgr.putEntityType("milk");
+                    AttributeType ageInDays = conceptMgr.putAttributeType("age-in-days", AttributeType.ValueType.LONG);
+                    AttributeType isStillGood = conceptMgr.putAttributeType("is-still-good", AttributeType.ValueType.BOOLEAN);
                     milk.setOwns(ageInDays);
                     milk.setOwns(isStillGood);
                     logicMgr.putRule(
@@ -148,8 +148,8 @@ public class RuleTest {
                     txn.commit();
                 }
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
-                    final LogicManager logicMgr = txn.logic();
-                    final Rule rule = logicMgr.getRule("old-milk-is-not-good");
+                    LogicManager logicMgr = txn.logic();
+                    Rule rule = logicMgr.getRule("old-milk-is-not-good");
 
                     assertTrue(rule.conclusion().isExplicitHas());
                     Set<Concludable> bodyConcludables = rule.whenConcludables();
@@ -170,12 +170,12 @@ public class RuleTest {
             grakn.databases().create(database);
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    final ConceptManager conceptMgr = txn.concepts();
-                    final LogicManager logicMgr = txn.logic();
+                    ConceptManager conceptMgr = txn.concepts();
+                    LogicManager logicMgr = txn.logic();
 
-                    final EntityType milk = conceptMgr.putEntityType("milk");
-                    final AttributeType ageInDays = conceptMgr.putAttributeType("age-in-days", AttributeType.ValueType.LONG);
-                    final AttributeType isStillGood = conceptMgr.putAttributeType("is-still-good", AttributeType.ValueType.BOOLEAN);
+                    EntityType milk = conceptMgr.putEntityType("milk");
+                    AttributeType ageInDays = conceptMgr.putAttributeType("age-in-days", AttributeType.ValueType.LONG);
+                    AttributeType isStillGood = conceptMgr.putAttributeType("is-still-good", AttributeType.ValueType.BOOLEAN);
                     milk.setOwns(ageInDays);
                     milk.setOwns(isStillGood);
                     logicMgr.putRule(
@@ -185,8 +185,8 @@ public class RuleTest {
                     txn.commit();
                 }
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
-                    final LogicManager logicMgr = txn.logic();
-                    final Rule rule = logicMgr.getRule("old-milk-is-not-good");
+                    LogicManager logicMgr = txn.logic();
+                    Rule rule = logicMgr.getRule("old-milk-is-not-good");
 
                     assertTrue(rule.conclusion().isVariableHas());
                     Set<Concludable> bodyConcludables = rule.whenConcludables();
@@ -209,13 +209,13 @@ public class RuleTest {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    final ConceptManager conceptMgr = txn.concepts();
-                    final LogicManager logicMgr = txn.logic();
+                    ConceptManager conceptMgr = txn.concepts();
+                    LogicManager logicMgr = txn.logic();
 
-                    final EntityType person = conceptMgr.putEntityType("person");
-                    final RelationType friendship = conceptMgr.putRelationType("friendship");
+                    EntityType person = conceptMgr.putEntityType("person");
+                    RelationType friendship = conceptMgr.putRelationType("friendship");
                     friendship.setRelates("friend");
-                    final RelationType marriage = conceptMgr.putRelationType("marriage");
+                    RelationType marriage = conceptMgr.putRelationType("marriage");
                     marriage.setRelates("spouse");
                     person.setPlays(friendship.getRelates("friend"));
                     person.setPlays(marriage.getRelates("spouse"));
@@ -228,7 +228,7 @@ public class RuleTest {
             }
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    final ConceptManager conceptMgr = txn.concepts();
+                    ConceptManager conceptMgr = txn.concepts();
                     txn.query().insert(Graql.parseQuery("insert $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage;").asInsert());
 
                     EntityType person = conceptMgr.getEntityType("person");
@@ -259,13 +259,13 @@ public class RuleTest {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    final ConceptManager conceptMgr = txn.concepts();
-                    final LogicManager logicMgr = txn.logic();
+                    ConceptManager conceptMgr = txn.concepts();
+                    LogicManager logicMgr = txn.logic();
 
-                    final EntityType person = conceptMgr.putEntityType("person");
-                    final RelationType friendship = conceptMgr.putRelationType("friendship");
+                    EntityType person = conceptMgr.putEntityType("person");
+                    RelationType friendship = conceptMgr.putRelationType("friendship");
                     friendship.setRelates("friend");
-                    final RelationType marriage = conceptMgr.putRelationType("marriage");
+                    RelationType marriage = conceptMgr.putRelationType("marriage");
                     marriage.setRelates("spouse");
                     person.setPlays(friendship.getRelates("friend"));
                     person.setPlays(marriage.getRelates("spouse"));
@@ -278,7 +278,7 @@ public class RuleTest {
             }
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    final ConceptManager conceptMgr = txn.concepts();
+                    ConceptManager conceptMgr = txn.concepts();
                     RelationType friendship = conceptMgr.getRelationType("friendship");
                     txn.query().insert(Graql.parseQuery("insert $x isa person; $y isa person; " +
                             "(spouse: $x, spouse: $y) isa marriage;" +
@@ -312,11 +312,11 @@ public class RuleTest {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    final ConceptManager conceptMgr = txn.concepts();
+                    ConceptManager conceptMgr = txn.concepts();
 
-                    final EntityType milk = conceptMgr.putEntityType("milk");
-                    final AttributeType ageInDays = conceptMgr.putAttributeType("age-in-days", AttributeType.ValueType.LONG);
-                    final AttributeType isStillGood = conceptMgr.putAttributeType("is-still-good", AttributeType.ValueType.BOOLEAN);
+                    EntityType milk = conceptMgr.putEntityType("milk");
+                    AttributeType ageInDays = conceptMgr.putAttributeType("age-in-days", AttributeType.ValueType.LONG);
+                    AttributeType isStillGood = conceptMgr.putAttributeType("is-still-good", AttributeType.ValueType.BOOLEAN);
                     milk.setOwns(ageInDays);
                     milk.setOwns(isStillGood);
                     txn.logic().putRule(
@@ -328,10 +328,10 @@ public class RuleTest {
             }
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    final ConceptManager conceptMgr = txn.concepts();
+                    ConceptManager conceptMgr = txn.concepts();
 
-                    final EntityType milk = conceptMgr.getEntityType("milk");
-                    final AttributeType ageInDays = conceptMgr.getAttributeType("age-in-days");
+                    EntityType milk = conceptMgr.getEntityType("milk");
+                    AttributeType ageInDays = conceptMgr.getAttributeType("age-in-days");
 
                     Entity milkInst = milk.create();
                     Attribute.Long ageInDays10 = ageInDays.asLong().put(10L);
@@ -358,11 +358,11 @@ public class RuleTest {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    final ConceptManager conceptMgr = txn.concepts();
+                    ConceptManager conceptMgr = txn.concepts();
 
-                    final EntityType milk = conceptMgr.putEntityType("milk");
-                    final AttributeType ageInDays = conceptMgr.putAttributeType("age-in-days", AttributeType.ValueType.LONG);
-                    final AttributeType isStillGood = conceptMgr.putAttributeType("is-still-good", AttributeType.ValueType.BOOLEAN);
+                    EntityType milk = conceptMgr.putEntityType("milk");
+                    AttributeType ageInDays = conceptMgr.putAttributeType("age-in-days", AttributeType.ValueType.LONG);
+                    AttributeType isStillGood = conceptMgr.putAttributeType("is-still-good", AttributeType.ValueType.BOOLEAN);
                     milk.setOwns(ageInDays);
                     milk.setOwns(isStillGood);
                     txn.logic().putRule(
@@ -374,10 +374,10 @@ public class RuleTest {
             }
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    final ConceptManager conceptMgr = txn.concepts();
+                    ConceptManager conceptMgr = txn.concepts();
 
-                    final EntityType milk = conceptMgr.getEntityType("milk");
-                    final AttributeType ageInDays = conceptMgr.getAttributeType("age-in-days");
+                    EntityType milk = conceptMgr.getEntityType("milk");
+                    AttributeType ageInDays = conceptMgr.getAttributeType("age-in-days");
 
                     Entity milkInst = milk.create();
                     milkInst.setHas(ageInDays.asLong().put(20L));
@@ -387,7 +387,7 @@ public class RuleTest {
                     Map<Identifier, Concept> thenConcepts = rule.putConclusion(whenAnswer, txn.traversal(), conceptMgr);
                     assertEquals(3, thenConcepts.size());
 
-                    final AttributeType isStillGood = conceptMgr.getAttributeType("is-still-good");
+                    AttributeType isStillGood = conceptMgr.getAttributeType("is-still-good");
                     List<? extends Attribute> isStillGoodOwned = milkInst.getHas(isStillGood).collect(Collectors.toList());
                     assertEquals(1, isStillGoodOwned.size());
                     assertEquals(isStillGood.asBoolean().getInstances().findFirst().get(), isStillGoodOwned.get(0));
@@ -406,14 +406,14 @@ public class RuleTest {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    final ConceptManager conceptMgr = txn.concepts();
-                    final LogicManager logicMgr = txn.logic();
+                    ConceptManager conceptMgr = txn.concepts();
+                    LogicManager logicMgr = txn.logic();
 
-                    final EntityType person = conceptMgr.putEntityType("person");
-                    final RelationType friendship = conceptMgr.putRelationType("friendship");
+                    EntityType person = conceptMgr.putEntityType("person");
+                    RelationType friendship = conceptMgr.putRelationType("friendship");
                     friendship.setRelates("friend");
-                    final RelationType marriage = conceptMgr.putRelationType("marriage");
-                    final AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
+                    RelationType marriage = conceptMgr.putRelationType("marriage");
+                    AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
                     marriage.setRelates("spouse");
                     person.setPlays(friendship.getRelates("friend"));
                     person.setPlays(marriage.getRelates("spouse"));
@@ -470,14 +470,14 @@ public class RuleTest {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    final ConceptManager conceptMgr = txn.concepts();
-                    final LogicManager logicMgr = txn.logic();
+                    ConceptManager conceptMgr = txn.concepts();
+                    LogicManager logicMgr = txn.logic();
 
-                    final EntityType person = conceptMgr.putEntityType("person");
-                    final RelationType friendship = conceptMgr.putRelationType("friendship");
+                    EntityType person = conceptMgr.putEntityType("person");
+                    RelationType friendship = conceptMgr.putRelationType("friendship");
                     friendship.setRelates("friend");
-                    final RelationType marriage = conceptMgr.putRelationType("marriage");
-                    final AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
+                    RelationType marriage = conceptMgr.putRelationType("marriage");
+                    AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
                     marriage.setRelates("spouse");
                     person.setPlays(friendship.getRelates("friend"));
                     person.setPlays(marriage.getRelates("spouse"));
@@ -538,7 +538,52 @@ public class RuleTest {
         }
     }
 
-    // TODO test: adding a new type updates conclusion index
+    @Test
+    public void new_type_updates_rule_conclusion_index() throws IOException {
+        Util.resetDirectory(directory);
+
+        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+            grakn.databases().create(database);
+            try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    ConceptManager conceptMgr = txn.concepts();
+                    LogicManager logicMgr = txn.logic();
+
+                    EntityType person = conceptMgr.putEntityType("person");
+                    RelationType marriage = conceptMgr.putRelationType("marriage");
+                    AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
+                    name.setAbstract();
+                    AttributeType firstName = conceptMgr.putAttributeType("first-name", AttributeType.ValueType.STRING);
+                    firstName.setSupertype(name);
+                    marriage.setRelates("spouse");
+                    person.setPlays(marriage.getRelates("spouse"));
+                    person.setOwns(firstName);
+
+                    Rule marriageSameName = logicMgr.putRule(
+                            "marriage-same-name",
+                            Graql.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
+                            Graql.parseVariable("$y has $a").asThing());
+                    Conjunction sameName = marriageSameName.then();
+                    Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.name("a"));
+                    assertEquals(set(Label.of("first-name")), nameAttr.resolvedTypes());
+
+                    txn.commit();
+                }
+                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    ConceptManager conceptMgr = txn.concepts();
+                    AttributeType lastName = conceptMgr.putAttributeType("last-name", AttributeType.ValueType.STRING);
+                    lastName.setSupertype(conceptMgr.getAttributeType("name"));
+                    conceptMgr.getEntityType("person").setOwns(lastName);
+                    txn.commit();
+                }
+                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
+                    LogicManager logicMgr = txn.logic();
+                    Rule marriageSameName = logicMgr.getRule("marriage-same-name");
+                    assertEquals(set(marriageSameName), logicMgr.rulesConcludingHasAttribute(Label.of("last-name")).toSet());
+                }
+            }
+        }
+    }
 
     // ------------ mentioned types indexing test (do these belong in higher level test?) ------------
 
@@ -557,14 +602,14 @@ public class RuleTest {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    final ConceptManager conceptMgr = txn.concepts();
-                    final LogicManager logicMgr = txn.logic();
+                    ConceptManager conceptMgr = txn.concepts();
+                    LogicManager logicMgr = txn.logic();
 
-                    final EntityType person = conceptMgr.putEntityType("person");
-                    final RelationType friendship = conceptMgr.putRelationType("friendship");
+                    EntityType person = conceptMgr.putEntityType("person");
+                    RelationType friendship = conceptMgr.putRelationType("friendship");
                     friendship.setRelates("friend");
-                    final RelationType marriage = conceptMgr.putRelationType("marriage");
-                    final AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
+                    RelationType marriage = conceptMgr.putRelationType("marriage");
+                    AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
                     marriage.setRelates("spouse");
                     person.setPlays(friendship.getRelates("friend"));
                     person.setPlays(marriage.getRelates("spouse"));
@@ -604,15 +649,15 @@ public class RuleTest {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    final ConceptManager conceptMgr = txn.concepts();
-                    final LogicManager logicMgr = txn.logic();
-                    final GraphManager graphMgr = logicMgr.graph();
+                    ConceptManager conceptMgr = txn.concepts();
+                    LogicManager logicMgr = txn.logic();
+                    GraphManager graphMgr = logicMgr.graph();
 
-                    final EntityType person = conceptMgr.putEntityType("person");
-                    final RelationType friendship = conceptMgr.putRelationType("friendship");
+                    EntityType person = conceptMgr.putEntityType("person");
+                    RelationType friendship = conceptMgr.putRelationType("friendship");
                     friendship.setRelates("friend");
-                    final RelationType marriage = conceptMgr.putRelationType("marriage");
-                    final AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
+                    RelationType marriage = conceptMgr.putRelationType("marriage");
+                    AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
                     marriage.setRelates("spouse");
                     person.setPlays(friendship.getRelates("friend"));
                     person.setPlays(marriage.getRelates("spouse"));
@@ -638,7 +683,7 @@ public class RuleTest {
 
                     txn.commit();
                 }
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.READ)){
+                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     LogicManager logicMgr = txn.logic();
                     Rule marriageFriendsRule = logicMgr.putRule(
                             "marriage-is-friendship",

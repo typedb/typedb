@@ -354,7 +354,6 @@ public class SchemaGraph implements Graph {
         } finally {
             singleLabelLocks.get(scopedLabel).unlockWrite();
             multiLabelLock.unlockRead();
-            // TODO this is a linear operation per new type
             rules().forEachRemaining(rule -> rule.isOutdated(true));
         }
     }
@@ -672,6 +671,7 @@ public class SchemaGraph implements Graph {
         }
     }
 
+    // TODO make naming consistent
     public class RuleIndex {
         final ConcurrentHashMap<Label, Set<RuleStructure>> typeConcluded;
         final ConcurrentHashMap<Label, Set<RuleStructure>> hasAttributeTypeConcluded;
