@@ -414,10 +414,12 @@ public class RuleTest {
                     friendship.setRelates("friend");
                     RelationType marriage = conceptMgr.putRelationType("marriage");
                     AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
+                    AttributeType age = conceptMgr.putAttributeType("age", AttributeType.ValueType.LONG);
                     marriage.setRelates("spouse");
                     person.setPlays(friendship.getRelates("friend"));
                     person.setPlays(marriage.getRelates("spouse"));
                     person.setOwns(name);
+                    person.setOwns(age);
                     Rule marriageFriendsRule = logicMgr.putRule(
                             "marriage-is-friendship",
                             Graql.parsePattern("{ $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
@@ -442,6 +444,15 @@ public class RuleTest {
                     Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.name("a"));
                     assertEquals(set(Label.of("name")), nameAttr.resolvedTypes());
 
+                    Rule peopleHaveAge10 = logicMgr.putRule(
+                            "people-have-age-10",
+                            Graql.parsePattern("{ $x isa person; }").asConjunction(),
+                            Graql.parseVariable("$x has age 10").asThing()
+                    );
+                    Conjunction age10 = peopleHaveAge10.then();
+                    Variable ageAttr = getVariable(age10.variables(), Identifier.Variable.anon(0));
+                    assertEquals(set(Label.of("age")), ageAttr.resolvedTypes());
+
                     txn.commit();
                 }
             }
@@ -457,6 +468,12 @@ public class RuleTest {
                     Set<Rule> hasNameRules = logicMgr.rulesConcludingHasAttribute(Label.of("name")).toSet();
                     Rule marriageSameName = txn.logic().getRule("marriage-same-name");
                     assertEquals(set(marriageSameName), hasNameRules);
+
+                    Set<Rule> hasAgeRules = logicMgr.rulesConcludingHasAttribute(Label.of("age")).toSet();
+                    Set<Rule> ageRules = logicMgr.rulesConcludingIsa(Label.of("age")).toSet();
+                    Rule peopleHaveAge10 = txn.logic().getRule("people-have-age-10");
+                    assertEquals(set(peopleHaveAge10), hasAgeRules);
+                    assertEquals(set(peopleHaveAge10), ageRules);
                 }
             }
         }

@@ -233,7 +233,7 @@ public class Bytes {
     }
 
     public static byte checkedCast(int value) {
-        assert (value & 0xFFFFFF00) == 0;
+        assert value >= -128 && value <= 127;
         return (byte) value;
     }
 }

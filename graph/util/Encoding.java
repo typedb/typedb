@@ -142,28 +142,27 @@ public class Encoding {
     /**
      * The values in this class will be used as 'prefixes' within an IID in the
      * of every object database, and must not overlap with each other.
-     *
-     * The size of a prefix is 1 byte; i.e. min-value = 0 and max-value = 255.
      */
     public enum Prefix {
-        // leave large open range for future indices
-        INDEX_TYPE(0, PrefixType.INDEX),
-        INDEX_RULE(10, PrefixType.INDEX),
-        INDEX_ATTRIBUTE(20, PrefixType.INDEX),
-        STATISTICS_THINGS(50, PrefixType.STATISTICS),
-        STATISTICS_COUNT_JOB(51, PrefixType.STATISTICS),
-        STATISTICS_COUNTED(52, PrefixType.STATISTICS),
-        STATISTICS_SNAPSHOT(53, PrefixType.STATISTICS),
-        VERTEX_THING_TYPE(100, PrefixType.TYPE),
-        VERTEX_ENTITY_TYPE(110, PrefixType.TYPE),
-        VERTEX_ATTRIBUTE_TYPE(120, PrefixType.TYPE),
-        VERTEX_RELATION_TYPE(130, PrefixType.TYPE),
-        VERTEX_ROLE_TYPE(140, PrefixType.TYPE),
-        VERTEX_ENTITY(150, PrefixType.THING),
-        VERTEX_ATTRIBUTE(160, PrefixType.THING),
-        VERTEX_RELATION(170, PrefixType.THING),
-        VERTEX_ROLE(180, PrefixType.THING),
-        STRUCTURE_RULE(190, PrefixType.RULE);
+        VERTEX_THING_TYPE(0, PrefixType.TYPE),
+        VERTEX_ENTITY_TYPE(10, PrefixType.TYPE),
+        VERTEX_ATTRIBUTE_TYPE(20, PrefixType.TYPE),
+        VERTEX_RELATION_TYPE(30, PrefixType.TYPE),
+        VERTEX_ROLE_TYPE(40, PrefixType.TYPE),
+        VERTEX_ENTITY(50, PrefixType.THING),
+        VERTEX_ATTRIBUTE(60, PrefixType.THING),
+        VERTEX_RELATION(70, PrefixType.THING),
+        VERTEX_ROLE(80, PrefixType.THING),
+        STRUCTURE_RULE(90, PrefixType.RULE),
+        // leave large open range for future indexes
+        INDEX_TYPE(-10, PrefixType.INDEX),
+        INDEX_RULE(-20, PrefixType.INDEX),
+        INDEX_ATTRIBUTE(-30, PrefixType.INDEX),
+        STATISTICS_THINGS(-80, PrefixType.STATISTICS),
+        STATISTICS_COUNT_JOB(-81, PrefixType.STATISTICS),
+        STATISTICS_COUNTED(-82, PrefixType.STATISTICS),
+        STATISTICS_SNAPSHOT(-83, PrefixType.STATISTICS);
+
 
         private final byte key;
         private final PrefixType type;
