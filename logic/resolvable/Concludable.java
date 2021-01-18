@@ -346,7 +346,7 @@ public abstract class Concludable extends Resolvable {
                     .filter(thenRP -> unificationSatisfiable(conjRP, thenRP, conceptMgr))
                     .map(thenRP -> {
                         Map<RolePlayer, Set<RolePlayer>> clone = cloneMapping(mapping);
-                        clone.putIfAbsent(conjRP, set());
+                        clone.putIfAbsent(conjRP, new HashSet<>());
                         clone.get(conjRP).add(thenRP);
                         return clone;
                     }).flatMap(newMapping -> matchRolePlayers(conjRolePLayers.subList(1, conjRolePLayers.size()),
