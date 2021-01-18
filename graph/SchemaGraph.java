@@ -354,7 +354,7 @@ public class SchemaGraph implements Graph {
         } finally {
             singleLabelLocks.get(scopedLabel).unlockWrite();
             multiLabelLock.unlockRead();
-            rules().forEachRemaining(rule -> rule.isOutdated(true));
+            ruleIndex().concludingIndexOutdated(true);
         }
     }
 
@@ -679,6 +679,7 @@ public class SchemaGraph implements Graph {
 
         final ConcurrentHashMap<Label, Set<RuleStructure>> ruleContains;
         final ConcurrentHashMap<Label, Set<RuleStructure>> bufferedRuleContains;
+        private boolean concludingIndexOutdated;
 
         public RuleIndex() {
             concludingIsa = new ConcurrentHashMap<>();
@@ -687,14 +688,17 @@ public class SchemaGraph implements Graph {
             bufferedConcludingHasAttribute = new ConcurrentHashMap<>();
             ruleContains = new ConcurrentHashMap<>();
             bufferedRuleContains = new ConcurrentHashMap<>();
+            concludingIndexOutdated = false;
         }
 
         public ResourceIterator<RuleStructure> concludingIsa(Label type) {
+            assert !concludingIndexOutdated;
             return link(iterate(concludingIsa.computeIfAbsent(type, this::loadConcludingIsa)),
                         iterate(bufferedConcludingIsa.getOrDefault(type, set())));
         }
 
         public ResourceIterator<RuleStructure> concludingHasAttribute(Label attributeType) {
+            assert !concludingIndexOutdated;
             return link(iterate(concludingHasAttribute.computeIfAbsent(attributeType, this::loadConcludingHasAttribute)),
                         iterate(bufferedConcludingHasAttribute.getOrDefault(attributeType, set())));
         }
@@ -849,5 +853,12 @@ public class SchemaGraph implements Graph {
                     .map(SchemaGraph.this::convert).toSet();
         }
 
+        public boolean concludingIndexOutdated() {
+            return concludingIndexOutdated;
+        }
+
+        public void concludingIndexOutdated(boolean isOutdated) {
+            this.concludingIndexOutdated = isOutdated;
+        }
     }
 }

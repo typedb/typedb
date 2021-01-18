@@ -88,7 +88,9 @@ public class LogicManager {
         rules().forEachRemaining(Rule::validateSatisfiable);
 
         // re-index if rules are valid and satisfiable
-        graphMgr.schema().rules().filter(RuleStructure::isOutdated).forEachRemaining(s -> fromStructure(s).reIndex());
+        if (graphMgr.schema().ruleIndex().concludingIndexOutdated()) {
+            graphMgr.schema().rules().forEachRemaining(s -> fromStructure(s).reIndex());
+        }
 
         // using the new index, validate new rules are stratifiable (eg. do not cause cycles through a negation)
         graphMgr.schema().bufferedRules().filter(structure -> structure.status().equals(Encoding.Status.BUFFERED))

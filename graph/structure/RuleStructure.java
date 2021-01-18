@@ -53,13 +53,6 @@ public interface RuleStructure {
      */
     void commit();
 
-    /**
-     * When a rule is outdated, we must re-index before correct reasoning may take place
-     */
-    boolean isOutdated();
-
-    void isOutdated(boolean isOutdated);
-
     void createConcludingIsaIndex(Label label);
 
     void clearConcludingIsaIndex(Label label);

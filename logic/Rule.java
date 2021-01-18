@@ -226,7 +226,6 @@ public class Rule {
     public void reIndex() {
         conclusion().clearFromIndex(this);
         conclusion().index(this);
-        structure.isOutdated(false);
     }
 
     public static abstract class Conclusion {

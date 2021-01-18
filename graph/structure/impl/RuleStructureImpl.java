@@ -106,16 +106,6 @@ public abstract class RuleStructureImpl implements RuleStructure {
     }
 
     @Override
-    public boolean isOutdated() {
-        return isOutdated.get();
-    }
-
-    @Override
-    public void isOutdated(boolean isOutdated) {
-        this.isOutdated.set(isOutdated);
-    }
-
-    @Override
     public void createConcludingIsaIndex(Label type) {
         graph.ruleIndex().concludingIsa(this, type);
     }
@@ -227,7 +217,6 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
         @Override
         public void commit() {
-            assert !isOutdated();
             if (isCommitted.compareAndSet(false, true)) {
                 commitVertex();
                 commitProperties();
@@ -293,11 +282,6 @@ public abstract class RuleStructureImpl implements RuleStructure {
         }
 
         @Override
-        public void commit() {
-            assert !isOutdated();
-        }
-
-        @Override
         public void delete() {
             if (isDeleted.compareAndSet(false, true)) {
                 graph.ruleIndex().deleteRuleContains(this, validRuleLabels());
@@ -305,6 +289,9 @@ public abstract class RuleStructureImpl implements RuleStructure {
                 deleteVertexFromStorage();
             }
         }
+
+        @Override
+        public void commit() {}
 
         private void deleteVertexFromStorage() {
             graph.storage().delete(IndexIID.Rule.of(label).bytes());
