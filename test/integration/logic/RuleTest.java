@@ -508,6 +508,7 @@ public class RuleTest {
 
                     txn.commit();
                 }
+                // check index after commit, and delete some rules
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     LogicManager logicMgr = txn.logic();
                     Set<Rule> friendshipRules = logicMgr.rulesConcludingIsa(Label.of("friendship")).toSet();
@@ -524,6 +525,7 @@ public class RuleTest {
                     txn.commit();
                 }
             }
+            // check indexed types, should only includes rules that are still present
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     LogicManager logicMgr = txn.logic();
@@ -569,6 +571,7 @@ public class RuleTest {
 
                     txn.commit();
                 }
+                // add a new subtype of an attribute in a rule
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     AttributeType lastName = conceptMgr.putAttributeType("last-name", AttributeType.ValueType.STRING);
@@ -576,6 +579,7 @@ public class RuleTest {
                     conceptMgr.getEntityType("person").setOwns(lastName);
                     txn.commit();
                 }
+                // check the new attribute type is re-indexed in the conclusions index
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     LogicManager logicMgr = txn.logic();
                     Rule marriageSameName = logicMgr.getRule("marriage-same-name");
@@ -683,39 +687,35 @@ public class RuleTest {
 
                     txn.commit();
                 }
+                // check the rule index is still established after commit
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
-                    LogicManager logicMgr = txn.logic();
-                    Rule marriageFriendsRule = logicMgr.putRule(
-                            "marriage-is-friendship",
-                            Graql.parsePattern("{ $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
-                            Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
+                    Rule marriageFriendsRule = txn.logic().getRule("marriage-is-friendship");
                     assertIndexTypesContainRule(set(Label.of("person"), Label.of("spouse", "marriage"),
                                                     Label.of("marriage"), Label.of("friend", "friendship"), Label.of("friendship")),
-                                                marriageFriendsRule.getLabel(),
-                                                logicMgr.graph()
-                    );
-                    Rule marriageSameName = logicMgr.putRule(
-                            "marriage-same-name",
-                            Graql.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
-                            Graql.parseVariable("$y has $a").asThing());
+                                                marriageFriendsRule.getLabel(), txn.logic().graph());
+
+                    Rule marriageSameName = txn.logic().getRule("marriage-same-name");
                     assertIndexTypesContainRule(set(Label.of("person"), Label.of("spouse", "marriage"), Label.of("marriage"), Label.of("name")),
-                                                marriageSameName.getLabel(),
-                                                logicMgr.graph()
+                                                marriageSameName.getLabel(), txn.logic().graph()
                     );
                 }
+                // deleting a relation type used in a rule should throw
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     RelationType friendship = conceptMgr.getRelationType("friendship");
                     assertThrowsGraknException(friendship::delete, ErrorMessage.TypeWrite.TYPE_PRESENT_IN_RULES.code());
+                    assertTrue(!txn.isOpen());
                 }
+                // deleting an attribute type used in a rule should throw
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     AttributeType name = conceptMgr.getAttributeType("name");
                     assertThrowsGraknException(name::delete, ErrorMessage.TypeWrite.TYPE_PRESENT_IN_RULES.code());
+                    assertTrue(!txn.isOpen());
                 }
+                // deleting a rule, then an attribute type used in the rule is allowed
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
-                    EntityType person = conceptMgr.getEntityType("person");
                     AttributeType name = conceptMgr.getAttributeType("name");
 
                     LogicManager logicMgr = txn.logic();
@@ -724,6 +724,7 @@ public class RuleTest {
                     assertNotThrows(name::delete);
                     txn.commit();
                 }
+                // deleting a rule, then an entity type used in the rule is allowed
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     RelationType person = conceptMgr.getRelationType("friendship");
@@ -733,6 +734,7 @@ public class RuleTest {
                     assertNotThrows(person::delete);
                     txn.commit();
                 }
+                // after all rules are deleted, no rules should exist in the index
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     LogicManager logicMgr = txn.logic();
                     GraphManager graphMgr = logicMgr.graph();
