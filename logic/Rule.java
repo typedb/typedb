@@ -96,18 +96,6 @@ public class Rule {
         this.conclusion.index(this);
     }
 
-    private void indexConclusion() {
-        /*
-        2. all explicit labels that are mentioned in this rule, to prevent types from undefined when they are used in a rule
-
-        note that the second can be handled transparently by the RuleStructure if that makes more sense
-        note that the latter is always up to date as we can only delete types that are not mentioned in rules,
-             and we can only add a rule that mentions types that exist. This hints that we should be creating this index
-             when we create the rule structure, and delete it when we delete the rule structure
-         */
-
-    }
-
     public static Rule of(LogicManager logicMgr, RuleStructure structure) {
         return new Rule(logicMgr, structure);
     }
@@ -199,9 +187,6 @@ public class Rule {
 
     }
 
-    // TODO this feels over-exposed, revisit
-    RuleStructure structure() { return structure; }
-
     void validateCycles() {
         // TODO implement this when we have negation
         // TODO detect negated cycles in the rule graph
@@ -229,16 +214,13 @@ public class Rule {
     }
 
     private Conjunction whenPattern(graql.lang.pattern.Conjunction<? extends Pattern> conjunction, LogicManager logicMgr) {
-        Conjunction conj = logicMgr.typeResolver().resolveLabels(Conjunction.create(conjunction.normalise().patterns().get(0)));
-        return logicMgr.typeResolver().resolveVariablesExhaustive(conj);
+        return logicMgr.typeResolver().resolve(Conjunction.create(conjunction.normalise().patterns().get(0)));
     }
 
     private Conjunction thenPattern(ThingVariable<?> thenVariable, LogicManager logicMgr) {
         // TODO when applying the type resolver, we should be using _insert semantics_ during the type resolution!!!
-//        this.then = logicMgr.typeHinter().computeHintsExhaustive(thenPattern(structure.then()));
-        Conjunction conj = logicMgr.typeResolver().resolveLabels(
-                new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set()));
-        return logicMgr.typeResolver().resolveVariablesExhaustive(conj);
+        Conjunction conj = new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
+        return logicMgr.typeResolver().resolve(conj);
     }
 
     public void reIndex() {
@@ -366,15 +348,15 @@ public class Rule {
             @Override
             void index(Rule rule) {
                 Variable relation = relation().owner();
-                Set<Label> possibleRelationTypes = relation.resolvedTypes(); // TODO these should in the future follow insert semantics
-                possibleRelationTypes.forEach(rule.structure::createConcludesIndex);
+                Set<Label> possibleRelationTypes = relation.resolvedTypes();
+                possibleRelationTypes.forEach(rule.structure::createConcludingIsaIndex);
             }
 
             @Override
             void clearFromIndex(Rule rule) {
                 Variable relation = relation().owner();
-                Set<Label> possibleRelationTypes = relation.resolvedTypes(); // TODO these should in the future follow insert semantics
-                possibleRelationTypes.forEach(rule.structure::clearConcludesIndex);
+                Set<Label> possibleRelationTypes = relation.resolvedTypes();
+                possibleRelationTypes.forEach(rule.structure::clearConcludingIsaIndex);
             }
 
             public RelationConstraint relation() {
@@ -531,19 +513,19 @@ public class Rule {
                 @Override
                 void index(Rule rule) {
                     grakn.core.pattern.variable.Variable attribute = has().attribute();
-                    Set<Label> possibleAttributeHas = attribute.resolvedTypes(); // TODO these should in the future follow insert semantics
+                    Set<Label> possibleAttributeHas = attribute.resolvedTypes();
                     possibleAttributeHas.forEach(label -> {
-                        rule.structure.createConcludesIndex(label);
-                        rule.structure.createConcludesHasAttributeIndex(label);
+                        rule.structure.createConcludingIsaIndex(label);
+                        rule.structure.createConcludingHasAttributeIndex(label);
                     });
                 }
 
                 @Override
                 void clearFromIndex(Rule rule) {
                     grakn.core.pattern.variable.Variable attribute = has().attribute();
-                    Set<Label> possibleAttributeHas = attribute.resolvedTypes(); // TODO these should in the future follow insert semantics
+                    Set<Label> possibleAttributeHas = attribute.resolvedTypes();
                     possibleAttributeHas.forEach(label -> {
-                        rule.structure.clearConcludesIndex(label);
+                        rule.structure.clearConcludingIsaIndex(label);
                         rule.structure.clearConcludesHasAttributeIndex(label);
                     });
                 }
@@ -646,14 +628,14 @@ public class Rule {
                 @Override
                 void index(Rule rule) {
                     grakn.core.pattern.variable.Variable attribute = has().attribute();
-                    Set<Label> possibleAttributeHas = attribute.resolvedTypes(); // TODO these should in the future follow insert semantics
-                    possibleAttributeHas.forEach(rule.structure::createConcludesHasAttributeIndex);
+                    Set<Label> possibleAttributeHas = attribute.resolvedTypes();
+                    possibleAttributeHas.forEach(rule.structure::createConcludingHasAttributeIndex);
                 }
 
                 @Override
                 void clearFromIndex(Rule rule) {
                     grakn.core.pattern.variable.Variable attribute = has().attribute();
-                    Set<Label> possibleAttributeHas = attribute.resolvedTypes(); // TODO these should in the future follow insert semantics
+                    Set<Label> possibleAttributeHas = attribute.resolvedTypes();
                     possibleAttributeHas.forEach(rule.structure::clearConcludesHasAttributeIndex);
                 }
 

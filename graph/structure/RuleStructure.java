@@ -60,11 +60,11 @@ public interface RuleStructure {
 
     void isOutdated(boolean isOutdated);
 
-    void createConcludesIndex(Label label);
+    void createConcludingIsaIndex(Label label);
 
-    void clearConcludesIndex(Label label);
+    void clearConcludingIsaIndex(Label label);
 
-    void createConcludesHasAttributeIndex(Label type);
+    void createConcludingHasAttributeIndex(Label type);
 
     void clearConcludesHasAttributeIndex(Label type);
 }

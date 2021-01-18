@@ -93,13 +93,10 @@ public abstract class Concludable extends Resolvable {
     }
 
     public ResourceIterator<Rule> getApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
-        computeApplicableRulesIfAbsent(conceptMgr, logicMgr);
+        synchronized (this) {
+            if (applicableRules == null) applicableRules = applicableRules(conceptMgr, logicMgr);
+        }
         return Iterators.iterate(applicableRules.keySet());
-    }
-
-
-    private synchronized void computeApplicableRulesIfAbsent(ConceptManager conceptMgr, LogicManager logicMgr) {
-        if (applicableRules == null) applicableRules = this.applicableRules(conceptMgr, logicMgr);
     }
 
     abstract Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr);
@@ -395,8 +392,7 @@ public abstract class Concludable extends Resolvable {
 
         @Override
         Variable generating() {
-            // TODO
-            return null;
+            return constraint().owner();
         }
 
         @Override
@@ -536,8 +532,7 @@ public abstract class Concludable extends Resolvable {
 
         @Override
         Variable generating() {
-            // TODO
-            return null;
+            return constraint().attribute();
         }
 
         @Override
@@ -644,8 +639,7 @@ public abstract class Concludable extends Resolvable {
 
         @Override
         Variable generating() {
-            // TODO
-            return null;
+            return constraint().owner();
         }
 
         @Override
@@ -746,8 +740,7 @@ public abstract class Concludable extends Resolvable {
 
         @Override
         Variable generating() {
-            // TODO
-            return null;
+            return constraint().owner();
         }
 
         @Override

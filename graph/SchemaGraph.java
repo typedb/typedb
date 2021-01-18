@@ -734,7 +734,7 @@ public class SchemaGraph implements Graph {
                 rules.forEach(rule -> {
                     byte[] typeRuleConconcludesIndex = join(Encoding.Index.Prefix.TYPE.bytes(),
                                                             typeIid.bytes(),
-                                                            Encoding.Index.Infix.RULE_CONCLUDES.bytes(),
+                                                            Encoding.Index.Infix.RULE_CONCLUDES_ISA.bytes(),
                                                             rule.iid().bytes());
                     storage.put(typeRuleConconcludesIndex);
                 });
@@ -777,7 +777,7 @@ public class SchemaGraph implements Graph {
                 storage().delete(join(
                         Encoding.Index.Prefix.TYPE.bytes(),
                         getType(type).iid().bytes(),
-                        Encoding.Index.Infix.RULE_CONCLUDES.bytes(),
+                        Encoding.Index.Infix.RULE_CONCLUDES_ISA.bytes(),
                         structure.iid().bytes()
                 ));
             }
@@ -826,7 +826,7 @@ public class SchemaGraph implements Graph {
             TypeVertex type = getType(label);
             byte[] indexScanPrefix = Bytes.join(Encoding.Index.Prefix.TYPE.bytes(),
                                                 type.iid().bytes(),
-                                                Encoding.Index.Infix.RULE_CONCLUDES.bytes());
+                                                Encoding.Index.Infix.RULE_CONCLUDES_ISA.bytes());
             return storage.iterate(indexScanPrefix, (key, value) -> StructureIID.Rule.of(stripPrefix(key, indexScanPrefix.length)))
                     .map(SchemaGraph.this::convert).toSet();
         }

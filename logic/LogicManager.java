@@ -99,7 +99,6 @@ public class LogicManager {
         return typeResolver;
     }
 
-    // For test
     GraphManager graph() { return graphMgr; }
 
     private Rule fromStructure(RuleStructure ruleStructure) {
