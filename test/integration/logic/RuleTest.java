@@ -396,7 +396,7 @@ public class RuleTest {
         }
     }
 
-    // ------------ Rule indexing tests ------------
+    // ------------ Rule conclusion indexing ------------
 
     @Test
     public void rule_indexes_created_and_readable() throws IOException {
@@ -585,7 +585,7 @@ public class RuleTest {
         }
     }
 
-    // ------------ mentioned types indexing test (do these belong in higher level test?) ------------
+    // ------------ Rule type labels indexing ------------
 
     private void assertIndexTypesContainRule(Set<Label> types, String requiredRule, GraphManager graphMgr) {
         types.forEach(t -> {

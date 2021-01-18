@@ -40,7 +40,6 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-// TODO replace (byte) with `checkedCast` methods
 public class Encoding {
 
     public static final String ROCKS_DATA = "data";
@@ -170,7 +169,7 @@ public class Encoding {
         private final PrefixType type;
 
         Prefix(int key, PrefixType type) {
-            this.key = (byte) (key & 0xff);
+            this.key = checkedCast(key);
             this.type = type;
         }
 
@@ -256,7 +255,7 @@ public class Encoding {
         }
 
         Infix(int key, boolean isOptimisation) {
-            this.key = (byte) key;
+            this.key = checkedCast(key);
             this.isOptimisation = isOptimisation;
         }
 
@@ -343,7 +342,7 @@ public class Encoding {
 
         ValueType(int key, Class<?> valueClass, boolean isWritable, boolean isKeyable,
                   @Nullable GraqlArg.ValueType graqlValueType) {
-            this.key = (byte) key;
+            this.key = checkedCast(key);
             this.valueClass = valueClass;
             this.isWritable = isWritable;
             this.isKeyable = isKeyable;
@@ -760,7 +759,7 @@ public class Encoding {
             private final byte key;
 
             JobType(int key) {
-                this.key = (byte) key;
+                this.key = checkedCast(key);
             }
 
             public static JobType of(byte[] key) {
@@ -788,7 +787,7 @@ public class Encoding {
             private final byte key;
 
             JobOperation(int key) {
-                this.key = (byte) key;
+                this.key = checkedCast(key);
             }
 
             public static JobOperation of(byte[] key) {
@@ -818,7 +817,7 @@ public class Encoding {
             private final byte key;
 
             Infix(int key) {
-                this.key = (byte) key;
+                this.key = checkedCast(key);
             }
 
             public byte key() {
