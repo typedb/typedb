@@ -60,6 +60,7 @@ import static grakn.core.common.test.Util.assertNotThrows;
 import static grakn.core.common.test.Util.assertThrowsGraknException;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 public class RuleTest {
     private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("rule-test");
@@ -630,17 +631,37 @@ public class RuleTest {
                             "marriage-same-name",
                             Graql.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
                             Graql.parseVariable("$y has $a").asThing());
-                    assertIndexTypesContainRule(set(Label.of("person"), Label.of("spouse", "marriage"), Label.of("name")),
-                                                marriageFriendsRule.getLabel(),
+                    assertIndexTypesContainRule(set(Label.of("person"), Label.of("spouse", "marriage"), Label.of("marriage"), Label.of("name")),
+                                                marriageSameName.getLabel(),
                                                 graphMgr
                     );
 
                     txn.commit();
                 }
+                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.READ)){
+                    LogicManager logicMgr = txn.logic();
+                    Rule marriageFriendsRule = logicMgr.putRule(
+                            "marriage-is-friendship",
+                            Graql.parsePattern("{ $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
+                            Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
+                    assertIndexTypesContainRule(set(Label.of("person"), Label.of("spouse", "marriage"),
+                                                    Label.of("marriage"), Label.of("friend", "friendship"), Label.of("friendship")),
+                                                marriageFriendsRule.getLabel(),
+                                                logicMgr.graph()
+                    );
+                    Rule marriageSameName = logicMgr.putRule(
+                            "marriage-same-name",
+                            Graql.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
+                            Graql.parseVariable("$y has $a").asThing());
+                    assertIndexTypesContainRule(set(Label.of("person"), Label.of("spouse", "marriage"), Label.of("marriage"), Label.of("name")),
+                                                marriageSameName.getLabel(),
+                                                logicMgr.graph()
+                    );
+                }
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
-                    EntityType person = conceptMgr.getEntityType("person");
-                    assertThrowsGraknException(person::delete, ErrorMessage.TypeWrite.TYPE_PRESENT_IN_RULES.code());
+                    RelationType friendship = conceptMgr.getRelationType("friendship");
+                    assertThrowsGraknException(friendship::delete, ErrorMessage.TypeWrite.TYPE_PRESENT_IN_RULES.code());
                 }
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
@@ -656,15 +677,24 @@ public class RuleTest {
                     Rule marriageSameName = logicMgr.getRule("marriage-same-name");
                     marriageSameName.delete();
                     assertNotThrows(name::delete);
-                    assertThrowsGraknException(person::delete, ErrorMessage.TypeWrite.TYPE_PRESENT_IN_RULES.code());
+                    txn.commit();
                 }
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
-                    EntityType person = conceptMgr.getEntityType("person");
+                    RelationType person = conceptMgr.getRelationType("friendship");
                     LogicManager logicMgr = txn.logic();
                     Rule marriageIsFriendship = logicMgr.getRule("marriage-is-friendship");
                     marriageIsFriendship.delete();
                     assertNotThrows(person::delete);
+                    txn.commit();
+                }
+                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
+                    LogicManager logicMgr = txn.logic();
+                    GraphManager graphMgr = logicMgr.graph();
+                    // no types should be in the index
+                    graphMgr.schema().thingTypes().forEachRemaining(type -> {
+                        assertFalse(graphMgr.schema().ruleIndex().rulesContaining(type.properLabel()).hasNext());
+                    });
                 }
             }
         }
