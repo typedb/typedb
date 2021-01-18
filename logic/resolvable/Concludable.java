@@ -290,7 +290,10 @@ public abstract class Concludable extends Resolvable {
 
         @Override
         public Set<Constraint> concludableConstraints() {
-            return isa == null ? set(new HashSet<>(labels), relation) : set(new HashSet<>(labels), relation, isa);
+            Set<Constraint> c = new HashSet<>(labels);
+            c.add(relation);
+            if (isa != null) c.add(isa);
+            return set(c);
         }
 
         @Override
@@ -343,7 +346,7 @@ public abstract class Concludable extends Resolvable {
                     .filter(thenRP -> unificationSatisfiable(conjRP, thenRP, conceptMgr))
                     .map(thenRP -> {
                         Map<RolePlayer, Set<RolePlayer>> clone = cloneMapping(mapping);
-                        clone.putIfAbsent(conjRP, new HashSet<>());
+                        clone.putIfAbsent(conjRP, set());
                         clone.get(conjRP).add(thenRP);
                         return clone;
                     }).flatMap(newMapping -> matchRolePlayers(conjRolePLayers.subList(1, conjRolePLayers.size()),
@@ -434,8 +437,8 @@ public abstract class Concludable extends Resolvable {
                 cloner = Conjunction.Cloner.cloneExactly(labels, values, isa, has);
                 clonedIsa = cloner.getClone(isa).asThing().asIsa();
             }
-            return new Has(cloner.conjunction(), cloner.getClone(has).asThing().asHas(), clonedIsa,
-                           new HashSet<>(Iterators.iterate(values).map(cloner::getClone).map(c -> c.asThing().asValue()).toSet()));
+            ResourceIterator<ValueConstraint<?>> valueIt = Iterators.iterate(values).map(cloner::getClone).map(c -> c.asThing().asValue());
+            return new Has(cloner.conjunction(), cloner.getClone(has).asThing().asHas(), clonedIsa, valueIt.toSet());
         }
 
         public HasConstraint has() {
@@ -448,7 +451,7 @@ public abstract class Concludable extends Resolvable {
             constraints.add(has);
             if (isa != null) constraints.add(isa);
             constraints.addAll(equalsConstraints(values));
-            return constraints;
+            return set(constraints);
         }
 
         @Override
@@ -527,8 +530,8 @@ public abstract class Concludable extends Resolvable {
 
         public static Isa of(IsaConstraint isa, Set<ValueConstraint<?>> values, Set<LabelConstraint> labelConstraints) {
             Conjunction.Cloner cloner = Conjunction.Cloner.cloneExactly(labelConstraints, values, isa);
-            return new Isa(cloner.conjunction(), cloner.getClone(isa).asThing().asIsa(), new HashSet<>(
-                    Iterators.iterate(values).map(cloner::getClone).map(c -> c.asThing().asValue()).toSet()));
+            ResourceIterator<ValueConstraint<?>> valueIt = Iterators.iterate(values).map(cloner::getClone).map(c -> c.asThing().asValue());
+            return new Isa(cloner.conjunction(), cloner.getClone(isa).asThing().asIsa(), valueIt.toSet());
         }
 
         public IsaConstraint isa() {
@@ -540,7 +543,7 @@ public abstract class Concludable extends Resolvable {
             Set<Constraint> constraints = new HashSet<>();
             constraints.add(isa);
             constraints.addAll(equalsConstraints(values));
-            return constraints;
+            return set(constraints);
         }
 
         @Override
@@ -623,8 +626,8 @@ public abstract class Concludable extends Resolvable {
             assert Iterators.iterate(values).map(ThingConstraint::owner).toSet().equals(set(attribute));
             Conjunction.Cloner cloner = Conjunction.Cloner.cloneExactly(values);
             assert cloner.conjunction().variables().size() == 1;
-            return new Attribute(cloner.conjunction().variables().iterator().next().asThing(), new HashSet<>(Iterators.iterate(
-                    values).map(v -> cloner.getClone(v).asThing().asValue()).toSet()));
+            ResourceIterator<ValueConstraint<?>> valueIt = Iterators.iterate(values).map(v -> cloner.getClone(v).asThing().asValue());
+            return new Attribute(cloner.conjunction().variables().iterator().next().asThing(), valueIt.toSet());
         }
 
         @Override
@@ -723,12 +726,12 @@ public abstract class Concludable extends Resolvable {
         }
 
         public Set<Concludable> concludables() {
-            return new HashSet<>(concludables);
+            return set(concludables);
         }
 
         private static Set<LabelConstraint> labelConstraints(Constraint constraint) {
-            return new HashSet<>(Iterators.iterate(constraint.variables()).filter(v -> v.reference().isLabel()).map(
-                    v -> v.asType().label().get()).toSet());
+            return Iterators.iterate(constraint.variables()).filter(v -> v.reference().isLabel()).map(
+                    v -> v.asType().label().get()).toSet();
         }
     }
 }
