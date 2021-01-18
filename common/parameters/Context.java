@@ -71,6 +71,10 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
             this.transactionType = transactionType;
             return this;
         }
+
+        public boolean isSchemaWrite() {
+            return sessionType.isSchema() && this.transactionType.isWrite();
+        }
     }
 
     public static class Query extends Context<Context.Transaction, Options.Query> {

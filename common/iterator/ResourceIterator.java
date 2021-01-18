@@ -82,6 +82,10 @@ public interface ResourceIterator<T> extends Iterator<T> {
         return this.filter(Objects::nonNull);
     }
 
+    default boolean allMatch(Predicate<T> predicate) {
+        return !this.filter(e -> !predicate.test(e)).hasNext();
+    }
+
     default boolean anyMatch(Predicate<T> predicate) {
         return this.filter(predicate).hasNext();
     }

@@ -24,12 +24,15 @@ import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableCloner;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
+import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.Conjunctable;
 import graql.lang.pattern.variable.BoundVariable;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -43,20 +46,32 @@ import static grakn.core.common.exception.ErrorMessage.Pattern.UNBOUNDED_NEGATIO
 import static grakn.core.common.iterator.Iterators.iterate;
 import static graql.lang.common.GraqlToken.Char.NEW_LINE;
 import static graql.lang.common.GraqlToken.Char.SEMICOLON;
+import static java.util.Collections.unmodifiableMap;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.stream.Collectors.toSet;
 
 public class Conjunction implements Pattern, Cloneable {
 
     private static final String TRACE_PREFIX = "conjunction.";
-    private final Set<Variable> variables;
+    private final Map<Identifier.Variable, Variable> variableMap;
+    private final Set<Variable> variableSet;
     private final Set<Negation> negations;
     private final int hash;
 
+    private boolean isSatisfiable;
+
     public Conjunction(Set<Variable> variables, Set<Negation> negations) {
-        this.variables = unmodifiableSet(variables);
+        this.variableSet = unmodifiableSet(variables);
+        this.variableMap = parseToMap(variables);
         this.negations = unmodifiableSet(negations);
         this.hash = Objects.hash(variables, negations);
+        this.isSatisfiable = true;
+    }
+
+    private Map<Identifier.Variable, Variable> parseToMap(Set<Variable> variables) {
+        HashMap<Identifier.Variable, Variable> map = new HashMap<>();
+        iterate(variables).forEachRemaining(v -> map.put(v.id(), v));
+        return unmodifiableMap(map);
     }
 
     public static Conjunction create(graql.lang.pattern.Conjunction<Conjunctable> graql) {
@@ -83,17 +98,23 @@ public class Conjunction implements Pattern, Cloneable {
         }
     }
 
+    public Variable variable(Identifier.Variable identifier) {
+        return variableMap.get(identifier);
+    }
+
     public Set<Variable> variables() {
-        return variables;
+        return variableSet;
     }
 
     public Set<Negation> negations() {
         return negations;
     }
 
-    public Traversal traversal() {
+    public Traversal traversal(List<Identifier.Variable.Name> filter) {
         Traversal traversal = new Traversal();
-        variables.forEach(variable -> variable.addTo(traversal));
+        variableSet.forEach(variable -> variable.addTo(traversal));
+        assert iterate(filter).allMatch(variableMap::containsKey);
+        traversal.filter(filter);
         return traversal;
     }
 
@@ -104,8 +125,16 @@ public class Conjunction implements Pattern, Cloneable {
         throw GraknException.of(ILLEGAL_STATE);
     }
 
+    public void setSatisfiable(boolean isSatisfiable) {
+        this.isSatisfiable = isSatisfiable;
+    }
+
+    public boolean isSatisfiable() {
+        return isSatisfiable;
+    }
+
     public void forEach(Consumer<Variable> function) {
-        variables.forEach(function);
+        variableSet.forEach(function);
     }
 
     @Override
@@ -116,7 +145,7 @@ public class Conjunction implements Pattern, Cloneable {
 
     @Override
     public String toString() {
-        return Stream.concat(variables.stream().filter(this::printable), negations.stream()).map(Pattern::toString)
+        return Stream.concat(variableSet.stream().filter(this::printable), negations.stream()).map(Pattern::toString)
                 .collect(Collectors.joining("" + SEMICOLON + NEW_LINE, "", "" + SEMICOLON));
     }
 
@@ -126,7 +155,7 @@ public class Conjunction implements Pattern, Cloneable {
         if (obj == null || obj.getClass() != getClass()) return false;
         final Conjunction that = (Conjunction) obj;
         // TODO This doesn't work! It doesn't compare constraints
-        return (this.variables.equals(that.variables()) &&
+        return (this.variableSet.equals(that.variables()) &&
                 this.negations.equals(that.negations()));
     }
 
