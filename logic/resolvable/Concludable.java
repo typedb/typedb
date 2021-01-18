@@ -407,8 +407,7 @@ public abstract class Concludable extends Resolvable {
 
         @Override
         AlphaEquivalence alphaEquals(Relation that) {
-            return relation().alphaEquals(that.relation()).validIfAlphaEqual(isa, that.isa)
-                    .validIfAlphaEqual(labels, that.labels);
+            return relation().alphaEquals(that.relation());
         }
     }
 
@@ -514,7 +513,7 @@ public abstract class Concludable extends Resolvable {
 
         @Override
         AlphaEquivalence alphaEquals(Has that) {
-            return has().alphaEquals(that.has()).validIfAlphaEqual(isa, that.isa).validIfAlphaEqual(values, that.values);
+            return has().alphaEquals(that.has());
         }
 
     }
@@ -597,7 +596,7 @@ public abstract class Concludable extends Resolvable {
 
         @Override
         AlphaEquivalence alphaEquals(Isa that) {
-            return isa().alphaEquals(that.isa()).validIfAlphaEqual(values, that.values);
+            return isa().alphaEquals(that.isa());
         }
     }
 
