@@ -490,7 +490,7 @@ public abstract class Concludable extends Resolvable {
                     ValueConstraint<?> value = attr.value().iterator().next();
                     assert value.predicate().equals(EQ);
                     Function<grakn.core.concept.thing.Attribute, Boolean> predicateFn = valueEqualsFunction(value);
-                    unifierBuilder.requirements().hasPredicate(attr.id(), predicateFn);
+                    unifierBuilder.requirements().predicates(attr.id(), predicateFn);
                 } else if (attr.reference().isName() && attr.isa().isPresent() && attr.isa().get().type().label().isPresent()) {
                     // form: $x has age $a (may also handle $x has $a; $a isa age)   -> require ISA age
                     Label attrLabel = attr.isa().get().type().label().get().properLabel();
@@ -578,7 +578,7 @@ public abstract class Concludable extends Resolvable {
                                                         subtypeLabels(type.resolvedTypes(), conceptMgr).collect(Collectors.toSet()));
                 }
                 for (ValueConstraint<?> value : equalsConstraints(values)) {
-                    unifierBuilder.requirements().hasPredicate(value.owner().id(), valueEqualsFunction(value));
+                    unifierBuilder.requirements().predicates(value.owner().id(), valueEqualsFunction(value));
                 }
             } else return Iterators.empty();
 
@@ -657,7 +657,7 @@ public abstract class Concludable extends Resolvable {
                 unifierBuilder.add(attribute.id(), valueConclusion.value().owner().id());
             } else return Iterators.empty();
             for (ValueConstraint<?> value : equalsConstraints(values)) {
-                unifierBuilder.requirements().hasPredicate(value.owner().id(), valueEqualsFunction(value));
+                unifierBuilder.requirements().predicates(value.owner().id(), valueEqualsFunction(value));
             }
             return Iterators.iterate(list(unifierBuilder.build()));
         }

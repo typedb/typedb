@@ -167,7 +167,7 @@ public class UnifyIsaConcludableTest {
         // test requirements
         assertEquals(0, unifier.requirements().types().size());
         assertEquals(0, unifier.requirements().isaExplicit().size());
-        assertFalse(unifier.requirements().hasPredicate());
+        assertEquals(0, unifier.requirements().predicates().size());
     }
 
     @Test
@@ -192,7 +192,7 @@ public class UnifyIsaConcludableTest {
         // test requirements
         assertEquals(0, unifier.requirements().types().size());
         assertEquals(0, unifier.requirements().isaExplicit().size());
-        assertFalse(unifier.requirements().hasPredicate());
+        assertEquals(0, unifier.requirements().predicates().size());
     }
 
     @Test
@@ -218,7 +218,7 @@ public class UnifyIsaConcludableTest {
         // test requirements
         assertEquals(0, unifier.requirements().types().size());
         assertEquals(0, unifier.requirements().isaExplicit().size());
-        assertFalse(unifier.requirements().hasPredicate());
+        assertEquals(0, unifier.requirements().predicates().size());
     }
 
     /*
@@ -272,7 +272,7 @@ public class UnifyIsaConcludableTest {
         assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")),
                      unifier.requirements().types().values().iterator().next());
         assertEquals(0, unifier.requirements().isaExplicit().size());
-        assertFalse(unifier.requirements().hasPredicate());
+        assertEquals(0, unifier.requirements().predicates().size());
 
         // test filter allows a valid answer
         Map<Identifier, Concept> identifiedConcepts = map(
@@ -314,7 +314,7 @@ public class UnifyIsaConcludableTest {
         assertEquals(1, unifier.requirements().types().size());
         assertEquals(set(Label.of("relation"), Label.of("employment")), unifier.requirements().types().values().iterator().next());
         assertEquals(0, unifier.requirements().isaExplicit().size());
-        assertFalse(unifier.requirements().hasPredicate());
+        assertEquals(0, unifier.requirements().predicates().size());
 
         // test filter allows a valid answer
         Map<Identifier, Concept> identifiedConcepts = map(
@@ -358,7 +358,7 @@ public class UnifyIsaConcludableTest {
         assertEquals(1, unifier.requirements().types().size());
         assertEquals(set(Label.of("relation"), Label.of("employment")), unifier.requirements().types().values().iterator().next());
         assertEquals(0, unifier.requirements().isaExplicit().size());
-        assertFalse(unifier.requirements().hasPredicate());
+        assertEquals(0, unifier.requirements().predicates().size());
 
         // test filter allows a valid answer
         Map<Identifier, Concept> identifiedConcepts = map(
@@ -434,7 +434,7 @@ public class UnifyIsaConcludableTest {
         // test requirements
         assertEquals(0, unifier.requirements().types().size());
         assertEquals(0, unifier.requirements().isaExplicit().size());
-        // TODO Assert that there are 3 predicates in the unifier requirements;
+        assertEquals(3, unifier.requirements().predicates().size());
 
         // test filter allows a valid answer
         Map<Identifier, Set<Label>> typesRequirements = unifier.requirements().types();

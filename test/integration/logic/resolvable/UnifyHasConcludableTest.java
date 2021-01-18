@@ -170,7 +170,7 @@ public class UnifyHasConcludableTest {
         assertEquals(0, unifier.requirements().types().size());
         assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().values().iterator().next());
-        assertTrue(unifier.requirements().hasPredicate());
+        assertEquals(1, unifier.requirements().predicates().size());
 
         // test filter allows a valid answer
         Map<Identifier, Concept> identifiedConcepts = map(
@@ -220,7 +220,7 @@ public class UnifyHasConcludableTest {
         assertEquals(0, unifier.requirements().types().size());
         assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().values().iterator().next());
-        assertTrue(unifier.requirements().hasPredicate());
+        assertEquals(1, unifier.requirements().predicates().size());
 
         // test filter allows a valid answer
         Map<Identifier, Concept> identifiedConcepts = map(
@@ -285,7 +285,7 @@ public class UnifyHasConcludableTest {
         // test requirements
         assertEquals(0, unifier.requirements().types().size());
         assertEquals(0, unifier.requirements().isaExplicit().size());
-        assertFalse(unifier.requirements().hasPredicate());
+        assertEquals(0, unifier.requirements().predicates().size());
     }
 
     @Test
@@ -318,7 +318,7 @@ public class UnifyHasConcludableTest {
         // test requirements
         assertEquals(0, unifier.requirements().types().size());
         assertEquals(0, unifier.requirements().isaExplicit().size());
-        assertFalse(unifier.requirements().hasPredicate());
+        assertEquals(0, unifier.requirements().predicates().size());
     }
 
     @Test
@@ -343,7 +343,7 @@ public class UnifyHasConcludableTest {
         assertEquals(0, unifier.requirements().types().size());
         assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().values().iterator().next());
-        assertFalse(unifier.requirements().hasPredicate());
+        assertEquals(0, unifier.requirements().predicates().size());
 
         // test filter allows a valid answer
         Map<Identifier, Concept> identifiedConcepts = map(
@@ -385,7 +385,7 @@ public class UnifyHasConcludableTest {
         assertEquals(0, unifier.requirements().types().size());
         assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().values().iterator().next());
-        assertFalse(unifier.requirements().hasPredicate());
+        assertEquals(0, unifier.requirements().predicates().size());
 
         // test filter allows a valid answer
         Map<Identifier, Concept> identifiedConcepts = map(
@@ -426,7 +426,7 @@ public class UnifyHasConcludableTest {
         // test requirements
         assertEquals(0, unifier.requirements().types().size());
         assertEquals(1, unifier.requirements().isaExplicit().size());
-        assertFalse(unifier.requirements().hasPredicate());
+        assertEquals(0, unifier.requirements().predicates().size());
     }
 
     @Test
@@ -485,6 +485,6 @@ public class UnifyHasConcludableTest {
         assertEquals(0, unifier.requirements().types().size());
         assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(set(Label.of("self-owning-attribute")), unifier.requirements().isaExplicit().values().iterator().next());
-        assertFalse(unifier.requirements().hasPredicate());
+        assertEquals(0, unifier.requirements().predicates().size());
     }
 }

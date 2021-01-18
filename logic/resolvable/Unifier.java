@@ -17,7 +17,6 @@
 
 package grakn.core.logic.resolvable;
 
-import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.Concept;
@@ -26,7 +25,6 @@ import grakn.core.concept.thing.Attribute;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.variable.Reference;
 
-import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -198,17 +196,17 @@ public class Unifier {
     public static class Requirements {
         Map<Identifier, Set<Label>> types;
         Map<Identifier, Set<Label>> isaExplicit;
-        Pair<Identifier, Function<Attribute, Boolean>> predicate;
+        Map<Identifier, Function<Attribute, Boolean>> predicates;
 
         public Requirements() {
-            this(new HashMap<>(), new HashMap<>(), null);
+            this(new HashMap<>(), new HashMap<>(), new HashMap<>());
         }
 
         public Requirements(Map<Identifier, Set<Label>> types, Map<Identifier, Set<Label>> isaExplicit,
-                            @Nullable Pair<Identifier, Function<Attribute, Boolean>> predicate) {
+                            Map<Identifier, Function<Attribute, Boolean>> predicates) {
             this.types = types;
             this.isaExplicit = isaExplicit;
-            this.predicate = predicate;
+            this.predicates = predicates;
         }
 
         public boolean satisfiedBy(Map<Identifier, Concept> concepts) {
@@ -241,10 +239,9 @@ public class Unifier {
         }
 
         private boolean predicatesSatisfied(Identifier id, Concept concept) {
-            if (predicate == null) return true;
-            if (predicate.first().equals(id)) {
+            if (predicates.containsKey(id)) {
                 assert concept.isThing() && (concept.asThing() instanceof Attribute);
-                return predicate.second().apply(concept.asAttribute());
+                return predicates.get(id).apply(concept.asAttribute());
             } else {
                 return true;
             }
@@ -260,26 +257,24 @@ public class Unifier {
             isaExplicit.put(identifier, set(labels));
         }
 
-        public void hasPredicate(Identifier identifier, Function<Attribute, Boolean> predicateFn) {
-            assert predicate == null;
-            predicate = new Pair<>(identifier, predicateFn);
+        public void predicates(Identifier identifier, Function<Attribute, Boolean> predicateFn) {
+            assert !predicates.containsKey(identifier);
+            predicates.put(identifier, predicateFn);
         }
 
         public Map<Identifier, Set<Label>> types() { return types; }
 
         public Map<Identifier, Set<Label>> isaExplicit() { return isaExplicit; }
 
-        public boolean hasPredicate() {
-            return predicate != null;
-        }
+        public Map<Identifier, Function<Attribute, Boolean>> predicates() { return predicates; }
 
         private Requirements duplicate() {
             Map<Identifier, Set<Label>> typesCopy = new HashMap<>();
             Map<Identifier, Set<Label>> isaExplicitCopy = new HashMap<>();
+            Map<Identifier, Function<Attribute, Boolean>> predicatesCopy = new HashMap<>();
             types.forEach(((identifier, labels) -> typesCopy.put(identifier, set(labels))));
             isaExplicit.forEach(((identifier, labels) -> isaExplicitCopy.put(identifier, set(labels))));
-            Pair<Identifier, Function<Attribute, Boolean>> predicatesCopy = predicate == null ? null : new Pair<>(
-                    predicate.first(), predicate.second());
+            predicates.forEach((predicatesCopy::put));
             return new Requirements(typesCopy, isaExplicitCopy, predicatesCopy);
         }
     }
