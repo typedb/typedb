@@ -29,15 +29,12 @@ import graql.lang.pattern.Conjunctable;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Negation;
 import graql.lang.pattern.Pattern;
-import graql.lang.pattern.constraint.Constraint;
-import graql.lang.pattern.constraint.ThingConstraint;
 import graql.lang.pattern.constraint.TypeConstraint;
 import graql.lang.pattern.variable.BoundVariable;
 import graql.lang.pattern.variable.ThingVariable;
 import graql.lang.pattern.variable.Variable;
 
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -120,22 +117,22 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
     @Override
     public void createConcludesIndex(Label type) {
-        graph.ruleIndex().ruleConcludes(this, type);
+        graph.ruleIndex().concludingIsa(this, type);
     }
 
     @Override
     public void clearConcludesIndex(Label type) {
-        graph.ruleIndex().deleteRuleConcludes(this, type);
+        graph.ruleIndex().deleteConcludingIsa(this, type);
     }
 
     @Override
     public void createConcludesHasAttributeIndex(Label type) {
-        graph.ruleIndex().ruleConcludesHasAttribute(this, type);
+        graph.ruleIndex().concludingHasAttribute(this, type);
     }
 
     @Override
     public void clearConcludesHasAttributeIndex(Label type) {
-        graph.ruleIndex().deleteRuleConcludesHasAttribute(this, type);
+        graph.ruleIndex().deleteConcludingHasAttribute(this, type);
     }
 
     public Encoding.Structure encoding() {

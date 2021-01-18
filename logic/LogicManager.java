@@ -66,12 +66,12 @@ public class LogicManager {
         return graphMgr.schema().rules().map(this::fromStructure);
     }
 
-    public ResourceIterator<Rule> rulesConcluding(Label type) {
-        return graphMgr.schema().ruleIndex().rulesConcluding(type).map(this::fromStructure);
+    public ResourceIterator<Rule> rulesConcludingIsa(Label type) {
+        return graphMgr.schema().ruleIndex().concludingIsa(type).map(this::fromStructure);
     }
 
     public ResourceIterator<Rule> rulesConcludingHasAttribute(Label attributeType) {
-        return graphMgr.schema().ruleIndex().rulesConcludingHasAttribute(attributeType).map(this::fromStructure);
+        return graphMgr.schema().ruleIndex().concludingHasAttribute(attributeType).map(this::fromStructure);
     }
 
 

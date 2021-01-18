@@ -396,7 +396,7 @@ public class RuleTest {
         }
     }
 
-    // ------------ concludable types indexing test (do these belong in a LogicManagerTest?) ------------
+    // ------------ Rule indexing tests ------------
 
     @Test
     public void rule_indexes_created_and_readable() throws IOException {
@@ -449,7 +449,7 @@ public class RuleTest {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     LogicManager logicMgr = txn.logic();
 
-                    Set<Rule> friendshipRules = logicMgr.rulesConcluding(Label.of("friendship")).toSet();
+                    Set<Rule> friendshipRules = logicMgr.rulesConcludingIsa(Label.of("friendship")).toSet();
                     Rule marriageFriendsRule = txn.logic().getRule("marriage-is-friendship");
                     Rule allFriendsRule = txn.logic().getRule("all-people-are-friends");
                     assertEquals(set(marriageFriendsRule, allFriendsRule), friendshipRules);
@@ -510,7 +510,7 @@ public class RuleTest {
                 }
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     LogicManager logicMgr = txn.logic();
-                    Set<Rule> friendshipRules = logicMgr.rulesConcluding(Label.of("friendship")).toSet();
+                    Set<Rule> friendshipRules = logicMgr.rulesConcludingIsa(Label.of("friendship")).toSet();
                     Rule marriageFriendsRule = txn.logic().getRule("marriage-is-friendship");
                     Rule allFriendsRule = txn.logic().getRule("all-people-are-friends");
                     assertEquals(set(marriageFriendsRule, allFriendsRule), friendshipRules);
@@ -527,7 +527,7 @@ public class RuleTest {
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     LogicManager logicMgr = txn.logic();
-                    Set<Rule> friendshipRules = logicMgr.rulesConcluding(Label.of("friendship")).toSet();
+                    Set<Rule> friendshipRules = logicMgr.rulesConcludingIsa(Label.of("friendship")).toSet();
                     Rule marriageFriendsRule = txn.logic().getRule("marriage-is-friendship");
                     assertEquals(set(marriageFriendsRule), friendshipRules);
 
