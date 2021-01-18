@@ -323,6 +323,7 @@ public class BasicTest {
                     final RelationType friendship = conceptMgr.putRelationType("friendship");
                     friendship.setRelates("friend");
                     person.setPlays(friendship.getRelates("friend"));
+                    person.setOwns(name);
                     logicMgr.putRule(
                             "friendless-have-names",
                             Graql.parsePattern("{$x isa person; not { (friend: $x) isa friendship; }; }").asConjunction(),
