@@ -18,6 +18,7 @@
 package grakn.core.logic.resolvable;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.Iterators;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.variable.Variable;
 
@@ -67,14 +68,10 @@ public abstract class Resolvable {
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Concludable.class));
     }
 
-    Set<Variable> generatedVars() {
-        return null;
-    }
-
     public static class Plan {
         private final Map<Resolvable, Set<Variable>> resolvableVars;
         private final List<Resolvable> plan;
-        private final Map<Variable, Resolvable> dependentOn;
+        private final Map<Variable, Set<Resolvable>> dependentOn;
 
         Plan(Set<Resolvable> resolvables) {
             assert resolvables.size() > 0;
@@ -82,7 +79,7 @@ public abstract class Resolvable {
             plan = new ArrayList<>();
             dependentOn = dependencies(resolvables);
 
-            Set<Resolvable> dependents = set(dependentOn.values());
+            Set<Resolvable> dependents = iterate(dependentOn.values()).flatMap(Iterators::iterate).toSet();
             Set<Resolvable> independents = new HashSet<>(resolvables);
             independents.removeAll(dependents);
 
@@ -95,7 +92,11 @@ public abstract class Resolvable {
 
         private void addToPlanBasedOnGenerated(Resolvable resolvable) {
             plan.add(resolvable);
-            iterate(resolvable.generatedVars()).map(dependentOn::get).forEachRemaining(this::addToPlanBasedOnGenerated);
+            if (resolvable.isConcludable()){
+                for (Resolvable nextResolvable : dependentOn.get(resolvable.asConcludable().generating())) {
+                    addToPlanBasedOnGenerated(nextResolvable);
+                }
+            }
         }
 
         public List<Resolvable> plan() {
@@ -116,13 +117,15 @@ public abstract class Resolvable {
             return dependents.iterator().next();
         }
 
-        private Map<Variable, Resolvable> dependencies(Set<Resolvable> resolvables) {
-            Map<Variable, Resolvable> deps = new HashMap<>();
-            final Set<Variable> generatedVars = iterate(resolvables).flatMap(r -> iterate(r.generatedVars())).toSet();
+        private Map<Variable, Set<Resolvable>> dependencies(Set<Resolvable> resolvables) {
+            Map<Variable, Set<Resolvable>> deps = new HashMap<>();
+            final Set<Variable> generatedVars = iterate(resolvables).filter(Resolvable::isConcludable)
+                    .map(Resolvable::asConcludable).map(Concludable::generating).toSet();
             for (Resolvable resolvable : resolvables) {
                 for (Variable v : resolvable.conjunction().variables()) {
                     if (generatedVars.contains(v)) {
-                        deps.put(v, resolvable);
+                        deps.putIfAbsent(v, new HashSet<>());
+                        deps.get(v).add(resolvable);
                     }
                 }
             }
