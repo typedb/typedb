@@ -392,7 +392,7 @@ public abstract class Concludable extends Resolvable {
 
         @Override
         Variable generating() {
-            return constraint().owner();
+            return relation.owner();
         }
 
         @Override
@@ -532,7 +532,7 @@ public abstract class Concludable extends Resolvable {
 
         @Override
         Variable generating() {
-            return constraint().attribute();
+            return has.attribute();
         }
 
         @Override
@@ -639,7 +639,7 @@ public abstract class Concludable extends Resolvable {
 
         @Override
         Variable generating() {
-            return constraint().owner();
+            return isa.owner();
         }
 
         @Override
@@ -740,7 +740,7 @@ public abstract class Concludable extends Resolvable {
 
         @Override
         Variable generating() {
-            return constraint().owner();
+            return attribute;
         }
 
         @Override
