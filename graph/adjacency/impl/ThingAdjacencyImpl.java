@@ -149,7 +149,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             edgesByOutIID.put(edge.outIID(), edge);
         }
 
-        if (isModified) owner.isModified();
+        if (isModified) owner.setModified();
         if (isReflexive) {
             if (direction.isOut()) ((ThingAdjacencyImpl) edge.to().ins()).putNonReflexive(edge);
             else ((ThingAdjacencyImpl) edge.from().outs()).putNonReflexive(edge);
