@@ -393,7 +393,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         public static final TypeWrite RELATION_ABSTRACT_ROLE =
                 new TypeWrite(26, "The relation type '%s' is not abstract, and thus cannot relate an abstract role type '%s'.");
         public static final TypeWrite RELATION_RELATES_ROLE_FROM_SUPERTYPE =
-                new TypeWrite(27, "The role type '%s' is already declared by a supertype.");
+                new TypeWrite(27, "The role type '%s' is already declared by a supertype of '%s'.");
         public static final TypeWrite RELATION_RELATES_ROLE_NOT_AVAILABLE =
                 new TypeWrite(28, "The role type '%s' cannot override '%s' as it is either directly related or not inherited.");
         public static final TypeWrite ROLE_DEFINED_OUTSIDE_OF_RELATION =

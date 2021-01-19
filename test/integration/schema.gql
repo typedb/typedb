@@ -37,7 +37,8 @@ reference-type sub attribute, value string;
 format sub attribute, value string;
 content sub attribute, value string;
 error sub attribute, value string;
-script sub attribute, value string;
+command sub attribute, value string;
+monitor sub attribute, value string;
 status sub attribute, value string;
 job-type sub attribute, value string;
 started sub attribute, value datetime;
@@ -74,7 +75,6 @@ pattern sub attribute, value string;
 index sub attribute, value long;
 discord-webhook-url sub attribute, value string;
 discord-id sub attribute, value string;
-email sub attribute, value string, regex ".+\@.+\..+";
 
 organisation sub entity,
     owns name @key,
@@ -107,13 +107,16 @@ team sub entity,
     owns name,
     plays org-team:team,
     plays team-member:team,
-    plays team-member:team;
+    plays repo-team:team;
 
 team-member sub relation,
     relates team,
     relates member;
 
+email sub attribute, value string, regex ".+\@.+\..+";
+
 user sub entity,
+    owns email,
     owns name @key,
     owns full-name,
     owns access-token,
@@ -124,7 +127,6 @@ user sub entity,
     owns environment-variable,
     owns discord-webhook-url,
     owns discord-id,
-    owns email,
     plays team-member:member,
     plays repo-owner:owner,
     plays repo-collaborator:collaborator,
@@ -214,58 +216,59 @@ rule repo-collaborator-org-rule:
         (repo: $r, collaborator: $u) isa repo-collaborator;
     };
 
-rule repo-collaborator-org-member-permission-rule:
-    when {
-        $o isa organisation, has permission $p;
-        (org: $o, member: $u) isa org-member, has org-role "member";
-        (repo: $r, owner: $o) isa repo-owner;
-        $c (repo: $r, collaborator: $u) isa repo-collaborator;
-    } then {
-        $c has $p;
-    };
+# TODO uncomment these after query planning the type resolution query for the `when` terminates in a reasonable time
+#rule repo-collaborator-org-member-permission-rule:
+#    when {
+#        $o isa organisation, has permission $p;
+#        (org: $o, member: $u) isa org-member, has org-role "member";
+#        (repo: $r, owner: $o) isa repo-owner;
+#        $c (repo: $r, collaborator: $u) isa repo-collaborator;
+#    } then {
+#        $c has $p;
+#    };
+#
+#rule repo-collaborator-org-owner-permission-rule:
+#    when {
+#        (org: $o, member: $u) isa org-member, has org-role "owner";
+#        (repo: $r, owner: $o) isa repo-owner;
+#        $c (repo: $r, collaborator: $u) isa repo-collaborator;
+#    } then {
+#        $c has permission "admin";
+#    };
+#
+#rule repo-collaborator-org-fork-rule:
+#    when {
+#        (org: $o, member: $u) isa org-member;
+#        (repo: $r, owner: $o) isa repo-owner;
+#        $r isa repository, has private true;
+#        (parent: $r, child: $rc) isa repo-fork;
+#    } then {
+#        (repo: $rc, collaborator: $u) isa repo-collaborator;
+#    }
 
-rule repo-collaborator-org-owner-permission-rule:
-    when {
-        (org: $o, member: $u) isa org-member, has org-role "owner";
-        (repo: $r, owner: $o) isa repo-owner;
-        $c (repo: $r, collaborator: $u) isa repo-collaborator;
-    } then {
-        $c has permission "admin";
-    };
-
-rule repo-collaborator-org-fork-rule:
-    when {
-        (org: $o, member: $u) isa org-member;
-        (repo: $r, owner: $o) isa repo-owner;
-        $r isa repository, has private true;
-        (parent: $r, child: $rc) isa repo-fork;
-    } then {
-        (repo: $rc, collaborator: $u) isa repo-collaborator;
-    };
-
-rule repo-collaborator-org-fork-member-permission-rule:
-    when {
-        $o isa organisation, has permission $p;
-        (org: $o, member: $u) isa org-member, has org-role "member";
-        (repo: $r, owner: $o) isa repo-owner;
-        $r isa repository, has private true;
-        (parent: $r, child: $rc) isa repo-fork;
-        $c (repo: $rc, collaborator: $u) isa repo-collaborator;
-    } then {
-        $c has $p;
-    };
-
-rule repo-collaborator-org-fork-owner-permission-rule:
-    when {
-        $o isa organisation, has permission $p;
-        (org: $o, member: $u) isa org-member, has org-role "owner";
-        (repo: $r, owner: $o) isa repo-owner;
-        $r isa repository, has private true;
-        (parent: $r, child: $rc) isa repo-fork;
-        $c (repo: $rc, collaborator: $u) isa repo-collaborator;
-    } then {
-        $c has permission "admin";
-    };
+#rule repo-collaborator-org-fork-member-permission-rule:
+#    when {
+#        $o isa organisation, has permission $p;
+#        (org: $o, member: $u) isa org-member, has org-role "member";
+#        (repo: $r, owner: $o) isa repo-owner;
+#        $r isa repository, has private true;
+#        (parent: $r, child: $rc) isa repo-fork;
+#        $c (repo: $rc, collaborator: $u) isa repo-collaborator;
+#    } then {
+#        $c has $p;
+#    };
+#
+#rule repo-collaborator-org-fork-owner-permission-rule:
+#    when {
+#        $o isa organisation, has permission $p;
+#        (org: $o, member: $u) isa org-member, has org-role "owner";
+#        (repo: $r, owner: $o) isa repo-owner;
+#        $r isa repository, has private true;
+#        (parent: $r, child: $rc) isa repo-fork;
+#        $c (repo: $rc, collaborator: $u) isa repo-collaborator;
+#    } then {
+#        $c has permission "admin";
+#    };
 
 rule repo-collaborator-team-rule:
     when {
@@ -276,39 +279,39 @@ rule repo-collaborator-team-rule:
     };
 
 rule repo-collaborator-team-permission-rule:
-    when {
-        (repo: $x, team: $y) isa repo-team, has permission $p;
-        (team: $y, member: $z) isa team-member;
-        $c (repo: $x, collaborator: $z) isa repo-collaborator;
-    } then {
-        $c has $p;
-    };
+  when {
+      (repo: $x, team: $y) isa repo-team, has permission $p;
+      (team: $y, member: $z) isa team-member;
+      $c (repo: $x, collaborator: $z) isa repo-collaborator;
+  } then {
+      $c has $p;
+  };
 
 rule repo-collaborator-user-rule:
-    when {
-        $owner isa user;
-        (repo: $repo, owner: $owner) isa repo-owner;
-    } then {
-        (repo: $repo, collaborator: $owner) isa repo-collaborator;
-    };
+   when {
+       $owner isa user;
+       (repo: $repo, owner: $owner) isa repo-owner;
+   } then {
+       (repo: $repo, collaborator: $owner) isa repo-collaborator;
+   };
 
 rule repo-collaborator-user-permission-rule:
-    when {
-        $owner isa user;
-        (repo: $repo, owner: $owner) isa repo-owner;
-        $c (repo: $repo, collaborator: $owner) isa repo-collaborator;
-    } then {
-        $c has permission "admin";
-    };
+   when {
+       $owner isa user;
+       (repo: $repo, owner: $owner) isa repo-owner;
+       $c (repo: $repo, collaborator: $owner) isa repo-collaborator;
+   } then {
+       $c has permission "admin";
+   };
 
-rule repo-collaborator-permission-admin-owns-write-rule:
-    when {
-        $c isa repo-collaborator, has permission "admin";
-    } then {
-        $c has permission "write";
-    };
+rule repo-collaborator-permission-admin-has-write-rule:
+   when {
+       $c isa repo-collaborator, has permission "admin";
+   } then {
+       $c has permission "write";
+   };
 
-rule repo-collaborator-permission-write-owns-read-rule:
+rule repo-collaborator-permission-write-has-read-rule:
    when {
        $c isa repo-collaborator, has permission "write";
    } then {
@@ -328,7 +331,7 @@ repo-branch-rule sub relation,
     relates rule;
 
 branch-rule sub entity,
-    owns symbol @key, # graknlabs/grakn/settings/branch-rule/master
+    owns symbol @key, # graknlabs/grakn/settings/branch-rule/main
     owns priority,
     owns pattern,
     owns build-correctness-wait-for-quality,
@@ -349,8 +352,7 @@ branch sub entity,
 tag sub entity,
     owns symbol @key,
     owns name,
-    owns created,
-    owns heads,
+    owns latest,
     plays repo-reference:reference,
     plays commit-reference:reference,
     plays commit-dependency:dependee,
@@ -450,7 +452,8 @@ workflow-job sub relation,
 
 job sub automation,
     owns job-type,
-    owns script,
+    owns command,
+    owns monitor,
     owns environment-variable,
     owns ip,
     plays workflow-job:job,
@@ -488,6 +491,7 @@ commit-analysis sub relation,
 
 analysis sub entity, abstract,
     owns analysis-id @key,
+    owns name,
     owns created,
     plays commit-analysis:analysis;
 

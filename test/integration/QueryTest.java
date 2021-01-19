@@ -111,7 +111,7 @@ public class QueryTest {
                     assertNotNull(tx.logic().getRule("repo-dependency-transitive-type-rule"));
                     assertNotNull(tx.logic().getRule("repo-collaborator-org-rule"));
                     // check total count
-                    assertEquals(20, tx.logic().rules().toList().size());
+                    assertEquals(15, tx.logic().rules().toList().size());
                 }
             }
         }
@@ -194,7 +194,7 @@ public class QueryTest {
                     assertNull(tx.logic().getRule("repo-collaborator-org-rule"));
 
                     // check total count
-                    assertEquals(20 - 5, tx.logic().rules().toList().size());
+                    assertEquals(15 - 5, tx.logic().rules().toList().size());
                 }
             }
         }
