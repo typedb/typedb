@@ -163,7 +163,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
         resolvables.addAll(concludablesWithApplicableRules);
         resolvables.addAll(retrievables);
         
-        List<Resolvable> plan = Resolvable.plan(resolvables);
+        List<Resolvable> plan = Resolvable.plan(resolvables, conceptMgr, logicMgr);
         for (Resolvable planned : plan) {
             Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> concludableUnifierPair = registry.registerResolvable(planned);
             this.plan.add(concludableUnifierPair);

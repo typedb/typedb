@@ -76,6 +76,29 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
+    name = "test-resolvable",
+    srcs = ["resolvable/ResolvableTest.java"],
+    native_libraries_deps = [
+        "//rocks:rocks",
+        "//:grakn",
+        "//concept:concept",
+        "//logic:logic",
+        "//pattern:pattern",
+    ],
+    test_class = "grakn.core.logic.resolvable.ResolvableTest",
+    deps = [
+        # Internal dependencies
+        "//test/integration/util",
+        "//common",
+
+        # External dependencies from Grakn Labs
+        "@graknlabs_common//:common",
+        "@graknlabs_graql//java/pattern",
+        "@graknlabs_graql//java:graql",
+    ],
+)
+
+host_compatible_java_test(
     name = "test-unification-relation-concludable",
     srcs = ["resolvable/UnifyRelationConcludableTest.java"],
     native_libraries_deps = [

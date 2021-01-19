@@ -17,11 +17,25 @@
 
 package grakn.core.logic.resolvable;
 
+import grakn.core.common.parameters.Arguments;
+import grakn.core.concept.ConceptManager;
+import grakn.core.logic.LogicManager;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
+import grakn.core.rocks.RocksGrakn;
+import grakn.core.rocks.RocksSession;
+import grakn.core.rocks.RocksTransaction;
+import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
 
@@ -30,6 +44,38 @@ import static grakn.common.collection.Collections.set;
 import static junit.framework.TestCase.assertEquals;
 
 public class ResolvableTest {
+
+    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("resolvable-test");
+    private static String database = "resolvable-test";
+    private static RocksGrakn grakn;
+    private static RocksSession session;
+    private static RocksTransaction rocksTransaction;
+    private static ConceptManager conceptMgr;
+    private static LogicManager logicMgr;
+
+    @BeforeClass
+    public static void setUp() throws IOException {
+        Util.resetDirectory(directory);
+        grakn = RocksGrakn.open(directory);
+        grakn.databases().create(database);
+        session = grakn.session(database, Arguments.Session.Type.SCHEMA);
+    }
+
+    @AfterClass
+    public static void tearDown() {
+        session.close();
+        grakn.close();
+    }
+
+    @Before
+    public void setUpTransaction() {
+        rocksTransaction = session.transaction(Arguments.Transaction.Type.WRITE);
+        conceptMgr = rocksTransaction.concepts();
+        logicMgr = rocksTransaction.logic();
+    }
+
+    @After
+    public void tearDownTransaction() { rocksTransaction.close(); }
 
     private Conjunction parse(String query) {
         return Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
@@ -41,7 +87,7 @@ public class ResolvableTest {
         Retrievable retrievable = new Retrievable(parse("{ $c($b); }"));
 
         Set<Resolvable> resolvables = set(concludable, retrievable);
-        List<Resolvable> plan = Resolvable.plan(resolvables);
+        List<Resolvable> plan = Resolvable.plan(resolvables, conceptMgr, logicMgr);
         assertEquals(list(concludable, retrievable), plan);
     }
 
@@ -52,7 +98,7 @@ public class ResolvableTest {
 
         Set<Resolvable> resolvables = set(concludable, retrievable);
 
-        List<Resolvable> plan = Resolvable.plan(resolvables);
+        List<Resolvable> plan = Resolvable.plan(resolvables, conceptMgr, logicMgr);
         assertEquals(list(retrievable, concludable), plan);
     }
 
@@ -64,7 +110,7 @@ public class ResolvableTest {
 
         Set<Resolvable> resolvables = set(retrievable, retrievable2, concludable);
 
-        List<Resolvable> plan = Resolvable.plan(resolvables);
+        List<Resolvable> plan = Resolvable.plan(resolvables, conceptMgr, logicMgr);
         assertEquals(list(retrievable, concludable, retrievable2), plan);
     }
 
@@ -75,7 +121,7 @@ public class ResolvableTest {
 
         Set<Resolvable> resolvables = set(concludable, concludable2);
 
-        List<Resolvable> plan = Resolvable.plan(resolvables);
+        List<Resolvable> plan = Resolvable.plan(resolvables, conceptMgr, logicMgr);
         assertEquals(list(concludable, concludable2), plan);
     }
 
@@ -87,7 +133,7 @@ public class ResolvableTest {
         Concludable concludable2 = Concludable.create(parse("{ $e($c, $p2) isa employment; }")).iterator().next();
 
         Set<Resolvable> resolvables = set(retrievable, retrievable2, concludable, concludable2);
-        List<Resolvable> plan = Resolvable.plan(resolvables);
+        List<Resolvable> plan = Resolvable.plan(resolvables, conceptMgr, logicMgr);
 
         assertEquals(list(retrievable, concludable, retrievable2, concludable2), plan);
     }
@@ -98,7 +144,7 @@ public class ResolvableTest {
         Concludable concludable2 = Concludable.create(parse("{ $b has $a; }")).iterator().next();
 
         Set<Resolvable> resolvables = set(concludable, concludable2);
-        List<Resolvable> plan = Resolvable.plan(resolvables);
+        List<Resolvable> plan = Resolvable.plan(resolvables, conceptMgr, logicMgr);
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
@@ -110,7 +156,7 @@ public class ResolvableTest {
         Concludable concludable2 = Concludable.create(parse("{ $b($a); }")).iterator().next();
 
         Set<Resolvable> resolvables = set(concludable, concludable2);
-        List<Resolvable> plan = Resolvable.plan(resolvables);
+        List<Resolvable> plan = Resolvable.plan(resolvables, conceptMgr, logicMgr);
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
@@ -122,7 +168,7 @@ public class ResolvableTest {
         Concludable concludable2 = Concludable.create(parse("{ $c($d); }")).iterator().next();
 
         Set<Resolvable> resolvables = set(concludable, concludable2);
-        List<Resolvable> plan = Resolvable.plan(resolvables);
+        List<Resolvable> plan = Resolvable.plan(resolvables, conceptMgr, logicMgr);
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));

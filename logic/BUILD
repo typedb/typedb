@@ -54,26 +54,6 @@ native_java_libraries(
 )
 
 host_compatible_java_test(
-    name = "test-resolvable",
-    srcs = [
-        "resolvable/ResolvableTest.java",
-    ],
-    native_libraries_deps = [
-        "//logic:logic",
-        "//pattern:pattern",
-    ],
-    test_class = "grakn.core.logic.resolvable.ResolvableTest",
-    deps = [
-        # Internal dependencies
-
-        # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
-        "@graknlabs_graql//java/pattern",
-        "@graknlabs_graql//java:graql",
-    ],
-)
-
-host_compatible_java_test(
     name = "test-concludable",
     srcs = [
         "resolvable/ConcludableTest.java",

@@ -18,7 +18,8 @@
 package grakn.core.logic.resolvable;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.Iterators;
+import grakn.core.concept.ConceptManager;
+import grakn.core.logic.LogicManager;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.variable.Variable;
 
@@ -44,8 +45,8 @@ public abstract class Resolvable {
         this.conjunction = conjunction;
     }
 
-    public static List<Resolvable> plan(Set<Resolvable> resolvables) {
-        return new Plan(resolvables).plan();
+    public static List<Resolvable> plan(Set<Resolvable> resolvables, ConceptManager conceptMgr, LogicManager logicMgr) {
+        return new Plan(resolvables, conceptMgr, logicMgr).plan();
     }
 
     public Conjunction conjunction() {
@@ -70,55 +71,75 @@ public abstract class Resolvable {
 
     public static class Plan {
         private final List<Resolvable> plan;
-        private final Map<Variable, Set<Resolvable>> dependentOnGenerated;
+        private final Map<Resolvable, Set<Variable>> dependencies;
         private final Map<Variable, Set<Resolvable>> connectedByVariable;
+        private final ConceptManager conceptMgr;
+        private final LogicManager logicMgr;
+        private Resolvable lastPlanned = null;
+        private Set<Variable> varsAnswered;
+        private Set<Resolvable> remaining;
 
-        Plan(Set<Resolvable> resolvables) {
+        Plan(Set<Resolvable> resolvables, ConceptManager conceptMgr, LogicManager logicMgr) {
+            this.conceptMgr = conceptMgr;
+            this.logicMgr = logicMgr;
             assert resolvables.size() > 0;
             plan = new ArrayList<>();
+            varsAnswered = new HashSet<>();
             connectedByVariable = connections(resolvables);
-            dependentOnGenerated = dependencies(resolvables);
+            dependencies = dependencies(resolvables);
+            remaining = new HashSet<>(resolvables);
 
-            Set<Resolvable> dependents = iterate(dependentOnGenerated.values()).flatMap(Iterators::iterate).toSet();
-            Set<Resolvable> independents = new HashSet<>(resolvables);
-            independents.removeAll(dependents);
-
-            Resolvable startingPoint = pickIndependentStartingPoint(independents).orElseGet(() -> pickDependentStartingPoint(dependents));
-            planFrom(startingPoint);
+            planning();
 
             assert plan.size() == resolvables.size();
             assert set(plan).equals(resolvables);
         }
 
-        private void planFrom(Resolvable resolvable) {
+        private void add(Resolvable resolvable) {
             plan.add(resolvable);
-            if (resolvable.isConcludable()){
-                for (Resolvable nextResolvable : dependentOnGenerated.getOrDefault(resolvable.asConcludable().generating(), set())) {
-                    if (!plan.contains(nextResolvable)) {
-                        planFrom(nextResolvable);
-                    }
+            lastPlanned = resolvable;
+            varsAnswered.addAll(resolvable.conjunction().variables());
+            remaining.remove(resolvable);
+        }
+
+        private void planning() {
+            int planSize = plan.size();
+            while (true) {
+                if (remaining.size() == 0) break;
+
+                // Retrievable where:
+                // all of it's dependencies are already satisfied,
+                // which will answer the most variables
+                Optional<Resolvable> retrievable = remaining.stream().filter(Resolvable::isRetrievable)
+                        .filter(r -> varsAnswered.containsAll(dependencies.get(r)))
+                        .max(Comparator.comparingInt(r -> {
+                            HashSet<Variable> s = new HashSet<>(r.conjunction().variables());
+                            s.removeAll(varsAnswered);
+                            return s.size();
+                        }));
+                if (retrievable.isPresent()) {
+                    add(retrievable.get());
+                    continue;
                 }
+
+                // Concludable where:
+                // all of it's dependencies are already satisfied,
+                // which has the least applicable rules,
+                // and of those the least unsatisfied variables
+                Optional<Concludable> concludable = remaining.stream().filter(Resolvable::isConcludable)
+                        .map(Resolvable::asConcludable).filter(c -> varsAnswered.containsAll(dependencies.get(c)))
+                        .min(Comparator.comparingInt(c -> c.getApplicableRules(conceptMgr, logicMgr).toSet().size()));
+                // TODO How to do a tie-break for Concludables with the same number of applicable rules?
+                if (concludable.isPresent()) {
+                    add(concludable.get());
+                    continue;
+                }
+                assert plan.size() > planSize;
             }
-            resolvable.conjunction().variables().stream().flatMap(var -> connectedByVariable.get(var).stream()).filter(r -> !plan.contains(r)).forEach(this::planFrom);
         }
 
         public List<Resolvable> plan() {
             return plan;
-        }
-
-        private Optional<Resolvable> pickIndependentStartingPoint(Set<Resolvable> independent) {
-            if (independent.size() > 0) {
-                Optional<Resolvable> startingPoint = independent.stream().filter(Resolvable::isRetrievable)
-                        .max(Comparator.comparingInt(r -> r.conjunction().variables().size()));
-                if (startingPoint.isPresent()) return startingPoint;
-                return independent.stream().filter(Resolvable::isConcludable).findFirst();
-            }
-            return Optional.empty();
-        }
-
-        private Resolvable pickDependentStartingPoint(Set<Resolvable> dependents) {
-            assert dependents.size() > 0;
-            return dependents.iterator().next();
         }
 
         /**
@@ -137,16 +158,18 @@ public abstract class Resolvable {
 
         /**
          * Determine the resolvables that are dependent upon the generation of each variable
+         * @return
          */
-        private Map<Variable, Set<Resolvable>> dependencies(Set<Resolvable> resolvables) {
-            Map<Variable, Set<Resolvable>> deps = new HashMap<>();
+        private Map<Resolvable, Set<Variable>> dependencies(Set<Resolvable> resolvables) {
+            Map<Resolvable, Set<Variable>> deps = new HashMap<>();
             Set<Variable> generatedVars = iterate(resolvables).filter(Resolvable::isConcludable)
                     .map(Resolvable::asConcludable).map(Concludable::generating).toSet();
             for (Resolvable resolvable : resolvables) {
                 for (Variable v : resolvable.conjunction().variables()) {
+                    deps.putIfAbsent(resolvable, new HashSet<>());
                     if (generatedVars.contains(v) && !(resolvable.isConcludable() && resolvable.asConcludable().generating().equals(v))) {
-                        deps.putIfAbsent(v, new HashSet<>());
-                        deps.get(v).add(resolvable);
+                        // TODO Should this rule the Resolvable out if generates it's own dependency?
+                        deps.get(resolvable).add(v);
                     }
                 }
             }
