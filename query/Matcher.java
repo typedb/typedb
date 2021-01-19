@@ -28,6 +28,7 @@ import grakn.core.concept.answer.NumericGroup;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.Reasoner;
+import grakn.core.traversal.common.Identifier;
 import graql.lang.common.GraqlArg;
 import graql.lang.common.GraqlToken;
 import graql.lang.pattern.variable.Reference;
@@ -66,12 +67,14 @@ public class Matcher {
     private final Reasoner reasoner;
     private final GraqlMatch query;
     private final Disjunction disjunction;
+    private final List<Identifier.Variable.Name> filter;
     private final Options.Query options;
 
     public Matcher(Reasoner reasoner, GraqlMatch query, Options.Query options) {
         this.reasoner = reasoner;
         this.query = query;
         this.disjunction = Disjunction.create(query.conjunction().normalise());
+        this.filter = iterate(query.filter()).map(v -> Identifier.Variable.of(v.reference().asName())).toList();
         this.options = options;
     }
 
@@ -80,23 +83,23 @@ public class Matcher {
     }
 
     public static Matcher.Aggregator create(Reasoner reasoner, GraqlMatch.Aggregate query, Options.Query options) {
-        Matcher matcher = new Matcher(reasoner, query.query(), options);
+        Matcher matcher = new Matcher(reasoner, query.match(), options);
         return new Aggregator(matcher, query);
     }
 
     public static Matcher.Group create(Reasoner reasoner, GraqlMatch.Group query, Options.Query options) {
-        Matcher matcher = new Matcher(reasoner, query.query(), options);
+        Matcher matcher = new Matcher(reasoner, query.match(), options);
         return new Group(matcher, query);
     }
 
     public static Matcher.Group.Aggregator create(Reasoner reasoner, GraqlMatch.Group.Aggregate query, Options.Query options) {
-        Matcher matcher = new Matcher(reasoner, query.group().query(), options);
+        Matcher matcher = new Matcher(reasoner, query.group().match(), options);
         Group group = new Group(matcher, query.group());
         return new Group.Aggregator(group, query);
     }
 
     public ResourceIterator<ConceptMap> execute(boolean isParallel) {
-        return filter(reasoner.execute(disjunction, isParallel));
+        return filter(reasoner.execute(disjunction, filter, isParallel));
     }
 
     private ResourceIterator<ConceptMap> filter(ResourceIterator<ConceptMap> answers) {

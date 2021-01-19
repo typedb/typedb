@@ -193,11 +193,12 @@ public class Rule {
         ResourceIterator<VertexMap> possibleThenPerms = null; //TODO
         Map<Reference, Variable> referenceVariableMapping = new HashMap<>(); //TODO
 
+
+
         Set<VertexMap> possibleThenSet = possibleThenPerms.toSet();
-        if (possibleWhenPerms.anyMatch(vertexMap -> {
-            possibleThenSet.stream().anyMatch(thenVertexMap -> vertexMapsEqual(vertexMap))
-            !possibleThenSet.contains(vertexMap)
-        })) {
+        if (possibleWhenPerms.noneMatch(whenVertexMap ->
+            possibleThenSet.stream().anyMatch(thenVertexMap -> vertexMapsEqual(whenVertexMap, thenVertexMap, whenVertexMap))
+        )) {
             throw GraknException.of(ILLEGAL_STATE);
         }
 
@@ -216,12 +217,10 @@ public class Rule {
          */
     }
 
-    private void vertexMapsEqual(VertexMap thenVertexMap, VertexMap whenVertexMap, Map<Reference, Variable> referenceVariableMap) {
-
-
-
+    private boolean vertexMapsEqual(VertexMap thenVertexMap, VertexMap whenVertexMap, Map<Reference, Variable> referenceVariableMap) {
 
         thenVertexMap.map().forEach((ref, vertex) -> {
+
             Variable variable = referenceVariableMap.get(ref);
 
         });

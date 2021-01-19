@@ -73,19 +73,6 @@ public class TypeResolver {
         this.logicCache = logicCache;
     }
 
-    public Rule resolve(Rule rule) {
-        Conjunction then = rule.then();
-        Conjunction when = rule.when();
-
-        TraversalBuilder thenTraversalBuilder = new TraversalBuilder(then, conceptMgr, true);
-        TraversalBuilder whenTraversalBuilder = new TraversalBuilder(when, conceptMgr, false);
-
-
-//        resolve(rule.then(), true);
-
-        //TODO
-    }
-
     public Conjunction resolveLabels(Conjunction conjunction) {
         iterate(conjunction.variables()).filter(v -> v.isType() && v.asType().label().isPresent())
                 .forEachRemaining(typeVar -> {
@@ -107,9 +94,11 @@ public class TypeResolver {
     public Conjunction resolve(Conjunction conjunction) {
         resolveLabels(conjunction);
         TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, conceptMgr);
-
         Map<Reference, Set<Label>> resolvedLabels = executeResolverTraversals(traversalBuilder);
-        if (resolvedLabels.isEmpty()) throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction);
+        if (resolvedLabels.isEmpty()) {
+            conjunction.setSatisfiable(false);
+            return conjunction;
+        }
 
         long numOfTypes = traversalEng.graph().schema().stats().thingTypeCount();
         long numOfConcreteTypes = traversalEng.graph().schema().stats().concreteThingTypeCount();

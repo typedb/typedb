@@ -39,6 +39,7 @@ import graql.lang.common.GraqlToken;
 import graql.lang.pattern.variable.Reference;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -72,11 +73,13 @@ public class Traversal {
 
     private final Parameters parameters;
     private final Structure structure;
+    private final List<Identifier.Variable.Name> filter;
     private List<Planner> planners;
 
     public Traversal() {
         structure = new Structure();
         parameters = new Parameters();
+        filter = new ArrayList<>();
     }
 
     void initialisePlanner(TraversalCache cache) {
@@ -238,6 +241,10 @@ public class Traversal {
     public void predicate(Identifier.Variable att1, GraqlToken.Predicate.Equality token, Identifier.Variable att2) {
         Predicate.Variable predicate = Predicate.Variable.of(token);
         structure.predicateEdge(structure.thingVertex(att1), structure.thingVertex(att2), predicate);
+    }
+
+    public void filter(List<Identifier.Variable.Name> filter) {
+        this.filter.addAll(filter);
     }
 
     @Override

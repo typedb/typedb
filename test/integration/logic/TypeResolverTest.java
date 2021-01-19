@@ -18,7 +18,6 @@
 
 package grakn.core.logic;
 
-import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
 import grakn.core.logic.tool.TypeResolver;
@@ -31,7 +30,9 @@ import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlMatch;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -47,12 +48,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.set;
-import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CONJUNCTION;
-import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CONSTRAINT_VALUE_TYPE;
 import static grakn.core.common.test.Util.assertThrows;
-import static grakn.core.common.test.Util.assertThrowsWithMessage;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class TypeResolverTest {
@@ -76,15 +75,23 @@ public class TypeResolverTest {
         grakn.close();
     }
 
-    private static void define_standard_schema(String fileName) throws IOException {
+    @Before
+    public void setup() {
         transaction = session.transaction(Arguments.Transaction.Type.WRITE);
+    }
+
+    @After
+    public void tearDown() {
+        transaction.close();
+    }
+
+    private static void define_standard_schema(String fileName) throws IOException {
         final GraqlDefine query = Graql.parseQuery(
                 new String(Files.readAllBytes(Paths.get("test/integration/logic/" + fileName + ".gql")), UTF_8));
         transaction.query().define(query);
     }
 
     private static void define_custom_schema(String schema) {
-        transaction = session.transaction(Arguments.Transaction.Type.WRITE);
         final GraqlDefine query = Graql.parseQuery(schema);
         transaction.query().define(query);
     }
@@ -730,7 +737,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void matching_rp_in_relation_that_cant_play_that_role_throws_an_error() throws IOException {
+    public void matching_rp_in_relation_that_cant_play_that_role_sets_conjunction_not_satisfiable() throws IOException {
         define_standard_schema("test-type-resolution");
 
         TypeResolver typeResolver = transaction.logic().typeResolver();
@@ -738,12 +745,8 @@ public class TypeResolverTest {
                 " $x isa company;" +
                 " ($x) isa friendship;";
 
-        Conjunction conjunction = createConjunction(queryString);
-
-        assertThrowsWithMessage(
-                () -> typeResolver.resolve(conjunction),
-                GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction).getMessage()
-        );
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
+        assertFalse(conjunction.isSatisfiable());
     }
 
     @Test

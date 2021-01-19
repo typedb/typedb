@@ -18,6 +18,7 @@
 
 package grakn.core.common.producer;
 
+import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 
 import java.util.List;
@@ -25,6 +26,8 @@ import java.util.List;
 import static grakn.common.collection.Collections.list;
 
 public class Producers {
+
+    public static <T> BaseProducer<T> empty() { return producer(Iterators.empty()); }
 
     public static <T> BaseProducer<T> producer(ResourceIterator<T> iterator) {
         return new BaseProducer<>(iterator);

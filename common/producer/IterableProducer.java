@@ -50,6 +50,7 @@ public class IterableProducer<T> {
     }
 
     public IterableProducer(List<Producer<T>> producers, int bufferMinSize, int bufferMaxSize) {
+        // TODO: Could we optimise IterableProducer by accepting ResourceIterator<Producer<T>> instead?
         this.producers = new ConcurrentLinkedQueue<>(producers);
         this.iterator = new Iterator();
         this.queue = new Queue();

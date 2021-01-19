@@ -92,7 +92,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             case DATETIME:
                 return AttributeTypeImpl.DateTime.of(graphMgr, vertex);
             default:
-                throw GraknException.of(UNRECOGNISED_VALUE);
+                throw graphMgr.exception(GraknException.of(UNRECOGNISED_VALUE));
         }
     }
 
