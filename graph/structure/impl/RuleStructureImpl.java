@@ -39,7 +39,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static grakn.common.collection.Collections.set;
 import static grakn.core.common.collection.Bytes.join;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
@@ -51,7 +50,6 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
     final SchemaGraph graph;
     final AtomicBoolean isDeleted;
-    final AtomicBoolean isOutdated;
     final Conjunction<? extends Pattern> when;
     final ThingVariable<?> then;
     StructureIID.Rule iid;
@@ -68,7 +66,6 @@ public abstract class RuleStructureImpl implements RuleStructure {
         this.label = label;
         this.when = when;
         this.then = then;
-        this.isOutdated = new AtomicBoolean(false);
         this.isDeleted = new AtomicBoolean(false);
     }
 

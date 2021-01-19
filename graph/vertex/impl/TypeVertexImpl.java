@@ -337,7 +337,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         private void commitVertex() {
             graph.storage().put(iid.bytes());
-            graph.storage().put(IndexIID.Type.of(label, scope).bytes(), iid.bytes());
+            graph.storage().put(IndexIID.Type.Label.of(label, scope).bytes(), iid.bytes());
         }
 
         private void commitProperties() {
@@ -405,8 +405,8 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         public void label(String label) {
             graph.update(this, this.label, scope, label, scope);
             graph.storage().put(join(iid.bytes(), LABEL.infix().bytes()), label.getBytes());
-            graph.storage().delete(IndexIID.Type.of(this.label, scope).bytes());
-            graph.storage().put(IndexIID.Type.of(label, scope).bytes(), iid.bytes());
+            graph.storage().delete(IndexIID.Type.Label.of(this.label, scope).bytes());
+            graph.storage().put(IndexIID.Type.Label.of(label, scope).bytes(), iid.bytes());
             this.label = label;
         }
 
@@ -414,8 +414,8 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         public void scope(String scope) {
             graph.update(this, label, this.scope, label, scope);
             graph.storage().put(join(iid.bytes(), SCOPE.infix().bytes()), scope.getBytes());
-            graph.storage().delete(IndexIID.Type.of(label, this.scope).bytes());
-            graph.storage().put(IndexIID.Type.of(label, scope).bytes(), iid.bytes());
+            graph.storage().delete(IndexIID.Type.Label.of(label, this.scope).bytes());
+            graph.storage().put(IndexIID.Type.Label.of(label, scope).bytes(), iid.bytes());
             this.scope = scope;
         }
 
@@ -485,7 +485,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         private void deleteVertexFromStorage() {
-            graph.storage().delete(IndexIID.Type.of(label, scope).bytes());
+            graph.storage().delete(IndexIID.Type.Label.of(label, scope).bytes());
             final ResourceIterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
             while (keys.hasNext()) graph.storage().delete(keys.next());
             graph.storage().delete(StatisticsBytes.vertexCountKey(iid));

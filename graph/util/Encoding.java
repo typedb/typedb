@@ -747,13 +747,23 @@ public class Encoding {
          * The size of a prefix is 1 unsigned byte; i.e. min-value = 0 and max-value = 255.
          */
         enum Infix {
-            RULE_CONCLUDES_ISA(0),
-            RULE_CONCLUDES_HAS_ATTRIBUTE(1),
-            RULE_CONTAINS(3);
+            CONCLUDED_ISA(0),
+            CONCLUDED_HAS_ATTRIBUTE(1),
+            CONTAINED_TYPE(10);
 
+            public static final int LENGTH = 1;
             private final byte key;
 
             Infix(int key) { this.key = checkedCastUnsigned(key); }
+
+            public static Infix of(byte[] key) {
+                if (key.length == 1) {
+                    for (Infix i : Infix.values()) {
+                        if (i.key == key[0]) return i;
+                    }
+                }
+                throw GraknException.of(UNRECOGNISED_VALUE);
+            }
 
             public byte[] bytes() { return new byte[]{key}; }
         }

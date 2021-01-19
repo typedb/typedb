@@ -287,7 +287,7 @@ public class SchemaGraph implements Graph {
             TypeVertex vertex = typesByLabel.get(scopedLabel);
             if (vertex != null) return vertex;
 
-            final IndexIID.Type index = IndexIID.Type.of(label, scope);
+            final IndexIID.Type index = IndexIID.Type.Label.of(label, scope);
             final byte[] iid = storage.get(index.bytes());
             if (iid != null) {
                 vertex = typesByIID.computeIfAbsent(
@@ -734,33 +734,23 @@ public class SchemaGraph implements Graph {
 
         public void commit() {
             bufferedConcludingIsa.forEach((label, rules) -> {
-                VertexIID.Type typeIid = getType(label).iid();
+                VertexIID.Type typeIID = getType(label).iid();
                 rules.forEach(rule -> {
-                    byte[] typeRuleConconcludesIndex = join(Encoding.Index.Prefix.TYPE.bytes(),
-                                                            typeIid.bytes(),
-                                                            Encoding.Index.Infix.RULE_CONCLUDES_ISA.bytes(),
-                                                            rule.iid().bytes());
-                    storage.put(typeRuleConconcludesIndex);
+                    IndexIID.Type.RuleIndex typeRuleConcludesIndex = IndexIID.Type.RuleIndex.concludedIsa(typeIID, rule.iid());
+                    storage.put(typeRuleConcludesIndex.bytes());
                 });
             });
             bufferedConcludingHasAttribute.forEach((label, rules) -> {
-                VertexIID.Type typeIid = getType(label).iid();
+                VertexIID.Type typeIID = getType(label).iid();
                 rules.forEach(rule -> {
-                    byte[] typeRuleConcludesHasIndex = join(Encoding.Index.Prefix.TYPE.bytes(),
-                                                            typeIid.bytes(),
-                                                            Encoding.Index.Infix.RULE_CONCLUDES_HAS_ATTRIBUTE.bytes(),
-                                                            rule.iid().bytes());
-                    storage.put(typeRuleConcludesHasIndex);
+                    IndexIID.Type.RuleIndex typeRuleConcludesHasIndex = IndexIID.Type.RuleIndex.concludedHasAttribute(typeIID, rule.iid());
+                    storage.put(typeRuleConcludesHasIndex.bytes());
                 });
             });
             bufferedRuleContains.forEach((label, rules) -> {
                 rules.forEach(rule -> {
-                    byte[] typeInRule = join(Encoding.Index.Prefix.TYPE.bytes(),
-                                             getType(label).iid().bytes(),
-                                             Encoding.Index.Infix.RULE_CONTAINS.bytes(),
-                                             rule.iid().bytes()
-                    );
-                    storage.put(typeInRule);
+                    IndexIID.Type.RuleIndex typeInRule = IndexIID.Type.RuleIndex.contained(getType(label).iid(), rule.iid());
+                    storage.put(typeInRule.bytes());
                 });
             });
         }
@@ -774,35 +764,25 @@ public class SchemaGraph implements Graph {
             bufferedRuleContains.clear();
         }
 
-        public void deleteConcludingIsa(RuleStructure structure, Label type) {
+        public void deleteConcludingIsa(RuleStructure rule, Label type) {
             Set<RuleStructure> rules = concludingIsa.get(type);
-            if (rules != null && rules.contains(structure)) {
-                concludingIsa.get(type).remove(structure);
-                storage().delete(join(
-                        Encoding.Index.Prefix.TYPE.bytes(),
-                        getType(type).iid().bytes(),
-                        Encoding.Index.Infix.RULE_CONCLUDES_ISA.bytes(),
-                        structure.iid().bytes()
-                ));
+            if (rules != null && rules.contains(rule)) {
+                concludingIsa.get(type).remove(rule);
+                storage().delete(IndexIID.Type.RuleIndex.concludedIsa(getType(type).iid(), rule.iid()).bytes());
             }
             if (bufferedConcludingIsa.containsKey(type)) {
-                bufferedConcludingIsa.get(type).remove(structure);
+                bufferedConcludingIsa.get(type).remove(rule);
             }
         }
 
-        public void deleteConcludingHasAttribute(RuleStructure structure, Label attributeType) {
+        public void deleteConcludingHasAttribute(RuleStructure rule, Label attributeType) {
             Set<RuleStructure> rules = concludingHasAttribute.get(attributeType);
-            if (rules != null && rules.contains(structure)) {
-                rules.remove(structure);
-                storage().delete(join(
-                        Encoding.Index.Prefix.TYPE.bytes(),
-                        getType(attributeType).iid().bytes(),
-                        Encoding.Index.Infix.RULE_CONCLUDES_HAS_ATTRIBUTE.bytes(),
-                        structure.iid().bytes()
-                ));
+            if (rules != null && rules.contains(rule)) {
+                rules.remove(rule);
+                storage().delete(IndexIID.Type.RuleIndex.concludedHasAttribute(getType(attributeType).iid(), rule.iid()).bytes());
             }
             if (bufferedConcludingHasAttribute.containsKey(attributeType)) {
-                bufferedConcludingHasAttribute.get(attributeType).remove(structure);
+                bufferedConcludingHasAttribute.get(attributeType).remove(rule);
             }
         }
 
@@ -818,38 +798,28 @@ public class SchemaGraph implements Graph {
             types.forEachRemaining(type -> {
                 Set<RuleStructure> rules = ruleContains.get(type);
                 if (rules != null) rules.remove(rule);
-                storage().delete(join(
-                        Encoding.Index.Prefix.TYPE.bytes(),
-                        getType(type).iid().bytes(),
-                        Encoding.Index.Infix.RULE_CONTAINS.bytes(),
-                        rule.iid().bytes()));
+                storage().delete(IndexIID.Type.RuleIndex.contained(getType(type).iid(), rule.iid()).bytes());
             });
         }
 
         private Set<RuleStructure> loadConcludingIsa(Label label) {
             TypeVertex type = getType(label);
-            byte[] indexScanPrefix = Bytes.join(Encoding.Index.Prefix.TYPE.bytes(),
-                                                type.iid().bytes(),
-                                                Encoding.Index.Infix.RULE_CONCLUDES_ISA.bytes());
-            return storage.iterate(indexScanPrefix, (key, value) -> StructureIID.Rule.of(stripPrefix(key, indexScanPrefix.length)))
+            IndexIID.Type.RuleIndex scanPrefix = IndexIID.Type.RuleIndex.concludedIsaScan(type.iid());
+            return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
                     .map(SchemaGraph.this::convert).toSet();
         }
 
         private Set<RuleStructure> loadConcludingHasAttribute(Label label) {
             TypeVertex type = getType(label);
-            byte[] indexScanPrefix = Bytes.join(Encoding.Index.Prefix.TYPE.bytes(),
-                                                type.iid().bytes(),
-                                                Encoding.Index.Infix.RULE_CONCLUDES_HAS_ATTRIBUTE.bytes());
-            return storage.iterate(indexScanPrefix, (key, value) -> StructureIID.Rule.of(stripPrefix(key, indexScanPrefix.length)))
+            IndexIID.Type.RuleIndex scanPrefix = IndexIID.Type.RuleIndex.concludedHasAttributeScan(type.iid());
+            return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
                     .map(SchemaGraph.this::convert).toSet();
         }
 
         private Set<RuleStructure> loadRuleContains(Label label) {
             TypeVertex type = getType(label);
-            byte[] indexScanPrefix = Bytes.join(Encoding.Index.Prefix.TYPE.bytes(),
-                                                type.iid().bytes(),
-                                                Encoding.Index.Infix.RULE_CONTAINS.bytes());
-            return storage.iterate(indexScanPrefix, (key, value) -> StructureIID.Rule.of(stripPrefix(key, indexScanPrefix.length)))
+            IndexIID.Type.RuleIndex scanPrefix = IndexIID.Type.RuleIndex.containedScan(type.iid());
+            return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
                     .map(SchemaGraph.this::convert).toSet();
         }
 
