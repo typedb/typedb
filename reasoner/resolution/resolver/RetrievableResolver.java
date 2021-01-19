@@ -21,8 +21,8 @@ import grakn.core.common.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.reasoner.resolution.MockTransaction;
-import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
+import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Response;
@@ -31,38 +31,32 @@ import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.Iterator;
-
-import static grakn.common.collection.Collections.map;
+import java.util.Map;
 
 public class RetrievableResolver extends ResolvableResolver<RetrievableResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(RetrievableResolver.class);
     private final Retrievable retrievable;
-    private final ResolutionRecorder resolutionRecorder;
-    private final TraversalEngine traversalEngine;
-    private ResponseProducer responseProducer;
+    private final Map<Request, ResponseProducer> responseProducers;
 
-    public RetrievableResolver(Actor<RetrievableResolver> self, Retrievable retrievable,
-                               ResolutionRecorder resolutionRecorder, ResolverRegistry registry,
+    public RetrievableResolver(Actor<RetrievableResolver> self, Retrievable retrievable,ResolverRegistry registry,
                                TraversalEngine traversalEngine, boolean explanations) {
         super(self, RetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable + ")", registry, traversalEngine, explanations);
         this.retrievable = retrievable;
-        this.resolutionRecorder = resolutionRecorder;
-        this.traversalEngine = traversalEngine;
+        this.responseProducers = new HashMap<>();
     }
-
 
     @Override
     public void receiveRequest(Request fromUpstream, int iteration) {
         LOG.trace("{}: received Request: {}", name(), fromUpstream);
-        responseProducer = responseProducerCreate(fromUpstream, iteration);
-        mayReiterateResponseProducer(fromUpstream, iteration);
+        ResponseProducer responseProducer = mayUpdateAndGetResponseProducer(fromUpstream, iteration);
         if (iteration < responseProducer.iteration()) {
             // short circuit if the request came from a prior iteration
             respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
         } else {
             assert iteration == responseProducer.iteration();
-            tryAnswer(fromUpstream, iteration);
+            tryAnswer(fromUpstream, responseProducer, iteration);
         }
     }
 
@@ -98,42 +92,37 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
         return responseProducerPrevious.newIteration(traversal, newIteration);
     }
 
-    private void tryAnswer(Request fromUpstream, int iteration) {
-        // TODO This method WIP
+    private ResponseProducer mayUpdateAndGetResponseProducer(Request fromUpstream, int iteration) {
+        if (!responseProducers.containsKey(fromUpstream)) {
+            responseProducers.put(fromUpstream, responseProducerCreate(fromUpstream, iteration));
+        } else {
+            ResponseProducer responseProducer = responseProducers.get(fromUpstream);
+            assert responseProducer.iteration() == iteration ||
+                    responseProducer.iteration() + 1 == iteration;
 
+            if (responseProducer.iteration() + 1 == iteration) {
+                // when the same request for the next iteration the first time, re-initialise required state
+                ResponseProducer responseProducerNextIter = responseProducerReiterate(fromUpstream, responseProducer, iteration);
+                responseProducers.put(fromUpstream, responseProducerNextIter);
+            }
+        }
+        return responseProducers.get(fromUpstream);
+    }
 
-
+    private void tryAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
         while (responseProducer.hasTraversalProducer()) {
             ConceptMap conceptMap = responseProducer.traversalProducer().next();
+            AnswerState.UpstreamVars.Derived derivedAnswer = fromUpstream.answerBounds().asMapped().aggregateToUpstream(conceptMap);
             LOG.trace("{}: has found via traversal: {}", name(), conceptMap);
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
                 assert fromUpstream.answerBounds().isRoot();
-                ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.answerBounds().asRoot().aggregateToUpstream(conceptMap),
-                                                               retrievable.conjunction().toString(), ResolutionAnswer.Derivation.EMPTY, self(), false);
-                submitAnswer(answer);
+                ResolutionAnswer answer = new ResolutionAnswer(derivedAnswer, retrievable.conjunction().toString(),
+                                                               ResolutionAnswer.Derivation.EMPTY, self(), false);
+                respondToUpstream(new Response.Answer(fromUpstream, answer), iteration);
             }
         }
-
-        if (responseProducer.hasDownstreamProducer()) {
-            requestFromDownstream(responseProducer.nextDownstreamProducer(), fromUpstream, iteration);
-        } else {
-            onExhausted.accept(iteration);
-        }
-    }
-
-    private void mayReiterateResponseProducer(Request fromUpstream, int iteration) {
-        // TODO This method WIP
-        if (responseProducer.iteration() + 1 == iteration) {
-            responseProducer = responseProducerReiterate(fromUpstream, responseProducer, iteration);
-        }
-    }
-
-    private void submitAnswer(ResolutionAnswer answer) {
-        // TODO This method WIP
-        LOG.debug("Submitting root answer: {}", answer.derived());
-        resolutionRecorder.tell(state -> state.record(answer));
-        onAnswer.accept(answer);
+        respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
     }
 
     @Override
