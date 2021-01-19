@@ -74,21 +74,19 @@ public abstract class Resolvable {
     public static class Plan {
         private final List<Resolvable> plan;
         private final Map<Resolvable, Set<Variable>> dependencies;
-        private final Map<Variable, Set<Resolvable>> connectedByVariable;
         private final ConceptManager conceptMgr;
         private final LogicManager logicMgr;
-        private Set<Variable> varsAnswered;
-        private Set<Resolvable> remaining;
+        private final Set<Variable> varsAnswered;
+        private final Set<Resolvable> remaining;
 
         Plan(Set<Resolvable> resolvables, ConceptManager conceptMgr, LogicManager logicMgr) {
             this.conceptMgr = conceptMgr;
             this.logicMgr = logicMgr;
             assert resolvables.size() > 0;
-            plan = new ArrayList<>();
-            varsAnswered = new HashSet<>();
-            connectedByVariable = connections(resolvables);
-            dependencies = dependencies(resolvables);
-            remaining = new HashSet<>(resolvables);
+            this.plan = new ArrayList<>();
+            this.varsAnswered = new HashSet<>();
+            this.dependencies = dependencies(resolvables);
+            this.remaining = new HashSet<>(resolvables);
 
             planning();
 
