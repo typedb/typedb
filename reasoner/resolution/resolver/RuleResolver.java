@@ -62,7 +62,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
 
     private final Map<Request, ResponseProducer> responseProducers;
     private final Rule rule;
-    private final List<Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>>> plan;
+    private List<Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>>> plan;
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
     private boolean isInitialised;
@@ -162,12 +162,8 @@ public class RuleResolver extends Resolver<RuleResolver> {
         Set<Resolvable> resolvables = new HashSet<>();
         resolvables.addAll(concludablesWithApplicableRules);
         resolvables.addAll(retrievables);
-        
-        List<Resolvable> plan = ResolverRegistry.plan(resolvables, conceptMgr, logicMgr);
-        for (Resolvable planned : plan) {
-            Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> concludableUnifierPair = registry.registerResolvable(planned);
-            this.plan.add(concludableUnifierPair);
-        }
+
+        plan = registry.planAndRegister(resolvables);
     }
 
     @Override

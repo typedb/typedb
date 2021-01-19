@@ -66,7 +66,7 @@ public class RootResolver extends Resolver<RootResolver> {
     private final Set<Concludable> concludables;
     private final Consumer<ResolutionAnswer> onAnswer;
     private final Consumer<Integer> onExhausted;
-    private final List<Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>>> plan;
+    private List<Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>>> plan;
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
@@ -164,11 +164,7 @@ public class RootResolver extends Resolver<RootResolver> {
         resolvables.addAll(concludablesWithApplicableRules);
         resolvables.addAll(retrievables);
 
-        List<Resolvable> plan = ResolverRegistry.plan(resolvables, conceptMgr, logicMgr);
-        for (Resolvable planned : plan) {
-            Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> concludableUnifierPair = registry.registerResolvable(planned);
-            this.plan.add(concludableUnifierPair);
-        }
+        plan = registry.planAndRegister(resolvables);
     }
 
     @Override

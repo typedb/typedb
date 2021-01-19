@@ -85,16 +85,8 @@ public class ResolverRegistry {
         rules = new HashMap<>();
     }
 
-    public static List<Resolvable> plan(Set<Resolvable> resolvables, ConceptManager conceptMgr, LogicManager logicMgr) {
-        return new Plan(resolvables, conceptMgr, logicMgr).plan();
-    }
-
-    public Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> registerResolvable(Resolvable resolvable) {
-        if (resolvable.isRetrievable()) {
-            return registerRetrievable(resolvable.asRetrievable());
-        } else if (resolvable.isConcludable()) {
-            return registerConcludable(resolvable.asConcludable());
-        } else throw GraknException.of(ILLEGAL_STATE);
+    public List<Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>>> planAndRegister(Set<Resolvable> resolvables) {
+        return iterate(new Plan(resolvables, conceptMgr, logicMgr).plan()).map(this::registerResolvable).toList();
     }
 
     public Actor<RuleResolver> registerRule(Rule rule) {
@@ -110,6 +102,14 @@ public class ResolverRegistry {
     // for testing
     public void setEventLoopGroup(EventLoopGroup eventLoopGroup) {
         this.elg = eventLoopGroup;
+    }
+
+    private Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> registerResolvable(Resolvable resolvable) {
+        if (resolvable.isRetrievable()) {
+            return registerRetrievable(resolvable.asRetrievable());
+        } else if (resolvable.isConcludable()) {
+            return registerConcludable(resolvable.asConcludable());
+        } else throw GraknException.of(ILLEGAL_STATE);
     }
 
     private Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> registerRetrievable(Retrievable retrievable) {
@@ -140,7 +140,7 @@ public class ResolverRegistry {
                 .collect(Collectors.toMap(Function.identity(), Function.identity()));
     }
 
-    private static class Plan {
+    static class Plan {
         private final List<Resolvable> plan;
         private final Map<Resolvable, Set<Variable>> dependencies;
         private final ConceptManager conceptMgr;
