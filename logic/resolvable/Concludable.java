@@ -74,6 +74,14 @@ public abstract class Concludable extends Resolvable {
         applicableRules = new HashMap<>(); // TODO Implement
     }
 
+    public boolean isConcludable() {
+        return true;
+    }
+
+    public Concludable asConcludable() {
+        return this;
+    }
+
     public abstract Set<Constraint> concludableConstraints();
 
     public static Set<Concludable> create(grakn.core.pattern.Conjunction conjunction) {

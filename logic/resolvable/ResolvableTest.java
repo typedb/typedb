@@ -37,8 +37,8 @@ public class ResolvableTest {
 
     @Test
     public void test_planner_retrievable_dependent_upon_concludable() {
-        Concludable<?> concludable = Concludable.create(parse("{ $r($x, $y) isa association; }")).iterator().next();
-        Retrievable retrievable = new Retrievable(parse("{ $x isa person; $y isa business; }"));
+        Concludable concludable = Concludable.create(parse("{ $a has $b; }")).iterator().next();
+        Retrievable retrievable = new Retrievable(parse("{ $c($b); }"));
 
         Set<Resolvable> resolvables = set(concludable, retrievable);
         List<Resolvable> plan = Resolvable.plan(resolvables);
@@ -47,7 +47,7 @@ public class ResolvableTest {
 
     @Test
     public void test_planner_prioritises_retrievable_without_dependencies() {
-        Concludable<?> concludable = Concludable.create(parse("{ $p has name $n; }")).iterator().next();
+        Concludable concludable = Concludable.create(parse("{ $p has name $n; }")).iterator().next();
         Retrievable retrievable = new Retrievable(parse("{ $p isa person; }"));
 
         Set<Resolvable> resolvables = set(concludable, retrievable);
@@ -59,7 +59,7 @@ public class ResolvableTest {
     @Test
     public void test_planner_prioritises_largest_retrievable_without_dependencies() {
         Retrievable retrievable = new Retrievable(parse("{ $p isa person, has age $a, has first-name $fn, has surname $sn; }"));
-        Concludable<?> concludable = Concludable.create(parse("{ ($p, $c); }")).iterator().next();
+        Concludable concludable = Concludable.create(parse("{ ($p, $c); }")).iterator().next();
         Retrievable retrievable2 = new Retrievable(parse("{ $c isa company, has name $cn; }"));
 
         Set<Resolvable> resolvables = set(retrievable, retrievable2, concludable);
@@ -70,8 +70,8 @@ public class ResolvableTest {
 
     @Test
     public void test_planner_starts_at_independent_concludable() {
-        Concludable<?> concludable = Concludable.create(parse("{ $r($a, $b); }")).iterator().next();
-        Concludable<?> concludable2 = Concludable.create(parse("{ $r has $c; }")).iterator().next();
+        Concludable concludable = Concludable.create(parse("{ $r($a, $b); }")).iterator().next();
+        Concludable concludable2 = Concludable.create(parse("{ $r has $c; }")).iterator().next();
 
         Set<Resolvable> resolvables = set(concludable, concludable2);
 
@@ -82,9 +82,9 @@ public class ResolvableTest {
     @Test
     public void test_planner_multiple_dependencies() {
         Retrievable retrievable = new Retrievable(parse("{ $p isa person; }"));
-        Concludable<?> concludable = Concludable.create(parse("{ $p has name $n; }")).iterator().next();
+        Concludable concludable = Concludable.create(parse("{ $p has name $n; }")).iterator().next();
         Retrievable retrievable2 = new Retrievable(parse("{ $c isa company, has name $n; }"));
-        Concludable<?> concludable2 = Concludable.create(parse("{ $e($c, $p2) isa employment; }")).iterator().next();
+        Concludable concludable2 = Concludable.create(parse("{ $e($c, $p2) isa employment; }")).iterator().next();
 
         Set<Resolvable> resolvables = set(retrievable, retrievable2, concludable, concludable2);
         List<Resolvable> plan = Resolvable.plan(resolvables);
@@ -94,8 +94,8 @@ public class ResolvableTest {
 
     @Test
     public void test_planner_two_circular_has_dependencies() {
-        Concludable<?> concludable = Concludable.create(parse("{ $a has $b; }")).iterator().next();
-        Concludable<?> concludable2 = Concludable.create(parse("{ $b has $a; }")).iterator().next();
+        Concludable concludable = Concludable.create(parse("{ $a has $b; }")).iterator().next();
+        Concludable concludable2 = Concludable.create(parse("{ $b has $a; }")).iterator().next();
 
         Set<Resolvable> resolvables = set(concludable, concludable2);
         List<Resolvable> plan = Resolvable.plan(resolvables);
@@ -106,8 +106,8 @@ public class ResolvableTest {
 
     @Test
     public void test_planner_two_circular_relates_dependencies() {
-        Concludable<?> concludable = Concludable.create(parse("{ $a($b); }")).iterator().next();
-        Concludable<?> concludable2 = Concludable.create(parse("{ $b($a); }")).iterator().next();
+        Concludable concludable = Concludable.create(parse("{ $a($b); }")).iterator().next();
+        Concludable concludable2 = Concludable.create(parse("{ $b($a); }")).iterator().next();
 
         Set<Resolvable> resolvables = set(concludable, concludable2);
         List<Resolvable> plan = Resolvable.plan(resolvables);
