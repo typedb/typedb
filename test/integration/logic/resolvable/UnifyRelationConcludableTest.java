@@ -90,6 +90,7 @@ public class UnifyRelationConcludableTest {
                                                        "    owns last-name," +
                                                        "    owns age," +
                                                        "    plays employment:employee," +
+                                                       "    plays employment:employer," +
                                                        "    plays part-time-employment:part-time-employee," +
                                                        "    plays friendship:friend;" +
                                                        "company sub entity," +
