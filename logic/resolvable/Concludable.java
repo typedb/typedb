@@ -98,7 +98,7 @@ public abstract class Concludable extends Resolvable {
         return iterate(applicableRules.keySet());
     }
 
-    abstract Variable generating();
+    public abstract Variable generating();
 
     /*
     TODO this should be improved by indexing rules by possible types, so rather than retrieving all rules
@@ -349,7 +349,7 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
-        Variable generating() {
+        public Variable generating() {
             return relation().owner();
         }
 
@@ -519,7 +519,7 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
-        Variable generating() {
+        public Variable generating() {
             return has().attribute();
         }
 
@@ -608,7 +608,7 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
-        Variable generating() {
+        public Variable generating() {
             return isa().owner();
         }
 
@@ -691,7 +691,7 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
-        Variable generating() {
+        public Variable generating() {
             return attribute;
         }
 

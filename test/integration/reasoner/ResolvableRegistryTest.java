@@ -15,13 +15,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.logic.resolvable;
+package grakn.core.reasoner;
 
 import grakn.core.common.parameters.Arguments;
 import grakn.core.concept.ConceptManager;
 import grakn.core.logic.LogicManager;
+import grakn.core.logic.resolvable.Concludable;
+import grakn.core.logic.resolvable.Resolvable;
+import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
+import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
@@ -43,7 +47,7 @@ import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 import static junit.framework.TestCase.assertEquals;
 
-public class ResolvableTest {
+public class ResolvableRegistryTest {
 
     private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("resolvable-test");
     private static String database = "resolvable-test";
@@ -87,7 +91,7 @@ public class ResolvableTest {
         Retrievable retrievable = new Retrievable(parse("{ $c($b); }"));
 
         Set<Resolvable> resolvables = set(concludable, retrievable);
-        List<Resolvable> plan = Resolvable.plan(resolvables, conceptMgr, logicMgr);
+        List<Resolvable> plan = ResolverRegistry.plan(resolvables, conceptMgr, logicMgr);
         assertEquals(list(concludable, retrievable), plan);
     }
 
@@ -98,7 +102,7 @@ public class ResolvableTest {
 
         Set<Resolvable> resolvables = set(concludable, retrievable);
 
-        List<Resolvable> plan = Resolvable.plan(resolvables, conceptMgr, logicMgr);
+        List<Resolvable> plan = ResolverRegistry.plan(resolvables, conceptMgr, logicMgr);
         assertEquals(list(retrievable, concludable), plan);
     }
 
@@ -110,7 +114,7 @@ public class ResolvableTest {
 
         Set<Resolvable> resolvables = set(retrievable, retrievable2, concludable);
 
-        List<Resolvable> plan = Resolvable.plan(resolvables, conceptMgr, logicMgr);
+        List<Resolvable> plan = ResolverRegistry.plan(resolvables, conceptMgr, logicMgr);
         assertEquals(list(retrievable, concludable, retrievable2), plan);
     }
 
@@ -121,7 +125,7 @@ public class ResolvableTest {
 
         Set<Resolvable> resolvables = set(concludable, concludable2);
 
-        List<Resolvable> plan = Resolvable.plan(resolvables, conceptMgr, logicMgr);
+        List<Resolvable> plan = ResolverRegistry.plan(resolvables, conceptMgr, logicMgr);
         assertEquals(list(concludable, concludable2), plan);
     }
 
@@ -133,7 +137,7 @@ public class ResolvableTest {
         Concludable concludable2 = Concludable.create(parse("{ $e($c, $p2) isa employment; }")).iterator().next();
 
         Set<Resolvable> resolvables = set(retrievable, retrievable2, concludable, concludable2);
-        List<Resolvable> plan = Resolvable.plan(resolvables, conceptMgr, logicMgr);
+        List<Resolvable> plan = ResolverRegistry.plan(resolvables, conceptMgr, logicMgr);
 
         assertEquals(list(retrievable, concludable, retrievable2, concludable2), plan);
     }
@@ -144,7 +148,7 @@ public class ResolvableTest {
         Concludable concludable2 = Concludable.create(parse("{ $b has $a; }")).iterator().next();
 
         Set<Resolvable> resolvables = set(concludable, concludable2);
-        List<Resolvable> plan = Resolvable.plan(resolvables, conceptMgr, logicMgr);
+        List<Resolvable> plan = ResolverRegistry.plan(resolvables, conceptMgr, logicMgr);
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
@@ -156,7 +160,7 @@ public class ResolvableTest {
         Concludable concludable2 = Concludable.create(parse("{ $b($a); }")).iterator().next();
 
         Set<Resolvable> resolvables = set(concludable, concludable2);
-        List<Resolvable> plan = Resolvable.plan(resolvables, conceptMgr, logicMgr);
+        List<Resolvable> plan = ResolverRegistry.plan(resolvables, conceptMgr, logicMgr);
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
@@ -168,7 +172,7 @@ public class ResolvableTest {
         Concludable concludable2 = Concludable.create(parse("{ $c($d); }")).iterator().next();
 
         Set<Resolvable> resolvables = set(concludable, concludable2);
-        List<Resolvable> plan = Resolvable.plan(resolvables, conceptMgr, logicMgr);
+        List<Resolvable> plan = ResolverRegistry.plan(resolvables, conceptMgr, logicMgr);
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
