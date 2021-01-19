@@ -747,9 +747,9 @@ public class Encoding {
          * The size of a prefix is 1 unsigned byte; i.e. min-value = 0 and max-value = 255.
          */
         enum Infix {
-            CONCLUDED_ISA(0),
-            CONCLUDED_HAS_ATTRIBUTE(1),
-            CONTAINED_TYPE(10);
+            CONTAINED_TYPE(0),
+            CONCLUDED_ISA(10),
+            CONCLUDED_HAS_ATTRIBUTE(11);
 
             public static final int LENGTH = 1;
             private final byte key;

@@ -128,7 +128,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void isa_explicit_inference() throws IOException, InterruptedException {
+    public void isa_explicit_inference() throws IOException {
         define_standard_schema("basic-schema");
         TypeResolver typeResolver = transaction.logic().typeResolver();
 
