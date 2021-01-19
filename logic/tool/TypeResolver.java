@@ -73,6 +73,11 @@ public class TypeResolver {
         this.logicCache = logicCache;
     }
 
+    public ResourceIterator<VertexMap> resolveAndGetIterator(Conjunction conjunction, boolean insertable) {
+        TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, conceptMgr, insertable);
+        return traversalEng.iterator(traversalBuilder.traversal());
+    }
+
     public Conjunction resolveLabels(Conjunction conjunction) {
         iterate(conjunction.variables()).filter(v -> v.isType() && v.asType().label().isPresent())
                 .forEachRemaining(typeVar -> {
@@ -91,9 +96,9 @@ public class TypeResolver {
         return conjunction;
     }
 
-    public Conjunction resolve(Conjunction conjunction) {
+    public Conjunction resolve(Conjunction conjunction, boolean insertable) {
         resolveLabels(conjunction);
-        TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, conceptMgr);
+        TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, conceptMgr, insertable);
         Map<Reference, Set<Label>> resolvedLabels = executeResolverTraversals(traversalBuilder);
         if (resolvedLabels.isEmpty()) {
             conjunction.setSatisfiable(false);
@@ -115,17 +120,8 @@ public class TypeResolver {
         return conjunction;
     }
 
-    public ResourceIterator<Map<Variable, Label>> resolveRuleConjunction(Conjunction conjunction, boolean insertable) {
-        resolveLabels(conjunction);
-        TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, conceptMgr, insertable);
-        return traversalEng.iterator(traversalBuilder.traversal()).map(vertexMap -> {
-            Map<Variable, Label> newMapping = new HashMap<>();
-            vertexMap.map().forEach((ref, vertex) -> {
-                assert vertex.isType();
-                newMapping.put(traversalBuilder.getVariable(ref), vertex.asType().properLabel());
-            });
-            return newMapping;
-        });
+    public Conjunction resolve(Conjunction conjunction) {
+        return resolve(conjunction, false);
     }
 
     private Map<Reference, Set<Label>> executeResolverTraversals(TraversalBuilder traversalConstructor) {

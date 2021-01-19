@@ -18,7 +18,6 @@
 
 package grakn.core.logic;
 
-import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
@@ -58,6 +57,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
@@ -65,6 +65,8 @@ import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CAN_NEVER_BE_SATISFIED;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CAN_VIOLATE_RULE_THEN_TYPES;
 import static grakn.core.logic.LogicManager.validateRuleStructureLabels;
 
 
@@ -80,15 +82,11 @@ public class Rule {
     private Rule(LogicManager logicManager, RuleStructure structure) {
         this.logicManager = logicManager;
         this.structure = structure;
-        // TODO enable when we have type hinting
-        this.when = whenPattern(structure.when());
-        this.then = thenPattern(structure.then());
-        logicManager.typeResolver().resolve(this);
-//        this.when = logicManager.typeResolver().resolve(whenPattern(structure.when()));
-//        this.then = logicManager.typeResolver().resolve(thenPattern(structure.then()));
+        this.when = logicManager.typeResolver().resolve(whenPattern(structure.when()), false);
+        this.then = logicManager.typeResolver().resolve(thenPattern(structure.then()), true);
 //        this.when = whenPattern(structure.when());
 //        this.then = thenPattern(structure.then());
-//        pruneThenResolvedTypes();
+        pruneThenResolvedTypes();
         this.conclusion = Conclusion.create(this.then);
         this.requiredWhenConcludables = Concludable.create(this.when);
     }
@@ -101,13 +99,11 @@ public class Rule {
         // TODO enable when we have type hinting
         this.when = logicManager.typeResolver().resolve(whenPattern(structure.when()));
         this.then = logicManager.typeResolver().resolve(thenPattern(structure.then()));;
-//        this.when = whenPattern(structure.when());
-//        this.then = thenPattern(structure.then());
-        validateSatisfiable();
         pruneThenResolvedTypes();
+        validateSatisfiable();
+        validateInsertable();
         this.conclusion = Conclusion.create(this.then);
         this.requiredWhenConcludables = Concludable.create(this.when);
-        validateInsertable();
         validateCycles();
     }
 
@@ -183,23 +179,19 @@ public class Rule {
          check that none of the variables in the `when` or `then` conjunctions are marked `isSatisfiable = false`. otherwise throw an error
          */
         if (Stream.concat(then.variables().stream(), when.variables().stream()).anyMatch(variable -> !variable.isSatisfiable())) {
-            // TODO: improve this to have a more relevant exception
-            throw GraknException.of(ILLEGAL_STATE);
+            throw GraknException.of(RULE_WHEN_CAN_NEVER_BE_SATISFIED, structure.label());
         }
     }
 
     public void validateInsertable()  {
-        ResourceIterator<VertexMap> possibleWhenPerms = null; //TODO
-        ResourceIterator<VertexMap> possibleThenPerms = null; //TODO
-        Map<Reference, Variable> referenceVariableMapping = new HashMap<>(); //TODO
-
-
+        ResourceIterator<VertexMap> possibleWhenPerms = logicManager.typeResolver().resolveAndGetIterator(when, false);
+        ResourceIterator<VertexMap> possibleThenPerms = logicManager.typeResolver().resolveAndGetIterator(then, true);
 
         Set<VertexMap> possibleThenSet = possibleThenPerms.toSet();
-        if (possibleWhenPerms.noneMatch(whenVertexMap ->
-            possibleThenSet.stream().anyMatch(thenVertexMap -> vertexMapsEqual(whenVertexMap, thenVertexMap, whenVertexMap))
+        if (possibleWhenPerms.anyMatch(whenVertexMap ->
+            possibleThenSet.stream().noneMatch(thenVertexMap -> vertexMapsEqual(thenVertexMap, whenVertexMap))
         )) {
-            throw GraknException.of(ILLEGAL_STATE);
+            throw GraknException.of(RULE_WHEN_CAN_VIOLATE_RULE_THEN_TYPES, structure.label());
         }
 
         /*
@@ -217,13 +209,15 @@ public class Rule {
          */
     }
 
-    private boolean vertexMapsEqual(VertexMap thenVertexMap, VertexMap whenVertexMap, Map<Reference, Variable> referenceVariableMap) {
-
-        thenVertexMap.map().forEach((ref, vertex) -> {
-
-            Variable variable = referenceVariableMap.get(ref);
-
-        });
+    private boolean vertexMapsEqual(VertexMap thenVertexMap, VertexMap whenVertexMap) {
+        for (Map.Entry<Reference, Vertex<?, ?>> entry : thenVertexMap.map().entrySet()) {
+            Reference ref = entry.getKey();
+            Vertex<?, ?> vertex = entry.getValue();
+            if (ref.isSystemReference()) continue;
+            assert whenVertexMap.containsKey(ref);
+            if (whenVertexMap.get(ref) != vertex) return false;
+        }
+        return true;
     }
 
     void validateCycles() {

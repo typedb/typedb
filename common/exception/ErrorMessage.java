@@ -448,8 +448,12 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new RuleWrite(2, "The rule '%s' uses type(s) %s which are not defined in the schema.");
         public static final RuleWrite RULES_IN_NEGATED_CYCLE_NOT_STRATIFIABLE =
                 new RuleWrite(3, "The rules '%s' causes inference cycles with negations");
+        public static final RuleWrite RULE_WHEN_CAN_VIOLATE_RULE_THEN_TYPES =
+                new RuleWrite(4, "The rule '%s' can has a when that can satisfy types that cannot be inserted into the then.");
+        public static final RuleWrite RULE_WHEN_CAN_NEVER_BE_SATISFIED =
+                new RuleWrite(5, "It is impossible to satisfy the rule both the when and then of the rule '%s', simultaneously.");
         public static final RuleWrite MAX_RULE_REACHED =
-                new RuleWrite(4, "The maximum number of rules has been reached: '%s'");
+                new RuleWrite(6, "The maximum number of rules has been reached: '%s'");
 
         private static final String codePrefix = "RUW";
         private static final String messagePrefix = "Invalid Rule Write";
