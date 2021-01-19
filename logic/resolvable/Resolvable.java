@@ -84,22 +84,22 @@ public abstract class Resolvable {
             independents.removeAll(dependents);
 
             Resolvable startingPoint = pickIndependentStartingPoint(independents).orElseGet(() -> pickDependentStartingPoint(dependents));
-            addToPlanBasedOnGenerated(startingPoint);
+            planFrom(startingPoint);
 
             assert plan.size() == resolvables.size();
             assert set(plan).equals(resolvables);
         }
 
-        private void addToPlanBasedOnGenerated(Resolvable resolvable) {
+        private void planFrom(Resolvable resolvable) {
             plan.add(resolvable);
             if (resolvable.isConcludable()){
                 for (Resolvable nextResolvable : dependentOnGenerated.getOrDefault(resolvable.asConcludable().generating(), set())) {
                     if (!plan.contains(nextResolvable)) {
-                        addToPlanBasedOnGenerated(nextResolvable);
+                        planFrom(nextResolvable);
                     }
                 }
             }
-            resolvable.conjunction().variables().stream().flatMap(var -> connectedByVariable.get(var).stream()).filter(r -> !plan.contains(r)).forEach(this::addToPlanBasedOnGenerated);
+            resolvable.conjunction().variables().stream().flatMap(var -> connectedByVariable.get(var).stream()).filter(r -> !plan.contains(r)).forEach(this::planFrom);
         }
 
         public List<Resolvable> plan() {
@@ -121,6 +121,9 @@ public abstract class Resolvable {
             return dependents.iterator().next();
         }
 
+        /**
+         * Determine which resolvables are connected by the same variable
+         */
         private Map<Variable, Set<Resolvable>> connections(Set<Resolvable> resolvables) {
             Map<Variable, Set<Resolvable>> connections = new HashMap<>();
             for (Resolvable resolvable : resolvables) {
@@ -132,6 +135,9 @@ public abstract class Resolvable {
             return connections;
         }
 
+        /**
+         * Determine the resolvables that are dependent upon the generation of each variable
+         */
         private Map<Variable, Set<Resolvable>> dependencies(Set<Resolvable> resolvables) {
             Map<Variable, Set<Resolvable>> deps = new HashMap<>();
             Set<Variable> generatedVars = iterate(resolvables).filter(Resolvable::isConcludable)

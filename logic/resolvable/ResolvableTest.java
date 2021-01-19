@@ -117,7 +117,14 @@ public class ResolvableTest {
     }
 
     @Test
-    public void test_planner_disconnected_pattern() {
-        // TODO
+    public void test_planner_disconnected_conjunction() {
+        Concludable concludable = Concludable.create(parse("{ $a($b); }")).iterator().next();
+        Concludable concludable2 = Concludable.create(parse("{ $c($d); }")).iterator().next();
+
+        Set<Resolvable> resolvables = set(concludable, concludable2);
+        List<Resolvable> plan = Resolvable.plan(resolvables);
+
+        assertEquals(2, plan.size());
+        assertEquals(set(concludable, concludable2), set(plan));
     }
 }
