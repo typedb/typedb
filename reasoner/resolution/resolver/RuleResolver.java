@@ -162,8 +162,8 @@ public class RuleResolver extends Resolver<RuleResolver> {
         Set<Resolvable> resolvables = new HashSet<>();
         resolvables.addAll(concludablesWithApplicableRules);
         resolvables.addAll(retrievables);
-        // TODO Plan the order in which to execute the concludables
-        List<Resolvable> plan = list(resolvables);
+        
+        List<Resolvable> plan = Resolvable.plan(resolvables);
         for (Resolvable planned : plan) {
             Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> concludableUnifierPair = registry.registerResolvable(planned);
             this.plan.add(concludableUnifierPair);
