@@ -69,6 +69,17 @@ public class ResolvableTest {
     }
 
     @Test
+    public void test_planner_starts_at_independent_concludable() {
+        Concludable<?> concludable = Concludable.create(parse("{ $r($a, $b); }")).iterator().next();
+        Concludable<?> concludable2 = Concludable.create(parse("{ $r has $c; }")).iterator().next();
+
+        Set<Resolvable> resolvables = set(concludable, concludable2);
+
+        List<Resolvable> plan = Resolvable.plan(resolvables);
+        assertEquals(list(concludable, concludable2), plan);
+    }
+
+    @Test
     public void test_planner_multiple_dependencies() {
         Retrievable retrievable = new Retrievable(parse("{ $p isa person; }"));
         Concludable<?> concludable = Concludable.create(parse("{ $p has name $n; }")).iterator().next();
@@ -107,6 +118,6 @@ public class ResolvableTest {
 
     @Test
     public void test_planner_disconnected_pattern() {
-
+        // TODO
     }
 }
