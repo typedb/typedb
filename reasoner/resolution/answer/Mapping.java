@@ -43,13 +43,6 @@ public class Mapping {
         return new Mapping(variableMap);
     }
 
-    public static Map<Reference.Name, Reference.Name> identity(Concludable<?> concludable) {
-        return new HashSet<>(concludable.constraint().variables()).stream()
-                .filter(variable -> variable.reference().isName())
-                .map(variable -> variable.reference().asName())
-                .collect(Collectors.toMap(Function.identity(), Function.identity()));
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

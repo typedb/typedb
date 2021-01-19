@@ -18,6 +18,7 @@
 
 package grakn.core.pattern.constraint.type;
 
+import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.equivalence.AlphaEquivalent;
 import grakn.core.pattern.variable.TypeVariable;
@@ -90,5 +91,10 @@ public class ValueTypeConstraint extends TypeConstraint implements AlphaEquivale
     @Override
     public AlphaEquivalence alphaEquals(ValueTypeConstraint that) {
         return AlphaEquivalence.valid().validIf(valueType().equals(that.valueType()));
+    }
+
+    @Override
+    public ValueTypeConstraint clone(Conjunction.Cloner cloner) {
+        return cloner.cloneVariable(owner).valueType(valueType);
     }
 }

@@ -99,14 +99,7 @@ public class Matcher {
     }
 
     public ResourceIterator<ConceptMap> execute(boolean isParallel) {
-        return filter(reasoner.execute(disjunction, filter, isParallel));
-    }
-
-    private ResourceIterator<ConceptMap> filter(ResourceIterator<ConceptMap> answers) {
-        if (!query.filter().isEmpty()) {
-            Set<Reference.Name> vars = iterate(query.filter()).map(f -> f.reference().asName()).toSet();
-            answers = answers.map(a -> a.filter(vars)).distinct();
-        }
+        ResourceIterator<ConceptMap> answers = reasoner.execute(disjunction, filter, isParallel);
         if (query.sort().isPresent()) answers = sort(answers, query.sort().get());
         if (query.offset().isPresent()) answers = answers.offset(query.offset().get());
         if (query.limit().isPresent()) answers = answers.limit(query.limit().get());

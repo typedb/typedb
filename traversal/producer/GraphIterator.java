@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -44,26 +45,28 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphIterator.class);
 
+    private final GraphManager graphMgr;
     private final GraphProcedure procedure;
-    private final Traversal.Parameters parameters;
+    private final Traversal.Parameters params;
+    private final List<Identifier.Variable.Name> filter;
     private final Map<Identifier, ResourceIterator<? extends Vertex<?, ?>>> iterators;
     private final Map<Identifier, Vertex<?, ?>> answer;
     private final Map<Identifier.Variable, Set<ThingVertex>> scoped;
     private final Map<Identifier, ThingVertex> roles;
     private final SeekStack seekStack;
     private final int edgeCount;
-    private final GraphManager graphMgr;
     private int computeNextSeekPos;
     private State state;
 
     enum State {INIT, EMPTY, FETCHED, COMPLETED}
 
-    public GraphIterator(GraphManager graphMgr, Vertex<?, ?> start,
-                         GraphProcedure procedure, Traversal.Parameters parameters) {
+    public GraphIterator(GraphManager graphMgr, Vertex<?, ?> start, GraphProcedure procedure,
+                         Traversal.Parameters params, List<Identifier.Variable.Name> filter) {
         assert procedure.edgesCount() > 0;
         this.graphMgr = graphMgr;
         this.procedure = procedure;
-        this.parameters = parameters;
+        this.params = params;
+        this.filter = filter;
         this.edgeCount = procedure.edgesCount();
         this.iterators = new HashMap<>();
         this.scoped = new HashMap<>();
@@ -91,7 +94,7 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
             }
             return state == State.FETCHED;
         } catch (Throwable e) {
-            LOG.error("Parameters: " + parameters.toString());
+            LOG.error("Parameters: " + params.toString());
             LOG.error("GraphProcedure: " + procedure.toString());
             throw e;
         }
@@ -218,9 +221,9 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
     private boolean isClosure(ProcedureEdge<?, ?> edge, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex) {
         if (edge.isRolePlayer()) {
             Set<ThingVertex> withinScope = scoped.computeIfAbsent(edge.asRolePlayer().scope(), id -> new HashSet<>());
-            return edge.asRolePlayer().isClosure(graphMgr, fromVertex, toVertex, parameters, withinScope);
+            return edge.asRolePlayer().isClosure(graphMgr, fromVertex, toVertex, params, withinScope);
         } else {
-            return edge.isClosure(graphMgr, fromVertex, toVertex, parameters);
+            return edge.isClosure(graphMgr, fromVertex, toVertex, params);
         }
     }
 
@@ -228,7 +231,7 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
         ResourceIterator<? extends Vertex<?, ?>> toIter;
         if (edge.to().id().isScoped()) {
             Set<ThingVertex> withinScope = scoped.computeIfAbsent(edge.to().id().asScoped().scope(), id -> new HashSet<>());
-            toIter = edge.branch(graphMgr, fromVertex, parameters).filter(role -> {
+            toIter = edge.branch(graphMgr, fromVertex, params).filter(role -> {
                 if (withinScope.contains(role.asThing())) return false;
                 else {
                     removePreviousScopedRole(edge.to().id().asScoped().scope(), edge.to().id());
@@ -239,7 +242,7 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
             });
         } else if (edge.isRolePlayer()) {
             Set<ThingVertex> withinScope = scoped.computeIfAbsent(edge.asRolePlayer().scope(), id -> new HashSet<>());
-            toIter = edge.asRolePlayer().branchEdge(graphMgr, fromVertex, parameters).filter(e -> {
+            toIter = edge.asRolePlayer().branchEdge(graphMgr, fromVertex, params).filter(e -> {
                 if (withinScope.contains(e.optimised().get())) return false;
                 else {
                     removePreviousScopedRole(edge.asRolePlayer().scope(), edge.to().id());
@@ -249,9 +252,9 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
                 }
             }).map(e -> edge.direction().isForward() ? e.to() : e.from());
         } else {
-            toIter = edge.branch(graphMgr, fromVertex, parameters);
+            toIter = edge.branch(graphMgr, fromVertex, params);
         }
-        if (!edge.to().id().isNamedReference() && edge.to().outs().isEmpty() && edge.to().ins().size() == 1) {
+        if (!edge.to().id().isName() && edge.to().outs().isEmpty() && edge.to().ins().size() == 1) {
             // TODO: This optimisation can apply to more situations, such as to
             //       an entire tree, where none of the leaves are referenced by name
             toIter = toIter.limit(1);
@@ -291,7 +294,7 @@ public class GraphIterator implements ResourceIterator<VertexMap> {
     private VertexMap toReferenceMap(Map<Identifier, Vertex<?, ?>> answer) {
         return VertexMap.of(
                 answer.entrySet().stream()
-                        .filter(e -> e.getKey().isNamedReference())
+                        .filter(e -> e.getKey().isName() && filter.contains(e.getKey().asVariable().asName()))
                         .collect(toMap(k -> k.getKey().asVariable().reference(), Map.Entry::getValue))
         );
     }

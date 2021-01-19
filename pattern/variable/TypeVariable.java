@@ -96,8 +96,8 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         return this;
     }
 
-    void constrainClone(TypeVariable clone, VariableCloner cloner) {
-        clone.constraints().forEach(constraint -> this.constrain(TypeConstraint.of(this, constraint, cloner)));
+    void constrainClone(TypeVariable toClone, VariableCloner cloner) {
+        toClone.constraints().forEach(constraint -> this.constrain(TypeConstraint.of(this, constraint, cloner)));
     }
 
     public void constrain(TypeConstraint constraint) {
@@ -282,7 +282,7 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     @Override
     public AlphaEquivalence alphaEquals(TypeVariable that) {
         return AlphaEquivalence.valid()
-                .validIf(id().isNamedReference() == that.id().isNamedReference())
+                .validIf(id().isName() == that.id().isName())
                 .validIfAlphaEqual(labelConstraint, that.labelConstraint)
                 .validIfAlphaEqual(valueTypeConstraint, that.valueTypeConstraint)
                 .addMapping(this, that);

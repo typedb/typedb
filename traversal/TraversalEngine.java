@@ -21,8 +21,13 @@ package grakn.core.traversal;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.producer.Producer;
 import grakn.core.graph.GraphManager;
+import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.common.VertexMap;
 import grakn.core.traversal.procedure.GraphProcedure;
+
+import java.util.List;
+
+import static grakn.common.collection.Collections.list;
 
 public class TraversalEngine {
 
@@ -39,16 +44,21 @@ public class TraversalEngine {
     }
 
     public Producer<VertexMap> producer(Traversal traversal, int parallelisation) {
-        traversal.initialisePlanner(cache);
+        traversal.initialise(cache);
         return traversal.producer(graphMgr, parallelisation);
     }
 
     public ResourceIterator<VertexMap> iterator(Traversal traversal) {
-        traversal.initialisePlanner(cache);
+        traversal.initialise(cache);
         return traversal.iterator(graphMgr);
     }
 
     public ResourceIterator<VertexMap> iterator(GraphProcedure procedure, Traversal.Parameters params) {
-        return procedure.iterator(graphMgr, params);
+        return iterator(procedure, params, list());
+    }
+
+    public ResourceIterator<VertexMap> iterator(GraphProcedure procedure, Traversal.Parameters params,
+                                                List<Identifier.Variable.Name> filter) {
+        return procedure.iterator(graphMgr, params, filter);
     }
 }

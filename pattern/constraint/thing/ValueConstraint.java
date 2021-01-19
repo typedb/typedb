@@ -18,6 +18,7 @@
 package grakn.core.pattern.constraint.thing;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.equivalence.AlphaEquivalent;
 import grakn.core.pattern.variable.ThingVariable;
@@ -35,7 +36,7 @@ import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 import static grakn.core.common.exception.ErrorMessage.Pattern.MISSING_CONSTRAINT_VALUE;
-import static graql.lang.common.GraqlToken.Char.QUOTE;
+import static graql.lang.common.GraqlToken.Char.QUOTE_DOUBLE;
 import static graql.lang.common.GraqlToken.Char.SPACE;
 import static graql.lang.common.GraqlToken.Predicate.Equality.EQ;
 
@@ -222,6 +223,11 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         public void addTo(Traversal traversal) {
             traversal.predicate(owner.id(), predicate.asEquality(), value);
         }
+
+        @Override
+        public Long clone(Conjunction.Cloner cloner) {
+            return cloner.cloneVariable(owner).valueLong(predicate(), value);
+        }
     }
 
     public static class Double extends ValueConstraint<java.lang.Double> {
@@ -248,6 +254,11 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         @Override
         public void addTo(Traversal traversal) {
             traversal.predicate(owner.id(), predicate.asEquality(), value);
+        }
+
+        @Override
+        public Double clone(Conjunction.Cloner cloner) {
+            return cloner.cloneVariable(owner).valueDouble(predicate(), value);
         }
     }
 
@@ -276,6 +287,11 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         public void addTo(Traversal traversal) {
             traversal.predicate(owner.id(), predicate.asEquality(), value);
         }
+
+        @Override
+        public Boolean clone(Conjunction.Cloner cloner) {
+            return cloner.cloneVariable(owner).valueBoolean(predicate(), value);
+        }
     }
 
     public static class String extends ValueConstraint<java.lang.String> {
@@ -301,7 +317,12 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
         @Override
         public java.lang.String toString() {
-            return predicate.toString() + SPACE + QUOTE + value + QUOTE;
+            return predicate.toString() + SPACE + QUOTE_DOUBLE + value + QUOTE_DOUBLE;
+        }
+
+        @Override
+        public String clone(Conjunction.Cloner cloner) {
+            return cloner.cloneVariable(owner).valueString(predicate(), value);
         }
     }
 
@@ -329,6 +350,11 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         @Override
         public void addTo(Traversal traversal) {
             traversal.predicate(owner.id(), predicate.asEquality(), value);
+        }
+
+        @Override
+        public DateTime clone(Conjunction.Cloner cloner) {
+            return cloner.cloneVariable(owner).valueDateTime(predicate(), value);
         }
     }
 
@@ -365,6 +391,11 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
                     .validIf(isVariable() && that.isVariable())
                     .validIf(this.predicate.equals(that.predicate))
                     .validIfAlphaEqual(this.value, that.asVariable().value);
+        }
+
+        @Override
+        public Variable clone(Conjunction.Cloner cloner) {
+            return cloner.cloneVariable(owner).valueVariable(predicate(), cloner.cloneVariable(value));
         }
     }
 }

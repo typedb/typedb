@@ -22,11 +22,16 @@ import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.producer.Producer;
 import grakn.core.graph.GraphManager;
 import grakn.core.traversal.Traversal;
+import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.common.VertexMap;
+
+import java.util.List;
 
 public interface Procedure {
 
-    Producer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params, int parallelisation);
+    Producer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
+                                 List<Identifier.Variable.Name> filter, int parallelisation);
 
-    ResourceIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params);
+    ResourceIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
+                                         List<Identifier.Variable.Name> filter);
 }

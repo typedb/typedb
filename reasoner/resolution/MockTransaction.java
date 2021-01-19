@@ -72,7 +72,7 @@ public class MockTransaction {
 
                 variableSeeds.forEach((var, seed) -> {
                     MockConcept mockConcept = new MockConcept(seed + counter);
-                    concepts.put(Reference.named(var), mockConcept);
+                    concepts.put(Reference.name(var), mockConcept);
                 });
 
                 ConceptMap conceptMap = new ConceptMap(concepts);

@@ -40,13 +40,13 @@ import static junit.framework.TestCase.assertTrue;
 public class AlphaEquivalenceTest {
 
     private Variable parseVariable(String variableName, String graqlVariable) {
-        return createFromVariables(list(Graql.parseVariable(graqlVariable)), null).get(Reference.named(variableName));
+        return createFromVariables(list(Graql.parseVariable(graqlVariable)), null).get(Reference.name(variableName));
     }
 
     private Variable parseVariables(String variableName, String... graqlVariables) {
         return createFromVariables(
                 Arrays.stream(graqlVariables).map(Graql::parseVariable).collect(Collectors.toList()), null)
-                .get(Reference.named(variableName));
+                .get(Reference.name(variableName));
     }
 
     private Set<Variable> parseAnonymousThingVariables(String... graqlVariables) {
@@ -55,7 +55,7 @@ public class AlphaEquivalenceTest {
                         .map(graqlVariable -> Graql.parseVariable(graqlVariable).asThing())
                         .collect(Collectors.toList()), null)
                 .variables().stream()
-                .filter(variable -> !variable.id().isNamedReference())
+                .filter(variable -> !variable.id().isName())
                 .collect(Collectors.toSet());
     }
 

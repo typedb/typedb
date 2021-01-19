@@ -18,6 +18,7 @@
 
 package grakn.core.pattern.constraint.thing;
 
+import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.equivalence.AlphaEquivalent;
 import grakn.core.pattern.variable.ThingVariable;
@@ -93,9 +94,11 @@ public class HasConstraint extends ThingConstraint implements AlphaEquivalent<Ha
         if (attribute.reference().isName()) {
             syntax.append(attribute.reference().toString());
         } else {
-            syntax.append(attribute.isa().get().type().label().get().label());
+            if (attribute.isa().isPresent() && attribute.isa().get().type().label().isPresent()) {
+                syntax.append(attribute.isa().get().type().label().get().label());
+            }
             syntax.append(SPACE);
-            syntax.append(attribute.value().iterator().next());
+            attribute.value().forEach(value -> syntax.append(value.toString()));
         }
 
         return syntax.toString();
@@ -104,5 +107,10 @@ public class HasConstraint extends ThingConstraint implements AlphaEquivalent<Ha
     @Override
     public AlphaEquivalence alphaEquals(HasConstraint that) {
         return AlphaEquivalence.valid().validIfAlphaEqual(attribute, that.attribute);
+    }
+
+    @Override
+    public HasConstraint clone(Conjunction.Cloner cloner) {
+        return cloner.cloneVariable(owner).has(cloner.cloneVariable(attribute));
     }
 }

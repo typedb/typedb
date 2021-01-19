@@ -50,7 +50,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
     private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
 
     private final Map<Actor<RuleResolver>, Set<Unifier>> applicableRules;
-    private final Concludable<?> concludable;
+    private final Concludable concludable;
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
     private final Map<Actor<RootResolver>, IterationState> iterationStates;
@@ -58,7 +58,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
     private final Map<Request, ResponseProducer> responseProducers;
     private boolean isInitialised;
 
-    public ConcludableResolver(Actor<ConcludableResolver> self, Concludable<?> concludable,
+    public ConcludableResolver(Actor<ConcludableResolver> self, Concludable concludable,
                                Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr) {
         super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable + ")", registry, traversalEngine);

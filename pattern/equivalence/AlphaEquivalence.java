@@ -51,9 +51,9 @@ public abstract class AlphaEquivalence {
 
     public abstract Valid asValid();
 
-    public abstract AlphaEquivalence addOrInvalidate(AlphaEquivalence mapping);
-
     public abstract AlphaEquivalence addOrInvalidate(Supplier<AlphaEquivalence> mappingSupplier);
+
+    protected abstract AlphaEquivalence addOrInvalidate(AlphaEquivalence mapping);
 
     public static class Valid extends AlphaEquivalence {
 

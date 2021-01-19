@@ -33,7 +33,6 @@ import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlMatch;
-import graql.lang.query.GraqlQuery;
 import graql.lang.query.GraqlUndefine;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -360,7 +359,7 @@ public class GraqlSteps {
     private boolean matchAnswer(Map<String, String> answerIdentifiers, ConceptMap answer) {
 
         for (Map.Entry<String, String> entry : answerIdentifiers.entrySet()) {
-            final Reference.Name var = Reference.named(entry.getKey());
+            final Reference.Name var = Reference.name(entry.getKey());
             final String identifier = entry.getValue();
 
             if (!identifierChecks.containsKey(identifier)) {
@@ -376,7 +375,7 @@ public class GraqlSteps {
 
     private boolean matchAnswerConcept(Map<String, String> answerIdentifiers, ConceptMap answer) {
         for (Map.Entry<String, String> entry : answerIdentifiers.entrySet()) {
-            final Reference.Name var = Reference.named(entry.getKey());
+            final Reference.Name var = Reference.name(entry.getKey());
             final String[] identifier = entry.getValue().split(":", 2);
             switch (identifier[0]) {
                 case "label":
@@ -479,7 +478,7 @@ public class GraqlSteps {
         for (ConceptMap answer : answers) {
             final String query = applyQueryTemplate(templatedQuery, answer);
             final GraqlMatch graqlQuery = Graql.parseQuery(query).asMatch();
-            final long answerSize = tx().query().match(graqlQuery, false).toList().size();
+            final long answerSize = tx().query().match(graqlQuery).toList().size();
             assertEquals(1, answerSize);
         }
     }
@@ -496,7 +495,7 @@ public class GraqlSteps {
             String requiredVariable = variableFromTemplatePlaceholder(matched.substring(1, matched.length() - 1));
 
             builder.append(template, i, matcher.start());
-            if (templateFiller.contains(Reference.named(requiredVariable))) {
+            if (templateFiller.contains(Reference.name(requiredVariable))) {
 
                 Concept concept = templateFiller.get(requiredVariable);
                 if (!concept.isThing())

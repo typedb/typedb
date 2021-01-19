@@ -43,7 +43,7 @@ public class ConceptMap implements Answer {
     }
 
     public boolean contains(String variable) {
-        return contains(Reference.named(variable));
+        return contains(Reference.name(variable));
     }
 
     public boolean contains(Reference.Name variable) {
@@ -51,7 +51,7 @@ public class ConceptMap implements Answer {
     }
 
     public Concept get(String variable) {
-        return get(Reference.named(variable));
+        return get(Reference.name(variable));
     }
 
     public Concept get(UnboundVariable variable) {

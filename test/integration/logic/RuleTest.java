@@ -56,19 +56,19 @@ public class RuleTest {
     private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("rule-test");
     private static String database = "rule-test";
 
-    private long isaConcludablesCount(Set<Concludable<?>> concludables) {
+    private long isaConcludablesCount(Set<Concludable> concludables) {
         return concludables.stream().filter(Concludable::isIsa).count();
     }
 
-    private long hasConcludablesCount(Set<Concludable<?>> concludables) {
+    private long hasConcludablesCount(Set<Concludable> concludables) {
         return concludables.stream().filter(Concludable::isHas).count();
     }
 
-    private long relationConcludablesCount(Set<Concludable<?>> concludables) {
+    private long relationConcludablesCount(Set<Concludable> concludables) {
         return concludables.stream().filter(Concludable::isRelation).count();
     }
 
-    private long attributeConcludablesCount(Set<Concludable<?>> concludables) {
+    private long attributeConcludablesCount(Set<Concludable> concludables) {
         return concludables.stream().filter(Concludable::isAttribute).count();
     }
 
@@ -101,7 +101,7 @@ public class RuleTest {
                     final Rule rule = logicMgr.getRule("marriage-is-friendship");
 
                     assertTrue(rule.conclusion().isRelation());
-                    Set<Concludable<?>> bodyConcludables = rule.whenConcludables();
+                    Set<Concludable> bodyConcludables = rule.whenConcludables();
                     assertEquals(2, isaConcludablesCount(bodyConcludables));
                     assertEquals(0, hasConcludablesCount(bodyConcludables));
                     assertEquals(1, relationConcludablesCount(bodyConcludables));
@@ -138,7 +138,7 @@ public class RuleTest {
                     final Rule rule = logicMgr.getRule("old-milk-is-not-good");
 
                     assertTrue(rule.conclusion().isExplicitHas());
-                    Set<Concludable<?>> bodyConcludables = rule.whenConcludables();
+                    Set<Concludable> bodyConcludables = rule.whenConcludables();
                     assertEquals(1, isaConcludablesCount(bodyConcludables));
                     assertEquals(1, hasConcludablesCount(bodyConcludables));
                     assertEquals(0, relationConcludablesCount(bodyConcludables));
@@ -175,7 +175,7 @@ public class RuleTest {
                     final Rule rule = logicMgr.getRule("old-milk-is-not-good");
 
                     assertTrue(rule.conclusion().isVariableHas());
-                    Set<Concludable<?>> bodyConcludables = rule.whenConcludables();
+                    Set<Concludable> bodyConcludables = rule.whenConcludables();
                     assertEquals(2, isaConcludablesCount(bodyConcludables));
                     assertEquals(0, hasConcludablesCount(bodyConcludables));
                     assertEquals(0, relationConcludablesCount(bodyConcludables));
@@ -222,8 +222,8 @@ public class RuleTest {
                     assertEquals(2, people.size());
 
                     Rule rule = txn.logic().getRule("marriage-is-friendship");
-                    ConceptMap whenAnswer = new ConceptMap(map(pair(Reference.named("x"), people.get(0)),
-                                                               pair(Reference.named("y"), people.get(1))));
+                    ConceptMap whenAnswer = new ConceptMap(map(pair(Reference.name("x"), people.get(0)),
+                                                               pair(Reference.name("y"), people.get(1))));
 
                     Map<Identifier, Concept> thenConcepts = rule.putConclusion(whenAnswer, txn.traversal(), conceptMgr);
                     assertEquals(4, thenConcepts.size());
@@ -277,8 +277,8 @@ public class RuleTest {
                     assertEquals(2, people.size());
 
                     Rule rule = txn.logic().getRule("marriage-is-friendship");
-                    ConceptMap whenAnswer = new ConceptMap(map(pair(Reference.named("x"), people.get(0)),
-                                                               pair(Reference.named("y"), people.get(1))));
+                    ConceptMap whenAnswer = new ConceptMap(map(pair(Reference.name("x"), people.get(0)),
+                                                               pair(Reference.name("y"), people.get(1))));
 
                     Map<Identifier, Concept> thenConcepts = rule.putConclusion(whenAnswer, txn.traversal(), conceptMgr);
                     assertEquals(4, thenConcepts.size());
@@ -323,8 +323,8 @@ public class RuleTest {
                     Attribute.Long ageInDays10 = ageInDays.asLong().put(10L);
 
                     Rule rule = txn.logic().getRule("old-milk-is-not-good");
-                    ConceptMap whenAnswer = new ConceptMap(map(pair(Reference.named("x"), milkInst),
-                                                               pair(Reference.named("a"), ageInDays10)));
+                    ConceptMap whenAnswer = new ConceptMap(map(pair(Reference.name("x"), milkInst),
+                                                               pair(Reference.name("a"), ageInDays10)));
                     Map<Identifier, Concept> thenConcepts = rule.putConclusion(whenAnswer, txn.traversal(), conceptMgr);
                     assertEquals(2, thenConcepts.size());
 
@@ -369,7 +369,7 @@ public class RuleTest {
                     milkInst.setHas(ageInDays.asLong().put(20L));
 
                     Rule rule = txn.logic().getRule("old-milk-is-not-good");
-                    ConceptMap whenAnswer = new ConceptMap(map(pair(Reference.named("x"), milkInst)));
+                    ConceptMap whenAnswer = new ConceptMap(map(pair(Reference.name("x"), milkInst)));
                     Map<Identifier, Concept> thenConcepts = rule.putConclusion(whenAnswer, txn.traversal(), conceptMgr);
                     assertEquals(3, thenConcepts.size());
 

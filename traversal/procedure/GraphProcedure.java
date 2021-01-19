@@ -47,6 +47,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.iterator.Iterators.iterate;
 
 public class GraphProcedure implements Procedure {
 
@@ -161,19 +162,27 @@ public class GraphProcedure implements Procedure {
         ).asType();
     }
 
-    @Override
-    public Producer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params, int parallelisation) {
-        LOG.debug(params.toString());
-        LOG.debug(this.toString());
-        return new GraphProducer(graphMgr, this, params, parallelisation);
+    private void assertWithinFilterBounds(List<Identifier.Variable.Name> filter) {
+        assert iterate(vertices.keySet()).anyMatch(id -> id.isName() && filter.contains(id.asVariable().asName()));
     }
 
     @Override
-    public ResourceIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params) {
+    public Producer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
+                                        List<Identifier.Variable.Name> filter, int parallelisation) {
         LOG.debug(params.toString());
         LOG.debug(this.toString());
+        assertWithinFilterBounds(filter);
+        return new GraphProducer(graphMgr, this, params, filter, parallelisation);
+    }
+
+    @Override
+    public ResourceIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
+                                                List<Identifier.Variable.Name> filter) {
+        LOG.debug(params.toString());
+        LOG.debug(this.toString());
+        assertWithinFilterBounds(filter);
         return startVertex().iterator(graphMgr, params).flatMap(
-                sv -> new GraphIterator(graphMgr, sv, this, params)
+                sv -> new GraphIterator(graphMgr, sv, this, params, filter)
         ).distinct();
     }
 
@@ -221,7 +230,7 @@ public class GraphProcedure implements Procedure {
         }
 
         public ProcedureVertex.Type namedType(String name, boolean isStart) {
-            return typeVertex(Identifier.Variable.of(Reference.named(name)), isStart);
+            return typeVertex(Identifier.Variable.of(Reference.name(name)), isStart);
         }
 
         public ProcedureVertex.Thing namedThing(String name) {
@@ -229,7 +238,7 @@ public class GraphProcedure implements Procedure {
         }
 
         public ProcedureVertex.Thing namedThing(String name, boolean isStart) {
-            return thingVertex(Identifier.Variable.of(Reference.named(name)), isStart);
+            return thingVertex(Identifier.Variable.of(Reference.name(name)), isStart);
         }
 
         public ProcedureVertex.Thing anonymousThing(int id) {

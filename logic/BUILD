@@ -51,7 +51,6 @@ native_java_libraries(
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-logic:{pom_version}"],
     visibility = ["//visibility:public"],
-
 )
 
 host_compatible_java_test(
@@ -69,7 +68,6 @@ host_compatible_java_test(
 
         # External dependencies from Grakn Labs
         "@graknlabs_common//:common",
-        "@graknlabs_graql//java/pattern",
         "@graknlabs_graql//java:graql",
     ],
 )
