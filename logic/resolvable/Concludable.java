@@ -90,6 +90,8 @@ public abstract class Concludable extends Resolvable {
         return iterate(applicableRules.keySet());
     }
 
+    abstract Variable generating();
+
     /*
     TODO this should be improved by indexing rules by possible types, so rather than retrieving all rules
     TODO and attempting to unify them, we only read rules that are relevant
@@ -338,6 +340,11 @@ public abstract class Concludable extends Resolvable {
                     .map(mapping -> convertRPMappingToUnifier(mapping, unifierBuilder.duplicate(), conceptMgr));
         }
 
+        @Override
+        Variable generating() {
+            return constraint().owner();
+        }
+
         private ResourceIterator<Map<RolePlayer, Set<RolePlayer>>> matchRolePlayers(
                 List<RolePlayer> conjRolePLayers, Set<RolePlayer> thenRolePlayers,
                 Map<RolePlayer, Set<RolePlayer>> mapping, ConceptManager conceptMgr) {
@@ -504,6 +511,11 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
+        Variable generating() {
+            return constraint().attribute();
+        }
+
+        @Override
         public AlphaEquivalence alphaEquals(Concludable that) {
             if (!that.isHas()) return AlphaEquivalence.invalid();
             return has().alphaEquals(that.asHas().has());
@@ -588,6 +600,11 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
+        Variable generating() {
+            return constraint().owner();
+        }
+
+        @Override
         public AlphaEquivalence alphaEquals(Concludable that) {
             if (!that.isIsa()) return AlphaEquivalence.invalid();
             return isa().alphaEquals(that.asIsa().isa());
@@ -663,6 +680,11 @@ public abstract class Concludable extends Resolvable {
         @Override
         public Attribute asAttribute() {
             return this;
+        }
+
+        @Override
+        Variable generating() {
+            return constraint().owner();
         }
 
         @Override
