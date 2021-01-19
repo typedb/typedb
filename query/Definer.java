@@ -243,7 +243,7 @@ public class Definer {
         }
     }
 
-    private void definePlays(ThingType thingType, Set<PlaysConstraint> playsConstraints){
+    private void definePlays(ThingType thingType, Set<PlaysConstraint> playsConstraints) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "defineplays")) {
             playsConstraints.forEach(plays -> {
                 define(plays.relation().get());
