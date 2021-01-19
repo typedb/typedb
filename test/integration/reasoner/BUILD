@@ -44,7 +44,7 @@ host_compatible_java_test(
 
 host_compatible_java_test(
     name = "test-resolvable-registry",
-    srcs = ["ResolvableRegistryTest.java"],
+    srcs = ["resolution/ResolvableRegistryTest.java"],
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",
@@ -53,7 +53,7 @@ host_compatible_java_test(
         "//logic:logic",
         "//reasoner:reasoner",
     ],
-    test_class = "grakn.core.reasoner.ResolvableRegistryTest",
+    test_class = "grakn.core.reasoner.resolution.ResolvableRegistryTest",
     deps = [
         # Internal dependencies
         "//test/integration/util",

@@ -169,6 +169,10 @@ public class ResolverRegistry {
             remaining.remove(resolvable);
         }
 
+        List<Resolvable> plan() {
+            return plan;
+        }
+
         private void planning() {
             while (remaining.size() != 0) {
                 Optional<Concludable> concludable;
@@ -248,10 +252,6 @@ public class ResolverRegistry {
                 s.removeAll(varsAnswered);
                 return s.size();
             }));
-        }
-
-        public List<Resolvable> plan() {
-            return plan;
         }
 
         /**
