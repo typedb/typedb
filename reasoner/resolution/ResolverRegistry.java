@@ -57,6 +57,7 @@ public class ResolverRegistry {
     private final ConceptManager conceptMgr;
     private final HashMap<Concludable, Actor<ConcludableResolver>> concludableActors;
     private final LogicManager logicMgr;
+    private boolean explanations;
     private final HashMap<Rule, Actor<RuleResolver>> rules;
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private final TraversalEngine traversalEngine;
@@ -69,6 +70,7 @@ public class ResolverRegistry {
         this.traversalEngine = traversalEngine;
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
+        this.explanations = false; // TODO enable/disable explanations from transaction context
         concludableActors = new HashMap<>();
         rules = new HashMap<>();
     }
@@ -83,12 +85,12 @@ public class ResolverRegistry {
 
     public Actor<RuleResolver> registerRule(Rule rule) {
         LOG.debug("Register retrieval for rule actor: '{}'", rule);
-        return rules.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new RuleResolver(self, r, this, traversalEngine, conceptMgr, logicMgr)));
+        return rules.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new RuleResolver(self, r, this, traversalEngine, conceptMgr, logicMgr, explanations)));
     }
 
     public Actor<RootResolver> createRoot(final Conjunction pattern, final Consumer<ResolutionAnswer> onAnswer, Consumer<Integer> onExhausted) {
         LOG.debug("Creating Conjunction Actor for pattern: '{}'", pattern);
-        return Actor.create(elg, self -> new RootResolver(self, pattern, onAnswer, onExhausted, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr));
+        return Actor.create(elg, self -> new RootResolver(self, pattern, onAnswer, onExhausted, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr, explanations));
     }
 
     // for testing
@@ -98,7 +100,7 @@ public class ResolverRegistry {
 
     private Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> registerRetrievable(Retrievable retrievable) {
         LOG.debug("Register retrieval for retrievable actor: '{}'", retrievable.conjunction());
-        Actor<RetrievableResolver> retrievableActor = Actor.create(elg, self -> new RetrievableResolver(self, retrievable, this, traversalEngine));
+        Actor<RetrievableResolver> retrievableActor = Actor.create(elg, self -> new RetrievableResolver(self, retrievable, this, traversalEngine, explanations));
         return new Pair<>(retrievableActor, identity(retrievable));
     }
 
@@ -112,7 +114,7 @@ public class ResolverRegistry {
             }
         }
         Actor<ConcludableResolver> concludableActor = Actor.create(elg, self ->
-                new ConcludableResolver(self, concludable, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr));
+                new ConcludableResolver(self, concludable, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr, explanations));
         concludableActors.put(concludable, concludableActor);
         return new Pair<>(concludableActor, identity(concludable));
     }

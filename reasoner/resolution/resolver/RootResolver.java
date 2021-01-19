@@ -75,8 +75,8 @@ public class RootResolver extends Resolver<RootResolver> {
 
     public RootResolver(Actor<RootResolver> self, Conjunction conjunction, Consumer<ResolutionAnswer> onAnswer,
                         Consumer<Integer> onExhausted, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
-                        TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr) {
-        super(self, RootResolver.class.getSimpleName() + "(pattern:" + conjunction + ")", registry, traversalEngine);
+                        TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr, boolean explanations) {
+        super(self, RootResolver.class.getSimpleName() + "(pattern:" + conjunction + ")", registry, traversalEngine, explanations);
         this.conjunction = conjunction;
         this.onAnswer = onAnswer;
         this.onExhausted = onExhausted;
@@ -113,9 +113,14 @@ public class RootResolver extends Resolver<RootResolver> {
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
 
-        ResolutionAnswer.Derivation derivation = fromDownstream.sourceRequest().partialResolutions();
-        if (fromDownstream.answer().isInferred()) {
-            derivation = derivation.withAnswer(fromDownstream.sourceRequest().receiver(), fromDownstream.answer());
+        ResolutionAnswer.Derivation derivation;
+        if (explanations()) {
+            derivation = fromDownstream.sourceRequest().partialResolutions();
+            if (fromDownstream.answer().isInferred()) {
+                derivation = derivation.withAnswer(fromDownstream.sourceRequest().receiver(), fromDownstream.answer());
+            }
+        } else {
+            derivation = null;
         }
 
         ConceptMap conceptMap = fromDownstream.answer().derived().withInitial();
@@ -230,7 +235,10 @@ public class RootResolver extends Resolver<RootResolver> {
 
     private void submitAnswer(ResolutionAnswer answer) {
         LOG.debug("Submitting root answer: {}", answer.derived());
-        resolutionRecorder.tell(state -> state.record(answer));
+        if (explanations()) {
+            LOG.trace("Recording root answer: {}", answer);
+            resolutionRecorder.tell(state -> state.record(answer));
+        }
         onAnswer.accept(answer);
     }
 

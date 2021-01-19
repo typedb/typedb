@@ -83,9 +83,9 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        long atomicTraversalAnswerCount = 3L;
+        long retrievableAnswerCount = 0L; // technically 3, but get deduplicated
         long conjunctionTraversalAnswerCount = 3L;
-        long answerCount = atomicTraversalAnswerCount + conjunctionTraversalAnswerCount;
+        long answerCount = retrievableAnswerCount + conjunctionTraversalAnswerCount;
         Conjunction conjunctionPattern = parseConjunction("{ $p1 has age 24; }");
         createRootAndAssertResponses(conjunctionPattern, answerCount);
     }

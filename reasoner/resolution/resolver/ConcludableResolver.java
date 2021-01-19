@@ -60,8 +60,9 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
 
     public ConcludableResolver(Actor<ConcludableResolver> self, Concludable concludable,
                                Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
-                               TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr) {
-        super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable + ")", registry, traversalEngine);
+                               TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
+                               boolean explanations) {
+        super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable + ")", registry, traversalEngine, explanations);
         this.concludable = concludable;
         this.resolutionRecorder = resolutionRecorder;
         this.conceptMgr = conceptMgr;
@@ -103,22 +104,28 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
         if (!responseProducer.hasProduced(conceptMap)) {
             responseProducer.recordProduced(conceptMap);
 
-            // update partial derivation provided from upstream to carry derivations sideways
-            ResolutionAnswer.Derivation derivation = new ResolutionAnswer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(),
-                                                                                              fromDownstream.answer())));
-            assert fromUpstream.answerBounds().isMapped();
+            ResolutionAnswer.Derivation derivation;
+            if (explanations()) {
+                // update partial derivation provided from upstream to carry derivations sideways
+                derivation = new ResolutionAnswer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(),
+                                                                      fromDownstream.answer())));
+            } else {
+                derivation = null;
+            }
+
             ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.answerBounds().asMapped().aggregateToUpstream(conceptMap),
                                                            concludable.toString(), derivation, self(), fromDownstream.answer().isInferred());
 
             respondToUpstream(new Response.Answer(fromUpstream, answer), iteration);
         } else {
-            ResolutionAnswer.Derivation derivation = new ResolutionAnswer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(),
-                                                                                              fromDownstream.answer())));
-            ResolutionAnswer deduplicated = new ResolutionAnswer(fromDownstream.answer().derived(), concludable.toString(),
-                                                                 derivation, self(), fromDownstream.answer().isInferred());
-            LOG.trace("{}: Recording deduplicated answer derivation: {}", name(), deduplicated);
-            resolutionRecorder.tell(actor -> actor.record(deduplicated));
-
+            if (explanations()) {
+                ResolutionAnswer.Derivation derivation = new ResolutionAnswer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(),
+                                                                                                  fromDownstream.answer())));
+                ResolutionAnswer deduplicated = new ResolutionAnswer(fromDownstream.answer().derived(), concludable.toString(),
+                                                                     derivation, self(), fromDownstream.answer().isInferred());
+                LOG.trace("{}: Recording deduplicated answer derivation: {}", name(), deduplicated);
+                resolutionRecorder.tell(actor -> actor.record(deduplicated));
+            }
             tryAnswer(fromUpstream, responseProducer, iteration);
         }
     }

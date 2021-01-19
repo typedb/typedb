@@ -68,8 +68,8 @@ public class RuleResolver extends Resolver<RuleResolver> {
     private boolean isInitialised;
 
     public RuleResolver(Actor<RuleResolver> self, Rule rule, ResolverRegistry registry, TraversalEngine traversalEngine,
-                        ConceptManager conceptMgr, LogicManager logicMgr) {
-        super(self, RuleResolver.class.getSimpleName() + "(rule:" + rule + ")", registry, traversalEngine);
+                        ConceptManager conceptMgr, LogicManager logicMgr, boolean explanations) {
+        super(self, RuleResolver.class.getSimpleName() + "(rule:" + rule + ")", registry, traversalEngine, explanations);
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
         this.responseProducers = new HashMap<>();
@@ -104,9 +104,14 @@ public class RuleResolver extends Resolver<RuleResolver> {
         Request fromUpstream = fromUpstream(toDownstream);
         ResponseProducer responseProducer = responseProducers.get(fromUpstream);
 
-        ResolutionAnswer.Derivation derivation = fromDownstream.sourceRequest().partialResolutions();
-        if (fromDownstream.answer().isInferred()) {
-            derivation = derivation.withAnswer(fromDownstream.sourceRequest().receiver(), fromDownstream.answer());
+        ResolutionAnswer.Derivation derivation;
+        if (explanations()) {
+            derivation = fromDownstream.sourceRequest().partialResolutions();
+            if (fromDownstream.answer().isInferred()) {
+                derivation = derivation.withAnswer(fromDownstream.sourceRequest().receiver(), fromDownstream.answer());
+            }
+        } else {
+            derivation = null;
         }
 
         ConceptMap whenAnswer = fromDownstream.answer().derived().withInitial();
