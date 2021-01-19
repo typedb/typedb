@@ -55,7 +55,7 @@ public class ResolverRegistry {
     private final static Logger LOG = LoggerFactory.getLogger(ResolverRegistry.class);
 
     private final ConceptManager conceptMgr;
-    private final HashMap<Concludable<?>, Actor<ConcludableResolver>> concludableActors;
+    private final HashMap<Concludable, Actor<ConcludableResolver>> concludableActors;
     private final LogicManager logicMgr;
     private final HashMap<Rule, Actor<RuleResolver>> rules;
     private final Actor<ResolutionRecorder> resolutionRecorder;
@@ -102,9 +102,9 @@ public class ResolverRegistry {
         return new Pair<>(retrievableActor, identity(retrievable));
     }
 
-    private Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> registerConcludable(Concludable<?> concludable) {
+    private Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> registerConcludable(Concludable concludable) {
         LOG.debug("Register retrieval for concludable actor: '{}'", concludable.conjunction());
-        for (Map.Entry<Concludable<?>, Actor<ConcludableResolver>> c : concludableActors.entrySet()) {
+        for (Map.Entry<Concludable, Actor<ConcludableResolver>> c : concludableActors.entrySet()) {
             // TODO This needs to be optimised from a linear search to use an alpha hash
             AlphaEquivalence alphaEquality = c.getKey().alphaEquals(concludable);
             if (alphaEquality.isValid()) {

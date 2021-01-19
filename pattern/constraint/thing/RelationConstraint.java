@@ -19,6 +19,7 @@
 package grakn.core.pattern.constraint.thing;
 
 import grakn.core.common.iterator.Iterators;
+import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.pattern.equivalence.AlphaEquivalent;
 import grakn.core.pattern.variable.ThingVariable;
@@ -69,6 +70,12 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
         return new RelationConstraint(
                 owner, iterate(clone.players()).map(rp -> RolePlayer.of(rp, cloner)).toLinkedSet()
         );
+    }
+
+    @Override
+    public RelationConstraint clone(Conjunction.Cloner cloner) {
+        return cloner.cloneVariable(owner()).relation(Iterators.iterate(rolePlayers).map(
+                rolePlayer -> rolePlayer.clone(cloner)).toLinkedSet());
     }
 
     public LinkedHashSet<RolePlayer> players() {
@@ -212,6 +219,12 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
             return AlphaEquivalence.valid()
                     .validIfAlphaEqual(roleType, that.roleType)
                     .validIfAlphaEqual(player, that.player);
+        }
+
+        public RolePlayer clone(Conjunction.Cloner cloner) {
+            TypeVariable roleTypeClone = roleType == null ? null : cloner.cloneVariable(roleType);
+            ThingVariable playerClone = cloner.cloneVariable(player);
+            return new RelationConstraint.RolePlayer(roleTypeClone, playerClone, repetition);
         }
     }
 

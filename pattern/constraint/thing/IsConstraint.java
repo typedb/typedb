@@ -18,6 +18,7 @@
 
 package grakn.core.pattern.constraint.thing;
 
+import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.VariableCloner;
 import grakn.core.pattern.variable.VariableRegistry;
@@ -85,5 +86,10 @@ public class IsConstraint extends ThingConstraint {
     @Override
     public String toString() {
         return "" + IS + SPACE + variable.reference().toString();
+    }
+
+    @Override
+    public IsConstraint clone(Conjunction.Cloner cloner) {
+        return cloner.cloneVariable(owner).is(cloner.cloneVariable(variable));
     }
 }

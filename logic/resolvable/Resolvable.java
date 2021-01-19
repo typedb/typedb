@@ -20,11 +20,20 @@ package grakn.core.logic.resolvable;
 import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.Conjunction;
 
+import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
 public abstract class Resolvable {
 
-    public abstract Conjunction conjunction();
+    private final Conjunction conjunction;
+
+    public Resolvable(Conjunction conjunction) {
+        this.conjunction = conjunction;
+    }
+
+    public Conjunction conjunction() {
+        return conjunction;
+    }
 
     public boolean isRetrievable() {
         return false;
@@ -35,11 +44,11 @@ public abstract class Resolvable {
     }
 
     public Retrievable asRetrievable() {
-        throw GraknException.of(INVALID_CASTING);
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Retrievable.class));
     }
 
-    public Concludable<?> asConcludable() {
-        throw GraknException.of(INVALID_CASTING);
+    public Concludable asConcludable() {
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Concludable.class));
     }
 
 }

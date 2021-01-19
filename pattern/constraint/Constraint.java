@@ -19,6 +19,7 @@
 package grakn.core.pattern.constraint;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.type.TypeConstraint;
 import grakn.core.pattern.variable.Variable;
@@ -58,4 +59,6 @@ public abstract class Constraint {
 
     @Override
     public abstract int hashCode();
+
+    public abstract Constraint clone(Conjunction.Cloner constraintCloner);
 }

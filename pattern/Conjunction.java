@@ -20,6 +20,9 @@ package grakn.core.pattern;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.exception.GraknException;
+import grakn.core.pattern.constraint.Constraint;
+import grakn.core.pattern.variable.ThingVariable;
+import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableCloner;
 import grakn.core.pattern.variable.VariableRegistry;
@@ -30,7 +33,9 @@ import graql.lang.pattern.variable.BoundVariable;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -162,5 +167,69 @@ public class Conjunction implements Pattern, Cloneable {
     @Override
     public int hashCode() {
         return hash;
+    }
+
+    public static class Cloner {
+
+        private final Map<Identifier.Variable, Variable> variables;
+        private final Map<Constraint, Constraint> constraints;
+
+        public Cloner() {
+            variables = new HashMap<>();
+            constraints = new HashMap<>();
+        }
+
+        public static Cloner cloneExactly(Set<? extends Constraint> s1, Constraint... s2) {
+            final LinkedHashSet<Constraint> ordered = new LinkedHashSet<>(s1);
+            Collections.addAll(ordered, s2);
+            return cloneExactly(ordered);
+        }
+
+        public static Cloner cloneExactly(Set<? extends Constraint> s1, Set<? extends Constraint> s2, Constraint... s3) {
+            final LinkedHashSet<Constraint> ordered = new LinkedHashSet<>(s1);
+            ordered.addAll(s2);
+            Collections.addAll(ordered, s3);
+            return cloneExactly(ordered);
+        }
+
+        public static Cloner cloneExactly(Constraint constraint) {
+            final LinkedHashSet<Constraint> orderedSet = new LinkedHashSet<>();
+            orderedSet.add(constraint);
+            return cloneExactly(orderedSet);
+        }
+
+        private static Cloner cloneExactly(LinkedHashSet<? extends Constraint> constraints) {
+            Cloner cloner = new Cloner();
+            constraints.forEach(cloner::clone);
+            return cloner;
+        }
+
+        private void clone(Constraint constraint) {
+            constraints.put(constraint, constraint.clone(this));
+        }
+
+        public ThingVariable cloneVariable(ThingVariable variable) {
+            return variables.computeIfAbsent(variable.id(), identifier -> {
+                ThingVariable clone = new ThingVariable(identifier);
+                clone.addResolvedTypes(variable.resolvedTypes());
+                return clone;
+            }).asThing();
+        }
+
+        public TypeVariable cloneVariable(TypeVariable variable) {
+            return variables.computeIfAbsent(variable.id(), identifier -> {
+                TypeVariable clone = new TypeVariable(identifier);
+                clone.addResolvedTypes(variable.resolvedTypes());
+                return clone;
+            }).asType();
+        }
+
+        public Conjunction conjunction() {
+            return new Conjunction(set(variables.values()), set());
+        }
+
+        public Constraint getClone(Constraint constraint) {
+            return constraints.get(constraint);
+        }
     }
 }

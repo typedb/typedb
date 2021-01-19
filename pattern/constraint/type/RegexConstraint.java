@@ -18,6 +18,7 @@
 
 package grakn.core.pattern.constraint.type;
 
+import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.traversal.Traversal;
 
@@ -81,5 +82,10 @@ public class RegexConstraint extends TypeConstraint {
     @Override
     public String toString() {
         return "" + LIKE + SPACE + regex.toString();
+    }
+
+    @Override
+    public RegexConstraint clone(Conjunction.Cloner cloner) {
+        return cloner.cloneVariable(owner).regex(regex);
     }
 }

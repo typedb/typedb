@@ -63,7 +63,7 @@ public class RootResolver extends Resolver<RootResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(RootResolver.class);
 
     private final Conjunction conjunction;
-    private final Set<Concludable<?>> concludables;
+    private final Set<Concludable> concludables;
     private final Consumer<ResolutionAnswer> onAnswer;
     private final Consumer<Integer> onExhausted;
     private final List<Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>>> plan;
@@ -152,7 +152,7 @@ public class RootResolver extends Resolver<RootResolver> {
 
     @Override
     protected void initialiseDownstreamActors() {
-        Set<Concludable<?>> concludablesWithApplicableRules = Iterators.iterate(concludables)
+        Set<Concludable> concludablesWithApplicableRules = Iterators.iterate(concludables)
                 .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext()).toSet();
         Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction, concludablesWithApplicableRules);
         Set<Resolvable> resolvables = new HashSet<>();

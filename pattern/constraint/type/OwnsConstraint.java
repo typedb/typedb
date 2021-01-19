@@ -19,6 +19,7 @@
 package grakn.core.pattern.constraint.type;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.VariableCloner;
 import grakn.core.pattern.variable.VariableRegistry;
@@ -122,6 +123,15 @@ public class OwnsConstraint extends TypeConstraint {
         if (isKey) syntax.append(SPACE).append(IS_KEY);
 
         return syntax.toString();
+    }
+
+    @Override
+    public OwnsConstraint clone(Conjunction.Cloner cloner) {
+        return cloner.cloneVariable(owner).owns(
+                cloner.cloneVariable(attributeType),
+                overriddenAttributeType == null ? null :cloner.cloneVariable(overriddenAttributeType),
+                isKey
+        );
     }
 
     private static Set<TypeVariable> attributeTypes(TypeVariable attributeType, TypeVariable overriddenAttributeType) {

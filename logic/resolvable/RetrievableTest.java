@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.set;
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertTrue;
 
 public class RetrievableTest {
 
@@ -36,7 +37,7 @@ public class RetrievableTest {
 
     @Test
     public void test_has_concludable_splits_retrievables() {
-        Set<Concludable<?>> concludables = Concludable.create(parse("{ $p has $n; }"));
+        Set<Concludable> concludables = Concludable.create(parse("{ $p has $n; }"));
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $p isa person; $p has $n; $n isa name; }"), concludables);
         assertEquals(1, concludables.size());
         assertEquals(set(parse("{ $p isa person; }"), parse("{ $n isa name; }")),
@@ -45,7 +46,7 @@ public class RetrievableTest {
 
     @Test
     public void test_isa_concludable_omitted_from_retrievable() {
-        Set<Concludable<?>> concludables = Concludable.create(parse("{ $p isa person; }"));
+        Set<Concludable> concludables = Concludable.create(parse("{ $p isa person; }"));
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $p isa person; $p has $n; $n isa name; }"), concludables);
         assertEquals(1, concludables.size());
         assertEquals(set(parse("{ $p has $n; $n isa name; }")),
@@ -54,7 +55,7 @@ public class RetrievableTest {
 
     @Test
     public void test_lone_type_variable_is_not_a_retrievable() {
-        Set<Concludable<?>> concludables = Concludable.create(parse("{ $p isa $pt; $pt type person; }"));
+        Set<Concludable> concludables = Concludable.create(parse("{ $p isa $pt; $pt type person; }"));
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse(
                 "{ $p isa $pt; $pt type person; $p has $n; $n isa name; }"), concludables);
         assertEquals(1, concludables.size());
@@ -65,7 +66,7 @@ public class RetrievableTest {
 
     @Test
     public void test_isa_named_type_var_sub_is_a_retrievable() {
-        Set<Concludable<?>> concludables = Concludable.create(parse("{ $p isa $pt; $pt sub person; }"));
+        Set<Concludable> concludables = Concludable.create(parse("{ $p isa $pt; $pt sub person; }"));
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse(
                 "{ $p isa $pt; $pt sub person; $p has $n; $n isa name; }"), concludables);
         assertEquals(1, concludables.size());
@@ -75,7 +76,7 @@ public class RetrievableTest {
 
     @Test
     public void test_relation_concludable_excluded_from_retrievable() {
-        Set<Concludable<?>> concludables = Concludable.create(parse("{ $e(employee: $p, employer:$c) isa employment; }"));
+        Set<Concludable> concludables = Concludable.create(parse("{ $e(employee: $p, employer:$c) isa employment; }"));
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse(
                 "{ $e(employee: $p, employer:$c) isa employment; $p isa person, has name \"Alice\"; $c isa company; }"), concludables);
         assertEquals(1, concludables.size());
@@ -86,7 +87,7 @@ public class RetrievableTest {
 
     @Test
     public void test_relation_and_isas_excluded_from_retrievable() {
-        Set<Concludable<?>> concludables = Concludable.create(parse(
+        Set<Concludable> concludables = Concludable.create(parse(
                 "{ $e(employee: $p, employer:$c) isa employment; $p isa person; $c isa company; }"));
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse(
                 "{ $e(employee: $p, employer:$c) isa employment; $p isa person, has name \"Alice\"; $c isa company; }"), concludables);
@@ -97,7 +98,7 @@ public class RetrievableTest {
 
     @Test
     public void test_relation_is_in_retrievable() {
-        Set<Concludable<?>> concludables = Concludable.create(parse("{ $p isa person, has name $n; $n \"Alice\"; }"));
+        Set<Concludable> concludables = Concludable.create(parse("{ $p isa person, has name $n; $n \"Alice\"; }"));
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse(
                 "{ $e(employee: $p, employer:$c) isa employment; $p isa person, has name $n; $n \"Alice\"; $c isa company; }"), concludables);
         assertEquals(2, concludables.size());
@@ -121,7 +122,7 @@ public class RetrievableTest {
 
     @Test
     public void test_multiple_value_constraints_in_retrievable() {
-        Set<Concludable<?>> concludables = Concludable.create(parse("{ $a has $b; }"));
+        Set<Concludable> concludables = Concludable.create(parse("{ $a has $b; }"));
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a has $b; $b > 5; $b < 10; }"), concludables);
         assertEquals(1, concludables.size());
         assertEquals(set(parse("{ $b > 5; $b < 10; }")),
@@ -134,5 +135,70 @@ public class RetrievableTest {
         assertEquals(set(parse("{ $b > 5; $b < 10; }"),
                          parse("{ $a = 7; }")),
                      retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void test_has_value_constraints_are_in_retrievable_and_concludable() {
+        Set<Concludable> concludables = Concludable.create(parse("{ $a has $b; $b > 5; $b < 10; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a has $b; $b > 5; $b < 10; }"), concludables);
+        assertEquals(set(parse("{ $b > 5; $b < 10; }")),
+                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void test_has_with_anonymous_atribute_value_constraints_are_in_retrievable_and_concludable() {
+        Set<Concludable> concludables = Concludable.create(parse("{ $x has age 30; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $x has age 30; }"), concludables);
+        assertEquals(set(), retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void test_isa_value_constraints_are_in_retrievable_and_concludable() {
+        Set<Concludable> concludables = Concludable.create(parse("{ $a isa $b; $a > 5; $a < 10; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a isa $b; $a > 5; $a < 10; }"), concludables);
+        assertEquals(set(parse("{ $a > 5; $a < 10; }")),
+                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void test_attribute_value_constraints_are_in_retrievable_and_concludable() {
+        Set<Concludable> concludables = Concludable.create(parse("{ $a > 5; $a < 10; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a > 5; $a < 10; }"), concludables);
+        assertEquals(set(parse("{ $a > 5; $a < 10; }")),
+                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void test_variable_value_constraints_create_retrievable_and_two_concludables() {
+        Set<Concludable> concludables = Concludable.create(parse("{ $x > $y; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $x > $y; }"), concludables);
+        assertEquals(set(parse("{ $x > $y; }")),
+                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void test_variable_value_equals_constraints_create_retrievable_and_two_concludables() {
+        Set<Concludable> concludables = Concludable.create(parse("{ $x = $y; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $x = $y; }"), concludables);
+        assertEquals(set(parse("{ $x = $y; }")),
+                     retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void test_equals_constraint_only_present_in_concludable() {
+        Set<Concludable> concludables = Concludable.create(parse("{ $x has $a; $a = $b; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $x has $a; $a = $b; }"), concludables);
+        assertEquals(set(), retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void test_is_constraint_is_a_retrievable() {
+        Set<Concludable> concludables = Concludable.create(parse("{ $x is $y; $x isa thing; $y isa thing; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $x is $y; $x isa thing; $y isa thing; }"), concludables);
+        // We can't build the conjunction { $x is $y; } using Graql (without binding the variables)
+        assertEquals(1, retrievables.size());
+        assertEquals(2, retrievables.iterator().next().conjunction().variables().size());
+        assertTrue(retrievables.iterator().next().conjunction().variables().stream().filter(
+                v -> v.reference().asName().name().equals("x")).findFirst().get().constraints().iterator().next().asThing().isIs());
     }
 }
