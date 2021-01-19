@@ -31,8 +31,8 @@ public class FilteredProducer<T> implements Producer<T> {
     }
 
     @Override
-    public void produce(Producer.Queue<T> queue, int count) {
-        baseProducer.produce(new Queue(queue), count);
+    public void produce(Producer.Queue<T> queue, int request) {
+        baseProducer.produce(new Queue(queue), request);
     }
 
     @Override
@@ -55,13 +55,13 @@ public class FilteredProducer<T> implements Producer<T> {
         }
 
         @Override
-        public void done(Producer<T> producer) {
-            baseQueue.done(FilteredProducer.this);
+        public void done() {
+            baseQueue.done();
         }
 
         @Override
-        public void done(Producer<T> producer, Throwable e) {
-            baseQueue.done(FilteredProducer.this, e);
+        public void done(Throwable e) {
+            baseQueue.done(e);
         }
     }
 }

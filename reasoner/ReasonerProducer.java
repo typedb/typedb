@@ -44,10 +44,10 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     @Override
-    public void produce(Queue<ConceptMap> queue, int count) {
+    public void produce(Queue<ConceptMap> queue, int request) {
         assert this.queue == null || this.queue == queue;
         this.queue = queue;
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < request; i++) {
             requestAnswer();
         }
     }
@@ -70,7 +70,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
             // fully terminated finding answers
             if (!done) {
                 done = true;
-                queue.done(this);
+                queue.done();
             }
         } else {
             // straggler request failing from prior iteration

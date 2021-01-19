@@ -31,8 +31,8 @@ public class MappedProducer<T, U> implements Producer<U> {
     }
 
     @Override
-    public void produce(Producer.Queue<U> queue, int count) {
-        baseProducer.produce(new Queue(queue), count);
+    public void produce(Producer.Queue<U> queue, int request) {
+        baseProducer.produce(new Queue(queue), request);
     }
 
     @Override
@@ -54,13 +54,13 @@ public class MappedProducer<T, U> implements Producer<U> {
         }
 
         @Override
-        public void done(Producer<T> producer) {
-            baseQueue.done(MappedProducer.this);
+        public void done() {
+            baseQueue.done();
         }
 
         @Override
-        public void done(Producer<T> producer, Throwable e) {
-            baseQueue.done(MappedProducer.this, e);
+        public void done(Throwable e) {
+            baseQueue.done(e);
         }
     }
 }

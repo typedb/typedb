@@ -19,31 +19,25 @@
 package grakn.core.common.producer;
 
 import grakn.common.collection.Either;
-import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.concurrent.ManagedBlockingQueue;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 
 import javax.annotation.Nullable;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class IterableProducer<T> {
 
     private static final int BUFFER_MIN_SIZE = 32;
     private static final int BUFFER_MAX_SIZE = 64;
 
-    private final ConcurrentLinkedQueue<Producer<T>> producers;
-    private final Iterator iterator;
+    private final LinkedList<Producer<T>> producers;
     private final Queue queue;
-    private final AtomicInteger pending;
-    private final int bufferMinSize;
-    private final int bufferMaxSize;
+    private final Iterator iterator;
 
     public IterableProducer(List<Producer<T>> producers) {
         this(producers, BUFFER_MIN_SIZE, BUFFER_MAX_SIZE);
@@ -51,28 +45,29 @@ public class IterableProducer<T> {
 
     public IterableProducer(List<Producer<T>> producers, int bufferMinSize, int bufferMaxSize) {
         // TODO: Could we optimise IterableProducer by accepting ResourceIterator<Producer<T>> instead?
-        this.producers = new ConcurrentLinkedQueue<>(producers);
+        assert !producers.isEmpty();
+        this.producers = new LinkedList<>(producers);
+        this.queue = new Queue(bufferMinSize, bufferMaxSize);
         this.iterator = new Iterator();
-        this.queue = new Queue();
-        this.pending = new AtomicInteger(0);
-        this.bufferMinSize = bufferMinSize;
-        this.bufferMaxSize = bufferMaxSize;
     }
 
     public IterableProducer<T>.Iterator iterator() {
         return iterator;
     }
 
-    public void mayProduce() {
-        int available = bufferMaxSize - queue.size() - pending.get();
-        if (available > bufferMaxSize - bufferMinSize) {
-            pending.addAndGet(available);
-            ExecutorService.forkJoinPool().submit(() -> {
+    private void mayProduce() {
+        synchronized (queue) {
+            if (producers.isEmpty()) return;
+            int available = queue.max - queue.size() - queue.pending;
+            if (available > queue.max - queue.min) {
+                queue.pending += available;
                 assert !producers.isEmpty();
                 producers.peek().produce(queue, available);
-            });
+            }
         }
     }
+
+    private enum State {EMPTY, FETCHED, COMPLETED}
 
     private static class Done {
         @Nullable
@@ -94,8 +89,6 @@ public class IterableProducer<T> {
             return Optional.ofNullable(error);
         }
     }
-
-    private enum State {EMPTY, FETCHED, COMPLETED}
 
     public class Iterator implements ResourceIterator<T> {
 
@@ -145,45 +138,51 @@ public class IterableProducer<T> {
     private class Queue implements Producer.Queue<T> {
 
         private final ManagedBlockingQueue<Either<T, Done>> blockingQueue;
+        private final AtomicBoolean isError;
+        private final int min;
+        private final int max;
+        private int pending;
 
-        private Queue() {
+        private Queue(int bufferMinSize, int max) {
+            this.min = bufferMinSize;
+            this.max = max;
             this.blockingQueue = new ManagedBlockingQueue<>();
+            this.isError = new AtomicBoolean(false);
+            this.pending = 0;
         }
 
         @Override
-        public void put(T item) {
+        public synchronized void put(T item) {
             try {
                 blockingQueue.put(Either.first(item));
-                pending.decrementAndGet();
+                pending--;
+                assert pending >= 0 || isError.get();
             } catch (InterruptedException e) {
                 throw GraknException.of(e);
             }
         }
 
         @Override
-        public void done(Producer<T> caller) {
-            done(caller, null);
+        public synchronized void done() {
+            done(null);
         }
 
         @Override
-        public void done(Producer<T> caller, @Nullable Throwable error) {
+        public synchronized void done(@Nullable Throwable error) {
             assert !producers.isEmpty();
-            if (producers.peek().equals(caller)) {
-                producers.remove();
-                pending.set(0);
+            producers.removeFirst();
+            pending = 0;
 
-                if (producers.isEmpty()) {
-                    try {
-                        Done done = error == null ? Done.success() : Done.error(error);
-                        blockingQueue.put(Either.second(done));
-                    } catch (InterruptedException e) {
-                        throw GraknException.of(e);
-                    }
+            try {
+                if (error != null) {
+                    blockingQueue.put(Either.second(Done.error(error)));
+                } else if (producers.isEmpty()) {
+                    blockingQueue.put(Either.second(Done.success()));
                 } else {
                     mayProduce();
                 }
-            } else {
-                throw GraknException.of(ILLEGAL_STATE);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
 

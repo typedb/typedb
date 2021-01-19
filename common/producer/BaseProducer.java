@@ -35,8 +35,8 @@ public class BaseProducer<T> implements Producer<T> {
     }
 
     @Override
-    public synchronized void produce(Queue<T> queue, int count) {
-        future = future.thenRunAsync(() -> produceAsync(queue, count), forkJoinPool());
+    public synchronized void produce(Queue<T> queue, int request) {
+        future = future.thenRunAsync(() -> produceAsync(queue, request), forkJoinPool());
     }
 
     private void produceAsync(Queue<T> queue, int count) {
@@ -45,12 +45,12 @@ public class BaseProducer<T> implements Producer<T> {
                 if (iterator.hasNext()) {
                     queue.put(iterator.next());
                 } else {
-                    queue.done(this);
+                    queue.done();
                     break;
                 }
             }
         } catch (Throwable e) {
-            queue.done(this, e);
+            queue.done(e);
         }
     }
 

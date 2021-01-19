@@ -22,7 +22,7 @@ import java.util.function.Predicate;
 
 public interface Producer<T> {
 
-    void produce(Queue<T> queue, int count);
+    void produce(Queue<T> queue, int request);
 
     void recycle();
 
@@ -38,8 +38,8 @@ public interface Producer<T> {
 
         void put(U item);
 
-        void done(Producer<U> producer);
+        void done();
 
-        void done(Producer<U> producer, Throwable e);
+        void done(Throwable e);
     }
 }
