@@ -117,10 +117,18 @@ public abstract class Identifier {
         }
 
         public static Referable of(Reference.Referable reference) {
-            if (reference.isLabel()) return new Label(reference.asLabel());
-            else if (reference.isName()) return new Name(reference.asName());
+            if (reference.isLabel()) return of(reference.asLabel());
+            else if (reference.isName()) return of(reference.asName());
             else assert false;
             return null;
+        }
+
+        public static Variable.Label of(Reference.Label reference) {
+            return new Label(reference);
+        }
+
+        public static Variable.Name of(Reference.Name reference) {
+            return new Name(reference);
         }
 
         public static Anonymous of(Reference.Anonymous reference, int id) {
@@ -168,7 +176,7 @@ public abstract class Identifier {
             return hash;
         }
 
-        static class Referable extends Variable {
+        public static class Referable extends Variable {
 
             Referable(Reference reference) {
                 super(reference, null);
@@ -180,7 +188,7 @@ public abstract class Identifier {
             }
         }
 
-        static class Name extends Referable {
+        public static class Name extends Referable {
 
             private Name(Reference.Name reference) {
                 super(reference);
@@ -192,7 +200,7 @@ public abstract class Identifier {
             }
         }
 
-        static class Label extends Referable {
+        public static class Label extends Referable {
 
             private Label(Reference.Label reference) {
                 super(reference);
@@ -204,7 +212,7 @@ public abstract class Identifier {
             }
         }
 
-        static class Anonymous extends Variable {
+        public static class Anonymous extends Variable {
 
             private Anonymous(Reference.Anonymous reference, int id) {
                 super(reference, id);

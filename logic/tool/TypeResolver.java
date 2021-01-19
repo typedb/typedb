@@ -88,11 +88,12 @@ public class TypeResolver {
 
     public Conjunction resolve(Conjunction conjunction) {
         resolveLabels(conjunction);
-        if (iterate(conjunction.variables()).noneMatch(Variable::isThing)) return conjunction;
         TraversalBuilder traversalConstructor = new TraversalBuilder(conjunction, conceptMgr);
-
         Map<Reference, Set<Label>> resolvedLabels = executeResolverTraversals(traversalConstructor);
-        if (resolvedLabels.isEmpty()) throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction);
+        if (resolvedLabels.isEmpty()) {
+            conjunction.setSatisfiable(false);
+            return conjunction;
+        }
 
         long numOfTypes = traversalEng.graph().schema().stats().thingTypeCount();
         long numOfConcreteTypes = traversalEng.graph().schema().stats().concreteThingTypeCount();

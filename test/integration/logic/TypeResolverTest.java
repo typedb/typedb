@@ -18,7 +18,6 @@
 
 package grakn.core.logic;
 
-import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
 import grakn.core.logic.tool.TypeResolver;
@@ -49,12 +48,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.set;
-import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CONJUNCTION;
-import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CONSTRAINT_VALUE_TYPE;
 import static grakn.core.common.test.Util.assertThrows;
-import static grakn.core.common.test.Util.assertThrowsWithMessage;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class TypeResolverTest {
@@ -740,7 +737,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void matching_rp_in_relation_that_cant_play_that_role_throws_an_error() throws IOException {
+    public void matching_rp_in_relation_that_cant_play_that_role_sets_conjunction_not_satisfiable() throws IOException {
         define_standard_schema("test-type-resolution");
 
         TypeResolver typeResolver = transaction.logic().typeResolver();
@@ -748,12 +745,8 @@ public class TypeResolverTest {
                 " $x isa company;" +
                 " ($x) isa friendship;";
 
-        Conjunction conjunction = createConjunction(queryString);
-
-        assertThrowsWithMessage(
-                () -> typeResolver.resolve(conjunction),
-                GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction).getMessage()
-        );
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
+        assertFalse(conjunction.isSatisfiable());
     }
 
     @Test

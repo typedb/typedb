@@ -114,9 +114,11 @@ public class Structure {
     public List<Structure> asGraphs() {
         if (structures == null) {
             structures = new ArrayList<>();
-            while (!vertices.isEmpty()) {
+            Set<StructureVertex<?>> verticesToVisit = new HashSet<>(this.vertices.values());
+            Set<StructureEdge<?, ?>> edgesToVisit = new HashSet<>(this.edges);
+            while (!verticesToVisit.isEmpty()) {
                 Structure newStructure = new Structure();
-                splitGraph(vertices.values().iterator().next(), newStructure);
+                splitGraph(verticesToVisit.iterator().next(), newStructure, verticesToVisit, edgesToVisit);
                 if (newStructure.vertices().size() > 1 ||
                         newStructure.vertices().iterator().next().id().isNamedReference()) {
                     structures.add(newStructure);
@@ -126,32 +128,32 @@ public class Structure {
         return structures;
     }
 
-    private void splitGraph(StructureVertex<?> vertex, Structure newStructure) {
-        if (!vertices.containsKey(vertex.id())) return;
+    private void splitGraph(StructureVertex<?> vertex, Structure newStructure,
+                            Set<StructureVertex<?>> verticesToVisit, Set<StructureEdge<?, ?>> edgesToVisit) {
+        if (!verticesToVisit.contains(vertex)) return;
 
-        this.vertices.remove(vertex.id());
+        verticesToVisit.remove(vertex);
         newStructure.vertices.put(vertex.id(), vertex);
-        // TODO: remove this with this.properties
-        if (vertex.id().isVariable() && this.properties.containsKey(vertex.id().asVariable())) {
-            TraversalVertex.Properties props = this.properties.remove(vertex.id().asVariable());
+        TraversalVertex.Properties props;
+        if (vertex.id().isVariable() && (props = this.properties.get(vertex.id().asVariable())) != null) {
             newStructure.properties.put(vertex.id().asVariable(), props);
         }
         List<StructureVertex<?>> adjacents = new ArrayList<>();
         vertex.outs().forEach(outgoing -> {
-            if (this.edges.contains(outgoing)) {
-                this.edges.remove(outgoing);
+            if (edgesToVisit.contains(outgoing)) {
+                edgesToVisit.remove(outgoing);
                 newStructure.edges.add(outgoing);
                 adjacents.add(outgoing.to());
             }
         });
         vertex.ins().forEach(incoming -> {
-            if (this.edges.contains(incoming)) {
-                this.edges.remove(incoming);
+            if (edgesToVisit.contains(incoming)) {
+                edgesToVisit.remove(incoming);
                 newStructure.edges.add(incoming);
                 adjacents.add(incoming.from());
             }
         });
-        adjacents.forEach(v -> splitGraph(v, newStructure));
+        adjacents.forEach(v -> splitGraph(v, newStructure, verticesToVisit, edgesToVisit));
     }
 
     @Override
