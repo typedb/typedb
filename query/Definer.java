@@ -38,21 +38,12 @@ import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.VariableRegistry;
 import graql.lang.pattern.schema.Rule;
 
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_SCOPE_IS_NOT_RELATION_TYPE;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_DEFINED_NOT_ON_ATTRIBUTE_TYPE;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MISSING;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MODIFIED;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_DEFINE_SUB;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROLE_DEFINED_OUTSIDE_OF_RELATION;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_CONSTRAINT_UNACCEPTED;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.*;
 import static graql.lang.common.GraqlToken.Constraint.IS;
 
 public class Definer {
@@ -241,14 +232,22 @@ public class Definer {
         }
     }
 
-    private void definePlays(ThingType thingType, Set<PlaysConstraint> playsConstraints) {
+    private void definePlays(ThingType thingType, Set<PlaysConstraint> playsConstraints){
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "defineplays")) {
             playsConstraints.forEach(plays -> {
                 define(plays.relation().get());
-                final RoleType roleType = getRoleType(plays.role().label().get()).asRoleType();
+                LabelConstraint roleTypeLabel = plays.role().label().get();
+                final RoleType roleType = getRoleType(roleTypeLabel).asRoleType();
                 if (plays.overridden().isPresent()) {
-                    final RoleType overriddenType = getRoleType(plays.overridden().get().label().get()).asRoleType();
-                    thingType.setPlays(roleType, overriddenType);
+                    String overriddenLabelName = plays.overridden().get().label().get().properLabel().name();
+                    Optional<? extends RoleType> overriddenType = roleType.getSupertypes()
+                            .filter(rt -> rt.getLabel().name().equals(overriddenLabelName)).findFirst();
+                    if (overriddenType.isPresent()) {
+                        thingType.setPlays(roleType, overriddenType.get());
+
+                    } else {
+                        throw GraknException.of(OVERRIDDEN_NOT_SUPERTYPE, roleTypeLabel.scopedLabel(), overriddenLabelName);
+                    }
                 } else {
                     thingType.setPlays(roleType);
                 }
