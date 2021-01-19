@@ -45,7 +45,7 @@ public class DistinctIterator<T> implements ResourceIterator<T> {
     }
 
     private boolean fetchAndCheck() {
-        while (iterator.hasNext() && consumed.contains(next = iterator.next())) next = null;
+        while (iterator.hasNext() && !consumed.add(next = iterator.next())) next = null;
         return next != null;
     }
 
@@ -53,7 +53,6 @@ public class DistinctIterator<T> implements ResourceIterator<T> {
     public T next() {
         if (!hasNext()) throw new NoSuchElementException();
         final T result = next;
-        consumed.add(next);
         next = null;
         return result;
     }

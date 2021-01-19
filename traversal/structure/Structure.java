@@ -120,7 +120,7 @@ public class Structure {
                 Structure newStructure = new Structure();
                 splitGraph(verticesToVisit.iterator().next(), newStructure, verticesToVisit, edgesToVisit);
                 if (newStructure.vertices().size() > 1 ||
-                        newStructure.vertices().iterator().next().id().isNamedReference()) {
+                        newStructure.vertices().iterator().next().id().isName()) {
                     structures.add(newStructure);
                 }
             }

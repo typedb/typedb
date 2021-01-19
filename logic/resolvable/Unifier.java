@@ -64,7 +64,7 @@ public class Unifier {
         for (Map.Entry<Identifier, Set<Identifier>> entry : unifier.entrySet()) {
             Identifier toUnify = entry.getKey();
             Set<Identifier> unifieds = entry.getValue();
-            if (toUnify.isNamedReference() && conceptMap.contains(toUnify.asVariable().reference().asName())) {
+            if (toUnify.isName() && conceptMap.contains(toUnify.asVariable().reference().asName())) {
                 Concept concept = conceptMap.get(toUnify.asVariable().reference().asName());
                 for (Identifier unified : unifieds) {
                     if (!unifiedMap.containsKey(unified)) unifiedMap.put(unified, concept);
@@ -138,7 +138,7 @@ public class Unifier {
     private ConceptMap conceptMap(Map<Identifier, Concept> identifiedConcepts) {
         Map<Reference.Name, Concept> namedConcepts = new HashMap<>();
         for (Map.Entry<Identifier, Concept> identifiedConcept : identifiedConcepts.entrySet()) {
-            if (identifiedConcept.getKey().isNamedReference()) {
+            if (identifiedConcept.getKey().isName()) {
                 assert identifiedConcept.getKey().asVariable().reference().isName();
                 namedConcepts.put(identifiedConcept.getKey().asVariable().reference().asName(), identifiedConcept.getValue());
             }

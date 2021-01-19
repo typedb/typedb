@@ -23,10 +23,12 @@ import grakn.core.common.producer.Producer;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.Traversal;
+import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.common.VertexMap;
 import grakn.core.traversal.procedure.GraphProcedure;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,17 +43,19 @@ public class GraphProducer implements Producer<VertexMap> {
     private final GraphManager graphMgr;
     private final GraphProcedure procedure;
     private final Traversal.Parameters params;
+    private final List<Identifier.Variable.Name> filter;
     private final ResourceIterator<? extends Vertex<?, ?>> start;
     private final ConcurrentHashMap.KeySetView<VertexMap, Boolean> produced;
     private final AtomicBoolean isDone;
     private final Map<ResourceIterator<VertexMap>, CompletableFuture<Void>> iteratorJobs;
     private final Map<ResourceIterator<VertexMap>, Integer> iteratorRequested;
 
-    public GraphProducer(GraphManager graphMgr, GraphProcedure procedure, Traversal.Parameters params, int parallelisation) {
+    public GraphProducer(GraphManager graphMgr, GraphProcedure procedure, Traversal.Parameters params, List<Identifier.Variable.Name> filter, int parallelisation) {
         assert parallelisation > 0;
         this.graphMgr = graphMgr;
         this.procedure = procedure;
         this.params = params;
+        this.filter = filter;
         this.parallelisation = parallelisation;
         this.isDone = new AtomicBoolean(false);
         this.produced = ConcurrentHashMap.newKeySet();
@@ -65,7 +69,7 @@ public class GraphProducer implements Producer<VertexMap> {
         if (iteratorRequested.size() < parallelisation) {
             for (int i = iteratorRequested.size(); i < parallelisation && start.hasNext(); i++) {
                 ResourceIterator<VertexMap> iterator =
-                        new GraphIterator(graphMgr, start.next(), procedure, params).distinct(produced);
+                        new GraphIterator(graphMgr, start.next(), procedure, params, filter).distinct(produced);
                 iteratorRequested.put(iterator, 0);
             }
         }

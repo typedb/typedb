@@ -29,13 +29,15 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
 public abstract class Identifier {
 
-    public boolean isNamedReference() {
-        return isVariable() && asVariable().reference().isName();
-    }
-
     public boolean isScoped() { return false; }
 
     public boolean isVariable() { return false; }
+
+    public boolean isName() { return false; }
+
+    public boolean isLabel() { return false; }
+
+    public boolean isAnonymous() { return false; }
 
     public Scoped asScoped() {
         throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Scoped.class));
@@ -136,7 +138,7 @@ public abstract class Identifier {
         }
 
         public static Referable name(String name) {
-            return Variable.of(Reference.named(name));
+            return Variable.of(Reference.name(name));
         }
 
         public static Referable label(String label) {
@@ -156,6 +158,18 @@ public abstract class Identifier {
 
         @Override
         public Variable asVariable() { return this; }
+
+        public Variable.Name asName() {
+            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Variable.Name.class));
+        }
+
+        public Variable.Label asLabel() {
+            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Variable.Label.class));
+        }
+
+        public Variable.Anonymous asAnonymous() {
+            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Variable.Anonymous.class));
+        }
 
         @Override
         public String toString() {
@@ -198,6 +212,12 @@ public abstract class Identifier {
             public Reference.Name reference() {
                 return reference.asName();
             }
+
+            @Override
+            public boolean isName() { return true; }
+
+            @Override
+            public Variable.Name asName() { return this; }
         }
 
         public static class Label extends Referable {
@@ -210,6 +230,12 @@ public abstract class Identifier {
             public Reference.Label reference() {
                 return reference.asLabel();
             }
+
+            @Override
+            public boolean isLabel() { return true; }
+
+            @Override
+            public Variable.Label asLabel() { return this; }
         }
 
         public static class Anonymous extends Variable {
@@ -222,6 +248,12 @@ public abstract class Identifier {
             public Reference.Anonymous reference() {
                 return reference.asAnonymous();
             }
+
+            @Override
+            public boolean isAnonymous() { return true; }
+
+            @Override
+            public Variable.Anonymous asAnonymous() { return this; }
         }
     }
 }

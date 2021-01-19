@@ -30,6 +30,7 @@ import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.common.VertexMap;
+import grakn.core.traversal.graph.TraversalVertex;
 import grakn.core.traversal.planner.Planner;
 import grakn.core.traversal.predicate.Predicate;
 import grakn.core.traversal.predicate.PredicateArgument;
@@ -51,6 +52,7 @@ import java.util.regex.Pattern;
 import static grakn.common.collection.Collections.pair;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.cartesian;
+import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.producer.Producers.iterable;
 import static grakn.core.graph.util.Encoding.Edge.ISA;
 import static grakn.core.graph.util.Encoding.Edge.Thing.HAS;
@@ -82,19 +84,26 @@ public class Traversal {
         filter = new ArrayList<>();
     }
 
-    void initialisePlanner(TraversalCache cache) {
-        planners = structure.asGraphs().stream().map(s -> cache.get(s, Planner::create)).collect(toList());
+    void initialise(TraversalCache cache) {
+        if (filter.isEmpty()) {
+            iterate(structure.vertices())
+                    .map(TraversalVertex::id).filter(Identifier::isName)
+                    .map(id -> id.asVariable().asName()).toList(filter);
+        }
+        planners = iterate(structure.asGraphs()).filter(p -> iterate(p.vertices()).anyMatch(
+                v -> v.id().isName() && filter.contains(v.id().asVariable().asName())
+        )).map(s -> cache.get(s, Planner::create)).toList();
     }
 
     ResourceIterator<VertexMap> iterator(GraphManager graphMgr) {
         assert !planners.isEmpty();
         if (planners.size() == 1) {
             planners.get(0).tryOptimise(graphMgr);
-            return planners.get(0).procedure().iterator(graphMgr, parameters);
+            return planners.get(0).procedure().iterator(graphMgr, parameters, filter);
         } else {
             return cartesian(planners.parallelStream().map(planner -> {
                 planner.tryOptimise(graphMgr);
-                return planner.procedure().iterator(graphMgr, parameters);
+                return planner.procedure().iterator(graphMgr, parameters, filter);
             }).collect(toList())).map(partialAnswers -> {
                 Map<Reference, Vertex<?, ?>> combinedAnswers = new HashMap<>();
                 partialAnswers.forEach(p -> combinedAnswers.putAll(p.map()));
@@ -107,11 +116,11 @@ public class Traversal {
         assert !planners.isEmpty();
         if (planners.size() == 1) {
             planners.get(0).tryOptimise(graphMgr);
-            return planners.get(0).procedure().producer(graphMgr, parameters, parallelisation);
+            return planners.get(0).procedure().producer(graphMgr, parameters, filter, parallelisation);
         } else {
             return Producers.producer(cartesian(planners.parallelStream().map(planner -> {
                 planner.tryOptimise(graphMgr);
-                return planner.procedure().producer(graphMgr, parameters, parallelisation);
+                return planner.procedure().producer(graphMgr, parameters, filter, parallelisation);
             }).map(p -> iterable(p).iterator()).collect(toList())).map(partialAnswers -> {
                 Map<Reference, Vertex<?, ?>> combinedAnswers = new HashMap<>();
                 partialAnswers.forEach(p -> combinedAnswers.putAll(p.map()));
@@ -252,12 +261,14 @@ public class Traversal {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Traversal that = (Traversal) o;
-        return this.structure.equals(that.structure) && this.parameters.equals(that.parameters);
+        return (this.structure.equals(that.structure) &&
+                this.parameters.equals(that.parameters) &&
+                this.filter.equals(that.filter));
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.structure, this.parameters);
+        return Objects.hash(this.structure, this.parameters, this.filter);
     }
 
     public static class Parameters {

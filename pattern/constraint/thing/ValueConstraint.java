@@ -36,7 +36,7 @@ import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 import static grakn.core.common.exception.ErrorMessage.Pattern.MISSING_CONSTRAINT_VALUE;
-import static graql.lang.common.GraqlToken.Char.QUOTE;
+import static graql.lang.common.GraqlToken.Char.QUOTE_DOUBLE;
 import static graql.lang.common.GraqlToken.Char.SPACE;
 import static graql.lang.common.GraqlToken.Predicate.Equality.EQ;
 
@@ -317,7 +317,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
         @Override
         public java.lang.String toString() {
-            return predicate.toString() + SPACE + QUOTE + value + QUOTE;
+            return predicate.toString() + SPACE + QUOTE_DOUBLE + value + QUOTE_DOUBLE;
         }
 
         @Override

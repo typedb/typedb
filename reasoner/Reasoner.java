@@ -151,7 +151,7 @@ public class Reasoner {
     private Conjunction bound(Conjunction conjunction, ConceptMap bounds) {
         Conjunction newClone = conjunction.clone();
         newClone.forEach(var -> {
-            if (var.id().isNamedReference() && bounds.contains(var.id().reference().asName())) {
+            if (var.id().isName() && bounds.contains(var.id().reference().asName())) {
                 Concept boundVar = bounds.get(var.id().reference().asName());
                 if (var.isType() != boundVar.isType()) throw GraknException.of(CONTRADICTORY_BOUND_VARIABLE, var);
                 else if (var.isType()) var.asType().label(boundVar.asType().getLabel());

@@ -201,7 +201,7 @@ public class Rule {
      */
     private void pruneThenResolvedTypes() {
         // TODO name is inconsistent with elsewhere
-        then.variables().stream().filter(variable -> variable.id().isNamedReference())
+        then.variables().stream().filter(variable -> variable.id().isName())
                 .forEach(thenVar ->
                                  when.variables().stream()
                                          .filter(whenVar -> whenVar.id().equals(thenVar.id()))
@@ -560,7 +560,7 @@ public class Rule {
                     return Iterators.iterate(conjunction.variables()).filter(grakn.core.pattern.variable.Variable::isThing)
                             .map(grakn.core.pattern.variable.Variable::asThing)
                             .flatMap(variable -> Iterators.iterate(variable.constraints()).filter(ThingConstraint::isHas)
-                                    .filter(constraint -> constraint.asHas().attribute().id().isNamedReference())
+                                    .filter(constraint -> constraint.asHas().attribute().id().isName())
                                     .map(constraint -> {
                                         assert !constraint.asHas().attribute().isa().isPresent();
                                         assert constraint.asHas().attribute().value().size() == 0;

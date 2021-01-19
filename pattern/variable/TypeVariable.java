@@ -282,7 +282,7 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     @Override
     public AlphaEquivalence alphaEquals(TypeVariable that) {
         return AlphaEquivalence.valid()
-                .validIf(id().isNamedReference() == that.id().isNamedReference())
+                .validIf(id().isName() == that.id().isName())
                 .validIfAlphaEqual(labelConstraint, that.labelConstraint)
                 .validIfAlphaEqual(valueTypeConstraint, that.valueTypeConstraint)
                 .addMapping(this, that);

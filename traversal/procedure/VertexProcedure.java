@@ -24,6 +24,7 @@ import grakn.core.common.producer.Producers;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.Traversal;
+import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.common.VertexMap;
 import grakn.core.traversal.planner.PlannerVertex;
 import graql.lang.pattern.variable.Reference;
@@ -47,7 +48,7 @@ public class VertexProcedure implements Procedure {
     }
 
     public static VertexProcedure create(PlannerVertex<?> plannerVertex) {
-        assert plannerVertex.id().isNamedReference();
+        assert plannerVertex.id().isName();
         return new VertexProcedure(toProcedure(plannerVertex));
     }
 
@@ -88,21 +89,24 @@ public class VertexProcedure implements Procedure {
     }
 
     @Override
-    public Producer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params, int parallelisation) {
+    public Producer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
+                                        List<Identifier.Variable.Name> filter, int parallelisation) {
         LOG.debug(params.toString());
         LOG.debug(this.toString());
-        return Producers.producer(iterator(graphMgr, params));
+        return Producers.producer(iterator(graphMgr, params, filter));
     }
 
     @Override
-    public ResourceIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params) {
+    public ResourceIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
+                                                List<Identifier.Variable.Name> filter) {
         LOG.debug(params.toString());
         LOG.debug(this.toString());
+        assert vertex.id().isName() && filter.contains(vertex.id().asVariable().asName());
         Reference ref = vertex.id().asVariable().reference();
         ResourceIterator<? extends Vertex<?, ?>> iterator = vertex.iterator(graphMgr, params);
         for (ProcedureEdge<?, ?> e : vertex.outs()) {
             iterator = iterator.filter(v -> e.isClosure(graphMgr, v, v, params));
         }
-        return iterator.map(v -> VertexMap.of(map(pair(ref, v))));
+        return iterator.map(v -> VertexMap.of(map(pair(ref, v)))).distinct();
     }
 }

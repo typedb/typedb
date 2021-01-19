@@ -259,7 +259,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     @Override
     public AlphaEquivalence alphaEquals(ThingVariable that) {
         return AlphaEquivalence.valid()
-                .validIf(id().isNamedReference() == that.id().isNamedReference())
+                .validIf(id().isName() == that.id().isName())
                 .validIf(this.resolvedTypes().equals(that.resolvedTypes()))
                 .validIfAlphaEqual(this.isaConstraint, that.isaConstraint)
                 .validIfAlphaEqual(this.relationConstraints, that.relationConstraints)

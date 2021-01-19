@@ -115,6 +115,10 @@ public interface ResourceIterator<T> extends Iterator<T> {
         return list;
     }
 
+    default void toList(List<T> list) {
+        this.forEachRemaining(list::add);
+    }
+
     default Set<T> toSet() {
         HashSet<T> set = new HashSet<>();
         this.forEachRemaining(set::add);
