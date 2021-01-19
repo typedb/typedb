@@ -647,29 +647,6 @@ rule repo-collaborator-permission-write-owns-read-rule:
         $c has permission "read";
     };
 
-rule repo-collaborator-team-permission-rule:
-    when
-    {
-        (repo: $x, team: $y) isa repo-team, has permission $p;
-        (team: $y, member: $z) isa team-member;
-        $c (repo: $x, collaborator: $z) isa repo-collaborator;
-    }
-    then
-    {
-        $c has $p;
-    };
-
-rule repo-collaborator-team-rule:
-    when
-    {
-        (repo: $x, team: $y) isa repo-team;
-        (team: $y, member: $z) isa team-member;
-    }
-    then
-    {
-        (repo: $x, collaborator: $z) isa repo-collaborator;
-    };
-
 rule repo-collaborator-user-permission-rule:
     when
     {
