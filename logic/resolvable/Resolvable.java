@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static grakn.common.util.Objects.className;
 import static grakn.common.collection.Collections.set;
@@ -76,7 +77,6 @@ public abstract class Resolvable {
         private final Map<Variable, Set<Resolvable>> connectedByVariable;
         private final ConceptManager conceptMgr;
         private final LogicManager logicMgr;
-        private Resolvable lastPlanned = null;
         private Set<Variable> varsAnswered;
         private Set<Resolvable> remaining;
 
@@ -98,26 +98,19 @@ public abstract class Resolvable {
 
         private void add(Resolvable resolvable) {
             plan.add(resolvable);
-            lastPlanned = resolvable;
             varsAnswered.addAll(resolvable.conjunction().variables());
             remaining.remove(resolvable);
         }
 
         private void planning() {
-            while (true) {
-                if (remaining.size() == 0) break;
+            while (remaining.size() != 0) {
+                Optional<Concludable> concludable;
+                Optional<Resolvable> retrievable;
 
                 // Retrievable where:
                 // all of it's dependencies are already satisfied,
                 // which will answer the most variables
-                Optional<Resolvable> retrievable = remaining.stream().filter(Resolvable::isRetrievable)
-                        .filter(r -> !Collections.disjoint(r.conjunction().variables(), varsAnswered))
-                        .filter(r -> varsAnswered.containsAll(dependencies.get(r)))
-                        .max(Comparator.comparingInt(r -> {
-                            HashSet<Variable> s = new HashSet<>(r.conjunction().variables());
-                            s.removeAll(varsAnswered);
-                            return s.size();
-                        }));
+                retrievable = mostUnansweredVars(dependenciesSatisfied(connected(remaining.stream().filter(Resolvable::isRetrievable))));
                 if (retrievable.isPresent()) {
                     add(retrievable.get());
                     continue;
@@ -127,12 +120,7 @@ public abstract class Resolvable {
                 // all of it's dependencies are already satisfied,
                 // which has the least applicable rules,
                 // and of those the least unsatisfied variables
-                Optional<Concludable> concludable = remaining.stream().filter(Resolvable::isConcludable)
-                        .map(Resolvable::asConcludable)
-                        .filter(r -> !Collections.disjoint(r.conjunction().variables(), varsAnswered))
-                        .filter(c -> varsAnswered.containsAll(dependencies.get(c)))
-                        .min(Comparator.comparingInt(c -> c.getApplicableRules(conceptMgr, logicMgr).toSet().size()));
-                // TODO How to do a tie-break for Concludables with the same number of applicable rules?
+                concludable = fewestRules(dependenciesSatisfied(connected(remaining.stream().filter(Resolvable::isConcludable))));
                 if (concludable.isPresent()) {
                     add(concludable.get());
                     continue;
@@ -142,15 +130,9 @@ public abstract class Resolvable {
                 // all of it's dependencies are already satisfied (should be moot),
                 // it can be disconnected
                 // which will answer the most variables
-                Optional<Resolvable> retrievable2 = remaining.stream().filter(Resolvable::isRetrievable)
-                        .filter(r -> varsAnswered.containsAll(dependencies.get(r)))
-                        .max(Comparator.comparingInt(r -> {
-                            HashSet<Variable> s = new HashSet<>(r.conjunction().variables());
-                            s.removeAll(varsAnswered);
-                            return s.size();
-                        }));
-                if (retrievable2.isPresent()) {
-                    add(retrievable2.get());
+                retrievable = mostUnansweredVars(dependenciesSatisfied(remaining.stream().filter(Resolvable::isRetrievable)));
+                if (retrievable.isPresent()) {
+                    add(retrievable.get());
                     continue;
                 }
 
@@ -159,13 +141,9 @@ public abstract class Resolvable {
                 // all of it's dependencies are already satisfied,
                 // which has the least applicable rules,
                 // and of those the least unsatisfied variables
-                Optional<Concludable> concludable2 = remaining.stream().filter(Resolvable::isConcludable)
-                        .map(Resolvable::asConcludable)
-                        .filter(c -> varsAnswered.containsAll(dependencies.get(c)))
-                        .min(Comparator.comparingInt(c -> c.getApplicableRules(conceptMgr, logicMgr).toSet().size()));
-                // TODO How to do a tie-break for Concludables with the same number of applicable rules?
-                if (concludable2.isPresent()) {
-                    add(concludable2.get());
+                concludable = fewestRules(dependenciesSatisfied(remaining.stream().filter(Resolvable::isConcludable)));
+                if (concludable.isPresent()) {
+                    add(concludable.get());
                     continue;
                 }
 
@@ -174,17 +152,38 @@ public abstract class Resolvable {
                 // all of it's dependencies are NOT already satisfied,
                 // which has the least applicable rules,
                 // and of those the least unsatisfied variables
-                Optional<Concludable> concludable3 = remaining.stream().filter(Resolvable::isConcludable)
-                        .map(Resolvable::asConcludable)
-                        .min(Comparator.comparingInt(c -> c.getApplicableRules(conceptMgr, logicMgr).toSet().size()));
-                // TODO How to do a tie-break for Concludables with the same number of applicable rules?
-                if (concludable3.isPresent()) {
-                    add(concludable3.get());
+                concludable = fewestRules(remaining.stream().filter(Resolvable::isConcludable));
+                if (concludable.isPresent()) {
+                    add(concludable.get());
                     continue;
                 }
                 assert false;
             }
         }
+
+        private Stream<Resolvable> dependenciesSatisfied(Stream<Resolvable> resolvableStream) {
+            return resolvableStream.filter(c -> varsAnswered.containsAll(dependencies.get(c)));
+        }
+
+        private Stream<Resolvable> connected(Stream<Resolvable> resolvableStream) {
+            return resolvableStream.filter(r -> !Collections.disjoint(r.conjunction().variables(), varsAnswered));
+        }
+
+        private Optional<Concludable> fewestRules(Stream<Resolvable> resolvableStream) {
+            // TODO How to do a tie-break for Concludables with the same number of applicable rules?
+            return resolvableStream.map(Resolvable::asConcludable)
+                    .min(Comparator.comparingInt(c -> c.getApplicableRules(conceptMgr, logicMgr).toSet().size()));
+        }
+
+        private Optional<Resolvable> mostUnansweredVars(Stream<Resolvable> resolvableStream) {
+            return resolvableStream.max(Comparator.comparingInt(r -> {
+                HashSet<Variable> s = new HashSet<>(r.conjunction().variables());
+                s.removeAll(varsAnswered);
+                return s.size();
+            }));
+        }
+
+
 
         public List<Resolvable> plan() {
             return plan;
@@ -206,7 +205,6 @@ public abstract class Resolvable {
 
         /**
          * Determine the resolvables that are dependent upon the generation of each variable
-         * @return
          */
         private Map<Resolvable, Set<Variable>> dependencies(Set<Resolvable> resolvables) {
             Map<Resolvable, Set<Variable>> deps = new HashMap<>();
