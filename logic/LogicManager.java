@@ -67,11 +67,11 @@ public class LogicManager {
     }
 
     public ResourceIterator<Rule> rulesConcludingIsa(Label type) {
-        return graphMgr.schema().ruleIndex().concludingIsa(type).map(this::fromStructure);
+        return graphMgr.schema().ruleIndex().concluding().getIsa(graphMgr.schema().getType(type)).map(this::fromStructure);
     }
 
     public ResourceIterator<Rule> rulesConcludingHasAttribute(Label attributeType) {
-        return graphMgr.schema().ruleIndex().concludingHasAttribute(attributeType).map(this::fromStructure);
+        return graphMgr.schema().ruleIndex().concluding().getHasAttribute(graphMgr.schema().getType(attributeType)).map(this::fromStructure);
     }
 
 
@@ -88,7 +88,7 @@ public class LogicManager {
         rules().forEachRemaining(Rule::validateSatisfiable);
 
         // re-index if rules are valid and satisfiable
-        if (graphMgr.schema().ruleIndex().concludingIndexOutdated()) {
+        if (graphMgr.schema().ruleIndex().concluding().isOutdated()) {
             graphMgr.schema().rules().forEachRemaining(s -> fromStructure(s).reIndex());
         }
 

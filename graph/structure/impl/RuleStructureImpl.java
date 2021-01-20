@@ -24,6 +24,7 @@ import grakn.core.graph.iid.IndexIID;
 import grakn.core.graph.iid.StructureIID;
 import grakn.core.graph.structure.RuleStructure;
 import grakn.core.graph.util.Encoding;
+import grakn.core.graph.vertex.TypeVertex;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunctable;
 import graql.lang.pattern.Conjunction;
@@ -104,22 +105,22 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
     @Override
     public void createConcludingIsaIndex(Label type) {
-        graph.ruleIndex().concludingIsa(this, type);
+        graph.ruleIndex().concluding().buffered().putIsa(this, graph.getType(type));
     }
 
     @Override
     public void clearConcludingIsaIndex(Label type) {
-        graph.ruleIndex().deleteConcludingIsa(this, type);
+        graph.ruleIndex().concluding().deleteIsa(this, graph.getType(type));
     }
 
     @Override
     public void createConcludingHasAttributeIndex(Label type) {
-        graph.ruleIndex().concludingHasAttribute(this, type);
+        graph.ruleIndex().concluding().buffered().putHasAttribute(this, graph.getType(type));
     }
 
     @Override
     public void clearConcludesHasAttributeIndex(Label type) {
-        graph.ruleIndex().deleteConcludingHasAttribute(this, type);
+        graph.ruleIndex().concluding().deleteHasAttribute(this, graph.getType(type));
     }
 
     public Encoding.Structure encoding() {
@@ -130,7 +131,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
         graph.delete(this);
     }
 
-    ResourceIterator<Label> validRuleLabels() {
+    ResourceIterator<TypeVertex> types() {
         graql.lang.pattern.Conjunction<Conjunctable> whenNormalised = when().normalise().patterns().get(0);
         ResourceIterator<BoundVariable> positiveVariables = iterate(whenNormalised.patterns()).filter(Conjunctable::isVariable)
                 .map(Conjunctable::asVariable);
@@ -142,7 +143,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
         // filter out invalid labels as if they were truly invalid (eg. not relation:friend) we will catch it validation
         // this lets us index only types the user can actually retrieve as a concept
         return link(whenPositiveLabels, whenNegativeLabels, thenLabels)
-                .filter(label -> graph.getType(label) != null);
+                .filter(label -> graph.getType(label) != null).map(graph::getType);
     }
 
     private ResourceIterator<BoundVariable> negationVariables(Negation<?> ruleNegation) {
@@ -179,12 +180,12 @@ public abstract class RuleStructureImpl implements RuleStructure {
             super(graph, iid, label, when, then);
             this.isCommitted = new AtomicBoolean(false);
             setModified();
-            indexLabels();
+            indexTypes();
         }
 
-        private void indexLabels() {
-            ResourceIterator<Label> labels = validRuleLabels();
-            labels.forEachRemaining(label -> graph.ruleIndex().ruleContains(this, label));
+        private void indexTypes() {
+            ResourceIterator<TypeVertex> labels = types();
+            labels.forEachRemaining(type -> graph.ruleIndex().containing().buffered().put(this, type));
         }
 
         @Override
@@ -207,7 +208,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
         @Override
         public void delete() {
             if (isDeleted.compareAndSet(false, true)) {
-                graph.ruleIndex().deleteBufferedRuleContains(this, validRuleLabels());
+                graph.ruleIndex().containing().delete(this, types());
                 deleteVertexFromGraph();
             }
         }
@@ -281,7 +282,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
         @Override
         public void delete() {
             if (isDeleted.compareAndSet(false, true)) {
-                graph.ruleIndex().deleteRuleContains(this, validRuleLabels());
+                graph.ruleIndex().containing().delete(this, types());
                 deleteVertexFromGraph();
                 deleteVertexFromStorage();
             }

@@ -102,7 +102,7 @@ public class SchemaGraph implements Graph {
         rulesByIID = new ConcurrentHashMap<>();
         singleLabelLocks = new ConcurrentHashMap<>();
         multiLabelLock = new ManagedReadWriteLock();
-        ruleIndex = new RuleIndex();
+        ruleIndex = new RuleIndex(this);
         statistics = new Statistics();
         cache = new Cache();
         isModified = false;
@@ -352,7 +352,7 @@ public class SchemaGraph implements Graph {
         } finally {
             singleLabelLocks.get(scopedLabel).unlockWrite();
             multiLabelLock.unlockRead();
-            ruleIndex().concludingIndexOutdated(true);
+            ruleIndex().concluding().isOutdated(true);
         }
     }
 
@@ -674,9 +674,9 @@ public class SchemaGraph implements Graph {
         private final Concluding concludingIndex;
         private final Containing containingIndex;
 
-        public RuleIndex(Storage storage) {
-            concludingIndex = new Concluding(storage);
-            containingIndex = new Containing(storage);
+        public RuleIndex(SchemaGraph SchemaGraph) {
+            concludingIndex = new Concluding(SchemaGraph);
+            containingIndex = new Containing(SchemaGraph);
         }
 
         public Concluding concluding() {
@@ -692,16 +692,15 @@ public class SchemaGraph implements Graph {
             containingIndex.buffered().commit();
         }
 
-
         public static class Concluding {
             private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> isa;
             private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> hasAttribute;
             private final Buffered buffered;
-            private final Storage storage;
+            private final SchemaGraph schemaGraph; // TODO revert to storage
             private boolean outdated;
 
-            public Concluding(Storage storage) {
-                this.storage = storage;
+            public Concluding(SchemaGraph graph) {
+                this.schemaGraph = graph;
                 isa = new ConcurrentHashMap<>();
                 hasAttribute = new ConcurrentHashMap<>();
                 buffered = new Buffered();
@@ -736,7 +735,7 @@ public class SchemaGraph implements Graph {
                 Set<RuleStructure> rules = isa.get(type);
                 if (rules != null && rules.contains(rule)) {
                     isa.get(type).remove(rule);
-                    storage.delete(IndexIID.Type.RuleIndex.concludedIsa(type.iid(), rule.iid()).bytes());
+                    schemaGraph.storage().delete(IndexIID.Type.RuleIndex.concludedIsa(type.iid(), rule.iid()).bytes());
                 }
                 buffered().deleteIsa(rule, type);
             }
@@ -745,7 +744,7 @@ public class SchemaGraph implements Graph {
                 Set<RuleStructure> rules = hasAttribute.get(attributeType);
                 if (rules != null && rules.contains(rule)) {
                     rules.remove(rule);
-                    storage.delete(IndexIID.Type.RuleIndex.concludedHasAttribute(attributeType.iid(), rule.iid()).bytes());
+                    schemaGraph.storage().delete(IndexIID.Type.RuleIndex.concludedHasAttribute(attributeType.iid(), rule.iid()).bytes());
                 }
                 buffered().deleteHasAttribute(rule, attributeType);
             }
@@ -753,17 +752,17 @@ public class SchemaGraph implements Graph {
 
             private Set<RuleStructure> loadIsaIndex(TypeVertex type) {
                 IndexIID.Type.RuleIndex scanPrefix = IndexIID.Type.RuleIndex.concludedIsaScan(type.iid());
-                return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
-                        .map(SchemaGraph.this::convert).toSet();
+                return schemaGraph.storage().iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
+                        .map(schemaGraph::convert).toSet();
             }
 
             private Set<RuleStructure> loadHasAttributeIndex(TypeVertex type) {
                 IndexIID.Type.RuleIndex scanPrefix = IndexIID.Type.RuleIndex.concludedHasAttributeScan(type.iid());
-                return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
-                        .map(SchemaGraph.this::convert).toSet();
+                return schemaGraph.storage().iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
+                        .map(schemaGraph::convert).toSet();
             }
 
-            public void clear() {
+            private void clear() {
                 isa.clear();
                 hasAttribute.clear();
                 buffered.clear();
@@ -777,14 +776,6 @@ public class SchemaGraph implements Graph {
                 public Buffered() {
                     isa = new ConcurrentHashMap<>();
                     hasAttribute = new ConcurrentHashMap<>();
-                }
-
-                public ResourceIterator<RuleStructure> getIsa(TypeVertex label) {
-                    return iterate(isa.getOrDefault(label, set()));
-                }
-
-                public ResourceIterator<RuleStructure> getHasAttribute(TypeVertex label) {
-                    return iterate(hasAttribute.getOrDefault(label, set()));
                 }
 
                 public void putIsa(RuleStructure rule, TypeVertex type) {
@@ -803,38 +794,46 @@ public class SchemaGraph implements Graph {
                     });
                 }
 
-                public void commit() {
+                private void commit() {
                     isa.forEach((type, rules) -> {
                         VertexIID.Type typeIID = type.iid();
                         rules.forEach(rule -> {
                             IndexIID.Type.RuleIndex typeRuleConcludesIndex = IndexIID.Type.RuleIndex.concludedIsa(typeIID, rule.iid());
-                            storage.put(typeRuleConcludesIndex.bytes());
+                            schemaGraph.storage().put(typeRuleConcludesIndex.bytes());
                         });
                     });
                     hasAttribute.forEach((type, rules) -> {
                         VertexIID.Type typeIID = type.iid();
                         rules.forEach(rule -> {
                             IndexIID.Type.RuleIndex typeRuleConcludesHasIndex = IndexIID.Type.RuleIndex.concludedHasAttribute(typeIID, rule.iid());
-                            storage.put(typeRuleConcludesHasIndex.bytes());
+                            schemaGraph.storage().put(typeRuleConcludesHasIndex.bytes());
                         });
                     });
                 }
 
-                public void deleteIsa(RuleStructure rule, TypeVertex type) {
+                private ResourceIterator<RuleStructure> getIsa(TypeVertex label) {
+                    return iterate(isa.getOrDefault(label, set()));
+                }
+
+                private ResourceIterator<RuleStructure> getHasAttribute(TypeVertex label) {
+                    return iterate(hasAttribute.getOrDefault(label, set()));
+                }
+
+                private void deleteIsa(RuleStructure rule, TypeVertex type) {
                     if (isa.containsKey(type)) {
                         isa.get(type).remove(rule);
                     }
                 }
 
-                public void deleteHasAttribute(RuleStructure rule, TypeVertex attributeType) {
+                private void deleteHasAttribute(RuleStructure rule, TypeVertex attributeType) {
                     if (hasAttribute.containsKey(attributeType)) {
                         hasAttribute.get(attributeType).remove(rule);
                     }
                 }
 
-                public void clear() {
+                private void clear() {
                     isa.clear();
-                    buffered.clear();
+                    hasAttribute.clear();
                 }
             }
 
@@ -844,10 +843,10 @@ public class SchemaGraph implements Graph {
 
             private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> contains;
             private final Buffered buffered;
-            private final Storage storage;
+            private final SchemaGraph schemaGraph; // TODO revert to storage
 
-            public Containing(Storage storage) {
-                this.storage = storage;
+            public Containing(SchemaGraph schemaGraph) {
+                this.schemaGraph = schemaGraph;
                 contains = new ConcurrentHashMap<>();
                 buffered = new Buffered();
             }
@@ -865,17 +864,18 @@ public class SchemaGraph implements Graph {
                 types.forEachRemaining(type -> {
                     Set<RuleStructure> rules = contains.get(type);
                     if (rules != null) rules.remove(rule);
-                    storage.delete(IndexIID.Type.RuleIndex.contained(type.iid(), rule.iid()).bytes());
+                    schemaGraph.storage().delete(IndexIID.Type.RuleIndex.contained(type.iid(), rule.iid()).bytes());
+                    buffered().delete(rule, type);
                 });
             }
 
             private Set<RuleStructure> loadIndex(TypeVertex type) {
                 IndexIID.Type.RuleIndex scanPrefix = IndexIID.Type.RuleIndex.containedScan(type.iid());
-                return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
-                        .map(SchemaGraph.this::convert).toSet();
+                return schemaGraph.storage().iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
+                        .map(schemaGraph::convert).toSet();
             }
 
-            public void clear() {
+            private void clear() {
                 contains.clear();
                 buffered.clear();
             }
@@ -887,15 +887,6 @@ public class SchemaGraph implements Graph {
                     contains = new ConcurrentHashMap<>();
                 }
 
-                public void commit() {
-                    contains.forEach((type, rules) -> {
-                        rules.forEach(rule -> {
-                            IndexIID.Type.RuleIndex typeInRule = IndexIID.Type.RuleIndex.contained(type.iid(), rule.iid());
-                            storage.put(typeInRule.bytes());
-                        });
-                    });
-                }
-
                 public void put(RuleStructure rule, TypeVertex type) {
                     contains.compute(type, (t, rules) -> {
                         if (rules == null) rules = new HashSet<>();
@@ -904,14 +895,20 @@ public class SchemaGraph implements Graph {
                     });
                 }
 
-                public void delete(RuleStructure rule, ResourceIterator<TypeVertex> types) {
-                    types.forEachRemaining(type -> {
-                        assert contains.containsKey(type) && contains.get(type).contains(rule);
-                        contains.get(type).remove(rule);
+                private void delete(RuleStructure rule, TypeVertex type) {
+                    if (contains.containsKey(type)) contains.get(type).remove(rule);
+                }
+
+                private void commit() {
+                    contains.forEach((type, rules) -> {
+                        rules.forEach(rule -> {
+                            IndexIID.Type.RuleIndex typeInRule = IndexIID.Type.RuleIndex.contained(type.iid(), rule.iid());
+                            schemaGraph.storage().put(typeInRule.bytes());
+                        });
                     });
                 }
 
-                public void clear() {
+                private void clear() {
                     contains.clear();
                 }
             }

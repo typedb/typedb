@@ -610,7 +610,7 @@ public class RuleTest {
 
     private void assertIndexTypesContainRule(Set<Label> types, String requiredRule, GraphManager graphMgr) {
         types.forEach(t -> {
-            Set<String> rules = graphMgr.schema().ruleIndex().rulesContaining(t).map(RuleStructure::label).toSet();
+            Set<String> rules = graphMgr.schema().ruleIndex().containing().get(graphMgr.schema().getType(t)).map(RuleStructure::label).toSet();
             assertTrue(rules.contains(requiredRule));
         });
     }
@@ -757,7 +757,7 @@ public class RuleTest {
                     GraphManager graphMgr = logicMgr.graph();
                     // no types should be in the index
                     graphMgr.schema().thingTypes().forEachRemaining(type -> {
-                        assertFalse(graphMgr.schema().ruleIndex().rulesContaining(type.properLabel()).hasNext());
+                        assertFalse(graphMgr.schema().ruleIndex().containing().get(graphMgr.schema().getType(type.properLabel())).hasNext());
                     });
                 }
             }

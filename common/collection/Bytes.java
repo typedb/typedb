@@ -19,9 +19,6 @@
 package grakn.core.common.collection;
 
 import grakn.core.common.exception.GraknCheckedException;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.traversal.Traversal;
-import grakn.core.traversal.common.Identifier;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
