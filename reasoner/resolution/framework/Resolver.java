@@ -19,7 +19,7 @@
 package grakn.core.reasoner.resolution.framework;
 
 import grakn.core.common.concurrent.actor.Actor;
-import grakn.core.reasoner.resolution.ResolverRegistry;
+import grakn.core.reasoner.resolution.ResolverManager;
 import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,11 +32,11 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
 
     private final String name;
     private final Map<Request, Request> requestRouter;
-    protected final ResolverRegistry registry;
+    protected final ResolverManager registry;
     protected final TraversalEngine traversalEngine;
     private final boolean explanations;
 
-    protected Resolver(Actor<T> self, String name, ResolverRegistry registry, TraversalEngine traversalEngine, boolean explanations) {
+    protected Resolver(Actor<T> self, String name, ResolverManager registry, TraversalEngine traversalEngine, boolean explanations) {
         super(self);
         this.name = name;
         this.registry = registry;
@@ -44,7 +44,7 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
         this.explanations = explanations;
         this.requestRouter = new HashMap<>();
         // Note: initialising downstream actors in constructor will create all actors ahead of time, so it is non-lazy
-        // additionally, it can cause deadlock within ResolverRegistry as different threads initialise actors
+        // additionally, it can cause deadlock within ResolverManager as different threads initialise actors
     }
 
     public String name() {

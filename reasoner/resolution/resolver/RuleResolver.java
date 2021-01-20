@@ -30,7 +30,7 @@ import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Resolvable;
 import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.reasoner.resolution.MockTransaction;
-import grakn.core.reasoner.resolution.ResolverRegistry;
+import grakn.core.reasoner.resolution.ResolverManager;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.answer.Mapping;
 import grakn.core.reasoner.resolution.framework.Request;
@@ -67,7 +67,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
     private final LogicManager logicMgr;
     private boolean isInitialised;
 
-    public RuleResolver(Actor<RuleResolver> self, Rule rule, ResolverRegistry registry, TraversalEngine traversalEngine,
+    public RuleResolver(Actor<RuleResolver> self, Rule rule, ResolverManager registry, TraversalEngine traversalEngine,
                         ConceptManager conceptMgr, LogicManager logicMgr, boolean explanations) {
         super(self, RuleResolver.class.getSimpleName() + "(rule:" + rule + ")", registry, traversalEngine, explanations);
         this.conceptMgr = conceptMgr;

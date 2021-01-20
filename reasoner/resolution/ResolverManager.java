@@ -60,9 +60,9 @@ import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.iterate;
 
-public class ResolverRegistry {
+public class ResolverManager {
 
-    private final static Logger LOG = LoggerFactory.getLogger(ResolverRegistry.class);
+    private final static Logger LOG = LoggerFactory.getLogger(ResolverManager.class);
 
     private final ConceptManager conceptMgr;
     private final HashMap<Concludable, Actor<ConcludableResolver>> concludableActors;
@@ -73,8 +73,8 @@ public class ResolverRegistry {
     private final TraversalEngine traversalEngine;
     private EventLoopGroup elg;
 
-    public ResolverRegistry(EventLoopGroup elg, Actor<ResolutionRecorder> resolutionRecorder, TraversalEngine traversalEngine,
-                            ConceptManager conceptMgr, LogicManager logicMgr) {
+    public ResolverManager(EventLoopGroup elg, Actor<ResolutionRecorder> resolutionRecorder, TraversalEngine traversalEngine,
+                           ConceptManager conceptMgr, LogicManager logicMgr) {
         this.elg = elg;
         this.resolutionRecorder = resolutionRecorder;
         this.traversalEngine = traversalEngine;

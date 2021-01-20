@@ -35,7 +35,7 @@ import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
-import grakn.core.reasoner.resolution.ResolverRegistry;
+import grakn.core.reasoner.resolution.ResolverManager;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
 import org.slf4j.Logger;
@@ -61,7 +61,7 @@ public class Reasoner {
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
     private final Context.Transaction context;
-    private final ResolverRegistry resolverRegistry;
+    private final ResolverManager resolverManager;
     private final Actor<ResolutionRecorder> resolutionRecorder; // for explanations
 
     public Reasoner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr, Context.Transaction context) {
@@ -70,7 +70,7 @@ public class Reasoner {
         this.logicMgr = logicMgr;
         this.context = context;
         this.resolutionRecorder = Actor.create(ExecutorService.eventLoopGroup(), ResolutionRecorder::new);
-        this.resolverRegistry = new ResolverRegistry(
+        this.resolverManager = new ResolverManager(
                 ExecutorService.eventLoopGroup(), resolutionRecorder, traversalEng, conceptMgr, logicMgr
         );
     }
@@ -163,13 +163,13 @@ public class Reasoner {
         return newClone;
     }
 
-    ResolverRegistry resolverRegistry() {
-        return resolverRegistry;
+    ResolverManager resolverManager() {
+        return resolverManager;
     }
 
     private Producer<ConceptMap> resolve(Conjunction conjunction) {
         return Producers.empty();
         // TODO enable reasoner when ready!
-        // return new ReasonerProducer(conjunction, resolverRegistry);
+        // return new ReasonerProducer(conjunction, resolverManager);
     }
 }

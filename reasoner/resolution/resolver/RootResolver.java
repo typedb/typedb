@@ -30,7 +30,7 @@ import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
-import grakn.core.reasoner.resolution.ResolverRegistry;
+import grakn.core.reasoner.resolution.ResolverManager;
 import grakn.core.reasoner.resolution.answer.Mapping;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
@@ -74,7 +74,7 @@ public class RootResolver extends Resolver<RootResolver> {
     private ResponseProducer responseProducer;
 
     public RootResolver(Actor<RootResolver> self, Conjunction conjunction, Consumer<ResolutionAnswer> onAnswer,
-                        Consumer<Integer> onExhausted, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
+                        Consumer<Integer> onExhausted, Actor<ResolutionRecorder> resolutionRecorder, ResolverManager registry,
                         TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr, boolean explanations) {
         super(self, RootResolver.class.getSimpleName() + "(pattern:" + conjunction + ")", registry, traversalEngine, explanations);
         this.conjunction = conjunction;

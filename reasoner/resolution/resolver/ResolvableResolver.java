@@ -18,12 +18,12 @@
 package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.common.concurrent.actor.Actor;
-import grakn.core.reasoner.resolution.ResolverRegistry;
+import grakn.core.reasoner.resolution.ResolverManager;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.traversal.TraversalEngine;
 
 public abstract class ResolvableResolver<T extends ResolvableResolver<T>> extends Resolver<T> {
-    public ResolvableResolver(Actor<T> self, String name, ResolverRegistry registry, TraversalEngine traversalEngine, boolean explanations) {
+    public ResolvableResolver(Actor<T> self, String name, ResolverManager registry, TraversalEngine traversalEngine, boolean explanations) {
         super(self, name, registry, traversalEngine, explanations);
     }
 }

@@ -22,7 +22,7 @@ import grakn.core.common.concurrent.actor.EventLoopGroup;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
-import grakn.core.reasoner.resolution.ResolverRegistry;
+import grakn.core.reasoner.resolution.ResolverManager;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
@@ -381,7 +381,7 @@ public class ResolutionTest {
 
         try (RocksSession session = schemaSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                ResolverRegistry registry = transaction.reasoner().resolverRegistry();
+                ResolverManager registry = transaction.reasoner().resolverManager();
                 LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
                 AtomicLong doneReceived = new AtomicLong(0L);
                 Actor<RootResolver> root = registry.createRoot(conjunctionPattern, responses::add, iterDone -> doneReceived.incrementAndGet());
@@ -436,7 +436,7 @@ public class ResolutionTest {
 
         try (RocksSession session = schemaSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                ResolverRegistry registry = transaction.reasoner().resolverRegistry();
+                ResolverManager registry = transaction.reasoner().resolverManager();
                 LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
                 int[] iteration = {0};
                 int[] doneInIteration = {0};
@@ -516,14 +516,14 @@ public class ResolutionTest {
 
     private RocksTransaction singleThreadElgTransaction(RocksSession session) {
         RocksTransaction transaction = session.transaction(Arguments.Transaction.Type.WRITE);
-        transaction.reasoner().resolverRegistry().setEventLoopGroup(new EventLoopGroup(1, "grakn-elg"));
+        transaction.reasoner().resolverManager().setEventLoopGroup(new EventLoopGroup(1, "grakn-elg"));
         return transaction;
     }
 
     private void createRootAndAssertResponses(Conjunction conjunctionPattern, long answerCount) throws InterruptedException {
         try (RocksSession session = schemaSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                ResolverRegistry registry = transaction.reasoner().resolverRegistry();
+                ResolverManager registry = transaction.reasoner().resolverManager();
                 LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
                 AtomicLong doneReceived = new AtomicLong(0L);
                 Actor<RootResolver> root = registry.createRoot(conjunctionPattern, responses::add, iterDone -> doneReceived.incrementAndGet());
