@@ -170,37 +170,20 @@ public class Rule {
     }
 
     public void validateSatisfiable() {
-        /*
-         check that none of the variables in the `when` or `then` conjunctions are marked `isSatisfiable = false`. otherwise throw an error
-         */
         if (Stream.concat(then.variables().stream(), when.variables().stream()).anyMatch(variable -> !variable.isSatisfiable())) {
             throw GraknException.of(RULE_WHEN_CAN_NEVER_BE_SATISFIED, structure.label());
         }
     }
 
     public void validateInsertable() {
-        ResourceIterator<VertexMap> possibleWhenPerms = logicManager.typeResolver().resolveAndGetIterator(when, false);
-        ResourceIterator<VertexMap> possibleThenPerms = logicManager.typeResolver().resolveAndGetIterator(then, true);
+        ResourceIterator<VertexMap> possibleWhenPerms = logicManager.typeResolver().retrievePossibleTypeCombos(when, false);
+        ResourceIterator<VertexMap> possibleThenPerms = logicManager.typeResolver().retrievePossibleTypeCombos(then, true);
 
         Set<VertexMap> possibleThenSet = possibleThenPerms.toSet();
         if (possibleWhenPerms.anyMatch(whenVertexMap -> possibleThenSet.stream().noneMatch(thenVertexMap -> vertexMapsEqual(thenVertexMap, whenVertexMap))
         )) {
             throw GraknException.of(RULE_WHEN_CAN_VIOLATE_RULE_THEN_TYPES, structure.label());
         }
-
-        /*
-        High level, we also want to ensure that every combination of possible variable types in the `then`, that may be provided
-        by the `when` of the rule, is actually compatible with the `then` of the rule. This means,
-        we need _any_ set of instances to be insertable in the `then`. Note that inserts are different from `match`
-        in that you don't check any subtyping (i think), just check what the exact concept's capabilities are.
-
-        If any combination of types the `when` may produce is not compatible with the `then`, we should flag it to the user.
-
-        To do this you may want to
-        1. utilise the streaming mode of `TypeResolver` (can re-run it, thats ok) to get all combinations
-        2. utilise the `Rule.Conclusion` classes before (there's exactly 1 of the 3 per rule) to validate a combination is compatible with the conclusion
-           using these Rule.Conclusion data structures indicates that it is a "high level" logical rule validation, which is true
-         */
     }
 
     private boolean vertexMapsEqual(VertexMap thenVertexMap, VertexMap whenVertexMap) {

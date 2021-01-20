@@ -70,7 +70,7 @@ public class TypeResolver {
         this.logicCache = logicCache;
     }
 
-    public ResourceIterator<VertexMap> resolveAndGetIterator(Conjunction conjunction, boolean insertable) {
+    public ResourceIterator<VertexMap> retrievePossibleTypeCombos(Conjunction conjunction, boolean insertable) {
         TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, conceptMgr, insertable);
         return traversalEng.iterator(traversalBuilder.traversal());
     }
