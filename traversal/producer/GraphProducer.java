@@ -66,20 +66,22 @@ public class GraphProducer implements Producer<VertexMap> {
     @Override
     public synchronized void produce(Producer.Queue<VertexMap> queue, int request) {
         if (isDone.get()) return;
-        else if (!isInitialised) initialise();
+        else if (!isInitialised) initialise(queue);
         distribute(queue, request);
     }
 
-    private synchronized void initialise() {
+    private synchronized void initialise(Queue<VertexMap> queue) {
         for (int i = 0; i < parallelisation && start.hasNext(); i++) {
             ResourceIterator<VertexMap> iter =
                     new GraphIterator(graphMgr, start.next(), procedure, params, filter).distinct(produced);
             runningJobs.put(iter, CompletableFuture.runAsync(() -> {}, forkJoinPool()));
         }
         isInitialised = true;
+        if (runningJobs.isEmpty()) done(queue);
     }
 
     private synchronized void distribute(Queue<VertexMap> queue, int request) {
+        if (isDone.get()) return;
         int requestSplitMax = (int) Math.ceil((double) request / runningJobs.size());
         int requestSent = 0;
         for (ResourceIterator<VertexMap> iterator : runningJobs.keySet()) {
