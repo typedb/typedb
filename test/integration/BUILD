@@ -67,6 +67,7 @@ host_compatible_java_test(
         "//common/test:logback"
     ],
     resource_strip_prefix = "common/test",
+    size = "large",
 )
 
 checkstyle_test(
