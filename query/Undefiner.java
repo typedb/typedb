@@ -167,8 +167,7 @@ public class Undefiner {
             final ThingType supertype = getThingType(subConstraint.type().label().get());
             if (supertype == null) {
                 throw GraknException.of(TYPE_NOT_FOUND, subConstraint.type().label().get());
-            } else if (thingType.getSupertypes().noneMatch(t -> t.equals(supertype))
-                    && !(supertype instanceof ThingTypeImpl.Root)) {
+            } else if (thingType.getSupertypes().noneMatch(t -> t.equals(supertype))) {
                 throw GraknException.of(INVALID_UNDEFINE_SUB, thingType.getLabel(), supertype.getLabel());
             }
             if (thingType instanceof RelationType) {
