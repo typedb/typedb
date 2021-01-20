@@ -64,8 +64,8 @@ import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
-import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CAN_NEVER_BE_SATISFIED;
-import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CAN_VIOLATE_RULE_THEN_TYPES;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CANNOT_BE_SATISFIED;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CAN_IMPLY_UNINSERTABLE_RESULTS;
 import static grakn.core.logic.LogicManager.validateRuleStructureLabels;
 
 
@@ -171,7 +171,7 @@ public class Rule {
 
     public void validateSatisfiable() {
         if (Stream.concat(then.variables().stream(), when.variables().stream()).anyMatch(variable -> !variable.isSatisfiable())) {
-            throw GraknException.of(RULE_WHEN_CAN_NEVER_BE_SATISFIED, structure.label());
+            throw GraknException.of(RULE_CANNOT_BE_SATISFIED, structure.label());
         }
     }
 
@@ -180,10 +180,16 @@ public class Rule {
         ResourceIterator<VertexMap> possibleThenPerms = logicManager.typeResolver().retrievePossibleTypeCombos(then, true);
 
         Set<VertexMap> possibleThenSet = possibleThenPerms.toSet();
-        if (possibleWhenPerms.anyMatch(whenVertexMap -> possibleThenSet.stream().noneMatch(thenVertexMap -> vertexMapsEqual(thenVertexMap, whenVertexMap))
-        )) {
-            throw GraknException.of(RULE_WHEN_CAN_VIOLATE_RULE_THEN_TYPES, structure.label());
-        }
+        possibleWhenPerms.forEachRemaining(whenVertexMap -> {
+            if (possibleThenSet.stream().noneMatch(thenVertexMap -> vertexMapsEqual(thenVertexMap, whenVertexMap))) {
+                throw GraknException.of(RULE_CAN_IMPLY_UNINSERTABLE_RESULTS, whenVertexMap);
+            }
+        });
+
+//        if (possibleWhenPerms.anyMatch(whenVertexMap -> possibleThenSet.stream().noneMatch(thenVertexMap -> vertexMapsEqual(thenVertexMap, whenVertexMap))
+//        )) {
+//            throw GraknException.of(RULE_CAN_IMPLY_UNINSERTABLE_RESULTS, structure.label());
+//        }
     }
 
     private boolean vertexMapsEqual(VertexMap thenVertexMap, VertexMap whenVertexMap) {
