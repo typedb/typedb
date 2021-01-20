@@ -189,10 +189,6 @@ public class ResolverManagerTest {
                 "marriage-is-friendship",
                 Graql.parsePattern("{$x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
                 Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
-        rocksTransaction.commit();
-        rocksTransaction = session.transaction(Arguments.Transaction.Type.WRITE);
-        conceptMgr = rocksTransaction.concepts();
-        logicMgr = rocksTransaction.logic();
 
         Concludable concludable = Concludable.create(parse("{ $b has $a; }")).iterator().next();
         Concludable concludable2 = Concludable.create(parse("{ $c($b) isa friendship; }")).iterator().next();
@@ -200,6 +196,8 @@ public class ResolverManagerTest {
         Set<Resolvable> resolvables = set(concludable, concludable2);
         List<Resolvable> plan = new ResolverManager.Plan(resolvables, conceptMgr, logicMgr).plan();
 
+        assertEquals(0, concludable.getApplicableRules(conceptMgr, logicMgr).toList().size());
+        assertEquals(1, concludable2.getApplicableRules(conceptMgr, logicMgr).toList().size());
         assertEquals(list(concludable, concludable2), plan);
     }
 }
