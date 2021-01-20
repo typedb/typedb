@@ -227,7 +227,7 @@ public class RuleTest {
 
                     Rule rule = txn.logic().getRule("marriage-is-friendship");
                     ConceptMap whenAnswer = new ConceptMap(map(pair(Reference.name("x"), people.get(0)),
-                                                               pair(Reference.name("y"), people.get(1))));
+                            pair(Reference.name("y"), people.get(1))));
 
                     Map<Identifier, Concept> thenConcepts = rule.putConclusion(whenAnswer, txn.traversal(), conceptMgr);
                     assertEquals(4, thenConcepts.size());
@@ -271,8 +271,8 @@ public class RuleTest {
                     final ConceptManager conceptMgr = txn.concepts();
                     RelationType friendship = conceptMgr.getRelationType("friendship");
                     txn.query().insert(Graql.parseQuery("insert $x isa person; $y isa person; " +
-                                                                "(spouse: $x, spouse: $y) isa marriage;" +
-                                                                "(friend: $x, friend: $y) isa friendship;").asInsert());
+                            "(spouse: $x, spouse: $y) isa marriage;" +
+                            "(friend: $x, friend: $y) isa friendship;").asInsert());
                     List<Relation> friendshipInstances = friendship.getInstances().collect(Collectors.toList());
                     assertEquals(1, friendshipInstances.size());
 
@@ -282,7 +282,7 @@ public class RuleTest {
 
                     Rule rule = txn.logic().getRule("marriage-is-friendship");
                     ConceptMap whenAnswer = new ConceptMap(map(pair(Reference.name("x"), people.get(0)),
-                                                               pair(Reference.name("y"), people.get(1))));
+                            pair(Reference.name("y"), people.get(1))));
 
                     Map<Identifier, Concept> thenConcepts = rule.putConclusion(whenAnswer, txn.traversal(), conceptMgr);
                     assertEquals(4, thenConcepts.size());
@@ -328,7 +328,7 @@ public class RuleTest {
 
                     Rule rule = txn.logic().getRule("old-milk-is-not-good");
                     ConceptMap whenAnswer = new ConceptMap(map(pair(Reference.name("x"), milkInst),
-                                                               pair(Reference.name("a"), ageInDays10)));
+                            pair(Reference.name("a"), ageInDays10)));
                     Map<Identifier, Concept> thenConcepts = rule.putConclusion(whenAnswer, txn.traversal(), conceptMgr);
                     assertEquals(2, thenConcepts.size());
 
