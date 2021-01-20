@@ -61,13 +61,15 @@ host_compatible_java_test(
 
         # External dependencies from Grakn Labs
         "@graknlabs_common//:common",
-        "@graknlabs_graql//java/pattern",
         "@graknlabs_graql//java:graql",
     ],
 )
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*"]),
+    include = glob([
+        "*",
+        "resolution/*",
+    ]),
     license_type = "agpl",
 )
