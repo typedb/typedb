@@ -99,16 +99,10 @@ public class GraphProducer implements Producer<VertexMap> {
 
     private synchronized void transition(Queue<VertexMap> queue, ResourceIterator<VertexMap> iterator, int unfulfilled) {
         if (!iterator.hasNext()) {
-            if (runningJobs.containsKey(iterator) && start.hasNext()) {
-                replace(queue, iterator, unfulfilled);
-            } else if (!runningJobs.isEmpty() && unfulfilled > 0) {
-                runningJobs.remove(iterator);
-                distribute(queue, unfulfilled);
-            } else if (runningJobs.isEmpty()) {
-                done(queue);
-            } else {
-                assert unfulfilled == 0;
-            }
+            if (runningJobs.remove(iterator) != null && start.hasNext()) replace(queue, iterator, unfulfilled);
+            else if (!runningJobs.isEmpty() && unfulfilled > 0) distribute(queue, unfulfilled);
+            else if (runningJobs.isEmpty()) done(queue);
+            else assert unfulfilled == 0;
         } else {
             assert unfulfilled == 0;
         }
