@@ -18,6 +18,7 @@
 package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.common.concurrent.actor.Actor;
+import grakn.core.common.exception.GraknException;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.reasoner.resolution.MockTransaction;
@@ -34,6 +35,8 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public class RetrievableResolver extends ResolvableResolver<RetrievableResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(RetrievableResolver.class);
@@ -62,17 +65,17 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
 
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
-        // No downstream actors, so do nothing
+        throw GraknException.of(ILLEGAL_STATE);
     }
 
     @Override
     protected void receiveExhausted(Response.Exhausted fromDownstream, int iteration) {
-        // No downstream actors, so do nothing
+        throw GraknException.of(ILLEGAL_STATE);
     }
 
     @Override
     protected void initialiseDownstreamActors() {
-        // No downstream actors, so do nothing
+        throw GraknException.of(ILLEGAL_STATE);
     }
 
     @Override
