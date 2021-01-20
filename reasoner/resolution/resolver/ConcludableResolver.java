@@ -18,6 +18,8 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
+import grakn.core.common.concurrent.actor.Actor;
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
@@ -37,6 +39,7 @@ import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -160,7 +163,8 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
         iterationStates.putIfAbsent(root, new IterationState(iteration));
         IterationState iterationState = iterationStates.get(root);
 
-        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.answerBounds().conceptMap());
+        ResourceIterator<ConceptMap> traversal = traversalEngine.iterator(concludable.conjunction().traversal(new ArrayList<>())).map(conceptMgr::conceptMap);
+
         ResponseProducer responseProducer = new ResponseProducer(traversal, iteration);
         mayRegisterRules(request, iterationState, responseProducer);
         return responseProducer;
