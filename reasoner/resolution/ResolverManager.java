@@ -165,7 +165,7 @@ public class ResolverManager {
 
         private void add(Resolvable resolvable) {
             plan.add(resolvable);
-            varsAnswered.addAll(resolvable.conjunction().variables());
+            varsAnswered.addAll(namedVariables(resolvable));
             remaining.remove(resolvable);
         }
 
@@ -237,21 +237,18 @@ public class ResolverManager {
         }
 
         private Stream<Resolvable> connected(Stream<Resolvable> resolvableStream) {
-            return resolvableStream.filter(r -> !Collections.disjoint(r.conjunction().variables(), varsAnswered));
+            return resolvableStream.filter(r -> !Collections.disjoint(namedVariables(r), varsAnswered));
         }
 
         private Optional<Concludable> fewestRules(Stream<Resolvable> resolvableStream) {
-            // TODO How to do a tie-break for Concludables with the same number of applicable rules?
+            // TODO Tie-break for Concludables with the same number of applicable rules
             return resolvableStream.map(Resolvable::asConcludable)
                     .min(Comparator.comparingInt(c -> c.getApplicableRules(conceptMgr, logicMgr).toSet().size()));
         }
 
         private Optional<Resolvable> mostUnansweredVars(Stream<Resolvable> resolvableStream) {
-            return resolvableStream.max(Comparator.comparingInt(r -> {
-                HashSet<Variable> s = new HashSet<>(r.conjunction().variables());
-                s.removeAll(varsAnswered);
-                return s.size();
-            }));
+            return resolvableStream.max(Comparator.comparingInt(r -> iterate(namedVariables(r))
+                    .filter(var -> !varsAnswered.contains(var)).toSet().size()));
         }
 
         /**
@@ -262,7 +259,7 @@ public class ResolverManager {
             Set<Variable> generatedVars = iterate(resolvables).filter(Resolvable::isConcludable)
                     .map(Resolvable::asConcludable).map(Concludable::generating).toSet();
             for (Resolvable resolvable : resolvables) {
-                for (Variable v : resolvable.conjunction().variables()) {
+                for (Variable v : namedVariables(resolvable)) {
                     deps.putIfAbsent(resolvable, new HashSet<>());
                     if (generatedVars.contains(v) && !(resolvable.isConcludable() && resolvable.asConcludable().generating().equals(v))) {
                         // TODO Should this rule the Resolvable out if generates it's own dependency?
@@ -271,6 +268,10 @@ public class ResolverManager {
                 }
             }
             return deps;
+        }
+
+        private Set<Variable> namedVariables(Resolvable resolvable) {
+            return iterate(resolvable.conjunction().variables()).filter(var -> var.reference().isName()).toSet();
         }
     }
 }

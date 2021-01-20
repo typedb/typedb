@@ -17,13 +17,11 @@
 
 package grakn.core.reasoner.resolution;
 
-import grakn.core.Grakn;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.logic.LogicManager;
-import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Resolvable;
 import grakn.core.logic.resolvable.Retrievable;
@@ -35,9 +33,7 @@ import grakn.core.rocks.RocksTransaction;
 import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -49,7 +45,6 @@ import java.util.Set;
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertTrue;
 
 public class ResolverManagerTest {
 
@@ -106,7 +101,8 @@ public class ResolverManagerTest {
 
     @Test
     public void test_planner_prioritises_largest_retrievable_without_dependencies() {
-        Retrievable retrievable = new Retrievable(parse("{ $p isa person, has age $a, has first-name $fn, has surname $sn; }"));
+        Retrievable retrievable = new Retrievable(parse("{ $p isa person, has age $a, has first-name $fn, has " +
+                                                                "surname $sn; }"));
         Concludable concludable = Concludable.create(parse("{ ($p, $c); }")).iterator().next();
         Retrievable retrievable2 = new Retrievable(parse("{ $c isa company, has name $cn; }"));
 
@@ -114,6 +110,19 @@ public class ResolverManagerTest {
 
         List<Resolvable> plan = new ResolverManager.Plan(resolvables, conceptMgr, logicMgr).plan();
         assertEquals(list(retrievable, concludable, retrievable2), plan);
+    }
+
+    @Test
+    public void test_planner_prioritises_largest_named_variables_retrievable_without_dependencies() {
+        Retrievable retrievable = new Retrievable(parse("{ $p isa person, has age 30, has first-name " +
+                                                                "\"Alice\", has surname \"Bachelor\"; }"));
+        Concludable concludable = Concludable.create(parse("{ ($p, $c); }")).iterator().next();
+        Retrievable retrievable2 = new Retrievable(parse("{ $c isa company, has name $cn; }"));
+
+        Set<Resolvable> resolvables = set(retrievable, retrievable2, concludable);
+
+        List<Resolvable> plan = new ResolverManager.Plan(resolvables, conceptMgr, logicMgr).plan();
+        assertEquals(list(retrievable2, concludable, retrievable), plan);
     }
 
     @Test
