@@ -57,7 +57,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
@@ -84,11 +83,12 @@ public class Rule {
         this.structure = structure;
         this.when = logicManager.typeResolver().resolve(whenPattern(structure.when()), false);
         this.then = logicManager.typeResolver().resolve(thenPattern(structure.then()), true);
-//        this.when = whenPattern(structure.when());
-//        this.then = thenPattern(structure.then());
         pruneThenResolvedTypes();
+        validateSatisfiable();
+        validateInsertable();
         this.conclusion = Conclusion.create(this.then);
         this.requiredWhenConcludables = Concludable.create(this.when);
+        validateCycles();
     }
 
     private Rule(GraphManager graphMgr, ConceptManager conceptMgr, LogicManager logicManager, String label,
@@ -96,9 +96,8 @@ public class Rule {
         this.logicManager = logicManager;
         this.structure = graphMgr.schema().create(label, when, then);
         validateRuleStructureLabels(conceptMgr, this.structure);
-        // TODO enable when we have type hinting
-        this.when = logicManager.typeResolver().resolve(whenPattern(structure.when()));
-        this.then = logicManager.typeResolver().resolve(thenPattern(structure.then()));;
+        this.when = logicManager.typeResolver().resolve(whenPattern(structure.when()), false);
+        this.then = logicManager.typeResolver().resolve(thenPattern(structure.then()), false); ;
         pruneThenResolvedTypes();
         validateSatisfiable();
         validateInsertable();
@@ -130,10 +129,6 @@ public class Rule {
 
     public Conjunction when() {
         return when;
-    }
-
-    public Conjunction then() {
-        return then;
     }
 
     public String getLabel() {
@@ -183,13 +178,12 @@ public class Rule {
         }
     }
 
-    public void validateInsertable()  {
+    public void validateInsertable() {
         ResourceIterator<VertexMap> possibleWhenPerms = logicManager.typeResolver().resolveAndGetIterator(when, false);
         ResourceIterator<VertexMap> possibleThenPerms = logicManager.typeResolver().resolveAndGetIterator(then, true);
 
         Set<VertexMap> possibleThenSet = possibleThenPerms.toSet();
-        if (possibleWhenPerms.anyMatch(whenVertexMap ->
-            possibleThenSet.stream().noneMatch(thenVertexMap -> vertexMapsEqual(thenVertexMap, whenVertexMap))
+        if (possibleWhenPerms.anyMatch(whenVertexMap -> possibleThenSet.stream().noneMatch(thenVertexMap -> vertexMapsEqual(thenVertexMap, whenVertexMap))
         )) {
             throw GraknException.of(RULE_WHEN_CAN_VIOLATE_RULE_THEN_TYPES, structure.label());
         }

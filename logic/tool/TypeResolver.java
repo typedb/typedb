@@ -22,13 +22,10 @@ import grakn.common.collection.Bytes;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
-import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
-import grakn.core.graph.vertex.Vertex;
 import grakn.core.logic.LogicCache;
-import grakn.core.logic.Rule;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IIDConstraint;
@@ -255,7 +252,7 @@ public class TypeResolver {
             for (RelationConstraint.RolePlayer rolePlayer : constraint.players()) {
                 TypeVariable playerResolver = register(rolePlayer.player());
                 TypeVariable roleResolver = register(rolePlayer.roleType().isPresent() ?
-                        rolePlayer.roleType().get() : new TypeVariable(newSystemId()));
+                                                             rolePlayer.roleType().get() : new TypeVariable(newSystemId()));
                 traversal.relates(owner.id(), roleResolver.id());
                 traversal.plays(playerResolver.id(), roleResolver.id());
             }

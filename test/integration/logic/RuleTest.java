@@ -52,7 +52,6 @@ import static grakn.common.collection.Collections.pair;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CAN_NEVER_BE_SATISFIED;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CAN_VIOLATE_RULE_THEN_TYPES;
-import static grakn.core.common.test.Util.assertThrows;
 import static grakn.core.common.test.Util.assertThrowsWithMessage;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
@@ -406,7 +405,7 @@ public class RuleTest {
                             "dogs-are-named-fido",
                             Graql.parsePattern("{$x isa dog;}").asConjunction(),
                             Graql.parseVariable("$x has name 'fido'").asThing()),
-                            GraknException.of(RULE_WHEN_CAN_NEVER_BE_SATISFIED, "dogs-are-named-fido").getMessage());
+                                            GraknException.of(RULE_WHEN_CAN_NEVER_BE_SATISFIED, "dogs-are-named-fido").getMessage());
                 }
             }
         }
