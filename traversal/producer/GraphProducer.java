@@ -109,7 +109,7 @@ public class GraphProducer implements Producer<VertexMap> {
                     new GraphIterator(graphMgr, start.next(), procedure, params, filter).distinct(produced);
             CompletableFuture<Void> asyncJob = unfulfilled > 0
                     ? CompletableFuture.runAsync(() -> job(queue, newIter, unfulfilled), forkJoinPool())
-                    : CompletableFuture.runAsync(() -> {}, forkJoinPool());
+                    : CompletableFuture.completedFuture(null);
             runningJobs.put(newIter, asyncJob);
         } else if (!runningJobs.isEmpty() && unfulfilled > 0) {
             distribute(queue, unfulfilled);
