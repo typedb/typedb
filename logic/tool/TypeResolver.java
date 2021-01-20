@@ -70,9 +70,18 @@ public class TypeResolver {
         this.logicCache = logicCache;
     }
 
-    public ResourceIterator<VertexMap> retrievePossibleTypeCombos(Conjunction conjunction, boolean insertable) {
+    public ResourceIterator<Map<Reference.Name, Label>> retrievePossibleTypeCombos(Conjunction conjunction, boolean insertable) {
         TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, conceptMgr, insertable);
-        return traversalEng.iterator(traversalBuilder.traversal());
+        return traversalEng.iterator(traversalBuilder.traversal()).map(vertexMap -> {
+            Map<Reference.Name, Label> mapping = new HashMap<>();
+            vertexMap.map().forEach((ref, vertex) -> {
+                assert vertex.isType();
+                Variable originalVar = traversalBuilder.getVariable(ref);
+                if (originalVar != null && originalVar.reference().isName())
+                    mapping.put(originalVar.reference().asName(), vertex.asType().properLabel());
+            });
+            return mapping;
+        });
     }
 
     public Conjunction resolveLabels(Conjunction conjunction) {
@@ -107,6 +116,7 @@ public class TypeResolver {
 
         resolvedLabels.forEach((ref, labels) -> {
             Variable variable = traversalBuilder.getVariable(ref);
+            if (variable == null) return;
             if (variable.isType() && labels.size() < numOfTypes ||
                     variable.isThing() && labels.size() < numOfConcreteTypes) {
                 assert variable.resolvedTypes().isEmpty() || variable.resolvedTypes().containsAll(labels);
@@ -238,7 +248,7 @@ public class TypeResolver {
         private void registerRelation(TypeVariable owner, RelationConstraint constraint) {
             for (RelationConstraint.RolePlayer rolePlayer : constraint.players()) {
                 TypeVariable playerResolver = register(rolePlayer.player());
-                TypeVariable actingRoleResolver = register(new TypeVariable(newSystemId()));
+                TypeVariable actingRoleResolver = new TypeVariable(newSystemId());
                 if (rolePlayer.roleType().isPresent()) {
                     TypeVariable roleTypeResolver = register(rolePlayer.roleType().get());
                     traversal.sub(actingRoleResolver.id(), roleTypeResolver.id(), true);

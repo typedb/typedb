@@ -176,27 +176,30 @@ public class Rule {
     }
 
     public void validateInsertable() {
-        ResourceIterator<VertexMap> possibleWhenPerms = logicManager.typeResolver().retrievePossibleTypeCombos(when, false);
-        ResourceIterator<VertexMap> possibleThenPerms = logicManager.typeResolver().retrievePossibleTypeCombos(then, true);
+        ResourceIterator<Map<Reference.Name, Label>> possibleWhenPerms = logicManager.typeResolver().retrievePossibleTypeCombos(when, false);
+        ResourceIterator<Map<Reference.Name, Label>> possibleThenPerms = logicManager.typeResolver().retrievePossibleTypeCombos(then, true);
 
-        Set<VertexMap> possibleThenSet = possibleThenPerms.toSet();
+        Set<Map<Reference.Name, Label>> possibleThenSet = possibleThenPerms.toSet();
         possibleWhenPerms.forEachRemaining(whenVertexMap -> {
-            if (possibleThenSet.stream().noneMatch(thenVertexMap -> vertexMapsEqual(thenVertexMap, whenVertexMap))) {
-                throw GraknException.of(RULE_CAN_IMPLY_UNINSERTABLE_RESULTS, whenVertexMap);
+            if (!possibleThenSet.contains(whenVertexMap)) {
+                throw GraknException.of(RULE_CAN_IMPLY_UNINSERTABLE_RESULTS, structure.label(), whenVertexMap.toString());
             }
         });
+    }
 
-//        if (possibleWhenPerms.anyMatch(whenVertexMap -> possibleThenSet.stream().noneMatch(thenVertexMap -> vertexMapsEqual(thenVertexMap, whenVertexMap))
-//        )) {
-//            throw GraknException.of(RULE_CAN_IMPLY_UNINSERTABLE_RESULTS, structure.label());
-//        }
+    private String printVertexMap(VertexMap vertexMap) {
+        StringBuilder stringBuilder = new StringBuilder();
+        vertexMap.map().forEach((ref, vert) -> {
+            stringBuilder.append(ref.toString()).append(" -> ").append(vert.asType().label());
+        });
+        return stringBuilder.toString();
     }
 
     private boolean vertexMapsEqual(VertexMap thenVertexMap, VertexMap whenVertexMap) {
         for (Map.Entry<Reference, Vertex<?, ?>> entry : thenVertexMap.map().entrySet()) {
             Reference ref = entry.getKey();
-            Vertex<?, ?> vertex = entry.getValue();
             if (ref.isSystemReference()) continue;
+            Vertex<?, ?> vertex = entry.getValue();
             assert whenVertexMap.containsKey(ref);
             if (whenVertexMap.get(ref) != vertex) return false;
         }
