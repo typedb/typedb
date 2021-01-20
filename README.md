@@ -6,7 +6,7 @@
 [![Stack Overflow](https://img.shields.io/badge/stackoverflow-grakn-796de3.svg)](https://stackoverflow.com/questions/tagged/grakn)
 [![Stack Overflow](https://img.shields.io/badge/stackoverflow-graql-3dce8c.svg)](https://stackoverflow.com/questions/tagged/graql)
 
-Grakn is a distributed knowledge graph: a logical database to organize large and complex networks of data as one body of knowledge.
+Grakn is a distributed knowledge graph: a logical database to organise large and complex networks of data as one body of knowledge.
 
 | Get Started | Documentation | Discussion |
 |:------------|:--------------|:-----------|
@@ -14,7 +14,7 @@ Grakn is a distributed knowledge graph: a logical database to organize large and
 
 # Meet Grakn and Graql
 
-Grakn is a distributed knowledge graph: a logical database to organize large and complex networks of data as one body of knowledge. Grakn provides the [knowledge engineering](https://en.wikipedia.org/wiki/Knowledge_engineering) tools for developers to easily leverage the power of [Knowledge Representation and Automated Reasoning](https://en.wikipedia.org/wiki/Knowledge_representation_and_reasoning) when building complex systems. Ultimately, Grakn serves as the knowledge-base foundation for intelligent systems.
+Grakn is a distributed knowledge graph: a logical database to organise large and complex networks of data as one body of knowledge. Grakn provides the [knowledge engineering](https://en.wikipedia.org/wiki/Knowledge_engineering) tools for developers to easily leverage the power of [Knowledge Representation and Automated Reasoning](https://en.wikipedia.org/wiki/Knowledge_representation_and_reasoning) when building complex systems. Ultimately, Grakn serves as the knowledge-base foundation for intelligent systems.
 
 [Graql](https://github.com/graknlabs/graql) is Grakn's reasoning and analytics query language. It provides an expressive knowledge schema language through an enhanced entity-relationship model, transactional queries that perform deductive reasoning in real-time, and analytical queries* with native distributed Pregel and MapReduce algorithms. Graql provides a strong abstraction over low-level data constructs and complex relationships. (* analytics queries are temporarily unavailable in 2.0.0)
 
