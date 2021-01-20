@@ -33,15 +33,17 @@ def graknlabs_common():
 
 
 def graknlabs_graql():
+#    TODO: change when Graql PR is merged
 #    git_repository(
 #        name = "graknlabs_graql",
 #        remote = "https://github.com/graknlabs/graql",
 #        commit = "4c866c8d566eae1d21386b20c4e1e6806a9deb25", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_graql
 #    )
 
-    native.local_repository(
+    git_repository(
         name = "graknlabs_graql",
-        path = "/users/max/programming/graql",
+        remote = "https://github.com/maxbaxt/graql",
+        commit = "2d17ed5596fecdbafb3bd6fd33050c938b385e2c", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_graql
     )
 
 def graknlabs_protocol():
