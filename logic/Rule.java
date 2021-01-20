@@ -177,22 +177,13 @@ public class Rule {
 
     public void validateInsertable() {
         ResourceIterator<Map<Reference.Name, Label>> possibleWhenPerms = logicManager.typeResolver().retrievePossibleTypeCombos(when, false);
-        ResourceIterator<Map<Reference.Name, Label>> possibleThenPerms = logicManager.typeResolver().retrievePossibleTypeCombos(then, true);
+        Set<Map<Reference.Name, Label>> possibleThenSet = logicManager.typeResolver().retrievePossibleTypeCombos(then, true).toSet();
 
-        Set<Map<Reference.Name, Label>> possibleThenSet = possibleThenPerms.toSet();
-        possibleWhenPerms.forEachRemaining(whenVertexMap -> {
-            if (!possibleThenSet.contains(whenVertexMap)) {
-                throw GraknException.of(RULE_CAN_IMPLY_UNINSERTABLE_RESULTS, structure.label(), whenVertexMap.toString());
+        possibleWhenPerms.forEachRemaining(nameLabelMap -> {
+            if (!possibleThenSet.contains(nameLabelMap)) {
+                throw GraknException.of(RULE_CAN_IMPLY_UNINSERTABLE_RESULTS, structure.label(), nameLabelMap.toString())
             }
         });
-    }
-
-    private String printVertexMap(VertexMap vertexMap) {
-        StringBuilder stringBuilder = new StringBuilder();
-        vertexMap.map().forEach((ref, vert) -> {
-            stringBuilder.append(ref.toString()).append(" -> ").append(vert.asType().label());
-        });
-        return stringBuilder.toString();
     }
 
     private boolean vertexMapsEqual(VertexMap thenVertexMap, VertexMap whenVertexMap) {
