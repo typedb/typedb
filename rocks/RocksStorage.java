@@ -18,6 +18,7 @@
 
 package grakn.core.rocks;
 
+import grakn.core.common.concurrent.ConcurrentSet;
 import grakn.core.common.concurrent.ManagedReadWriteLock;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
@@ -36,8 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
@@ -53,7 +52,7 @@ public class RocksStorage implements Storage {
 
     protected final Transaction storageTransaction;
     private final boolean isReadOnly;
-    private final Set<RocksIterator<?>> iterators;
+    private final ConcurrentSet<RocksIterator<?>> iterators;
     private final ConcurrentLinkedQueue<org.rocksdb.RocksIterator> recycled;
     private final OptimisticTransactionOptions transactionOptions;
     private final WriteOptions writeOptions;
@@ -64,7 +63,7 @@ public class RocksStorage implements Storage {
 
     public RocksStorage(OptimisticTransactionDB rocksDB, boolean isReadOnly) {
         this.isReadOnly = isReadOnly;
-        iterators = ConcurrentHashMap.newKeySet();
+        iterators = new ConcurrentSet<>();
         recycled = new ConcurrentLinkedQueue<>();
         readWriteLock = new ManagedReadWriteLock();
         writeOptions = new WriteOptions();

@@ -18,6 +18,7 @@
 
 package grakn.core.graph.adjacency.impl;
 
+import grakn.core.common.concurrent.ConcurrentSet;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.adjacency.TypeAdjacency;
@@ -43,7 +44,7 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
 
     final TypeVertex owner;
     final Encoding.Direction.Adjacency direction;
-    final ConcurrentMap<Encoding.Edge.Type, Set<TypeEdge>> edges;
+    final ConcurrentMap<Encoding.Edge.Type, ConcurrentSet<TypeEdge>> edges;
 
     TypeAdjacencyImpl(TypeVertex owner, Encoding.Direction.Adjacency direction) {
         this.owner = owner;
@@ -61,7 +62,7 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
         final TypeVertex from = direction.isOut() ? owner : adjacent;
         final TypeVertex to = direction.isOut() ? adjacent : owner;
         final TypeEdgeImpl edge = new TypeEdgeImpl.Buffered(encoding, from, to);
-        edges.computeIfAbsent(encoding, e -> ConcurrentHashMap.newKeySet()).add(edge);
+        edges.computeIfAbsent(encoding, e -> new ConcurrentSet<>()).add(edge);
         if (direction.isOut()) ((TypeAdjacencyImpl) to.ins()).putNonRecursive(edge);
         else ((TypeAdjacencyImpl) from.outs()).putNonRecursive(edge);
         owner.setModified();
@@ -70,7 +71,7 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
 
     @Override
     public TypeEdge cache(TypeEdge edge) {
-        edges.computeIfAbsent(edge.encoding(), e -> ConcurrentHashMap.newKeySet()).add(edge);
+        edges.computeIfAbsent(edge.encoding(), e -> new ConcurrentSet<>()).add(edge);
         return edge;
     }
 

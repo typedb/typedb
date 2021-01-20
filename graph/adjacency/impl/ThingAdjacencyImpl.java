@@ -18,6 +18,7 @@
 
 package grakn.core.graph.adjacency.impl;
 
+import grakn.core.common.concurrent.ConcurrentSet;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.adjacency.ThingAdjacency;
@@ -31,7 +32,6 @@ import grakn.core.graph.iid.SuffixIID;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -44,13 +44,12 @@ import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
 import static java.util.Arrays.copyOfRange;
 import static java.util.Collections.emptyIterator;
-import static java.util.concurrent.ConcurrentHashMap.newKeySet;
 
 public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
     final ThingVertex owner;
     final Encoding.Direction.Adjacency direction;
-    final ConcurrentMap<InfixIID.Thing, ConcurrentHashMap.KeySetView<InfixIID.Thing, Boolean>> infixes;
+    final ConcurrentMap<InfixIID.Thing, ConcurrentSet<InfixIID.Thing>> infixes;
     final ConcurrentMap<InfixIID.Thing, ConcurrentMap<EdgeIID.Thing, ThingEdge>> edges;
 
     ThingAdjacencyImpl(ThingVertex owner, Encoding.Direction.Adjacency direction) {
@@ -136,7 +135,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         assert encoding.lookAhead() == infixes.length;
         InfixIID.Thing infixIID = infixIID(encoding);
         for (int i = 0; i < encoding.lookAhead(); i++) {
-            this.infixes.computeIfAbsent(infixIID, x -> newKeySet()).add(
+            this.infixes.computeIfAbsent(infixIID, x -> new ConcurrentSet<>()).add(
                     infixIID = infixIID(encoding, copyOfRange(infixes, 0, i + 1))
             );
         }

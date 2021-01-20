@@ -18,6 +18,7 @@
 
 package grakn.core.traversal.producer;
 
+import grakn.core.common.concurrent.ConcurrentSet;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.producer.Producer;
 import grakn.core.graph.GraphManager;
@@ -32,7 +33,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grakn.core.common.concurrent.ExecutorService.forkJoinPool;
@@ -46,7 +46,7 @@ public class GraphProducer implements Producer<VertexMap> {
     private final Traversal.Parameters params;
     private final List<Identifier.Variable.Name> filter;
     private final ResourceIterator<? extends Vertex<?, ?>> start;
-    private final ConcurrentHashMap.KeySetView<VertexMap, Boolean> produced;
+    private final ConcurrentSet<VertexMap> produced;
     private final Map<ResourceIterator<VertexMap>, CompletableFuture<Void>> runningJobs;
     private final AtomicBoolean isDone;
     private boolean isInitialised;
@@ -60,7 +60,7 @@ public class GraphProducer implements Producer<VertexMap> {
         this.filter = filter;
         this.parallelisation = parallelisation;
         this.runningJobs = new HashMap<>();
-        this.produced = ConcurrentHashMap.newKeySet();
+        this.produced = new ConcurrentSet<>();
         this.start = procedure.startVertex().iterator(graphMgr, params);
         this.isDone = new AtomicBoolean(false);
         this.isInitialised = false;
