@@ -167,17 +167,12 @@ public class ProducerIterator<T> implements ResourceIterator<T> {
             assert !producers.isEmpty();
             producers.removeFirst();
             pending = 0;
-
             try {
-                if (error != null) {
-                    blockingQueue.put(Either.second(Done.error(error)));
-                } else if (producers.isEmpty()) {
-                    blockingQueue.put(Either.second(Done.success()));
-                } else {
-                    mayProduce();
-                }
+                if (error != null) blockingQueue.put(Either.second(Done.error(error)));
+                else if (producers.isEmpty()) blockingQueue.put(Either.second(Done.success()));
+                else mayProduce();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                throw GraknException.of(e);
             }
         }
 
