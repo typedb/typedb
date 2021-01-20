@@ -50,8 +50,8 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
     final ThingVertex owner;
     final Encoding.Direction.Adjacency direction;
-    final ConcurrentMap<InfixIID.Thing, Set<InfixIID.Thing>> infixes;
-    final ConcurrentMap<InfixIID.Thing, Map<EdgeIID.Thing, ThingEdge>> edges;
+    final ConcurrentMap<InfixIID.Thing, ConcurrentHashMap.KeySetView<InfixIID.Thing, Boolean>> infixes;
+    final ConcurrentMap<InfixIID.Thing, ConcurrentMap<EdgeIID.Thing, ThingEdge>> edges;
 
     ThingAdjacencyImpl(ThingVertex owner, Encoding.Direction.Adjacency direction) {
         this.owner = owner;
@@ -141,7 +141,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             );
         }
 
-        Map<EdgeIID.Thing, ThingEdge> edgesByOutIID = edges.computeIfAbsent(infixIID, iid -> new HashMap<>());
+        Map<EdgeIID.Thing, ThingEdge> edgesByOutIID = edges.computeIfAbsent(infixIID, iid -> new ConcurrentHashMap<>());
         if (edgesByOutIID.containsKey(edge.outIID())) {
             ThingEdge thingEdge = edgesByOutIID.get(edge.outIID());
             if (thingEdge.isInferred() && !edge.isInferred()) thingEdge.isInferred(false);
