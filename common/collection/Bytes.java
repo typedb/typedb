@@ -19,6 +19,9 @@
 package grakn.core.common.collection;
 
 import grakn.core.common.exception.GraknCheckedException;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.traversal.Traversal;
+import grakn.core.traversal.common.Identifier;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -232,12 +235,12 @@ public class Bytes {
         return true;
     }
 
-    public static byte checkedCastSigned(int value) {
+    public static byte signedByte(int value) {
         assert value >= -128 && value <= 127;
         return (byte) value;
     }
 
-    public static byte checkedCastUnsigned(int value) {
+    public static byte unsignedByte(int value) {
         assert value >= 0 && value <= 255;
         return (byte) (value & 0xff);
     }

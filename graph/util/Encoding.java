@@ -35,8 +35,8 @@ import static grakn.common.collection.Collections.map;
 import static grakn.common.collection.Collections.pair;
 import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
-import static grakn.core.common.collection.Bytes.checkedCastSigned;
-import static grakn.core.common.collection.Bytes.checkedCastUnsigned;
+import static grakn.core.common.collection.Bytes.signedByte;
+import static grakn.core.common.collection.Bytes.unsignedByte;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -171,7 +171,7 @@ public class Encoding {
         private final PrefixType type;
 
         Prefix(int key, PrefixType type) {
-            this.key = checkedCastUnsigned(key);
+            this.key = unsignedByte(key);
             this.type = type;
         }
 
@@ -257,7 +257,7 @@ public class Encoding {
         }
 
         Infix(int key, boolean isOptimisation) {
-            this.key = checkedCastSigned(key);
+            this.key = signedByte(key);
             this.isOptimisation = isOptimisation;
         }
 
@@ -347,7 +347,7 @@ public class Encoding {
 
         ValueType(int key, Class<?> valueClass, boolean isWritable, boolean isKeyable,
                   @Nullable GraqlArg.ValueType graqlValueType) {
-            this.key = checkedCastUnsigned(key);
+            this.key = unsignedByte(key);
             this.valueClass = valueClass;
             this.isWritable = isWritable;
             this.isKeyable = isKeyable;
@@ -754,7 +754,7 @@ public class Encoding {
             public static final int LENGTH = 1;
             private final byte key;
 
-            Infix(int key) { this.key = checkedCastUnsigned(key); }
+            Infix(int key) { this.key = unsignedByte(key); }
 
             public static Infix of(byte[] key) {
                 if (key.length == 1) {
@@ -781,7 +781,7 @@ public class Encoding {
             private final byte key;
 
             JobType(int key) {
-                this.key = checkedCastUnsigned(key);
+                this.key = unsignedByte(key);
             }
 
             public static JobType of(byte[] key) {
@@ -812,7 +812,7 @@ public class Encoding {
             private final byte key;
 
             JobOperation(int key) {
-                this.key = checkedCastUnsigned(key);
+                this.key = unsignedByte(key);
             }
 
             public static JobOperation of(byte[] key) {
@@ -845,7 +845,7 @@ public class Encoding {
             private final byte key;
 
             Infix(int key) {
-                this.key = checkedCastUnsigned(key);
+                this.key = unsignedByte(key);
             }
 
             public byte key() {

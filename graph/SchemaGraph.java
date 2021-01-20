@@ -19,7 +19,6 @@
 package grakn.core.graph;
 
 import grakn.common.collection.Pair;
-import grakn.core.common.collection.Bytes;
 import grakn.core.common.concurrent.ManagedReadWriteLock;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
@@ -50,7 +49,6 @@ import java.util.stream.Stream;
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.pair;
 import static grakn.common.collection.Collections.set;
-import static grakn.core.common.collection.Bytes.join;
 import static grakn.core.common.collection.Bytes.stripPrefix;
 import static grakn.core.common.exception.ErrorMessage.SchemaGraph.INVALID_SCHEMA_WRITE;
 import static grakn.core.common.exception.ErrorMessage.Transaction.SCHEMA_READ_VIOLATION;
@@ -671,164 +669,257 @@ public class SchemaGraph implements Graph {
         }
     }
 
-    public class RuleIndex {
-        final ConcurrentHashMap<Label, Set<RuleStructure>> concludingIsa;
-        final ConcurrentHashMap<Label, Set<RuleStructure>> concludingHasAttribute;
-        final ConcurrentHashMap<Label, Set<RuleStructure>> bufferedConcludingIsa;
-        final ConcurrentHashMap<Label, Set<RuleStructure>> bufferedConcludingHasAttribute;
+    public static class RuleIndex {
 
-        final ConcurrentHashMap<Label, Set<RuleStructure>> ruleContains;
-        final ConcurrentHashMap<Label, Set<RuleStructure>> bufferedRuleContains;
-        private boolean concludingIndexOutdated;
+        private final Concluding concludingIndex;
+        private final Containing containingIndex;
 
-        public RuleIndex() {
-            concludingIsa = new ConcurrentHashMap<>();
-            concludingHasAttribute = new ConcurrentHashMap<>();
-            bufferedConcludingIsa = new ConcurrentHashMap<>();
-            bufferedConcludingHasAttribute = new ConcurrentHashMap<>();
-            ruleContains = new ConcurrentHashMap<>();
-            bufferedRuleContains = new ConcurrentHashMap<>();
-            concludingIndexOutdated = false;
+        public RuleIndex(Storage storage) {
+            concludingIndex = new Concluding(storage);
+            containingIndex = new Containing(storage);
         }
 
-        public ResourceIterator<RuleStructure> concludingIsa(Label type) {
-            assert !concludingIndexOutdated;
-            return link(iterate(concludingIsa.computeIfAbsent(type, this::loadConcludingIsa)),
-                        iterate(bufferedConcludingIsa.getOrDefault(type, set())));
+        public Concluding concluding() {
+            return concludingIndex;
         }
 
-        public ResourceIterator<RuleStructure> concludingHasAttribute(Label attributeType) {
-            assert !concludingIndexOutdated;
-            return link(iterate(concludingHasAttribute.computeIfAbsent(attributeType, this::loadConcludingHasAttribute)),
-                        iterate(bufferedConcludingHasAttribute.getOrDefault(attributeType, set())));
-        }
-
-        public ResourceIterator<RuleStructure> rulesContaining(Label type) {
-            return link(iterate(ruleContains.computeIfAbsent(type, this::loadRuleContains)),
-                        iterate(bufferedRuleContains.getOrDefault(type, set())));
-        }
-
-        public void concludingIsa(RuleStructure rule, Label type) {
-            bufferedConcludingIsa.compute(type, (t, rules) -> {
-                if (rules == null) rules = new HashSet<>();
-                rules.add(rule);
-                return rules;
-            });
-        }
-
-        public void concludingHasAttribute(RuleStructure rule, Label attributeType) {
-            bufferedConcludingHasAttribute.compute(attributeType, (t, rules) -> {
-                if (rules == null) rules = new HashSet<>();
-                rules.add(rule);
-                return rules;
-            });
-        }
-
-        public void ruleContains(RuleStructure rule, Label type) {
-            bufferedRuleContains.compute(type, (t, rules) -> {
-                if (rules == null) rules = new HashSet<>();
-                rules.add(rule);
-                return rules;
-            });
+        public Containing containing() {
+            return containingIndex;
         }
 
         public void commit() {
-            bufferedConcludingIsa.forEach((label, rules) -> {
-                VertexIID.Type typeIID = getType(label).iid();
-                rules.forEach(rule -> {
-                    IndexIID.Type.RuleIndex typeRuleConcludesIndex = IndexIID.Type.RuleIndex.concludedIsa(typeIID, rule.iid());
-                    storage.put(typeRuleConcludesIndex.bytes());
+            concludingIndex.buffered().commit();
+            containingIndex.buffered().commit();
+        }
+
+
+        public static class Concluding {
+            private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> isa;
+            private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> hasAttribute;
+            private final Buffered buffered;
+            private final Storage storage;
+            private boolean outdated;
+
+            public Concluding(Storage storage) {
+                this.storage = storage;
+                isa = new ConcurrentHashMap<>();
+                hasAttribute = new ConcurrentHashMap<>();
+                buffered = new Buffered();
+                outdated = false;
+            }
+
+            public Buffered buffered() {
+                return buffered;
+            }
+
+            public boolean isOutdated() {
+                return outdated;
+            }
+
+            public void isOutdated(boolean isOutdated) {
+                this.outdated = isOutdated;
+            }
+
+            public ResourceIterator<RuleStructure> getIsa(TypeVertex type) {
+                assert !outdated;
+                return link(iterate(isa.computeIfAbsent(type, this::loadIsaIndex)),
+                            buffered().getIsa(type));
+            }
+
+            public ResourceIterator<RuleStructure> getHasAttribute(TypeVertex attributeType) {
+                assert !outdated;
+                return link(iterate(hasAttribute.computeIfAbsent(attributeType, this::loadHasAttributeIndex)),
+                            buffered().getHasAttribute(attributeType));
+            }
+
+            public void deleteIsa(RuleStructure rule, TypeVertex type) {
+                Set<RuleStructure> rules = isa.get(type);
+                if (rules != null && rules.contains(rule)) {
+                    isa.get(type).remove(rule);
+                    storage.delete(IndexIID.Type.RuleIndex.concludedIsa(type.iid(), rule.iid()).bytes());
+                }
+                buffered().deleteIsa(rule, type);
+            }
+
+            public void deleteHasAttribute(RuleStructure rule, TypeVertex attributeType) {
+                Set<RuleStructure> rules = hasAttribute.get(attributeType);
+                if (rules != null && rules.contains(rule)) {
+                    rules.remove(rule);
+                    storage.delete(IndexIID.Type.RuleIndex.concludedHasAttribute(attributeType.iid(), rule.iid()).bytes());
+                }
+                buffered().deleteHasAttribute(rule, attributeType);
+            }
+
+
+            private Set<RuleStructure> loadIsaIndex(TypeVertex type) {
+                IndexIID.Type.RuleIndex scanPrefix = IndexIID.Type.RuleIndex.concludedIsaScan(type.iid());
+                return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
+                        .map(SchemaGraph.this::convert).toSet();
+            }
+
+            private Set<RuleStructure> loadHasAttributeIndex(TypeVertex type) {
+                IndexIID.Type.RuleIndex scanPrefix = IndexIID.Type.RuleIndex.concludedHasAttributeScan(type.iid());
+                return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
+                        .map(SchemaGraph.this::convert).toSet();
+            }
+
+            public void clear() {
+                isa.clear();
+                hasAttribute.clear();
+                buffered.clear();
+            }
+
+            public class Buffered {
+
+                private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> isa;
+                private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> hasAttribute;
+
+                public Buffered() {
+                    isa = new ConcurrentHashMap<>();
+                    hasAttribute = new ConcurrentHashMap<>();
+                }
+
+                public ResourceIterator<RuleStructure> getIsa(TypeVertex label) {
+                    return iterate(isa.getOrDefault(label, set()));
+                }
+
+                public ResourceIterator<RuleStructure> getHasAttribute(TypeVertex label) {
+                    return iterate(hasAttribute.getOrDefault(label, set()));
+                }
+
+                public void putIsa(RuleStructure rule, TypeVertex type) {
+                    isa.compute(type, (t, rules) -> {
+                        if (rules == null) rules = new HashSet<>();
+                        rules.add(rule);
+                        return rules;
+                    });
+                }
+
+                public void putHasAttribute(RuleStructure rule, TypeVertex attributeType) {
+                    hasAttribute.compute(attributeType, (t, rules) -> {
+                        if (rules == null) rules = new HashSet<>();
+                        rules.add(rule);
+                        return rules;
+                    });
+                }
+
+                public void commit() {
+                    isa.forEach((type, rules) -> {
+                        VertexIID.Type typeIID = type.iid();
+                        rules.forEach(rule -> {
+                            IndexIID.Type.RuleIndex typeRuleConcludesIndex = IndexIID.Type.RuleIndex.concludedIsa(typeIID, rule.iid());
+                            storage.put(typeRuleConcludesIndex.bytes());
+                        });
+                    });
+                    hasAttribute.forEach((type, rules) -> {
+                        VertexIID.Type typeIID = type.iid();
+                        rules.forEach(rule -> {
+                            IndexIID.Type.RuleIndex typeRuleConcludesHasIndex = IndexIID.Type.RuleIndex.concludedHasAttribute(typeIID, rule.iid());
+                            storage.put(typeRuleConcludesHasIndex.bytes());
+                        });
+                    });
+                }
+
+                public void deleteIsa(RuleStructure rule, TypeVertex type) {
+                    if (isa.containsKey(type)) {
+                        isa.get(type).remove(rule);
+                    }
+                }
+
+                public void deleteHasAttribute(RuleStructure rule, TypeVertex attributeType) {
+                    if (hasAttribute.containsKey(attributeType)) {
+                        hasAttribute.get(attributeType).remove(rule);
+                    }
+                }
+
+                public void clear() {
+                    isa.clear();
+                    buffered.clear();
+                }
+            }
+
+        }
+
+        public static class Containing {
+
+            private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> contains;
+            private final Buffered buffered;
+            private final Storage storage;
+
+            public Containing(Storage storage) {
+                this.storage = storage;
+                contains = new ConcurrentHashMap<>();
+                buffered = new Buffered();
+            }
+
+            public Buffered buffered() {
+                return buffered;
+            }
+
+            public ResourceIterator<RuleStructure> get(TypeVertex type) {
+                return link(iterate(contains.computeIfAbsent(type, this::loadIndex)),
+                            iterate(buffered().contains.getOrDefault(type, set())));
+            }
+
+            public void delete(RuleStructure rule, ResourceIterator<TypeVertex> types) {
+                types.forEachRemaining(type -> {
+                    Set<RuleStructure> rules = contains.get(type);
+                    if (rules != null) rules.remove(rule);
+                    storage.delete(IndexIID.Type.RuleIndex.contained(type.iid(), rule.iid()).bytes());
                 });
-            });
-            bufferedConcludingHasAttribute.forEach((label, rules) -> {
-                VertexIID.Type typeIID = getType(label).iid();
-                rules.forEach(rule -> {
-                    IndexIID.Type.RuleIndex typeRuleConcludesHasIndex = IndexIID.Type.RuleIndex.concludedHasAttribute(typeIID, rule.iid());
-                    storage.put(typeRuleConcludesHasIndex.bytes());
-                });
-            });
-            bufferedRuleContains.forEach((label, rules) -> {
-                rules.forEach(rule -> {
-                    IndexIID.Type.RuleIndex typeInRule = IndexIID.Type.RuleIndex.contained(getType(label).iid(), rule.iid());
-                    storage.put(typeInRule.bytes());
-                });
-            });
+            }
+
+            private Set<RuleStructure> loadIndex(TypeVertex type) {
+                IndexIID.Type.RuleIndex scanPrefix = IndexIID.Type.RuleIndex.containedScan(type.iid());
+                return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
+                        .map(SchemaGraph.this::convert).toSet();
+            }
+
+            public void clear() {
+                contains.clear();
+                buffered.clear();
+            }
+
+            public class Buffered {
+                private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> contains;
+
+                public Buffered() {
+                    contains = new ConcurrentHashMap<>();
+                }
+
+                public void commit() {
+                    contains.forEach((type, rules) -> {
+                        rules.forEach(rule -> {
+                            IndexIID.Type.RuleIndex typeInRule = IndexIID.Type.RuleIndex.contained(type.iid(), rule.iid());
+                            storage.put(typeInRule.bytes());
+                        });
+                    });
+                }
+
+                public void put(RuleStructure rule, TypeVertex type) {
+                    contains.compute(type, (t, rules) -> {
+                        if (rules == null) rules = new HashSet<>();
+                        rules.add(rule);
+                        return rules;
+                    });
+                }
+
+                public void delete(RuleStructure rule, ResourceIterator<TypeVertex> types) {
+                    types.forEachRemaining(type -> {
+                        assert contains.containsKey(type) && contains.get(type).contains(rule);
+                        contains.get(type).remove(rule);
+                    });
+                }
+
+                public void clear() {
+                    contains.clear();
+                }
+            }
         }
 
         public void clear() {
-            concludingIsa.clear();
-            concludingHasAttribute.clear();
-            bufferedConcludingIsa.clear();
-            bufferedConcludingHasAttribute.clear();
-            ruleContains.clear();
-            bufferedRuleContains.clear();
-        }
-
-        public void deleteConcludingIsa(RuleStructure rule, Label type) {
-            Set<RuleStructure> rules = concludingIsa.get(type);
-            if (rules != null && rules.contains(rule)) {
-                concludingIsa.get(type).remove(rule);
-                storage().delete(IndexIID.Type.RuleIndex.concludedIsa(getType(type).iid(), rule.iid()).bytes());
-            }
-            if (bufferedConcludingIsa.containsKey(type)) {
-                bufferedConcludingIsa.get(type).remove(rule);
-            }
-        }
-
-        public void deleteConcludingHasAttribute(RuleStructure rule, Label attributeType) {
-            Set<RuleStructure> rules = concludingHasAttribute.get(attributeType);
-            if (rules != null && rules.contains(rule)) {
-                rules.remove(rule);
-                storage().delete(IndexIID.Type.RuleIndex.concludedHasAttribute(getType(attributeType).iid(), rule.iid()).bytes());
-            }
-            if (bufferedConcludingHasAttribute.containsKey(attributeType)) {
-                bufferedConcludingHasAttribute.get(attributeType).remove(rule);
-            }
-        }
-
-
-        public void deleteBufferedRuleContains(RuleStructure rule, ResourceIterator<Label> types) {
-            types.forEachRemaining(type -> {
-                assert bufferedRuleContains.containsKey(type) && bufferedRuleContains.get(type).contains(rule);
-                bufferedRuleContains.get(type).remove(rule);
-            });
-        }
-
-        public void deleteRuleContains(RuleStructure rule, ResourceIterator<Label> types) {
-            types.forEachRemaining(type -> {
-                Set<RuleStructure> rules = ruleContains.get(type);
-                if (rules != null) rules.remove(rule);
-                storage().delete(IndexIID.Type.RuleIndex.contained(getType(type).iid(), rule.iid()).bytes());
-            });
-        }
-
-        private Set<RuleStructure> loadConcludingIsa(Label label) {
-            TypeVertex type = getType(label);
-            IndexIID.Type.RuleIndex scanPrefix = IndexIID.Type.RuleIndex.concludedIsaScan(type.iid());
-            return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
-                    .map(SchemaGraph.this::convert).toSet();
-        }
-
-        private Set<RuleStructure> loadConcludingHasAttribute(Label label) {
-            TypeVertex type = getType(label);
-            IndexIID.Type.RuleIndex scanPrefix = IndexIID.Type.RuleIndex.concludedHasAttributeScan(type.iid());
-            return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
-                    .map(SchemaGraph.this::convert).toSet();
-        }
-
-        private Set<RuleStructure> loadRuleContains(Label label) {
-            TypeVertex type = getType(label);
-            IndexIID.Type.RuleIndex scanPrefix = IndexIID.Type.RuleIndex.containedScan(type.iid());
-            return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
-                    .map(SchemaGraph.this::convert).toSet();
-        }
-
-        public boolean concludingIndexOutdated() {
-            return concludingIndexOutdated;
-        }
-
-        public void concludingIndexOutdated(boolean isOutdated) {
-            this.concludingIndexOutdated = isOutdated;
+            concludingIndex.clear();
+            containingIndex.clear();
         }
     }
 }
