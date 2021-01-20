@@ -30,8 +30,8 @@ import org.slf4j.LoggerFactory;
 public class RetrievableResolver extends ResolvableResolver<RetrievableResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(RetrievableResolver.class);
 
-    public RetrievableResolver(Actor<RetrievableResolver> self, Retrievable retrievable, ResolverRegistry registry, TraversalEngine traversalEngine) {
-        super(self, RetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable + ")", registry, traversalEngine);
+    public RetrievableResolver(Actor<RetrievableResolver> self, Retrievable retrievable, ResolverRegistry registry, TraversalEngine traversalEngine, boolean explanations) {
+        super(self, RetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable + ")", registry, traversalEngine, explanations);
     }
 
 
