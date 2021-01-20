@@ -17,9 +17,13 @@
 
 package grakn.core.reasoner.resolution;
 
+import grakn.core.Grakn;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.concept.ConceptManager;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
 import grakn.core.logic.LogicManager;
+import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Resolvable;
 import grakn.core.logic.resolvable.Retrievable;
@@ -45,6 +49,7 @@ import java.util.Set;
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertTrue;
 
 public class ResolverManagerTest {
 
@@ -56,29 +61,23 @@ public class ResolverManagerTest {
     private static ConceptManager conceptMgr;
     private static LogicManager logicMgr;
 
-    @BeforeClass
-    public static void setUp() throws IOException {
+    @Before
+    public void setUp() throws IOException {
         Util.resetDirectory(directory);
         grakn = RocksGrakn.open(directory);
         grakn.databases().create(database);
         session = grakn.session(database, Arguments.Session.Type.SCHEMA);
-    }
-
-    @AfterClass
-    public static void tearDown() {
-        session.close();
-        grakn.close();
-    }
-
-    @Before
-    public void setUpTransaction() {
         rocksTransaction = session.transaction(Arguments.Transaction.Type.WRITE);
         conceptMgr = rocksTransaction.concepts();
         logicMgr = rocksTransaction.logic();
     }
 
     @After
-    public void tearDownTransaction() { rocksTransaction.close(); }
+    public void tearDown() {
+        rocksTransaction.close();
+        session.close();
+        grakn.close();
+    }
 
     private Conjunction parse(String query) {
         return Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
@@ -175,5 +174,32 @@ public class ResolverManagerTest {
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
+    }
+
+    @Test
+    public void test_planner_prioritises_concludable_with_least_applicable_rules() {
+        final EntityType person = conceptMgr.putEntityType("person");
+        final RelationType friendship = conceptMgr.putRelationType("friendship");
+        friendship.setRelates("friend");
+        final RelationType marriage = conceptMgr.putRelationType("marriage");
+        marriage.setRelates("spouse");
+        person.setPlays(friendship.getRelates("friend"));
+        person.setPlays(marriage.getRelates("spouse"));
+        logicMgr.putRule(
+                "marriage-is-friendship",
+                Graql.parsePattern("{$x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
+                Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
+        rocksTransaction.commit();
+        rocksTransaction = session.transaction(Arguments.Transaction.Type.WRITE);
+        conceptMgr = rocksTransaction.concepts();
+        logicMgr = rocksTransaction.logic();
+
+        Concludable concludable = Concludable.create(parse("{ $a($b) isa companionship; }")).iterator().next();
+        Concludable concludable2 = Concludable.create(parse("{ $c($b) isa friendship; }")).iterator().next();
+
+        Set<Resolvable> resolvables = set(concludable, concludable2);
+        List<Resolvable> plan = new ResolverManager.Plan(resolvables, conceptMgr, logicMgr).plan();
+
+        assertEquals(list(concludable, concludable2), plan);
     }
 }
