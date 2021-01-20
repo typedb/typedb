@@ -34,12 +34,14 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
     private final Map<Request, Request> requestRouter;
     protected final ResolverRegistry registry;
     protected final TraversalEngine traversalEngine;
+    private final boolean explanations;
 
-    protected Resolver(Actor<T> self, String name, ResolverRegistry registry, TraversalEngine traversalEngine) {
+    protected Resolver(Actor<T> self, String name, ResolverRegistry registry, TraversalEngine traversalEngine, boolean explanations) {
         super(self);
         this.name = name;
         this.registry = registry;
         this.traversalEngine = traversalEngine;
+        this.explanations = explanations;
         this.requestRouter = new HashMap<>();
         // Note: initialising downstream actors in constructor will create all actors ahead of time, so it is non-lazy
         // additionally, it can cause deadlock within ResolverRegistry as different threads initialise actors
@@ -48,6 +50,8 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
     public String name() {
         return name;
     }
+
+    protected boolean explanations() { return explanations; }
 
     public abstract void receiveRequest(Request fromUpstream, int iteration);
 

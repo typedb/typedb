@@ -21,6 +21,7 @@ package grakn.core.reasoner.resolution.framework;
 import grakn.core.common.concurrent.actor.Actor;
 import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars.Derived;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,7 +36,7 @@ public class ResolutionAnswer {
 
     public ResolutionAnswer(Derived answer,
                             String patternAnswered,
-                            Derivation derivation,
+                            @Nullable Derivation derivation,
                             Actor<? extends Resolver<?>> producer,
                             boolean isInferred) {
         this.answer = answer;

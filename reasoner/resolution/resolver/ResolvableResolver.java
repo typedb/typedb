@@ -23,7 +23,7 @@ import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.traversal.TraversalEngine;
 
 public abstract class ResolvableResolver<T extends ResolvableResolver<T>> extends Resolver<T> {
-    public ResolvableResolver(Actor<T> self, String name, ResolverRegistry registry, TraversalEngine traversalEngine) {
-        super(self, name, registry, traversalEngine);
+    public ResolvableResolver(Actor<T> self, String name, ResolverRegistry registry, TraversalEngine traversalEngine, boolean explanations) {
+        super(self, name, registry, traversalEngine, explanations);
     }
 }
