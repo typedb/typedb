@@ -22,10 +22,9 @@ import grakn.core.common.concurrent.actor.EventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-
-import static java.util.concurrent.ForkJoinPool.defaultForkJoinWorkerThreadFactory;
 
 public class ExecutorService {
 
@@ -39,8 +38,7 @@ public class ExecutorService {
     private final ScheduledThreadPoolExecutor scheduledThreadPool;
 
     private ExecutorService(int parallelisation) {
-        forkJoinPool = new ForkJoinPool(parallelisation, defaultForkJoinWorkerThreadFactory,
-                                        (t, e) -> LOG.error(e.getMessage(), e), true);
+        forkJoinPool = (ForkJoinPool) Executors.newWorkStealingPool(parallelisation);
         eventLoopGroup = new EventLoopGroup(parallelisation, "grakn-elg");
         scheduledThreadPool = new ScheduledThreadPoolExecutor(1);
         scheduledThreadPool.setRemoveOnCancelPolicy(true);
