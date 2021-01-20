@@ -18,8 +18,10 @@
 
 package grakn.core.common.producer;
 
+import javax.annotation.concurrent.ThreadSafe;
 import java.util.function.Predicate;
 
+@ThreadSafe
 public class FilteredProducer<T> implements Producer<T> {
 
     private final Producer<T> baseProducer;
@@ -40,6 +42,7 @@ public class FilteredProducer<T> implements Producer<T> {
         baseProducer.recycle();
     }
 
+    @ThreadSafe
     private class Queue implements Producer.Queue<T> {
 
         private final Producer.Queue<T> baseQueue;

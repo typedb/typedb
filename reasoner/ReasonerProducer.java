@@ -26,21 +26,26 @@ import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
 
-import static grakn.core.reasoner.resolution.answer.AnswerState.DownstreamVars.Root;
+import javax.annotation.concurrent.ThreadSafe;
 
+import static grakn.core.reasoner.resolution.answer.AnswerState.DownstreamVars.Root;
+import static grakn.core.reasoner.resolution.framework.ResolutionAnswer.Derivation.EMPTY;
+
+@ThreadSafe // TODO: verify
 public class ReasonerProducer implements Producer<ConceptMap> {
 
     private final Actor<RootResolver> rootResolver;
+    private Queue<ConceptMap> queue;
     private Request resolveRequest;
-    private boolean done;
-    private Queue<ConceptMap> queue = null;
-    private int iteration;
     private boolean iterationInferredAnswer;
+    private boolean done;
+    private int iteration;
 
     public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry) {
         this.rootResolver = resolverRegistry.createRoot(conjunction, this::requestAnswered, this::requestFailed);
+        this.resolveRequest = new Request(new Request.Path(rootResolver), Root.create(), EMPTY);
+        this.queue = null;
         this.iteration = 0;
-        this.resolveRequest = new Request(new Request.Path(rootResolver), Root.create(), ResolutionAnswer.Derivation.EMPTY);
     }
 
     @Override
@@ -80,7 +85,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private void nextIteration() {
         iteration++;
-        resolveRequest = new Request(new Request.Path(rootResolver), Root.create(), ResolutionAnswer.Derivation.EMPTY);
+        resolveRequest = new Request(new Request.Path(rootResolver), Root.create(), EMPTY);
     }
 
     private boolean mustReiterate() {

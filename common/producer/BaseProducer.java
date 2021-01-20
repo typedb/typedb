@@ -20,42 +20,53 @@ package grakn.core.common.producer;
 
 import grakn.core.common.iterator.ResourceIterator;
 
+import javax.annotation.concurrent.ThreadSafe;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grakn.core.common.concurrent.ExecutorService.forkJoinPool;
 
+@ThreadSafe
 public class BaseProducer<T> implements Producer<T> {
 
     private final ResourceIterator<T> iterator;
+    private final AtomicBoolean isDone;
     private CompletableFuture<Void> future;
 
     BaseProducer(ResourceIterator<T> iterator) {
         this.iterator = iterator;
+        this.isDone = new AtomicBoolean(false);
         this.future = CompletableFuture.completedFuture(null);
     }
 
     @Override
     public synchronized void produce(Queue<T> queue, int request) {
-        future = future.thenRunAsync(() -> produceAsync(queue, request), forkJoinPool());
+        if (isDone.get()) return;
+        future = future.thenRunAsync(() -> {
+            try {
+                int i = 0;
+                for (; i < request && iterator.hasNext() && !isDone.get(); i++) queue.put(iterator.next());
+                if (i < request && !isDone.get()) done(queue);
+            } catch (Throwable e) {
+                queue.done(e);
+            }
+        }, forkJoinPool());
     }
 
-    private void produceAsync(Queue<T> queue, int count) {
-        try {
-            for (int i = 0; i < count; i++) {
-                if (iterator.hasNext()) {
-                    queue.put(iterator.next());
-                } else {
-                    queue.done();
-                    break;
-                }
-            }
-        } catch (Throwable e) {
+    private void done(Queue<T> queue) {
+        if (isDone.compareAndSet(false, true)) {
+            queue.done();
+        }
+    }
+
+    private void done(Queue<T> queue, Throwable e) {
+        if (isDone.compareAndSet(false, true)) {
             queue.done(e);
         }
     }
 
     @Override
-    public void recycle() {
+    public synchronized void recycle() {
         iterator.recycle();
     }
 }

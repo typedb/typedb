@@ -30,7 +30,7 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class IterableProducer<T> {
+public class ProducerIterator<T> {
 
     private static final int BUFFER_MIN_SIZE = 32;
     private static final int BUFFER_MAX_SIZE = 64;
@@ -39,11 +39,11 @@ public class IterableProducer<T> {
     private final Queue queue;
     private final Iterator iterator;
 
-    public IterableProducer(List<Producer<T>> producers) {
+    public ProducerIterator(List<Producer<T>> producers) {
         this(producers, BUFFER_MIN_SIZE, BUFFER_MAX_SIZE);
     }
 
-    public IterableProducer(List<Producer<T>> producers, int bufferMinSize, int bufferMaxSize) {
+    public ProducerIterator(List<Producer<T>> producers, int bufferMinSize, int bufferMaxSize) {
         // TODO: Could we optimise IterableProducer by accepting ResourceIterator<Producer<T>> instead?
         assert !producers.isEmpty();
         this.producers = new LinkedList<>(producers);
@@ -51,7 +51,7 @@ public class IterableProducer<T> {
         this.iterator = new Iterator();
     }
 
-    public IterableProducer<T>.Iterator iterator() {
+    public ProducerIterator<T>.Iterator iterator() {
         return iterator;
     }
 
