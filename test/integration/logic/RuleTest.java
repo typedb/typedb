@@ -28,7 +28,6 @@ import grakn.core.concept.thing.Relation;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.RoleType;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
