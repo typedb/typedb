@@ -49,7 +49,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.map;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CONJUNCTION;
@@ -121,14 +120,6 @@ public class TypeResolver {
                         assert variable.resolvedTypes().isEmpty() || variable.resolvedTypes().containsAll(labels);
                         variable.setResolvedTypes(labels);
                     });
-
-//            Variable variable = traversalBuilder.getVariable(ref);
-//            if (variable == null) return;
-//            if (variable.isType() && labels.size() < numOfTypes ||
-//                    variable.isThing() && labels.size() < numOfConcreteTypes) {
-//                assert variable.resolvedTypes().isEmpty() || variable.resolvedTypes().containsAll(labels);
-//                variable.setResolvedTypes(labels);
-//            }
         });
 
         return conjunction;
