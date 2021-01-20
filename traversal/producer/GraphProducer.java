@@ -99,7 +99,7 @@ public class GraphProducer implements Producer<VertexMap> {
 
     private synchronized void transition(Queue<VertexMap> queue, ResourceIterator<VertexMap> iterator, int unfulfilled) {
         if (!iterator.hasNext()) {
-            if (runningJobs.remove(iterator) != null && start.hasNext()) replace(queue, iterator, unfulfilled);
+            if (runningJobs.remove(iterator) != null && start.hasNext()) compensate(queue, unfulfilled);
             else if (!runningJobs.isEmpty() && unfulfilled > 0) distribute(queue, unfulfilled);
             else if (runningJobs.isEmpty()) done(queue);
             else assert unfulfilled == 0;
@@ -108,8 +108,7 @@ public class GraphProducer implements Producer<VertexMap> {
         }
     }
 
-    private synchronized void replace(Queue<VertexMap> queue, ResourceIterator<VertexMap> iterator, int unfulfilled) {
-        runningJobs.remove(iterator);
+    private synchronized void compensate(Queue<VertexMap> queue, int unfulfilled) {
         ResourceIterator<VertexMap> newIter =
                 new GraphIterator(graphMgr, start.next(), procedure, params, filter).distinct(produced);
         CompletableFuture<Void> asyncJob = unfulfilled > 0
