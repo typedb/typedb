@@ -67,10 +67,11 @@ import static graql.lang.common.GraqlToken.Predicate.Equality.EQ;
 
 public abstract class Concludable extends Resolvable {
 
-    private Map<Rule, Set<Unifier>> applicableRules = null;
+    private Map<Rule, Set<Unifier>> applicableRules;
 
     private Concludable(Conjunction conjunction) {
         super(conjunction);
+        applicableRules = null;
     }
 
     public boolean isConcludable() {
@@ -168,7 +169,7 @@ public abstract class Concludable extends Resolvable {
     boolean unificationSatisfiable(ThingVariable concludableThingVar, ThingVariable conclusionThingVar) {
         boolean satisfiable = true;
         if (!concludableThingVar.resolvedTypes().isEmpty() && !conclusionThingVar.resolvedTypes().isEmpty()) {
-            satisfiable = Collections.disjoint(concludableThingVar.resolvedTypes(), conclusionThingVar.resolvedTypes());
+            satisfiable = !Collections.disjoint(concludableThingVar.resolvedTypes(), conclusionThingVar.resolvedTypes());
         }
 
         if (!concludableThingVar.value().isEmpty() && !conclusionThingVar.value().isEmpty()) {

@@ -91,7 +91,7 @@ public class UnifyHasConcludableTest {
                                                        "    relates employee," +
                                                        "    relates employer;" +
                                                        "name sub attribute, value string, abstract;" +
-                                                       "first-name sub name;" +
+                                                       "first-name sub name, owns first-name;" + // need a name with a name for one test
                                                        "last-name sub name;" +
                                                        "age sub attribute, value long;" +
                                                        "self-owning-attribute sub attribute, value long, owns self-owning-attribute;" +
@@ -441,7 +441,7 @@ public class UnifyHasConcludableTest {
         Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
-        Rule rule = createRule("has-rule", "{ $x isa person; }", "$x has first-name \"john\"");
+        Rule rule = createRule("has-rule", "{ $x isa thing; }", "$x has first-name \"john\"");
 
         List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
