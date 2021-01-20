@@ -119,13 +119,13 @@ public class GraphProducer implements Producer<VertexMap> {
 
     private void job(Queue<VertexMap> queue, ResourceIterator<VertexMap> iterator, int request) {
         try {
-            int i = 0;
+            int unfulfilled = request;
             if (runningJobs.containsKey(iterator)) {
-                for (; i < request && iterator.hasNext() && !isDone.get(); i++) {
+                for (; unfulfilled > 0 && iterator.hasNext() && !isDone.get(); unfulfilled--) {
                     queue.put(iterator.next());
                 }
             }
-            if (!isDone.get()) transition(queue, iterator, request - i);
+            if (!isDone.get()) transition(queue, iterator, unfulfilled);
         } catch (Throwable e) {
             done(queue, e);
         }
