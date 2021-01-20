@@ -451,7 +451,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         public static final RuleWrite RULE_CAN_IMPLY_UNINSERTABLE_RESULTS =
                 new RuleWrite(4, "The rule '%s' when can imply the type combination '%s', which cannot be inserted into the then.");
         public static final RuleWrite RULE_CANNOT_BE_SATISFIED =
-                new RuleWrite(5, "It is impossible to satisfy the rule both the when and then of the rule '%s' simultaneously.");
+                new RuleWrite(5, "The rule '%s' can never satisfy the variable '%s' in the then.");
         public static final RuleWrite MAX_RULE_REACHED =
                 new RuleWrite(6, "The maximum number of rules has been reached: '%s'");
 

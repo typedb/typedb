@@ -405,7 +405,7 @@ public class RuleTest {
                             "dogs-are-named-fido",
                             Graql.parsePattern("{$x isa dog;}").asConjunction(),
                             Graql.parseVariable("$x has name 'fido'").asThing()),
-                                            GraknException.of(RULE_CANNOT_BE_SATISFIED, "dogs-are-named-fido").getMessage());
+                                            GraknException.of(RULE_CANNOT_BE_SATISFIED, "dogs-are-named-fido", "$x").getMessage());
                 }
             }
         }
@@ -433,7 +433,6 @@ public class RuleTest {
                             "animals-are-named-fido",
                             Graql.parsePattern("{$x isa animal;}").asConjunction(),
                             Graql.parseVariable("$x has name 'fido'").asThing()));
-//                                            GraknException.of(RULE_CAN_IMPLY_UNINSERTABLE_RESULTS, "animals-are-named-fido").getMessage());
                 }
             }
         }

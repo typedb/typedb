@@ -168,9 +168,13 @@ public class Rule {
     }
 
     public void validateSatisfiable() {
-        if (Stream.concat(then.variables().stream(), when.variables().stream()).anyMatch(variable -> !variable.isSatisfiable())) {
-            throw GraknException.of(RULE_CANNOT_BE_SATISFIED, structure.label());
-        }
+        Stream.concat(then.variables().stream(), when.variables().stream()).forEach(variable -> {
+            if (!variable.isSatisfiable()) throw GraknException.of(RULE_CANNOT_BE_SATISFIED, structure.label(), variable.reference().toString());
+        });
+
+//        if (Stream.concat(then.variables().stream(), when.variables().stream()).anyMatch(variable -> !variable.isSatisfiable())) {
+//            throw GraknException.of(RULE_CANNOT_BE_SATISFIED, structure.label());
+//        }
     }
 
     public void validateInsertable() {
