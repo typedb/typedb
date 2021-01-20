@@ -71,7 +71,6 @@ public abstract class Concludable extends Resolvable {
 
     private Concludable(Conjunction conjunction) {
         super(conjunction);
-        applicableRules = new HashMap<>(); // TODO Implement
     }
 
     public boolean isConcludable() {

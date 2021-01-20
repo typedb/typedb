@@ -194,7 +194,7 @@ public class ResolverManagerTest {
         conceptMgr = rocksTransaction.concepts();
         logicMgr = rocksTransaction.logic();
 
-        Concludable concludable = Concludable.create(parse("{ $a($b) isa companionship; }")).iterator().next();
+        Concludable concludable = Concludable.create(parse("{ $b has $a; }")).iterator().next();
         Concludable concludable2 = Concludable.create(parse("{ $c($b) isa friendship; }")).iterator().next();
 
         Set<Resolvable> resolvables = set(concludable, concludable2);
