@@ -51,7 +51,8 @@ public class GraphProducer implements Producer<VertexMap> {
     private final AtomicBoolean isDone;
     private boolean isInitialised;
 
-    public GraphProducer(GraphManager graphMgr, GraphProcedure procedure, Traversal.Parameters params, List<Identifier.Variable.Name> filter, int parallelisation) {
+    public GraphProducer(GraphManager graphMgr, GraphProcedure procedure, Traversal.Parameters params,
+                         List<Identifier.Variable.Name> filter, int parallelisation) {
         assert parallelisation > 0;
         this.graphMgr = graphMgr;
         this.procedure = procedure;
