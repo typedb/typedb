@@ -124,10 +124,9 @@ public class UnifyAttributeConcludableTest {
         return type.asString().put(stringValue);
     }
 
-    private Conjunction parseConjunction(String query) {
-        // TODO type resolver should probably run INSIDE the creation of a conclusion or concludable
+    private Conjunction resolvedConjunction(String query) {
         Conjunction conjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
-        return logicMgr.typeResolver().resolveLabels(conjunction);
+        return logicMgr.typeResolver().resolve(conjunction);
     }
 
     private Rule createRule(String label, String whenConjunctionPattern, String thenThingPattern) {
@@ -139,7 +138,7 @@ public class UnifyAttributeConcludableTest {
     @Test
     public void literal_predicates_unify_and_filter_answers() {
         String conjunction = "{ $a = 'john'; }";
-        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction));
         Concludable.Attribute queryConcludable = concludables.iterator().next().asAttribute();
 
         Rule rule = createRule("isa-rule", "{ $x isa person; }", "$x has first-name \"john\"");
@@ -177,7 +176,7 @@ public class UnifyAttributeConcludableTest {
     @Test
     public void variable_predicates_unify_value_conclusions() {
         String conjunction = "{ $x > $y; }";
-        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction));
         assertEquals(2, concludables.size());
         Concludable.Attribute queryConcludable = concludables.iterator().next().asAttribute();
         // Get the name of the attribute variable from whichever concludable is chosen
