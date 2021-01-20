@@ -103,8 +103,8 @@ public class GraphProducer implements Producer<VertexMap> {
             return;
         }
 
-        runningJobs.remove(iterator);
-        if (start.hasNext()) {
+        if (runningJobs.containsKey(iterator) && start.hasNext()) {
+            runningJobs.remove(iterator);
             ResourceIterator<VertexMap> newIter =
                     new GraphIterator(graphMgr, start.next(), procedure, params, filter).distinct(produced);
             CompletableFuture<Void> asyncJob = unfulfilled > 0
