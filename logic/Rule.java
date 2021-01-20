@@ -32,7 +32,6 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
-import grakn.core.graph.vertex.Vertex;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.thing.HasConstraint;
@@ -47,7 +46,6 @@ import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.VertexMap;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.Reference;
 import graql.lang.pattern.variable.ThingVariable;
@@ -180,21 +178,9 @@ public class Rule {
         Set<Map<Reference.Name, Label>> possibleThenSet = logicManager.typeResolver().retrievePossibleTypeCombos(then, true).toSet();
 
         possibleWhenPerms.forEachRemaining(nameLabelMap -> {
-            if (!possibleThenSet.contains(nameLabelMap)) {
-                throw GraknException.of(RULE_CAN_IMPLY_UNINSERTABLE_RESULTS, structure.label(), nameLabelMap.toString())
-            }
+            if (possibleThenSet.stream().noneMatch(thenMap -> nameLabelMap.entrySet().containsAll(thenMap.entrySet())))
+                throw GraknException.of(RULE_CAN_IMPLY_UNINSERTABLE_RESULTS, structure.label(), nameLabelMap.toString());
         });
-    }
-
-    private boolean vertexMapsEqual(VertexMap thenVertexMap, VertexMap whenVertexMap) {
-        for (Map.Entry<Reference, Vertex<?, ?>> entry : thenVertexMap.map().entrySet()) {
-            Reference ref = entry.getKey();
-            if (ref.isSystemReference()) continue;
-            Vertex<?, ?> vertex = entry.getValue();
-            assert whenVertexMap.containsKey(ref);
-            if (whenVertexMap.get(ref) != vertex) return false;
-        }
-        return true;
     }
 
     void validateCycles() {

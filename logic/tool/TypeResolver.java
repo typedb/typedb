@@ -40,15 +40,16 @@ import grakn.core.pattern.variable.Variable;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.VertexMap;
 import graql.lang.common.GraqlArg.ValueType;
 import graql.lang.pattern.variable.Reference;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
+import static grakn.common.collection.Collections.map;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CONJUNCTION;
@@ -74,11 +75,10 @@ public class TypeResolver {
         TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, conceptMgr, insertable);
         return traversalEng.iterator(traversalBuilder.traversal()).map(vertexMap -> {
             Map<Reference.Name, Label> mapping = new HashMap<>();
-            vertexMap.map().forEach((ref, vertex) -> {
+            vertexMap.forEach((ref, vertex) -> {
                 assert vertex.isType();
-                Variable originalVar = traversalBuilder.getVariable(ref);
-                if (originalVar != null && originalVar.reference().isName())
-                    mapping.put(originalVar.reference().asName(), vertex.asType().properLabel());
+                traversalBuilder.getVariable(ref).map(Variable::reference).filter(Reference::isName)
+                        .map(Reference::asName).ifPresent(originalRef -> mapping.put(originalRef, vertex.asType().properLabel()));
             });
             return mapping;
         });
@@ -115,13 +115,20 @@ public class TypeResolver {
         long numOfConcreteTypes = traversalEng.graph().schema().stats().concreteThingTypeCount();
 
         resolvedLabels.forEach((ref, labels) -> {
-            Variable variable = traversalBuilder.getVariable(ref);
-            if (variable == null) return;
-            if (variable.isType() && labels.size() < numOfTypes ||
-                    variable.isThing() && labels.size() < numOfConcreteTypes) {
-                assert variable.resolvedTypes().isEmpty() || variable.resolvedTypes().containsAll(labels);
-                variable.setResolvedTypes(labels);
-            }
+            traversalBuilder.getVariable(ref)
+                    .filter(var -> (var.isType() && labels.size() < numOfTypes) || (var.isThing() && labels.size() < numOfConcreteTypes))
+                    .ifPresent(variable -> {
+                        assert variable.resolvedTypes().isEmpty() || variable.resolvedTypes().containsAll(labels);
+                        variable.setResolvedTypes(labels);
+                    });
+
+//            Variable variable = traversalBuilder.getVariable(ref);
+//            if (variable == null) return;
+//            if (variable.isType() && labels.size() < numOfTypes ||
+//                    variable.isThing() && labels.size() < numOfConcreteTypes) {
+//                assert variable.resolvedTypes().isEmpty() || variable.resolvedTypes().containsAll(labels);
+//                variable.setResolvedTypes(labels);
+//            }
         });
 
         return conjunction;
@@ -139,7 +146,8 @@ public class TypeResolver {
                         mapping.putIfAbsent(ref, new HashSet<>());
                         assert vertex.isType();
                         // TODO: This filter should not be needed if we enforce traversal only to return non-abstract
-                        if (!(vertex.asType().isAbstract() && traversalConstructor.getVariable(ref).isThing()))
+                        if (!traversalConstructor.getVariable(ref).isPresent()) return;
+                        if (!(vertex.asType().isAbstract() && traversalConstructor.getVariable(ref).get().isThing()))
                             mapping.get(ref).add(vertex.asType().properLabel());
                     })
             );
@@ -168,16 +176,13 @@ public class TypeResolver {
             conjunction.variables().forEach(this::register);
         }
 
-        TraversalBuilder(Conjunction conjunction, ConceptManager conceptMgr) {
-            this(conjunction, conceptMgr, false);
-        }
-
         Traversal traversal() {
             return traversal;
         }
 
-        Variable getVariable(Reference reference) {
-            return variableRegister.get(reference);
+        Optional<Variable> getVariable(Reference reference) {
+            if (!variableRegister.containsKey(reference)) return Optional.empty();
+            return Optional.of(variableRegister.get(reference));
         }
 
         private void register(Variable variable) {

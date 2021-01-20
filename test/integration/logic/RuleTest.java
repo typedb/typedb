@@ -51,7 +51,6 @@ import static grakn.common.collection.Collections.map;
 import static grakn.common.collection.Collections.pair;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CANNOT_BE_SATISFIED;
-import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CAN_IMPLY_UNINSERTABLE_RESULTS;
 import static grakn.core.common.test.Util.assertThrows;
 import static grakn.core.common.test.Util.assertThrowsWithMessage;
 import static junit.framework.TestCase.assertEquals;
