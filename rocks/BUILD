@@ -41,6 +41,7 @@ native_java_libraries(
         "@maven//:com_google_code_findbugs_jsr305",
         # "@maven//:org_rocksdb_rocksdbjni_dev", # Use this JAR for debugging RocksDB on Mac
         "@maven//:org_rocksdb_rocksdbjni",
+        "@maven//:org_slf4j_slf4j_api"
     ],
     native_libraries_deps = [
         "//:grakn",

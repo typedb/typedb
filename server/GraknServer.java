@@ -85,17 +85,19 @@ public class GraknServer implements AutoCloseable {
         configureAndVerifyDataDir();
         configureTracing();
 
-        if (command.debug()) {
-            LOG.info("Running Grakn Core Server in debug mode.");
-        }
+        if (command.debug()) LOG.info("Running Grakn Core Server in debug mode.");
 
         grakn = RocksGrakn.open(command.dataDir());
         graknRPCService = new GraknRPCService(grakn);
         migratorRPCService = new MigratorRPCService(grakn);
 
         server = rpcServer();
-        Runtime.getRuntime().addShutdownHook(NamedThreadFactory.create(GraknServer.class, "shutdown").newThread(this::close));
-        Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) -> LOG.error(UNCAUGHT_EXCEPTION.message(t.getName()), e));
+        Thread.setDefaultUncaughtExceptionHandler(
+                (t, e) -> LOG.error(UNCAUGHT_EXCEPTION.message(t.getName() + ": " + e.getMessage()), e)
+        );
+        Runtime.getRuntime().addShutdownHook(
+                NamedThreadFactory.create(GraknServer.class, "shutdown").newThread(this::close)
+        );
     }
 
     private int port() {

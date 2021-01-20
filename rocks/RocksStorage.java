@@ -32,6 +32,8 @@ import org.rocksdb.RocksDBException;
 import org.rocksdb.Snapshot;
 import org.rocksdb.Transaction;
 import org.rocksdb.WriteOptions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -46,6 +48,8 @@ import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_C
 public class RocksStorage implements Storage {
 
     private static final byte[] EMPTY_ARRAY = new byte[]{};
+
+    private static final Logger LOG = LoggerFactory.getLogger(RocksStorage.class);
 
     protected final Transaction storageTransaction;
     private final boolean isReadOnly;
@@ -175,15 +179,18 @@ public class RocksStorage implements Storage {
         return iterator;
     }
 
-    @Override
     public GraknException exception(ErrorMessage error) {
-        return GraknException.of(error);
+        GraknException e = GraknException.of(error);
+        LOG.error(e.getMessage(), e);
+        return e;
     }
 
-    @Override
     public GraknException exception(Exception exception) {
-        if (exception instanceof GraknException) return (GraknException) exception;
-        else return GraknException.of(exception);
+        GraknException e;
+        if (exception instanceof GraknException) e = (GraknException) exception;
+        else e = GraknException.of(exception);
+        LOG.error(e.getMessage(), e);
+        return e;
     }
 
     @Override

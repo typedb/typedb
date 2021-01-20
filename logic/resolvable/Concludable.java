@@ -61,6 +61,8 @@ import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
+import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.common.iterator.Iterators.single;
 import static graql.lang.common.GraqlToken.Predicate.Equality.EQ;
 
 public abstract class Concludable extends Resolvable {
@@ -80,12 +82,12 @@ public abstract class Concludable extends Resolvable {
 
     public ResourceIterator<Unifier> getUnifiers(Rule rule) {
         assert applicableRules != null;
-        return Iterators.iterate(applicableRules.get(rule));
+        return iterate(applicableRules.get(rule));
     }
 
     public ResourceIterator<Rule> getApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
         if (applicableRules == null) computeApplicableRules(conceptMgr, logicMgr);
-        return Iterators.iterate(applicableRules.keySet());
+        return iterate(applicableRules.keySet());
     }
 
     /*
@@ -95,7 +97,7 @@ public abstract class Concludable extends Resolvable {
     private void computeApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
         assert applicableRules == null;
         applicableRules = new HashMap<>();
-        logicMgr.rules().forEachRemaining(rule -> Iterators.iterate(unify(rule.conclusion(), conceptMgr))
+        logicMgr.rules().forEachRemaining(rule -> iterate(unify(rule.conclusion(), conceptMgr))
                 .forEachRemaining(unifier -> {
                     applicableRules.putIfAbsent(rule, new HashSet<>());
                     applicableRules.get(rule).add(unifier);
@@ -193,7 +195,7 @@ public abstract class Concludable extends Resolvable {
     }
 
     private static Set<ValueConstraint<?>> equalsConstraints(Set<ValueConstraint<?>> values) {
-        return Iterators.iterate(values).filter(v -> v.predicate().equals(EQ)).toSet();
+        return iterate(values).filter(v -> v.predicate().equals(EQ)).toSet();
     }
 
     private static Function<grakn.core.concept.thing.Attribute, Boolean> valueEqualsFunction(ValueConstraint<?> value) {
@@ -281,7 +283,7 @@ public abstract class Concludable extends Resolvable {
                 clonedIsa = cloner.getClone(isa).asThing().asIsa();
             }
             return new Relation(cloner.conjunction(), cloner.getClone(relation).asThing().asRelation(), clonedIsa,
-                                Iterators.iterate(labels).map(l -> cloner.getClone(l).asType().asLabel()).toSet());
+                                iterate(labels).map(l -> cloner.getClone(l).asType().asLabel()).toSet());
         }
 
         public RelationConstraint relation() {
@@ -339,10 +341,10 @@ public abstract class Concludable extends Resolvable {
         private ResourceIterator<Map<RolePlayer, Set<RolePlayer>>> matchRolePlayers(
                 List<RolePlayer> conjRolePLayers, Set<RolePlayer> thenRolePlayers,
                 Map<RolePlayer, Set<RolePlayer>> mapping, ConceptManager conceptMgr) {
-            if (conjRolePLayers.isEmpty()) return Iterators.iterate(list(mapping));
+            if (conjRolePLayers.isEmpty()) return single(mapping);
             RolePlayer conjRP = conjRolePLayers.get(0);
-            return Iterators.iterate(thenRolePlayers)
-                    .filter(thenRP -> Iterators.iterate(mapping.values()).noneMatch(rolePlayers -> rolePlayers.contains(thenRP)))
+            return iterate(thenRolePlayers)
+                    .filter(thenRP -> iterate(mapping.values()).noneMatch(rolePlayers -> rolePlayers.contains(thenRP)))
                     .filter(thenRP -> unificationSatisfiable(conjRP, thenRP, conceptMgr))
                     .map(thenRP -> {
                         Map<RolePlayer, Set<RolePlayer>> clone = cloneMapping(mapping);
@@ -437,7 +439,7 @@ public abstract class Concludable extends Resolvable {
                 cloner = Conjunction.Cloner.cloneExactly(labels, values, isa, has);
                 clonedIsa = cloner.getClone(isa).asThing().asIsa();
             }
-            ResourceIterator<ValueConstraint<?>> valueIt = Iterators.iterate(values).map(cloner::getClone).map(c -> c.asThing().asValue());
+            ResourceIterator<ValueConstraint<?>> valueIt = iterate(values).map(cloner::getClone).map(c -> c.asThing().asValue());
             return new Has(cloner.conjunction(), cloner.getClone(has).asThing().asHas(), clonedIsa, valueIt.toSet());
         }
 
@@ -488,7 +490,7 @@ public abstract class Concludable extends Resolvable {
                 }
             } else return Iterators.empty();
 
-            return Iterators.iterate(list(unifierBuilder.build()));
+            return single(unifierBuilder.build());
         }
 
         @Override
@@ -530,7 +532,7 @@ public abstract class Concludable extends Resolvable {
 
         public static Isa of(IsaConstraint isa, Set<ValueConstraint<?>> values, Set<LabelConstraint> labelConstraints) {
             Conjunction.Cloner cloner = Conjunction.Cloner.cloneExactly(labelConstraints, values, isa);
-            ResourceIterator<ValueConstraint<?>> valueIt = Iterators.iterate(values).map(cloner::getClone).map(c -> c.asThing().asValue());
+            ResourceIterator<ValueConstraint<?>> valueIt = iterate(values).map(cloner::getClone).map(c -> c.asThing().asValue());
             return new Isa(cloner.conjunction(), cloner.getClone(isa).asThing().asIsa(), valueIt.toSet());
         }
 
@@ -572,7 +574,7 @@ public abstract class Concludable extends Resolvable {
                 }
             } else return Iterators.empty();
 
-            return Iterators.iterate(list(unifierBuilder.build()));
+            return single(unifierBuilder.build());
         }
 
         @Override
@@ -623,10 +625,10 @@ public abstract class Concludable extends Resolvable {
         }
 
         public static Attribute of(ThingVariable attribute, Set<ValueConstraint<?>> values) {
-            assert Iterators.iterate(values).map(ThingConstraint::owner).toSet().equals(set(attribute));
+            assert iterate(values).map(ThingConstraint::owner).toSet().equals(set(attribute));
             Conjunction.Cloner cloner = Conjunction.Cloner.cloneExactly(values);
             assert cloner.conjunction().variables().size() == 1;
-            ResourceIterator<ValueConstraint<?>> valueIt = Iterators.iterate(values).map(v -> cloner.getClone(v).asThing().asValue());
+            ResourceIterator<ValueConstraint<?>> valueIt = iterate(values).map(v -> cloner.getClone(v).asThing().asValue());
             return new Attribute(cloner.conjunction().variables().iterator().next().asThing(), valueIt.toSet());
         }
 
@@ -642,7 +644,7 @@ public abstract class Concludable extends Resolvable {
         }
 
         ResourceIterator<Unifier> unify(Rule.Conclusion.Value valueConclusion, ConceptManager conceptMgr) {
-            assert Iterators.iterate(values).filter(ValueConstraint::isVariable).toSet().size() == 0;
+            assert iterate(values).filter(ValueConstraint::isVariable).toSet().size() == 0;
             Unifier.Builder unifierBuilder = Unifier.builder();
             if (unificationSatisfiable(attribute, valueConclusion.value().owner())) {
                 unifierBuilder.add(attribute.id(), valueConclusion.value().owner().id());
@@ -650,7 +652,7 @@ public abstract class Concludable extends Resolvable {
             for (ValueConstraint<?> value : equalsConstraints(values)) {
                 unifierBuilder.requirements().predicates(value.owner().id(), valueEqualsFunction(value));
             }
-            return Iterators.iterate(list(unifierBuilder.build()));
+            return single(unifierBuilder.build());
         }
 
         @Override
@@ -730,7 +732,7 @@ public abstract class Concludable extends Resolvable {
         }
 
         private static Set<LabelConstraint> labelConstraints(Constraint constraint) {
-            return Iterators.iterate(constraint.variables()).filter(v -> v.reference().isLabel()).map(
+            return iterate(constraint.variables()).filter(v -> v.reference().isLabel()).map(
                     v -> v.asType().label().get()).toSet();
         }
     }

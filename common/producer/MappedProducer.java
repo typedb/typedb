@@ -18,8 +18,10 @@
 
 package grakn.core.common.producer;
 
+import javax.annotation.concurrent.ThreadSafe;
 import java.util.function.Function;
 
+@ThreadSafe
 public class MappedProducer<T, U> implements Producer<U> {
 
     private final Producer<T> baseProducer;
@@ -31,8 +33,8 @@ public class MappedProducer<T, U> implements Producer<U> {
     }
 
     @Override
-    public void produce(Producer.Queue<U> queue, int count) {
-        baseProducer.produce(new Queue(queue), count);
+    public void produce(Producer.Queue<U> queue, int request) {
+        baseProducer.produce(new Queue(queue), request);
     }
 
     @Override
@@ -40,6 +42,7 @@ public class MappedProducer<T, U> implements Producer<U> {
         baseProducer.recycle();
     }
 
+    @ThreadSafe
     private class Queue implements Producer.Queue<T> {
 
         private final Producer.Queue<U> baseQueue;
@@ -54,13 +57,13 @@ public class MappedProducer<T, U> implements Producer<U> {
         }
 
         @Override
-        public void done(Producer<T> producer) {
-            baseQueue.done(MappedProducer.this);
+        public void done() {
+            baseQueue.done();
         }
 
         @Override
-        public void done(Producer<T> producer, Throwable e) {
-            baseQueue.done(MappedProducer.this, e);
+        public void done(Throwable e) {
+            baseQueue.done(e);
         }
     }
 }
