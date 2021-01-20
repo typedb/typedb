@@ -74,7 +74,7 @@ public class GraphProducer implements Producer<VertexMap> {
         for (int i = 0; i < parallelisation && start.hasNext(); i++) {
             ResourceIterator<VertexMap> iter =
                     new GraphIterator(graphMgr, start.next(), procedure, params, filter).distinct(produced);
-            runningJobs.put(iter, CompletableFuture.runAsync(() -> {}, forkJoinPool()));
+            runningJobs.put(iter, CompletableFuture.completedFuture(null));
         }
         isInitialised = true;
         if (runningJobs.isEmpty()) done(queue);
@@ -87,7 +87,7 @@ public class GraphProducer implements Producer<VertexMap> {
         for (ResourceIterator<VertexMap> iterator : runningJobs.keySet()) {
             int requestSplit = Math.min(requestSplitMax, request - requestSent);
             runningJobs.computeIfPresent(iterator, (iter, asyncJob) -> asyncJob.thenRunAsync(
-                    () -> job(queue, iter, requestSplit)
+                    () -> job(queue, iter, requestSplit), forkJoinPool()
             ));
             requestSent += requestSplit;
             if (requestSent == request) break;
