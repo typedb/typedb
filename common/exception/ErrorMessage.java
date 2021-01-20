@@ -449,9 +449,9 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         public static final RuleWrite RULES_IN_NEGATED_CYCLE_NOT_STRATIFIABLE =
                 new RuleWrite(3, "The rules '%s' causes inference cycles with negations");
         public static final RuleWrite RULE_CAN_IMPLY_UNINSERTABLE_RESULTS =
-                new RuleWrite(4, "The rule '%s' when can imply the type combination '%s', which cannot be inserted into the then.");
+                new RuleWrite(4, "The rule '%s' when can imply the type combination '%s', which cannot be inserted into the rule's then.");
         public static final RuleWrite RULE_CANNOT_BE_SATISFIED =
-                new RuleWrite(5, "The rule '%s' can never satisfy the variable '%s' in the then.");
+                new RuleWrite(5, "The rule '%s' can never satisfy a type for the variable '%s' that can be inserted.");
         public static final RuleWrite MAX_RULE_REACHED =
                 new RuleWrite(6, "The maximum number of rules has been reached: '%s'");
 
