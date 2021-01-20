@@ -19,25 +19,32 @@
 package grakn.core.common.producer;
 
 import grakn.common.collection.Either;
+import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.concurrent.ManagedBlockingQueue;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ProducerIterator<T> {
+public class ProducerIterator<T> implements ResourceIterator<T> {
 
+    private static final Logger LOG = LoggerFactory.getLogger(ProducerIterator.class);
     private static final int BUFFER_MIN_SIZE = 32;
     private static final int BUFFER_MAX_SIZE = 64;
 
     private final LinkedList<Producer<T>> producers;
     private final Queue queue;
-    private final Iterator iterator;
+
+    private T next;
+    private State state;
 
     public ProducerIterator(List<Producer<T>> producers) {
         this(producers, BUFFER_MIN_SIZE, BUFFER_MAX_SIZE);
@@ -48,11 +55,7 @@ public class ProducerIterator<T> {
         assert !producers.isEmpty();
         this.producers = new LinkedList<>(producers);
         this.queue = new Queue(bufferMinSize, bufferMaxSize);
-        this.iterator = new Iterator();
-    }
-
-    public ProducerIterator<T>.Iterator iterator() {
-        return iterator;
+        this.state = State.EMPTY;
     }
 
     private void mayProduce() {
@@ -62,12 +65,48 @@ public class ProducerIterator<T> {
             if (available > queue.max - queue.min) {
                 queue.pending += available;
                 assert !producers.isEmpty();
-                producers.peek().produce(queue, available);
+                Producer<T> producer = producers.peek();
+                ExecutorService.forkJoinPool().submit(() -> producer.produce(queue, available));
             }
         }
     }
 
     private enum State {EMPTY, FETCHED, COMPLETED}
+
+    @Override
+    public boolean hasNext() {
+        if (state == State.COMPLETED) return false;
+        else if (state == State.FETCHED) return true;
+        else mayProduce();
+
+        Either<T, Done> result = queue.take();
+
+        if (result.isFirst()) {
+            next = result.first();
+            state = State.FETCHED;
+        } else {
+            Done done = result.second();
+            recycle();
+            state = State.COMPLETED;
+            if (done.error().isPresent()) {
+                throw GraknException.of(done.error().get());
+            }
+        }
+
+        return state == State.FETCHED;
+    }
+
+    @Override
+    public T next() {
+        if (!hasNext()) throw new NoSuchElementException();
+        state = State.EMPTY;
+        return next;
+    }
+
+    @Override
+    public void recycle() {
+        producers.forEach(Producer::recycle);
+    }
 
     private static class Done {
         @Nullable
@@ -90,51 +129,7 @@ public class ProducerIterator<T> {
         }
     }
 
-    public class Iterator implements ResourceIterator<T> {
-
-        private T next;
-        private State state;
-
-        Iterator() {
-            state = State.EMPTY;
-        }
-
-        @Override
-        public boolean hasNext() {
-            if (state == State.COMPLETED) return false;
-            else if (state == State.FETCHED) return true;
-            else mayProduce();
-
-            Either<T, Done> result = queue.take();
-
-            if (result.isFirst()) {
-                next = result.first();
-                state = State.FETCHED;
-            } else {
-                Done done = result.second();
-                recycle();
-                state = State.COMPLETED;
-                if (done.error().isPresent()) {
-                    throw GraknException.of(done.error().get());
-                }
-            }
-
-            return state == State.FETCHED;
-        }
-
-        @Override
-        public T next() {
-            if (!hasNext()) throw new NoSuchElementException();
-            state = State.EMPTY;
-            return next;
-        }
-
-        @Override
-        public void recycle() {
-            producers.forEach(Producer::recycle);
-        }
-    }
-
+    @ThreadSafe
     private class Queue implements Producer.Queue<T> {
 
         private final ManagedBlockingQueue<Either<T, Done>> blockingQueue;

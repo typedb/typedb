@@ -33,19 +33,19 @@ public class Producers {
         return new BaseProducer<>(iterator);
     }
 
-    public static <T> ProducerIterator<T> iterable(Producer<T> producer) {
+    public static <T> ProducerIterator<T> produce(Producer<T> producer) {
         return new ProducerIterator<>(list(producer));
     }
 
-    public static <T> ProducerIterator<T> iterable(Producer<T> producer, int bufferMinSize, int bufferMaxSize) {
+    public static <T> ProducerIterator<T> produce(Producer<T> producer, int bufferMinSize, int bufferMaxSize) {
         return new ProducerIterator<>(list(producer), bufferMinSize, bufferMaxSize);
     }
 
-    public static <T> ProducerIterator<T> iterable(List<Producer<T>> producers) {
+    public static <T> ProducerIterator<T> produce(List<Producer<T>> producers) {
         return new ProducerIterator<>(producers);
     }
 
-    public static <T> ProducerIterator<T> iterable(List<Producer<T>> producers, int bufferMinSize, int bufferMaxSize) {
+    public static <T> ProducerIterator<T> produce(List<Producer<T>> producers, int bufferMinSize, int bufferMaxSize) {
         return new ProducerIterator<>(producers, bufferMinSize, bufferMaxSize);
     }
 }

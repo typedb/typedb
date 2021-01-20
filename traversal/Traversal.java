@@ -53,7 +53,6 @@ import static grakn.common.collection.Collections.pair;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.cartesian;
 import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.producer.Producers.iterable;
 import static grakn.core.graph.util.Encoding.Edge.ISA;
 import static grakn.core.graph.util.Encoding.Edge.Thing.HAS;
 import static grakn.core.graph.util.Encoding.Edge.Thing.PLAYING;
@@ -121,7 +120,7 @@ public class Traversal {
             return Producers.producer(cartesian(planners.parallelStream().map(planner -> {
                 planner.tryOptimise(graphMgr);
                 return planner.procedure().producer(graphMgr, parameters, filter, parallelisation);
-            }).map(p -> iterable(p).iterator()).collect(toList())).map(partialAnswers -> {
+            }).map(Producers::produce).collect(toList())).map(partialAnswers -> {
                 Map<Reference, Vertex<?, ?>> combinedAnswers = new HashMap<>();
                 partialAnswers.forEach(p -> combinedAnswers.putAll(p.map()));
                 return VertexMap.of(combinedAnswers);

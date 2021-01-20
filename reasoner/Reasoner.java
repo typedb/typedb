@@ -51,7 +51,8 @@ import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CON
 import static grakn.core.common.exception.ErrorMessage.ThingRead.CONTRADICTORY_BOUND_VARIABLE;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
-import static grakn.core.common.producer.Producers.iterable;
+import static grakn.core.common.iterator.Iterators.single;
+import static grakn.core.common.producer.Producers.produce;
 
 public class Reasoner {
     private static final Logger LOG = LoggerFactory.getLogger(Reasoner.class);
@@ -78,7 +79,7 @@ public class Reasoner {
                                                 boolean isParallel) {
         BaseIterator<Conjunction> conjunctions = iterate(disjunction.conjunctions());
         if (!isParallel) return conjunctions.flatMap(conj -> iterator(conj, filter));
-        else return iterable(conjunctions.flatMap(conj -> producers(conj, filter)).toList()).iterator();
+        else return produce(conjunctions.flatMap(conj -> producers(conj, filter)).toList());
     }
 
     private ResourceIterator<Producer<ConceptMap>> producers(Conjunction conjunction) {
@@ -98,13 +99,13 @@ public class Reasoner {
                 iterate(conjunction.variables()).anyMatch(Variable::isThing)) {
             throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction);
         } else {
-            return iterate(list(Producers.empty()));
+            return single(Producers.empty());
         }
 
         if (conjunction.negations().isEmpty()) return iterate(answerProducers);
-        else return iterate(answerProducers).map(p -> p.filter(answer -> !iterable(
+        else return iterate(answerProducers).map(p -> p.filter(answer -> !produce(
                 iterate(conjunction.negations()).flatMap(n -> iterate(producers(n.disjunction(), answer))).toList()
-        ).iterator().hasNext()));
+        ).hasNext()));
     }
 
     private ResourceIterator<Producer<ConceptMap>> producers(Disjunction disjunction, ConceptMap bounds) {
@@ -126,7 +127,7 @@ public class Reasoner {
         final Conjunction conj = logicMgr.typeResolver().resolve(conjunction);
         if (conj.isSatisfiable()) {
             answers = traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
-            if (!context.isSchemaWrite()) answers = link(answers, iterable(resolve(conj)).iterator());
+            if (!context.isSchemaWrite()) answers = link(answers, produce(resolve(conj)));
         } else if (!filter.isEmpty() && iterate(filter).anyMatch(id -> conj.variable(id).isThing()) ||
                 iterate(conjunction.variables()).anyMatch(Variable::isThing)) {
             throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction);

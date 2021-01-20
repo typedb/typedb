@@ -43,10 +43,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
-import static grakn.common.collection.Collections.list;
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_DATA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.common.iterator.Iterators.single;
 
 public class QueryManager {
 
@@ -163,7 +163,7 @@ public class QueryManager {
                         conceptMgr, query.variables(), answer, context
                 ).execute()).toList());
             } else {
-                return iterate(list(Inserter.create(conceptMgr, query.variables(), context).execute()));
+                return single(Inserter.create(conceptMgr, query.variables(), context).execute());
             }
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
