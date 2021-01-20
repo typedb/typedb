@@ -98,24 +98,20 @@ public class GraphProducer implements Producer<VertexMap> {
     }
 
     private synchronized void transition(Queue<VertexMap> queue, ResourceIterator<VertexMap> iterator, int unfulfilled) {
-        if (iterator.hasNext()) {
-            assert unfulfilled == 0;
-            return;
-        }
+        if (iterator.hasNext()) return;
+        if (runningJobs.containsKey(iterator) && start.hasNext()) replace(queue, iterator, unfulfilled);
+        else if (!runningJobs.isEmpty() && unfulfilled > 0) distribute(queue, unfulfilled);
+        else if (runningJobs.isEmpty()) done(queue);
+    }
 
-        if (runningJobs.containsKey(iterator) && start.hasNext()) {
-            runningJobs.remove(iterator);
-            ResourceIterator<VertexMap> newIter =
-                    new GraphIterator(graphMgr, start.next(), procedure, params, filter).distinct(produced);
-            CompletableFuture<Void> asyncJob = unfulfilled > 0
-                    ? CompletableFuture.runAsync(() -> job(queue, newIter, unfulfilled), forkJoinPool())
-                    : CompletableFuture.completedFuture(null);
-            runningJobs.put(newIter, asyncJob);
-        } else if (!runningJobs.isEmpty() && unfulfilled > 0) {
-            distribute(queue, unfulfilled);
-        } else if (runningJobs.isEmpty()) {
-            done(queue);
-        }
+    private synchronized void replace(Queue<VertexMap> queue, ResourceIterator<VertexMap> iterator, int unfulfilled) {
+        runningJobs.remove(iterator);
+        ResourceIterator<VertexMap> newIter =
+                new GraphIterator(graphMgr, start.next(), procedure, params, filter).distinct(produced);
+        CompletableFuture<Void> asyncJob = unfulfilled > 0
+                ? CompletableFuture.runAsync(() -> job(queue, newIter, unfulfilled), forkJoinPool())
+                : CompletableFuture.completedFuture(null);
+        runningJobs.put(newIter, asyncJob);
     }
 
     private void job(Queue<VertexMap> queue, ResourceIterator<VertexMap> iterator, int request) {
