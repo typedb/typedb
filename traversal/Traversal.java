@@ -76,21 +76,31 @@ public class Traversal {
     private final Structure structure;
     private final List<Identifier.Variable.Name> filter;
     private List<Planner> planners;
+    private boolean modifiable;
 
     public Traversal() {
         structure = new Structure();
         parameters = new Parameters();
         filter = new ArrayList<>();
+        modifiable = true;
     }
 
-    void initialise(TraversalCache cache) {
+    // TODO: We should not dynamically calculate properties like this, and then guard against 'modifiable'.
+    //       We should introduce a "builder pattern" to Traversal, such that users of this library will build
+    //       traversals with Traversal.Builder, and call .build() in the end to produce a final Object.
+    private List<Identifier.Variable.Name> filter() {
         if (filter.isEmpty()) {
+            modifiable = false;
             iterate(structure.vertices())
                     .map(TraversalVertex::id).filter(Identifier::isName)
                     .map(id -> id.asVariable().asName()).toList(filter);
         }
+        return filter;
+    }
+
+    void initialise(TraversalCache cache) {
         planners = iterate(structure.asGraphs()).filter(p -> iterate(p.vertices()).anyMatch(
-                v -> v.id().isName() && filter.contains(v.id().asVariable().asName())
+                v -> v.id().isName() && filter().contains(v.id().asVariable().asName())
         )).map(s -> cache.get(s, Planner::create)).toList();
     }
 
@@ -98,11 +108,11 @@ public class Traversal {
         assert !planners.isEmpty();
         if (planners.size() == 1) {
             planners.get(0).tryOptimise(graphMgr);
-            return planners.get(0).procedure().iterator(graphMgr, parameters, filter);
+            return planners.get(0).procedure().iterator(graphMgr, parameters, filter());
         } else {
             return cartesian(planners.parallelStream().map(planner -> {
                 planner.tryOptimise(graphMgr);
-                return planner.procedure().iterator(graphMgr, parameters, filter);
+                return planner.procedure().iterator(graphMgr, parameters, filter());
             }).collect(toList())).map(partialAnswers -> {
                 Map<Reference, Vertex<?, ?>> combinedAnswers = new HashMap<>();
                 partialAnswers.forEach(p -> combinedAnswers.putAll(p.map()));
@@ -115,11 +125,11 @@ public class Traversal {
         assert !planners.isEmpty();
         if (planners.size() == 1) {
             planners.get(0).tryOptimise(graphMgr);
-            return planners.get(0).procedure().producer(graphMgr, parameters, filter, parallelisation);
+            return planners.get(0).procedure().producer(graphMgr, parameters, filter(), parallelisation);
         } else {
             return Producers.producer(cartesian(planners.parallelStream().map(planner -> {
                 planner.tryOptimise(graphMgr);
-                return planner.procedure().producer(graphMgr, parameters, filter, parallelisation);
+                return planner.procedure().producer(graphMgr, parameters, filter(), parallelisation);
             }).map(Producers::produce).collect(toList())).map(partialAnswers -> {
                 Map<Reference, Vertex<?, ?>> combinedAnswers = new HashMap<>();
                 partialAnswers.forEach(p -> combinedAnswers.putAll(p.map()));
@@ -129,88 +139,109 @@ public class Traversal {
     }
 
     public void equalThings(Identifier.Variable thing1, Identifier.Variable thing2) {
+        assert modifiable;
         structure.equalEdge(structure.thingVertex(thing1), structure.thingVertex(thing2));
     }
 
     public void equalTypes(Identifier.Variable type1, Identifier.Variable type2) {
+        assert modifiable;
         structure.equalEdge(structure.typeVertex(type1), structure.typeVertex(type2));
     }
 
     public void has(Identifier.Variable thing, Identifier.Variable attribute) {
+        assert modifiable;
         structure.nativeEdge(structure.thingVertex(thing), structure.thingVertex(attribute), HAS);
     }
 
     public void isa(Identifier thing, Identifier.Variable type) {
+        assert modifiable;
         isa(thing, type, true);
     }
 
     public void isa(Identifier thing, Identifier.Variable type, boolean isTransitive) {
+        assert modifiable;
         structure.nativeEdge(structure.thingVertex(thing), structure.typeVertex(type), ISA, isTransitive);
     }
 
     public void relating(Identifier.Variable relation, Identifier.Scoped role) {
+        assert modifiable;
         structure.nativeEdge(structure.thingVertex(relation), structure.thingVertex(role), RELATING);
     }
 
     public void playing(Identifier.Variable thing, Identifier.Scoped role) {
+        assert modifiable;
         structure.nativeEdge(structure.thingVertex(thing), structure.thingVertex(role), PLAYING);
     }
 
     public void rolePlayer(Identifier.Variable relation, Identifier.Variable player, int repetition) {
+        assert modifiable;
         structure.rolePlayer(structure.thingVertex(relation), structure.thingVertex(player), repetition);
     }
 
     public void rolePlayer(Identifier.Variable relation, Identifier.Variable player, Set<Label> roleTypes, int repetition) {
+        assert modifiable;
         structure.rolePlayer(structure.thingVertex(relation), structure.thingVertex(player), roleTypes, repetition);
     }
 
     public void owns(Identifier.Variable thingType, Identifier.Variable attributeType, boolean isKey) {
+        assert modifiable;
         // TODO: Something smells here. We should really just have one encoding for OWNS, and a flag for @key
         structure.nativeEdge(structure.typeVertex(thingType), structure.typeVertex(attributeType), isKey ? OWNS_KEY : OWNS);
     }
 
     public void plays(Identifier.Variable thingType, Identifier.Variable roleType) {
+        assert modifiable;
         structure.nativeEdge(structure.typeVertex(thingType), structure.typeVertex(roleType), PLAYS);
     }
 
     public void relates(Identifier.Variable relationType, Identifier.Variable roleType) {
+        assert modifiable;
         structure.nativeEdge(structure.typeVertex(relationType), structure.typeVertex(roleType), RELATES);
     }
 
     public void sub(Identifier.Variable subtype, Identifier.Variable supertype, boolean isTransitive) {
+        assert modifiable;
         structure.nativeEdge(structure.typeVertex(subtype), structure.typeVertex(supertype), SUB, isTransitive);
     }
 
     public void iid(Identifier.Variable thing, byte[] iid) {
+        assert modifiable;
         parameters.putIID(thing, VertexIID.Thing.of(iid));
         structure.thingVertex(thing).props().hasIID(true);
     }
 
     public void types(Identifier thing, Set<Label> labels) {
+        assert modifiable;
         structure.thingVertex(thing).props().types(labels);
     }
 
     public void isAbstract(Identifier.Variable type) {
+        assert modifiable;
         structure.typeVertex(type).props().setAbstract();
     }
 
     public void labels(Identifier.Variable type, Label label) {
+        assert modifiable;
         structure.typeVertex(type).props().labels(label);
     }
 
     public void labels(Identifier.Variable type, Set<Label> label) {
+        assert modifiable;
         structure.typeVertex(type).props().labels(label);
     }
 
     public void regex(Identifier.Variable type, String regex) {
+        assert modifiable;
         structure.typeVertex(type).props().regex(regex);
     }
 
     public void valueType(Identifier.Variable attributeType, GraqlArg.ValueType valueType) {
+        assert modifiable;
         structure.typeVertex(attributeType).props().valueType(Encoding.ValueType.of(valueType));
     }
 
     public void predicate(Identifier.Variable attribute, GraqlToken.Predicate token, String value) {
+        assert modifiable;
         Predicate.Value.String predicate = Predicate.Value.String.of(token);
         structure.thingVertex(attribute).props().predicate(predicate);
         if (token == LIKE) parameters.pushValue(attribute, predicate, new Parameters.Value(Pattern.compile(value)));
@@ -218,18 +249,21 @@ public class Traversal {
     }
 
     public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality token, Boolean value) {
+        assert modifiable;
         Predicate.Value.Numerical predicate = Predicate.Value.Numerical.of(token, PredicateArgument.Value.BOOLEAN);
         parameters.pushValue(attribute, predicate, new Parameters.Value(value));
         structure.thingVertex(attribute).props().predicate(predicate);
     }
 
     public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality token, Long value) {
+        assert modifiable;
         Predicate.Value.Numerical predicate = Predicate.Value.Numerical.of(token, PredicateArgument.Value.LONG);
         parameters.pushValue(attribute, predicate, new Parameters.Value(value));
         structure.thingVertex(attribute).props().predicate(predicate);
     }
 
     public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality token, Double value) {
+        assert modifiable;
         long longValue = Math.round(value);
         if (Predicate.compareDoubles(value, longValue) == 0) {
             predicate(attribute, token, longValue);
@@ -241,17 +275,20 @@ public class Traversal {
     }
 
     public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality token, LocalDateTime value) {
+        assert modifiable;
         Predicate.Value.Numerical predicate = Predicate.Value.Numerical.of(token, PredicateArgument.Value.DATETIME);
         parameters.pushValue(attribute, predicate, new Parameters.Value(value));
         structure.thingVertex(attribute).props().predicate(predicate);
     }
 
     public void predicate(Identifier.Variable att1, GraqlToken.Predicate.Equality token, Identifier.Variable att2) {
+        assert modifiable;
         Predicate.Variable predicate = Predicate.Variable.of(token);
         structure.predicateEdge(structure.thingVertex(att1), structure.thingVertex(att2), predicate);
     }
 
     public void filter(List<Identifier.Variable.Name> filter) {
+        assert modifiable;
         this.filter.addAll(filter);
     }
 
@@ -260,9 +297,11 @@ public class Traversal {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Traversal that = (Traversal) o;
+
+        // We compare this.filter() instead of this.filter, as the property is dynamically calculated
         return (this.structure.equals(that.structure) &&
                 this.parameters.equals(that.parameters) &&
-                this.filter.equals(that.filter));
+                this.filter().equals(that.filter()));
     }
 
     @Override
