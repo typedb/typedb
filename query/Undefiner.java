@@ -173,7 +173,7 @@ public class Undefiner {
             if (thingType instanceof RelationType) {
                 variables.stream().filter(
                         v -> v.label().isPresent() && v.label().get().scope().isPresent() &&
-                                v.label().get().scope().get().equals(thingType.getLabel().scope().get())
+                                v.label().get().scope().get().equals(thingType.getLabel().toString())
                 ).forEach(undefined::add);
             }
             thingType.delete();
@@ -224,8 +224,8 @@ public class Undefiner {
                                             owns.attribute().label().get());
                 } else if (owns.isKey()) {
                     throw GraknException.of(INVALID_UNDEFINE_OWNS_KEY,
-                                            owns.attribute().label().get(),
-                                            owns.attribute().label().get());
+                            owns.attribute().label().get(),
+                            owns.attribute().label().get());
                 } else if (attributeType != null) {
                     thingType.unsetOwns(attributeType.asAttributeType());
                 }
