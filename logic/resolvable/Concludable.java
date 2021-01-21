@@ -404,7 +404,7 @@ public abstract class Concludable extends Resolvable {
             assert generatedRelation.isSatisfiable() && !relationTypes.isEmpty();
 
             Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
-            relationTypes.forEach(type -> logicMgr.rulesConcludingIsa(type)
+            relationTypes.forEach(type -> logicMgr.rulesCreating(type)
                     .forEachRemaining(rule -> unify(rule.conclusion(), conceptMgr)
                             .forEachRemaining(unifier -> {
                                 applicableRules.putIfAbsent(rule, new HashSet<>());
@@ -544,7 +544,7 @@ public abstract class Concludable extends Resolvable {
             assert attribute.isSatisfiable() && !attributeTypes.isEmpty();
 
             Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
-            attributeTypes.forEach(type -> logicMgr.rulesConcludingHasAttribute(type)
+            attributeTypes.forEach(type -> logicMgr.rulesCreatingHas(type)
                     .forEachRemaining(rule -> unify(rule.conclusion(), conceptMgr)
                             .forEachRemaining(unifier -> {
                                 applicableRules.putIfAbsent(rule, new HashSet<>());
@@ -651,7 +651,7 @@ public abstract class Concludable extends Resolvable {
             assert var.isSatisfiable() && !types.isEmpty();
 
             Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
-            types.forEach(type -> logicMgr.rulesConcludingIsa(type)
+            types.forEach(type -> logicMgr.rulesCreating(type)
                     .forEachRemaining(rule -> unify(rule.conclusion(), conceptMgr)
                             .forEachRemaining(unifier -> {
                                 applicableRules.putIfAbsent(rule, new HashSet<>());
@@ -752,7 +752,7 @@ public abstract class Concludable extends Resolvable {
             assert attribute.isSatisfiable() && !attributeTypes.isEmpty();
 
             Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
-            attributeTypes.forEach(type -> logicMgr.rulesConcludingIsa(type)
+            attributeTypes.forEach(type -> logicMgr.rulesCreating(type)
                     .forEachRemaining(rule -> unify(rule.conclusion(), conceptMgr)
                             .forEachRemaining(unifier -> {
                                 applicableRules.putIfAbsent(rule, new HashSet<>());

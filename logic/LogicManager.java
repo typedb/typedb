@@ -32,14 +32,12 @@ import graql.lang.pattern.variable.ThingVariable;
 
 public class LogicManager {
 
-    private final ConceptManager conceptMgr;
     private final GraphManager graphMgr;
     private final TypeResolver typeResolver;
     private LogicCache logicCache;
 
     public LogicManager(GraphManager graphMgr, ConceptManager conceptMgr, TraversalEngine traversalEng, LogicCache logicCache) {
         this.graphMgr = graphMgr;
-        this.conceptMgr = conceptMgr;
         this.logicCache = logicCache;
         this.typeResolver = new TypeResolver(conceptMgr, traversalEng, logicCache);
     }
@@ -66,12 +64,12 @@ public class LogicManager {
         return graphMgr.schema().rules().all().map(this::fromStructure);
     }
 
-    public ResourceIterator<Rule> rulesConcludingIsa(Label type) {
-        return graphMgr.schema().rules().concluding().getIsa(graphMgr.schema().getType(type)).map(this::fromStructure);
+    public ResourceIterator<Rule> rulesCreating(Label type) {
+        return graphMgr.schema().rules().conclusions().creating(graphMgr.schema().getType(type)).map(this::fromStructure);
     }
 
-    public ResourceIterator<Rule> rulesConcludingHasAttribute(Label attributeType) {
-        return graphMgr.schema().rules().concluding().getHasAttribute(graphMgr.schema().getType(attributeType)).map(this::fromStructure);
+    public ResourceIterator<Rule> rulesCreatingHas(Label attributeType) {
+        return graphMgr.schema().rules().conclusions().creatingHas(graphMgr.schema().getType(attributeType)).map(this::fromStructure);
     }
 
 
@@ -88,7 +86,7 @@ public class LogicManager {
         rules().forEachRemaining(Rule::validateSatisfiable);
 
         // re-index if rules are valid and satisfiable
-        if (graphMgr.schema().rules().concluding().isOutdated()) {
+        if (graphMgr.schema().rules().conclusions().isOutdated()) {
             graphMgr.schema().rules().all().forEachRemaining(s -> fromStructure(s).reIndex());
         }
 

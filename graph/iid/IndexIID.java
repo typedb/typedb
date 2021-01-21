@@ -82,86 +82,100 @@ public abstract class IndexIID extends IID {
             }
         }
 
-        public static class RuleIndex extends Type {
+        // type -> rule indexing
+        public static abstract class Rule extends Type {
 
-            private boolean isScan;
-
-            RuleIndex(byte[] bytes, boolean isScan) {
+            Rule(byte[] bytes) {
                 super(bytes);
-                this.isScan = isScan;
             }
 
             public int length() { return bytes.length; }
 
-            /**
-             * @return a byte array representing the index of a given type concluded in a given rule
-             */
-            public static RuleIndex concludedIsa(VertexIID.Type typeIID, StructureIID.Rule ruleIID) {
-                return new RuleIndex(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
-                                          Encoding.Index.Infix.CONCLUDED_ISA.bytes(), ruleIID.bytes()),
-                                     false);
-            }
+            public static class Key extends Type.Rule {
 
-            /**
-             * @return a byte array representing the the index scan prefix of a given type concluded in rules
-             */
-            public static RuleIndex concludedIsaScan(VertexIID.Type typeIID) {
-                return new RuleIndex(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
-                                          Encoding.Index.Infix.CONCLUDED_ISA.bytes()),
-                                     true);
-            }
-
-            /**
-             * @return a byte array representing the index of a given type concluded in a given rule
-             */
-            public static RuleIndex concludedHasAttribute(VertexIID.Type typeIID, StructureIID.Rule ruleIID) {
-                return new RuleIndex(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
-                                          Encoding.Index.Infix.CONCLUDED_HAS_ATTRIBUTE.bytes(), ruleIID.bytes()),
-                                     false);
-            }
-
-            /**
-             * @return a byte array representing the index prefix scan of a given type concluded in rules
-             */
-            public static RuleIndex concludedHasAttributeScan(VertexIID.Type typeIID) {
-                return new RuleIndex(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
-                                          Encoding.Index.Infix.CONCLUDED_HAS_ATTRIBUTE.bytes()),
-                                     true);
-            }
-
-            /**
-             * @return a byte array representing the index of a given type contained in a given rule
-             */
-            public static RuleIndex contained(VertexIID.Type typeIID, StructureIID.Rule ruleIID) {
-                return new RuleIndex(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
-                                          Encoding.Index.Infix.CONTAINED_TYPE.bytes(), ruleIID.bytes()),
-                                     false);
-            }
-
-            /**
-             * @return a byte array representing the index scan prefix of a given type contained in rules
-             */
-            public static RuleIndex containedScan(VertexIID.Type typeIID) {
-                return new RuleIndex(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
-                                          Encoding.Index.Infix.CONTAINED_TYPE.bytes()),
-                                     true);
-            }
-
-            @Override
-            public String toString() {
-                if (readableString == null) {
-                    readableString = "[" + PrefixIID.LENGTH + ": " + Encoding.Index.Prefix.TYPE.toString() + "]" +
-                            "[" + (VertexIID.Type.LENGTH) + ": " + bytesToString(copyOfRange(bytes, PrefixIID.LENGTH, VertexIID.Type.LENGTH), STRING_ENCODING) + "]" +
-                            "[" + (Encoding.Index.Infix.LENGTH) + ": " + Encoding.Index.Infix.of(copyOfRange(
-                            bytes, PrefixIID.LENGTH + VertexIID.Type.LENGTH, Encoding.Index.Infix.LENGTH)) + "]" +
-                            (isScan ? "" :
-                                    "[" + (StructureIID.Rule.LENGTH) + ": " + bytesToString(copyOfRange(
-                                            bytes, PrefixIID.LENGTH + VertexIID.Type.LENGTH + Encoding.Index.Infix.LENGTH, StructureIID.Rule.LENGTH), STRING_ENCODING) + "]")
-                    ;
+                public Key(byte[] bytes) {
+                    super(bytes);
                 }
-                return readableString;
+
+                /**
+                 * @return a byte array representing the index of a given type concluded in a given rule
+                 */
+                public static Key concludedVertex(VertexIID.Type typeIID, StructureIID.Rule ruleIID) {
+                    return new Key(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
+                                        Encoding.Index.Infix.CONCLUDED_VERTEX.bytes(), ruleIID.bytes()));
+                }
+
+                /**
+                 * @return a byte array representing the index of a given type concluded in a given rule
+                 */
+                public static Key concludedHasEdge(VertexIID.Type typeIID, StructureIID.Rule ruleIID) {
+                    return new Key(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
+                                        Encoding.Index.Infix.CONCLUDED_HAS_EDGE.bytes(), ruleIID.bytes()));
+                }
+
+
+                /**
+                 * @return a byte array representing the index of a given type contained in a given rule
+                 */
+                public static Key contained(VertexIID.Type typeIID, StructureIID.Rule ruleIID) {
+                    return new Key(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
+                                        Encoding.Index.Infix.CONTAINED_TYPE.bytes(), ruleIID.bytes()));
+                }
+
+                @Override
+                public String toString() {
+                    if (readableString == null) {
+                        readableString = "[" + PrefixIID.LENGTH + ": " + Encoding.Index.Prefix.TYPE.toString() + "]" +
+                                "[" + (VertexIID.Type.LENGTH) + ": " + bytesToString(copyOfRange(bytes, PrefixIID.LENGTH, VertexIID.Type.LENGTH), STRING_ENCODING) + "]" +
+                                "[" + (Encoding.Index.Infix.LENGTH) + ": " + Encoding.Index.Infix.of(copyOfRange(bytes, PrefixIID.LENGTH + VertexIID.Type.LENGTH, Encoding.Index.Infix.LENGTH)) + "]";
+                        ;
+                    }
+                    return readableString;
+                }
             }
 
+            public static class Prefix extends Type.Rule {
+
+                public Prefix(byte[] bytes) {
+                    super(bytes);
+                }
+
+                /**
+                 * @return a byte array representing the the index scan prefix of a given type concluded in rules
+                 */
+                public static Prefix concludedVertex(VertexIID.Type typeIID) {
+                    return new Prefix(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
+                                           Encoding.Index.Infix.CONCLUDED_VERTEX.bytes()));
+                }
+
+                /**
+                 * @return a byte array representing the index prefix scan of a given type concluded in rules
+                 */
+                public static Prefix concludedHasEdge(VertexIID.Type typeIID) {
+                    return new Prefix(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
+                                           Encoding.Index.Infix.CONCLUDED_HAS_EDGE.bytes()));
+                }
+
+                /**
+                 * @return a byte array representing the index scan prefix of a given type contained in rules
+                 */
+                public static Prefix contained(VertexIID.Type typeIID) {
+                    return new Prefix(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
+                                           Encoding.Index.Infix.CONTAINED_TYPE.bytes()));
+                }
+
+                @Override
+                public String toString() {
+                    if (readableString == null) {
+                        readableString = "[" + PrefixIID.LENGTH + ": " + Encoding.Index.Prefix.TYPE.toString() + "]" +
+                                "[" + (VertexIID.Type.LENGTH) + ": " + bytesToString(copyOfRange(bytes, PrefixIID.LENGTH, VertexIID.Type.LENGTH), STRING_ENCODING) + "]" +
+                                "[" + (Encoding.Index.Infix.LENGTH) + ": " + Encoding.Index.Infix.of(copyOfRange(bytes, PrefixIID.LENGTH + VertexIID.Type.LENGTH, Encoding.Index.Infix.LENGTH)) + "]" +
+                                "[" + (StructureIID.Rule.LENGTH) + ": " + bytesToString(copyOfRange(bytes, PrefixIID.LENGTH + VertexIID.Type.LENGTH + Encoding.Index.Infix.LENGTH, StructureIID.Rule.LENGTH), STRING_ENCODING) + "]";
+                        ;
+                    }
+                    return readableString;
+                }
+            }
         }
     }
 
