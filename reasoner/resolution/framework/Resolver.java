@@ -44,7 +44,7 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
         this.explanations = explanations;
         this.requestRouter = new HashMap<>();
         // Note: initialising downstream actors in constructor will create all actors ahead of time, so it is non-lazy
-        // additionally, it can cause deadlock within ResolverManager as different threads initialise actors
+        // additionally, it can cause deadlock within ResolverRegistry as different threads initialise actors
     }
 
     public String name() {

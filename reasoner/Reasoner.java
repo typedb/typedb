@@ -61,7 +61,7 @@ public class Reasoner {
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
     private final Context.Transaction context;
-    private final ResolverRegistry resolverManager;
+    private final ResolverRegistry resolverRegistry;
     private final Actor<ResolutionRecorder> resolutionRecorder; // for explanations
 
     public Reasoner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr, Context.Transaction context) {
@@ -70,7 +70,7 @@ public class Reasoner {
         this.logicMgr = logicMgr;
         this.context = context;
         this.resolutionRecorder = Actor.create(ExecutorService.eventLoopGroup(), ResolutionRecorder::new);
-        this.resolverManager = new ResolverRegistry(
+        this.resolverRegistry = new ResolverRegistry(
                 ExecutorService.eventLoopGroup(), resolutionRecorder, traversalEng, conceptMgr, logicMgr
         );
     }
@@ -163,13 +163,13 @@ public class Reasoner {
         return newClone;
     }
 
-    ResolverRegistry resolverManager() {
-        return resolverManager;
+    ResolverRegistry resolverRegistry() {
+        return resolverRegistry;
     }
 
     private Producer<ConceptMap> resolve(Conjunction conjunction) {
         return Producers.empty();
         // TODO enable reasoner when ready!
-        // return new ReasonerProducer(conjunction, resolverManager);
+        // return new ReasonerProducer(conjunction, resolverRegistry);
     }
 }
