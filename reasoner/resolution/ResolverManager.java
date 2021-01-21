@@ -243,7 +243,7 @@ public class ResolverManager {
                     add(concludable.get());
                     continue;
                 }
-                assert false;
+                throw GraknException.of(ILLEGAL_STATE);
             }
         }
 
