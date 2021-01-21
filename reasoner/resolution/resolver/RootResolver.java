@@ -31,6 +31,7 @@ import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegister;
+import grakn.core.reasoner.resolution.ResolverRegister.AlphaEquivalentResolver;
 import grakn.core.reasoner.resolution.answer.Mapping;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
@@ -42,9 +43,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -64,13 +67,14 @@ public class RootResolver extends Resolver<RootResolver> {
     private final Set<Concludable> concludables;
     private final Consumer<ResolutionAnswer> onAnswer;
     private final Consumer<Integer> onExhausted;
-    private List<ResolverRegister.MappedActor> plan;
+    private List<Resolvable> plan;
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
     private boolean isInitialised;
     private ResponseProducer responseProducer;
     private final Planner planner;
+    private final Map<Resolvable, AlphaEquivalentResolver> downstreamResolvers;
 
     public RootResolver(Actor<RootResolver> self, Conjunction conjunction, Consumer<ResolutionAnswer> onAnswer,
                         Consumer<Integer> onExhausted, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegister register,
@@ -86,6 +90,7 @@ public class RootResolver extends Resolver<RootResolver> {
         this.isInitialised = false;
         this.concludables = Concludable.create(conjunction);
         this.plan = new ArrayList<>();
+        this.downstreamResolvers = new HashMap<>();
     }
 
     @Override
@@ -124,8 +129,7 @@ public class RootResolver extends Resolver<RootResolver> {
         }
 
         ConceptMap conceptMap = fromDownstream.answer().derived().withInitial();
-        Actor<?> sender = fromDownstream.sourceRequest().receiver();
-        if (isLast(sender)) {
+        if (fromDownstream.planIndex() == plan.size() - 1) {
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
                 ResolutionAnswer answer = new ResolutionAnswer(fromDownstream.answer().derived(),
@@ -136,11 +140,12 @@ public class RootResolver extends Resolver<RootResolver> {
                 tryAnswer(fromUpstream, iteration);
             }
         } else {
-            ResolverRegister.MappedActor nextPlannedDownstream = nextPlannedDownstream(sender);
-            Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.actor()),
+            int planIndex = fromDownstream.planIndex() + 1;
+            AlphaEquivalentResolver nextPlannedDownstream = downstreamResolvers.get(plan.get(planIndex));
+            Request downstreamRequest = Request.create(fromUpstream.path().append(nextPlannedDownstream.resolver()),
                                                     UpstreamVars.Initial.of(conceptMap).toDownstreamVars(
                                                             Mapping.of(nextPlannedDownstream.mapping())),
-                                                    derivation);
+                                                    derivation, planIndex);
             responseProducer.addDownstreamProducer(downstreamRequest);
             requestFromDownstream(downstreamRequest, fromUpstream, iteration);
         }
@@ -163,8 +168,10 @@ public class RootResolver extends Resolver<RootResolver> {
         Set<Resolvable> resolvables = new HashSet<>();
         resolvables.addAll(concludablesWithApplicableRules);
         resolvables.addAll(retrievables);
-
-        plan = iterate(planner.plan(resolvables)).map(register::registerResolvable).toList();
+        plan = planner.plan(resolvables);
+        iterate(plan).forEachRemaining(resolvable -> {
+            downstreamResolvers.put(resolvable, register.registerResolvable(resolvable));
+        });
     }
 
     @Override
@@ -172,10 +179,10 @@ public class RootResolver extends Resolver<RootResolver> {
         LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), request);
         Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(conjunction, new ConceptMap());
         ResponseProducer responseProducer = new ResponseProducer(traversal, iteration);
-        Request toDownstream = new Request(request.path().append(plan.get(0).actor()),
+        Request toDownstream = Request.create(request.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
                                            UpstreamVars.Initial.of(request.answerBounds().conceptMap())
-                                                   .toDownstreamVars(Mapping.of(plan.get(0).mapping())),
-                                           new ResolutionAnswer.Derivation(map()));
+                                                   .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
+                                           new ResolutionAnswer.Derivation(map()), 0);
         responseProducer.addDownstreamProducer(toDownstream);
 
         return responseProducer;
@@ -189,10 +196,10 @@ public class RootResolver extends Resolver<RootResolver> {
         assert newIteration > responseProducerPrevious.iteration();
         Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(conjunction, new ConceptMap());
         ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversal, newIteration);
-        Request toDownstream = new Request(request.path().append(plan.get(0).actor()),
+        Request toDownstream = Request.create(request.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
                                            UpstreamVars.Initial.of(request.answerBounds().conceptMap()).
-                                                   toDownstreamVars(Mapping.of(plan.get(0).mapping())),
-                                           new ResolutionAnswer.Derivation(map()));
+                                                   toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
+                                           new ResolutionAnswer.Derivation(map()), 0);
         responseProducerNewIter.addDownstreamProducer(toDownstream);
         return responseProducerNewIter;
     }
@@ -236,21 +243,5 @@ public class RootResolver extends Resolver<RootResolver> {
             resolutionRecorder.tell(state -> state.record(answer));
         }
         onAnswer.accept(answer);
-    }
-
-    private boolean isLast(Actor<?> actor) {
-        return plan.get(plan.size() - 1).actor().equals(actor);
-    }
-
-    ResolverRegister.MappedActor nextPlannedDownstream(Actor<?> actor) {
-        int index = -1;
-        for (int i = 0; i < plan.size(); i++) {
-            if (actor.equals(plan.get(i).actor())) {
-                index = i;
-                break;
-            }
-        }
-        assert index != -1 && index < plan.size() - 1;
-        return plan.get(index + 1);
     }
 }

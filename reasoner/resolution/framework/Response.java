@@ -41,11 +41,13 @@ public interface Response {
     class Answer implements Response {
         private final Request sourceRequest;
         private final ResolutionAnswer answer;
+        private final int planIndex;
 
         public Answer(Request sourceRequest,
                       ResolutionAnswer answer) {
             this.sourceRequest = sourceRequest;
             this.answer = answer;
+            this.planIndex = sourceRequest.planIndex();
         }
 
         @Override
@@ -55,6 +57,10 @@ public interface Response {
 
         public ResolutionAnswer answer() {
             return answer;
+        }
+
+        public int planIndex() {
+            return planIndex;
         }
 
         @Override

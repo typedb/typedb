@@ -78,7 +78,7 @@ public class ResolverRegister {
         planner = new Planner(conceptMgr, logicMgr);
     }
 
-    public MappedActor registerResolvable(Resolvable resolvable) {
+    public AlphaEquivalentResolver registerResolvable(Resolvable resolvable) {
         if (resolvable.isRetrievable()) {
             return registerRetrievable(resolvable.asRetrievable());
         } else if (resolvable.isConcludable()) {
@@ -106,27 +106,27 @@ public class ResolverRegister {
         this.elg = eventLoopGroup;
     }
 
-    private MappedActor registerRetrievable(Retrievable retrievable) {
+    private AlphaEquivalentResolver registerRetrievable(Retrievable retrievable) {
         LOG.debug("Register retrieval for retrievable actor: '{}'", retrievable.conjunction());
         Actor<RetrievableResolver> retrievableActor = Actor.create(elg, self -> new RetrievableResolver(
                 self, retrievable, this, traversalEngine, explanations));
-        return new MappedActor(retrievableActor, identity(retrievable));
+        return new AlphaEquivalentResolver(retrievableActor, identity(retrievable));
     }
 
-    private MappedActor registerConcludable(Concludable concludable) {
+    private AlphaEquivalentResolver registerConcludable(Concludable concludable) {
         LOG.debug("Register retrieval for concludable actor: '{}'", concludable.conjunction());
         for (Map.Entry<Concludable, Actor<ConcludableResolver>> c : concludableActors.entrySet()) {
             // TODO This needs to be optimised from a linear search to use an alpha hash
             AlphaEquivalence alphaEquality = c.getKey().alphaEquals(concludable);
             if (alphaEquality.isValid()) {
-                return new MappedActor(c.getValue(), alphaEquality.asValid().namedVariableMapping());
+                return new AlphaEquivalentResolver(c.getValue(), alphaEquality.asValid().namedVariableMapping());
             }
         }
         Actor<ConcludableResolver> concludableActor = Actor.create(elg, self ->
                 new ConcludableResolver(self, concludable, resolutionRecorder, this, traversalEngine, conceptMgr,
                                         logicMgr, explanations));
         concludableActors.put(concludable, concludableActor);
-        return new MappedActor(concludableActor, identity(concludable));
+        return new AlphaEquivalentResolver(concludableActor, identity(concludable));
     }
 
     private static Map<Reference.Name, Reference.Name> identity(Resolvable resolvable) {
@@ -136,12 +136,12 @@ public class ResolverRegister {
                 .collect(Collectors.toMap(Function.identity(), Function.identity()));
     }
 
-    public static class MappedActor {
-        private final Actor<? extends ResolvableResolver<?>> actor;
+    public static class AlphaEquivalentResolver {
+        private final Actor<? extends ResolvableResolver<?>> resolver;
         private final Map<Reference.Name, Reference.Name> mapping;
 
-        public MappedActor(Actor<? extends ResolvableResolver<?>> actor, Map<Reference.Name, Reference.Name> mapping) {
-            this.actor = actor;
+        public AlphaEquivalentResolver(Actor<? extends ResolvableResolver<?>> resolver, Map<Reference.Name, Reference.Name> mapping) {
+            this.resolver = resolver;
             this.mapping = mapping;
         }
 
@@ -149,8 +149,8 @@ public class ResolverRegister {
             return mapping;
         }
 
-        public Actor<? extends ResolvableResolver<?>> actor() {
-            return actor;
+        public Actor<? extends ResolvableResolver<?>> resolver() {
+            return resolver;
         }
     }
 
