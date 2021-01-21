@@ -24,7 +24,7 @@ Graql is distributed as an open-source technology, while Grakn comes in two form
 
 Grakn provides an enhanced [entity-relationship](https://en.wikipedia.org/wiki/Entity–relationship_model) schema to model complex datasets. The schema allows users to model type hierarchies, hyper-entities, hyper-relationships, and rules. The schema can be updated and extended at any time in the database lifecycle. Hyper-entities are entities with multiple instances of a given attribute, and hyper-relationships are nested relationships, cardinality-restricted relationships, or relationships between any number of entities. This enables the creation of complex knowledge models very easily and allows them to evolve flexibly.
 
-Under the hood, Grakn has an expressive knowledge representation system based on [hypergraph](https://en.wikipedia.org/wiki/Hypergraph) data structures (that generalizes an edge to be a set of vertices - non-binary). Graql is Grakn’s reasoning (through OLTP) and analytics (through OLAP) declarative query language. 
+Under the hood, Grakn has an expressive knowledge representation system based on [hypergraph](https://en.wikipedia.org/wiki/Hypergraph) data structures (that generalises an edge to be a set of vertices - non-binary). Graql is Grakn’s reasoning (through OLTP) and analytics (through OLAP) declarative query language. 
 
 ## Logical Inference
 
