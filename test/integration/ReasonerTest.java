@@ -23,6 +23,7 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
 import grakn.core.logic.LogicManager;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
@@ -94,5 +95,53 @@ public class ReasonerTest {
 
         rocksTransaction.close();
         session.close();
+    }
+
+    @Test
+    public void test_relation_rule() throws IOException {
+        Util.resetDirectory(directory);
+
+        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+            grakn.databases().create(database);
+            try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    final ConceptManager conceptMgr = txn.concepts();
+                    final LogicManager logicMgr = txn.logic();
+
+                    final EntityType person = conceptMgr.putEntityType("person");
+                    final AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
+                    person.setOwns(name);
+                    final RelationType friendship = conceptMgr.putRelationType("friendship");
+                    friendship.setRelates("friend");
+                    final RelationType marriage = conceptMgr.putRelationType("marriage");
+                    marriage.setRelates("spouse");
+                    person.setPlays(friendship.getRelates("friend"));
+                    person.setPlays(marriage.getRelates("spouse"));
+                    logicMgr.putRule(
+                            "marriage-is-friendship",
+                            Graql.parsePattern("{ $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
+                            Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
+                    txn.commit();
+                }
+            }
+            try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    txn.query().insert(Graql.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (spouse: $x, spouse: $y) isa marriage;").asInsert());
+                    txn.commit();
+                }
+                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $r (friend: $x, friend: $y) isa friendship;").asMatch()).toList();
+                    System.out.println(ans);
+
+                    ans.iterator().forEachRemaining(a -> {
+                        assertEquals("friendship", a.get("r").asThing().getType().getLabel().scopedName());
+                        assertEquals("person", a.get("x").asThing().getType().getLabel().scopedName());
+                        assertEquals("person", a.get("y").asThing().getType().getLabel().scopedName());
+                    });
+
+                    assertEquals(2, ans.size());
+                }
+            }
+        }
     }
 }
