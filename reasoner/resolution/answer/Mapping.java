@@ -54,6 +54,13 @@ public class Mapping {
         return Objects.hash(mapping, reverseMapping);
     }
 
+    @Override
+    public String toString() {
+        return "Mapping{" +
+                "mapping=" + mapping +
+                '}';
+    }
+
     public ConceptMap transform(ConceptMap toTransform) {
         return undirectedTransform(toTransform, mapping);
     }

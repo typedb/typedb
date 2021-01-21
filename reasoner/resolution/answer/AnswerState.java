@@ -58,6 +58,13 @@ public abstract class AnswerState {
         return Objects.hash(conceptMap);
     }
 
+    @Override
+    public String toString() {
+        return "AnswerState{" +
+                "conceptMap=" + conceptMap +
+                '}';
+    }
+
     public static class UpstreamVars {
 
         public static class Initial extends AnswerState {
@@ -78,6 +85,13 @@ public abstract class AnswerState {
                 Optional<ConceptMap> unified = unifier.unify(conceptMap());
                 return unified.map(conceptMap -> new DownstreamVars.Unified(this, conceptMap, unifier));
             }
+
+            @Override
+            public String toString() {
+                return "AnswerState.UpstreamVars.Initial{" +
+                        "conceptMap=" + conceptMap() +
+                        '}';
+            }
         }
 
         public static class Derived extends AnswerState {
@@ -93,6 +107,14 @@ public abstract class AnswerState {
                 HashMap<Reference.Name, Concept> withInitial = new HashMap<>(conceptMap().concepts());
                 withInitial.putAll(initial.conceptMap().concepts());
                 return new ConceptMap(withInitial);
+            }
+
+            @Override
+            public String toString() {
+                return "AnswerState.UpstreamVars.Derived{" +
+                        "derivedAnswer=" + conceptMap() +
+                        "initial=" + initial +
+                        '}';
             }
         }
     }
@@ -143,6 +165,14 @@ public abstract class AnswerState {
 
             @Override
             public Root asRoot() { return this; }
+
+
+            @Override
+            public String toString() {
+                return "AnswerState.DownstreamVars.Root{" +
+                        "conceptMap=" + conceptMap() +
+                        '}';
+            }
         }
 
         public static class Mapped extends DownstreamVars {
@@ -181,6 +211,14 @@ public abstract class AnswerState {
             @Override
             public int hashCode() {
                 return Objects.hash(initial, mapping);
+            }
+
+            @Override
+            public String toString() {
+                return "AnswerState.DownstreamVars.Mapped{" +
+                        "initial=" + conceptMap() +
+                        "mapping=" + mapping +
+                        '}';
             }
         }
 
@@ -225,6 +263,14 @@ public abstract class AnswerState {
             @Override
             public int hashCode() {
                 return Objects.hash(initial, unifier);
+            }
+
+            @Override
+            public String toString() {
+                return "AnswerState.DownstreamVars.Unified{" +
+                        "initial=" + conceptMap() +
+                        "unifier=" + unifier +
+                        '}';
             }
         }
     }
