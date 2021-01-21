@@ -167,7 +167,9 @@ public class RuleResolver extends Resolver<RuleResolver> {
         resolvables.addAll(retrievables);
 
         plan = planner.plan(resolvables);
-        iterate(plan).forEachRemaining(registry::registerResolvable);
+        iterate(plan).forEachRemaining(resolvable -> {
+            downstreamResolvers.put(resolvable, registry.registerResolvable(resolvable));
+        });
     }
 
     @Override
