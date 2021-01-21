@@ -29,7 +29,7 @@ import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
-import grakn.core.reasoner.resolution.ResolverManager;
+import grakn.core.reasoner.resolution.ResolverRegister;
 import grakn.core.reasoner.resolution.answer.Mapping;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
@@ -62,7 +62,7 @@ public class RootResolver extends Resolver<RootResolver> {
     private final Set<Concludable> concludables;
     private final Consumer<ResolutionAnswer> onAnswer;
     private final Consumer<Integer> onExhausted;
-    private List<ResolverManager.MappedActor> plan;
+    private List<ResolverRegister.MappedActor> plan;
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
@@ -70,9 +70,9 @@ public class RootResolver extends Resolver<RootResolver> {
     private ResponseProducer responseProducer;
 
     public RootResolver(Actor<RootResolver> self, Conjunction conjunction, Consumer<ResolutionAnswer> onAnswer,
-                        Consumer<Integer> onExhausted, Actor<ResolutionRecorder> resolutionRecorder, ResolverManager resolverMgr,
+                        Consumer<Integer> onExhausted, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegister register,
                         TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr, boolean explanations) {
-        super(self, RootResolver.class.getSimpleName() + "(pattern:" + conjunction + ")", resolverMgr, traversalEngine, explanations);
+        super(self, RootResolver.class.getSimpleName() + "(pattern:" + conjunction + ")", register, traversalEngine, explanations);
         this.conjunction = conjunction;
         this.onAnswer = onAnswer;
         this.onExhausted = onExhausted;
@@ -132,7 +132,7 @@ public class RootResolver extends Resolver<RootResolver> {
                 tryAnswer(fromUpstream, iteration);
             }
         } else {
-            ResolverManager.MappedActor nextPlannedDownstream = nextPlannedDownstream(sender);
+            ResolverRegister.MappedActor nextPlannedDownstream = nextPlannedDownstream(sender);
             Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.actor()),
                                                     UpstreamVars.Initial.of(conceptMap).toDownstreamVars(
                                                             Mapping.of(nextPlannedDownstream.mapping())),
@@ -160,7 +160,7 @@ public class RootResolver extends Resolver<RootResolver> {
         resolvables.addAll(concludablesWithApplicableRules);
         resolvables.addAll(retrievables);
 
-        plan = resolverMgr.planAndRegister(resolvables);
+        plan = register.planAndRegister(resolvables);
     }
 
     @Override
@@ -238,7 +238,7 @@ public class RootResolver extends Resolver<RootResolver> {
         return plan.get(plan.size() - 1).actor().equals(actor);
     }
 
-    ResolverManager.MappedActor nextPlannedDownstream(Actor<?> actor) {
+    ResolverRegister.MappedActor nextPlannedDownstream(Actor<?> actor) {
         int index = -1;
         for (int i = 0; i < plan.size(); i++) {
             if (actor.equals(plan.get(i).actor())) {

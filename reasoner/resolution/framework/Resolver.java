@@ -19,7 +19,7 @@
 package grakn.core.reasoner.resolution.framework;
 
 import grakn.core.common.concurrent.actor.Actor;
-import grakn.core.reasoner.resolution.ResolverManager;
+import grakn.core.reasoner.resolution.ResolverRegister;
 import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,14 +32,14 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
 
     private final String name;
     private final Map<Request, Request> requestRouter;
-    protected final ResolverManager resolverMgr;
+    protected final ResolverRegister register;
     protected final TraversalEngine traversalEngine;
     private final boolean explanations;
 
-    protected Resolver(Actor<T> self, String name, ResolverManager resolverMgr, TraversalEngine traversalEngine, boolean explanations) {
+    protected Resolver(Actor<T> self, String name, ResolverRegister register, TraversalEngine traversalEngine, boolean explanations) {
         super(self);
         this.name = name;
-        this.resolverMgr = resolverMgr;
+        this.register = register;
         this.traversalEngine = traversalEngine;
         this.explanations = explanations;
         this.requestRouter = new HashMap<>();

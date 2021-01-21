@@ -26,7 +26,7 @@ import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Unifier;
 import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
-import grakn.core.reasoner.resolution.ResolverManager;
+import grakn.core.reasoner.resolution.ResolverRegister;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
@@ -59,10 +59,10 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
     private boolean isInitialised;
 
     public ConcludableResolver(Actor<ConcludableResolver> self, Concludable concludable,
-                               Actor<ResolutionRecorder> resolutionRecorder, ResolverManager resolverMgr,
+                               Actor<ResolutionRecorder> resolutionRecorder, ResolverRegister register,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
                                boolean explanations) {
-        super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable + ")", resolverMgr, traversalEngine, explanations);
+        super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable + ")", register, traversalEngine, explanations);
         this.concludable = concludable;
         this.resolutionRecorder = resolutionRecorder;
         this.conceptMgr = conceptMgr;
@@ -146,7 +146,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
         LOG.debug("{}: initialising downstream actors", name());
         concludable.getApplicableRules(conceptMgr, logicMgr).forEachRemaining(rule -> concludable.getUnifiers(rule)
                 .forEachRemaining(unifier -> {
-                    Actor<RuleResolver> ruleActor = resolverMgr.registerRule(rule);
+                    Actor<RuleResolver> ruleActor = register.registerRule(rule);
                     applicableRules.putIfAbsent(ruleActor, new HashSet<>());
                     applicableRules.get(ruleActor).add(unifier);
                 }));

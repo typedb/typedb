@@ -29,7 +29,7 @@ import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Resolvable;
 import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.reasoner.resolution.MockTransaction;
-import grakn.core.reasoner.resolution.ResolverManager;
+import grakn.core.reasoner.resolution.ResolverRegister;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.answer.Mapping;
 import grakn.core.reasoner.resolution.framework.Request;
@@ -58,14 +58,14 @@ public class RuleResolver extends Resolver<RuleResolver> {
 
     private final Map<Request, ResponseProducer> responseProducers;
     private final Rule rule;
-    private List<ResolverManager.MappedActor> plan;
+    private List<ResolverRegister.MappedActor> plan;
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
     private boolean isInitialised;
 
-    public RuleResolver(Actor<RuleResolver> self, Rule rule, ResolverManager resolverMgr, TraversalEngine traversalEngine,
+    public RuleResolver(Actor<RuleResolver> self, Rule rule, ResolverRegister register, TraversalEngine traversalEngine,
                         ConceptManager conceptMgr, LogicManager logicMgr, boolean explanations) {
-        super(self, RuleResolver.class.getSimpleName() + "(rule:" + rule + ")", resolverMgr, traversalEngine, explanations);
+        super(self, RuleResolver.class.getSimpleName() + "(rule:" + rule + ")", register, traversalEngine, explanations);
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
         this.responseProducers = new HashMap<>();
@@ -127,7 +127,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
                 tryAnswer(fromUpstream, responseProducer, iteration);
             }
         } else {
-            ResolverManager.MappedActor nextPlannedDownstream = nextPlannedDownstream(sender);
+            ResolverRegister.MappedActor nextPlannedDownstream = nextPlannedDownstream(sender);
             Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.actor()),
                                                     AnswerState.UpstreamVars.Initial.of(whenAnswer).toDownstreamVars(
                                                             Mapping.of(nextPlannedDownstream.mapping())),
@@ -159,7 +159,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
         resolvables.addAll(concludablesWithApplicableRules);
         resolvables.addAll(retrievables);
 
-        plan = resolverMgr.planAndRegister(resolvables);
+        plan = register.planAndRegister(resolvables);
     }
 
     @Override
@@ -241,7 +241,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
         return plan.get(plan.size() - 1).actor().equals(actor);
     }
 
-    ResolverManager.MappedActor nextPlannedDownstream(Actor<?> actor) {
+    ResolverRegister.MappedActor nextPlannedDownstream(Actor<?> actor) {
         int index = -1;
         for (int i = 0; i < plan.size(); i++) {
             if (actor.equals(plan.get(i).actor())) {
