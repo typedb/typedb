@@ -59,6 +59,10 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_NOT_
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_SUBTYPES;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_OWNS;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_PLAYS;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_NONEXISTENT_OWNS;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_NONEXISTENT_PLAYS;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.loop;
 import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
@@ -153,8 +157,16 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if (getInstances().anyMatch(thing -> thing.getHas(attributeType).findAny().isPresent())) {
             throw exception(GraknException.of(INVALID_UNDEFINE_OWNS_HAS_INSTANCES, vertex.label(), attVertex.label()));
         }
-        if ((edge = vertex.outs().edge(OWNS, attVertex)) != null) edge.delete();
         if ((edge = vertex.outs().edge(OWNS_KEY, attVertex)) != null) edge.delete();
+        else if ((edge = vertex.outs().edge(OWNS, attVertex)) != null) edge.delete();
+        else if (this.getOwns().anyMatch(attr -> attr.equals(attributeType))) {
+            throw exception(GraknException.of(INVALID_UNDEFINE_INHERITED_OWNS,
+                    this.getLabel().toString(), attributeType.getLabel().toString()));
+        }
+        else {
+            throw exception(GraknException.of(INVALID_UNDEFINE_NONEXISTENT_OWNS,
+                    this.getLabel().toString(), attributeType.getLabel().toString()));
+        }
     }
 
     private <T extends grakn.core.concept.type.Type> void override(Encoding.Edge.Type encoding, T type, T overriddenType,
@@ -321,7 +333,16 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void unsetPlays(RoleType roleType) {
         final TypeEdge edge = vertex.outs().edge(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
-        if (edge == null) return;
+        if (edge == null) {
+            if (this.getPlays().anyMatch(attr -> attr.equals(roleType))) {
+                throw exception(GraknException.of(INVALID_UNDEFINE_INHERITED_PLAYS,
+                        this.getLabel().toString(), roleType.getLabel().toString()));
+            }
+            else {
+                throw exception(GraknException.of(INVALID_UNDEFINE_NONEXISTENT_PLAYS,
+                        this.getLabel().toString(), roleType.getLabel().toString()));
+            }
+        }
         if (getInstances().anyMatch(thing -> thing.getRelations(roleType).findAny().isPresent())) {
             throw exception(GraknException.of(INVALID_UNDEFINE_PLAYS_HAS_INSTANCES, vertex.label(), roleType.getLabel().toString()));
         }

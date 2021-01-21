@@ -34,6 +34,7 @@ java_test(
         "//test/behaviour/connection:steps",
         "//test/behaviour/connection/session:steps",
         "//test/behaviour/config:parameters",
+        "//test/behaviour/logic/rule:steps",
     ],
     data = [
         "@graknlabs_behaviour//graql/language:undefine.feature",

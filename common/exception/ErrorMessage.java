@@ -414,12 +414,24 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new TypeWrite(36, "The ability of type '%s' to own attribute type '%s' cannot be undefined because it is currently owned by existing instances.");
         public static final TypeWrite INVALID_UNDEFINE_PLAYS_HAS_INSTANCES =
                 new TypeWrite(37, "The ability of type '%s' to play role type '%s' cannot be undefined because it is currently played by existing instances.");
+        public static final TypeWrite INVALID_UNDEFINE_INHERITED_RELATES =
+                new TypeWrite(38, "The ability of type '%s' to relate role type '%s' cannot be undefined because the ability is inherited from a supertype.");
+        public static final TypeWrite INVALID_UNDEFINE_INHERITED_OWNS =
+                new TypeWrite(39, "The ability of type '%s' to own attribute type '%s' cannot be undefined because the ability is inherited from a supertype.");
+        public static final TypeWrite INVALID_UNDEFINE_INHERITED_PLAYS =
+                new TypeWrite(40, "The ability of type '%s' to play role type '%s' cannot be undefined because the ability is inherited from a supertype.");
+        public static final TypeWrite INVALID_UNDEFINE_NONEXISTENT_RELATES =
+                new TypeWrite(41, "The ability of type '%s' to relate role type '%s' cannot be undefined because because it does not have that ability.");
+        public static final TypeWrite INVALID_UNDEFINE_NONEXISTENT_OWNS =
+                new TypeWrite(42, "The ability of type '%s' to own attribute type '%s' cannot be undefined because it does not have that ability.");
+        public static final TypeWrite INVALID_UNDEFINE_NONEXISTENT_PLAYS =
+                new TypeWrite(43, "The ability of type '%s' to play role type '%s' cannot be undefined because it does not have that ability.");
         public static final TypeWrite TYPE_CONSTRAINT_UNACCEPTED =
-                new TypeWrite(38, "The type constraint '%s' is not accepted in a define/undefine query.");
+                new TypeWrite(44, "The type constraint '%s' is not accepted in a define/undefine query.");
         public static final TypeWrite ILLEGAL_SUPERTYPE_ENCODING =
-                new TypeWrite(39, "Unable to set type with class '%s' as a supertype.");
+                new TypeWrite(45, "Unable to set type with class '%s' as a supertype.");
         public static final TypeWrite MAX_SUBTYPE_REACHED =
-                new TypeWrite(40, "The maximum number of '%s' types has been reached: '%s'");
+                new TypeWrite(46, "The maximum number of '%s' types has been reached: '%s'");
 
         private static final String codePrefix = "TYW";
         private static final String messagePrefix = "Invalid Type Write";
