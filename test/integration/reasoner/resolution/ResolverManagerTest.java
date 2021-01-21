@@ -19,6 +19,7 @@ package grakn.core.reasoner.resolution;
 
 import grakn.core.common.parameters.Arguments;
 import grakn.core.concept.ConceptManager;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.logic.LogicManager;
@@ -75,7 +76,8 @@ public class ResolverManagerTest {
     }
 
     private Conjunction parse(String query) {
-        return Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
+        return logicMgr.typeResolver().resolve(Disjunction.create(Graql.parsePattern(query).asConjunction().normalise())
+                                                       .conjunctions().iterator().next());
     }
 
     @Test
@@ -90,6 +92,9 @@ public class ResolverManagerTest {
 
     @Test
     public void test_planner_prioritises_retrievable_without_dependencies() {
+        EntityType person = conceptMgr.putEntityType("person");
+        person.setOwns(conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING));
+
         Concludable concludable = Concludable.create(parse("{ $p has name $n; }")).iterator().next();
         Retrievable retrievable = new Retrievable(parse("{ $p isa person; }"));
 
@@ -101,6 +106,13 @@ public class ResolverManagerTest {
 
     @Test
     public void test_planner_prioritises_largest_retrievable_without_dependencies() {
+        EntityType person = conceptMgr.putEntityType("person");
+        person.setOwns(conceptMgr.putAttributeType("first-name", AttributeType.ValueType.STRING));
+        person.setOwns(conceptMgr.putAttributeType("surname", AttributeType.ValueType.STRING));
+        person.setOwns(conceptMgr.putAttributeType("age", AttributeType.ValueType.STRING));
+        EntityType company = conceptMgr.putEntityType("company");
+        company.setOwns(conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING));
+
         Retrievable retrievable = new Retrievable(parse("{ $p isa person, has age $a, has first-name $fn, has " +
                                                                 "surname $sn; }"));
         Concludable concludable = Concludable.create(parse("{ ($p, $c); }")).iterator().next();
@@ -114,6 +126,13 @@ public class ResolverManagerTest {
 
     @Test
     public void test_planner_prioritises_largest_named_variables_retrievable_without_dependencies() {
+        EntityType person = conceptMgr.putEntityType("person");
+        person.setOwns(conceptMgr.putAttributeType("first-name", AttributeType.ValueType.STRING));
+        person.setOwns(conceptMgr.putAttributeType("surname", AttributeType.ValueType.STRING));
+        person.setOwns(conceptMgr.putAttributeType("age", AttributeType.ValueType.STRING));
+        EntityType company = conceptMgr.putEntityType("company");
+        company.setOwns(conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING));
+
         Retrievable retrievable = new Retrievable(parse("{ $p isa person, has age 30, has first-name " +
                                                                 "\"Alice\", has surname \"Bachelor\"; }"));
         Concludable concludable = Concludable.create(parse("{ ($p, $c); }")).iterator().next();
@@ -138,6 +157,13 @@ public class ResolverManagerTest {
 
     @Test
     public void test_planner_multiple_dependencies() {
+        EntityType person = conceptMgr.putEntityType("person");
+        AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
+        person.setOwns(name);
+        EntityType company = conceptMgr.putEntityType("company");
+        company.setOwns(name);
+        conceptMgr.putRelationType("employment");
+
         Retrievable retrievable = new Retrievable(parse("{ $p isa person; }"));
         Concludable concludable = Concludable.create(parse("{ $p has name $n; }")).iterator().next();
         Retrievable retrievable2 = new Retrievable(parse("{ $c isa company, has name $n; }"));
