@@ -59,8 +59,7 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.ROLE_TYPE_AMBI
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ROLE_TYPE_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_CONSTRAINT_TYPE_VARIABLE;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_CONSTRAINT_UNACCEPTED;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_IID_REASSERTION;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_IID_CONFLICT;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_IID_NOT_INSERTABLE;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_REASSERTION;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
@@ -121,7 +120,6 @@ public class Inserter {
             else validate(var);
 
             if (existingContains(var)) thing = existingGet(var);
-            else if (var.iid().isPresent()) thing = getThing(var.iid().get());
             else if (var.isa().isPresent()) thing = insertIsa(var.isa().get(), var);
             else throw GraknException.of(THING_ISA_MISSING, ref);
             if (ref.isName()) inserted.put(ref.asName(), thing);
@@ -133,15 +131,10 @@ public class Inserter {
     private void validate(ThingVariable var) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "validate")) {
             Reference ref = var.reference();
-            if (existingContains(var) && (var.iid().isPresent() || var.isa().isPresent())) {
-                if (var.iid().isPresent()) {
-                    throw GraknException.of(THING_IID_REASSERTION, ref, var.iid().get().iid());
-                } else {
-                    throw GraknException.of(THING_ISA_REASSERTION, ref, var.isa().get().type().label().get().label());
-                }
-            } else if (var.iid().isPresent() && var.isa().isPresent()) {
-                throw GraknException.of(THING_ISA_IID_CONFLICT, var.iid().get(),
-                                        var.isa().get().type().label().get().label());
+            if (var.iid().isPresent()) {
+                throw GraknException.of(THING_IID_NOT_INSERTABLE, ref, var.iid().get());
+            } else if (existingContains(var) && var.isa().isPresent()) {
+                throw GraknException.of(THING_ISA_REASSERTION, ref, var.isa().get().type().label().get().label());
             } else if (!var.is().isEmpty()) {
                 throw GraknException.of(THING_CONSTRAINT_UNACCEPTED, IS);
             }
