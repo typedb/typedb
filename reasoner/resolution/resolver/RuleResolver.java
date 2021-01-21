@@ -121,9 +121,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
         if (fromDownstream.planIndex() == plan.size() - 1) {
             Map<Identifier, Concept> thenMaterialisation = rule.putConclusion(whenAnswer, traversalEngine, conceptMgr);
             assert fromUpstream.answerBounds().isUnified();
-            Optional<AnswerState.UpstreamVars.Derived> unifiedAnswer = fromUpstream.answerBounds().asUnified()
-                    .aggregateToUpstream(thenMaterialisation);
-
+            Optional<AnswerState.UpstreamVars.Derived> unifiedAnswer = fromUpstream.answerBounds().asUnified().aggregateToUpstream(thenMaterialisation);
             if (unifiedAnswer.isPresent() && !responseProducer.hasProduced(unifiedAnswer.get().conceptMap())) {
                 responseProducer.recordProduced(unifiedAnswer.get().conceptMap());
                 // TODO revisit whether using `rule.when()` is the correct pattern to associate with the unified answer? Variables won't match
@@ -214,12 +212,13 @@ public class RuleResolver extends Resolver<RuleResolver> {
         while (responseProducer.hasTraversalProducer()) {
             ConceptMap conceptMap = responseProducer.traversalProducer().next();
             LOG.trace("{}: has found via traversal: {}", name(), conceptMap);
+
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
-                // TODO now we've found an answer for the `when`, so materialise it and respond with the materialised `then`, unifying it for the upstream
+
+                Map<Identifier, Concept> thenMaterialisation = rule.putConclusion(conceptMap, traversalEngine, conceptMgr);
                 assert fromUpstream.answerBounds().isUnified();
-                Optional<AnswerState.UpstreamVars.Derived> derivedAnswer = fromUpstream.answerBounds().asUnified()
-                        .aggregateToUpstream(asIdentifiedMap(conceptMap));
+                Optional<AnswerState.UpstreamVars.Derived> derivedAnswer = fromUpstream.answerBounds().asUnified().aggregateToUpstream(thenMaterialisation);
                 if (derivedAnswer.isPresent()) {
                     ResolutionAnswer answer = new ResolutionAnswer(derivedAnswer.get(), rule.when().toString(),
                                                                    ResolutionAnswer.Derivation.EMPTY, self(), true);
@@ -233,12 +232,6 @@ public class RuleResolver extends Resolver<RuleResolver> {
         } else {
             respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
         }
-    }
-
-    public static Map<Identifier, Concept> asIdentifiedMap(ConceptMap conceptMap) {
-        Map<Identifier, Concept> concepts = new HashMap<>();
-        conceptMap.concepts().forEach((ref, concept) -> concepts.put(Identifier.Variable.of(ref), concept));
-        return concepts;
     }
 
     private ResponseProducer mayUpdateAndGetResponseProducer(Request fromUpstream, int iteration) {
