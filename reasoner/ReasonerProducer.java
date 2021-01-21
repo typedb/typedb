@@ -41,9 +41,9 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private boolean done;
     private int iteration;
 
-    public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry) {
-        this.rootResolver = resolverRegistry.createRoot(conjunction, this::requestAnswered, this::requestFailed);
-        this.resolveRequest = new Request(new Request.Path(rootResolver), Root.create(), EMPTY);
+    public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverMgr) {
+        this.rootResolver = resolverMgr.createRoot(conjunction, this::requestAnswered, this::requestFailed);
+        this.resolveRequest = Request.create(new Request.Path(rootResolver), Root.create(), EMPTY);
         this.queue = null;
         this.iteration = 0;
     }
@@ -85,7 +85,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private void nextIteration() {
         iteration++;
-        resolveRequest = new Request(new Request.Path(rootResolver), Root.create(), EMPTY);
+        resolveRequest = Request.create(new Request.Path(rootResolver), Root.create(), EMPTY);
     }
 
     private boolean mustReiterate() {

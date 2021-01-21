@@ -71,7 +71,14 @@ public abstract class Concludable extends Resolvable {
 
     private Concludable(Conjunction conjunction) {
         super(conjunction);
-        applicableRules = new HashMap<>(); // TODO Implement
+    }
+
+    public boolean isConcludable() {
+        return true;
+    }
+
+    public Concludable asConcludable() {
+        return this;
     }
 
     public abstract Set<Constraint> concludableConstraints();
@@ -89,6 +96,8 @@ public abstract class Concludable extends Resolvable {
         if (applicableRules == null) computeApplicableRules(conceptMgr, logicMgr);
         return iterate(applicableRules.keySet());
     }
+
+    public abstract Variable generating();
 
     /*
     TODO this should be improved by indexing rules by possible types, so rather than retrieving all rules
@@ -338,6 +347,11 @@ public abstract class Concludable extends Resolvable {
                     .map(mapping -> convertRPMappingToUnifier(mapping, unifierBuilder.duplicate(), conceptMgr));
         }
 
+        @Override
+        public Variable generating() {
+            return relation().owner();
+        }
+
         private ResourceIterator<Map<RolePlayer, Set<RolePlayer>>> matchRolePlayers(
                 List<RolePlayer> conjRolePLayers, Set<RolePlayer> thenRolePlayers,
                 Map<RolePlayer, Set<RolePlayer>> mapping, ConceptManager conceptMgr) {
@@ -504,6 +518,11 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
+        public Variable generating() {
+            return has().attribute();
+        }
+
+        @Override
         public AlphaEquivalence alphaEquals(Concludable that) {
             if (!that.isHas()) return AlphaEquivalence.invalid();
             return has().alphaEquals(that.asHas().has());
@@ -588,6 +607,11 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
+        public Variable generating() {
+            return isa().owner();
+        }
+
+        @Override
         public AlphaEquivalence alphaEquals(Concludable that) {
             if (!that.isIsa()) return AlphaEquivalence.invalid();
             return isa().alphaEquals(that.asIsa().isa());
@@ -663,6 +687,11 @@ public abstract class Concludable extends Resolvable {
         @Override
         public Attribute asAttribute() {
             return this;
+        }
+
+        @Override
+        public Variable generating() {
+            return attribute;
         }
 
         @Override

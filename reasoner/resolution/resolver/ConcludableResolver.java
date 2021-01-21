@@ -31,6 +31,7 @@ import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Response;
+import grakn.core.reasoner.resolution.framework.Response.Answer;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
@@ -93,7 +94,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
     }
 
     @Override
-    protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
+    protected void receiveAnswer(Answer fromDownstream, int iteration) {
         LOG.trace("{}: received Answer: {}", name(), fromDownstream);
 
         Request toDownstream = fromDownstream.sourceRequest();
@@ -116,7 +117,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
             ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.answerBounds().asMapped().aggregateToUpstream(conceptMap),
                                                            concludable.toString(), derivation, self(), fromDownstream.answer().isInferred());
 
-            respondToUpstream(new Response.Answer(fromUpstream, answer), iteration);
+            respondToUpstream(Answer.create(fromUpstream, answer), iteration);
         } else {
             if (explanations()) {
                 ResolutionAnswer.Derivation derivation = new ResolutionAnswer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(),
@@ -198,7 +199,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
                 ResolutionAnswer answer = new ResolutionAnswer(derivedAnswer, concludable.toString(), new ResolutionAnswer.Derivation(map()), self(), false);
-                respondToUpstream(new Response.Answer(fromUpstream, answer), iteration);
+                respondToUpstream(Answer.create(fromUpstream, answer), iteration);
             }
         }
 
@@ -236,7 +237,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
                     AnswerState.UpstreamVars.Initial initial = AnswerState.UpstreamVars.Initial.of(request.answerBounds().conceptMap());
                     Optional<AnswerState.DownstreamVars.Unified> unified = initial.toDownstreamVars(unifier);
                     if (unified.isPresent()) {
-                        Request toDownstream = new Request(request.path().append(ruleActor), unified.get(),
+                        Request toDownstream = Request.create(request.path().append(ruleActor), unified.get(),
                                                            ResolutionAnswer.Derivation.EMPTY);
                         responseProducer.addDownstreamProducer(toDownstream);
                     }

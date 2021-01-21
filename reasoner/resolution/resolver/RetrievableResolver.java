@@ -27,6 +27,7 @@ import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Response;
+import grakn.core.reasoner.resolution.framework.Response.Answer;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
@@ -43,7 +44,7 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
     private final Retrievable retrievable;
     private final Map<Request, ResponseProducer> responseProducers;
 
-    public RetrievableResolver(Actor<RetrievableResolver> self, Retrievable retrievable,ResolverRegistry registry,
+    public RetrievableResolver(Actor<RetrievableResolver> self, Retrievable retrievable, ResolverRegistry registry,
                                TraversalEngine traversalEngine, boolean explanations) {
         super(self, RetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable + ")", registry, traversalEngine, explanations);
         this.retrievable = retrievable;
@@ -64,7 +65,7 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
     }
 
     @Override
-    protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
+    protected void receiveAnswer(Answer fromDownstream, int iteration) {
         throw GraknException.of(ILLEGAL_STATE);
     }
 
@@ -122,7 +123,7 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
                 assert fromUpstream.answerBounds().isRoot();
                 ResolutionAnswer answer = new ResolutionAnswer(derivedAnswer, retrievable.conjunction().toString(),
                                                                ResolutionAnswer.Derivation.EMPTY, self(), false);
-                respondToUpstream(new Response.Answer(fromUpstream, answer), iteration);
+                respondToUpstream(Answer.create(fromUpstream, answer), iteration);
             }
         }
         respondToUpstream(new Response.Exhausted(fromUpstream), iteration);

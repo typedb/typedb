@@ -18,7 +18,6 @@
 
 package grakn.core.reasoner.resolution;
 
-import grakn.common.collection.Pair;
 import grakn.core.common.concurrent.actor.Actor;
 import grakn.core.common.concurrent.actor.EventLoopGroup;
 import grakn.core.common.exception.GraknException;
@@ -48,7 +47,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.iterator.Iterators.iterate;
 
 public class ResolverRegistry {
 
@@ -62,6 +63,7 @@ public class ResolverRegistry {
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private final TraversalEngine traversalEngine;
     private EventLoopGroup elg;
+    private final Planner planner;
 
     public ResolverRegistry(EventLoopGroup elg, Actor<ResolutionRecorder> resolutionRecorder, TraversalEngine traversalEngine,
                             ConceptManager conceptMgr, LogicManager logicMgr) {
@@ -73,9 +75,10 @@ public class ResolverRegistry {
         this.explanations = false; // TODO enable/disable explanations from transaction context
         concludableActors = new HashMap<>();
         rules = new HashMap<>();
+        planner = new Planner(conceptMgr, logicMgr);
     }
 
-    public Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> registerResolvable(Resolvable resolvable) {
+    public AlphaEquivalentResolver registerResolvable(Resolvable resolvable) {
         if (resolvable.isRetrievable()) {
             return registerRetrievable(resolvable.asRetrievable());
         } else if (resolvable.isConcludable()) {
@@ -85,44 +88,76 @@ public class ResolverRegistry {
 
     public Actor<RuleResolver> registerRule(Rule rule) {
         LOG.debug("Register retrieval for rule actor: '{}'", rule);
-        return rules.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new RuleResolver(self, r, this, traversalEngine, conceptMgr, logicMgr, explanations)));
+        return rules.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new RuleResolver(
+                        self, r, this, traversalEngine, conceptMgr, logicMgr, planner,
+                        explanations)));
     }
 
     public Actor<RootResolver> createRoot(final Conjunction pattern, final Consumer<ResolutionAnswer> onAnswer, Consumer<Integer> onExhausted) {
         LOG.debug("Creating Conjunction Actor for pattern: '{}'", pattern);
-        return Actor.create(elg, self -> new RootResolver(self, pattern, onAnswer, onExhausted, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr, explanations));
+        return Actor.create(
+                elg, self -> new RootResolver(
+                        self, pattern, onAnswer, onExhausted, resolutionRecorder, this, traversalEngine,
+                        conceptMgr, logicMgr, planner, explanations));
     }
-
     // for testing
+
     public void setEventLoopGroup(EventLoopGroup eventLoopGroup) {
         this.elg = eventLoopGroup;
     }
 
-    private Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> registerRetrievable(Retrievable retrievable) {
+    private AlphaEquivalentResolver registerRetrievable(Retrievable retrievable) {
         LOG.debug("Register retrieval for retrievable actor: '{}'", retrievable.conjunction());
-        Actor<RetrievableResolver> retrievableActor = Actor.create(elg, self -> new RetrievableResolver(self, retrievable, this, traversalEngine, explanations));
-        return new Pair<>(retrievableActor, identity(retrievable));
+        Actor<RetrievableResolver> retrievableActor = Actor.create(elg, self -> new RetrievableResolver(
+                self, retrievable, this, traversalEngine, explanations));
+        return AlphaEquivalentResolver.createDirect(retrievableActor, retrievable);
     }
 
-    private Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> registerConcludable(Concludable concludable) {
+    private AlphaEquivalentResolver registerConcludable(Concludable concludable) {
         LOG.debug("Register retrieval for concludable actor: '{}'", concludable.conjunction());
         for (Map.Entry<Concludable, Actor<ConcludableResolver>> c : concludableActors.entrySet()) {
             // TODO This needs to be optimised from a linear search to use an alpha hash
             AlphaEquivalence alphaEquality = c.getKey().alphaEquals(concludable);
             if (alphaEquality.isValid()) {
-                return new Pair<>(c.getValue(), alphaEquality.asValid().namedVariableMapping());
+                return AlphaEquivalentResolver.createMapped(c.getValue(), alphaEquality.asValid().namedVariableMapping());
             }
         }
         Actor<ConcludableResolver> concludableActor = Actor.create(elg, self ->
-                new ConcludableResolver(self, concludable, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr, explanations));
+                new ConcludableResolver(self, concludable, resolutionRecorder, this, traversalEngine, conceptMgr,
+                                        logicMgr, explanations));
         concludableActors.put(concludable, concludableActor);
-        return new Pair<>(concludableActor, identity(concludable));
+        return AlphaEquivalentResolver.createDirect(concludableActor, concludable);
     }
 
-    private static Map<Reference.Name, Reference.Name> identity(Resolvable resolvable) {
-        return new HashSet<>(resolvable.conjunction().variables()).stream()
-                .filter(variable -> variable.reference().isName())
-                .map(variable -> variable.reference().asName())
-                .collect(Collectors.toMap(Function.identity(), Function.identity()));
+
+
+    public static class AlphaEquivalentResolver {
+        private final Actor<? extends ResolvableResolver<?>> resolver;
+        private final Map<Reference.Name, Reference.Name> mapping;
+
+        private AlphaEquivalentResolver(Actor<? extends ResolvableResolver<?>> resolver, Map<Reference.Name, Reference.Name> mapping) {
+            this.resolver = resolver;
+            this.mapping = mapping;
+        }
+
+        public static AlphaEquivalentResolver createMapped(Actor<? extends ResolvableResolver<?>> resolver, Map<Reference.Name, Reference.Name> mapping) {
+            return new AlphaEquivalentResolver(resolver, mapping);
+        }
+
+        public static AlphaEquivalentResolver createDirect(Actor<? extends ResolvableResolver<?>> resolver, Resolvable resolvable) {
+            Map<Reference.Name, Reference.Name> directMapping = new HashSet<>(resolvable.conjunction().variables()).stream()
+                    .filter(variable -> variable.reference().isName())
+                    .map(variable -> variable.reference().asName())
+                    .collect(Collectors.toMap(Function.identity(), Function.identity()));
+            return new AlphaEquivalentResolver(resolver, directMapping);
+        }
+
+        public Map<Reference.Name, Reference.Name> mapping() {
+            return mapping;
+        }
+
+        public Actor<? extends ResolvableResolver<?>> resolver() {
+            return resolver;
+        }
     }
 }
