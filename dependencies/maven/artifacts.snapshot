@@ -35,7 +35,7 @@
 @maven//:com_google_ortools_ortools_win32_x86_64_java
 @maven//:com_google_ortools_ortools_win32_x86_64_java_8_0_8283
 @maven//:com_google_protobuf_protobuf_java
-@maven//:com_google_protobuf_protobuf_java_3_5_1
+@maven//:com_google_protobuf_protobuf_java_3_14_0
 @maven//:commons_codec_commons_codec
 @maven//:commons_codec_commons_codec_1_11
 @maven//:commons_io_commons_io
