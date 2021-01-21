@@ -50,11 +50,11 @@ import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_TOO_MANY;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_CONSTRAINT_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_CONSTRAINT_TOO_MANY;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ROLE_TYPE_AMBIGUOUS;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ROLE_TYPE_MISSING;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_CONSTRAINT_TYPE_VARIABLE;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_CONSTRAINT_UNACCEPTED;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_IID_NOT_INSERTABLE;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_MISSING;
@@ -116,8 +116,12 @@ public class Inserter {
             else if (existingContains(var) && var.constraints().isEmpty()) return existingGet(var);
             else validate(var);
 
-            if (existingContains(var)) thing = existingGet(var);
-            else if (var.isa().isPresent()) thing = insertIsa(var.isa().get(), var);
+            if (existingContains(var)) {
+                thing = existingGet(var);
+                if (var.isa().isPresent() && !thing.getType().equals(getThingType(var.isa().get().type()))) {
+                    throw GraknException.of(THING_ISA_REINSERTION, ref, var.isa().get().type());
+                }
+            } else if (var.isa().isPresent()) thing = insertIsa(var.isa().get(), var);
             else throw GraknException.of(THING_ISA_MISSING, ref);
             if (ref.isName()) inserted.put(ref.asName(), thing);
             if (!var.has().isEmpty()) insertHas(thing, var.has());
@@ -130,8 +134,6 @@ public class Inserter {
             Reference ref = var.reference();
             if (var.iid().isPresent()) {
                 throw GraknException.of(THING_IID_NOT_INSERTABLE, ref, var.iid().get());
-            } else if (existingContains(var) && var.isa().isPresent()) {
-                throw GraknException.of(THING_ISA_REINSERTION, ref, var.isa().get().type().label().get().label());
             } else if (!var.is().isEmpty()) {
                 throw GraknException.of(THING_CONSTRAINT_UNACCEPTED, IS);
             }
@@ -146,7 +148,7 @@ public class Inserter {
                 if (thingType == null) throw GraknException.of(TYPE_NOT_FOUND, var.label().get().label());
                 else return thingType.asThingType();
             } else {
-                throw GraknException.of(THING_CONSTRAINT_TYPE_VARIABLE, var.reference());
+                throw GraknException.of(ILLEGAL_TYPE_VARIABLE, var.reference());
             }
         }
     }
@@ -164,7 +166,7 @@ public class Inserter {
                     throw GraknException.of(TYPE_NOT_FOUND, var.label().get().scopedLabel());
                 }
             } else {
-                throw GraknException.of(THING_CONSTRAINT_TYPE_VARIABLE, var.reference());
+                throw GraknException.of(ILLEGAL_TYPE_VARIABLE, var.reference());
             }
         }
     }

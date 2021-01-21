@@ -270,8 +270,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new ThingWrite(13, "Attempted to re-insert pre-existing thing of matched variable '%s' as a new instance (isa) of type '%s'.");
         public static final ThingWrite THING_ISA_MISSING =
                 new ThingWrite(14, "The thing variable '%s' cannot be inserted as a new instance without providing its type (isa).");
-        public static final ThingWrite THING_CONSTRAINT_TYPE_VARIABLE =
-                new ThingWrite(15, "Types can only be referred to by their labels in 'insert' queries or 'then' clauses, unlike the the type variable '%s'.");
+        public static final ThingWrite ILLEGAL_TYPE_VARIABLE =
+                new ThingWrite(15, "Illegal type variable '%s' found in insert query. Types can only be referred to by their labels in 'insert' queries or 'then' clauses.");
         public static final ThingWrite THING_CONSTRAINT_UNACCEPTED =
                 new ThingWrite(16, "The thing constraint '%s' is not accepted in an insert query.");
         public static final ThingWrite ATTRIBUTE_VALUE_TOO_MANY =
