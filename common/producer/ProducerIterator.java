@@ -22,7 +22,7 @@ import grakn.common.collection.Either;
 import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.concurrent.ManagedBlockingQueue;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.AbstractResourceIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +34,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ProducerIterator<T> implements ResourceIterator<T> {
+public class ProducerIterator<T> extends AbstractResourceIterator<T> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProducerIterator.class);
     private static final int BUFFER_MIN_SIZE = 32;

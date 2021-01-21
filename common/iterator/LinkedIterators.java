@@ -22,7 +22,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-class LinkedIterators<T> implements ResourceIterator<T> {
+class LinkedIterators<T> extends AbstractResourceIterator<T> {
 
     private final List<ResourceIterator<T>> iterators;
 

@@ -20,7 +20,7 @@ package grakn.core.common.iterator;
 
 import java.util.NoSuchElementException;
 
-class OffsetIterator<T> implements ResourceIterator<T> {
+class OffsetIterator<T> extends AbstractResourceIterator<T> {
 
     private final ResourceIterator<T> iterator;
     private final long offset;

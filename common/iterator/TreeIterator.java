@@ -22,7 +22,7 @@ import java.util.LinkedList;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 
-class TreeIterator<T> implements ResourceIterator<T> {
+class TreeIterator<T> extends AbstractResourceIterator<T> {
 
     private final Function<T, ResourceIterator<T>> childrenFn;
     private final LinkedList<ResourceIterator<T>> families;

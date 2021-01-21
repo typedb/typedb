@@ -24,7 +24,7 @@ import grakn.core.common.concurrent.ResizingBlockingQueue;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-class ParallelIterators<T> implements ResourceIterator<T> {
+class ParallelIterators<T> extends AbstractResourceIterator<T> {
 
     private final ResizingBlockingQueue<T> queue;
     private final List<ResourceIterator<T>> iterators;

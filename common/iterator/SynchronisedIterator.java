@@ -18,7 +18,7 @@
 
 package grakn.core.common.iterator;
 
-class SynchronisedIterator<T> implements ResourceIterator<T> {
+class SynchronisedIterator<T> extends AbstractResourceIterator<T> {
 
     private final ResourceIterator<T> iterator;
 

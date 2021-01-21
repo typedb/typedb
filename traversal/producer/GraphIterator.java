@@ -19,6 +19,7 @@
 package grakn.core.traversal.producer;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.AbstractResourceIterator;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.ThingVertex;
@@ -41,7 +42,7 @@ import java.util.Set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static java.util.stream.Collectors.toMap;
 
-public class GraphIterator implements ResourceIterator<VertexMap> {
+public class GraphIterator extends AbstractResourceIterator<VertexMap> {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphIterator.class);
 

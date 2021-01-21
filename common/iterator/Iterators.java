@@ -65,7 +65,7 @@ public class Iterators {
     public static <T> ResourceIterator<T> link(List<? extends Iterator<T>> iterators) {
         final LinkedList<ResourceIterator<T>> converted = new LinkedList<>();
         iterators.forEach(iterator -> {
-            if (iterator instanceof ResourceIterator<?>) {
+            if (iterator instanceof AbstractResourceIterator<?>) {
                 converted.addLast((ResourceIterator<T>) iterator);
             } else {
                 converted.addLast(iterate(iterator));
