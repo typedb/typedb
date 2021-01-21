@@ -130,7 +130,7 @@ public class ReasonerTest {
                     txn.commit();
                 }
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $r (friend: $x, friend: $y) isa friendship;").asMatch()).toList();
+                    List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $r (friend: $x, friend: $y) isa friendship; $x has name $a;").asMatch()).toList();
                     System.out.println(ans);
 
                     ans.iterator().forEachRemaining(a -> {

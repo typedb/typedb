@@ -73,9 +73,10 @@ public class Mapping {
         Map<Reference.Name, Concept> transformed = new HashMap<>();
         for (Map.Entry<Reference.Name, ? extends Concept> entry : conceptMap.concepts().entrySet()) {
             Reference.Name ref = entry.getKey();
-            assert mapping.containsKey(ref);
-            Concept concept = entry.getValue();
-            transformed.put(mapping.get(ref), concept);
+            if (mapping.containsKey(ref)) {
+                Concept concept = entry.getValue();
+                transformed.put(mapping.get(ref), concept);
+            }
         }
         return new ConceptMap(transformed);
     }
