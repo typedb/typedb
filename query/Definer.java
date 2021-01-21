@@ -42,8 +42,8 @@ import graql.lang.query.GraqlDefine;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
+import java.util.Optional;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_SCOPE_IS_NOT_RELATION_TYPE;
@@ -53,9 +53,9 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MODIFIED;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_DEFINE_SUB;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_NOT_SUPERTYPE;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROLE_DEFINED_OUTSIDE_OF_RELATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_CONSTRAINT_UNACCEPTED;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_NOT_SUPERTYPE;
 import static graql.lang.common.GraqlToken.Constraint.IS;
 
 public class Definer {

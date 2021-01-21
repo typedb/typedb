@@ -170,13 +170,6 @@ public class Conjunction implements Pattern, Cloneable {
                                iterate(this.negations).map(Negation::clone).toSet());
     }
 
-//    @Override
-//    public String toString() {
-//        return Stream.concat(variableSet.stream().filter(this::printable), negations.stream()).map(Pattern::toString)
-//                .collect(Collectors.joining("" + SEMICOLON + NEW_LINE, "", "" + SEMICOLON));
-//    }
-
-
     @Override
     public String toString() {
         return variableSet.stream().flatMap(variable -> variable.constraints().stream()).map(Object::toString)

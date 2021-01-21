@@ -248,26 +248,6 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         constraints().forEach(constraint -> constraint.addTo(traversal));
     }
 
-//    @Override
-//    public String toString() {
-//        StringBuilder syntax = new StringBuilder();
-//        if (!reference().isLabel()) {
-//            syntax.append(reference());
-//            if (labelConstraint != null) syntax.append(SPACE).append(labelConstraint.toString());
-//        } else {
-//            syntax.append(labelConstraint.label());
-//        }
-//
-//        if (constraints.size() > 1 || labelConstraint == null) syntax.append(SPACE);
-//        Stream<Set<? extends TypeConstraint>> conStream =
-//                Stream.of(set(subConstraint), set(abstractConstraint), ownsConstraints, relatesConstraints,
-//                          playsConstraints, set(valueTypeConstraint), set(regexConstraint), isConstraints);
-//        syntax.append(conStream.flatMap(Set::stream).filter(Objects::nonNull).map(TypeConstraint::toString)
-//                              .collect(Collectors.joining("" + COMMA + SPACE)));
-//        return syntax.toString();
-//    }
-
-
     @Override
     public String toString() {
         if (reference().isLabel()) {
@@ -276,12 +256,6 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         } else {
             return super.toString();
         }
-    }
-
-    public String referenceSyntax() {
-        if (reference().isLabel()) return labelConstraint.label();
-        else if (reference().isName() || reference().isAnonymous()) return reference().toString();
-        else throw new RuntimeException("Unhandled reference type.");
     }
 
     @Override

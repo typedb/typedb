@@ -239,22 +239,6 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         return this;
     }
 
-//    @Override
-//    public String toString() {
-//
-//        StringBuilder head = new StringBuilder();
-//        StringBuilder tail = new StringBuilder();
-//
-//        if (reference().isName()) head.append(reference());
-//        tail.append(Stream.of(relationConstraints, isaConstraint == null ? new HashSet<IsaConstraint>() : set(isaConstraint),
-//                              hasConstraints, valueConstraints, isConstraints)
-//                              .flatMap(Collection::stream).filter(Objects::nonNull).map(ThingConstraint::toString)
-//                              .collect(Collectors.joining("" + COMMA + SPACE)));
-//        if (iidConstraint != null) tail.append(COMMA).append(SPACE).append(iidConstraint);
-//        if (head.length() > 0 && tail.length() > 0) head.append(SPACE);
-//        return head.append(tail.toString()).toString();
-//    }
-
     @Override
     public AlphaEquivalence alphaEquals(ThingVariable that) {
         return AlphaEquivalence.valid()
