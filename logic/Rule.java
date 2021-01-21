@@ -175,8 +175,8 @@ public class Rule {
     }
 
     public void validateInsertable() {
-        ResourceIterator<Map<Reference.Name, Label>> possibleWhenPerms = logicManager.typeResolver().retrievePossibleTypeCombos(when, false);
-        Set<Map<Reference.Name, Label>> possibleThenSet = logicManager.typeResolver().retrievePossibleTypeCombos(then, true).toSet();
+        ResourceIterator<Map<Reference.Name, Label>> possibleWhenPerms = logicManager.typeResolver().combinations(when, false);
+        Set<Map<Reference.Name, Label>> possibleThenSet = logicManager.typeResolver().combinations(then, true).toSet();
 
         possibleWhenPerms.forEachRemaining(nameLabelMap -> {
             if (possibleThenSet.stream().noneMatch(thenMap -> nameLabelMap.entrySet().containsAll(thenMap.entrySet())))

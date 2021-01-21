@@ -70,7 +70,7 @@ public class TypeResolver {
         this.logicCache = logicCache;
     }
 
-    public ResourceIterator<Map<Reference.Name, Label>> retrievePossibleTypeCombos(Conjunction conjunction, boolean insertable) {
+    public ResourceIterator<Map<Reference.Name, Label>> combinations(Conjunction conjunction, boolean insertable) {
         TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, conceptMgr, insertable);
         return traversalEng.iterator(traversalBuilder.traversal()).map(vertexMap -> {
             Map<Reference.Name, Label> mapping = new HashMap<>();
