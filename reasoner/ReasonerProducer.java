@@ -21,7 +21,7 @@ import grakn.core.common.concurrent.actor.Actor;
 import grakn.core.common.producer.Producer;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.Conjunction;
-import grakn.core.reasoner.resolution.ResolverRegister;
+import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
@@ -41,7 +41,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private boolean done;
     private int iteration;
 
-    public ReasonerProducer(Conjunction conjunction, ResolverRegister resolverMgr) {
+    public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverMgr) {
         this.rootResolver = resolverMgr.createRoot(conjunction, this::requestAnswered, this::requestFailed);
         this.resolveRequest = Request.create(new Request.Path(rootResolver), Root.create(), EMPTY);
         this.queue = null;

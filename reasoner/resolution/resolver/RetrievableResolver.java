@@ -22,7 +22,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.reasoner.resolution.MockTransaction;
-import grakn.core.reasoner.resolution.ResolverRegister;
+import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
@@ -44,9 +44,9 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
     private final Retrievable retrievable;
     private final Map<Request, ResponseProducer> responseProducers;
 
-    public RetrievableResolver(Actor<RetrievableResolver> self, Retrievable retrievable, ResolverRegister register,
+    public RetrievableResolver(Actor<RetrievableResolver> self, Retrievable retrievable, ResolverRegistry registry,
                                TraversalEngine traversalEngine, boolean explanations) {
-        super(self, RetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable + ")", register, traversalEngine, explanations);
+        super(self, RetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable + ")", registry, traversalEngine, explanations);
         this.retrievable = retrievable;
         this.responseProducers = new HashMap<>();
     }

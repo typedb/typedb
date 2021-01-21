@@ -30,8 +30,8 @@ import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
-import grakn.core.reasoner.resolution.ResolverRegister;
-import grakn.core.reasoner.resolution.ResolverRegister.AlphaEquivalentResolver;
+import grakn.core.reasoner.resolution.ResolverRegistry;
+import grakn.core.reasoner.resolution.ResolverRegistry.AlphaEquivalentResolver;
 import grakn.core.reasoner.resolution.answer.Mapping;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
@@ -77,9 +77,9 @@ public class RootResolver extends Resolver<RootResolver> {
     private final Map<Resolvable, AlphaEquivalentResolver> downstreamResolvers;
 
     public RootResolver(Actor<RootResolver> self, Conjunction conjunction, Consumer<ResolutionAnswer> onAnswer,
-                        Consumer<Integer> onExhausted, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegister register,
+                        Consumer<Integer> onExhausted, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                         TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr, Planner planner, boolean explanations) {
-        super(self, RootResolver.class.getSimpleName() + "(pattern:" + conjunction + ")", register, traversalEngine, explanations);
+        super(self, RootResolver.class.getSimpleName() + "(pattern:" + conjunction + ")", registry, traversalEngine, explanations);
         this.conjunction = conjunction;
         this.onAnswer = onAnswer;
         this.onExhausted = onExhausted;
@@ -170,7 +170,7 @@ public class RootResolver extends Resolver<RootResolver> {
         resolvables.addAll(retrievables);
         plan = planner.plan(resolvables);
         iterate(plan).forEachRemaining(resolvable -> {
-            downstreamResolvers.put(resolvable, register.registerResolvable(resolvable));
+            downstreamResolvers.put(resolvable, registry.registerResolvable(resolvable));
         });
     }
 
