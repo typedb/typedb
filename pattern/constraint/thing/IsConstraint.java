@@ -83,9 +83,15 @@ public class IsConstraint extends ThingConstraint {
         return hash;
     }
 
+//    @Override
+//    public String toString() {
+//        return "" + IS + SPACE + variable.reference().toString();
+//    }
+
+
     @Override
     public String toString() {
-        return "" + IS + SPACE + variable.reference().toString();
+        return owner.toString() + SPACE + IS + SPACE + variable.toString();
     }
 
     @Override

@@ -117,15 +117,24 @@ public class PlaysConstraint extends TypeConstraint {
         return hash;
     }
 
+//    @Override
+//    public String toString() {
+//        StringBuilder syntax = new StringBuilder();
+//        syntax.append(PLAYS).append(SPACE);
+//        if (relationType != null) syntax.append(relationType.referenceSyntax()).append(COLON);
+//        if (roleType != null) syntax.append(roleType.referenceSyntax());
+//        if (overriddenRoleType != null)
+//            syntax.append(SPACE).append(AS).append(SPACE).append(overriddenRoleType.referenceSyntax());
+//        return syntax.toString();
+//    }
+
+
     @Override
     public String toString() {
-        StringBuilder syntax = new StringBuilder();
-        syntax.append(PLAYS).append(SPACE);
-        if (relationType != null) syntax.append(relationType.referenceSyntax()).append(COLON);
-        if (roleType != null) syntax.append(roleType.referenceSyntax());
-        if (overriddenRoleType != null)
-            syntax.append(SPACE).append(AS).append(SPACE).append(overriddenRoleType.referenceSyntax());
-        return syntax.toString();
+        return owner.toString() + SPACE + PLAYS
+                + (relation().isPresent() ? "" + SPACE + relationType + COLON : "")
+                + SPACE + roleType.toString()
+                + (overridden().isPresent() ? "" + SPACE + AS + SPACE + overriddenRoleType.toString() : "");
     }
 
     @Override

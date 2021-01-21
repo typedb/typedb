@@ -41,21 +41,15 @@ import graql.lang.pattern.constraint.ConceptConstraint;
 import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_TYPE_CONSTRAINT_LABEL;
 import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_TYPE_CONSTRAINT_REGEX;
 import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_TYPE_CONSTRAINT_SUB;
 import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_TYPE_CONSTRAINT_VALUE_TYPE;
-import static graql.lang.common.GraqlToken.Char.COMMA;
-import static graql.lang.common.GraqlToken.Char.SPACE;
 
 public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariable> {
 
@@ -254,23 +248,34 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         constraints().forEach(constraint -> constraint.addTo(traversal));
     }
 
+//    @Override
+//    public String toString() {
+//        StringBuilder syntax = new StringBuilder();
+//        if (!reference().isLabel()) {
+//            syntax.append(reference());
+//            if (labelConstraint != null) syntax.append(SPACE).append(labelConstraint.toString());
+//        } else {
+//            syntax.append(labelConstraint.label());
+//        }
+//
+//        if (constraints.size() > 1 || labelConstraint == null) syntax.append(SPACE);
+//        Stream<Set<? extends TypeConstraint>> conStream =
+//                Stream.of(set(subConstraint), set(abstractConstraint), ownsConstraints, relatesConstraints,
+//                          playsConstraints, set(valueTypeConstraint), set(regexConstraint), isConstraints);
+//        syntax.append(conStream.flatMap(Set::stream).filter(Objects::nonNull).map(TypeConstraint::toString)
+//                              .collect(Collectors.joining("" + COMMA + SPACE)));
+//        return syntax.toString();
+//    }
+
+
     @Override
     public String toString() {
-        StringBuilder syntax = new StringBuilder();
-        if (!reference().isLabel()) {
-            syntax.append(reference());
-            if (labelConstraint != null) syntax.append(SPACE).append(labelConstraint.toString());
+        if (reference().isLabel()) {
+            assert label().isPresent();
+            return "" + label().get().toString();
         } else {
-            syntax.append(labelConstraint.label());
+            return super.toString();
         }
-
-        if (constraints.size() > 1 || labelConstraint == null) syntax.append(SPACE);
-        Stream<Set<? extends TypeConstraint>> conStream =
-                Stream.of(set(subConstraint), set(abstractConstraint), ownsConstraints, relatesConstraints,
-                          playsConstraints, set(valueTypeConstraint), set(regexConstraint), isConstraints);
-        syntax.append(conStream.flatMap(Set::stream).filter(Objects::nonNull).map(TypeConstraint::toString)
-                              .collect(Collectors.joining("" + COMMA + SPACE)));
-        return syntax.toString();
     }
 
     public String referenceSyntax() {

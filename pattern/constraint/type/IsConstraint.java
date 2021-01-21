@@ -83,9 +83,14 @@ public class IsConstraint extends TypeConstraint {
         return hash;
     }
 
+//    @Override
+//    public String toString() {
+//        return "" + IS + SPACE + variable.referenceSyntax();
+//    }
+
     @Override
     public String toString() {
-        return "" + IS + SPACE + variable.referenceSyntax();
+        return owner.toString() + SPACE + IS + SPACE + variable.toString();
     }
 
     @Override

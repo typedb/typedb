@@ -96,8 +96,14 @@ public class LabelConstraint extends TypeConstraint implements AlphaEquivalent<L
         return hash;
     }
 
+//    @Override
+//    public String toString() { return "" + TYPE + SPACE + scopedLabel(); }
+
+
     @Override
-    public String toString() { return "" + TYPE + SPACE + scopedLabel(); }
+    public String toString() {
+        return owner.toString() + SPACE + TYPE + SPACE + scopedLabel();
+    }
 
     @Override
     public AlphaEquivalence alphaEquals(LabelConstraint that) {

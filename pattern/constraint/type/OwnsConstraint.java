@@ -34,7 +34,6 @@ import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.OVERRIDDEN_TYPES_IN_TRAVERSAL;
 import static graql.lang.common.GraqlToken.Char.SPACE;
 import static graql.lang.common.GraqlToken.Constraint.AS;
-import static graql.lang.common.GraqlToken.Constraint.IS_KEY;
 import static graql.lang.common.GraqlToken.Constraint.OWNS;
 
 public class OwnsConstraint extends TypeConstraint {
@@ -113,16 +112,23 @@ public class OwnsConstraint extends TypeConstraint {
         return hash;
     }
 
+//    @Override
+//    public String toString() {
+//        StringBuilder syntax = new StringBuilder();
+//        syntax.append(OWNS).append(SPACE).append(attributeType.referenceSyntax());
+//        if (overriddenAttributeType != null) {
+//            syntax.append(SPACE).append(AS).append(SPACE).append(overriddenAttributeType.referenceSyntax());
+//        }
+//        if (isKey) syntax.append(SPACE).append(IS_KEY);
+//
+//        return syntax.toString();
+//    }
+
+
     @Override
     public String toString() {
-        StringBuilder syntax = new StringBuilder();
-        syntax.append(OWNS).append(SPACE).append(attributeType.referenceSyntax());
-        if (overriddenAttributeType != null) {
-            syntax.append(SPACE).append(AS).append(SPACE).append(overriddenAttributeType.referenceSyntax());
-        }
-        if (isKey) syntax.append(SPACE).append(IS_KEY);
-
-        return syntax.toString();
+        return owner.toString() + SPACE + OWNS + SPACE + attributeType.toString()
+                + (overridden().isPresent() ? "" + SPACE + AS + SPACE + overriddenAttributeType.toString() : "");
     }
 
     @Override

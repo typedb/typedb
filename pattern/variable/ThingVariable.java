@@ -34,23 +34,16 @@ import grakn.core.traversal.common.Identifier;
 import graql.lang.common.GraqlToken;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.ILLEGAL_DERIVED_THING_CONSTRAINT_ISA;
 import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_THING_CONSTRAINT_IID;
 import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_THING_CONSTRAINT_ISA;
-import static graql.lang.common.GraqlToken.Char.COMMA;
-import static graql.lang.common.GraqlToken.Char.SPACE;
 
 public class ThingVariable extends Variable implements AlphaEquivalent<ThingVariable> {
 
@@ -246,21 +239,21 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         return this;
     }
 
-    @Override
-    public String toString() {
-
-        StringBuilder head = new StringBuilder();
-        StringBuilder tail = new StringBuilder();
-
-        if (reference().isName()) head.append(reference());
-        tail.append(Stream.of(relationConstraints, isaConstraint == null ? new HashSet<IsaConstraint>() : set(isaConstraint),
-                              hasConstraints, valueConstraints, isConstraints)
-                            .flatMap(Collection::stream).filter(Objects::nonNull).map(ThingConstraint::toString)
-                            .collect(Collectors.joining("" + COMMA + SPACE)));
-        if (iidConstraint != null) tail.append(COMMA).append(SPACE).append(iidConstraint);
-        if (head.length() > 0 && tail.length() > 0) head.append(SPACE);
-        return head.append(tail.toString()).toString();
-    }
+//    @Override
+//    public String toString() {
+//
+//        StringBuilder head = new StringBuilder();
+//        StringBuilder tail = new StringBuilder();
+//
+//        if (reference().isName()) head.append(reference());
+//        tail.append(Stream.of(relationConstraints, isaConstraint == null ? new HashSet<IsaConstraint>() : set(isaConstraint),
+//                              hasConstraints, valueConstraints, isConstraints)
+//                              .flatMap(Collection::stream).filter(Objects::nonNull).map(ThingConstraint::toString)
+//                              .collect(Collectors.joining("" + COMMA + SPACE)));
+//        if (iidConstraint != null) tail.append(COMMA).append(SPACE).append(iidConstraint);
+//        if (head.length() > 0 && tail.length() > 0) head.append(SPACE);
+//        return head.append(tail.toString()).toString();
+//    }
 
     @Override
     public AlphaEquivalence alphaEquals(ThingVariable that) {

@@ -45,7 +45,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.common.collection.Collections.set;
@@ -53,8 +52,8 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.UNBOUNDED_NEGATION;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.CONTRADICTORY_BOUND_VARIABLE;
 import static grakn.core.common.iterator.Iterators.iterate;
-import static graql.lang.common.GraqlToken.Char.NEW_LINE;
 import static graql.lang.common.GraqlToken.Char.SEMICOLON;
+import static graql.lang.common.GraqlToken.Char.SPACE;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.stream.Collectors.toSet;
@@ -171,10 +170,17 @@ public class Conjunction implements Pattern, Cloneable {
                                iterate(this.negations).map(Negation::clone).toSet());
     }
 
+//    @Override
+//    public String toString() {
+//        return Stream.concat(variableSet.stream().filter(this::printable), negations.stream()).map(Pattern::toString)
+//                .collect(Collectors.joining("" + SEMICOLON + NEW_LINE, "", "" + SEMICOLON));
+//    }
+
+
     @Override
     public String toString() {
-        return Stream.concat(variableSet.stream().filter(this::printable), negations.stream()).map(Pattern::toString)
-                .collect(Collectors.joining("" + SEMICOLON + NEW_LINE, "", "" + SEMICOLON));
+        return variableSet.stream().flatMap(variable -> variable.constraints().stream()).map(Object::toString)
+                .collect(Collectors.joining("" + SEMICOLON + SPACE));
     }
 
     @Override
