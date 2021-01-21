@@ -74,142 +74,129 @@ public class Inserter {
     private final ConceptManager conceptMgr;
     private final Context.Query context;
     private final ConceptMap existing;
-    private final Map<Reference, Thing> inserted;
+    private final Map<Reference.Name, Thing> inserted;
     private final Set<ThingVariable> variables;
 
-    private Inserter(ConceptManager conceptMgr, Set<ThingVariable> variables,
-                     ConceptMap existing, Context.Query context) {
+    private Inserter(ConceptManager conceptMgr, Set<ThingVariable> vars, ConceptMap existing, Context.Query context) {
         this.conceptMgr = conceptMgr;
-        this.variables = variables;
+        this.variables = vars;
         this.context = context;
         this.existing = existing;
         this.inserted = new HashMap<>();
     }
 
-    public static Inserter create(ConceptManager conceptMgr,
-                                  List<graql.lang.pattern.variable.ThingVariable<?>> variables,
+    public static Inserter create(ConceptManager conceptMgr, List<graql.lang.pattern.variable.ThingVariable<?>> vars,
                                   Context.Query context) {
-        return create(conceptMgr, variables, new ConceptMap(), context);
+        return create(conceptMgr, vars, new ConceptMap(), context);
     }
 
-    public static Inserter create(ConceptManager conceptMgr,
-                                  List<graql.lang.pattern.variable.ThingVariable<?>> variables,
+    public static Inserter create(ConceptManager conceptMgr, List<graql.lang.pattern.variable.ThingVariable<?>> vars,
                                   ConceptMap existing, Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            return new Inserter(conceptMgr, VariableRegistry.createFromThings(variables).things(), existing, context);
+            return new Inserter(conceptMgr, VariableRegistry.createFromThings(vars).things(), existing, context);
         }
     }
 
     public ConceptMap execute() {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
             variables.forEach(this::insert);
-            return answer();
+            return new ConceptMap(inserted);
         }
     }
 
-    private ConceptMap answer() {
-        Map<Reference.Name, Thing> answerMap = new HashMap<>();
-        inserted.forEach((ref, thing) -> {
-            if (ref.isName()) answerMap.put(ref.asName(), thing);
-        });
-        return new ConceptMap(answerMap);
+    private boolean existingContains(ThingVariable var) {
+        return var.reference().isName() && existing.contains(var.reference().asName());
     }
 
-    private boolean existingContains(ThingVariable variable) {
-        return variable.reference().isName() && existing.contains(variable.reference().asName());
+    public Thing existingGet(ThingVariable var) {
+        return existing.get(var.reference().asName()).asThing();
     }
 
-    public Thing existingGet(ThingVariable variable) {
-        return existing.get(variable.reference().asName()).asThing();
-    }
-
-    private Thing insert(ThingVariable variable) {
+    private Thing insert(ThingVariable var) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
-            if (!variable.reference().isAnonymous() && inserted.containsKey(variable.reference())) {
-                return inserted.get(variable.reference());
-            } else if (existingContains(variable) && variable.constraints().isEmpty()) {
-                return existingGet(variable);
-            } else validate(variable);
+            Thing thing; Reference ref = var.reference();
 
-            final Thing thing;
+            if (ref.isName() && (thing = inserted.get(ref.asName())) != null) return thing;
+            else if (existingContains(var) && var.constraints().isEmpty()) return existingGet(var);
+            else validate(var);
 
-            if (existingContains(variable)) thing = existingGet(variable);
-            else if (variable.iid().isPresent()) thing = getThing(variable.iid().get());
-            else if (variable.isa().isPresent()) thing = insertIsa(variable.isa().get(), variable);
-            else throw GraknException.of(THING_ISA_MISSING, variable.reference());
-            if (!variable.reference().isAnonymous()) inserted.put(variable.reference(), thing);
-            if (!variable.has().isEmpty()) insertHas(thing, variable.has());
+            if (existingContains(var)) thing = existingGet(var);
+            else if (var.iid().isPresent()) thing = getThing(var.iid().get());
+            else if (var.isa().isPresent()) thing = insertIsa(var.isa().get(), var);
+            else throw GraknException.of(THING_ISA_MISSING, ref);
+            if (ref.isName()) inserted.put(ref.asName(), thing);
+            if (!var.has().isEmpty()) insertHas(thing, var.has());
             return thing;
         }
     }
 
-    private void validate(ThingVariable variable) {
+    private void validate(ThingVariable var) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "validate")) {
-            if (existingContains(variable) && (variable.iid().isPresent() || variable.isa().isPresent())) {
-                if (variable.iid().isPresent()) {
-                    throw GraknException.of(THING_IID_REASSERTION, variable.reference(), variable.iid().get().iid());
+            Reference ref = var.reference();
+            if (existingContains(var) && (var.iid().isPresent() || var.isa().isPresent())) {
+                if (var.iid().isPresent()) {
+                    throw GraknException.of(THING_IID_REASSERTION, ref, var.iid().get().iid());
                 } else {
-                    throw GraknException.of(THING_ISA_REASSERTION, variable.reference(),
-                                            variable.isa().get().type().label().get().label());
+                    throw GraknException.of(THING_ISA_REASSERTION, ref, var.isa().get().type().label().get().label());
                 }
-            } else if (variable.iid().isPresent() && variable.isa().isPresent()) {
-                throw GraknException.of(THING_ISA_IID_CONFLICT, variable.iid().get(),
-                                        variable.isa().get().type().label().get().label());
-            } else if (!variable.is().isEmpty()) {
+            } else if (var.iid().isPresent() && var.isa().isPresent()) {
+                throw GraknException.of(THING_ISA_IID_CONFLICT, var.iid().get(),
+                                        var.isa().get().type().label().get().label());
+            } else if (!var.is().isEmpty()) {
                 throw GraknException.of(THING_CONSTRAINT_UNACCEPTED, IS);
             }
         }
     }
 
     private Thing getThing(IIDConstraint iidConstraint) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "getthing")) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "get_thing")) {
             final Thing thing = conceptMgr.getThing(iidConstraint.iid());
             if (thing == null) throw GraknException.of(THING_NOT_FOUND, bytesToHexString(iidConstraint.iid()));
             else return thing;
         }
     }
 
-    private ThingType getThingType(TypeVariable variable) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "getthingtype")) {
-            if (variable.reference().isLabel()) {
-                assert variable.label().isPresent();
-                final ThingType thingType = conceptMgr.getThingType(variable.label().get().label());
-                if (thingType == null) throw GraknException.of(TYPE_NOT_FOUND, variable.label().get().label());
+    private ThingType getThingType(TypeVariable var) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "get_thing_type")) {
+            if (var.reference().isLabel()) {
+                assert var.label().isPresent();
+                final ThingType thingType = conceptMgr.getThingType(var.label().get().label());
+                if (thingType == null) throw GraknException.of(TYPE_NOT_FOUND, var.label().get().label());
                 else return thingType.asThingType();
             } else {
-                throw GraknException.of(THING_CONSTRAINT_TYPE_VARIABLE, variable.reference());
+                throw GraknException.of(THING_CONSTRAINT_TYPE_VARIABLE, var.reference());
             }
         }
     }
 
-    private RoleType getRoleType(TypeVariable variable) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "getroletype")) {
-            if (variable.reference().isLabel()) {
-                assert variable.label().isPresent();
+    private RoleType getRoleType(TypeVariable var) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "get_role_type")) {
+            if (var.reference().isLabel()) {
+                assert var.label().isPresent();
                 final RelationType relationType;
                 final RoleType roleType;
-                if ((relationType = conceptMgr.getRelationType(variable.label().get().scope().get())) != null &&
-                        (roleType = relationType.getRelates(variable.label().get().label())) != null) {
+                if ((relationType = conceptMgr.getRelationType(var.label().get().scope().get())) != null &&
+                        (roleType = relationType.getRelates(var.label().get().label())) != null) {
                     return roleType;
                 } else {
-                    throw GraknException.of(TYPE_NOT_FOUND, variable.label().get().scopedLabel());
+                    throw GraknException.of(TYPE_NOT_FOUND, var.label().get().scopedLabel());
                 }
             } else {
-                throw GraknException.of(THING_CONSTRAINT_TYPE_VARIABLE, variable.reference());
+                throw GraknException.of(THING_CONSTRAINT_TYPE_VARIABLE, var.reference());
             }
         }
     }
 
-    private Thing insertIsa(IsaConstraint isaConstraint, ThingVariable variable) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insertisa")) {
+    private Thing insertIsa(IsaConstraint isaConstraint, ThingVariable var) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_isa")) {
             final ThingType thingType = getThingType(isaConstraint.type());
 
             if (thingType instanceof EntityType) {
                 return insertEntity(thingType.asEntityType());
             } else if (thingType instanceof AttributeType) {
-                return insertAttribute(thingType.asAttributeType(), variable);
+                return insertAttribute(thingType.asAttributeType(), var);
             } else if (thingType instanceof RelationType) {
-                return insertRelation(thingType.asRelationType(), variable);
+                return insertRelation(thingType.asRelationType(), var);
             } else if (thingType instanceof ThingTypeImpl.Root) {
                 throw GraknException.of(ILLEGAL_ABSTRACT_WRITE, Thing.class.getSimpleName(), thingType.getLabel());
             } else {
@@ -220,18 +207,19 @@ public class Inserter {
     }
 
     private Entity insertEntity(EntityType entityType) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insertentity")) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_entity")) {
             return entityType.create();
         }
     }
 
-    private Attribute insertAttribute(AttributeType attributeType, ThingVariable variable) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insertattribute")) {
-            final ValueConstraint<?> valueConstraint;
-            if (variable.value().size() > 1) {
-                throw GraknException.of(ATTRIBUTE_VALUE_TOO_MANY, variable.reference(), attributeType.getLabel());
-            } else if (!variable.value().isEmpty() &&
-                    (valueConstraint = variable.value().iterator().next()).isValueIdentity()) {
+    private Attribute insertAttribute(AttributeType attributeType, ThingVariable var) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_attribute")) {
+            ValueConstraint<?> valueConstraint;
+
+            if (var.value().size() > 1) {
+                throw GraknException.of(ATTRIBUTE_VALUE_TOO_MANY, var.reference(), attributeType.getLabel());
+            } else if (!var.value().isEmpty() &&
+                    (valueConstraint = var.value().iterator().next()).isValueIdentity()) {
                 switch (attributeType.getValueType()) {
                     case LONG:
                         return attributeType.asLong().put(valueConstraint.asLong().value());
@@ -248,16 +236,16 @@ public class Inserter {
                         return null;
                 }
             } else {
-                throw GraknException.of(ATTRIBUTE_VALUE_MISSING, variable.reference(), attributeType.getLabel());
+                throw GraknException.of(ATTRIBUTE_VALUE_MISSING, var.reference(), attributeType.getLabel());
             }
         }
     }
 
-    private Relation insertRelation(RelationType relationType, ThingVariable variable) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insertrelation")) {
-            if (variable.relation().size() == 1) {
-                final Relation relation = relationType.create();
-                variable.relation().iterator().next().players().forEach(rolePlayer -> {
+    private Relation insertRelation(RelationType relationType, ThingVariable var) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_relation")) {
+            if (var.relation().size() == 1) {
+                Relation relation = relationType.create();
+                var.relation().iterator().next().players().forEach(rolePlayer -> {
                     final RoleType roleType;
                     final Thing player = insert(rolePlayer.player());
                     final Set<RoleType> inferred;
@@ -276,16 +264,16 @@ public class Inserter {
                     relation.addPlayer(roleType, player);
                 });
                 return relation;
-            } else if (variable.relation().size() > 1) {
-                throw GraknException.of(RELATION_CONSTRAINT_TOO_MANY, variable.reference());
-            } else { // variable.relation().isEmpty()
-                throw GraknException.of(RELATION_CONSTRAINT_MISSING, variable.reference());
+            } else if (var.relation().size() > 1) {
+                throw GraknException.of(RELATION_CONSTRAINT_TOO_MANY, var.reference());
+            } else { // var.relation().isEmpty()
+                throw GraknException.of(RELATION_CONSTRAINT_MISSING, var.reference());
             }
         }
     }
 
     private void insertHas(Thing thing, Set<HasConstraint> hasConstraints) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "inserthas")) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_has")) {
             hasConstraints.forEach(has -> thing.setHas(insert(has.attribute()).asAttribute()));
         }
     }
