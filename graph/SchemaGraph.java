@@ -80,13 +80,12 @@ public class SchemaGraph implements Graph {
     private final Storage storage;
     private final KeyGenerator.Schema.Buffered keyGenerator;
     private final ConcurrentMap<String, TypeVertex> typesByLabel;
-    private final ConcurrentMap<String, RuleStructure> rulesByLabel;
+
     private final ConcurrentMap<VertexIID.Type, TypeVertex> typesByIID;
-    private final ConcurrentMap<StructureIID.Rule, RuleStructure> rulesByIID;
     private final ConcurrentMap<String, ManagedReadWriteLock> singleLabelLocks;
     private final ManagedReadWriteLock multiLabelLock;
 
-    private final RuleIndex ruleIndex;
+    private final Rules rules;
     private final Statistics statistics;
     private final Cache cache;
     private final boolean isReadOnly;
@@ -97,19 +96,17 @@ public class SchemaGraph implements Graph {
         this.isReadOnly = isReadOnly;
         keyGenerator = new KeyGenerator.Schema.Buffered();
         typesByLabel = new ConcurrentHashMap<>();
-        rulesByLabel = new ConcurrentHashMap<>();
         typesByIID = new ConcurrentHashMap<>();
-        rulesByIID = new ConcurrentHashMap<>();
         singleLabelLocks = new ConcurrentHashMap<>();
         multiLabelLock = new ManagedReadWriteLock();
-        ruleIndex = new RuleIndex(this);
+        rules = new Rules();
         statistics = new Statistics();
         cache = new Cache();
         isModified = false;
     }
 
-    public RuleIndex ruleIndex() {
-        return ruleIndex;
+    public Rules ruleIndex() {
+        return rules;
     }
 
     static class Cache {
@@ -175,12 +172,6 @@ public class SchemaGraph implements Graph {
         return getType(ROLE.label(), ROLE.scope());
     }
 
-    public ResourceIterator<RuleStructure> rules() {
-        Encoding.Prefix index = IndexIID.Rule.prefix();
-        ResourceIterator<RuleStructure> persistedRules = storage.iterate(index.bytes(), (key, value) ->
-                convert(StructureIID.Rule.of(value)));
-        return link(iterate(rulesByIID.values()), persistedRules).distinct();
-    }
 
     public ResourceIterator<TypeVertex> thingTypes() {
         return tree(rootThingType(), v -> v.ins().edge(SUB).from());
@@ -245,23 +236,12 @@ public class SchemaGraph implements Graph {
         return typesByIID.values().stream();
     }
 
-    public Stream<RuleStructure> bufferedRules() {
-        return rulesByIID.values().stream();
-    }
 
     public TypeVertex convert(VertexIID.Type iid) {
         return typesByIID.computeIfAbsent(iid, i -> {
             final TypeVertex vertex = new TypeVertexImpl.Persisted(this, i);
             typesByLabel.putIfAbsent(vertex.scopedLabel(), vertex);
             return vertex;
-        });
-    }
-
-    public RuleStructure convert(StructureIID.Rule iid) {
-        return rulesByIID.computeIfAbsent(iid, i -> {
-            final RuleStructure structure = new RuleStructureImpl.Persisted(this, i);
-            rulesByLabel.putIfAbsent(structure.label(), structure);
-            return structure;
         });
     }
 
@@ -305,30 +285,6 @@ public class SchemaGraph implements Graph {
         }
     }
 
-    public RuleStructure getRule(String label) {
-        assert storage.isOpen();
-        try {
-            if (!isReadOnly) {
-                multiLabelLock.lockRead();
-                singleLabelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockRead();
-            }
-
-            RuleStructure vertex = rulesByLabel.get(label);
-            if (vertex != null) return vertex;
-
-            final IndexIID.Rule index = IndexIID.Rule.of(label);
-            final byte[] iid = storage.get(index.bytes());
-            if (iid != null) vertex = convert(StructureIID.Rule.of(iid));
-            return vertex;
-        } catch (InterruptedException e) {
-            throw GraknException.of(e);
-        } finally {
-            if (!isReadOnly) {
-                singleLabelLocks.get(label).unlockRead();
-                multiLabelLock.unlockRead();
-            }
-        }
-    }
 
     public TypeVertex create(Encoding.Vertex.Type encoding, String label) {
         return create(encoding, label, null);
@@ -356,26 +312,6 @@ public class SchemaGraph implements Graph {
         }
     }
 
-    public RuleStructure create(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
-        assert storage.isOpen();
-        if (isReadOnly) throw GraknException.of(SCHEMA_READ_VIOLATION);
-        try {
-            multiLabelLock.lockRead();
-            singleLabelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockWrite();
-
-            final RuleStructure rule = rulesByLabel.computeIfAbsent(label, i -> new RuleStructureImpl.Buffered(
-                    this, StructureIID.Rule.generate(keyGenerator), label, when, then
-            ));
-            rulesByIID.put(rule.iid(), rule);
-            return rule;
-        } catch (InterruptedException e) {
-            throw GraknException.of(e);
-        } finally {
-            singleLabelLocks.get(label).unlockWrite();
-            multiLabelLock.unlockRead();
-        }
-    }
-
     public TypeVertex update(TypeVertex vertex, String oldLabel, @Nullable String oldScope, String newLabel, @Nullable String newScope) {
         assert storage.isOpen();
         if (isReadOnly) throw GraknException.of(SCHEMA_READ_VIOLATION);
@@ -387,23 +323,6 @@ public class SchemaGraph implements Graph {
             if (type != null) throw GraknException.of(INVALID_SCHEMA_WRITE, newScopedLabel);
             typesByLabel.remove(oldScopedLabel);
             typesByLabel.put(newScopedLabel, vertex);
-            return vertex;
-        } catch (InterruptedException e) {
-            throw GraknException.of(e);
-        } finally {
-            multiLabelLock.unlockWrite();
-        }
-    }
-
-    public RuleStructure update(RuleStructure vertex, String oldLabel, String newLabel) {
-        assert storage.isOpen();
-        if (isReadOnly) throw GraknException.of(SCHEMA_READ_VIOLATION);
-        try {
-            final RuleStructure rule = getRule(newLabel);
-            multiLabelLock.lockWrite();
-            if (rule != null) throw GraknException.of(INVALID_SCHEMA_WRITE, newLabel);
-            rulesByLabel.remove(oldLabel);
-            rulesByLabel.put(newLabel, vertex);
             return vertex;
         } catch (InterruptedException e) {
             throw GraknException.of(e);
@@ -429,23 +348,6 @@ public class SchemaGraph implements Graph {
         }
     }
 
-    public void delete(RuleStructure vertex) {
-        assert storage.isOpen();
-        if (isReadOnly) throw GraknException.of(SCHEMA_READ_VIOLATION);
-        try { // we intentionally use READ on multiLabelLock, as delete() only concerns one label
-            // TODO do we need all these locks here? Are they applicable for this method?
-            multiLabelLock.lockRead();
-            singleLabelLocks.computeIfAbsent(vertex.label(), x -> new ManagedReadWriteLock()).lockWrite();
-
-            rulesByLabel.remove(vertex.label());
-            rulesByIID.remove(vertex.iid());
-        } catch (InterruptedException e) {
-            throw GraknException.of(e);
-        } finally {
-            singleLabelLocks.get(vertex.label()).unlockWrite();
-            multiLabelLock.unlockRead();
-        }
-    }
 
     public void setModified() {
         if (!isModified) isModified = true;
@@ -470,22 +372,17 @@ public class SchemaGraph implements Graph {
         typesByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Status.BUFFERED)).forEach(
                 typeVertex -> typeVertex.iid(VertexIID.Type.generate(storage.asSchema().schemaKeyGenerator(), typeVertex.encoding()))
         ); // typeByIID no longer contains valid mapping from IID to TypeVertex
-        rulesByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Status.BUFFERED)).forEach(
-                ruleStructure -> ruleStructure.iid(StructureIID.Rule.generate(storage.asSchema().schemaKeyGenerator()))
-        ); // rulesByIID no longer contains valid mapping from IID to TypeVertex
         typesByIID.values().forEach(TypeVertex::commit);
-        rulesByIID.values().forEach(RuleStructure::commit);
-        ruleIndex.commit();
+        rules.commit();
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Type to be used again
-        ruleIndex.clear();
+        rules.clear();
     }
 
     @Override
     public void clear() {
         typesByIID.clear();
         typesByLabel.clear();
-        rulesByIID.clear();
-        rulesByLabel.clear();
+        rules.clear();
     }
 
     public class Statistics {
@@ -669,14 +566,23 @@ public class SchemaGraph implements Graph {
         }
     }
 
-    public static class RuleIndex {
+    public class Rules {
+
+        private final ConcurrentMap<String, RuleStructure> rulesByLabel;
+        private final ConcurrentMap<StructureIID.Rule, RuleStructure> rulesByIID;
+        private final ConcurrentMap<String, ManagedReadWriteLock> singleLabelLocks;
+        private final ManagedReadWriteLock multiLabelLock;
 
         private final Concluding concludingIndex;
         private final Containing containingIndex;
 
-        public RuleIndex(SchemaGraph SchemaGraph) {
-            concludingIndex = new Concluding(SchemaGraph);
-            containingIndex = new Containing(SchemaGraph);
+        public Rules() {
+            rulesByLabel = new ConcurrentHashMap<>();
+            rulesByIID = new ConcurrentHashMap<>();
+            concludingIndex = new Concluding();
+            containingIndex = new Containing();
+            singleLabelLocks = new ConcurrentHashMap<>();
+            multiLabelLock = new ManagedReadWriteLock();
         }
 
         public Concluding concluding() {
@@ -687,20 +593,126 @@ public class SchemaGraph implements Graph {
             return containingIndex;
         }
 
+        public ResourceIterator<RuleStructure> rules() {
+            Encoding.Prefix index = IndexIID.Rule.prefix();
+            ResourceIterator<RuleStructure> persistedRules = storage.iterate(index.bytes(), (key, value) ->
+                    convert(StructureIID.Rule.of(value)));
+            return link(iterate(rulesByIID.values()), persistedRules).distinct();
+        }
+
+        public Stream<RuleStructure> bufferedRules() {
+            return rulesByIID.values().stream();
+        }
+
+        public RuleStructure convert(StructureIID.Rule iid) {
+            return rulesByIID.computeIfAbsent(iid, i -> {
+                final RuleStructure structure = new RuleStructureImpl.Persisted(SchemaGraph.this, i);
+                rulesByLabel.putIfAbsent(structure.label(), structure);
+                return structure;
+            });
+        }
+
+        public RuleStructure getRule(String label) {
+            assert storage.isOpen();
+            try {
+                if (!isReadOnly) {
+                    multiLabelLock.lockRead();
+                    singleLabelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockRead();
+                }
+
+                RuleStructure vertex = rulesByLabel.get(label);
+                if (vertex != null) return vertex;
+
+                final IndexIID.Rule index = IndexIID.Rule.of(label);
+                final byte[] iid = storage.get(index.bytes());
+                if (iid != null) vertex = convert(StructureIID.Rule.of(iid));
+                return vertex;
+            } catch (InterruptedException e) {
+                throw GraknException.of(e);
+            } finally {
+                if (!isReadOnly) {
+                    singleLabelLocks.get(label).unlockRead();
+                    multiLabelLock.unlockRead();
+                }
+            }
+        }
+
+        public RuleStructure create(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
+            assert storage.isOpen();
+            try {
+                multiLabelLock.lockRead();
+                singleLabelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockWrite();
+
+                final RuleStructure rule = rulesByLabel.computeIfAbsent(label, i -> new RuleStructureImpl.Buffered(
+                        SchemaGraph.this, StructureIID.Rule.generate(keyGenerator), label, when, then
+                ));
+                rulesByIID.put(rule.iid(), rule);
+                return rule;
+            } catch (InterruptedException e) {
+                throw GraknException.of(e);
+            } finally {
+                singleLabelLocks.get(label).unlockWrite();
+                multiLabelLock.unlockRead();
+            }
+        }
+
+        public void delete(RuleStructure vertex) {
+            assert storage.isOpen();
+            try { // we intentionally use READ on multiLabelLock, as delete() only concerns one label
+                // TODO do we need all these locks here? Are they applicable for this method?
+                multiLabelLock.lockRead();
+                singleLabelLocks.computeIfAbsent(vertex.label(), x -> new ManagedReadWriteLock()).lockWrite();
+
+                rulesByLabel.remove(vertex.label());
+                rulesByIID.remove(vertex.iid());
+            } catch (InterruptedException e) {
+                throw GraknException.of(e);
+            } finally {
+                singleLabelLocks.get(vertex.label()).unlockWrite();
+                multiLabelLock.unlockRead();
+            }
+        }
+
+        public RuleStructure update(RuleStructure vertex, String oldLabel, String newLabel) {
+            assert storage.isOpen();
+            try {
+                final RuleStructure rule = getRule(newLabel);
+                multiLabelLock.lockWrite();
+                if (rule != null) throw GraknException.of(INVALID_SCHEMA_WRITE, newLabel);
+                rulesByLabel.remove(oldLabel);
+                rulesByLabel.put(newLabel, vertex);
+                return vertex;
+            } catch (InterruptedException e) {
+                throw GraknException.of(e);
+            } finally {
+                multiLabelLock.unlockWrite();
+            }
+        }
+
+
         public void commit() {
+            rulesByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Status.BUFFERED)).forEach(
+                    ruleStructure -> ruleStructure.iid(StructureIID.Rule.generate(storage.asSchema().schemaKeyGenerator()))
+            ); // rulesByIID no longer contains valid mapping from IID to TypeVertex
+            rulesByIID.values().forEach(RuleStructure::commit);
             concludingIndex.buffered().commit();
             containingIndex.buffered().commit();
         }
 
-        public static class Concluding {
+        public void clear() {
+            concludingIndex.clear();
+            containingIndex.clear();
+            rulesByIID.clear();
+            rulesByLabel.clear();
+        }
+
+        public class Concluding {
             private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> isa;
             private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> hasAttribute;
             private final Buffered buffered;
-            private final SchemaGraph schemaGraph; // TODO revert to storage
             private boolean outdated;
 
-            public Concluding(SchemaGraph graph) {
-                this.schemaGraph = graph;
+            public Concluding() {
                 isa = new ConcurrentHashMap<>();
                 hasAttribute = new ConcurrentHashMap<>();
                 buffered = new Buffered();
@@ -735,7 +747,7 @@ public class SchemaGraph implements Graph {
                 Set<RuleStructure> rules = isa.get(type);
                 if (rules != null && rules.contains(rule)) {
                     isa.get(type).remove(rule);
-                    schemaGraph.storage().delete(IndexIID.Type.RuleIndex.concludedIsa(type.iid(), rule.iid()).bytes());
+                    storage.delete(IndexIID.Type.RuleIndex.concludedIsa(type.iid(), rule.iid()).bytes());
                 }
                 buffered().deleteIsa(rule, type);
             }
@@ -744,7 +756,7 @@ public class SchemaGraph implements Graph {
                 Set<RuleStructure> rules = hasAttribute.get(attributeType);
                 if (rules != null && rules.contains(rule)) {
                     rules.remove(rule);
-                    schemaGraph.storage().delete(IndexIID.Type.RuleIndex.concludedHasAttribute(attributeType.iid(), rule.iid()).bytes());
+                    storage.delete(IndexIID.Type.RuleIndex.concludedHasAttribute(attributeType.iid(), rule.iid()).bytes());
                 }
                 buffered().deleteHasAttribute(rule, attributeType);
             }
@@ -752,14 +764,14 @@ public class SchemaGraph implements Graph {
 
             private Set<RuleStructure> loadIsaIndex(TypeVertex type) {
                 IndexIID.Type.RuleIndex scanPrefix = IndexIID.Type.RuleIndex.concludedIsaScan(type.iid());
-                return schemaGraph.storage().iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
-                        .map(schemaGraph::convert).toSet();
+                return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
+                        .map(Rules.this::convert).toSet();
             }
 
             private Set<RuleStructure> loadHasAttributeIndex(TypeVertex type) {
                 IndexIID.Type.RuleIndex scanPrefix = IndexIID.Type.RuleIndex.concludedHasAttributeScan(type.iid());
-                return schemaGraph.storage().iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
-                        .map(schemaGraph::convert).toSet();
+                return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
+                        .map(Rules.this::convert).toSet();
             }
 
             private void clear() {
@@ -799,14 +811,14 @@ public class SchemaGraph implements Graph {
                         VertexIID.Type typeIID = type.iid();
                         rules.forEach(rule -> {
                             IndexIID.Type.RuleIndex typeRuleConcludesIndex = IndexIID.Type.RuleIndex.concludedIsa(typeIID, rule.iid());
-                            schemaGraph.storage().put(typeRuleConcludesIndex.bytes());
+                            storage.put(typeRuleConcludesIndex.bytes());
                         });
                     });
                     hasAttribute.forEach((type, rules) -> {
                         VertexIID.Type typeIID = type.iid();
                         rules.forEach(rule -> {
                             IndexIID.Type.RuleIndex typeRuleConcludesHasIndex = IndexIID.Type.RuleIndex.concludedHasAttribute(typeIID, rule.iid());
-                            schemaGraph.storage().put(typeRuleConcludesHasIndex.bytes());
+                            storage.put(typeRuleConcludesHasIndex.bytes());
                         });
                     });
                 }
@@ -839,14 +851,12 @@ public class SchemaGraph implements Graph {
 
         }
 
-        public static class Containing {
+        public class Containing {
 
             private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> contains;
             private final Buffered buffered;
-            private final SchemaGraph schemaGraph; // TODO revert to storage
 
-            public Containing(SchemaGraph schemaGraph) {
-                this.schemaGraph = schemaGraph;
+            public Containing() {
                 contains = new ConcurrentHashMap<>();
                 buffered = new Buffered();
             }
@@ -864,15 +874,15 @@ public class SchemaGraph implements Graph {
                 types.forEachRemaining(type -> {
                     Set<RuleStructure> rules = contains.get(type);
                     if (rules != null) rules.remove(rule);
-                    schemaGraph.storage().delete(IndexIID.Type.RuleIndex.contained(type.iid(), rule.iid()).bytes());
+                    storage.delete(IndexIID.Type.RuleIndex.contained(type.iid(), rule.iid()).bytes());
                     buffered().delete(rule, type);
                 });
             }
 
             private Set<RuleStructure> loadIndex(TypeVertex type) {
                 IndexIID.Type.RuleIndex scanPrefix = IndexIID.Type.RuleIndex.containedScan(type.iid());
-                return schemaGraph.storage().iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
-                        .map(schemaGraph::convert).toSet();
+                return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
+                        .map(Rules.this::convert).toSet();
             }
 
             private void clear() {
@@ -903,7 +913,7 @@ public class SchemaGraph implements Graph {
                     contains.forEach((type, rules) -> {
                         rules.forEach(rule -> {
                             IndexIID.Type.RuleIndex typeInRule = IndexIID.Type.RuleIndex.contained(type.iid(), rule.iid());
-                            schemaGraph.storage().put(typeInRule.bytes());
+                            storage.put(typeInRule.bytes());
                         });
                     });
                 }
@@ -912,11 +922,6 @@ public class SchemaGraph implements Graph {
                     contains.clear();
                 }
             }
-        }
-
-        public void clear() {
-            concludingIndex.clear();
-            containingIndex.clear();
         }
     }
 }
