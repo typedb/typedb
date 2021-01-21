@@ -18,7 +18,6 @@
 
 package grakn.core.reasoner.resolution;
 
-import grakn.common.collection.Pair;
 import grakn.core.common.concurrent.actor.Actor;
 import grakn.core.common.concurrent.actor.EventLoopGroup;
 import grakn.core.common.exception.GraknException;
@@ -85,7 +84,7 @@ public class ResolverManager {
         rules = new HashMap<>();
     }
 
-    public List<Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>>> planAndRegister(Set<Resolvable> resolvables) {
+    public List<MappedActor> planAndRegister(Set<Resolvable> resolvables) {
         return iterate(new Plan(resolvables, conceptMgr, logicMgr).plan()).map(this::registerResolvable).toList();
     }
 
@@ -104,7 +103,7 @@ public class ResolverManager {
         this.elg = eventLoopGroup;
     }
 
-    private Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> registerResolvable(Resolvable resolvable) {
+    private MappedActor registerResolvable(Resolvable resolvable) {
         if (resolvable.isRetrievable()) {
             return registerRetrievable(resolvable.asRetrievable());
         } else if (resolvable.isConcludable()) {
@@ -112,25 +111,25 @@ public class ResolverManager {
         } else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    private Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> registerRetrievable(Retrievable retrievable) {
+    private MappedActor registerRetrievable(Retrievable retrievable) {
         LOG.debug("Register retrieval for retrievable actor: '{}'", retrievable.conjunction());
         Actor<RetrievableResolver> retrievableActor = Actor.create(elg, self -> new RetrievableResolver(self, retrievable, this, traversalEngine, explanations));
-        return new Pair<>(retrievableActor, identity(retrievable));
+        return new MappedActor(retrievableActor, identity(retrievable));
     }
 
-    private Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> registerConcludable(Concludable concludable) {
+    private MappedActor registerConcludable(Concludable concludable) {
         LOG.debug("Register retrieval for concludable actor: '{}'", concludable.conjunction());
         for (Map.Entry<Concludable, Actor<ConcludableResolver>> c : concludableActors.entrySet()) {
             // TODO This needs to be optimised from a linear search to use an alpha hash
             AlphaEquivalence alphaEquality = c.getKey().alphaEquals(concludable);
             if (alphaEquality.isValid()) {
-                return new Pair<>(c.getValue(), alphaEquality.asValid().namedVariableMapping());
+                return new MappedActor(c.getValue(), alphaEquality.asValid().namedVariableMapping());
             }
         }
         Actor<ConcludableResolver> concludableActor = Actor.create(elg, self ->
                 new ConcludableResolver(self, concludable, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr, explanations));
         concludableActors.put(concludable, concludableActor);
-        return new Pair<>(concludableActor, identity(concludable));
+        return new MappedActor(concludableActor, identity(concludable));
     }
 
     private static Map<Reference.Name, Reference.Name> identity(Resolvable resolvable) {
@@ -138,6 +137,24 @@ public class ResolverManager {
                 .filter(variable -> variable.reference().isName())
                 .map(variable -> variable.reference().asName())
                 .collect(Collectors.toMap(Function.identity(), Function.identity()));
+    }
+
+    public static class MappedActor {
+        private final Actor<? extends ResolvableResolver<?>> actor;
+        private final Map<Reference.Name, Reference.Name> mapping;
+
+        public MappedActor(Actor<? extends ResolvableResolver<?>> actor, Map<Reference.Name, Reference.Name> mapping) {
+            this.actor = actor;
+            this.mapping = mapping;
+        }
+
+        public Map<Reference.Name, Reference.Name> mapping() {
+            return mapping;
+        }
+
+        public Actor<? extends ResolvableResolver<?>> actor() {
+            return actor;
+        }
     }
 
     static class Plan {

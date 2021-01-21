@@ -18,7 +18,6 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
-import grakn.common.collection.Pair;
 import grakn.core.common.concurrent.actor.Actor;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.Concept;
@@ -40,7 +39,6 @@ import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
-import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,16 +51,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.map;
 
-// TODO unify and materialise in receiveAnswer
 public class RuleResolver extends Resolver<RuleResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(RuleResolver.class);
 
     private final Map<Request, ResponseProducer> responseProducers;
     private final Rule rule;
-    private List<Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>>> plan;
+    private List<ResolverManager.MappedActor> plan;
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
     private boolean isInitialised;
@@ -115,7 +111,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
         }
 
         ConceptMap whenAnswer = fromDownstream.answer().derived().withInitial();
-        Actor<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
+        Actor<?> sender = fromDownstream.sourceRequest().receiver();
         if (isLast(sender)) {
             Map<Identifier, Concept> thenMaterialisation = rule.putConclusion(whenAnswer, traversalEngine, conceptMgr);
             assert fromUpstream.answerBounds().isUnified();
@@ -131,10 +127,10 @@ public class RuleResolver extends Resolver<RuleResolver> {
                 tryAnswer(fromUpstream, responseProducer, iteration);
             }
         } else {
-            Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> nextPlannedDownstream = nextPlannedDownstream(sender);
-            Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.first()),
+            ResolverManager.MappedActor nextPlannedDownstream = nextPlannedDownstream(sender);
+            Request downstreamRequest = new Request(fromUpstream.path().append(nextPlannedDownstream.actor()),
                                                     AnswerState.UpstreamVars.Initial.of(whenAnswer).toDownstreamVars(
-                                                            Mapping.of(nextPlannedDownstream.second())),
+                                                            Mapping.of(nextPlannedDownstream.mapping())),
                                                     derivation);
             responseProducer.addDownstreamProducer(downstreamRequest);
             requestFromDownstream(downstreamRequest, fromUpstream, iteration);
@@ -170,9 +166,9 @@ public class RuleResolver extends Resolver<RuleResolver> {
     protected ResponseProducer responseProducerCreate(Request request, int iteration) {
         Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(rule.when(), new ConceptMap());
         ResponseProducer responseProducer = new ResponseProducer(traversal, iteration);
-        Request toDownstream = new Request(request.path().append(plan.get(0).first()),
+        Request toDownstream = new Request(request.path().append(plan.get(0).actor()),
                                            AnswerState.UpstreamVars.Initial.of(request.answerBounds().conceptMap())
-                                                   .toDownstreamVars(Mapping.of(plan.get(0).second())),
+                                                   .toDownstreamVars(Mapping.of(plan.get(0).mapping())),
                                            new ResolutionAnswer.Derivation(map()));
         responseProducer.addDownstreamProducer(toDownstream);
 
@@ -186,9 +182,9 @@ public class RuleResolver extends Resolver<RuleResolver> {
 
         Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(rule.when(), new ConceptMap());
         ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversal, newIteration);
-        Request toDownstream = new Request(request.path().append(plan.get(0).first()),
+        Request toDownstream = new Request(request.path().append(plan.get(0).actor()),
                                            AnswerState.UpstreamVars.Initial.of(request.answerBounds().conceptMap())
-                                                   .toDownstreamVars(Mapping.of(plan.get(0).second())),
+                                                   .toDownstreamVars(Mapping.of(plan.get(0).mapping())),
                                            new ResolutionAnswer.Derivation(map()));
         responseProducerNewIter.addDownstreamProducer(toDownstream);
         return responseProducerNewIter;
@@ -241,14 +237,14 @@ public class RuleResolver extends Resolver<RuleResolver> {
         return responseProducers.get(fromUpstream);
     }
 
-    private boolean isLast(Actor<? extends Resolver<?>> actor) {
-        return plan.get(plan.size() - 1).first().equals(actor);
+    private boolean isLast(Actor<?> actor) {
+        return plan.get(plan.size() - 1).actor().equals(actor);
     }
 
-    Pair<Actor<? extends ResolvableResolver<?>>, Map<Reference.Name, Reference.Name>> nextPlannedDownstream(Actor<? extends Resolver<?>> actor) {
+    ResolverManager.MappedActor nextPlannedDownstream(Actor<?> actor) {
         int index = -1;
         for (int i = 0; i < plan.size(); i++) {
-            if (actor.equals(plan.get(i).first())) {
+            if (actor.equals(plan.get(i).actor())) {
                 index = i;
                 break;
             }
