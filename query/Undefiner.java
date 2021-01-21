@@ -173,7 +173,7 @@ public class Undefiner {
             if (thingType instanceof RelationType) {
                 variables.stream().filter(
                         v -> v.label().isPresent() && v.label().get().scope().isPresent() &&
-                                v.label().get().scope().get().equals(thingType.getLabel().toString())
+                                v.label().get().scope().get().equals(thingType.getLabel().name())
                 ).forEach(undefined::add);
             }
             thingType.delete();

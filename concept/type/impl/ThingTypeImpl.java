@@ -159,11 +159,14 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
         if ((edge = vertex.outs().edge(OWNS_KEY, attVertex)) != null) edge.delete();
         else if ((edge = vertex.outs().edge(OWNS, attVertex)) != null) edge.delete();
-        else if (this.getOwns().anyMatch(attr -> attr.equals(attributeType)))
+        else if (this.getOwns().anyMatch(attr -> attr.equals(attributeType))) {
             throw exception(GraknException.of(INVALID_UNDEFINE_INHERITED_OWNS,
                     this.getLabel().toString(), attributeType.getLabel().toString()));
-        else throw exception(GraknException.of(INVALID_UNDEFINE_NONEXISTENT_OWNS,
+        }
+        else {
+            throw exception(GraknException.of(INVALID_UNDEFINE_NONEXISTENT_OWNS,
                     this.getLabel().toString(), attributeType.getLabel().toString()));
+        }
     }
 
     private <T extends grakn.core.concept.type.Type> void override(Encoding.Edge.Type encoding, T type, T overriddenType,
@@ -331,11 +334,14 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public void unsetPlays(RoleType roleType) {
         final TypeEdge edge = vertex.outs().edge(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
         if (edge == null) {
-            if (this.getPlays().anyMatch(attr -> attr.equals(roleType)))
+            if (this.getPlays().anyMatch(attr -> attr.equals(roleType))) {
                 throw exception(GraknException.of(INVALID_UNDEFINE_INHERITED_PLAYS,
                         this.getLabel().toString(), roleType.getLabel().toString()));
-            else throw exception(GraknException.of(INVALID_UNDEFINE_NONEXISTENT_PLAYS,
-                    this.getLabel().toString(), roleType.getLabel().toString()));
+            }
+            else {
+                throw exception(GraknException.of(INVALID_UNDEFINE_NONEXISTENT_PLAYS,
+                        this.getLabel().toString(), roleType.getLabel().toString()));
+            }
         }
         if (getInstances().anyMatch(thing -> thing.getRelations(roleType).findAny().isPresent())) {
             throw exception(GraknException.of(INVALID_UNDEFINE_PLAYS_HAS_INSTANCES, vertex.label(), roleType.getLabel().toString()));
