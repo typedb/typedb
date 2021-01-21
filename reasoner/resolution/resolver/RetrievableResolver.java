@@ -125,7 +125,6 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
             LOG.trace("{}: has found via traversal: {}", name(), conceptMap);
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
-                assert fromUpstream.answerBounds().isRoot();
                 ResolutionAnswer answer = new ResolutionAnswer(derivedAnswer, retrievable.conjunction().toString(),
                                                                ResolutionAnswer.Derivation.EMPTY, self(), false);
                 respondToUpstream(Answer.create(fromUpstream, answer), iteration);

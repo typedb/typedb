@@ -83,7 +83,7 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        long atomicTraversalAnswerCount = 3L;
+        long atomicTraversalAnswerCount = 0L;
         long conjunctionTraversalAnswerCount = 3L;
         long answerCount = atomicTraversalAnswerCount + conjunctionTraversalAnswerCount;
         Conjunction conjunctionPattern = parseConjunction("{ $p1 has age 24; }");
