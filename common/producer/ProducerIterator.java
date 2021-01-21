@@ -105,7 +105,9 @@ public class ProducerIterator<T> implements ResourceIterator<T> {
 
     @Override
     public void recycle() {
-        producers.forEach(Producer::recycle);
+        synchronized (queue) {
+            producers.forEach(Producer::recycle);
+        }
     }
 
     private static class Done {
