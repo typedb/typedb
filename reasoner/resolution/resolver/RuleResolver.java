@@ -128,7 +128,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
                 responseProducer.recordProduced(unifiedAnswer.get().conceptMap());
                 // TODO revisit whether using `rule.when()` is the correct pattern to associate with the unified answer? Variables won't match
                 ResolutionAnswer answer = new ResolutionAnswer(unifiedAnswer.get(), rule.when().toString(), derivation, self(), true);
-                respondToUpstream(new Answer(fromUpstream, answer), iteration);
+                respondToUpstream(Answer.create(fromUpstream, answer), iteration);
             } else {
                 tryAnswer(fromUpstream, responseProducer, iteration);
             }
@@ -216,7 +216,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
                 if (derivedAnswer.isPresent()) {
                     ResolutionAnswer answer = new ResolutionAnswer(derivedAnswer.get(), rule.when().toString(),
                                                                    ResolutionAnswer.Derivation.EMPTY, self(), true);
-                    respondToUpstream(new Answer(fromUpstream, answer), iteration);
+                    respondToUpstream(Answer.create(fromUpstream, answer), iteration);
                 }
             }
         }

@@ -117,7 +117,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
             ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.answerBounds().asMapped().aggregateToUpstream(conceptMap),
                                                            concludable.toString(), derivation, self(), fromDownstream.answer().isInferred());
 
-            respondToUpstream(new Answer(fromUpstream, answer), iteration);
+            respondToUpstream(Answer.create(fromUpstream, answer), iteration);
         } else {
             if (explanations()) {
                 ResolutionAnswer.Derivation derivation = new ResolutionAnswer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(),
@@ -199,7 +199,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
                 ResolutionAnswer answer = new ResolutionAnswer(derivedAnswer, concludable.toString(), new ResolutionAnswer.Derivation(map()), self(), false);
-                respondToUpstream(new Answer(fromUpstream, answer), iteration);
+                respondToUpstream(Answer.create(fromUpstream, answer), iteration);
             }
         }
 

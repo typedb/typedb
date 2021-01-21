@@ -35,7 +35,7 @@ public class Request {
     private final ResolutionAnswer.Derivation partialDerivation;
     private final int planIndex;
 
-    public Request(Path path,
+    private Request(Path path,
                    AnswerState.DownstreamVars startingConcept,
                    ResolutionAnswer.Derivation partialDerivation,
                    int planIndex) {

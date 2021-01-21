@@ -123,7 +123,7 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
                 assert fromUpstream.answerBounds().isRoot();
                 ResolutionAnswer answer = new ResolutionAnswer(derivedAnswer, retrievable.conjunction().toString(),
                                                                ResolutionAnswer.Derivation.EMPTY, self(), false);
-                respondToUpstream(new Answer(fromUpstream, answer), iteration);
+                respondToUpstream(Answer.create(fromUpstream, answer), iteration);
             }
         }
         respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
