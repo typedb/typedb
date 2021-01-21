@@ -526,7 +526,7 @@ public class ResolutionTest {
                 ResolverRegistry registry = transaction.reasoner().resolverRegistry();
                 LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
                 AtomicLong doneReceived = new AtomicLong(0L);
-                Actor<RootResolver> root = registry.createRoot(conjunctionPattern, responses::add, iterDone -> doneReceived.incrementAndGet());
+                Actor<RootResolver> root = registry.createRoot(transaction.logic().typeResolver().resolve(conjunctionPattern), responses::add, iterDone -> doneReceived.incrementAndGet());
                 assertResponses(root, responses, doneReceived, answerCount);
             }
         }
