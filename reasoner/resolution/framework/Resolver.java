@@ -83,7 +83,6 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
 
     protected void respondToUpstream(Response response, int iteration) {
         Actor<? extends Resolver<?>> receiver = response.sourceRequest().sender();
-        assert receiver != null;
         if (response.isAnswer()) {
             LOG.trace("{} : Sending a new Response.Answer to upstream", name());
             receiver.tell(actor -> actor.receiveAnswer(response.asAnswer(), iteration));
