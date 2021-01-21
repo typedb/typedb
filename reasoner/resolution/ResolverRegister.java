@@ -42,9 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -65,6 +63,7 @@ public class ResolverRegister {
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private final TraversalEngine traversalEngine;
     private EventLoopGroup elg;
+    private final Planner planner;
 
     public ResolverRegister(EventLoopGroup elg, Actor<ResolutionRecorder> resolutionRecorder, TraversalEngine traversalEngine,
                             ConceptManager conceptMgr, LogicManager logicMgr) {
@@ -76,28 +75,10 @@ public class ResolverRegister {
         this.explanations = false; // TODO enable/disable explanations from transaction context
         concludableActors = new HashMap<>();
         rules = new HashMap<>();
+        planner = new Planner(conceptMgr, logicMgr);
     }
 
-    public List<MappedActor> planAndRegister(Set<Resolvable> resolvables) {
-        return iterate(new Planner(conceptMgr, logicMgr).plan(resolvables)).map(this::registerResolvable).toList();
-    }
-
-    public Actor<RuleResolver> registerRule(Rule rule) {
-        LOG.debug("Register retrieval for rule actor: '{}'", rule);
-        return rules.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new RuleResolver(self, r, this, traversalEngine, conceptMgr, logicMgr, explanations)));
-    }
-
-    public Actor<RootResolver> createRoot(final Conjunction pattern, final Consumer<ResolutionAnswer> onAnswer, Consumer<Integer> onExhausted) {
-        LOG.debug("Creating Conjunction Actor for pattern: '{}'", pattern);
-        return Actor.create(elg, self -> new RootResolver(self, pattern, onAnswer, onExhausted, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr, explanations));
-    }
-
-    // for testing
-    public void setEventLoopGroup(EventLoopGroup eventLoopGroup) {
-        this.elg = eventLoopGroup;
-    }
-
-    private MappedActor registerResolvable(Resolvable resolvable) {
+    public MappedActor registerResolvable(Resolvable resolvable) {
         if (resolvable.isRetrievable()) {
             return registerRetrievable(resolvable.asRetrievable());
         } else if (resolvable.isConcludable()) {
@@ -105,9 +86,30 @@ public class ResolverRegister {
         } else throw GraknException.of(ILLEGAL_STATE);
     }
 
+    public Actor<RuleResolver> registerRule(Rule rule) {
+        LOG.debug("Register retrieval for rule actor: '{}'", rule);
+        return rules.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new RuleResolver(
+                        self, r, this, traversalEngine, conceptMgr, logicMgr, planner,
+                        explanations)));
+    }
+
+    public Actor<RootResolver> createRoot(final Conjunction pattern, final Consumer<ResolutionAnswer> onAnswer, Consumer<Integer> onExhausted) {
+        LOG.debug("Creating Conjunction Actor for pattern: '{}'", pattern);
+        return Actor.create(
+                elg, self -> new RootResolver(
+                        self, pattern, onAnswer, onExhausted, resolutionRecorder, this, traversalEngine,
+                        conceptMgr, logicMgr, planner, explanations));
+    }
+    // for testing
+
+    public void setEventLoopGroup(EventLoopGroup eventLoopGroup) {
+        this.elg = eventLoopGroup;
+    }
+
     private MappedActor registerRetrievable(Retrievable retrievable) {
         LOG.debug("Register retrieval for retrievable actor: '{}'", retrievable.conjunction());
-        Actor<RetrievableResolver> retrievableActor = Actor.create(elg, self -> new RetrievableResolver(self, retrievable, this, traversalEngine, explanations));
+        Actor<RetrievableResolver> retrievableActor = Actor.create(elg, self -> new RetrievableResolver(
+                self, retrievable, this, traversalEngine, explanations));
         return new MappedActor(retrievableActor, identity(retrievable));
     }
 
@@ -121,7 +123,8 @@ public class ResolverRegister {
             }
         }
         Actor<ConcludableResolver> concludableActor = Actor.create(elg, self ->
-                new ConcludableResolver(self, concludable, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr, explanations));
+                new ConcludableResolver(self, concludable, resolutionRecorder, this, traversalEngine, conceptMgr,
+                                        logicMgr, explanations));
         concludableActors.put(concludable, concludableActor);
         return new MappedActor(concludableActor, identity(concludable));
     }

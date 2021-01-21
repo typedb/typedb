@@ -39,7 +39,7 @@ import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.iterate;
 
-class Planner {
+public class Planner {
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
 
@@ -48,7 +48,7 @@ class Planner {
         this.logicMgr = logicMgr;
     }
 
-    List<Resolvable> plan(Set<Resolvable> resolvables) {
+    public List<Resolvable> plan(Set<Resolvable> resolvables) {
         return new Plan(resolvables).plan;
     }
 

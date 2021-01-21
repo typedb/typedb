@@ -28,6 +28,7 @@ import grakn.core.logic.resolvable.Resolvable;
 import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.MockTransaction;
+import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegister;
 import grakn.core.reasoner.resolution.answer.Mapping;
@@ -48,6 +49,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import static grakn.common.collection.Collections.map;
+import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars;
 
 /**
@@ -68,10 +70,11 @@ public class RootResolver extends Resolver<RootResolver> {
     private final LogicManager logicMgr;
     private boolean isInitialised;
     private ResponseProducer responseProducer;
+    private final Planner planner;
 
     public RootResolver(Actor<RootResolver> self, Conjunction conjunction, Consumer<ResolutionAnswer> onAnswer,
                         Consumer<Integer> onExhausted, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegister register,
-                        TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr, boolean explanations) {
+                        TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr, Planner planner, boolean explanations) {
         super(self, RootResolver.class.getSimpleName() + "(pattern:" + conjunction + ")", register, traversalEngine, explanations);
         this.conjunction = conjunction;
         this.onAnswer = onAnswer;
@@ -79,6 +82,7 @@ public class RootResolver extends Resolver<RootResolver> {
         this.resolutionRecorder = resolutionRecorder;
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
+        this.planner = planner;
         this.isInitialised = false;
         this.concludables = Concludable.create(conjunction);
         this.plan = new ArrayList<>();
@@ -160,7 +164,7 @@ public class RootResolver extends Resolver<RootResolver> {
         resolvables.addAll(concludablesWithApplicableRules);
         resolvables.addAll(retrievables);
 
-        plan = register.planAndRegister(resolvables);
+        plan = iterate(planner.plan(resolvables)).map(register::registerResolvable).toList();
     }
 
     @Override

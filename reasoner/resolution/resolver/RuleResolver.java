@@ -29,6 +29,7 @@ import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Resolvable;
 import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.reasoner.resolution.MockTransaction;
+import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolverRegister;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.answer.Mapping;
@@ -52,6 +53,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.map;
+import static grakn.core.common.iterator.Iterators.iterate;
 
 public class RuleResolver extends Resolver<RuleResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(RuleResolver.class);
@@ -62,12 +64,14 @@ public class RuleResolver extends Resolver<RuleResolver> {
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
     private boolean isInitialised;
+    private final Planner planner;
 
     public RuleResolver(Actor<RuleResolver> self, Rule rule, ResolverRegister register, TraversalEngine traversalEngine,
-                        ConceptManager conceptMgr, LogicManager logicMgr, boolean explanations) {
+                        ConceptManager conceptMgr, LogicManager logicMgr, Planner planner, boolean explanations) {
         super(self, RuleResolver.class.getSimpleName() + "(rule:" + rule + ")", register, traversalEngine, explanations);
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
+        this.planner = planner;
         this.responseProducers = new HashMap<>();
         this.rule = rule;
         this.plan = new ArrayList<>();
@@ -159,7 +163,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
         resolvables.addAll(concludablesWithApplicableRules);
         resolvables.addAll(retrievables);
 
-        plan = register.planAndRegister(resolvables);
+        plan = iterate(planner.plan(resolvables)).map(register::registerResolvable).toList();
     }
 
     @Override
