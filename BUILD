@@ -20,7 +20,6 @@ load("@graknlabs_bazel_distribution//brew:rules.bzl", "deploy_brew")
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip", "checksum", "assemble_versioned")
 load("@graknlabs_bazel_distribution//github:rules.bzl", "deploy_github")
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
-load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm")
 load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
 load("@graknlabs_dependencies//distribution:deployment.bzl", "deployment")
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
@@ -154,20 +153,6 @@ deploy_apt(
     target = ":assemble-linux-apt",
     snapshot = deployment['apt.snapshot'],
     release = deployment['apt.release'],
-)
-
-assemble_rpm(
-    name = "assemble-linux-rpm",
-    package_name = "grakn-core-all",
-    spec_file = "//config/rpm:grakn-core-all.spec",
-    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
-)
-
-deploy_rpm(
-    name = "deploy-rpm",
-    target = ":assemble-linux-rpm",
-    snapshot = deployment['rpm.snapshot'],
-    release = deployment['rpm.release'],
 )
 
 release_validate_deps(

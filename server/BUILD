@@ -18,7 +18,6 @@
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip")
 load("@graknlabs_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
-load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm")
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@graknlabs_dependencies//distribution:deployment.bzl", "deployment")
 load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
@@ -296,32 +295,6 @@ deploy_apt(
     snapshot = deployment['apt.snapshot'],
     release = deployment['apt.release']
 )
-
-# assemble_rpm(
-#     name = "assemble-linux-rpm",
-#     package_name = "grakn-core-server",
-#     installation_dir = "/opt/grakn/core/",
-#     spec_file = "//config/rpm:grakn-core-server.spec",
-#     workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
-#     archives = [":server-deps-dev", ":server-deps-linux"],
-#     empty_dirs = [
-#         "var/lib/grakn/db/",
-#      ],
-#     files = assemble_files,
-#     permissions = {
-#         "var/lib/grakn/db/": "0777",
-#     },
-#     symlinks = {
-#         "opt/grakn/core/server/data": "/var/lib/grakn/db/",
-#     },
-# )
-
-# deploy_rpm(
-#     name = "deploy-rpm",
-#     target = ":assemble-linux-rpm",
-#     snapshot = deployment['rpm.snapshot'],
-#     release = deployment['rpm.release']
-# )
 
 checkstyle_test(
     name = "checkstyle",
