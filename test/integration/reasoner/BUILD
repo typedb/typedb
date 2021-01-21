@@ -43,8 +43,8 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "test-resolver-manager",
-    srcs = ["resolution/ResolverManagerTest.java"],
+    name = "test-resolution-planner",
+    srcs = ["resolution/PlannerTest.java"],
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",
@@ -53,7 +53,7 @@ host_compatible_java_test(
         "//logic:logic",
         "//reasoner:reasoner",
     ],
-    test_class = "grakn.core.reasoner.resolution.ResolverManagerTest",
+    test_class = "grakn.core.reasoner.resolution.PlannerTest",
     deps = [
         # Internal dependencies
         "//test/integration/util",
