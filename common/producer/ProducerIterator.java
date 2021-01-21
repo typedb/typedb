@@ -28,10 +28,10 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ProducerIterator<T> implements ResourceIterator<T> {
@@ -40,7 +40,8 @@ public class ProducerIterator<T> implements ResourceIterator<T> {
     private static final int BUFFER_MIN_SIZE = 32;
     private static final int BUFFER_MAX_SIZE = 64;
 
-    private final LinkedList<Producer<T>> producers;
+    // TODO: why does 'producers' have to be ConcurrentLinkedQueue? see method recycle() below
+    private final ConcurrentLinkedQueue<Producer<T>> producers;
     private final Queue queue;
 
     private T next;
@@ -53,7 +54,7 @@ public class ProducerIterator<T> implements ResourceIterator<T> {
     public ProducerIterator(List<Producer<T>> producers, int bufferMinSize, int bufferMaxSize) {
         // TODO: Could we optimise IterableProducer by accepting ResourceIterator<Producer<T>> instead?
         assert !producers.isEmpty();
-        this.producers = new LinkedList<>(producers);
+        this.producers = new ConcurrentLinkedQueue<>(producers);
         this.queue = new Queue(bufferMinSize, bufferMaxSize);
         this.state = State.EMPTY;
     }
@@ -105,9 +106,9 @@ public class ProducerIterator<T> implements ResourceIterator<T> {
 
     @Override
     public void recycle() {
-        synchronized (queue) {
-            producers.forEach(Producer::recycle);
-        }
+        // TODO: If this method is wrapped in synchronize(queue), we won't need producers to be ConcurrentLinkedQueue
+        //       However, doing so would also cause a deadlock. Let's investigate this soon.
+        producers.forEach(Producer::recycle);
     }
 
     private static class Done {
@@ -167,7 +168,7 @@ public class ProducerIterator<T> implements ResourceIterator<T> {
         @Override
         public synchronized void done(@Nullable Throwable error) {
             assert !producers.isEmpty();
-            producers.removeFirst();
+            producers.remove();
             pending = 0;
             try {
                 if (error != null) blockingQueue.put(Either.second(Done.error(error)));
