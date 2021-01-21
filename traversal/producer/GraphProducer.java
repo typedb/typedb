@@ -19,6 +19,7 @@
 package grakn.core.traversal.producer;
 
 import grakn.core.common.concurrent.ConcurrentSet;
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.producer.Producer;
 import grakn.core.graph.GraphManager;
@@ -36,6 +37,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grakn.core.common.concurrent.ExecutorService.forkJoinPool;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 @ThreadSafe
 public class GraphProducer implements Producer<VertexMap> {
@@ -102,9 +104,9 @@ public class GraphProducer implements Producer<VertexMap> {
             if (runningJobs.remove(iterator) != null && start.hasNext()) compensate(queue, unfulfilled);
             else if (!runningJobs.isEmpty() && unfulfilled > 0) distribute(queue, unfulfilled);
             else if (runningJobs.isEmpty()) done(queue);
-            else assert unfulfilled == 0;
+            else if (unfulfilled != 0) throw GraknException.of(ILLEGAL_STATE);
         } else {
-            assert unfulfilled == 0;
+            if (unfulfilled != 0) throw GraknException.of(ILLEGAL_STATE);
         }
     }
 
