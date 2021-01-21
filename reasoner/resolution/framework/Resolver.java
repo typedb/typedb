@@ -32,14 +32,14 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
 
     private final String name;
     private final Map<Request, Request> requestRouter;
-    protected final ResolverManager registry;
+    protected final ResolverManager resolverMgr;
     protected final TraversalEngine traversalEngine;
     private final boolean explanations;
 
-    protected Resolver(Actor<T> self, String name, ResolverManager registry, TraversalEngine traversalEngine, boolean explanations) {
+    protected Resolver(Actor<T> self, String name, ResolverManager resolverMgr, TraversalEngine traversalEngine, boolean explanations) {
         super(self);
         this.name = name;
-        this.registry = registry;
+        this.resolverMgr = resolverMgr;
         this.traversalEngine = traversalEngine;
         this.explanations = explanations;
         this.requestRouter = new HashMap<>();

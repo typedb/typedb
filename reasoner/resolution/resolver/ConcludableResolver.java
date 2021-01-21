@@ -59,10 +59,10 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
     private boolean isInitialised;
 
     public ConcludableResolver(Actor<ConcludableResolver> self, Concludable concludable,
-                               Actor<ResolutionRecorder> resolutionRecorder, ResolverManager registry,
+                               Actor<ResolutionRecorder> resolutionRecorder, ResolverManager resolverMgr,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
                                boolean explanations) {
-        super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable + ")", registry, traversalEngine, explanations);
+        super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable + ")", resolverMgr, traversalEngine, explanations);
         this.concludable = concludable;
         this.resolutionRecorder = resolutionRecorder;
         this.conceptMgr = conceptMgr;
@@ -146,7 +146,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
         LOG.debug("{}: initialising downstream actors", name());
         concludable.getApplicableRules(conceptMgr, logicMgr).forEachRemaining(rule -> concludable.getUnifiers(rule)
                 .forEachRemaining(unifier -> {
-                    Actor<RuleResolver> ruleActor = registry.registerRule(rule);
+                    Actor<RuleResolver> ruleActor = resolverMgr.registerRule(rule);
                     applicableRules.putIfAbsent(ruleActor, new HashSet<>());
                     applicableRules.get(ruleActor).add(unifier);
                 }));

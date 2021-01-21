@@ -63,9 +63,9 @@ public class RuleResolver extends Resolver<RuleResolver> {
     private final LogicManager logicMgr;
     private boolean isInitialised;
 
-    public RuleResolver(Actor<RuleResolver> self, Rule rule, ResolverManager registry, TraversalEngine traversalEngine,
+    public RuleResolver(Actor<RuleResolver> self, Rule rule, ResolverManager resolverMgr, TraversalEngine traversalEngine,
                         ConceptManager conceptMgr, LogicManager logicMgr, boolean explanations) {
-        super(self, RuleResolver.class.getSimpleName() + "(rule:" + rule + ")", registry, traversalEngine, explanations);
+        super(self, RuleResolver.class.getSimpleName() + "(rule:" + rule + ")", resolverMgr, traversalEngine, explanations);
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
         this.responseProducers = new HashMap<>();
@@ -159,7 +159,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
         resolvables.addAll(concludablesWithApplicableRules);
         resolvables.addAll(retrievables);
 
-        plan = registry.planAndRegister(resolvables);
+        plan = resolverMgr.planAndRegister(resolvables);
     }
 
     @Override

@@ -43,9 +43,9 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
     private final Retrievable retrievable;
     private final Map<Request, ResponseProducer> responseProducers;
 
-    public RetrievableResolver(Actor<RetrievableResolver> self, Retrievable retrievable,ResolverManager registry,
+    public RetrievableResolver(Actor<RetrievableResolver> self, Retrievable retrievable,ResolverManager resolverMgr,
                                TraversalEngine traversalEngine, boolean explanations) {
-        super(self, RetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable + ")", registry, traversalEngine, explanations);
+        super(self, RetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable + ")", resolverMgr, traversalEngine, explanations);
         this.retrievable = retrievable;
         this.responseProducers = new HashMap<>();
     }

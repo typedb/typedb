@@ -70,9 +70,9 @@ public class RootResolver extends Resolver<RootResolver> {
     private ResponseProducer responseProducer;
 
     public RootResolver(Actor<RootResolver> self, Conjunction conjunction, Consumer<ResolutionAnswer> onAnswer,
-                        Consumer<Integer> onExhausted, Actor<ResolutionRecorder> resolutionRecorder, ResolverManager registry,
+                        Consumer<Integer> onExhausted, Actor<ResolutionRecorder> resolutionRecorder, ResolverManager resolverMgr,
                         TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr, boolean explanations) {
-        super(self, RootResolver.class.getSimpleName() + "(pattern:" + conjunction + ")", registry, traversalEngine, explanations);
+        super(self, RootResolver.class.getSimpleName() + "(pattern:" + conjunction + ")", resolverMgr, traversalEngine, explanations);
         this.conjunction = conjunction;
         this.onAnswer = onAnswer;
         this.onExhausted = onExhausted;
@@ -160,7 +160,7 @@ public class RootResolver extends Resolver<RootResolver> {
         resolvables.addAll(concludablesWithApplicableRules);
         resolvables.addAll(retrievables);
 
-        plan = registry.planAndRegister(resolvables);
+        plan = resolverMgr.planAndRegister(resolvables);
     }
 
     @Override
