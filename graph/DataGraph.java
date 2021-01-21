@@ -19,6 +19,7 @@
 package grakn.core.graph;
 
 import grakn.common.collection.Pair;
+import grakn.core.common.concurrent.ConcurrentSet;
 import grakn.core.common.exception.GraknCheckedException;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
@@ -38,7 +39,6 @@ import grakn.core.graph.vertex.impl.AttributeVertexImpl;
 import grakn.core.graph.vertex.impl.ThingVertexImpl;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -81,7 +81,7 @@ public class DataGraph implements Graph {
     private final SchemaGraph schemaGraph;
     private final KeyGenerator.Data.Buffered keyGenerator;
     private final ConcurrentMap<VertexIID.Thing, ThingVertex> thingsByIID;
-    private final ConcurrentMap<VertexIID.Type, Set<ThingVertex>> thingsByTypeIID;
+    private final ConcurrentMap<VertexIID.Type, ConcurrentSet<ThingVertex>> thingsByTypeIID;
     private final AttributesByIID attributesByIID;
     private final Statistics statistics;
     private boolean isModified;
@@ -169,7 +169,7 @@ public class DataGraph implements Graph {
         final VertexIID.Thing iid = generate(keyGenerator, typeVertex.iid(), typeVertex.properLabel());
         final ThingVertex vertex = new ThingVertexImpl.Buffered(this, iid, isInferred);
         thingsByIID.put(iid, vertex);
-        thingsByTypeIID.computeIfAbsent(typeVertex.iid(), t -> new HashSet<>()).add(vertex);
+        thingsByTypeIID.computeIfAbsent(typeVertex.iid(), t -> new ConcurrentSet<>()).add(vertex);
         if (!isInferred) statistics.vertexCreated(typeVertex.iid());
         return vertex;
     }
@@ -268,7 +268,7 @@ public class DataGraph implements Graph {
                 new VertexIID.Attribute.Boolean(type.iid(), value),
                 iid -> {
                     final AttributeVertex<Boolean> v = new AttributeVertexImpl.Boolean(this, iid, isInferred);
-                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new HashSet<>()).add(v);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     if (!isInferred) statistics.attributeVertexCreated(v.iid());
                     return v;
                 }
@@ -290,7 +290,7 @@ public class DataGraph implements Graph {
                 new VertexIID.Attribute.Long(type.iid(), value),
                 iid -> {
                     final AttributeVertex<Long> v = new AttributeVertexImpl.Long(this, iid, isInferred);
-                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new HashSet<>()).add(v);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     if (!isInferred) statistics.attributeVertexCreated(v.iid());
                     return v;
                 }
@@ -312,7 +312,7 @@ public class DataGraph implements Graph {
                 new VertexIID.Attribute.Double(type.iid(), value),
                 iid -> {
                     final AttributeVertex<Double> v = new AttributeVertexImpl.Double(this, iid, isInferred);
-                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new HashSet<>()).add(v);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     if (!isInferred) statistics.attributeVertexCreated(v.iid());
                     return v;
                 }
@@ -345,7 +345,7 @@ public class DataGraph implements Graph {
         final AttributeVertex<String> vertex = attributesByIID.strings.computeIfAbsent(
                 attIID, iid -> {
                     final AttributeVertex<String> v = new AttributeVertexImpl.String(this, iid, isInferred);
-                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new HashSet<>()).add(v);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     if (!isInferred) statistics.attributeVertexCreated(v.iid());
                     return v;
                 }
@@ -367,7 +367,7 @@ public class DataGraph implements Graph {
                 new VertexIID.Attribute.DateTime(type.iid(), value),
                 iid -> {
                     final AttributeVertex<LocalDateTime> v = new AttributeVertexImpl.DateTime(this, iid, isInferred);
-                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new HashSet<>()).add(v);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     if (!isInferred) statistics.attributeVertexCreated(v.iid());
                     return v;
                 }

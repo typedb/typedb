@@ -70,7 +70,6 @@ import static grakn.core.graph.util.Encoding.Vertex.Type.Root.THING;
 import static grakn.core.graph.util.Encoding.Vertex.Type.THING_TYPE;
 import static grakn.core.graph.util.Encoding.Vertex.Type.scopedLabel;
 import static java.lang.Math.toIntExact;
-import static java.util.stream.Collectors.toSet;
 
 public class SchemaGraph implements Graph {
 
@@ -200,7 +199,7 @@ public class SchemaGraph implements Graph {
     public Set<TypeVertex> ownedAttributeTypes(TypeVertex owner) {
         Supplier<Set<TypeVertex>> fn = () -> link(
                 list(owner.outs().edge(OWNS).to(), owner.outs().edge(OWNS_KEY).to())
-        ).stream().collect(toSet());
+        ).toSet();
         if (isReadOnly) return cache.ownedAttributeTypes.computeIfAbsent(owner, o -> fn.get());
         else return fn.get();
     }
@@ -208,7 +207,7 @@ public class SchemaGraph implements Graph {
     public Set<TypeVertex> ownersOfAttributeType(TypeVertex attType) {
         final Supplier<Set<TypeVertex>> fn = () -> link(
                 attType.ins().edge(OWNS).from(), attType.ins().edge(OWNS_KEY).from()
-        ).stream().collect(toSet());
+        ).toSet();
         if (isReadOnly) return cache.ownersOfAttributeTypes.computeIfAbsent(attType, a -> fn.get());
         else return fn.get();
     }

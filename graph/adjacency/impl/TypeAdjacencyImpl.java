@@ -19,7 +19,6 @@
 package grakn.core.graph.adjacency.impl;
 
 import grakn.core.common.concurrent.ConcurrentSet;
-import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.adjacency.TypeAdjacency;
 import grakn.core.graph.edge.Edge;
@@ -30,14 +29,14 @@ import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
 
-import java.util.Collections;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Predicate;
 
 import static grakn.core.common.collection.Bytes.join;
+import static grakn.core.common.iterator.Iterators.empty;
+import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
 
 public abstract class TypeAdjacencyImpl implements TypeAdjacency {
@@ -102,9 +101,9 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
 
         @Override
         public TypeIteratorBuilder edge(Encoding.Edge.Type encoding) {
-            final Set<TypeEdge> t = edges.get(encoding);
-            if (t != null) return new TypeIteratorBuilder(Iterators.iterate(t.iterator()));
-            return new TypeIteratorBuilder(Iterators.iterate(Collections.emptyIterator()));
+            final ConcurrentSet<TypeEdge> t = edges.get(encoding);
+            if (t != null) return new TypeIteratorBuilder(iterate(t.iterator()));
+            return new TypeIteratorBuilder(empty());
         }
 
 
