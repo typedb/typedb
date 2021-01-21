@@ -79,12 +79,6 @@ public class RegexConstraint extends TypeConstraint {
         return hash;
     }
 
-//    @Override
-//    public String toString() {
-//        return "" + LIKE + SPACE + regex.toString();
-//    }
-
-
     @Override
     public String toString() {
         return owner.toString() + SPACE + LIKE + SPACE + regex.toString();

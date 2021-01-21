@@ -83,12 +83,6 @@ public class ValueTypeConstraint extends TypeConstraint implements AlphaEquivale
         return hash;
     }
 
-//    @Override
-//    public String toString() {
-//        return "" + VALUE_TYPE + SPACE + valueType.toString();
-//    }
-
-
     @Override
     public String toString() {
         return owner.toString() + SPACE + VALUE_TYPE + SPACE + valueType.toString();

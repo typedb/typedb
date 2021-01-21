@@ -70,10 +70,6 @@ public class AbstractConstraint extends TypeConstraint {
         return hash;
     }
 
-//    @Override
-//    public String toString() { return ABSTRACT.toString(); }
-
-
     @Override
     public String toString() {
         return owner.toString() + SPACE + ABSTRACT;

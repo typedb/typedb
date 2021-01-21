@@ -212,15 +212,9 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
             return hash;
         }
 
-//        @Override
-//        public String toString() {
-//            return (roleType == null ? "" : roleType.referenceSyntax() + ":") + player.reference().toString();
-//        }
-
-
         @Override
         public String toString() {
-            return "" + (roleType().isPresent() ? "" : roleType.toString() + COLON + SPACE) + player.toString();
+            return (roleType().isPresent() ? roleType.toString() + COLON + SPACE : "") + player.toString();
         }
 
         @Override
@@ -236,13 +230,6 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
             return new RelationConstraint.RolePlayer(roleTypeClone, playerClone, repetition);
         }
     }
-
-//    @Override
-//    public String toString() {
-//        return rolePlayers.stream().map(RolePlayer::toString)
-//                .collect(Collectors.joining(", ", PARAN_OPEN.toString(), PARAN_CLOSE.toString()));
-//    }
-
 
     @Override
     public String toString() {

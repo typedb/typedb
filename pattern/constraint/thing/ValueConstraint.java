@@ -176,12 +176,6 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         return hash;
     }
 
-//    @Override
-//    public java.lang.String toString() {
-//        return predicate.toString() + SPACE + value.toString();
-//    }
-
-
     @Override
     public java.lang.String toString() {
         return owner.toString() + SPACE + predicate.toString() + SPACE + value.toString();
@@ -321,15 +315,9 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
             traversal.predicate(owner.id(), predicate, value);
         }
 
-//        @Override
-//        public java.lang.String toString() {
-//            return predicate.toString() + SPACE + QUOTE_DOUBLE + value + QUOTE_DOUBLE;
-//        }
-
-
         @Override
         public java.lang.String toString() {
-            return owner.toString() + predicate.toString() + SPACE + QUOTE_DOUBLE + value + QUOTE_DOUBLE;
+            return owner.toString() + SPACE + predicate.toString() + SPACE + QUOTE_DOUBLE + value + QUOTE_DOUBLE;
         }
 
         @Override

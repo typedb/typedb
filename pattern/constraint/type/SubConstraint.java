@@ -99,11 +99,6 @@ public class SubConstraint extends TypeConstraint {
         return hash;
     }
 
-//    @Override
-//    public String toString() {
-//        return "" + (isExplicit ? SUBX : SUB) + SPACE + type.referenceSyntax();
-//    }
-
     @Override
     public String toString() {
         return owner.toString() + SPACE + (isExplicit ? SUBX : SUB) + SPACE + type.toString();
