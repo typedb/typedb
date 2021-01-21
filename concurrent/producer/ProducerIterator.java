@@ -37,8 +37,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ProducerIterator<T> extends AbstractResourceIterator<T> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProducerIterator.class);
-    private static final int BUFFER_MIN_SIZE = 32;
-    private static final int BUFFER_MAX_SIZE = 64;
+    private static final int BUFFER_MIN_SIZE = 1;
+    private static final int BUFFER_MAX_SIZE = 2;
 
     // TODO: why does 'producers' have to be ConcurrentLinkedQueue? see method recycle() below
     private final ConcurrentLinkedQueue<Producer<T>> producers;

@@ -25,6 +25,8 @@ import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.ThreadSafe;
 
@@ -33,6 +35,7 @@ import static grakn.core.reasoner.resolution.framework.ResolutionAnswer.Derivati
 
 @ThreadSafe // TODO: verify
 public class ReasonerProducer implements Producer<ConceptMap> {
+    private static final Logger LOG = LoggerFactory.getLogger(ReasonerProducer.class);
 
     private final Actor<RootResolver> rootResolver;
     private Queue<ConceptMap> queue;
@@ -66,6 +69,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     private void requestFailed(int iteration) {
+        LOG.error("New iteration {}", iteration);
         assert this.iteration == iteration || this.iteration == iteration + 1;
 
         if (iteration == this.iteration && mustReiterate()) {
@@ -85,6 +89,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private void nextIteration() {
         iteration++;
+        iterationInferredAnswer = false;
         resolveRequest = Request.create(new Request.Path(rootResolver), Root.create(), EMPTY);
     }
 

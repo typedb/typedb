@@ -66,6 +66,7 @@ build:
       command: |
         bazel test --config=rbe //test/integration:test-basic --test_output=streamed
         bazel test --config=rbe //test/integration:test-query --test_output=streamed
+        bazel test --config=rbe //test/integration:test-reasoner --test_output=streamed
         bazel test --config=rbe //test/integration/migrator/... --test_output=streamed
         bazel test --config=rbe //test/integration/logic/... --test_output=streamed
       # bazel test //test/integration/traversal/... --test_output=streamed

@@ -112,7 +112,7 @@ public class ResolverRegistry {
     }
 
     private AlphaEquivalentResolver registerConcludable(Concludable concludable) {
-        LOG.debug("Register retrieval for concludable actor: '{}'", concludable.conjunction());
+        LOG.debug("Register ConcludableResolver: '{}'", concludable.conjunction());
         for (Map.Entry<Concludable, Actor<ConcludableResolver>> c : concludableActors.entrySet()) {
             // TODO This needs to be optimised from a linear search to use an alpha hash
             AlphaEquivalence alphaEquality = c.getKey().alphaEquals(concludable);
