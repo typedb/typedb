@@ -83,9 +83,4 @@ class ParallelIterators<T> extends AbstractResourceIterator<T> {
         queue.cancel();
         this.iterators.forEach(ResourceIterator::recycle);
     }
-
-    @Override
-    public void finalize() {
-        queue.cancel();
-    }
 }

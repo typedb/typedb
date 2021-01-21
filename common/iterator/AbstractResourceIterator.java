@@ -94,12 +94,16 @@ public abstract class AbstractResourceIterator<T> implements ResourceIterator<T>
 
     @Override
     public boolean allMatch(Predicate<T> predicate) {
-        return !this.filter(e -> !predicate.test(e)).hasNext();
+        boolean match = !filter(e -> !predicate.test(e)).hasNext();
+        recycle();
+        return match;
     }
 
     @Override
     public boolean anyMatch(Predicate<T> predicate) {
-        return this.filter(predicate).hasNext();
+        boolean match = filter(predicate).hasNext();
+        recycle();
+        return match;
     }
 
     @Override
@@ -114,8 +118,9 @@ public abstract class AbstractResourceIterator<T> implements ResourceIterator<T>
 
     @Override
     public T firstOrNull() {
-        if (hasNext()) return next();
-        else return null;
+        T next = hasNext() ? next() : null;
+        recycle();
+        return next;
     }
 
     @Override
@@ -128,13 +133,15 @@ public abstract class AbstractResourceIterator<T> implements ResourceIterator<T>
     @Override
     public List<T> toList() {
         ArrayList<T> list = new ArrayList<>();
-        this.forEachRemaining(list::add);
+        forEachRemaining(list::add);
+        recycle();
         return list;
     }
 
     @Override
     public void toList(List<T> list) {
-        this.forEachRemaining(list::add);
+        forEachRemaining(list::add);
+        recycle();
     }
 
     @Override
@@ -147,17 +154,16 @@ public abstract class AbstractResourceIterator<T> implements ResourceIterator<T>
     @Override
     public LinkedHashSet<T> toLinkedSet() {
         LinkedHashSet<T> linkedSet = new LinkedHashSet<>();
-        this.forEachRemaining(linkedSet::add);
+        forEachRemaining(linkedSet::add);
+        recycle();
         return linkedSet;
     }
 
     @Override
     public long count() {
         long count = 0;
-        while (this.hasNext()) {
-            this.next();
-            count++;
-        }
+        for (; hasNext(); count++) next();
+        recycle();
         return count;
     }
 
@@ -166,4 +172,11 @@ public abstract class AbstractResourceIterator<T> implements ResourceIterator<T>
         return new ErrorHandledIterator<>(this, exceptionFn);
     }
 
+    @Override
+    protected void finalize() {
+        recycle();
+    }
+
+    @Override
+    public abstract void recycle();
 }

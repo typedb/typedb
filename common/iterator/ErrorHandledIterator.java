@@ -33,25 +33,27 @@ class ErrorHandledIterator<T> extends AbstractResourceIterator<T> {
     }
 
     @Override
-    public void recycle() {
-        this.iterator.recycle();
-    }
-
-    @Override
     public boolean hasNext() {
         try {
             return iterator.hasNext();
         } catch (Exception e) {
-            throw this.exceptionFn.apply(e);
+            recycle();
+            throw exceptionFn.apply(e);
         }
     }
 
     @Override
     public T next() {
         try {
-            return this.iterator.next();
+            return iterator.next();
         } catch (Exception e) {
-            throw this.exceptionFn.apply(e);
+            recycle();
+            throw exceptionFn.apply(e);
         }
+    }
+
+    @Override
+    public void recycle() {
+        iterator.recycle();
     }
 }
