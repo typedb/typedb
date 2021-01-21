@@ -128,6 +128,7 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
                 ResolutionAnswer answer = new ResolutionAnswer(derivedAnswer, retrievable.conjunction().toString(),
                                                                ResolutionAnswer.Derivation.EMPTY, self(), false);
                 respondToUpstream(Answer.create(fromUpstream, answer), iteration);
+                return;
             }
         }
         respondToUpstream(new Response.Exhausted(fromUpstream), iteration);

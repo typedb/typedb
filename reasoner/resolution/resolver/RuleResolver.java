@@ -223,6 +223,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
                     ResolutionAnswer answer = new ResolutionAnswer(derivedAnswer.get(), rule.when().toString(),
                                                                    ResolutionAnswer.Derivation.EMPTY, self(), true);
                     respondToUpstream(Answer.create(fromUpstream, answer), iteration);
+                    return;
                 }
             }
         }

@@ -205,6 +205,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
                 responseProducer.recordProduced(conceptMap);
                 ResolutionAnswer answer = new ResolutionAnswer(derivedAnswer, concludable.toString(), new ResolutionAnswer.Derivation(map()), self(), false);
                 respondToUpstream(Answer.create(fromUpstream, answer), iteration);
+                return;
             }
         }
 

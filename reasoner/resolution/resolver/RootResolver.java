@@ -104,7 +104,7 @@ public class RootResolver extends Resolver<RootResolver> {
         mayReiterateResponseProducer(fromUpstream, iteration);
         if (iteration < responseProducer.iteration()) {
             // short circuit if the request came from a prior iteration
-            respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
+            onExhausted.accept(iteration);
         } else {
             assert iteration == responseProducer.iteration();
             tryAnswer(fromUpstream, iteration);
@@ -155,9 +155,7 @@ public class RootResolver extends Resolver<RootResolver> {
     protected void receiveExhausted(Response.Exhausted fromDownstream, int iteration) {
         LOG.trace("{}: received Exhausted: {}", name(), fromDownstream);
         responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
-        Request toDownstream = fromDownstream.sourceRequest();
-        Request fromUpstream = fromUpstream(toDownstream);
-        respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
+        onExhausted.accept(iteration);
     }
 
     @Override
@@ -224,6 +222,7 @@ public class RootResolver extends Resolver<RootResolver> {
                 ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.answerBounds().asRoot().aggregateToUpstream(conceptMap),
                                                                conjunction.toString(), ResolutionAnswer.Derivation.EMPTY, self(), false);
                 submitAnswer(answer);
+                return;
             }
         }
 
