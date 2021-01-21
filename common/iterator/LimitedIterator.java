@@ -20,7 +20,7 @@ package grakn.core.common.iterator;
 
 import java.util.NoSuchElementException;
 
-public class LimitedIterator<T> implements ResourceIterator<T> {
+class LimitedIterator<T> implements ResourceIterator<T> {
 
     private final ResourceIterator<T> iterator;
     private final long limit;

@@ -22,7 +22,7 @@ import grakn.core.common.exception.GraknException;
 
 import java.util.function.Function;
 
-public class ErrorHandledIterator<T> implements ResourceIterator<T> {
+class ErrorHandledIterator<T> implements ResourceIterator<T> {
 
     private final ResourceIterator<T> iterator;
     private final Function<Exception, GraknException> exceptionFn;

@@ -21,7 +21,6 @@ package grakn.core.reasoner;
 import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.concurrent.actor.Actor;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.BaseIterator;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Context;
@@ -77,7 +76,7 @@ public class Reasoner {
 
     public ResourceIterator<ConceptMap> execute(Disjunction disjunction, List<Identifier.Variable.Name> filter,
                                                 boolean isParallel) {
-        BaseIterator<Conjunction> conjunctions = iterate(disjunction.conjunctions());
+        ResourceIterator<Conjunction> conjunctions = iterate(disjunction.conjunctions());
         if (!isParallel) return conjunctions.flatMap(conj -> iterator(conj, filter));
         else return produce(conjunctions.flatMap(conj -> producers(conj, filter)).toList());
     }

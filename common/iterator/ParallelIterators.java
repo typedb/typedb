@@ -24,7 +24,7 @@ import grakn.core.common.concurrent.ResizingBlockingQueue;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-public class ParallelIterators<T> implements ResourceIterator<T> {
+class ParallelIterators<T> implements ResourceIterator<T> {
 
     private final ResizingBlockingQueue<T> queue;
     private final List<ResourceIterator<T>> iterators;
@@ -85,7 +85,7 @@ public class ParallelIterators<T> implements ResourceIterator<T> {
     }
 
     @Override
-    protected void finalize() {
+    public void finalize() {
         queue.cancel();
     }
 }

@@ -21,7 +21,7 @@ package grakn.core.common.iterator;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 
-public class FlatMappedIterator<T, U> implements ResourceIterator<U> {
+class FlatMappedIterator<T, U> implements ResourceIterator<U> {
 
     private final ResourceIterator<T> sourceIterator;
     private ResourceIterator<U> currentIterator;

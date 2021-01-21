@@ -20,7 +20,7 @@ package grakn.core.common.iterator;
 
 import java.util.function.Function;
 
-public class MappedIterator<T, U> implements ResourceIterator<U> {
+class MappedIterator<T, U> implements ResourceIterator<U> {
 
     private final ResourceIterator<T> iterator;
     private final Function<T, U> function;

@@ -19,7 +19,6 @@
 package grakn.core.traversal.procedure;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.BaseIterator;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.GraphManager;
@@ -1016,7 +1015,7 @@ public abstract class ProcedureEdge<
                         boolean filteredIID = false, filteredTypes = false;
 
                         if (!roleTypes.isEmpty()) {
-                            BaseIterator<TypeVertex> resolveRoleTypesIter = iterate(resolvedRoleTypes(graphMgr.schema()));
+                            ResourceIterator<TypeVertex> resolveRoleTypesIter = iterate(resolvedRoleTypes(graphMgr.schema()));
                             if (to.props().hasIID()) {
                                 assert to.id().isVariable();
                                 filteredIID = true;
@@ -1077,7 +1076,7 @@ public abstract class ProcedureEdge<
                         boolean filteredIID = false, filteredTypes = false;
 
                         if (!roleTypes.isEmpty()) {
-                            BaseIterator<TypeVertex> resolveRoleTypesIter = iterate(resolvedRoleTypes(graphMgr.schema()));
+                            ResourceIterator<TypeVertex> resolveRoleTypesIter = iterate(resolvedRoleTypes(graphMgr.schema()));
                             if (to.props().hasIID()) {
                                 assert to.id().isVariable();
                                 filteredIID = true;

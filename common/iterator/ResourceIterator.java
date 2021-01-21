@@ -62,7 +62,7 @@ public interface ResourceIterator<T> extends Iterator<T> {
     }
 
     default ResourceIterator<T> offset(long offset) {
-        return new OffsettedIterator<>(this, offset);
+        return new OffsetIterator<>(this, offset);
     }
 
     default ResourceIterator<T> limit(long limit) {

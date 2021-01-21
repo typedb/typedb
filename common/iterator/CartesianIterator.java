@@ -24,7 +24,7 @@ import java.util.NoSuchElementException;
 
 import static grakn.common.collection.Collections.list;
 
-public class CartesianIterator<T> implements ResourceIterator<List<T>> {
+class CartesianIterator<T> implements ResourceIterator<List<T>> {
 
     private final ArrayList<ArrayList<T>> copies;
     private final ArrayList<Boolean> iterated;

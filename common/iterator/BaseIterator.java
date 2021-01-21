@@ -22,7 +22,7 @@ import grakn.common.collection.Either;
 
 import java.util.Iterator;
 
-public class BaseIterator<T> implements ResourceIterator<T> {
+class BaseIterator<T> implements ResourceIterator<T> {
 
     private final Either<ResourceIterator<T>, Iterator<T>> iterator;
 

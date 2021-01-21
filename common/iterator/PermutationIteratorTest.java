@@ -28,7 +28,7 @@ import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 
-public class PermutationIteratorTest {
+class PermutationIteratorTest {
 
     @Test
     public void test_permutations_with_n_equals_4() {
