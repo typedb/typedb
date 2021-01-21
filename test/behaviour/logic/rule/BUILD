@@ -33,10 +33,7 @@ host_compatible_java_library(
     ],
     deps = [
         # Internal dependencies
-        "//common:common",
-        "//test/behaviour/config:parameters",
         "//test/behaviour/connection:steps",
-        "//test/behaviour/util:util",
 
         # External Maven Dependencies
         "@maven//:junit_junit",

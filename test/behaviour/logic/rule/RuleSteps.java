@@ -1,5 +1,3 @@
-package grakn.core.test.behaviour.logic.rule;
-
 /*
  * Copyright (C) 2021 Grakn Labs
  *
@@ -17,6 +15,8 @@ package grakn.core.test.behaviour.logic.rule;
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
+
+package grakn.core.test.behaviour.logic.rule;
 
 import grakn.core.logic.Rule;
 import io.cucumber.java.en.Then;
