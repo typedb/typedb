@@ -110,7 +110,7 @@ public class ResolverRegister {
         LOG.debug("Register retrieval for retrievable actor: '{}'", retrievable.conjunction());
         Actor<RetrievableResolver> retrievableActor = Actor.create(elg, self -> new RetrievableResolver(
                 self, retrievable, this, traversalEngine, explanations));
-        return new AlphaEquivalentResolver(retrievableActor, identity(retrievable));
+        return AlphaEquivalentResolver.createDirect(retrievableActor, retrievable);
     }
 
     private AlphaEquivalentResolver registerConcludable(Concludable concludable) {
@@ -119,30 +119,37 @@ public class ResolverRegister {
             // TODO This needs to be optimised from a linear search to use an alpha hash
             AlphaEquivalence alphaEquality = c.getKey().alphaEquals(concludable);
             if (alphaEquality.isValid()) {
-                return new AlphaEquivalentResolver(c.getValue(), alphaEquality.asValid().namedVariableMapping());
+                return AlphaEquivalentResolver.createMapped(c.getValue(), alphaEquality.asValid().namedVariableMapping());
             }
         }
         Actor<ConcludableResolver> concludableActor = Actor.create(elg, self ->
                 new ConcludableResolver(self, concludable, resolutionRecorder, this, traversalEngine, conceptMgr,
                                         logicMgr, explanations));
         concludableActors.put(concludable, concludableActor);
-        return new AlphaEquivalentResolver(concludableActor, identity(concludable));
+        return AlphaEquivalentResolver.createDirect(concludableActor, concludable);
     }
 
-    private static Map<Reference.Name, Reference.Name> identity(Resolvable resolvable) {
-        return new HashSet<>(resolvable.conjunction().variables()).stream()
-                .filter(variable -> variable.reference().isName())
-                .map(variable -> variable.reference().asName())
-                .collect(Collectors.toMap(Function.identity(), Function.identity()));
-    }
+
 
     public static class AlphaEquivalentResolver {
         private final Actor<? extends ResolvableResolver<?>> resolver;
         private final Map<Reference.Name, Reference.Name> mapping;
 
-        public AlphaEquivalentResolver(Actor<? extends ResolvableResolver<?>> resolver, Map<Reference.Name, Reference.Name> mapping) {
+        private AlphaEquivalentResolver(Actor<? extends ResolvableResolver<?>> resolver, Map<Reference.Name, Reference.Name> mapping) {
             this.resolver = resolver;
             this.mapping = mapping;
+        }
+
+        public static AlphaEquivalentResolver createMapped(Actor<? extends ResolvableResolver<?>> resolver, Map<Reference.Name, Reference.Name> mapping) {
+            return new AlphaEquivalentResolver(resolver, mapping);
+        }
+
+        public static AlphaEquivalentResolver createDirect(Actor<? extends ResolvableResolver<?>> resolver, Resolvable resolvable) {
+            Map<Reference.Name, Reference.Name> directMapping = new HashSet<>(resolvable.conjunction().variables()).stream()
+                    .filter(variable -> variable.reference().isName())
+                    .map(variable -> variable.reference().asName())
+                    .collect(Collectors.toMap(Function.identity(), Function.identity()));
+            return new AlphaEquivalentResolver(resolver, directMapping);
         }
 
         public Map<Reference.Name, Reference.Name> mapping() {
@@ -153,5 +160,4 @@ public class ResolverRegister {
             return resolver;
         }
     }
-
 }
