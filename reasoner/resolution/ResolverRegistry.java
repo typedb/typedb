@@ -107,7 +107,7 @@ public class ResolverRegistry {
     private AlphaEquivalentResolver registerRetrievable(Retrievable retrievable) {
         LOG.debug("Register retrieval for retrievable actor: '{}'", retrievable.conjunction());
         Actor<RetrievableResolver> retrievableActor = Actor.create(elg, self -> new RetrievableResolver(
-                self, retrievable, this, traversalEngine, explanations));
+                self, retrievable, this, traversalEngine, conceptMgr, explanations));
         return AlphaEquivalentResolver.createDirect(retrievableActor, retrievable);
     }
 

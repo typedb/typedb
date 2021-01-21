@@ -19,6 +19,7 @@
 package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.common.iterator.Iterators;
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
@@ -27,7 +28,6 @@ import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Resolvable;
 import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.pattern.Conjunction;
-import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
@@ -38,6 +38,7 @@ import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
+import grakn.core.traversal.Traversal;
 import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +46,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -157,7 +157,7 @@ public class RootResolver extends Resolver<RootResolver> {
         responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        tryAnswer(fromUpstream, iteration);
+        respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
     }
 
     @Override
@@ -177,8 +177,11 @@ public class RootResolver extends Resolver<RootResolver> {
     @Override
     protected ResponseProducer responseProducerCreate(Request request, int iteration) {
         LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), request);
-        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(conjunction, new ConceptMap());
-        ResponseProducer responseProducer = new ResponseProducer(traversal, iteration);
+
+        Traversal traversal = boundTraversal(conjunction.traversal(), request.answerBounds().conceptMap());
+        ResourceIterator<ConceptMap> traversalProducer = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
+
+        ResponseProducer responseProducer = new ResponseProducer(traversalProducer, iteration);
         Request toDownstream = Request.create(request.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
                                               UpstreamVars.Initial.of(request.answerBounds().conceptMap())
                                                       .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
@@ -194,8 +197,9 @@ public class RootResolver extends Resolver<RootResolver> {
         LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
 
         assert newIteration > responseProducerPrevious.iteration();
-        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(conjunction, new ConceptMap());
-        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversal, newIteration);
+        ResourceIterator<ConceptMap> traversalIterator = traversalEngine.iterator(conjunction.traversal())
+                .map(conceptMgr::conceptMap);
+        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversalIterator, newIteration);
         Request toDownstream = Request.create(request.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
                                               UpstreamVars.Initial.of(request.answerBounds().conceptMap()).
                                                       toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),

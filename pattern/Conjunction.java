@@ -123,6 +123,12 @@ public class Conjunction implements Pattern, Cloneable {
         return traversal;
     }
 
+    public Traversal traversal() {
+        Traversal traversal = new Traversal();
+        variableSet.forEach(variable -> variable.addTo(traversal));
+        return traversal;
+    }
+
     private boolean printable(Variable variable) {
         if (variable.reference().isName() || !variable.reference().isLabel()) return !variable.constraints().isEmpty();
         if (variable.isThing()) return !variable.asThing().relation().isEmpty() && !variable.asThing().has().isEmpty();

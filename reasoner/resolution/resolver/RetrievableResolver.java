@@ -18,10 +18,11 @@
 package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.resolvable.Retrievable;
-import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.framework.Request;
@@ -29,12 +30,12 @@ import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.Response.Answer;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
+import grakn.core.traversal.Traversal;
 import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -43,11 +44,13 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
     private static final Logger LOG = LoggerFactory.getLogger(RetrievableResolver.class);
     private final Retrievable retrievable;
     private final Map<Request, ResponseProducer> responseProducers;
+    private final ConceptManager conceptMgr;
 
     public RetrievableResolver(Actor<RetrievableResolver> self, Retrievable retrievable, ResolverRegistry registry,
-                               TraversalEngine traversalEngine, boolean explanations) {
+                               TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean explanations) {
         super(self, RetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable + ")", registry, traversalEngine, explanations);
         this.retrievable = retrievable;
+        this.conceptMgr = conceptMgr;
         this.responseProducers = new HashMap<>();
     }
 
@@ -82,8 +85,9 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
     @Override
     protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), fromUpstream);
-        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(retrievable.conjunction(), new ConceptMap());
-        return new ResponseProducer(traversal, iteration);
+        Traversal traversal = boundTraversal(retrievable.conjunction().traversal(), fromUpstream.answerBounds().conceptMap());
+        ResourceIterator<ConceptMap> traversalProducer = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
+        return new ResponseProducer(traversalProducer, iteration);
     }
 
     @Override
@@ -92,8 +96,9 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
         LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
 
         assert newIteration > responseProducerPrevious.iteration();
-        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(retrievable.conjunction(), new ConceptMap());
-        return responseProducerPrevious.newIteration(traversal, newIteration);
+        Traversal traversal = boundTraversal(retrievable.conjunction().traversal(), fromUpstream.answerBounds().conceptMap());
+        ResourceIterator<ConceptMap> traversalProducer = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
+        return responseProducerPrevious.newIteration(traversalProducer, newIteration);
     }
 
     private ResponseProducer mayUpdateAndGetResponseProducer(Request fromUpstream, int iteration) {

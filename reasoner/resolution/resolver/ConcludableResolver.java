@@ -26,7 +26,6 @@ import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Unifier;
-import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
@@ -35,14 +34,13 @@ import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.Response.Answer;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
+import grakn.core.traversal.Traversal;
 import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -163,9 +161,10 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
         iterationStates.putIfAbsent(root, new IterationState(iteration));
         IterationState iterationState = iterationStates.get(root);
 
-        ResourceIterator<ConceptMap> traversal = traversalEngine.iterator(concludable.conjunction().traversal(new ArrayList<>())).map(conceptMgr::conceptMap);
+        Traversal traversal = boundTraversal(concludable.conjunction().traversal(), request.answerBounds().conceptMap());
+        ResourceIterator<ConceptMap> traversalProducer = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
 
-        ResponseProducer responseProducer = new ResponseProducer(traversal, iteration);
+        ResponseProducer responseProducer = new ResponseProducer(traversalProducer, iteration);
         mayRegisterRules(request, iterationState, responseProducer);
         return responseProducer;
     }
@@ -182,8 +181,10 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
             iterationState.nextIteration(newIteration);
         }
 
-        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.answerBounds().conceptMap());
-        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversal, newIteration);
+        Traversal traversal = boundTraversal(concludable.conjunction().traversal(), request.answerBounds().conceptMap());
+        ResourceIterator<ConceptMap> traversalProducer = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
+
+        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversalProducer, newIteration);
         mayRegisterRules(request, iterationState, responseProducerNewIter);
         return responseProducerNewIter;
     }

@@ -19,6 +19,7 @@
 package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.common.iterator.Iterators;
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
@@ -28,7 +29,6 @@ import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Resolvable;
 import grakn.core.logic.resolvable.Retrievable;
-import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
@@ -39,6 +39,7 @@ import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.Response.Answer;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
+import grakn.core.traversal.Traversal;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
 import org.slf4j.Logger;
@@ -47,7 +48,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -152,7 +152,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
         ResponseProducer responseProducer = responseProducers.get(fromUpstream);
 
         responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
-        tryAnswer(fromUpstream, responseProducer, iteration);
+        respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
     }
 
     @Override
@@ -174,8 +174,10 @@ public class RuleResolver extends Resolver<RuleResolver> {
 
     @Override
     protected ResponseProducer responseProducerCreate(Request request, int iteration) {
-        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(rule.when(), new ConceptMap());
-        ResponseProducer responseProducer = new ResponseProducer(traversal, iteration);
+        Traversal traversal = boundTraversal(rule.when().traversal(), request.answerBounds().conceptMap());
+        ResourceIterator<ConceptMap> traversalIterator = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
+
+        ResponseProducer responseProducer = new ResponseProducer(traversalIterator, iteration);
         Request toDownstream = Request.create(request.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
                                               AnswerState.UpstreamVars.Initial.of(request.answerBounds().conceptMap())
                                                       .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
@@ -190,8 +192,10 @@ public class RuleResolver extends Resolver<RuleResolver> {
         assert newIteration > responseProducerPrevious.iteration();
         LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
 
-        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(rule.when(), new ConceptMap());
-        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversal, newIteration);
+        Traversal traversal = boundTraversal(rule.when().traversal(), request.answerBounds().conceptMap());
+        ResourceIterator<ConceptMap> traversalIterator = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
+
+        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversalIterator, newIteration);
         Request toDownstream = Request.create(request.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
                                               AnswerState.UpstreamVars.Initial.of(request.answerBounds().conceptMap())
                                                       .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
@@ -212,9 +216,10 @@ public class RuleResolver extends Resolver<RuleResolver> {
             LOG.trace("{}: has found via traversal: {}", name(), conceptMap);
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
+                // TODO now we've found an answer for the `when`, so materialise it and respond with the materialised `then`, unifying it for the upstream
                 assert fromUpstream.answerBounds().isUnified();
                 Optional<AnswerState.UpstreamVars.Derived> derivedAnswer = fromUpstream.answerBounds().asUnified()
-                        .aggregateToUpstream(MockTransaction.asIdentifiedMap(conceptMap));
+                        .aggregateToUpstream(asIdentifiedMap(conceptMap));
                 if (derivedAnswer.isPresent()) {
                     ResolutionAnswer answer = new ResolutionAnswer(derivedAnswer.get(), rule.when().toString(),
                                                                    ResolutionAnswer.Derivation.EMPTY, self(), true);
@@ -228,6 +233,12 @@ public class RuleResolver extends Resolver<RuleResolver> {
         } else {
             respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
         }
+    }
+
+    public static Map<Identifier, Concept> asIdentifiedMap(ConceptMap conceptMap) {
+        Map<Identifier, Concept> concepts = new HashMap<>();
+        conceptMap.concepts().forEach((ref, concept) -> concepts.put(Identifier.Variable.of(ref), concept));
+        return concepts;
     }
 
     private ResponseProducer mayUpdateAndGetResponseProducer(Request fromUpstream, int iteration) {
