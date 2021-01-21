@@ -173,9 +173,7 @@ public class ResolverManager {
             this.varsAnswered = new HashSet<>();
             this.dependencies = dependencies(resolvables);
             this.remaining = new HashSet<>(resolvables);
-
-            planning();
-
+            computePlan();
             assert plan.size() == resolvables.size();
             assert set(plan).equals(resolvables);
         }
@@ -190,7 +188,7 @@ public class ResolverManager {
             return plan;
         }
 
-        private void planning() {
+        private void computePlan() {
             while (remaining.size() != 0) {
                 Optional<Concludable> concludable;
                 Optional<Resolvable> retrievable;
