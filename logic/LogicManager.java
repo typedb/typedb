@@ -45,33 +45,33 @@ public class LogicManager {
     }
 
     public Rule putRule(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
-        RuleStructure structure = graphMgr.schema().getRule(label);
+        RuleStructure structure = graphMgr.schema().rules().get(label);
         if (structure != null) {
             // overwriting a rule means we purge it and re-create the rule
             structure.delete();
             logicCache.rule().invalidate(label);
         }
-        return logicCache.rule().get(label, l -> Rule.of(graphMgr, conceptMgr, this, label, when, then));
+        return logicCache.rule().get(label, l -> Rule.of(graphMgr, this, label, when, then));
     }
 
     public Rule getRule(String label) {
         Rule rule = logicCache.rule().getIfPresent(label);
         if (rule != null) return rule;
-        RuleStructure structure = graphMgr.schema().getRule(label);
+        RuleStructure structure = graphMgr.schema().rules().get(label);
         if (structure != null) return logicCache.rule().get(structure.label(), l -> Rule.of(this, structure));
         return null;
     }
 
     public ResourceIterator<Rule> rules() {
-        return graphMgr.schema().rules().map(this::fromStructure);
+        return graphMgr.schema().rules().all().map(this::fromStructure);
     }
 
     public ResourceIterator<Rule> rulesConcludingIsa(Label type) {
-        return graphMgr.schema().ruleIndex().concluding().getIsa(graphMgr.schema().getType(type)).map(this::fromStructure);
+        return graphMgr.schema().rules().concluding().getIsa(graphMgr.schema().getType(type)).map(this::fromStructure);
     }
 
     public ResourceIterator<Rule> rulesConcludingHasAttribute(Label attributeType) {
-        return graphMgr.schema().ruleIndex().concluding().getHasAttribute(graphMgr.schema().getType(attributeType)).map(this::fromStructure);
+        return graphMgr.schema().rules().concluding().getHasAttribute(graphMgr.schema().getType(attributeType)).map(this::fromStructure);
     }
 
 
@@ -88,12 +88,12 @@ public class LogicManager {
         rules().forEachRemaining(Rule::validateSatisfiable);
 
         // re-index if rules are valid and satisfiable
-        if (graphMgr.schema().ruleIndex().concluding().isOutdated()) {
-            graphMgr.schema().rules().forEachRemaining(s -> fromStructure(s).reIndex());
+        if (graphMgr.schema().rules().concluding().isOutdated()) {
+            graphMgr.schema().rules().all().forEachRemaining(s -> fromStructure(s).reIndex());
         }
 
         // using the new index, validate new rules are stratifiable (eg. do not cause cycles through a negation)
-        graphMgr.schema().bufferedRules().filter(structure -> structure.status().equals(Encoding.Status.BUFFERED))
+        graphMgr.schema().rules().buffered().filter(structure -> structure.status().equals(Encoding.Status.BUFFERED))
                 .forEach(structure -> getRule(structure.label()).validateCycles());
     }
 

@@ -82,9 +82,9 @@ public class Rule {
         this.requiredWhenConcludables = Concludable.create(this.when);
     }
 
-    private Rule(GraphManager graphMgr, ConceptManager conceptMgr, LogicManager logicMgr, String label,
+    private Rule(GraphManager graphMgr, LogicManager logicMgr, String label,
                  graql.lang.pattern.Conjunction<? extends Pattern> when, ThingVariable<?> then) {
-        this.structure = graphMgr.schema().create(label, when, then);
+        this.structure = graphMgr.schema().rules().create(label, when, then);
         this.when = whenPattern(structure.when(), logicMgr);
         this.then = thenPattern(structure.then(), logicMgr);
         validateSatisfiable();
@@ -100,9 +100,9 @@ public class Rule {
         return new Rule(logicMgr, structure);
     }
 
-    public static Rule of(GraphManager graphMgr, ConceptManager conceptMgr, LogicManager logicMgr, String label,
+    public static Rule of(GraphManager graphMgr, LogicManager logicMgr, String label,
                           graql.lang.pattern.Conjunction<? extends Pattern> when, ThingVariable<?> then) {
-        return new Rule(graphMgr, conceptMgr, logicMgr, label, when, then);
+        return new Rule(graphMgr, logicMgr, label, when, then);
     }
 
     public Set<Concludable> whenConcludables() {

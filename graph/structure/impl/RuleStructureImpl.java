@@ -105,22 +105,22 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
     @Override
     public void createConcludingIsaIndex(Label type) {
-        graph.ruleIndex().concluding().buffered().putIsa(this, graph.getType(type));
+        graph.rules().concluding().buffered().putIsa(this, graph.getType(type));
     }
 
     @Override
     public void clearConcludingIsaIndex(Label type) {
-        graph.ruleIndex().concluding().deleteIsa(this, graph.getType(type));
+        graph.rules().concluding().deleteIsa(this, graph.getType(type));
     }
 
     @Override
     public void createConcludingHasAttributeIndex(Label type) {
-        graph.ruleIndex().concluding().buffered().putHasAttribute(this, graph.getType(type));
+        graph.rules().concluding().buffered().putHasAttribute(this, graph.getType(type));
     }
 
     @Override
     public void clearConcludesHasAttributeIndex(Label type) {
-        graph.ruleIndex().concluding().deleteHasAttribute(this, graph.getType(type));
+        graph.rules().concluding().deleteHasAttribute(this, graph.getType(type));
     }
 
     public Encoding.Structure encoding() {
@@ -128,7 +128,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
     }
 
     void deleteVertexFromGraph() {
-        graph.delete(this);
+        graph.rules().delete(this);
     }
 
     ResourceIterator<TypeVertex> types() {
@@ -185,12 +185,12 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
         private void indexTypes() {
             ResourceIterator<TypeVertex> labels = types();
-            labels.forEachRemaining(type -> graph.ruleIndex().containing().buffered().put(this, type));
+            labels.forEachRemaining(type -> graph.rules().containing().buffered().put(this, type));
         }
 
         @Override
         public void label(String label) {
-            graph.update(this, this.label, label);
+            graph.rules().update(this, this.label, label);
             this.label = label;
         }
 
@@ -208,7 +208,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
         @Override
         public void delete() {
             if (isDeleted.compareAndSet(false, true)) {
-                graph.ruleIndex().containing().delete(this, types());
+                graph.rules().containing().delete(this, types());
                 deleteVertexFromGraph();
             }
         }
@@ -272,7 +272,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
         @Override
         public void label(String label) {
-            graph.update(this, this.label, label);
+            graph.rules().update(this, this.label, label);
             graph.storage().put(join(iid.bytes(), LABEL.infix().bytes()), label.getBytes());
             graph.storage().delete(IndexIID.Rule.of(this.label).bytes());
             graph.storage().put(IndexIID.Rule.of(label).bytes(), iid.bytes());
@@ -282,7 +282,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
         @Override
         public void delete() {
             if (isDeleted.compareAndSet(false, true)) {
-                graph.ruleIndex().containing().delete(this, types());
+                graph.rules().containing().delete(this, types());
                 deleteVertexFromGraph();
                 deleteVertexFromStorage();
             }

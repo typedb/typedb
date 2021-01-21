@@ -105,7 +105,7 @@ public class SchemaGraph implements Graph {
         isModified = false;
     }
 
-    public Rules ruleIndex() {
+    public Rules rules() {
         return rules;
     }
 
@@ -308,7 +308,7 @@ public class SchemaGraph implements Graph {
         } finally {
             singleLabelLocks.get(scopedLabel).unlockWrite();
             multiLabelLock.unlockRead();
-            ruleIndex().concluding().isOutdated(true);
+            rules().concluding().isOutdated(true);
         }
     }
 
@@ -593,14 +593,14 @@ public class SchemaGraph implements Graph {
             return containingIndex;
         }
 
-        public ResourceIterator<RuleStructure> rules() {
+        public ResourceIterator<RuleStructure> all() {
             Encoding.Prefix index = IndexIID.Rule.prefix();
             ResourceIterator<RuleStructure> persistedRules = storage.iterate(index.bytes(), (key, value) ->
                     convert(StructureIID.Rule.of(value)));
             return link(iterate(rulesByIID.values()), persistedRules).distinct();
         }
 
-        public Stream<RuleStructure> bufferedRules() {
+        public Stream<RuleStructure> buffered() {
             return rulesByIID.values().stream();
         }
 
@@ -612,7 +612,7 @@ public class SchemaGraph implements Graph {
             });
         }
 
-        public RuleStructure getRule(String label) {
+        public RuleStructure get(String label) {
             assert storage.isOpen();
             try {
                 if (!isReadOnly) {
@@ -656,6 +656,22 @@ public class SchemaGraph implements Graph {
             }
         }
 
+        public RuleStructure update(RuleStructure vertex, String oldLabel, String newLabel) {
+            assert storage.isOpen();
+            try {
+                final RuleStructure rule = get(newLabel);
+                multiLabelLock.lockWrite();
+                if (rule != null) throw GraknException.of(INVALID_SCHEMA_WRITE, newLabel);
+                rulesByLabel.remove(oldLabel);
+                rulesByLabel.put(newLabel, vertex);
+                return vertex;
+            } catch (InterruptedException e) {
+                throw GraknException.of(e);
+            } finally {
+                multiLabelLock.unlockWrite();
+            }
+        }
+
         public void delete(RuleStructure vertex) {
             assert storage.isOpen();
             try { // we intentionally use READ on multiLabelLock, as delete() only concerns one label
@@ -673,23 +689,6 @@ public class SchemaGraph implements Graph {
             }
         }
 
-        public RuleStructure update(RuleStructure vertex, String oldLabel, String newLabel) {
-            assert storage.isOpen();
-            try {
-                final RuleStructure rule = getRule(newLabel);
-                multiLabelLock.lockWrite();
-                if (rule != null) throw GraknException.of(INVALID_SCHEMA_WRITE, newLabel);
-                rulesByLabel.remove(oldLabel);
-                rulesByLabel.put(newLabel, vertex);
-                return vertex;
-            } catch (InterruptedException e) {
-                throw GraknException.of(e);
-            } finally {
-                multiLabelLock.unlockWrite();
-            }
-        }
-
-
         public void commit() {
             rulesByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Status.BUFFERED)).forEach(
                     ruleStructure -> ruleStructure.iid(StructureIID.Rule.generate(storage.asSchema().schemaKeyGenerator()))
@@ -700,10 +699,10 @@ public class SchemaGraph implements Graph {
         }
 
         public void clear() {
-            concludingIndex.clear();
-            containingIndex.clear();
             rulesByIID.clear();
             rulesByLabel.clear();
+            concludingIndex.clear();
+            containingIndex.clear();
         }
 
         public class Concluding {
