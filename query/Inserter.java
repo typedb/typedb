@@ -34,7 +34,6 @@ import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.impl.ThingTypeImpl;
 import grakn.core.pattern.constraint.thing.HasConstraint;
-import grakn.core.pattern.constraint.thing.IIDConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.variable.ThingVariable;
@@ -48,8 +47,6 @@ import java.util.Map;
 import java.util.Set;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
-import static grakn.common.collection.Bytes.bytesToHexString;
-import static grakn.core.common.exception.ErrorMessage.ThingRead.THING_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_TOO_MANY;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
@@ -138,14 +135,6 @@ public class Inserter {
             } else if (!var.is().isEmpty()) {
                 throw GraknException.of(THING_CONSTRAINT_UNACCEPTED, IS);
             }
-        }
-    }
-
-    private Thing getThing(IIDConstraint iidConstraint) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "get_thing")) {
-            final Thing thing = conceptMgr.getThing(iidConstraint.iid());
-            if (thing == null) throw GraknException.of(THING_NOT_FOUND, bytesToHexString(iidConstraint.iid()));
-            else return thing;
         }
     }
 
