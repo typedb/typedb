@@ -348,14 +348,14 @@ public class Rule {
             void index(Rule rule) {
                 Variable relation = relation().owner();
                 Set<Label> possibleRelationTypes = relation.resolvedTypes();
-                possibleRelationTypes.forEach(rule.structure::createConcludingIsaIndex);
+                possibleRelationTypes.forEach(rule.structure::indexConcludes);
             }
 
             @Override
             void clearFromIndex(Rule rule) {
                 Variable relation = relation().owner();
                 Set<Label> possibleRelationTypes = relation.resolvedTypes();
-                possibleRelationTypes.forEach(rule.structure::clearConcludingIsaIndex);
+                possibleRelationTypes.forEach(rule.structure::unindexConcludes);
             }
 
             public RelationConstraint relation() {
@@ -514,8 +514,8 @@ public class Rule {
                     grakn.core.pattern.variable.Variable attribute = has().attribute();
                     Set<Label> possibleAttributeHas = attribute.resolvedTypes();
                     possibleAttributeHas.forEach(label -> {
-                        rule.structure.createConcludingIsaIndex(label);
-                        rule.structure.createConcludingHasAttributeIndex(label);
+                        rule.structure.indexConcludes(label);
+                        rule.structure.indexConcludesHas(label);
                     });
                 }
 
@@ -524,8 +524,8 @@ public class Rule {
                     grakn.core.pattern.variable.Variable attribute = has().attribute();
                     Set<Label> possibleAttributeHas = attribute.resolvedTypes();
                     possibleAttributeHas.forEach(label -> {
-                        rule.structure.clearConcludingIsaIndex(label);
-                        rule.structure.clearConcludesHasAttributeIndex(label);
+                        rule.structure.unindexConcludes(label);
+                        rule.structure.unindexConclusionHas(label);
                     });
                 }
 
@@ -628,14 +628,14 @@ public class Rule {
                 void index(Rule rule) {
                     grakn.core.pattern.variable.Variable attribute = has().attribute();
                     Set<Label> possibleAttributeHas = attribute.resolvedTypes();
-                    possibleAttributeHas.forEach(rule.structure::createConcludingHasAttributeIndex);
+                    possibleAttributeHas.forEach(rule.structure::indexConcludesHas);
                 }
 
                 @Override
                 void clearFromIndex(Rule rule) {
                     grakn.core.pattern.variable.Variable attribute = has().attribute();
                     Set<Label> possibleAttributeHas = attribute.resolvedTypes();
-                    possibleAttributeHas.forEach(rule.structure::clearConcludesHasAttributeIndex);
+                    possibleAttributeHas.forEach(rule.structure::unindexConclusionHas);
                 }
 
                 @Override

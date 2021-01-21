@@ -53,12 +53,12 @@ public interface RuleStructure {
      */
     void commit();
 
-    void createConcludingIsaIndex(Label label);
+    void indexConcludes(Label label);
 
-    void clearConcludingIsaIndex(Label label);
+    void unindexConcludes(Label label);
 
-    void createConcludingHasAttributeIndex(Label type);
+    void indexConcludesHas(Label type);
 
-    void clearConcludesHasAttributeIndex(Label type);
+    void unindexConclusionHas(Label type);
 }
 

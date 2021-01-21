@@ -104,22 +104,22 @@ public abstract class RuleStructureImpl implements RuleStructure {
     }
 
     @Override
-    public void createConcludingIsaIndex(Label type) {
+    public void indexConcludes(Label type) {
         graph.rules().conclusions().buffered().putInstance(this, graph.getType(type));
     }
 
     @Override
-    public void clearConcludingIsaIndex(Label type) {
+    public void unindexConcludes(Label type) {
         graph.rules().conclusions().deleteInstance(this, graph.getType(type));
     }
 
     @Override
-    public void createConcludingHasAttributeIndex(Label type) {
+    public void indexConcludesHas(Label type) {
         graph.rules().conclusions().buffered().putHas(this, graph.getType(type));
     }
 
     @Override
-    public void clearConcludesHasAttributeIndex(Label type) {
+    public void unindexConclusionHas(Label type) {
         graph.rules().conclusions().deleteHas(this, graph.getType(type));
     }
 
