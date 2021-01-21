@@ -64,8 +64,11 @@ public class Mapping {
 
     private static ConceptMap undirectedTransform(ConceptMap conceptMap, Map<Reference.Name, Reference.Name> mapping) {
         Map<Reference.Name, Concept> transformed = new HashMap<>();
-        for (Map.Entry<Reference.Name, Reference.Name> e : mapping.entrySet()) {
-            transformed.put(e.getValue(), conceptMap.get(e.getKey()));
+        for (Map.Entry<Reference.Name, ? extends Concept> entry : conceptMap.concepts().entrySet()) {
+            Reference.Name ref = entry.getKey();
+            assert mapping.containsKey(ref);
+            Concept concept = entry.getValue();
+            transformed.put(mapping.get(ref), concept);
         }
         return new ConceptMap(transformed);
     }
