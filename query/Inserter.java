@@ -58,7 +58,7 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_CONSTRAI
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_CONSTRAINT_UNACCEPTED;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_IID_NOT_INSERTABLE;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_MISSING;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_REASSERTION;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_REINSERTION;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static graql.lang.common.GraqlToken.Constraint.IS;
 import static java.util.stream.Collectors.toSet;
@@ -131,7 +131,7 @@ public class Inserter {
             if (var.iid().isPresent()) {
                 throw GraknException.of(THING_IID_NOT_INSERTABLE, ref, var.iid().get());
             } else if (existingContains(var) && var.isa().isPresent()) {
-                throw GraknException.of(THING_ISA_REASSERTION, ref, var.isa().get().type().label().get().label());
+                throw GraknException.of(THING_ISA_REINSERTION, ref, var.isa().get().type().label().get().label());
             } else if (!var.is().isEmpty()) {
                 throw GraknException.of(THING_CONSTRAINT_UNACCEPTED, IS);
             }

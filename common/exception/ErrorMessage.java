@@ -266,10 +266,10 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new ThingWrite(11, "Attempted to put an instance of '%s' with value '%s' that does not satisfy the regular expression '%s'.");
         public static final ThingWrite THING_IID_NOT_INSERTABLE =
                 new ThingWrite(12, "The variable '%s' tries to insert iid '%s'. IIDs are prohibited in insert clauses. You may want to query the variable using IID in the match clause.");
-        public static final ThingWrite THING_ISA_REASSERTION =
-                new ThingWrite(13, "Attempted to re-assert pre-existing thing of matched variable '%s' as a new instance (isa) of type '%s'.");
+        public static final ThingWrite THING_ISA_REINSERTION =
+                new ThingWrite(13, "Attempted to re-insert pre-existing thing of matched variable '%s' as a new instance (isa) of type '%s'.");
         public static final ThingWrite THING_ISA_MISSING =
-                new ThingWrite(14, "The thing variable '%s' cannot be asserted as a new instance without providing its type (isa).");
+                new ThingWrite(14, "The thing variable '%s' cannot be inserted as a new instance without providing its type (isa).");
         public static final ThingWrite THING_CONSTRAINT_TYPE_VARIABLE =
                 new ThingWrite(15, "Types can only be referred to by their labels in 'insert' queries or 'then' clauses, unlike the the type variable '%s'.");
         public static final ThingWrite THING_CONSTRAINT_UNACCEPTED =
