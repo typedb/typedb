@@ -60,6 +60,7 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_IID_NOT_
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_REINSERTION;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
+import static grakn.core.common.iterator.Iterators.iterate;
 import static graql.lang.common.GraqlToken.Constraint.IS;
 import static java.util.stream.Collectors.toSet;
 
@@ -89,7 +90,11 @@ public class Inserter {
     public static Inserter create(ConceptManager conceptMgr, List<graql.lang.pattern.variable.ThingVariable<?>> vars,
                                   ConceptMap existing, Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            return new Inserter(conceptMgr, VariableRegistry.createFromThings(vars).things(), existing, context);
+            VariableRegistry registry = VariableRegistry.createFromThings(vars);
+            iterate(registry.types()).filter(t -> !t.reference().isLabel()).forEachRemaining(t -> {
+                throw GraknException.of(ILLEGAL_TYPE_VARIABLE, t.reference());
+            });
+            return new Inserter(conceptMgr, registry.things(), existing, context);
         }
     }
 
@@ -142,14 +147,10 @@ public class Inserter {
 
     private ThingType getThingType(TypeVariable var) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "get_thing_type")) {
-            if (var.reference().isLabel()) {
-                assert var.label().isPresent();
-                final ThingType thingType = conceptMgr.getThingType(var.label().get().label());
-                if (thingType == null) throw GraknException.of(TYPE_NOT_FOUND, var.label().get().label());
-                else return thingType.asThingType();
-            } else {
-                throw GraknException.of(ILLEGAL_TYPE_VARIABLE, var.reference());
-            }
+            assert var.reference().isLabel() && var.label().isPresent();
+            final ThingType thingType = conceptMgr.getThingType(var.label().get().label());
+            if (thingType == null) throw GraknException.of(TYPE_NOT_FOUND, var.label().get().label());
+            else return thingType.asThingType();
         }
     }
 
