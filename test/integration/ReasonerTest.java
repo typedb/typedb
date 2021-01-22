@@ -42,8 +42,8 @@ import static org.junit.Assert.assertEquals;
 
 public class ReasonerTest {
 
-    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("query-test");
-    private static String database = "reasoner-test";
+    private static final Path directory = Paths.get(System.getProperty("user.dir")).resolve("query-test");
+    private static final String database = "reasoner-test";
     private static RocksGrakn grakn;
     private static RocksSession session;
     private static RocksTransaction rocksTransaction;
@@ -68,7 +68,6 @@ public class ReasonerTest {
         logicMgr.putRule(
                 "old-milk-is-not-good",
                 Graql.parsePattern("{ $x isa milk, has age-in-days >= 10; }").asConjunction(),
-//                Graql.parsePattern("{ $x isa milk; }").asConjunction(),
                 Graql.parseVariable("$x has is-still-good false").asThing());
         rocksTransaction.commit();
         session.close();
@@ -132,14 +131,14 @@ public class ReasonerTest {
                     txn.commit();
                 }
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $r (friend: $x, friend: $y) isa friendship; $x has name $a;").asMatch()).toList();
+                    List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $f (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;").asMatch()).toList();
                     System.out.println(ans);
 
                     ans.iterator().forEachRemaining(a -> {
-                        assertEquals("friendship", a.get("r").asThing().getType().getLabel().scopedName());
-                        assertEquals("person", a.get("x").asThing().getType().getLabel().scopedName());
-                        assertEquals("person", a.get("y").asThing().getType().getLabel().scopedName());
-                        assertEquals("name", a.get("a").asAttribute().getType().getLabel().scopedName());
+                        assertEquals("friendship", a.get("f").asThing().getType().getLabel().scopedName());
+                        assertEquals("person", a.get("p1").asThing().getType().getLabel().scopedName());
+                        assertEquals("person", a.get("p2").asThing().getType().getLabel().scopedName());
+                        assertEquals("name", a.get("na").asAttribute().getType().getLabel().scopedName());
                     });
 
                     assertEquals(2, ans.size());

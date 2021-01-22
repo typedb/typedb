@@ -239,7 +239,7 @@ public abstract class AnswerState {
                 Optional<ConceptMap> reversed = unifier.unUnify(identifiedConcepts);
                 if (reversed.isPresent()) {
                     HashMap<Reference.Name, Concept> merged = new HashMap<>(reversed.get().concepts());
-                    merged.putAll(conceptMap().concepts());
+                    merged.putAll(initial.conceptMap().concepts());
                     return Optional.of(new UpstreamVars.Derived(new ConceptMap(merged), initial));
                 } else {
                     return Optional.empty();
