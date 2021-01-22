@@ -111,7 +111,7 @@ public abstract class RocksSession implements Grakn.Session {
         }
     }
 
-    public static final class Schema extends RocksSession {
+    public static class Schema extends RocksSession {
         private final Factory.TransactionSchema txSchemaFactory;
         private final Lock writeLock;
 
@@ -162,7 +162,7 @@ public abstract class RocksSession implements Grakn.Session {
         }
     }
 
-    public static final class Data extends RocksSession {
+    public static class Data extends RocksSession {
 
         private final Factory.TransactionData txDataFactory;
 
