@@ -29,7 +29,6 @@ import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.NumericGroup;
 import grakn.core.logic.LogicManager;
 import grakn.core.reasoner.Reasoner;
-import graql.lang.pattern.variable.BoundVariable;
 import graql.lang.pattern.variable.UnboundVariable;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
@@ -157,7 +156,8 @@ public class QueryManager {
             if (query.match().isPresent()) {
                 GraqlMatch.Unfiltered match = query.match().get();
                 List<UnboundVariable> filterVars = new ArrayList<>(match.namedVariablesUnbound());
-                filterVars.retainAll(iterate(query.variables()).map(BoundVariable::toUnbound).toList());
+                filterVars.retainAll(query.namedVariablesUnbound());
+                assert !filterVars.isEmpty();
                 List<ConceptMap> matched = match(match.get(filterVars), options).toList();
                 return iterate(iterate(matched).map(answer -> Inserter.create(
                         conceptMgr, query.variables(), answer, context
@@ -179,7 +179,8 @@ public class QueryManager {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete")) {
             final Context.Query context = new Context.Query(transactionCtx, options);
             List<UnboundVariable> filterVars = new ArrayList<>(query.match().namedVariablesUnbound());
-            filterVars.retainAll(iterate(query.variables()).map(BoundVariable::toUnbound).toList());
+            filterVars.retainAll(query.namedVariablesUnbound());
+            assert !filterVars.isEmpty();
             final List<ConceptMap> matched = match(query.match().get(filterVars), options).toList();
             matched.forEach(existing -> Deleter.create(conceptMgr, query.variables(), existing, context).execute());
         } catch (Exception exception) {

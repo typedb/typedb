@@ -50,18 +50,17 @@ import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_TOO_MANY;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_IS_CONSTRAINT;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_INSERT;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_CONSTRAINT_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_CONSTRAINT_TOO_MANY;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ROLE_TYPE_AMBIGUOUS;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ROLE_TYPE_MISSING;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_CONSTRAINT_UNACCEPTED;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_IID_NOT_INSERTABLE;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_REINSERTION;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static grakn.core.common.iterator.Iterators.iterate;
-import static graql.lang.common.GraqlToken.Constraint.IS;
 import static java.util.stream.Collectors.toSet;
 
 public class Inserter {
@@ -140,7 +139,7 @@ public class Inserter {
             if (var.iid().isPresent()) {
                 throw GraknException.of(THING_IID_NOT_INSERTABLE, ref, var.iid().get());
             } else if (!var.is().isEmpty()) {
-                throw GraknException.of(THING_CONSTRAINT_UNACCEPTED, IS);
+                throw GraknException.of(ILLEGAL_IS_CONSTRAINT, var, var.is().iterator().next());
             }
         }
     }
