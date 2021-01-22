@@ -65,81 +65,81 @@ public class QueryManager {
     }
 
     public ResourceIterator<ConceptMap> match(GraqlMatch query) {
-        return match(query, true, new Options.Query());
+        return match(query, true, false, new Options.Query());
     }
 
-    public ResourceIterator<ConceptMap> match(GraqlMatch query, boolean isParallel) {
-        return match(query, isParallel, new Options.Query());
+    public ResourceIterator<ConceptMap> match(GraqlMatch query, boolean isParallel, boolean reasoning) {
+        return match(query, isParallel, reasoning, new Options.Query());
     }
 
     public ResourceIterator<ConceptMap> match(GraqlMatch query, Options.Query options) {
-        return match(query, true, options);
+        return match(query, true, false, options);
     }
 
-    public ResourceIterator<ConceptMap> match(GraqlMatch query, boolean isParallel, Options.Query options) {
+    public ResourceIterator<ConceptMap> match(GraqlMatch query, boolean isParallel, boolean reasoning, Options.Query options) {
         // TODO: Note that Query Options are not yet utilised during match query
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match")) {
-            return Matcher.create(reasoner, query, options).execute(isParallel).onError(conceptMgr::exception);
+            return Matcher.create(reasoner, query, options).execute(isParallel, reasoning).onError(conceptMgr::exception);
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }
     }
 
     public Numeric match(GraqlMatch.Aggregate query) {
-        return match(query, true, new Options.Query());
+        return match(query, true, false, new Options.Query());
     }
 
-    public Numeric match(GraqlMatch.Aggregate query, boolean isParallel) {
-        return match(query, isParallel, new Options.Query());
+    public Numeric match(GraqlMatch.Aggregate query, boolean isParallel, boolean reasoning) {
+        return match(query, isParallel, reasoning, new Options.Query());
     }
 
     public Numeric match(GraqlMatch.Aggregate query, Options.Query options) {
-        return match(query, true, options);
+        return match(query, true, false, options);
     }
 
-    public Numeric match(GraqlMatch.Aggregate query, boolean isParallel, Options.Query options) {
+    public Numeric match(GraqlMatch.Aggregate query, boolean isParallel, boolean reasoning, Options.Query options) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match_aggregate")) {
-            return Matcher.create(reasoner, query, options).execute(isParallel);
+            return Matcher.create(reasoner, query, options).execute(isParallel, reasoning);
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }
     }
 
     public ResourceIterator<ConceptMapGroup> match(GraqlMatch.Group query) {
-        return match(query, true, new Options.Query());
+        return match(query, true, false, new Options.Query());
     }
 
-    public ResourceIterator<ConceptMapGroup> match(GraqlMatch.Group query, boolean isParallel) {
-        return match(query, isParallel, new Options.Query());
+    public ResourceIterator<ConceptMapGroup> match(GraqlMatch.Group query, boolean isParallel, boolean reasoning) {
+        return match(query, isParallel, reasoning, new Options.Query());
     }
 
     public ResourceIterator<ConceptMapGroup> match(GraqlMatch.Group query, Options.Query options) {
-        return match(query, true, options);
+        return match(query, true, false, options);
     }
 
-    public ResourceIterator<ConceptMapGroup> match(GraqlMatch.Group query, boolean isParallel, Options.Query options) {
+    public ResourceIterator<ConceptMapGroup> match(GraqlMatch.Group query, boolean isParallel, boolean reasoning, Options.Query options) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match_group")) {
-            return Matcher.create(reasoner, query, options).execute(isParallel).onError(conceptMgr::exception);
+            return Matcher.create(reasoner, query, options).execute(isParallel, reasoning).onError(conceptMgr::exception);
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }
     }
 
     public ResourceIterator<NumericGroup> match(GraqlMatch.Group.Aggregate query) {
-        return match(query, true, new Options.Query());
+        return match(query, true, false, new Options.Query());
     }
 
-    public ResourceIterator<NumericGroup> match(GraqlMatch.Group.Aggregate query, boolean isParallel) {
-        return match(query, isParallel, new Options.Query());
+    public ResourceIterator<NumericGroup> match(GraqlMatch.Group.Aggregate query, boolean isParallel, boolean reasoning) {
+        return match(query, isParallel, reasoning, new Options.Query());
     }
 
     public ResourceIterator<NumericGroup> match(GraqlMatch.Group.Aggregate query, Options.Query options) {
-        return match(query, true, options);
+        return match(query, true, false, options);
     }
 
-    public ResourceIterator<NumericGroup> match(GraqlMatch.Group.Aggregate query, boolean isParallel, Options.Query options) {
+    public ResourceIterator<NumericGroup> match(GraqlMatch.Group.Aggregate query, boolean isParallel, boolean reasoning, Options.Query options) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match_group_aggregate")) {
-            return Matcher.create(reasoner, query, options).execute(isParallel).onError(conceptMgr::exception);
+            return Matcher.create(reasoner, query, options).execute(isParallel, reasoning).onError(conceptMgr::exception);
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }
