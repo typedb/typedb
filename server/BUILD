@@ -191,7 +191,6 @@ java_deps(
 assemble_deps_common = [
     ":server-deps-dev",
 #    ":server-deps-prod",
-    "@graknlabs_common//binary:assemble-bash-targz",
 ]
 
 assemble_files = {
@@ -210,7 +209,7 @@ permissions = {
 
 assemble_targz(
     name = "assemble-linux-targz",
-    targets = assemble_deps_common + ["server-deps-linux"],
+    targets = assemble_deps_common + ["server-deps-linux", "@graknlabs_common//binary:assemble-bash-targz"],
     additional_files = assemble_files,
     permissions = permissions,
     output_filename = "grakn-core-server-linux",
@@ -219,7 +218,7 @@ assemble_targz(
 
 assemble_zip(
     name = "assemble-mac-zip",
-    targets = assemble_deps_common + ["server-deps-mac"],
+    targets = assemble_deps_common + ["server-deps-mac", "@graknlabs_common//binary:assemble-bash-targz"],
     additional_files = assemble_files,
     permissions = permissions,
     output_filename = "grakn-core-server-mac",
@@ -228,7 +227,7 @@ assemble_zip(
 
 assemble_zip(
     name = "assemble-windows-zip",
-    targets = assemble_deps_common + ["server-deps-windows"],
+    targets = assemble_deps_common + ["server-deps-windows", "@graknlabs_common//binary:assemble-bat-targz"],
     additional_files = assemble_files,
     permissions = permissions,
     output_filename = "grakn-core-server-windows",
