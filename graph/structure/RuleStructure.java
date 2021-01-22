@@ -59,6 +59,6 @@ public interface RuleStructure {
 
     void indexConcludesHas(Label type);
 
-    void unindexConclusionHas(Label type);
+    void unindexConcludesHas(Label type);
 }
 

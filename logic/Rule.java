@@ -138,7 +138,7 @@ public class Rule {
     }
 
     public void delete() {
-        conclusion().clearFromIndex(this);
+        conclusion().unindex(this);
         structure.delete();
     }
 
@@ -224,7 +224,7 @@ public class Rule {
     }
 
     public void reIndex() {
-        conclusion().clearFromIndex(this);
+        conclusion().unindex(this);
         conclusion().index(this);
     }
 
@@ -244,7 +244,7 @@ public class Rule {
 
         abstract void index(Rule rule);
 
-        abstract void clearFromIndex(Rule rule);
+        abstract void unindex(Rule rule);
 
         public boolean isRelation() {
             return false;
@@ -352,7 +352,7 @@ public class Rule {
             }
 
             @Override
-            void clearFromIndex(Rule rule) {
+            void unindex(Rule rule) {
                 Variable relation = relation().owner();
                 Set<Label> possibleRelationTypes = relation.resolvedTypes();
                 possibleRelationTypes.forEach(rule.structure::unindexConcludes);
@@ -520,12 +520,12 @@ public class Rule {
                 }
 
                 @Override
-                void clearFromIndex(Rule rule) {
+                void unindex(Rule rule) {
                     grakn.core.pattern.variable.Variable attribute = has().attribute();
                     Set<Label> possibleAttributeHas = attribute.resolvedTypes();
                     possibleAttributeHas.forEach(label -> {
                         rule.structure.unindexConcludes(label);
-                        rule.structure.unindexConclusionHas(label);
+                        rule.structure.unindexConcludesHas(label);
                     });
                 }
 
@@ -632,10 +632,10 @@ public class Rule {
                 }
 
                 @Override
-                void clearFromIndex(Rule rule) {
+                void unindex(Rule rule) {
                     grakn.core.pattern.variable.Variable attribute = has().attribute();
                     Set<Label> possibleAttributeHas = attribute.resolvedTypes();
-                    possibleAttributeHas.forEach(rule.structure::unindexConclusionHas);
+                    possibleAttributeHas.forEach(rule.structure::unindexConcludesHas);
                 }
 
                 @Override

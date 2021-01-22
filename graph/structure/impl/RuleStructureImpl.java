@@ -105,7 +105,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
     @Override
     public void indexConcludes(Label type) {
-        graph.rules().conclusions().buffered().putCreating(this, graph.getType(type));
+        graph.rules().conclusions().buffered().creates(this, graph.getType(type));
     }
 
     @Override
@@ -115,11 +115,11 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
     @Override
     public void indexConcludesHas(Label type) {
-        graph.rules().conclusions().buffered().putCreatingHas(this, graph.getType(type));
+        graph.rules().conclusions().buffered().createsHas(this, graph.getType(type));
     }
 
     @Override
-    public void unindexConclusionHas(Label type) {
+    public void unindexConcludesHas(Label type) {
         graph.rules().conclusions().deleteCreatingHas(this, graph.getType(type));
     }
 
@@ -153,7 +153,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
     }
 
     private ResourceIterator<Label> getTypeLabels(ResourceIterator<BoundVariable> variables) {
-        return variables.flatMap(v -> iterate(connectedVars(v, new HashSet<>())))
+        return variables.flatMap(v -> iterate(graqlVars(v, new HashSet<>())))
                 .distinct().filter(v -> v.isBound() && v.asBound().isType()).map(var -> var.asBound().asType().label()).filter(Optional::isPresent)
                 .map(labelConstraint -> {
                     TypeConstraint.Label label = labelConstraint.get();
@@ -162,13 +162,13 @@ public abstract class RuleStructureImpl implements RuleStructure {
                 });
     }
 
-    private Set<Variable> connectedVars(Variable var, Set<Variable> visited) {
+    private Set<Variable> graqlVars(Variable var, Set<Variable> visited) {
         visited.add(var);
         Set<Variable> vars = iterate(var.constraints()).flatMap(c -> iterate(c.variables())).map(v -> (Variable)v).toSet();
         if (visited.containsAll(vars)) return visited;
         else {
             visited.addAll(vars);
-            return iterate(vars).flatMap(v -> iterate(connectedVars(v, visited))).toSet();
+            return iterate(vars).flatMap(v -> iterate(graqlVars(v, visited))).toSet();
         }
     }
 

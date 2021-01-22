@@ -747,7 +747,7 @@ public class SchemaGraph implements Graph {
                     creating.get(type).remove(rule);
                     storage.delete(Rule.Key.concludedVertex(type.iid(), rule.iid()).bytes());
                 }
-                buffered().deleteCreating(rule, type);
+                buffered().deleteCreates(rule, type);
             }
 
             public void deleteCreatingHas(RuleStructure rule, TypeVertex attributeType) {
@@ -756,7 +756,7 @@ public class SchemaGraph implements Graph {
                     rules.remove(rule);
                     storage.delete(Rule.Key.concludedHasEdge(attributeType.iid(), rule.iid()).bytes());
                 }
-                buffered().deleteCreatingHas(rule, attributeType);
+                buffered().deleteCreatesHas(rule, attributeType);
             }
 
             private Set<RuleStructure> loadCreating(TypeVertex type) {
@@ -787,7 +787,7 @@ public class SchemaGraph implements Graph {
                     creatingHas = new ConcurrentHashMap<>();
                 }
 
-                public void putCreating(RuleStructure rule, TypeVertex type) {
+                public void creates(RuleStructure rule, TypeVertex type) {
                     creating.compute(type, (t, rules) -> {
                         if (rules == null) rules = new HashSet<>();
                         rules.add(rule);
@@ -795,7 +795,7 @@ public class SchemaGraph implements Graph {
                     });
                 }
 
-                public void putCreatingHas(RuleStructure rule, TypeVertex attributeType) {
+                public void createsHas(RuleStructure rule, TypeVertex attributeType) {
                     creatingHas.compute(attributeType, (t, rules) -> {
                         if (rules == null) rules = new HashSet<>();
                         rules.add(rule);
@@ -828,13 +828,13 @@ public class SchemaGraph implements Graph {
                     return iterate(creatingHas.getOrDefault(label, set()));
                 }
 
-                private void deleteCreating(RuleStructure rule, TypeVertex type) {
+                private void deleteCreates(RuleStructure rule, TypeVertex type) {
                     if (creating.containsKey(type)) {
                         creating.get(type).remove(rule);
                     }
                 }
 
-                private void deleteCreatingHas(RuleStructure rule, TypeVertex attributeType) {
+                private void deleteCreatesHas(RuleStructure rule, TypeVertex attributeType) {
                     if (creatingHas.containsKey(attributeType)) {
                         creatingHas.get(attributeType).remove(rule);
                     }
