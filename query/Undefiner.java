@@ -92,9 +92,7 @@ public class Undefiner {
     private void sort(TypeVariable variable, Set<TypeVariable> sorted) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "sort")) {
             if (sorted.contains(variable)) return;
-            if (variable.sub().isPresent()) {
-                sort(variable.sub().get().type(), sorted);
-            }
+            if (variable.sub().isPresent()) sort(variable.sub().get().type(), sorted);
             this.variables.addFirst(variable);
             sorted.add(variable);
         }

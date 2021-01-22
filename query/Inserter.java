@@ -50,7 +50,7 @@ import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_TOO_MANY;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_INSERT;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_CONSTRAINT_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_CONSTRAINT_TOO_MANY;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ROLE_TYPE_AMBIGUOUS;
@@ -92,7 +92,7 @@ public class Inserter {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             VariableRegistry registry = VariableRegistry.createFromThings(vars);
             iterate(registry.types()).filter(t -> !t.reference().isLabel()).forEachRemaining(t -> {
-                throw GraknException.of(ILLEGAL_TYPE_VARIABLE, t.reference());
+                throw GraknException.of(ILLEGAL_TYPE_VARIABLE_IN_INSERT, t.reference());
             });
             return new Inserter(conceptMgr, registry.things(), existing, context);
         }
@@ -156,18 +156,14 @@ public class Inserter {
 
     private RoleType getRoleType(TypeVariable var) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "get_role_type")) {
-            if (var.reference().isLabel()) {
-                assert var.label().isPresent();
-                final RelationType relationType;
-                final RoleType roleType;
-                if ((relationType = conceptMgr.getRelationType(var.label().get().scope().get())) != null &&
-                        (roleType = relationType.getRelates(var.label().get().label())) != null) {
-                    return roleType;
-                } else {
-                    throw GraknException.of(TYPE_NOT_FOUND, var.label().get().scopedLabel());
-                }
+            assert var.reference().isLabel() && var.label().isPresent();
+            final RelationType relationType;
+            final RoleType roleType;
+            if ((relationType = conceptMgr.getRelationType(var.label().get().scope().get())) != null &&
+                    (roleType = relationType.getRelates(var.label().get().label())) != null) {
+                return roleType;
             } else {
-                throw GraknException.of(ILLEGAL_TYPE_VARIABLE, var.reference());
+                throw GraknException.of(TYPE_NOT_FOUND, var.label().get().scopedLabel());
             }
         }
     }

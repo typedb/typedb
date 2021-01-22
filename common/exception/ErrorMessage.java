@@ -272,24 +272,26 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new ThingWrite(13, "Attempted to re-insert pre-existing thing of matched variable '%s' as a new instance (isa) of type '%s'.");
         public static final ThingWrite THING_ISA_MISSING =
                 new ThingWrite(14, "The thing variable '%s' cannot be inserted as a new instance without providing its type (isa).");
-        public static final ThingWrite ILLEGAL_TYPE_VARIABLE =
+        public static final ThingWrite ILLEGAL_TYPE_VARIABLE_IN_INSERT =
                 new ThingWrite(15, "Illegal type variable '%s' found in insert query. Types can only be referred to by their labels in 'insert' queries or 'then' clauses.");
+        public static final ThingWrite ILLEGAL_TYPE_VARIABLE_IN_DELETE =
+                new ThingWrite(16, "Illegal type variable '%s' found in delete query. Types can only be referred to by their labels in 'delete' queries or 'then' clauses.");
         public static final ThingWrite THING_CONSTRAINT_UNACCEPTED =
-                new ThingWrite(16, "The thing constraint '%s' is not accepted in an insert query.");
+                new ThingWrite(17, "The thing constraint '%s' is not accepted in an insert query.");
         public static final ThingWrite ATTRIBUTE_VALUE_TOO_MANY =
-                new ThingWrite(17, "Unable to insert attribute '%s' of type '%s' with more than one value operations.");
+                new ThingWrite(18, "Unable to insert attribute '%s' of type '%s' with more than one value operations.");
         public static final ThingWrite ATTRIBUTE_VALUE_MISSING =
-                new ThingWrite(18, "Unable to insert attribute '%s' of type '%s' without a value assigned to the variable.");
+                new ThingWrite(19, "Unable to insert attribute '%s' of type '%s' without a value assigned to the variable.");
         public static final ThingWrite RELATION_CONSTRAINT_TOO_MANY =
-                new ThingWrite(19, "Unable to insert relation '%s' as it has more than one relation tuple describing the role players.");
+                new ThingWrite(20, "Unable to insert relation '%s' as it has more than one relation tuple describing the role players.");
         public static final ThingWrite RELATION_CONSTRAINT_MISSING =
-                new ThingWrite(20, "Unable to insert relation '%s' as it is missing the relation tuple describing the role players.");
+                new ThingWrite(21, "Unable to insert relation '%s' as it is missing the relation tuple describing the role players.");
         public static final ThingWrite ROLE_TYPE_AMBIGUOUS =
-                new ThingWrite(21, "Unable to add role player '%s' to the relation, as there are more than one possible role type it could play.");
+                new ThingWrite(22, "Unable to add role player '%s' to the relation, as there are more than one possible role type it could play.");
         public static final ThingWrite ROLE_TYPE_MISSING =
-                new ThingWrite(22, "Unable to add role player '%s' to the relation, as there is no provided or inferrable role type.");
+                new ThingWrite(23, "Unable to add role player '%s' to the relation, as there is no provided or inferrable role type.");
         public static final ThingWrite MAX_INSTANCE_REACHED =
-                new ThingWrite(23, "The maximum number of instances for type '%s' has been reached: '%s'");
+                new ThingWrite(24, "The maximum number of instances for type '%s' has been reached: '%s'");
 
         private static final String codePrefix = "THW";
         private static final String messagePrefix = "Invalid Thing Write";
