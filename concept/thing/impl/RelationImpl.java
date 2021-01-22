@@ -88,8 +88,12 @@ public class RelationImpl extends ThingImpl implements Relation {
 
         if (role.hasNext()) {
             RoleImpl.of(role.next()).delete();
-            if (!vertex.outs().edge(RELATING).to().hasNext()) this.delete();
+            deleteIfNoPlayer();
         }
+    }
+
+    void deleteIfNoPlayer() {
+        if (!vertex.outs().edge(RELATING).to().hasNext()) this.delete();
     }
 
     @Override
