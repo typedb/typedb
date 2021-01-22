@@ -102,7 +102,7 @@ public abstract class Concludable extends Resolvable {
 
     abstract Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr);
 
-    abstract Variable generating();
+    public abstract Variable generating();
 
     abstract ResourceIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr);
 
@@ -392,11 +392,6 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
-        Variable generating() {
-            return relation.owner();
-        }
-
-        @Override
         Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
             Variable generatedRelation = generating();
             Set<Label> relationTypes = generatedRelation.resolvedTypes();
@@ -532,7 +527,7 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
-        Variable generating() {
+        public Variable generating() {
             return has.attribute();
         }
 
@@ -639,8 +634,8 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
-        Variable generating() {
-            return isa.owner();
+        public Variable generating() {
+            return isa().owner();
         }
 
         @Override
@@ -740,7 +735,7 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
-        Variable generating() {
+        public Variable generating() {
             return attribute;
         }
 

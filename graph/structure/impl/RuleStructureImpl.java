@@ -105,22 +105,22 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
     @Override
     public void indexConcludes(Label type) {
-        graph.rules().conclusions().buffered().putInstance(this, graph.getType(type));
+        graph.rules().conclusions().buffered().putCreating(this, graph.getType(type));
     }
 
     @Override
     public void unindexConcludes(Label type) {
-        graph.rules().conclusions().deleteInstance(this, graph.getType(type));
+        graph.rules().conclusions().deleteCreating(this, graph.getType(type));
     }
 
     @Override
     public void indexConcludesHas(Label type) {
-        graph.rules().conclusions().buffered().putHas(this, graph.getType(type));
+        graph.rules().conclusions().buffered().putCreatingHas(this, graph.getType(type));
     }
 
     @Override
     public void unindexConclusionHas(Label type) {
-        graph.rules().conclusions().deleteHas(this, graph.getType(type));
+        graph.rules().conclusions().deleteCreatingHas(this, graph.getType(type));
     }
 
     public Encoding.Structure encoding() {
@@ -185,7 +185,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
         private void indexTypes() {
             ResourceIterator<TypeVertex> labels = types();
-            labels.forEachRemaining(type -> graph.rules().containing().buffered().put(this, type));
+            labels.forEachRemaining(type -> graph.rules().contains().buffered().put(this, type));
         }
 
         @Override
@@ -208,7 +208,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
         @Override
         public void delete() {
             if (isDeleted.compareAndSet(false, true)) {
-                graph.rules().containing().delete(this, types());
+                graph.rules().contains().delete(this, types());
                 deleteVertexFromGraph();
             }
         }
@@ -282,7 +282,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
         @Override
         public void delete() {
             if (isDeleted.compareAndSet(false, true)) {
-                graph.rules().containing().delete(this, types());
+                graph.rules().contains().delete(this, types());
                 deleteVertexFromGraph();
                 deleteVertexFromStorage();
             }

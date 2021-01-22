@@ -142,7 +142,7 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
     }
 
     void validateDelete() {
-        ResourceIterator<RuleStructure> rules = graphMgr.schema().rules().containing().get(graphMgr.schema().getType(getLabel()));
+        ResourceIterator<RuleStructure> rules = graphMgr.schema().rules().contains().get(graphMgr.schema().getType(getLabel()));
         if (rules.hasNext()) {
             throw exception(GraknException.of(TYPE_PRESENT_IN_RULES, getLabel(), rules.toList()));
         }
