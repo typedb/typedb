@@ -69,15 +69,15 @@ public class Inserter {
 
     private final ConceptManager conceptMgr;
     private final Context.Query context;
-    private final ConceptMap existing;
+    private final ConceptMap matched;
     private final Map<Reference.Name, Thing> inserted;
     private final Set<ThingVariable> variables;
 
-    private Inserter(ConceptManager conceptMgr, Set<ThingVariable> vars, ConceptMap existing, Context.Query context) {
+    private Inserter(ConceptManager conceptMgr, Set<ThingVariable> vars, ConceptMap matched, Context.Query context) {
         this.conceptMgr = conceptMgr;
         this.variables = vars;
         this.context = context;
-        this.existing = existing;
+        this.matched = matched;
         this.inserted = new HashMap<>();
     }
 
@@ -87,41 +87,43 @@ public class Inserter {
     }
 
     public static Inserter create(ConceptManager conceptMgr, List<graql.lang.pattern.variable.ThingVariable<?>> vars,
-                                  ConceptMap existing, Context.Query context) {
+                                  ConceptMap matched, Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             VariableRegistry registry = VariableRegistry.createFromThings(vars);
             iterate(registry.types()).filter(t -> !t.reference().isLabel()).forEachRemaining(t -> {
                 throw GraknException.of(ILLEGAL_TYPE_VARIABLE_IN_INSERT, t.reference());
             });
-            return new Inserter(conceptMgr, registry.things(), existing, context);
+            return new Inserter(conceptMgr, registry.things(), matched, context);
         }
     }
 
     public ConceptMap execute() {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
             variables.forEach(this::insert);
+            matched.forEach((ref, concept) -> inserted.putIfAbsent(ref, concept.asThing()));
             return new ConceptMap(inserted);
         }
     }
 
-    private boolean existingContains(ThingVariable var) {
-        return var.reference().isName() && existing.contains(var.reference().asName());
+    private boolean matchedContains(ThingVariable var) {
+        return var.reference().isName() && matched.contains(var.reference().asName());
     }
 
-    public Thing existingGet(ThingVariable var) {
-        return existing.get(var.reference().asName()).asThing();
+    public Thing matchedGet(ThingVariable var) {
+        return matched.get(var.reference().asName()).asThing();
     }
 
     private Thing insert(ThingVariable var) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
-            Thing thing; Reference ref = var.reference();
+            Thing thing;
+            Reference ref = var.reference();
 
             if (ref.isName() && (thing = inserted.get(ref.asName())) != null) return thing;
-            else if (existingContains(var) && var.constraints().isEmpty()) return existingGet(var);
+            else if (matchedContains(var) && var.constraints().isEmpty()) return matchedGet(var);
             else validate(var);
 
-            if (existingContains(var)) {
-                thing = existingGet(var);
+            if (matchedContains(var)) {
+                thing = matchedGet(var);
                 if (var.isa().isPresent() && !thing.getType().equals(getThingType(var.isa().get().type()))) {
                     throw GraknException.of(THING_ISA_REINSERTION, ref, var.isa().get().type());
                 }
@@ -161,10 +163,10 @@ public class Inserter {
     private RoleType getRoleType(TypeVariable var, RelationType relation) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "get_role_type")) {
             assert var.reference().isLabel() && var.label().isPresent();
-                final RelationType relationType = relation != null ?
-                        relation : conceptMgr.getRelationType(var.label().get().scope().get());
-                final RoleType roleType;
-                if ((relationType != null && (roleType = relationType.getRelates(var.label().get().label())) != null)) {
+            final RelationType relationType = relation != null ?
+                    relation : conceptMgr.getRelationType(var.label().get().scope().get());
+            final RoleType roleType;
+            if ((relationType != null && (roleType = relationType.getRelates(var.label().get().label())) != null)) {
                 return roleType;
             } else {
                 throw GraknException.of(TYPE_NOT_FOUND, var.label().get().scopedLabel());
