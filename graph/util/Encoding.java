@@ -169,10 +169,12 @@ public class Encoding {
 
         private final byte key;
         private final PrefixType type;
+        private final byte[] bytes;
 
         Prefix(int key, PrefixType type) {
             this.key = unsignedByte(key);
             this.type = type;
+            this.bytes = new byte[] {this.key};
         }
 
         public static Prefix of(byte key) {
@@ -187,7 +189,7 @@ public class Encoding {
         }
 
         public byte[] bytes() {
-            return new byte[]{key};
+            return bytes;
         }
 
         public PrefixType type() {
@@ -251,6 +253,7 @@ public class Encoding {
         EDGE_ROLEPLAYER_IN(-73, true);
         private final byte key;
         private final boolean isOptimisation;
+        private final byte[] bytes;
 
         Infix(int key) {
             this(key, false);
@@ -259,6 +262,7 @@ public class Encoding {
         Infix(int key, boolean isOptimisation) {
             this.key = signedByte(key);
             this.isOptimisation = isOptimisation;
+            this.bytes = new byte[] {this.key};
         }
 
         public static Infix of(byte key) {
@@ -273,7 +277,7 @@ public class Encoding {
         }
 
         public byte[] bytes() {
-            return new byte[]{key};
+            return bytes;
         }
 
         public boolean isOptimisation() {
@@ -344,10 +348,12 @@ public class Encoding {
         private final boolean isWritable;
 
         private final GraqlArg.ValueType graqlValueType;
+        private final byte[] bytes;
 
         ValueType(int key, Class<?> valueClass, boolean isWritable, boolean isKeyable,
                   @Nullable GraqlArg.ValueType graqlValueType) {
             this.key = unsignedByte(key);
+            this.bytes = new byte[] {this.key};
             this.valueClass = valueClass;
             this.isWritable = isWritable;
             this.isKeyable = isKeyable;
@@ -376,7 +382,7 @@ public class Encoding {
         }
 
         public byte[] bytes() {
-            return new byte[]{key};
+            return bytes;
         }
 
         public Class<?> valueClass() {
@@ -753,8 +759,12 @@ public class Encoding {
 
             public static final int LENGTH = 1;
             private final byte key;
+            private final byte[] bytes;
 
-            Infix(int key) { this.key = unsignedByte(key); }
+            Infix(int key) {
+                this.key = unsignedByte(key);
+                bytes = new byte[]{this.key};
+            }
 
             public static Infix of(byte[] key) {
                 if (key.length == 1) {
@@ -765,7 +775,7 @@ public class Encoding {
                 throw GraknException.of(UNRECOGNISED_VALUE);
             }
 
-            public byte[] bytes() { return new byte[]{key}; }
+            public byte[] bytes() { return bytes; }
         }
     }
 
@@ -779,9 +789,11 @@ public class Encoding {
             HAS_EDGE(1);
 
             private final byte key;
+            private final byte[] bytes;
 
             JobType(int key) {
                 this.key = unsignedByte(key);
+                this.bytes = new byte[] {this.key};
             }
 
             public static JobType of(byte[] key) {
@@ -798,7 +810,7 @@ public class Encoding {
             }
 
             public byte[] bytes() {
-                return new byte[]{key};
+                return bytes;
             }
         }
 
@@ -810,9 +822,11 @@ public class Encoding {
             DELETED(1);
 
             private final byte key;
+            private final byte[] bytes;
 
             JobOperation(int key) {
                 this.key = unsignedByte(key);
+                this.bytes = new byte[] {this.key};
             }
 
             public static JobOperation of(byte[] key) {
@@ -829,7 +843,7 @@ public class Encoding {
             }
 
             public byte[] bytes() {
-                return new byte[]{key};
+                return bytes;
             }
         }
 
@@ -843,9 +857,11 @@ public class Encoding {
             HAS_EDGE_TOTAL_COUNT(3);
 
             private final byte key;
+            private final byte[] bytes;
 
             Infix(int key) {
                 this.key = unsignedByte(key);
+                this.bytes = new byte[] {this.key};
             }
 
             public byte key() {
@@ -853,7 +869,7 @@ public class Encoding {
             }
 
             public byte[] bytes() {
-                return new byte[]{key};
+                return bytes;
             }
         }
     }
