@@ -185,7 +185,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
         private void indexTypes() {
             ResourceIterator<TypeVertex> labels = types();
-            labels.forEachRemaining(type -> graph.rules().contains().buffered().put(this, type));
+            labels.forEachRemaining(type -> graph.rules().references().buffered().put(this, type));
         }
 
         @Override
@@ -208,7 +208,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
         @Override
         public void delete() {
             if (isDeleted.compareAndSet(false, true)) {
-                graph.rules().contains().delete(this, types());
+                graph.rules().references().delete(this, types());
                 deleteVertexFromGraph();
             }
         }
@@ -282,7 +282,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
         @Override
         public void delete() {
             if (isDeleted.compareAndSet(false, true)) {
-                graph.rules().contains().delete(this, types());
+                graph.rules().references().delete(this, types());
                 deleteVertexFromGraph();
                 deleteVertexFromStorage();
             }

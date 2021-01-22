@@ -92,7 +92,7 @@ public class LogicManager {
 
         // using the new index, validate new rules are stratifiable (eg. do not cause cycles through a negation)
         graphMgr.schema().rules().buffered().filter(structure -> structure.status().equals(Encoding.Status.BUFFERED))
-                .forEach(structure -> getRule(structure.label()).validateCycles());
+                .forEachRemaining(structure -> getRule(structure.label()).validateCycles());
     }
 
     public TypeResolver typeResolver() {

@@ -105,26 +105,26 @@ public class SchemaGraph implements Graph {
         isModified = false;
     }
 
-    public Rules rules() {
-        return rules;
-    }
-
     static class Cache {
 
         private final ConcurrentMap<TypeVertex, Set<TypeVertex>> ownedAttributeTypes;
+
         private final ConcurrentMap<TypeVertex, Set<TypeVertex>> ownersOfAttributeTypes;
         private final ConcurrentMap<Label, Set<Label>> resolvedRoleTypeLabels;
-
         Cache() {
             ownedAttributeTypes = new ConcurrentHashMap<>();
             ownersOfAttributeTypes = new ConcurrentHashMap<>();
             resolvedRoleTypeLabels = new ConcurrentHashMap<>();
         }
-    }
 
+    }
     @Override
     public Storage storage() {
         return storage;
+    }
+
+    public Rules rules() {
+        return rules;
     }
 
     public SchemaGraph.Statistics stats() {
@@ -236,7 +236,6 @@ public class SchemaGraph implements Graph {
         return typesByIID.values().stream();
     }
 
-
     public TypeVertex convert(VertexIID.Type iid) {
         return typesByIID.computeIfAbsent(iid, i -> {
             final TypeVertex vertex = new TypeVertexImpl.Persisted(this, i);
@@ -284,7 +283,6 @@ public class SchemaGraph implements Graph {
             }
         }
     }
-
 
     public TypeVertex create(Encoding.Vertex.Type encoding, String label) {
         return create(encoding, label, null);
@@ -348,7 +346,6 @@ public class SchemaGraph implements Graph {
         }
     }
 
-
     public void setModified() {
         if (!isModified) isModified = true;
     }
@@ -383,6 +380,419 @@ public class SchemaGraph implements Graph {
         typesByIID.clear();
         typesByLabel.clear();
         rules.clear();
+    }
+
+    public class Rules {
+
+        private final ConcurrentMap<String, RuleStructure> rulesByLabel;
+        private final ConcurrentMap<StructureIID.Rule, RuleStructure> rulesByIID;
+        private final ConcurrentMap<String, ManagedReadWriteLock> singleLabelLocks;
+        private final ManagedReadWriteLock multiLabelLock;
+        private final Conclusions conclusionsIndex;
+        private final References referencesIndex;
+
+        public Rules() {
+            rulesByLabel = new ConcurrentHashMap<>();
+            rulesByIID = new ConcurrentHashMap<>();
+            singleLabelLocks = new ConcurrentHashMap<>();
+            multiLabelLock = new ManagedReadWriteLock();
+            conclusionsIndex = new Conclusions();
+            referencesIndex = new References();
+        }
+
+        public Conclusions conclusions() {
+            return conclusionsIndex;
+        }
+
+        public References references() {
+            return referencesIndex;
+        }
+
+        public ResourceIterator<RuleStructure> all() {
+            Encoding.Prefix index = IndexIID.Rule.prefix();
+            ResourceIterator<RuleStructure> persistedRules = storage.iterate(index.bytes(), (key, value) ->
+                    convert(StructureIID.Rule.of(value)));
+            return link(buffered(), persistedRules).distinct();
+        }
+
+        public ResourceIterator<RuleStructure> buffered() {
+            return iterate(rulesByIID.values());
+        }
+
+        public RuleStructure convert(StructureIID.Rule iid) {
+            return rulesByIID.computeIfAbsent(iid, i -> {
+                final RuleStructure structure = new RuleStructureImpl.Persisted(SchemaGraph.this, i);
+                rulesByLabel.putIfAbsent(structure.label(), structure);
+                return structure;
+            });
+        }
+
+        public RuleStructure get(String label) {
+            assert storage.isOpen();
+            try {
+                if (!isReadOnly) {
+                    multiLabelLock.lockRead();
+                    singleLabelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockRead();
+                }
+
+                RuleStructure vertex = rulesByLabel.get(label);
+                if (vertex != null) return vertex;
+
+                final IndexIID.Rule index = IndexIID.Rule.of(label);
+                final byte[] iid = storage.get(index.bytes());
+                if (iid != null) vertex = convert(StructureIID.Rule.of(iid));
+                return vertex;
+            } catch (InterruptedException e) {
+                throw GraknException.of(e);
+            } finally {
+                if (!isReadOnly) {
+                    singleLabelLocks.get(label).unlockRead();
+                    multiLabelLock.unlockRead();
+                }
+            }
+        }
+
+        public RuleStructure create(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
+            assert storage.isOpen();
+            try {
+                multiLabelLock.lockRead();
+                singleLabelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockWrite();
+
+                final RuleStructure rule = rulesByLabel.computeIfAbsent(label, i -> new RuleStructureImpl.Buffered(
+                        SchemaGraph.this, StructureIID.Rule.generate(keyGenerator), label, when, then
+                ));
+                rulesByIID.put(rule.iid(), rule);
+                return rule;
+            } catch (InterruptedException e) {
+                throw GraknException.of(e);
+            } finally {
+                singleLabelLocks.get(label).unlockWrite();
+                multiLabelLock.unlockRead();
+            }
+        }
+
+        public RuleStructure update(RuleStructure vertex, String oldLabel, String newLabel) {
+            assert storage.isOpen();
+            try {
+                final RuleStructure rule = get(newLabel);
+                multiLabelLock.lockWrite();
+                if (rule != null) throw GraknException.of(INVALID_SCHEMA_WRITE, newLabel);
+                rulesByLabel.remove(oldLabel);
+                rulesByLabel.put(newLabel, vertex);
+                return vertex;
+            } catch (InterruptedException e) {
+                throw GraknException.of(e);
+            } finally {
+                multiLabelLock.unlockWrite();
+            }
+        }
+
+        public void delete(RuleStructure vertex) {
+            assert storage.isOpen();
+            try { // we intentionally use READ on multiLabelLock, as delete() only concerns one label
+                // TODO do we need all these locks here? Are they applicable for this method?
+                multiLabelLock.lockRead();
+                singleLabelLocks.computeIfAbsent(vertex.label(), x -> new ManagedReadWriteLock()).lockWrite();
+
+                rulesByLabel.remove(vertex.label());
+                rulesByIID.remove(vertex.iid());
+            } catch (InterruptedException e) {
+                throw GraknException.of(e);
+            } finally {
+                singleLabelLocks.get(vertex.label()).unlockWrite();
+                multiLabelLock.unlockRead();
+            }
+        }
+
+        public void commit() {
+            rulesByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Status.BUFFERED)).forEach(
+                    ruleStructure -> ruleStructure.iid(StructureIID.Rule.generate(storage.asSchema().schemaKeyGenerator()))
+            ); // rulesByIID no longer contains valid mapping from IID to TypeVertex
+            rulesByIID.values().forEach(RuleStructure::commit);
+            conclusionsIndex.buffered().commit();
+            referencesIndex.buffered().commit();
+        }
+
+        public void clear() {
+            rulesByIID.clear();
+            rulesByLabel.clear();
+            conclusionsIndex.clear();
+            referencesIndex.clear();
+        }
+
+        public class Conclusions {
+            private final Buffered buffered;
+            private final Persisted persisted;
+            private boolean outdated;
+
+            public Conclusions() {
+                buffered = new Buffered();
+                persisted = new Persisted();
+                outdated = false;
+            }
+
+            public Buffered buffered() {
+                return buffered;
+            }
+
+            public boolean isOutdated() {
+                return outdated;
+            }
+
+            public void isOutdated(boolean isOutdated) {
+                this.outdated = isOutdated;
+            }
+
+            public ResourceIterator<RuleStructure> creating(TypeVertex type) {
+                assert !outdated;
+                return link(persisted.creating(type), buffered.creating(type));
+            }
+
+            public ResourceIterator<RuleStructure> creatingHas(TypeVertex attributeType) {
+                assert !outdated;
+                return link(persisted.creatingHas(attributeType), buffered.creatingHas(attributeType));
+            }
+
+            public void deleteCreating(RuleStructure rule, TypeVertex type) {
+                persisted.deleteCreating(rule, type);
+                buffered.deleteCreates(rule, type);
+            }
+
+            public void deleteCreatingHas(RuleStructure rule, TypeVertex attributeType) {
+                persisted.deleteCreatingHas(rule, attributeType);
+                buffered.deleteCreatesHas(rule, attributeType);
+            }
+
+            private void clear() {
+                persisted.clear();
+                buffered.clear();
+            }
+
+            public class Persisted {
+
+                private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> creating;
+                private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> creatingHas;
+
+                public Persisted() {
+                    creating = new ConcurrentHashMap<>();
+                    creatingHas = new ConcurrentHashMap<>();
+                }
+
+                private ResourceIterator<RuleStructure> creating(TypeVertex type) {
+                    assert !outdated;
+                    return iterate(creating.computeIfAbsent(type, this::loadCreating));
+                }
+
+                public ResourceIterator<RuleStructure> creatingHas(TypeVertex attributeType) {
+                    assert !outdated;
+                    return iterate(creatingHas.computeIfAbsent(attributeType, this::loadCreatingHas));
+                }
+
+                private void deleteCreating(RuleStructure rule, TypeVertex type) {
+                    Set<RuleStructure> rules = creating.get(type);
+                    if (rules != null && rules.contains(rule)) {
+                        creating.get(type).remove(rule);
+                        storage.delete(Rule.Key.concludedVertex(type.iid(), rule.iid()).bytes());
+                    }
+                }
+
+                private void deleteCreatingHas(RuleStructure rule, TypeVertex attributeType) {
+                    Set<RuleStructure> rules = creatingHas.get(attributeType);
+                    if (rules != null && rules.contains(rule)) {
+                        rules.remove(rule);
+                        storage.delete(Rule.Key.concludedHasEdge(attributeType.iid(), rule.iid()).bytes());
+                    }
+                }
+
+                private Set<RuleStructure> loadCreating(TypeVertex type) {
+                    Rule scanPrefix = Rule.Prefix.concludedVertex(type.iid());
+                    return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
+                            .map(Rules.this::convert).toSet();
+                }
+
+                private Set<RuleStructure> loadCreatingHas(TypeVertex attrType) {
+                    Rule scanPrefix = Rule.Prefix.concludedHasEdge(attrType.iid());
+                    return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
+                            .map(Rules.this::convert).toSet();
+                }
+
+                public void clear() {
+                    creating.clear();
+                    creatingHas.clear();
+                }
+
+            }
+
+            public class Buffered {
+
+                private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> creating;
+                private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> creatingHas;
+
+                public Buffered() {
+                    creating = new ConcurrentHashMap<>();
+                    creatingHas = new ConcurrentHashMap<>();
+                }
+
+                public void creates(RuleStructure rule, TypeVertex type) {
+                    creating.compute(type, (t, rules) -> {
+                        if (rules == null) rules = new HashSet<>();
+                        rules.add(rule);
+                        return rules;
+                    });
+                }
+
+                public void createsHas(RuleStructure rule, TypeVertex attributeType) {
+                    creatingHas.compute(attributeType, (t, rules) -> {
+                        if (rules == null) rules = new HashSet<>();
+                        rules.add(rule);
+                        return rules;
+                    });
+                }
+
+                private void commit() {
+                    creating.forEach((type, rules) -> {
+                        VertexIID.Type typeIID = type.iid();
+                        rules.forEach(rule -> {
+                            Rule concludesInstance = Rule.Key.concludedVertex(typeIID, rule.iid());
+                            storage.put(concludesInstance.bytes());
+                        });
+                    });
+                    creatingHas.forEach((type, rules) -> {
+                        VertexIID.Type typeIID = type.iid();
+                        rules.forEach(rule -> {
+                            Rule concludesHas = Rule.Key.concludedHasEdge(typeIID, rule.iid());
+                            storage.put(concludesHas.bytes());
+                        });
+                    });
+                }
+
+                private ResourceIterator<RuleStructure> creating(TypeVertex label) {
+                    return iterate(creating.getOrDefault(label, set()));
+                }
+
+                private ResourceIterator<RuleStructure> creatingHas(TypeVertex label) {
+                    return iterate(creatingHas.getOrDefault(label, set()));
+                }
+
+                private void deleteCreates(RuleStructure rule, TypeVertex type) {
+                    if (creating.containsKey(type)) {
+                        creating.get(type).remove(rule);
+                    }
+                }
+
+                private void deleteCreatesHas(RuleStructure rule, TypeVertex attributeType) {
+                    if (creatingHas.containsKey(attributeType)) {
+                        creatingHas.get(attributeType).remove(rule);
+                    }
+                }
+
+                private void clear() {
+                    creating.clear();
+                    creatingHas.clear();
+                }
+
+            }
+
+        }
+
+        public class References {
+
+            private final Buffered buffered;
+            private final Persisted persisted;
+
+            public References() {
+                buffered = new Buffered();
+                persisted = new Persisted();
+            }
+
+            public Buffered buffered() {
+                return buffered;
+            }
+
+            public ResourceIterator<RuleStructure> get(TypeVertex type) {
+                return link(persisted.get(type), buffered().get(type));
+            }
+
+            public void delete(RuleStructure rule, ResourceIterator<TypeVertex> types) {
+                types.forEachRemaining(type -> {
+                    persisted.delete(rule, type);
+                    buffered.delete(rule, type);
+                });
+            }
+
+            private void clear() {
+                persisted.clear();
+                buffered.clear();
+            }
+
+            private class Persisted {
+
+                private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> references;
+
+                private Persisted() {
+                    references = new ConcurrentHashMap<>();
+                }
+
+                private ResourceIterator<RuleStructure> get(TypeVertex type) {
+                    return iterate(references.computeIfAbsent(type, this::loadIndex));
+                }
+
+                private void delete(RuleStructure rule, TypeVertex type) {
+                    Set<RuleStructure> rules = references.get(type);
+                    if (rules != null) rules.remove(rule);
+                    storage.delete(Rule.Key.contained(type.iid(), rule.iid()).bytes());
+                }
+
+                private Set<RuleStructure> loadIndex(TypeVertex type) {
+                    Rule scanPrefix = Rule.Prefix.contained(type.iid());
+                    return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
+                            .map(Rules.this::convert).toSet();
+                }
+
+                private void clear() {
+                    references.clear();
+                }
+            }
+
+            public class Buffered {
+
+                private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> references;
+
+                public Buffered() {
+                    references = new ConcurrentHashMap<>();
+                }
+
+                public void put(RuleStructure rule, TypeVertex type) {
+                    references.compute(type, (t, rules) -> {
+                        if (rules == null) rules = new HashSet<>();
+                        rules.add(rule);
+                        return rules;
+                    });
+                }
+
+                private ResourceIterator<RuleStructure> get(TypeVertex type) {
+                    return iterate(references.getOrDefault(type, set()));
+                }
+
+                private void delete(RuleStructure rule, TypeVertex type) {
+                    if (references.containsKey(type)) references.get(type).remove(rule);
+                }
+
+                private void commit() {
+                    references.forEach((type, rules) -> {
+                        rules.forEach(rule -> {
+                            Rule typeInRule = Rule.Key.contained(type.iid(), rule.iid());
+                            storage.put(typeInRule.bytes());
+                        });
+                    });
+                }
+
+                private void clear() {
+                    references.clear();
+                }
+
+            }
+        }
     }
 
     public class Statistics {
@@ -564,361 +974,6 @@ public class SchemaGraph implements Graph {
                 }
             } else return maxDepthFn.get();
         }
-    }
 
-    public class Rules {
-
-        private final ConcurrentMap<String, RuleStructure> rulesByLabel;
-        private final ConcurrentMap<StructureIID.Rule, RuleStructure> rulesByIID;
-        private final ConcurrentMap<String, ManagedReadWriteLock> singleLabelLocks;
-        private final ManagedReadWriteLock multiLabelLock;
-        private final Conclusions conclusionsIndex;
-        private final Contains containsIndex;
-
-        public Rules() {
-            rulesByLabel = new ConcurrentHashMap<>();
-            rulesByIID = new ConcurrentHashMap<>();
-            singleLabelLocks = new ConcurrentHashMap<>();
-            multiLabelLock = new ManagedReadWriteLock();
-            conclusionsIndex = new Conclusions();
-            containsIndex = new Contains();
-        }
-
-        public Conclusions conclusions() {
-            return conclusionsIndex;
-        }
-
-        public Contains contains() {
-            return containsIndex;
-        }
-
-        public ResourceIterator<RuleStructure> all() {
-            Encoding.Prefix index = IndexIID.Rule.prefix();
-            ResourceIterator<RuleStructure> persistedRules = storage.iterate(index.bytes(), (key, value) ->
-                    convert(StructureIID.Rule.of(value)));
-            return link(iterate(rulesByIID.values()), persistedRules).distinct();
-        }
-
-        public Stream<RuleStructure> buffered() {
-            return rulesByIID.values().stream();
-        }
-
-        public RuleStructure convert(StructureIID.Rule iid) {
-            return rulesByIID.computeIfAbsent(iid, i -> {
-                final RuleStructure structure = new RuleStructureImpl.Persisted(SchemaGraph.this, i);
-                rulesByLabel.putIfAbsent(structure.label(), structure);
-                return structure;
-            });
-        }
-
-        public RuleStructure get(String label) {
-            assert storage.isOpen();
-            try {
-                if (!isReadOnly) {
-                    multiLabelLock.lockRead();
-                    singleLabelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockRead();
-                }
-
-                RuleStructure vertex = rulesByLabel.get(label);
-                if (vertex != null) return vertex;
-
-                final IndexIID.Rule index = IndexIID.Rule.of(label);
-                final byte[] iid = storage.get(index.bytes());
-                if (iid != null) vertex = convert(StructureIID.Rule.of(iid));
-                return vertex;
-            } catch (InterruptedException e) {
-                throw GraknException.of(e);
-            } finally {
-                if (!isReadOnly) {
-                    singleLabelLocks.get(label).unlockRead();
-                    multiLabelLock.unlockRead();
-                }
-            }
-        }
-
-        public RuleStructure create(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
-            assert storage.isOpen();
-            try {
-                multiLabelLock.lockRead();
-                singleLabelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockWrite();
-
-                final RuleStructure rule = rulesByLabel.computeIfAbsent(label, i -> new RuleStructureImpl.Buffered(
-                        SchemaGraph.this, StructureIID.Rule.generate(keyGenerator), label, when, then
-                ));
-                rulesByIID.put(rule.iid(), rule);
-                return rule;
-            } catch (InterruptedException e) {
-                throw GraknException.of(e);
-            } finally {
-                singleLabelLocks.get(label).unlockWrite();
-                multiLabelLock.unlockRead();
-            }
-        }
-
-        public RuleStructure update(RuleStructure vertex, String oldLabel, String newLabel) {
-            assert storage.isOpen();
-            try {
-                final RuleStructure rule = get(newLabel);
-                multiLabelLock.lockWrite();
-                if (rule != null) throw GraknException.of(INVALID_SCHEMA_WRITE, newLabel);
-                rulesByLabel.remove(oldLabel);
-                rulesByLabel.put(newLabel, vertex);
-                return vertex;
-            } catch (InterruptedException e) {
-                throw GraknException.of(e);
-            } finally {
-                multiLabelLock.unlockWrite();
-            }
-        }
-
-        public void delete(RuleStructure vertex) {
-            assert storage.isOpen();
-            try { // we intentionally use READ on multiLabelLock, as delete() only concerns one label
-                // TODO do we need all these locks here? Are they applicable for this method?
-                multiLabelLock.lockRead();
-                singleLabelLocks.computeIfAbsent(vertex.label(), x -> new ManagedReadWriteLock()).lockWrite();
-
-                rulesByLabel.remove(vertex.label());
-                rulesByIID.remove(vertex.iid());
-            } catch (InterruptedException e) {
-                throw GraknException.of(e);
-            } finally {
-                singleLabelLocks.get(vertex.label()).unlockWrite();
-                multiLabelLock.unlockRead();
-            }
-        }
-
-        public void commit() {
-            rulesByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Status.BUFFERED)).forEach(
-                    ruleStructure -> ruleStructure.iid(StructureIID.Rule.generate(storage.asSchema().schemaKeyGenerator()))
-            ); // rulesByIID no longer contains valid mapping from IID to TypeVertex
-            rulesByIID.values().forEach(RuleStructure::commit);
-            conclusionsIndex.buffered().commit();
-            containsIndex.buffered().commit();
-        }
-
-        public void clear() {
-            rulesByIID.clear();
-            rulesByLabel.clear();
-            conclusionsIndex.clear();
-            containsIndex.clear();
-        }
-
-        public class Conclusions {
-            private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> creating;
-            private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> creatingHas;
-            private final Buffered buffered;
-            private boolean outdated;
-
-            public Conclusions() {
-                creating = new ConcurrentHashMap<>();
-                creatingHas = new ConcurrentHashMap<>();
-                buffered = new Buffered();
-                outdated = false;
-            }
-
-            public Buffered buffered() {
-                return buffered;
-            }
-
-            public boolean isOutdated() {
-                return outdated;
-            }
-
-            public void isOutdated(boolean isOutdated) {
-                this.outdated = isOutdated;
-            }
-
-            public ResourceIterator<RuleStructure> creating(TypeVertex type) {
-                assert !outdated;
-                return link(iterate(creating.computeIfAbsent(type, this::loadCreating)),
-                            buffered().creating(type));
-            }
-
-            public ResourceIterator<RuleStructure> creatingHas(TypeVertex attributeType) {
-                assert !outdated;
-                return link(iterate(creatingHas.computeIfAbsent(attributeType, this::loadCreatingHas)),
-                            buffered().creatingHas(attributeType));
-            }
-
-            public void deleteCreating(RuleStructure rule, TypeVertex type) {
-                Set<RuleStructure> rules = creating.get(type);
-                if (rules != null && rules.contains(rule)) {
-                    creating.get(type).remove(rule);
-                    storage.delete(Rule.Key.concludedVertex(type.iid(), rule.iid()).bytes());
-                }
-                buffered().deleteCreates(rule, type);
-            }
-
-            public void deleteCreatingHas(RuleStructure rule, TypeVertex attributeType) {
-                Set<RuleStructure> rules = creatingHas.get(attributeType);
-                if (rules != null && rules.contains(rule)) {
-                    rules.remove(rule);
-                    storage.delete(Rule.Key.concludedHasEdge(attributeType.iid(), rule.iid()).bytes());
-                }
-                buffered().deleteCreatesHas(rule, attributeType);
-            }
-
-            private Set<RuleStructure> loadCreating(TypeVertex type) {
-                Rule scanPrefix = Rule.Prefix.concludedVertex(type.iid());
-                return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
-                        .map(Rules.this::convert).toSet();
-            }
-
-            private Set<RuleStructure> loadCreatingHas(TypeVertex attrType) {
-                Rule scanPrefix = Rule.Prefix.concludedHasEdge(attrType.iid());
-                return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
-                        .map(Rules.this::convert).toSet();
-            }
-
-            private void clear() {
-                creating.clear();
-                creatingHas.clear();
-                buffered.clear();
-            }
-
-            public class Buffered {
-
-                private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> creating;
-                private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> creatingHas;
-
-                public Buffered() {
-                    creating = new ConcurrentHashMap<>();
-                    creatingHas = new ConcurrentHashMap<>();
-                }
-
-                public void creates(RuleStructure rule, TypeVertex type) {
-                    creating.compute(type, (t, rules) -> {
-                        if (rules == null) rules = new HashSet<>();
-                        rules.add(rule);
-                        return rules;
-                    });
-                }
-
-                public void createsHas(RuleStructure rule, TypeVertex attributeType) {
-                    creatingHas.compute(attributeType, (t, rules) -> {
-                        if (rules == null) rules = new HashSet<>();
-                        rules.add(rule);
-                        return rules;
-                    });
-                }
-
-                private void commit() {
-                    creating.forEach((type, rules) -> {
-                        VertexIID.Type typeIID = type.iid();
-                        rules.forEach(rule -> {
-                            Rule concludesInstance = Rule.Key.concludedVertex(typeIID, rule.iid());
-                            storage.put(concludesInstance.bytes());
-                        });
-                    });
-                    creatingHas.forEach((type, rules) -> {
-                        VertexIID.Type typeIID = type.iid();
-                        rules.forEach(rule -> {
-                            Rule concludesHas = Rule.Key.concludedHasEdge(typeIID, rule.iid());
-                            storage.put(concludesHas.bytes());
-                        });
-                    });
-                }
-
-                private ResourceIterator<RuleStructure> creating(TypeVertex label) {
-                    return iterate(creating.getOrDefault(label, set()));
-                }
-
-                private ResourceIterator<RuleStructure> creatingHas(TypeVertex label) {
-                    return iterate(creatingHas.getOrDefault(label, set()));
-                }
-
-                private void deleteCreates(RuleStructure rule, TypeVertex type) {
-                    if (creating.containsKey(type)) {
-                        creating.get(type).remove(rule);
-                    }
-                }
-
-                private void deleteCreatesHas(RuleStructure rule, TypeVertex attributeType) {
-                    if (creatingHas.containsKey(attributeType)) {
-                        creatingHas.get(attributeType).remove(rule);
-                    }
-                }
-
-                private void clear() {
-                    creating.clear();
-                    creatingHas.clear();
-                }
-            }
-
-        }
-
-        public class Contains {
-
-            private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> contains;
-            private final Buffered buffered;
-
-            public Contains() {
-                contains = new ConcurrentHashMap<>();
-                buffered = new Buffered();
-            }
-
-            public Buffered buffered() {
-                return buffered;
-            }
-
-            public ResourceIterator<RuleStructure> get(TypeVertex type) {
-                return link(iterate(contains.computeIfAbsent(type, this::loadIndex)),
-                            iterate(buffered().contains.getOrDefault(type, set())));
-            }
-
-            public void delete(RuleStructure rule, ResourceIterator<TypeVertex> types) {
-                types.forEachRemaining(type -> {
-                    Set<RuleStructure> rules = contains.get(type);
-                    if (rules != null) rules.remove(rule);
-                    storage.delete(Rule.Key.contained(type.iid(), rule.iid()).bytes());
-                    buffered().delete(rule, type);
-                });
-            }
-
-            private Set<RuleStructure> loadIndex(TypeVertex type) {
-                Rule scanPrefix = Rule.Prefix.contained(type.iid());
-                return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
-                        .map(Rules.this::convert).toSet();
-            }
-
-            private void clear() {
-                contains.clear();
-                buffered.clear();
-            }
-
-            public class Buffered {
-                private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> contains;
-
-                public Buffered() {
-                    contains = new ConcurrentHashMap<>();
-                }
-
-                public void put(RuleStructure rule, TypeVertex type) {
-                    contains.compute(type, (t, rules) -> {
-                        if (rules == null) rules = new HashSet<>();
-                        rules.add(rule);
-                        return rules;
-                    });
-                }
-
-                private void delete(RuleStructure rule, TypeVertex type) {
-                    if (contains.containsKey(type)) contains.get(type).remove(rule);
-                }
-
-                private void commit() {
-                    contains.forEach((type, rules) -> {
-                        rules.forEach(rule -> {
-                            Rule typeInRule = Rule.Key.contained(type.iid(), rule.iid());
-                            storage.put(typeInRule.bytes());
-                        });
-                    });
-                }
-
-                private void clear() {
-                    contains.clear();
-                }
-            }
-        }
     }
 }
