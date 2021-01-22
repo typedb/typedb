@@ -353,11 +353,11 @@ public class Encoding {
         ValueType(int key, Class<?> valueClass, boolean isWritable, boolean isKeyable,
                   @Nullable GraqlArg.ValueType graqlValueType) {
             this.key = unsignedByte(key);
+            this.bytes = new byte[] {this.key};
             this.valueClass = valueClass;
             this.isWritable = isWritable;
             this.isKeyable = isKeyable;
             this.graqlValueType = graqlValueType;
-            this.bytes = new byte[] {this.key};
         }
 
         public static ValueType of(byte value) {
