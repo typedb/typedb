@@ -67,8 +67,8 @@ public class ReasonerTest {
         milk.setOwns(isStillGood);
         logicMgr.putRule(
                 "old-milk-is-not-good",
-//                Graql.parsePattern("{ $x isa milk, has age-in-days >= 10; }").asConjunction(),
-                Graql.parsePattern("{ $x isa milk; }").asConjunction(),
+                Graql.parsePattern("{ $x isa milk, has age-in-days >= 10; }").asConjunction(),
+//                Graql.parsePattern("{ $x isa milk; }").asConjunction(),
                 Graql.parseVariable("$x has is-still-good false").asThing());
         rocksTransaction.commit();
         session.close();
@@ -76,13 +76,13 @@ public class ReasonerTest {
         session = grakn.session(database, Arguments.Session.Type.DATA);
 
         rocksTransaction = session.transaction(Arguments.Transaction.Type.WRITE);
-        rocksTransaction.query().insert(Graql.parseQuery("insert $x isa milk;").asInsert());
-        rocksTransaction.query().insert(Graql.parseQuery("insert $x isa milk;").asInsert());
-        rocksTransaction.query().insert(Graql.parseQuery("insert $x isa milk;").asInsert());
+        rocksTransaction.query().insert(Graql.parseQuery("insert $x isa milk, has age-in-days 5;").asInsert());
+        rocksTransaction.query().insert(Graql.parseQuery("insert $x isa milk, has age-in-days 10;").asInsert());
+        rocksTransaction.query().insert(Graql.parseQuery("insert $x isa milk, has age-in-days 15;").asInsert());
         rocksTransaction.commit();
 
         rocksTransaction = session.transaction(Arguments.Transaction.Type.WRITE);
-        List<ConceptMap> ans = rocksTransaction.query().match(Graql.parseQuery("match $x has $a;").asMatch()).toList();
+        List<ConceptMap> ans = rocksTransaction.query().match(Graql.parseQuery("match $x has is-still-good $a;").asMatch()).toList();
         System.out.println(ans);
 
         ans.iterator().forEachRemaining(a -> {
@@ -91,7 +91,7 @@ public class ReasonerTest {
             assertEquals("milk", a.get("x").asThing().getType().getLabel().scopedName());
         });
 
-        assertEquals(3, ans.size());
+        assertEquals(2, ans.size());
 
         rocksTransaction.close();
         session.close();
