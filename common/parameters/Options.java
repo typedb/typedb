@@ -33,7 +33,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     public static final boolean DEFAULT_PARALLEL = true;
     public static final boolean DEFAULT_QUERY_READ_PREFETCH = true;
     public static final boolean DEFAULT_QUERY_WRITE_PREFETCH = false;
-    public static final boolean DEFAULT_PRIMARY_REPLICA = true;
+    public static final boolean DEFAULT_ALLOW_SECONDARY_REPLICA = false;
 
     private PARENT parent;
     private Boolean infer = null;
@@ -110,7 +110,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     public boolean allowSecondaryReplica() {
         if (allowSecondaryReplica != null) return allowSecondaryReplica;
         else if (parent != null) return parent.allowSecondaryReplica();
-        else return DEFAULT_PRIMARY_REPLICA;
+        else return DEFAULT_ALLOW_SECONDARY_REPLICA;
     }
 
     public SELF allowSecondaryReplica(boolean allowSecondaryReplica) {

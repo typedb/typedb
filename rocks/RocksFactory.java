@@ -80,17 +80,8 @@ public final class RocksFactory implements Factory {
 
     private synchronized Factory.TransactionSchema transactionSchemaFactory() {
         if (transactionSchemaFactory == null) {
-            transactionSchemaFactory = new TransactionSchema() {
-                @Override
-                public RocksTransaction.Schema transactionSchemaInit(RocksSession.Schema session) {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public RocksTransaction.Schema transaction(RocksSession.Schema session, Arguments.Transaction.Type type, Options.Transaction options) {
-                    return new RocksTransaction.Schema(session, type, options, storageFactory());
-                }
-            };
+            transactionSchemaFactory = (session, type, options) ->
+                    new RocksTransaction.Schema(session, type, options, storageFactory());
         }
         return transactionSchemaFactory;
     }
