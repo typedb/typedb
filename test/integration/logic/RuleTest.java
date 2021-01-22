@@ -656,7 +656,7 @@ public class RuleTest {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     EntityType person = conceptMgr.getEntityType("person");
-                    assertThrowsGraknException(person::delete, ErrorMessage.TypeWrite.TYPE_PRESENT_IN_RULES.code());
+                    assertThrowsGraknException(person::delete, ErrorMessage.TypeWrite.TYPE_REFERENCED_IN_RULES.code());
                 }
             }
         }
@@ -720,14 +720,14 @@ public class RuleTest {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     RelationType friendship = conceptMgr.getRelationType("friendship");
-                    assertThrowsGraknException(friendship::delete, ErrorMessage.TypeWrite.TYPE_PRESENT_IN_RULES.code());
+                    assertThrowsGraknException(friendship::delete, ErrorMessage.TypeWrite.TYPE_REFERENCED_IN_RULES.code());
                     assertTrue(!txn.isOpen());
                 }
                 // deleting an attribute type used in a rule should throw
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     AttributeType name = conceptMgr.getAttributeType("name");
-                    assertThrowsGraknException(name::delete, ErrorMessage.TypeWrite.TYPE_PRESENT_IN_RULES.code());
+                    assertThrowsGraknException(name::delete, ErrorMessage.TypeWrite.TYPE_REFERENCED_IN_RULES.code());
                     assertTrue(!txn.isOpen());
                 }
                 // deleting a rule, then an attribute type used in the rule is allowed

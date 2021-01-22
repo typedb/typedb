@@ -346,8 +346,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new TypeWrite(2, "The type '%s' has subtypes, and cannot be deleted.");
         public static final TypeWrite TYPE_HAS_INSTANCES =
                 new TypeWrite(3, "The type '%s' has instances, and cannot be deleted.");
-        public static final TypeWrite TYPE_PRESENT_IN_RULES =
-                new TypeWrite(4, "The type '%s' is utilised in rules '%s', and cannot be deleted.");
+        public static final TypeWrite TYPE_REFERENCED_IN_RULES =
+                new TypeWrite(4, "The type '%s' is referenced in rules '%s', and cannot be deleted.");
         public static final TypeWrite CYCLIC_TYPE_HIERARCHY =
                 new TypeWrite(5, "There is a cyclic type hierarchy, which is not allowed: '%s'.");
         public static final TypeWrite OWNS_ABSTRACT_ATT_TYPE =

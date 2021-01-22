@@ -102,7 +102,7 @@ public abstract class IndexIID extends IID {
                 /**
                  * @return a byte array representing the index of a given type concluded in a given rule
                  */
-                public static Key concludesVertex(VertexIID.Type typeIID, StructureIID.Rule ruleIID) {
+                public static Key concludedVertex(VertexIID.Type typeIID, StructureIID.Rule ruleIID) {
                     return new Key(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
                                         Encoding.Index.Infix.CONCLUDED_VERTEX.bytes(), ruleIID.bytes()));
                 }
@@ -110,16 +110,16 @@ public abstract class IndexIID extends IID {
                 /**
                  * @return a byte array representing the index of a given type concluded in a given rule
                  */
-                public static Key concludesEdgeTo(VertexIID.Type typeIID, StructureIID.Rule ruleIID) {
+                public static Key concludedEdgeTo(VertexIID.Type typeIID, StructureIID.Rule ruleIID) {
                     return new Key(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
-                                        Encoding.Index.Infix.CONCLUDED_HAS_EDGE.bytes(), ruleIID.bytes()));
+                                        Encoding.Index.Infix.CONCLUDED_EDGE_TO.bytes(), ruleIID.bytes()));
                 }
 
 
                 /**
                  * @return a byte array representing the index of a given type contained in a given rule
                  */
-                public static Key contains(VertexIID.Type typeIID, StructureIID.Rule ruleIID) {
+                public static Key contained(VertexIID.Type typeIID, StructureIID.Rule ruleIID) {
                     return new Key(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
                                         Encoding.Index.Infix.CONTAINED_TYPE.bytes(), ruleIID.bytes()));
                 }
@@ -147,7 +147,7 @@ public abstract class IndexIID extends IID {
                 /**
                  * @return a byte array representing the the index scan prefix of a given type concluded in rules
                  */
-                public static Prefix concludesVertex(VertexIID.Type typeIID) {
+                public static Prefix concludedVertex(VertexIID.Type typeIID) {
                     return new Prefix(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
                                            Encoding.Index.Infix.CONCLUDED_VERTEX.bytes()));
                 }
@@ -155,15 +155,15 @@ public abstract class IndexIID extends IID {
                 /**
                  * @return a byte array representing the index prefix scan of a given type concluded in rules
                  */
-                public static Prefix concludesEdgeTo(VertexIID.Type typeIID) {
+                public static Prefix concludedEdgeTo(VertexIID.Type typeIID) {
                     return new Prefix(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
-                                           Encoding.Index.Infix.CONCLUDED_HAS_EDGE.bytes()));
+                                           Encoding.Index.Infix.CONCLUDED_EDGE_TO.bytes()));
                 }
 
                 /**
                  * @return a byte array representing the index scan prefix of a given type contained in rules
                  */
-                public static Prefix contains(VertexIID.Type typeIID) {
+                public static Prefix contained(VertexIID.Type typeIID) {
                     return new Prefix(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
                                            Encoding.Index.Infix.CONTAINED_TYPE.bytes()));
                 }

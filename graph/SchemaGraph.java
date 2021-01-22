@@ -592,7 +592,7 @@ public class SchemaGraph implements Graph {
                     Set<RuleStructure> rules = concludesVertex.get(type);
                     if (rules != null && rules.contains(rule)) {
                         concludesVertex.get(type).remove(rule);
-                        storage.delete(Rule.Key.concludesVertex(type.iid(), rule.iid()).bytes());
+                        storage.delete(Rule.Key.concludedVertex(type.iid(), rule.iid()).bytes());
                     }
                 }
 
@@ -600,18 +600,18 @@ public class SchemaGraph implements Graph {
                     Set<RuleStructure> rules = concludesEdgeTo.get(type);
                     if (rules != null && rules.contains(rule)) {
                         rules.remove(rule);
-                        storage.delete(Rule.Key.concludesEdgeTo(type.iid(), rule.iid()).bytes());
+                        storage.delete(Rule.Key.concludedEdgeTo(type.iid(), rule.iid()).bytes());
                     }
                 }
 
                 private Set<RuleStructure> loadConcludesVertex(TypeVertex type) {
-                    Rule scanPrefix = Rule.Prefix.concludesVertex(type.iid());
+                    Rule scanPrefix = Rule.Prefix.concludedVertex(type.iid());
                     return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
                             .map(Rules.this::convert).toSet();
                 }
 
                 private Set<RuleStructure> loadConcludesEdgeTo(TypeVertex attrType) {
-                    Rule scanPrefix = Rule.Prefix.concludesEdgeTo(attrType.iid());
+                    Rule scanPrefix = Rule.Prefix.concludedEdgeTo(attrType.iid());
                     return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
                             .map(Rules.this::convert).toSet();
                 }
@@ -653,14 +653,14 @@ public class SchemaGraph implements Graph {
                     concludesVertex.forEach((type, rules) -> {
                         VertexIID.Type typeIID = type.iid();
                         rules.forEach(rule -> {
-                            Rule concludesVertex = Rule.Key.concludesVertex(typeIID, rule.iid());
+                            Rule concludesVertex = Rule.Key.concludedVertex(typeIID, rule.iid());
                             storage.put(concludesVertex.bytes());
                         });
                     });
                     concludesEdgeTo.forEach((type, rules) -> {
                         VertexIID.Type typeIID = type.iid();
                         rules.forEach(rule -> {
-                            Rule concludesEdgeTo = Rule.Key.concludesEdgeTo(typeIID, rule.iid());
+                            Rule concludesEdgeTo = Rule.Key.concludedEdgeTo(typeIID, rule.iid());
                             storage.put(concludesEdgeTo.bytes());
                         });
                     });
@@ -738,11 +738,11 @@ public class SchemaGraph implements Graph {
                 private void delete(RuleStructure rule, TypeVertex type) {
                     Set<RuleStructure> rules = references.get(type);
                     if (rules != null) rules.remove(rule);
-                    storage.delete(Rule.Key.contains(type.iid(), rule.iid()).bytes());
+                    storage.delete(Rule.Key.contained(type.iid(), rule.iid()).bytes());
                 }
 
                 private Set<RuleStructure> loadIndex(TypeVertex type) {
-                    Rule scanPrefix = Rule.Prefix.contains(type.iid());
+                    Rule scanPrefix = Rule.Prefix.contained(type.iid());
                     return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
                             .map(Rules.this::convert).toSet();
                 }
@@ -779,7 +779,7 @@ public class SchemaGraph implements Graph {
                 private void commit() {
                     references.forEach((type, rules) -> {
                         rules.forEach(rule -> {
-                            Rule typeInRule = Rule.Key.contains(type.iid(), rule.iid());
+                            Rule typeInRule = Rule.Key.contained(type.iid(), rule.iid());
                             storage.put(typeInRule.bytes());
                         });
                     });

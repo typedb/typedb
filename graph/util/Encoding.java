@@ -749,7 +749,7 @@ public class Encoding {
         enum Infix {
             CONTAINED_TYPE(0),
             CONCLUDED_VERTEX(10),
-            CONCLUDED_HAS_EDGE(11);
+            CONCLUDED_EDGE_TO(11);
 
             public static final int LENGTH = 1;
             private final byte key;
