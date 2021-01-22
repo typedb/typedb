@@ -64,12 +64,12 @@ public class LogicManager {
         return graphMgr.schema().rules().all().map(this::fromStructure);
     }
 
-    public ResourceIterator<Rule> rulesCreating(Label type) {
-        return graphMgr.schema().rules().conclusions().creating(graphMgr.schema().getType(type)).map(this::fromStructure);
+    public ResourceIterator<Rule> rulesConcluding(Label type) {
+        return graphMgr.schema().rules().conclusions().concludesVertex(graphMgr.schema().getType(type)).map(this::fromStructure);
     }
 
-    public ResourceIterator<Rule> rulesCreatingHas(Label attributeType) {
-        return graphMgr.schema().rules().conclusions().creatingHas(graphMgr.schema().getType(attributeType)).map(this::fromStructure);
+    public ResourceIterator<Rule> rulesConcludingHas(Label attributeType) {
+        return graphMgr.schema().rules().conclusions().concludesEdgeTo(graphMgr.schema().getType(attributeType)).map(this::fromStructure);
     }
 
 

@@ -348,14 +348,14 @@ public class Rule {
             void index(Rule rule) {
                 Variable relation = relation().owner();
                 Set<Label> possibleRelationTypes = relation.resolvedTypes();
-                possibleRelationTypes.forEach(rule.structure::indexConcludes);
+                possibleRelationTypes.forEach(rule.structure::indexConcludesVertex);
             }
 
             @Override
             void unindex(Rule rule) {
                 Variable relation = relation().owner();
                 Set<Label> possibleRelationTypes = relation.resolvedTypes();
-                possibleRelationTypes.forEach(rule.structure::unindexConcludes);
+                possibleRelationTypes.forEach(rule.structure::unindexConcludesVertex);
             }
 
             public RelationConstraint relation() {
@@ -514,8 +514,8 @@ public class Rule {
                     grakn.core.pattern.variable.Variable attribute = has().attribute();
                     Set<Label> possibleAttributeHas = attribute.resolvedTypes();
                     possibleAttributeHas.forEach(label -> {
-                        rule.structure.indexConcludes(label);
-                        rule.structure.indexConcludesHas(label);
+                        rule.structure.indexConcludesVertex(label);
+                        rule.structure.indexConcludesEdgeTo(label);
                     });
                 }
 
@@ -524,8 +524,8 @@ public class Rule {
                     grakn.core.pattern.variable.Variable attribute = has().attribute();
                     Set<Label> possibleAttributeHas = attribute.resolvedTypes();
                     possibleAttributeHas.forEach(label -> {
-                        rule.structure.unindexConcludes(label);
-                        rule.structure.unindexConcludesHas(label);
+                        rule.structure.unindexConcludesVertex(label);
+                        rule.structure.unindexConcludesEdgeTo(label);
                     });
                 }
 
@@ -628,14 +628,14 @@ public class Rule {
                 void index(Rule rule) {
                     grakn.core.pattern.variable.Variable attribute = has().attribute();
                     Set<Label> possibleAttributeHas = attribute.resolvedTypes();
-                    possibleAttributeHas.forEach(rule.structure::indexConcludesHas);
+                    possibleAttributeHas.forEach(rule.structure::indexConcludesEdgeTo);
                 }
 
                 @Override
                 void unindex(Rule rule) {
                     grakn.core.pattern.variable.Variable attribute = has().attribute();
                     Set<Label> possibleAttributeHas = attribute.resolvedTypes();
-                    possibleAttributeHas.forEach(rule.structure::unindexConcludesHas);
+                    possibleAttributeHas.forEach(rule.structure::unindexConcludesEdgeTo);
                 }
 
                 @Override

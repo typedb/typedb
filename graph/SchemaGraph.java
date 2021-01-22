@@ -172,7 +172,6 @@ public class SchemaGraph implements Graph {
         return getType(ROLE.label(), ROLE.scope());
     }
 
-
     public ResourceIterator<TypeVertex> thingTypes() {
         return tree(rootThingType(), v -> v.ins().edge(SUB).from());
     }
@@ -521,6 +520,7 @@ public class SchemaGraph implements Graph {
         }
 
         public class Conclusions {
+
             private final Buffered buffered;
             private final Persisted persisted;
             private boolean outdated;
@@ -543,24 +543,24 @@ public class SchemaGraph implements Graph {
                 this.outdated = isOutdated;
             }
 
-            public ResourceIterator<RuleStructure> creating(TypeVertex type) {
+            public ResourceIterator<RuleStructure> concludesVertex(TypeVertex type) {
                 assert !outdated;
-                return link(persisted.creating(type), buffered.creating(type));
+                return link(persisted.concludesVertex(type), buffered.concludesVertex(type));
             }
 
-            public ResourceIterator<RuleStructure> creatingHas(TypeVertex attributeType) {
+            public ResourceIterator<RuleStructure> concludesEdgeTo(TypeVertex type) {
                 assert !outdated;
-                return link(persisted.creatingHas(attributeType), buffered.creatingHas(attributeType));
+                return link(persisted.concludesEdgeTo(type), buffered.concludesEdgeTo(type));
             }
 
-            public void deleteCreating(RuleStructure rule, TypeVertex type) {
-                persisted.deleteCreating(rule, type);
-                buffered.deleteCreates(rule, type);
+            public void deleteConcludesVertex(RuleStructure rule, TypeVertex type) {
+                persisted.deleteConcludesVertex(rule, type);
+                buffered.deleteConcludesVertex(rule, type);
             }
 
-            public void deleteCreatingHas(RuleStructure rule, TypeVertex attributeType) {
-                persisted.deleteCreatingHas(rule, attributeType);
-                buffered.deleteCreatesHas(rule, attributeType);
+            public void deleteConcludesEdgeTo(RuleStructure rule, TypeVertex attributeType) {
+                persisted.deleteConcludesEdgeTo(rule, attributeType);
+                buffered.deleteConcludesEdgeTo(rule, attributeType);
             }
 
             private void clear() {
@@ -570,79 +570,79 @@ public class SchemaGraph implements Graph {
 
             public class Persisted {
 
-                private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> creating;
-                private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> creatingHas;
+                private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> concludesVertex;
+                private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> concludesEdgeTo;
 
                 public Persisted() {
-                    creating = new ConcurrentHashMap<>();
-                    creatingHas = new ConcurrentHashMap<>();
+                    concludesVertex = new ConcurrentHashMap<>();
+                    concludesEdgeTo = new ConcurrentHashMap<>();
                 }
 
-                private ResourceIterator<RuleStructure> creating(TypeVertex type) {
+                private ResourceIterator<RuleStructure> concludesVertex(TypeVertex type) {
                     assert !outdated;
-                    return iterate(creating.computeIfAbsent(type, this::loadCreating));
+                    return iterate(concludesVertex.computeIfAbsent(type, this::loadConcludesVertex));
                 }
 
-                public ResourceIterator<RuleStructure> creatingHas(TypeVertex attributeType) {
+                public ResourceIterator<RuleStructure> concludesEdgeTo(TypeVertex type) {
                     assert !outdated;
-                    return iterate(creatingHas.computeIfAbsent(attributeType, this::loadCreatingHas));
+                    return iterate(concludesEdgeTo.computeIfAbsent(type, this::loadConcludesEdgeTo));
                 }
 
-                private void deleteCreating(RuleStructure rule, TypeVertex type) {
-                    Set<RuleStructure> rules = creating.get(type);
+                private void deleteConcludesVertex(RuleStructure rule, TypeVertex type) {
+                    Set<RuleStructure> rules = concludesVertex.get(type);
                     if (rules != null && rules.contains(rule)) {
-                        creating.get(type).remove(rule);
-                        storage.delete(Rule.Key.concludedVertex(type.iid(), rule.iid()).bytes());
+                        concludesVertex.get(type).remove(rule);
+                        storage.delete(Rule.Key.concludesVertex(type.iid(), rule.iid()).bytes());
                     }
                 }
 
-                private void deleteCreatingHas(RuleStructure rule, TypeVertex attributeType) {
-                    Set<RuleStructure> rules = creatingHas.get(attributeType);
+                private void deleteConcludesEdgeTo(RuleStructure rule, TypeVertex type) {
+                    Set<RuleStructure> rules = concludesEdgeTo.get(type);
                     if (rules != null && rules.contains(rule)) {
                         rules.remove(rule);
-                        storage.delete(Rule.Key.concludedHasEdge(attributeType.iid(), rule.iid()).bytes());
+                        storage.delete(Rule.Key.concludesEdgeTo(type.iid(), rule.iid()).bytes());
                     }
                 }
 
-                private Set<RuleStructure> loadCreating(TypeVertex type) {
-                    Rule scanPrefix = Rule.Prefix.concludedVertex(type.iid());
+                private Set<RuleStructure> loadConcludesVertex(TypeVertex type) {
+                    Rule scanPrefix = Rule.Prefix.concludesVertex(type.iid());
                     return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
                             .map(Rules.this::convert).toSet();
                 }
 
-                private Set<RuleStructure> loadCreatingHas(TypeVertex attrType) {
-                    Rule scanPrefix = Rule.Prefix.concludedHasEdge(attrType.iid());
+                private Set<RuleStructure> loadConcludesEdgeTo(TypeVertex attrType) {
+                    Rule scanPrefix = Rule.Prefix.concludesEdgeTo(attrType.iid());
                     return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
                             .map(Rules.this::convert).toSet();
                 }
 
                 public void clear() {
-                    creating.clear();
-                    creatingHas.clear();
+                    concludesVertex.clear();
+                    concludesEdgeTo.clear();
                 }
 
             }
 
             public class Buffered {
 
-                private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> creating;
-                private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> creatingHas;
+                private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> concludesVertex;
+                private final ConcurrentHashMap<TypeVertex, Set<RuleStructure>> concludesEdgeTo;
 
                 public Buffered() {
-                    creating = new ConcurrentHashMap<>();
-                    creatingHas = new ConcurrentHashMap<>();
+                    concludesVertex = new ConcurrentHashMap<>();
+                    concludesEdgeTo = new ConcurrentHashMap<>();
                 }
 
-                public void creates(RuleStructure rule, TypeVertex type) {
-                    creating.compute(type, (t, rules) -> {
+                public void concludesVertex(RuleStructure rule, TypeVertex type) {
+                    concludesVertex.compute(type, (t, rules) -> {
                         if (rules == null) rules = new HashSet<>();
                         rules.add(rule);
                         return rules;
                     });
                 }
 
-                public void createsHas(RuleStructure rule, TypeVertex attributeType) {
-                    creatingHas.compute(attributeType, (t, rules) -> {
+                public void concludesEdgeTo(RuleStructure rule, TypeVertex type) {
+                    concludesEdgeTo.compute(type, (t, rules) -> {
                         if (rules == null) rules = new HashSet<>();
                         rules.add(rule);
                         return rules;
@@ -650,49 +650,47 @@ public class SchemaGraph implements Graph {
                 }
 
                 private void commit() {
-                    creating.forEach((type, rules) -> {
+                    concludesVertex.forEach((type, rules) -> {
                         VertexIID.Type typeIID = type.iid();
                         rules.forEach(rule -> {
-                            Rule concludesInstance = Rule.Key.concludedVertex(typeIID, rule.iid());
-                            storage.put(concludesInstance.bytes());
+                            Rule concludesVertex = Rule.Key.concludesVertex(typeIID, rule.iid());
+                            storage.put(concludesVertex.bytes());
                         });
                     });
-                    creatingHas.forEach((type, rules) -> {
+                    concludesEdgeTo.forEach((type, rules) -> {
                         VertexIID.Type typeIID = type.iid();
                         rules.forEach(rule -> {
-                            Rule concludesHas = Rule.Key.concludedHasEdge(typeIID, rule.iid());
-                            storage.put(concludesHas.bytes());
+                            Rule concludesEdgeTo = Rule.Key.concludesEdgeTo(typeIID, rule.iid());
+                            storage.put(concludesEdgeTo.bytes());
                         });
                     });
                 }
 
-                private ResourceIterator<RuleStructure> creating(TypeVertex label) {
-                    return iterate(creating.getOrDefault(label, set()));
+                private ResourceIterator<RuleStructure> concludesVertex(TypeVertex type) {
+                    return iterate(concludesVertex.getOrDefault(type, set()));
                 }
 
-                private ResourceIterator<RuleStructure> creatingHas(TypeVertex label) {
-                    return iterate(creatingHas.getOrDefault(label, set()));
+                private ResourceIterator<RuleStructure> concludesEdgeTo(TypeVertex type) {
+                    return iterate(concludesEdgeTo.getOrDefault(type, set()));
                 }
 
-                private void deleteCreates(RuleStructure rule, TypeVertex type) {
-                    if (creating.containsKey(type)) {
-                        creating.get(type).remove(rule);
+                private void deleteConcludesVertex(RuleStructure rule, TypeVertex type) {
+                    if (concludesVertex.containsKey(type)) {
+                        concludesVertex.get(type).remove(rule);
                     }
                 }
 
-                private void deleteCreatesHas(RuleStructure rule, TypeVertex attributeType) {
-                    if (creatingHas.containsKey(attributeType)) {
-                        creatingHas.get(attributeType).remove(rule);
+                private void deleteConcludesEdgeTo(RuleStructure rule, TypeVertex type) {
+                    if (concludesEdgeTo.containsKey(type)) {
+                        concludesEdgeTo.get(type).remove(rule);
                     }
                 }
 
                 private void clear() {
-                    creating.clear();
-                    creatingHas.clear();
+                    concludesVertex.clear();
+                    concludesEdgeTo.clear();
                 }
-
             }
-
         }
 
         public class References {
@@ -710,7 +708,7 @@ public class SchemaGraph implements Graph {
             }
 
             public ResourceIterator<RuleStructure> get(TypeVertex type) {
-                return link(persisted.get(type), buffered().get(type));
+                return link(persisted.get(type), buffered.get(type));
             }
 
             public void delete(RuleStructure rule, ResourceIterator<TypeVertex> types) {
@@ -740,11 +738,11 @@ public class SchemaGraph implements Graph {
                 private void delete(RuleStructure rule, TypeVertex type) {
                     Set<RuleStructure> rules = references.get(type);
                     if (rules != null) rules.remove(rule);
-                    storage.delete(Rule.Key.contained(type.iid(), rule.iid()).bytes());
+                    storage.delete(Rule.Key.contains(type.iid(), rule.iid()).bytes());
                 }
 
                 private Set<RuleStructure> loadIndex(TypeVertex type) {
-                    Rule scanPrefix = Rule.Prefix.contained(type.iid());
+                    Rule scanPrefix = Rule.Prefix.contains(type.iid());
                     return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
                             .map(Rules.this::convert).toSet();
                 }
@@ -781,7 +779,7 @@ public class SchemaGraph implements Graph {
                 private void commit() {
                     references.forEach((type, rules) -> {
                         rules.forEach(rule -> {
-                            Rule typeInRule = Rule.Key.contained(type.iid(), rule.iid());
+                            Rule typeInRule = Rule.Key.contains(type.iid(), rule.iid());
                             storage.put(typeInRule.bytes());
                         });
                     });

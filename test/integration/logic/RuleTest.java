@@ -460,17 +460,17 @@ public class RuleTest {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     LogicManager logicMgr = txn.logic();
 
-                    Set<Rule> friendshipRules = logicMgr.rulesCreating(Label.of("friendship")).toSet();
+                    Set<Rule> friendshipRules = logicMgr.rulesConcluding(Label.of("friendship")).toSet();
                     Rule marriageFriendsRule = txn.logic().getRule("marriage-is-friendship");
                     Rule allFriendsRule = txn.logic().getRule("all-people-are-friends");
                     assertEquals(set(marriageFriendsRule, allFriendsRule), friendshipRules);
 
-                    Set<Rule> hasNameRules = logicMgr.rulesCreatingHas(Label.of("name")).toSet();
+                    Set<Rule> hasNameRules = logicMgr.rulesConcludingHas(Label.of("name")).toSet();
                     Rule marriageSameName = txn.logic().getRule("marriage-same-name");
                     assertEquals(set(marriageSameName), hasNameRules);
 
-                    Set<Rule> hasAgeRules = logicMgr.rulesCreatingHas(Label.of("age")).toSet();
-                    Set<Rule> ageRules = logicMgr.rulesCreating(Label.of("age")).toSet();
+                    Set<Rule> hasAgeRules = logicMgr.rulesConcludingHas(Label.of("age")).toSet();
+                    Set<Rule> ageRules = logicMgr.rulesConcluding(Label.of("age")).toSet();
                     Rule peopleHaveAge10 = txn.logic().getRule("people-have-age-10");
                     assertEquals(set(peopleHaveAge10), hasAgeRules);
                     assertEquals(set(peopleHaveAge10), ageRules);
@@ -528,13 +528,13 @@ public class RuleTest {
                 // check index after commit, and delete some rules
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     LogicManager logicMgr = txn.logic();
-                    Set<Rule> friendshipRules = logicMgr.rulesCreating(Label.of("friendship")).toSet();
+                    Set<Rule> friendshipRules = logicMgr.rulesConcluding(Label.of("friendship")).toSet();
                     Rule marriageFriendsRule = txn.logic().getRule("marriage-is-friendship");
                     Rule allFriendsRule = txn.logic().getRule("all-people-are-friends");
                     assertEquals(set(marriageFriendsRule, allFriendsRule), friendshipRules);
                     allFriendsRule.delete();
 
-                    Set<Rule> hasNameRules = logicMgr.rulesCreatingHas(Label.of("name")).toSet();
+                    Set<Rule> hasNameRules = logicMgr.rulesConcludingHas(Label.of("name")).toSet();
                     Rule marriageSameName = txn.logic().getRule("marriage-same-name");
                     assertEquals(set(marriageSameName), hasNameRules);
                     marriageSameName.delete();
@@ -546,11 +546,11 @@ public class RuleTest {
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     LogicManager logicMgr = txn.logic();
-                    Set<Rule> friendshipRules = logicMgr.rulesCreating(Label.of("friendship")).toSet();
+                    Set<Rule> friendshipRules = logicMgr.rulesConcluding(Label.of("friendship")).toSet();
                     Rule marriageFriendsRule = txn.logic().getRule("marriage-is-friendship");
                     assertEquals(set(marriageFriendsRule), friendshipRules);
 
-                    Set<Rule> hasNameRules = logicMgr.rulesCreatingHas(Label.of("name")).toSet();
+                    Set<Rule> hasNameRules = logicMgr.rulesConcludingHas(Label.of("name")).toSet();
                     assertEquals(set(), hasNameRules);
                 }
             }
@@ -600,7 +600,7 @@ public class RuleTest {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     LogicManager logicMgr = txn.logic();
                     Rule marriageSameName = logicMgr.getRule("marriage-same-name");
-                    assertEquals(set(marriageSameName), logicMgr.rulesCreatingHas(Label.of("last-name")).toSet());
+                    assertEquals(set(marriageSameName), logicMgr.rulesConcludingHas(Label.of("last-name")).toSet());
                 }
             }
         }

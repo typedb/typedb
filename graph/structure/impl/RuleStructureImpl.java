@@ -104,23 +104,23 @@ public abstract class RuleStructureImpl implements RuleStructure {
     }
 
     @Override
-    public void indexConcludes(Label type) {
-        graph.rules().conclusions().buffered().creates(this, graph.getType(type));
+    public void indexConcludesVertex(Label type) {
+        graph.rules().conclusions().buffered().concludesVertex(this, graph.getType(type));
     }
 
     @Override
-    public void unindexConcludes(Label type) {
-        graph.rules().conclusions().deleteCreating(this, graph.getType(type));
+    public void unindexConcludesVertex(Label type) {
+        graph.rules().conclusions().deleteConcludesVertex(this, graph.getType(type));
     }
 
     @Override
-    public void indexConcludesHas(Label type) {
-        graph.rules().conclusions().buffered().createsHas(this, graph.getType(type));
+    public void indexConcludesEdgeTo(Label type) {
+        graph.rules().conclusions().buffered().concludesEdgeTo(this, graph.getType(type));
     }
 
     @Override
-    public void unindexConcludesHas(Label type) {
-        graph.rules().conclusions().deleteCreatingHas(this, graph.getType(type));
+    public void unindexConcludesEdgeTo(Label type) {
+        graph.rules().conclusions().deleteConcludesEdgeTo(this, graph.getType(type));
     }
 
     public Encoding.Structure encoding() {
@@ -153,7 +153,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
     }
 
     private ResourceIterator<Label> getTypeLabels(ResourceIterator<BoundVariable> variables) {
-        return variables.flatMap(v -> iterate(graqlVars(v, new HashSet<>())))
+        return variables.flatMap(v -> iterate(connectedVars(v, new HashSet<>())))
                 .distinct().filter(v -> v.isBound() && v.asBound().isType()).map(var -> var.asBound().asType().label()).filter(Optional::isPresent)
                 .map(labelConstraint -> {
                     TypeConstraint.Label label = labelConstraint.get();
@@ -162,13 +162,13 @@ public abstract class RuleStructureImpl implements RuleStructure {
                 });
     }
 
-    private Set<Variable> graqlVars(Variable var, Set<Variable> visited) {
+    private Set<Variable> connectedVars(Variable var, Set<Variable> visited) {
         visited.add(var);
         Set<Variable> vars = iterate(var.constraints()).flatMap(c -> iterate(c.variables())).map(v -> (Variable)v).toSet();
         if (visited.containsAll(vars)) return visited;
         else {
             visited.addAll(vars);
-            return iterate(vars).flatMap(v -> iterate(graqlVars(v, visited))).toSet();
+            return iterate(vars).flatMap(v -> iterate(connectedVars(v, visited))).toSet();
         }
     }
 
@@ -180,12 +180,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
             super(graph, iid, label, when, then);
             this.isCommitted = new AtomicBoolean(false);
             setModified();
-            indexTypes();
-        }
-
-        private void indexTypes() {
-            ResourceIterator<TypeVertex> labels = types();
-            labels.forEachRemaining(type -> graph.rules().references().buffered().put(this, type));
+            indexReferences();
         }
 
         @Override
@@ -244,6 +239,11 @@ public abstract class RuleStructureImpl implements RuleStructure {
             graph.storage().put(join(iid.bytes(), THEN.infix().bytes()), then().toString().getBytes());
         }
 
+        private void indexReferences() {
+            ResourceIterator<TypeVertex> labels = types();
+            labels.forEachRemaining(type -> graph.rules().references().buffered().put(this, type));
+        }
+
     }
 
     public static class Persisted extends RuleStructureImpl {
@@ -288,14 +288,14 @@ public abstract class RuleStructureImpl implements RuleStructure {
             }
         }
 
-        @Override
-        public void commit() {}
-
         private void deleteVertexFromStorage() {
             graph.storage().delete(IndexIID.Rule.of(label).bytes());
             final ResourceIterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
             while (keys.hasNext()) graph.storage().delete(keys.next());
         }
+
+        @Override
+        public void commit() {}
     }
 
 }

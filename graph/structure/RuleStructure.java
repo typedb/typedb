@@ -53,12 +53,12 @@ public interface RuleStructure {
      */
     void commit();
 
-    void indexConcludes(Label label);
+    void indexConcludesVertex(Label label);
 
-    void unindexConcludes(Label label);
+    void unindexConcludesVertex(Label label);
 
-    void indexConcludesHas(Label type);
+    void indexConcludesEdgeTo(Label type);
 
-    void unindexConcludesHas(Label type);
+    void unindexConcludesEdgeTo(Label type);
 }
 
