@@ -87,65 +87,82 @@ public class Deleter {
 
     public void execute() {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
-            variables.forEach(this::detach);
-            variables.forEach(this::mayDelete);
+            variables.forEach(this::delete);
+            variables.forEach(this::delete_isa);
         }
     }
 
-    private void detach(ThingVariable var) {
+    private void delete(ThingVariable var) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete")) {
             validate(var);
             Thing thing = matched.get(var.reference().asName()).asThing();
-            if (!var.has().isEmpty()) detachHas(var, thing);
-            if (!var.relation().isEmpty()) detachRelation(var, thing.asRelation());
+            if (!var.has().isEmpty()) deleteHas(var, thing);
+            if (!var.relation().isEmpty()) deleteRelation(var, thing.asRelation());
             detached.put(var, thing);
         }
     }
 
     private void validate(ThingVariable var) {
-        if (!var.reference().isName()) {
-            ErrorMessage.ThingWrite msg = !var.relation().isEmpty()
-                    ? ILLEGAL_ANONYMOUS_RELATION_IN_DELETE
-                    : ILLEGAL_ANONYMOUS_VARIABLE_IN_DELETE;
-            throw GraknException.of(msg, var);
-        } else if (var.iid().isPresent()) {
-            throw GraknException.of(THING_IID_NOT_INSERTABLE, var.reference(), var.iid().get());
-        } else if (!var.is().isEmpty()) {
-            throw GraknException.of(ILLEGAL_IS_CONSTRAINT, var, var.is().iterator().next());
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "validate")) {
+            if (!var.reference().isName()) {
+                ErrorMessage.ThingWrite msg = !var.relation().isEmpty()
+                        ? ILLEGAL_ANONYMOUS_RELATION_IN_DELETE
+                        : ILLEGAL_ANONYMOUS_VARIABLE_IN_DELETE;
+                throw GraknException.of(msg, var);
+            } else if (var.iid().isPresent()) {
+                throw GraknException.of(THING_IID_NOT_INSERTABLE, var.reference(), var.iid().get());
+            } else if (!var.is().isEmpty()) {
+                throw GraknException.of(ILLEGAL_IS_CONSTRAINT, var, var.is().iterator().next());
+            }
         }
     }
 
-    private void detachHas(ThingVariable var, Thing thing) {
-        for (HasConstraint hasConstraint : var.has()) {
-            Reference.Name attRef = hasConstraint.attribute().reference().asName();
-            Attribute att = matched.get(attRef).asAttribute();
-            if (thing.getHas(att.getType()).anyMatch(a -> a.equals(att))) thing.unsetHas(att);
-            else throw GraknException.of(INVALID_DELETE_HAS, var.reference(), attRef);
+    private void deleteHas(ThingVariable var, Thing thing) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete_has")) {
+            for (HasConstraint hasConstraint : var.has()) {
+                Reference.Name attRef = hasConstraint.attribute().reference().asName();
+                Attribute att = matched.get(attRef).asAttribute();
+                if (thing.getHas(att.getType()).anyMatch(a -> a.equals(att))) thing.unsetHas(att);
+                else throw GraknException.of(INVALID_DELETE_HAS, var.reference(), attRef);
+            }
         }
     }
 
-    private void detachRelation(ThingVariable var, Relation relation) {
-        if (var.relation().size() == 1) {
-            var.relation().iterator().next().players().forEach(rolePlayer -> {
-                RoleType roleType;
-                Thing player = matched.get(rolePlayer.player().reference().asName()).asThing();
-                Set<RoleType> inferred;
-                if (rolePlayer.roleType().isPresent()) {
-                    roleType = getRoleType(rolePlayer.roleType().get());
-                } else if ((inferred = player.getType().getPlays()
-                        .filter(rt -> rt.getRelationType().equals(relation.getType()))
-                        .collect(toSet())).size() == 1) {
-                    roleType = inferred.iterator().next();
-                } else if (inferred.size() > 1) {
-                    throw GraknException.of(ROLE_TYPE_AMBIGUOUS, rolePlayer.player().reference());
-                } else {
-                    throw GraknException.of(ROLE_TYPE_MISSING, rolePlayer.player().reference());
-                }
+    private void deleteRelation(ThingVariable var, Relation relation) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete_relation")) {
+            if (var.relation().size() == 1) {
+                var.relation().iterator().next().players().forEach(rolePlayer -> {
+                    RoleType roleType;
+                    Thing player = matched.get(rolePlayer.player().reference().asName()).asThing();
+                    Set<RoleType> inferred;
+                    if (rolePlayer.roleType().isPresent()) {
+                        roleType = getRoleType(rolePlayer.roleType().get());
+                    } else if ((inferred = player.getType().getPlays()
+                            .filter(rt -> rt.getRelationType().equals(relation.getType()))
+                            .collect(toSet())).size() == 1) {
+                        roleType = inferred.iterator().next();
+                    } else if (inferred.size() > 1) {
+                        throw GraknException.of(ROLE_TYPE_AMBIGUOUS, rolePlayer.player().reference());
+                    } else {
+                        throw GraknException.of(ROLE_TYPE_MISSING, rolePlayer.player().reference());
+                    }
 
-                relation.removePlayer(roleType, player);
-            });
-        } else {
-            throw GraknException.of(RELATION_CONSTRAINT_TOO_MANY, var.reference());
+                    relation.removePlayer(roleType, player);
+                });
+            } else {
+                throw GraknException.of(RELATION_CONSTRAINT_TOO_MANY, var.reference());
+            }
+        }
+    }
+
+    private void delete_isa(ThingVariable var) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete_isa")) {
+            Thing thing = detached.get(var);
+            if (var.isa().isPresent() && !thing.isDeleted()) {
+                Label typeLabel = var.isa().get().type().label().get().properLabel();
+                if (thing.getType().getSupertypes().anyMatch(t -> t.getLabel().equals(typeLabel))) thing.delete();
+                else throw GraknException.of(INVALID_DELETE_THING, var.reference(), typeLabel);
+            }
         }
     }
 
@@ -160,15 +177,6 @@ public class Deleter {
             } else {
                 throw GraknException.of(TYPE_NOT_FOUND, var.label().get().scopedLabel());
             }
-        }
-    }
-
-    private void mayDelete(ThingVariable var) {
-        Thing thing = detached.get(var);
-        if (var.isa().isPresent() && !thing.isDeleted()) {
-            Label typeLabel = var.isa().get().type().label().get().properLabel();
-            if (thing.getType().getSupertypes().anyMatch(t -> t.getLabel().equals(typeLabel))) thing.delete();
-            else throw GraknException.of(INVALID_DELETE_THING, var.reference(), typeLabel);
         }
     }
 }
