@@ -240,8 +240,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
         }
 
         private void indexReferences() {
-            ResourceIterator<TypeVertex> labels = types();
-            labels.forEachRemaining(type -> graph.rules().references().buffered().put(this, type));
+            types().forEachRemaining(type -> graph.rules().references().buffered().put(this, type));
         }
 
     }
