@@ -38,7 +38,6 @@ import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
-import grakn.core.traversal.Traversal;
 import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -175,10 +174,10 @@ public class RootResolver extends Resolver<RootResolver> {
     @Override
     protected ResponseProducer responseProducerCreate(Request request, int iteration) {
         LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), request);
+        assert request.answerBounds().isRoot(); // We can ignore the empty ConceptMap of the incoming request
 
-        Traversal traversal = boundTraversal(conjunction.traversal(), request.answerBounds().conceptMap());
-        ResourceIterator<ConceptMap> traversalProducer = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
-
+        ResourceIterator<ConceptMap> traversalProducer = traversalEngine.iterator(conjunction.traversal())
+                .map(conceptMgr::conceptMap);
         ResponseProducer responseProducer = new ResponseProducer(traversalProducer, iteration);
         Request toDownstream = Request.create(request.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
                                               UpstreamVars.Initial.of(request.answerBounds().conceptMap())

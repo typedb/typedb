@@ -114,19 +114,21 @@ public class ReasonerTest {
                     final RelationType friendship = conceptMgr.putRelationType("friendship");
                     friendship.setRelates("friend");
                     final RelationType marriage = conceptMgr.putRelationType("marriage");
-                    marriage.setRelates("spouse");
+                    marriage.setRelates("husband");
+                    marriage.setRelates("wife");
                     person.setPlays(friendship.getRelates("friend"));
-                    person.setPlays(marriage.getRelates("spouse"));
+                    person.setPlays(marriage.getRelates("husband"));
+                    person.setPlays(marriage.getRelates("wife"));
                     logicMgr.putRule(
                             "marriage-is-friendship",
-                            Graql.parsePattern("{ $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
+                            Graql.parsePattern("{ $x isa person; $y isa person; (husband: $x, wife: $y) isa marriage; }").asConjunction(),
                             Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
                     txn.commit();
                 }
             }
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    txn.query().insert(Graql.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (spouse: $x, spouse: $y) isa marriage;").asInsert());
+                    txn.query().insert(Graql.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (husband: $x, wife: $y) isa marriage;").asInsert());
                     txn.commit();
                 }
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -137,6 +139,7 @@ public class ReasonerTest {
                         assertEquals("friendship", a.get("r").asThing().getType().getLabel().scopedName());
                         assertEquals("person", a.get("x").asThing().getType().getLabel().scopedName());
                         assertEquals("person", a.get("y").asThing().getType().getLabel().scopedName());
+                        assertEquals("name", a.get("a").asAttribute().getType().getLabel().scopedName());
                     });
 
                     assertEquals(2, ans.size());

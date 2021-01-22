@@ -105,7 +105,9 @@ public abstract class AnswerState {
 
             public ConceptMap withInitial() {
                 HashMap<Reference.Name, Concept> withInitial = new HashMap<>(conceptMap().concepts());
-                withInitial.putAll(initial.conceptMap().concepts());
+                if (initial != null) {
+                   withInitial.putAll(initial.conceptMap().concepts());
+                }
                 return new ConceptMap(withInitial);
             }
 
@@ -157,7 +159,7 @@ public abstract class AnswerState {
             public UpstreamVars.Derived aggregateToUpstream(ConceptMap conceptMap) {
                 if (conceptMap == null) return null;
                 if (conceptMap.concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
-                return new UpstreamVars.Derived(new ConceptMap(conceptMap().concepts()), null);
+                return new UpstreamVars.Derived(new ConceptMap(conceptMap.concepts()), null);
             }
 
             @Override
@@ -187,9 +189,9 @@ public abstract class AnswerState {
             }
 
             public UpstreamVars.Derived aggregateToUpstream(ConceptMap additionalConcepts) {
-                Map<Reference.Name, Concept> merged = new HashMap<>(additionalConcepts.concepts());
-                merged.putAll(conceptMap().concepts());
-                return new UpstreamVars.Derived(mapping.unTransform(new ConceptMap(merged)), initial);
+                Map<Reference.Name, Concept> merged = new HashMap<>(mapping.unTransform(additionalConcepts).concepts());
+                merged.putAll(initial.conceptMap().concepts());
+                return new UpstreamVars.Derived(new ConceptMap(merged), initial);
             }
 
             @Override
