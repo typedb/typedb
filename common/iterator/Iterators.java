@@ -20,6 +20,7 @@ package grakn.core.common.iterator;
 
 import grakn.common.collection.Either;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -54,21 +55,23 @@ public class Iterators {
         return new BaseIterator<>(Either.second(iterator));
     }
 
-    public static <T> ResourceIterator<T> link(Iterator<T> iter1, Iterator<T> iter2) {
+    public static <T> ResourceIterator<T> link(Iterator<? extends T> iter1, Iterator<? extends T> iter2) {
         return link(list(iter1, iter2));
     }
 
-    public static <T> ResourceIterator<T> link(Iterator<T> iter1, Iterator<T> iter2, Iterator<T> iter3) {
+    public static <T> ResourceIterator<T> link(Iterator<? extends T> iter1, Iterator<? extends T> iter2,
+                                               Iterator<? extends T> iter3) {
         return link(list(iter1, iter2, iter3));
     }
 
-    public static <T> ResourceIterator<T> link(List<? extends Iterator<T>> iterators) {
-        final LinkedList<ResourceIterator<T>> converted = new LinkedList<>();
+    @SuppressWarnings("unchecked")
+    public static <T> ResourceIterator<T> link(List<? extends Iterator<? extends T>> iterators) {
+        final List<ResourceIterator<T>> converted = new ArrayList<>();
         iterators.forEach(iterator -> {
             if (iterator instanceof AbstractResourceIterator<?>) {
-                converted.addLast((ResourceIterator<T>) iterator);
+                converted.add((ResourceIterator<T>) iterator);
             } else {
-                converted.addLast(iterate(iterator));
+                converted.add(iterate((Iterator<T>) iterator));
             }
         });
         return new LinkedIterators<>(converted);
@@ -90,7 +93,8 @@ public class Iterators {
         return new ParallelIterators<>(iterators, bufferSize);
     }
 
-    public static <T> ResourceIterator<T> parallel(List<ResourceIterator<T>> iterators, int bufferSize, int bufferMultiplier) {
+    public static <T> ResourceIterator<T> parallel(List<ResourceIterator<T>> iterators,
+                                                   int bufferSize, int bufferMultiplier) {
         return new ParallelIterators<>(iterators, bufferSize, bufferMultiplier);
     }
 

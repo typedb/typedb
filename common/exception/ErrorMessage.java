@@ -153,14 +153,16 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Transaction(5, "The transaction has been closed and no further operation is allowed.");
         public static final Transaction ILLEGAL_COMMIT =
                 new Transaction(6, "Only write transactions can be committed.");
+        public static final Transaction SCHEMA_READ_VIOLATION =
+                new Transaction(7, "Attempted schema writes when session and transaction types do not allow.");
         public static final Transaction SESSION_DATA_VIOLATION =
-                new Transaction(7, "Attempted schema writes when session type does not allow.");
+                new Transaction(8, "Attempted schema writes when session type does not allow.");
         public static final Transaction SESSION_SCHEMA_VIOLATION =
-                new Transaction(8, "Attempted data writes when session type does not allow.");
+                new Transaction(9, "Attempted data writes when session type does not allow.");
         public static final Transaction MISSING_TRANSACTION =
-                new Transaction(9, "Transaction can not be null.");
+                new Transaction(10, "Transaction can not be null.");
         public static final Transaction BAD_TRANSACTION_TYPE =
-                new Transaction(10, "The transaction type '%s' was not recognised.");
+                new Transaction(11, "The transaction type '%s' was not recognised.");
 
         private static final String codePrefix = "TXN";
         private static final String messagePrefix = "Invalid Transaction Operation";

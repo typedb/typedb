@@ -46,6 +46,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.pair;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.collection.Bytes.bytesToLong;
@@ -73,7 +74,6 @@ import static grakn.core.graph.util.StatisticsBytes.hasEdgeTotalCountKey;
 import static grakn.core.graph.util.StatisticsBytes.snapshotKey;
 import static grakn.core.graph.util.StatisticsBytes.vertexCountKey;
 import static grakn.core.graph.util.StatisticsBytes.vertexTransitiveCountKey;
-import static java.util.stream.Stream.concat;
 
 public class DataGraph implements Graph {
 
@@ -109,8 +109,8 @@ public class DataGraph implements Graph {
         return statistics;
     }
 
-    public Stream<ThingVertex> vertices() {
-        return concat(thingsByIID.values().stream(), attributesByIID.valueStream());
+    public ResourceIterator<ThingVertex> vertices() {
+        return link(thingsByIID.values().iterator(), attributesByIID.valuesIterator());
     }
 
     public ThingVertex get(VertexIID.Thing iid) {
@@ -433,7 +433,7 @@ public class DataGraph implements Graph {
                 vertex -> vertex.iid(generate(storage.dataKeyGenerator(), vertex.type().iid(), vertex.type().properLabel()))
         ); // thingByIID no longer contains valid mapping from IID to TypeVertex
         thingsByIID.values().stream().filter(v -> !v.isInferred()).forEach(Vertex::commit);
-        attributesByIID.valueStream().forEach(Vertex::commit);
+        attributesByIID.valuesIterator().forEachRemaining(Vertex::commit);
         statistics.commit();
 
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Thing to be used again
@@ -455,12 +455,14 @@ public class DataGraph implements Graph {
             dateTimes = new ConcurrentHashMap<>();
         }
 
-        Stream<AttributeVertex<?>> valueStream() {
-            return concat(booleans.values().stream(),
-                          concat(longs.values().stream(),
-                                 concat(doubles.values().stream(),
-                                        concat(strings.values().stream(),
-                                               dateTimes.values().stream()))));
+        ResourceIterator<AttributeVertex<?>> valuesIterator() {
+            return link(list(
+                    booleans.values().iterator(),
+                    longs.values().iterator(),
+                    doubles.values().iterator(),
+                    strings.values().iterator(),
+                    dateTimes.values().iterator()
+            ));
         }
 
         void clear() {
