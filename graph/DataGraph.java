@@ -110,7 +110,7 @@ public class DataGraph implements Graph {
     }
 
     public ResourceIterator<ThingVertex> vertices() {
-        return link(thingsByIID.values().iterator(), attributesByIID.valueIterator());
+        return link(thingsByIID.values().iterator(), attributesByIID.valuesIterator());
     }
 
     public ThingVertex get(VertexIID.Thing iid) {
@@ -433,7 +433,7 @@ public class DataGraph implements Graph {
                 vertex -> vertex.iid(generate(storage.dataKeyGenerator(), vertex.type().iid(), vertex.type().properLabel()))
         ); // thingByIID no longer contains valid mapping from IID to TypeVertex
         thingsByIID.values().stream().filter(v -> !v.isInferred()).forEach(Vertex::commit);
-        attributesByIID.valueIterator().forEachRemaining(Vertex::commit);
+        attributesByIID.valuesIterator().forEachRemaining(Vertex::commit);
         statistics.commit();
 
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Thing to be used again
@@ -455,7 +455,7 @@ public class DataGraph implements Graph {
             dateTimes = new ConcurrentHashMap<>();
         }
 
-        ResourceIterator<AttributeVertex<?>> valueIterator() {
+        ResourceIterator<AttributeVertex<?>> valuesIterator() {
             return link(list(
                     booleans.values().iterator(),
                     longs.values().iterator(),
