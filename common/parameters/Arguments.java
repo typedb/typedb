@@ -51,7 +51,8 @@ public class Arguments {
 
         public enum Type {
             READ(0),
-            WRITE(1);
+            WRITE(1),
+            READ_SECONDARY(2);
 
             private final int id;
             private final boolean isWrite;
