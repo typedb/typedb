@@ -115,22 +115,16 @@ public class RocksDatabase implements Grakn.Database {
 
     protected void initialise() {
         try (RocksSession session = createAndOpenSession(SCHEMA, new Options.Session())) {
-            try (RocksTransaction.Schema txn = session.transaction(WRITE).asSchema()) {
+            try (RocksTransaction.Schema txn = initialisationTx(session)) {
                 if (txn.graph().isInitialised()) throw GraknException.of(DIRTY_INITIALISATION);
                 txn.graph().initialise();
-                initialiseCommit(txn);
+                txn.commit();
             }
         }
     }
 
-    /**
-     * Responsible for committing the initial schema of a database.
-     * A different implementation of this class may override it.
-     *
-     * @param transaction
-     */
-    protected void initialiseCommit(RocksTransaction.Schema transaction) {
-        transaction.commit();
+    protected RocksTransaction.Schema initialisationTx(RocksSession session) {
+        return session.transaction(WRITE).asSchema();
     }
 
     protected void load() {
