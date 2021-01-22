@@ -175,9 +175,9 @@ public final class ConceptManager {
     }
 
     public void validateThings() {
-        graphMgr.data().vertices().parallel()
+        graphMgr.data().vertices()
                 .filter(v -> !v.isInferred() && v.isModified() && !v.encoding().equals(Encoding.Vertex.Thing.ROLE))
-                .forEach(v -> ThingImpl.of(v).validate());
+                .forEachRemaining(v -> ThingImpl.of(v).validate());
     }
 
     public GraknException exception(ErrorMessage error) {
