@@ -223,7 +223,7 @@ public class Rule {
         return logicMgr.typeResolver().resolve(conj);
     }
 
-    public void reIndex() {
+    public void reindex() {
         conclusion().unindex(this);
         conclusion().index(this);
     }
