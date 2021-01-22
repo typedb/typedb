@@ -113,10 +113,11 @@ public class GraphProducer implements Producer<VertexMap> {
     private synchronized void compensate(Queue<VertexMap> queue, int unfulfilled) {
         ResourceIterator<VertexMap> newIter =
                 new GraphIterator(graphMgr, start.next(), procedure, params, filter).distinct(produced);
-        CompletableFuture<Void> asyncJob = unfulfilled > 0
-                ? CompletableFuture.runAsync(() -> job(queue, newIter, unfulfilled), forkJoinPool())
-                : CompletableFuture.completedFuture(null);
-        runningJobs.put(newIter, asyncJob);
+        runningJobs.put(newIter, CompletableFuture.completedFuture(null));
+        if (unfulfilled > 0) {
+            runningJobs.computeIfPresent(newIter, (iter, asyncJob) ->
+                    asyncJob.thenRunAsync(() -> job(queue, newIter, unfulfilled), forkJoinPool()));
+        }
     }
 
     private void job(Queue<VertexMap> queue, ResourceIterator<VertexMap> iterator, int request) {
