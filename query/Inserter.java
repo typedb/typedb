@@ -129,6 +129,7 @@ public class Inserter {
             else throw GraknException.of(THING_ISA_MISSING, ref);
             if (ref.isName()) inserted.put(ref.asName(), thing);
             if (!var.has().isEmpty()) insertHas(thing, var.has());
+            if (!var.relation().isEmpty()) extendRelation((Relation) thing, var);
             return thing;
         }
     }
@@ -154,12 +155,16 @@ public class Inserter {
     }
 
     private RoleType getRoleType(TypeVariable var) {
+        return getRoleType(var, null);
+    }
+
+    private RoleType getRoleType(TypeVariable var, RelationType relation) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "get_role_type")) {
             assert var.reference().isLabel() && var.label().isPresent();
-            final RelationType relationType;
-            final RoleType roleType;
-            if ((relationType = conceptMgr.getRelationType(var.label().get().scope().get())) != null &&
-                    (roleType = relationType.getRelates(var.label().get().label())) != null) {
+                final RelationType relationType = relation != null ?
+                        relation : conceptMgr.getRelationType(var.label().get().scope().get());
+                final RoleType roleType;
+                if ((relationType != null && (roleType = relationType.getRelates(var.label().get().label())) != null)) {
                 return roleType;
             } else {
                 throw GraknException.of(TYPE_NOT_FOUND, var.label().get().scopedLabel());
@@ -222,17 +227,27 @@ public class Inserter {
     }
 
     private Relation insertRelation(RelationType relationType, ThingVariable var) {
+        Relation relation = relationType.create();
+        return extendRelation(relation, var);
+    }
+
+    private void insertHas(Thing thing, Set<HasConstraint> hasConstraints) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_has")) {
+            hasConstraints.forEach(has -> thing.setHas(insert(has.attribute()).asAttribute()));
+        }
+    }
+
+    private Relation extendRelation(Relation relation, ThingVariable var) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_relation")) {
             if (var.relation().size() == 1) {
-                Relation relation = relationType.create();
                 var.relation().iterator().next().players().forEach(rolePlayer -> {
                     final RoleType roleType;
                     final Thing player = insert(rolePlayer.player());
                     final Set<RoleType> inferred;
                     if (rolePlayer.roleType().isPresent()) {
-                        roleType = getRoleType(rolePlayer.roleType().get());
+                        roleType = getRoleType(rolePlayer.roleType().get(), relation.getType());
                     } else if ((inferred = player.getType().getPlays()
-                            .filter(rt -> rt.getRelationType().equals(relationType))
+                            .filter(rt -> rt.getRelationType().equals(relation.getType()))
                             .collect(toSet())).size() == 1) {
                         roleType = inferred.iterator().next();
                     } else if (inferred.size() > 1) {
@@ -249,12 +264,6 @@ public class Inserter {
             } else { // var.relation().isEmpty()
                 throw GraknException.of(RELATION_CONSTRAINT_MISSING, var.reference());
             }
-        }
-    }
-
-    private void insertHas(Thing thing, Set<HasConstraint> hasConstraints) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_has")) {
-            hasConstraints.forEach(has -> thing.setHas(insert(has.attribute()).asAttribute()));
         }
     }
 }
