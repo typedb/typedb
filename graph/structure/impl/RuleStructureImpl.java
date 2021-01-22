@@ -18,19 +18,31 @@
 package grakn.core.graph.structure.impl;
 
 import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.parameters.Label;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.iid.IndexIID;
 import grakn.core.graph.iid.StructureIID;
 import grakn.core.graph.structure.RuleStructure;
 import grakn.core.graph.util.Encoding;
+import grakn.core.graph.vertex.TypeVertex;
 import graql.lang.Graql;
+import graql.lang.pattern.Conjunctable;
 import graql.lang.pattern.Conjunction;
+import graql.lang.pattern.Negation;
 import graql.lang.pattern.Pattern;
+import graql.lang.pattern.constraint.TypeConstraint;
+import graql.lang.pattern.variable.BoundVariable;
 import graql.lang.pattern.variable.ThingVariable;
+import graql.lang.pattern.variable.Variable;
 
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grakn.core.common.collection.Bytes.join;
+import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.graph.util.Encoding.Property.LABEL;
 import static grakn.core.graph.util.Encoding.Property.THEN;
 import static grakn.core.graph.util.Encoding.Property.WHEN;
@@ -91,12 +103,73 @@ public abstract class RuleStructureImpl implements RuleStructure {
         return isDeleted.get();
     }
 
+    @Override
+    public void indexConcludesVertex(Label type) {
+        graph.rules().conclusions().buffered().concludesVertex(this, graph.getType(type));
+    }
+
+    @Override
+    public void unindexConcludesVertex(Label type) {
+        graph.rules().conclusions().deleteConcludesVertex(this, graph.getType(type));
+    }
+
+    @Override
+    public void indexConcludesEdgeTo(Label type) {
+        graph.rules().conclusions().buffered().concludesEdgeTo(this, graph.getType(type));
+    }
+
+    @Override
+    public void unindexConcludesEdgeTo(Label type) {
+        graph.rules().conclusions().deleteConcludesEdgeTo(this, graph.getType(type));
+    }
+
     public Encoding.Structure encoding() {
         return iid.encoding();
     }
 
     void deleteVertexFromGraph() {
-        graph.delete(this);
+        graph.rules().delete(this);
+    }
+
+    ResourceIterator<TypeVertex> types() {
+        graql.lang.pattern.Conjunction<Conjunctable> whenNormalised = when().normalise().patterns().get(0);
+        ResourceIterator<BoundVariable> positiveVariables = iterate(whenNormalised.patterns()).filter(Conjunctable::isVariable)
+                .map(Conjunctable::asVariable);
+        ResourceIterator<BoundVariable> negativeVariables = iterate(whenNormalised.patterns()).filter(Conjunctable::isNegation)
+                .flatMap(p -> negationVariables(p.asNegation()));
+        ResourceIterator<Label> whenPositiveLabels = getTypeLabels(positiveVariables);
+        ResourceIterator<Label> whenNegativeLabels = getTypeLabels(negativeVariables);
+        ResourceIterator<Label> thenLabels = getTypeLabels(iterate(then().variables().iterator()));
+        // filter out invalid labels as if they were truly invalid (eg. not relation:friend) we will catch it validation
+        // this lets us index only types the user can actually retrieve as a concept
+        return link(whenPositiveLabels, whenNegativeLabels, thenLabels)
+                .filter(label -> graph.getType(label) != null).map(graph::getType);
+    }
+
+    private ResourceIterator<BoundVariable> negationVariables(Negation<?> ruleNegation) {
+        assert ruleNegation.patterns().size() == 1 && ruleNegation.patterns().get(0).isDisjunction();
+        return iterate(ruleNegation.patterns().get(0).asDisjunction().patterns())
+                .flatMap(pattern -> iterate(pattern.asConjunction().patterns())).map(Pattern::asVariable);
+    }
+
+    private ResourceIterator<Label> getTypeLabels(ResourceIterator<BoundVariable> variables) {
+        return variables.flatMap(v -> iterate(connectedVars(v, new HashSet<>())))
+                .distinct().filter(v -> v.isBound() && v.asBound().isType()).map(var -> var.asBound().asType().label()).filter(Optional::isPresent)
+                .map(labelConstraint -> {
+                    TypeConstraint.Label label = labelConstraint.get();
+                    if (label.scope().isPresent()) return Label.of(label.label(), label.scope().get());
+                    else return Label.of(label.label());
+                });
+    }
+
+    private Set<Variable> connectedVars(Variable var, Set<Variable> visited) {
+        visited.add(var);
+        Set<Variable> vars = iterate(var.constraints()).flatMap(c -> iterate(c.variables())).map(v -> (Variable)v).toSet();
+        if (visited.containsAll(vars)) return visited;
+        else {
+            visited.addAll(vars);
+            return iterate(vars).flatMap(v -> iterate(connectedVars(v, visited))).toSet();
+        }
     }
 
     public static class Buffered extends RuleStructureImpl {
@@ -107,11 +180,12 @@ public abstract class RuleStructureImpl implements RuleStructure {
             super(graph, iid, label, when, then);
             this.isCommitted = new AtomicBoolean(false);
             setModified();
+            indexReferences();
         }
 
         @Override
         public void label(String label) {
-            graph.update(this, this.label, label);
+            graph.rules().update(this, this.label, label);
             this.label = label;
         }
 
@@ -129,6 +203,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
         @Override
         public void delete() {
             if (isDeleted.compareAndSet(false, true)) {
+                graph.rules().references().delete(this, types());
                 deleteVertexFromGraph();
             }
         }
@@ -164,6 +239,10 @@ public abstract class RuleStructureImpl implements RuleStructure {
             graph.storage().put(join(iid.bytes(), THEN.infix().bytes()), then().toString().getBytes());
         }
 
+        private void indexReferences() {
+            types().forEachRemaining(type -> graph.rules().references().buffered().put(this, type));
+        }
+
     }
 
     public static class Persisted extends RuleStructureImpl {
@@ -192,7 +271,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
         @Override
         public void label(String label) {
-            graph.update(this, this.label, label);
+            graph.rules().update(this, this.label, label);
             graph.storage().put(join(iid.bytes(), LABEL.infix().bytes()), label.getBytes());
             graph.storage().delete(IndexIID.Rule.of(this.label).bytes());
             graph.storage().put(IndexIID.Rule.of(label).bytes(), iid.bytes());
@@ -200,11 +279,9 @@ public abstract class RuleStructureImpl implements RuleStructure {
         }
 
         @Override
-        public void commit() { }
-
-        @Override
         public void delete() {
             if (isDeleted.compareAndSet(false, true)) {
+                graph.rules().references().delete(this, types());
                 deleteVertexFromGraph();
                 deleteVertexFromStorage();
             }
@@ -215,6 +292,9 @@ public abstract class RuleStructureImpl implements RuleStructure {
             final ResourceIterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
             while (keys.hasNext()) graph.storage().delete(keys.next());
         }
+
+        @Override
+        public void commit() {}
     }
 
 }

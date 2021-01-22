@@ -28,7 +28,7 @@ host_compatible_java_library(
         # Internal dependencies
         "//test/behaviour/concept/thing:steps",
         "//test/behaviour/connection:steps",
-        "//test/behaviour/util:util",
+        "//common/test:util",
 
         # Internal Repository Dependencies
         # "@graknlabs_common//:common",

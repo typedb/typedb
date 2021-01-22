@@ -231,4 +231,14 @@ public class Bytes {
         }
         return true;
     }
+
+    public static byte signedByte(int value) {
+        assert value >= -128 && value <= 127;
+        return (byte) value;
+    }
+
+    public static byte unsignedByte(int value) {
+        assert value >= 0 && value <= 255;
+        return (byte) (value & 0xff);
+    }
 }

@@ -67,10 +67,11 @@ import static graql.lang.common.GraqlToken.Predicate.Equality.EQ;
 
 public abstract class Concludable extends Resolvable {
 
-    private Map<Rule, Set<Unifier>> applicableRules = null;
+    private Map<Rule, Set<Unifier>> applicableRules;
 
     private Concludable(Conjunction conjunction) {
         super(conjunction);
+        applicableRules = null;
     }
 
     public boolean isConcludable() {
@@ -93,25 +94,15 @@ public abstract class Concludable extends Resolvable {
     }
 
     public ResourceIterator<Rule> getApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
-        if (applicableRules == null) computeApplicableRules(conceptMgr, logicMgr);
-        return iterate(applicableRules.keySet());
+        synchronized (this) {
+            if (applicableRules == null) applicableRules = applicableRules(conceptMgr, logicMgr);
+        }
+        return Iterators.iterate(applicableRules.keySet());
     }
+
+    abstract Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr);
 
     public abstract Variable generating();
-
-    /*
-    TODO this should be improved by indexing rules by possible types, so rather than retrieving all rules
-    TODO and attempting to unify them, we only read rules that are relevant
-     */
-    private void computeApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
-        assert applicableRules == null;
-        applicableRules = new HashMap<>();
-        logicMgr.rules().forEachRemaining(rule -> iterate(unify(rule.conclusion(), conceptMgr))
-                .forEachRemaining(unifier -> {
-                    applicableRules.putIfAbsent(rule, new HashSet<>());
-                    applicableRules.get(rule).add(unifier);
-                }));
-    }
 
     abstract ResourceIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr);
 
@@ -178,7 +169,7 @@ public abstract class Concludable extends Resolvable {
     boolean unificationSatisfiable(ThingVariable concludableThingVar, ThingVariable conclusionThingVar) {
         boolean satisfiable = true;
         if (!concludableThingVar.resolvedTypes().isEmpty() && !conclusionThingVar.resolvedTypes().isEmpty()) {
-            satisfiable = Collections.disjoint(concludableThingVar.resolvedTypes(), conclusionThingVar.resolvedTypes());
+            satisfiable = !Collections.disjoint(concludableThingVar.resolvedTypes(), conclusionThingVar.resolvedTypes());
         }
 
         if (!concludableThingVar.value().isEmpty() && !conclusionThingVar.value().isEmpty()) {
@@ -401,6 +392,24 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
+        Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+            Variable generatedRelation = generating();
+            Set<Label> relationTypes = generatedRelation.resolvedTypes();
+            // may never be empty as its always known to be at least a relation
+            assert generatedRelation.isSatisfiable() && !relationTypes.isEmpty();
+
+            Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
+            relationTypes.forEach(type -> logicMgr.rulesConcluding(type)
+                    .forEachRemaining(rule -> unify(rule.conclusion(), conceptMgr)
+                            .forEachRemaining(unifier -> {
+                                applicableRules.putIfAbsent(rule, new HashSet<>());
+                                applicableRules.get(rule).add(unifier);
+                            })));
+
+            return applicableRules;
+        }
+
+        @Override
         public boolean isRelation() {
             return true;
         }
@@ -519,7 +528,25 @@ public abstract class Concludable extends Resolvable {
 
         @Override
         public Variable generating() {
-            return has().attribute();
+            return has.attribute();
+        }
+
+        @Override
+        Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+            Variable attribute = generating();
+            Set<Label> attributeTypes = attribute.resolvedTypes();
+            // may never be empty as its always known to be at least a relation
+            assert attribute.isSatisfiable() && !attributeTypes.isEmpty();
+
+            Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
+            attributeTypes.forEach(type -> logicMgr.rulesConcludingHas(type)
+                    .forEachRemaining(rule -> unify(rule.conclusion(), conceptMgr)
+                            .forEachRemaining(unifier -> {
+                                applicableRules.putIfAbsent(rule, new HashSet<>());
+                                applicableRules.get(rule).add(unifier);
+                            })));
+
+            return applicableRules;
         }
 
         @Override
@@ -612,6 +639,24 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
+        Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+            Variable var = generating();
+            Set<Label> types = var.resolvedTypes();
+            // may never be empty as its always known to be at least a relation or attribute
+            assert var.isSatisfiable() && !types.isEmpty();
+
+            Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
+            types.forEach(type -> logicMgr.rulesConcluding(type)
+                    .forEachRemaining(rule -> unify(rule.conclusion(), conceptMgr)
+                            .forEachRemaining(unifier -> {
+                                applicableRules.putIfAbsent(rule, new HashSet<>());
+                                applicableRules.get(rule).add(unifier);
+                            })));
+
+            return applicableRules;
+        }
+
+        @Override
         public AlphaEquivalence alphaEquals(Concludable that) {
             if (!that.isIsa()) return AlphaEquivalence.invalid();
             return isa().alphaEquals(that.asIsa().isa());
@@ -692,6 +737,24 @@ public abstract class Concludable extends Resolvable {
         @Override
         public Variable generating() {
             return attribute;
+        }
+
+        @Override
+        Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+            Variable attribute = generating();
+            Set<Label> attributeTypes = attribute.resolvedTypes();
+            // may never be empty as its always known to be at least an attribute
+            assert attribute.isSatisfiable() && !attributeTypes.isEmpty();
+
+            Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
+            attributeTypes.forEach(type -> logicMgr.rulesConcluding(type)
+                    .forEachRemaining(rule -> unify(rule.conclusion(), conceptMgr)
+                            .forEachRemaining(unifier -> {
+                                applicableRules.putIfAbsent(rule, new HashSet<>());
+                                applicableRules.get(rule).add(unifier);
+                            })));
+
+            return applicableRules;
         }
 
         @Override

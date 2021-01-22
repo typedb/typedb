@@ -44,6 +44,7 @@ host_compatible_java_test(
     ],
     resource_strip_prefix = "common/test",
     data = [":schema.gql", "data.grakn"],
+    size = "large",
 )
 
 checkstyle_test(

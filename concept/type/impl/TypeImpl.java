@@ -19,10 +19,12 @@
 package grakn.core.concept.type.impl;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptImpl;
 import grakn.core.concept.type.Type;
 import grakn.core.graph.GraphManager;
+import grakn.core.graph.structure.RuleStructure;
 import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
@@ -38,6 +40,7 @@ import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_REFERENCED_IN_RULES;
 import static grakn.core.common.iterator.Iterators.tree;
 import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
 
@@ -136,6 +139,14 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
 
     <TYPE extends Type> Stream<TYPE> getSubtypesExplicit(Function<TypeVertex, TYPE> typeConstructor) {
         return vertex.ins().edge(SUB).from().map(typeConstructor).stream();
+    }
+
+    void validateDelete() {
+        TypeVertex type = graphMgr.schema().getType(getLabel());
+        ResourceIterator<RuleStructure> rules = graphMgr.schema().rules().references().get(type);
+        if (rules.hasNext()) {
+            throw exception(GraknException.of(TYPE_REFERENCED_IN_RULES, getLabel(), rules.toList()));
+        }
     }
 
     @Override

@@ -381,12 +381,17 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public void delete() {
+        validateDelete();
+        vertex.delete();
+    }
+
+    @Override
+    void validateDelete() {
+        super.validateDelete();
         if (getSubtypes().anyMatch(s -> !s.equals(this))) {
             throw exception(GraknException.of(TYPE_HAS_SUBTYPES, getLabel()));
         } else if (getSubtypes().flatMap(ThingType::getInstances).findFirst().isPresent()) {
             throw exception(GraknException.of(TYPE_HAS_INSTANCES, getLabel()));
-        } else {
-            vertex.delete();
         }
     }
 

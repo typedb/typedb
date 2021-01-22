@@ -213,7 +213,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
                     else if (graphMgr.data().isModified()) throw GraknException.of(SESSION_SCHEMA_VIOLATION);
 
                     conceptMgr.validateTypes();
-                    logicMgr.validateRules();
+                    logicMgr.revalidateAndReindexRules();
                     graphMgr.schema().commit();
                     schemaStorage.commit();
                     session.database().cacheInvalidate();

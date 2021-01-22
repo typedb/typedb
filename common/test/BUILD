@@ -23,6 +23,7 @@ java_library(
     srcs = glob(["*.java"]),
     deps = [
         # Internal dependencies
+        "//common",
 
         # External Maven Dependencies
         "@maven//:junit_junit",

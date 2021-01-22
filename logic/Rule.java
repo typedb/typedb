@@ -61,56 +61,48 @@ import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
-import static grakn.core.logic.LogicManager.validateRuleStructureLabels;
 
 
 public class Rule {
 
-    private final LogicManager logicManager;
+    // note: as `Rule` is cached between transactions, we cannot hold any transaction-bound objects such as Managers
+
     private final RuleStructure structure;
     private final Conjunction when;
     private final Conjunction then;
     private final Conclusion conclusion;
     private final Set<Concludable> requiredWhenConcludables;
 
-    private Rule(LogicManager logicManager, RuleStructure structure) {
-        this.logicManager = logicManager;
+    private Rule(LogicManager logicMgr, RuleStructure structure) {
         this.structure = structure;
-        // TODO enable when we have type hinting
-//        this.when = logicManager.typeHinter().computeHintsExhaustive(whenPattern(structure.when()));
-//        this.then = logicManager.typeHinter().computeHintsExhaustive(thenPattern(structure.then()));
-        this.when = whenPattern(structure.when());
-        this.then = thenPattern(structure.then());
+        this.when = whenPattern(structure.when(), logicMgr);
+        this.then = thenPattern(structure.then(), logicMgr);
         pruneThenResolvedTypes();
         this.conclusion = Conclusion.create(this.then);
         this.requiredWhenConcludables = Concludable.create(this.when);
     }
 
-    private Rule(GraphManager graphMgr, ConceptManager conceptMgr, LogicManager logicManager, String label,
+    private Rule(GraphManager graphMgr, LogicManager logicMgr, String label,
                  graql.lang.pattern.Conjunction<? extends Pattern> when, ThingVariable<?> then) {
-        this.logicManager = logicManager;
-        this.structure = graphMgr.schema().create(label, when, then);
-        validateRuleStructureLabels(conceptMgr, this.structure);
-        // TODO enable when we have type hinting
-//        this.when = logicManager.typeHinter().computeHintsExhaustive(whenPattern(structure.when()));
-//        this.then = logicManager.typeHinter().computeHintsExhaustive(thenPattern(structure.then()));
-        this.when = whenPattern(structure.when());
-        this.then = thenPattern(structure.then());
+        this.structure = graphMgr.schema().rules().create(label, when, then);
+        this.when = whenPattern(structure.when(), logicMgr);
+        this.then = thenPattern(structure.then(), logicMgr);
         validateSatisfiable();
         pruneThenResolvedTypes();
         this.conclusion = Conclusion.create(this.then);
         this.requiredWhenConcludables = Concludable.create(this.when);
         validateInsertable();
         validateCycles();
+        this.conclusion.index(this);
     }
 
-    public static Rule of(LogicManager logicManager, RuleStructure structure) {
-        return new Rule(logicManager, structure);
+    public static Rule of(LogicManager logicMgr, RuleStructure structure) {
+        return new Rule(logicMgr, structure);
     }
 
-    public static Rule of(GraphManager graphMgr, ConceptManager conceptMgr, LogicManager logicManager, String label,
+    public static Rule of(GraphManager graphMgr, LogicManager logicMgr, String label,
                           graql.lang.pattern.Conjunction<? extends Pattern> when, ThingVariable<?> then) {
-        return new Rule(graphMgr, conceptMgr, logicManager, label, when, then);
+        return new Rule(graphMgr, logicMgr, label, when, then);
     }
 
     public Set<Concludable> whenConcludables() {
@@ -129,6 +121,10 @@ public class Rule {
         return when;
     }
 
+    public Conjunction then() {
+        return then;
+    }
+
     public String getLabel() {
         return structure.label();
     }
@@ -142,6 +138,7 @@ public class Rule {
     }
 
     public void delete() {
+        conclusion().unindex(this);
         structure.delete();
     }
 
@@ -173,7 +170,7 @@ public class Rule {
          */
     }
 
-    public void validateInsertable()  {
+    public void validateInsertable() {
         /*
         High level, we also want to ensure that every combination of possible variable types in the `then`, that may be provided
         by the `when` of the rule, is actually compatible with the `then` of the rule. This means,
@@ -187,6 +184,7 @@ public class Rule {
         2. utilise the `Rule.Conclusion` classes before (there's exactly 1 of the 3 per rule) to validate a combination is compatible with the conclusion
            using these Rule.Conclusion data structures indicates that it is a "high level" logical rule validation, which is true
          */
+
     }
 
     void validateCycles() {
@@ -215,14 +213,19 @@ public class Rule {
                 );
     }
 
-    private Conjunction whenPattern(graql.lang.pattern.Conjunction<? extends Pattern> conjunction) {
-        return logicManager.typeResolver().resolveLabels(
-                Conjunction.create(conjunction.normalise().patterns().get(0)));
+    private Conjunction whenPattern(graql.lang.pattern.Conjunction<? extends Pattern> conjunction, LogicManager logicMgr) {
+        return logicMgr.typeResolver().resolve(Conjunction.create(conjunction.normalise().patterns().get(0)));
     }
 
-    private Conjunction thenPattern(ThingVariable<?> thenVariable) {
-        return logicManager.typeResolver().resolveLabels(
-                new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set()));
+    private Conjunction thenPattern(ThingVariable<?> thenVariable, LogicManager logicMgr) {
+        // TODO when applying the type resolver, we should be using _insert semantics_ during the type resolution!!!
+        Conjunction conj = new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
+        return logicMgr.typeResolver().resolve(conj);
+    }
+
+    public void reindex() {
+        conclusion().unindex(this);
+        conclusion().index(this);
     }
 
     public static abstract class Conclusion {
@@ -238,6 +241,10 @@ public class Rule {
         }
 
         public abstract Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr);
+
+        abstract void index(Rule rule);
+
+        abstract void unindex(Rule rule);
 
         public boolean isRelation() {
             return false;
@@ -337,6 +344,20 @@ public class Rule {
                 return thenConcepts;
             }
 
+            @Override
+            void index(Rule rule) {
+                Variable relation = relation().owner();
+                Set<Label> possibleRelationTypes = relation.resolvedTypes();
+                possibleRelationTypes.forEach(rule.structure::indexConcludesVertex);
+            }
+
+            @Override
+            void unindex(Rule rule) {
+                Variable relation = relation().owner();
+                Set<Label> possibleRelationTypes = relation.resolvedTypes();
+                possibleRelationTypes.forEach(rule.structure::unindexConcludesVertex);
+            }
+
             public RelationConstraint relation() {
                 return relation;
             }
@@ -364,7 +385,6 @@ public class Rule {
             public Relation asRelation() {
                 return this;
             }
-
 
             private grakn.core.concept.thing.Relation insertRelation(RelationType relationType, Set<RolePlayer> players) {
                 grakn.core.concept.thing.Relation relation = relationType.create(true);
@@ -490,6 +510,26 @@ public class Rule {
                 }
 
                 @Override
+                void index(Rule rule) {
+                    grakn.core.pattern.variable.Variable attribute = has().attribute();
+                    Set<Label> possibleAttributeHas = attribute.resolvedTypes();
+                    possibleAttributeHas.forEach(label -> {
+                        rule.structure.indexConcludesVertex(label);
+                        rule.structure.indexConcludesEdgeTo(label);
+                    });
+                }
+
+                @Override
+                void unindex(Rule rule) {
+                    grakn.core.pattern.variable.Variable attribute = has().attribute();
+                    Set<Label> possibleAttributeHas = attribute.resolvedTypes();
+                    possibleAttributeHas.forEach(label -> {
+                        rule.structure.unindexConcludesVertex(label);
+                        rule.structure.unindexConcludesEdgeTo(label);
+                    });
+                }
+
+                @Override
                 public boolean isExplicitHas() {
                     return true;
                 }
@@ -582,6 +622,20 @@ public class Rule {
                     thenConcepts.put(has().attribute().id(), attribute);
                     thenConcepts.put(has().owner().id(), owner);
                     return thenConcepts;
+                }
+
+                @Override
+                void index(Rule rule) {
+                    grakn.core.pattern.variable.Variable attribute = has().attribute();
+                    Set<Label> possibleAttributeHas = attribute.resolvedTypes();
+                    possibleAttributeHas.forEach(rule.structure::indexConcludesEdgeTo);
+                }
+
+                @Override
+                void unindex(Rule rule) {
+                    grakn.core.pattern.variable.Variable attribute = has().attribute();
+                    Set<Label> possibleAttributeHas = attribute.resolvedTypes();
+                    possibleAttributeHas.forEach(rule.structure::unindexConcludesEdgeTo);
                 }
 
                 @Override

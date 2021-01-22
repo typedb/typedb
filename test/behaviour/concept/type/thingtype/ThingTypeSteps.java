@@ -36,7 +36,7 @@ import java.util.Set;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static grakn.core.test.behaviour.config.Parameters.RootLabel;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
-import static grakn.core.test.behaviour.util.Util.assertThrows;
+import static grakn.core.common.test.Util.assertThrows;
 import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;

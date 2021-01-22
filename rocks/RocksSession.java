@@ -19,8 +19,8 @@
 package grakn.core.rocks;
 
 import grakn.core.Grakn;
-import grakn.core.common.concurrent.ManagedLock;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.concurrent.ManagedLock;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;

@@ -35,6 +35,8 @@ import static grakn.common.collection.Collections.map;
 import static grakn.common.collection.Collections.pair;
 import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
+import static grakn.core.common.collection.Bytes.signedByte;
+import static grakn.core.common.collection.Bytes.unsignedByte;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -142,7 +144,7 @@ public class Encoding {
      * The values in this class will be used as 'prefixes' within an IID in the
      * of every object database, and must not overlap with each other.
      *
-     * The size of a prefix is 1 byte; i.e. min-value = 0 and max-value = 255.
+     * The size of a prefix is 1 unsigned byte; i.e. min-value = 0 and max-value = 255.
      */
     public enum Prefix {
         // leave large open range for future indices
@@ -164,11 +166,12 @@ public class Encoding {
         VERTEX_ROLE(180, PrefixType.THING),
         STRUCTURE_RULE(190, PrefixType.RULE);
 
+
         private final byte key;
         private final PrefixType type;
 
         Prefix(int key, PrefixType type) {
-            this.key = (byte) (key & 0xff);
+            this.key = unsignedByte(key);
             this.type = type;
         }
 
@@ -215,7 +218,7 @@ public class Encoding {
      * The values in this class will be used as 'infixes' between two IIDs of
      * two objects in the database, and must not overlap with each other.
      *
-     * The size of a prefix is 1 byte; i.e. min-value = 0 and max-value = 255.
+     * The size of a prefix is 1 signed byte; i.e. min-value = -128 and max-value = 127.
      */
     public enum Infix {
         PROPERTY_LABEL(0),
@@ -254,7 +257,7 @@ public class Encoding {
         }
 
         Infix(int key, boolean isOptimisation) {
-            this.key = (byte) key;
+            this.key = signedByte(key);
             this.isOptimisation = isOptimisation;
         }
 
@@ -302,6 +305,9 @@ public class Encoding {
 
     }
 
+    /**
+     * The size of a prefix is 1 unsigned byte; i.e. min-value = 0 and max-value = 255.
+     */
     public enum ValueType {
         OBJECT(0, Object.class, false, false, null),
         BOOLEAN(10, Boolean.class, true, false, GraqlArg.ValueType.BOOLEAN),
@@ -341,7 +347,7 @@ public class Encoding {
 
         ValueType(int key, Class<?> valueClass, boolean isWritable, boolean isKeyable,
                   @Nullable GraqlArg.ValueType graqlValueType) {
-            this.key = (byte) key;
+            this.key = unsignedByte(key);
             this.valueClass = valueClass;
             this.isWritable = isWritable;
             this.isKeyable = isKeyable;
@@ -718,6 +724,7 @@ public class Encoding {
     }
 
     public interface Index {
+
         enum Prefix {
             TYPE(Encoding.Prefix.INDEX_TYPE),
             RULE(Encoding.Prefix.INDEX_RULE),
@@ -732,11 +739,41 @@ public class Encoding {
             public Encoding.Prefix prefix() {
                 return prefix;
             }
+
+            public byte[] bytes() { return prefix.bytes(); }
+        }
+
+        /**
+         * The size of a prefix is 1 unsigned byte; i.e. min-value = 0 and max-value = 255.
+         */
+        enum Infix {
+            CONTAINED_TYPE(0),
+            CONCLUDED_VERTEX(10),
+            CONCLUDED_EDGE_TO(11);
+
+            public static final int LENGTH = 1;
+            private final byte key;
+
+            Infix(int key) { this.key = unsignedByte(key); }
+
+            public static Infix of(byte[] key) {
+                if (key.length == 1) {
+                    for (Infix i : Infix.values()) {
+                        if (i.key == key[0]) return i;
+                    }
+                }
+                throw GraknException.of(UNRECOGNISED_VALUE);
+            }
+
+            public byte[] bytes() { return new byte[]{key}; }
         }
     }
 
     public interface Statistics {
 
+        /**
+         * The size of a prefix is 1 unsigned byte; i.e. min-value = 0 and max-value = 255.
+         */
         enum JobType {
             ATTRIBUTE_VERTEX(0),
             HAS_EDGE(1);
@@ -744,7 +781,7 @@ public class Encoding {
             private final byte key;
 
             JobType(int key) {
-                this.key = (byte) key;
+                this.key = unsignedByte(key);
             }
 
             public static JobType of(byte[] key) {
@@ -765,6 +802,9 @@ public class Encoding {
             }
         }
 
+        /**
+         * The size of a prefix is 1 unsigned byte; i.e. min-value = 0 and max-value = 255.
+         */
         enum JobOperation {
             CREATED(0),
             DELETED(1);
@@ -772,7 +812,7 @@ public class Encoding {
             private final byte key;
 
             JobOperation(int key) {
-                this.key = (byte) key;
+                this.key = unsignedByte(key);
             }
 
             public static JobOperation of(byte[] key) {
@@ -793,6 +833,9 @@ public class Encoding {
             }
         }
 
+        /**
+         * The size of a prefix is 1 unsigned byte; i.e. min-value = 0 and max-value = 255.
+         */
         enum Infix {
             VERTEX_COUNT(0),
             VERTEX_TRANSITIVE_COUNT(1),
@@ -802,7 +845,7 @@ public class Encoding {
             private final byte key;
 
             Infix(int key) {
-                this.key = (byte) key;
+                this.key = unsignedByte(key);
             }
 
             public byte key() {

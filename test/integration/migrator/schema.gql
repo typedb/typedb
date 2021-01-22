@@ -548,36 +548,6 @@ rule performance-tracker-rule:
         (analysis: $x, tracker: $z) isa performance-tracker;
     };
 
-rule repo-collaborator-org-fork-member-permission-rule:
-    when
-    {
-        $o isa organisation, has permission $p;
-        (org: $o, member: $u) isa org-member, has org-role "member";
-        (repo: $r, owner: $o) isa repo-owner;
-        $r isa repository, has private true;
-        (parent: $r, child: $rc) isa repo-fork;
-        $c (repo: $rc, collaborator: $u) isa repo-collaborator;
-    }
-    then
-    {
-        $c has $p;
-    };
-
-rule repo-collaborator-org-fork-owner-permission-rule:
-    when
-    {
-        $o isa organisation, has permission $p;
-        (org: $o, member: $u) isa org-member, has org-role "owner";
-        (repo: $r, owner: $o) isa repo-owner;
-        $r isa repository, has private true;
-        (parent: $r, child: $rc) isa repo-fork;
-        $c (repo: $rc, collaborator: $u) isa repo-collaborator;
-    }
-    then
-    {
-        $c has permission "admin";
-    };
-
 rule repo-collaborator-org-fork-rule:
     when
     {
@@ -645,29 +615,6 @@ rule repo-collaborator-permission-write-owns-read-rule:
     then
     {
         $c has permission "read";
-    };
-
-rule repo-collaborator-team-permission-rule:
-    when
-    {
-        (repo: $x, team: $y) isa repo-team, has permission $p;
-        (team: $y, member: $z) isa team-member;
-        $c (repo: $x, collaborator: $z) isa repo-collaborator;
-    }
-    then
-    {
-        $c has $p;
-    };
-
-rule repo-collaborator-team-rule:
-    when
-    {
-        (repo: $x, team: $y) isa repo-team;
-        (team: $y, member: $z) isa team-member;
-    }
-    then
-    {
-        (repo: $x, collaborator: $z) isa repo-collaborator;
     };
 
 rule repo-collaborator-user-permission-rule:

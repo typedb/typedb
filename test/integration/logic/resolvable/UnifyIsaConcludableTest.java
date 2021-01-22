@@ -141,10 +141,9 @@ public class UnifyIsaConcludableTest {
         return type.asString().put(stringValue);
     }
 
-    private Conjunction parseConjunction(String query) {
-        // TODO type resolver should probably run INSIDE the creation of a conclusion or concludable
+    private Conjunction resolvedConjunction(String query) {
         Conjunction conjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
-        return logicMgr.typeResolver().resolveLabels(conjunction);
+        return logicMgr.typeResolver().resolve(conjunction);
     }
 
     private Rule createRule(String label, String whenConjunctionPattern, String thenThingPattern) {
@@ -156,7 +155,7 @@ public class UnifyIsaConcludableTest {
     @Test
     public void isa_variable_unifies_rule_has_exact() {
         String conjunction = "{ $a isa $t; }";
-        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction));
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
         Rule rule = createRule("isa-rule", "{ $x isa person; }",
@@ -181,7 +180,7 @@ public class UnifyIsaConcludableTest {
     @Test
     public void isa_variable_unifies_rule_relation_exact() {
         String conjunction = "{ $a isa $t; }";
-        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction));
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
         Rule rule = createRule("isa-rule", "{ $x isa person; }",
@@ -203,10 +202,11 @@ public class UnifyIsaConcludableTest {
         assertEquals(0, unifier.requirements().predicates().size());
     }
 
+    @Ignore // TODO enable when type resolver is updated
     @Test
     public void isa_variable_unifies_relation_variable_type() {
         String conjunction = "{ $a isa $t; }";
-        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction));
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
         Rule rule = createRule("isa-rule",
@@ -232,10 +232,11 @@ public class UnifyIsaConcludableTest {
     /*
     Test unifier pruning using type information
      */
+    @Ignore // TODO enable when type resolver is updated
     @Test
     public void isa_variable_with_type_prunes_irrelevant_rules() {
         String conjunction = "{ $a isa $t; $t type company; }";
-        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction));
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
         Rule rule = createRule("isa-rule", "{ $x isa person; }", "$x has first-name \"john\"");
@@ -251,15 +252,14 @@ public class UnifyIsaConcludableTest {
                                 "($role-type: $x) isa $rel-type");
         unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
 
-        // TODO this test can only be enabled after full type resolution runs
-//        assertEquals(0, unifiers.size());
+        assertEquals(0, unifiers.size());
 
     }
 
     @Test
     public void isa_exact_unifies_rule_has_exact() {
         String conjunction = "{ $a isa name; }";
-        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction));
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
         Rule rule = createRule("isa-rule", "{ $x isa person; }",
@@ -303,7 +303,7 @@ public class UnifyIsaConcludableTest {
     @Test
     public void isa_exact_unifies_rule_relation_exact() {
         String conjunction = "{ $a isa relation; }";
-        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction));
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
         Rule rule = createRule("isa-rule", "{ $x isa person; }", "(employee: $x) isa employment");
@@ -342,10 +342,11 @@ public class UnifyIsaConcludableTest {
         assertFalse(unified.isPresent());
     }
 
+    @Ignore // TODO enable when type resolver is updated
     @Test
     public void isa_exact_unifies_rule_relation_variable() {
         String conjunction = "{ $a isa relation; }";
-        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction));
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
         Rule rule = createRule("isa-rule",
@@ -386,10 +387,11 @@ public class UnifyIsaConcludableTest {
         assertFalse(unified.isPresent());
     }
 
+    @Ignore // TODO enable when type resolver is updated
     @Test
     public void isa_concrete_prunes_irrelevant_rules() {
         String conjunction = "{ $a isa age; }";
-        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction));
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
         Rule rule = createRule("isa-rule", "{ $x isa person; }",
@@ -407,8 +409,7 @@ public class UnifyIsaConcludableTest {
                                 "{ $x isa person; $role-type type employment:employee; $rel-type relates $role-type; }",
                                 "($role-type: $x) isa $rel-type");
         unifiers = queryConcludable.unify(rule3.conclusion(), conceptMgr).toList();
-        // TODO this test can only be enabled after full type resolution runs
-//        assertEquals(0, unifiers.size());
+        assertEquals(0, unifiers.size());
     }
 
 
@@ -430,7 +431,7 @@ public class UnifyIsaConcludableTest {
     @Test
     public void isa_predicates_can_filter_answers() {
         String conjunction = "{ $a isa first-name; $a > 'b'; $a < 'y'; $a contains 'j'; }";
-        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction));
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
         Rule rule = createRule("isa-rule", "{ $x isa person; }", "$x has first-name \"john\"");

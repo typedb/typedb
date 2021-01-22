@@ -120,7 +120,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         if (roleTypeVertex == null) {
             if (getSupertypes().filter(t -> !t.equals(this) && t.isRelationType()).map(TypeImpl::asRelationType)
                     .flatMap(RelationType::getRelates).anyMatch(role -> role.getLabel().name().equals(roleLabel))) {
-                throw exception(GraknException.of(RELATION_RELATES_ROLE_FROM_SUPERTYPE, roleLabel));
+                throw exception(GraknException.of(RELATION_RELATES_ROLE_FROM_SUPERTYPE, roleLabel, getLabel()));
             } else {
                 final RoleTypeImpl roleType = RoleTypeImpl.of(graphMgr, roleLabel, vertex.label());
                 assert roleType.getSupertype() != null;
@@ -225,11 +225,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public void delete() {
-        if (getSubtypes().anyMatch(s -> !s.equals(this)))
-            throw exception(GraknException.of(TYPE_HAS_SUBTYPES, getLabel()));
-        else if (getInstances().findFirst().isPresent())
-            throw exception(GraknException.of(TYPE_HAS_INSTANCES, getLabel()));
-
+        validateDelete();
         declaredRoles().forEach(RoleTypeImpl::delete);
         vertex.delete();
     }
