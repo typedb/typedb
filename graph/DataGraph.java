@@ -22,7 +22,6 @@ import grakn.common.collection.Pair;
 import grakn.core.common.concurrent.ConcurrentSet;
 import grakn.core.common.exception.GraknCheckedException;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.iid.EdgeIID;
@@ -39,11 +38,7 @@ import grakn.core.graph.vertex.Vertex;
 import grakn.core.graph.vertex.impl.AttributeVertexImpl;
 import grakn.core.graph.vertex.impl.ThingVertexImpl;
 
-import javax.annotation.Resource;
-import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -60,7 +55,6 @@ import static grakn.core.common.collection.Bytes.longToBytes;
 import static grakn.core.common.collection.Bytes.stripPrefix;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
-import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.tree;
 import static grakn.core.graph.iid.VertexIID.Thing.generate;
@@ -80,7 +74,6 @@ import static grakn.core.graph.util.StatisticsBytes.hasEdgeTotalCountKey;
 import static grakn.core.graph.util.StatisticsBytes.snapshotKey;
 import static grakn.core.graph.util.StatisticsBytes.vertexCountKey;
 import static grakn.core.graph.util.StatisticsBytes.vertexTransitiveCountKey;
-import static java.util.stream.Stream.concat;
 
 public class DataGraph implements Graph {
 
