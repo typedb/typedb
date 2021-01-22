@@ -33,9 +33,10 @@ def graknlabs_common():
 
 
 def graknlabs_graql():
-    native.local_repository(
+    git_repository(
         name = "graknlabs_graql",
-        path = "../graql"
+        remote = "https://github.com/graknlabs/graql",
+        tag = "2.0.0-alpha-5" # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_graql
     )
 
 
@@ -54,7 +55,8 @@ def graknlabs_grabl_tracing():
     )
 
 def graknlabs_behaviour():
-    native.local_repository(
+    git_repository(
         name = "graknlabs_behaviour",
-        path = "../behaviour"
+        remote = "https://github.com/graknlabs/behaviour",
+        commit = "dad2c72dc8f0eee43a18b1626183fb6d4d9c1260" # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_behaviour
     )
