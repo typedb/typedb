@@ -48,7 +48,7 @@ import java.util.stream.Stream;
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.pair;
 import static grakn.core.common.exception.ErrorMessage.SchemaGraph.INVALID_SCHEMA_WRITE;
-import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
+import static grakn.core.common.exception.ErrorMessage.Transaction.SCHEMA_READ_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
@@ -333,7 +333,7 @@ public class SchemaGraph implements Graph {
 
     public TypeVertex create(Encoding.Vertex.Type encoding, String label, @Nullable String scope) {
         assert storage.isOpen();
-        if (isReadOnly) throw GraknException.of(SESSION_SCHEMA_VIOLATION);
+        if (isReadOnly) throw GraknException.of(SCHEMA_READ_VIOLATION);
         final String scopedLabel = scopedLabel(label, scope);
         try { // we intentionally use READ on multiLabelLock, as put() only concerns one label
             multiLabelLock.lockRead();
@@ -354,7 +354,7 @@ public class SchemaGraph implements Graph {
 
     public RuleStructure create(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
         assert storage.isOpen();
-        if (isReadOnly) throw GraknException.of(SESSION_SCHEMA_VIOLATION);
+        if (isReadOnly) throw GraknException.of(SCHEMA_READ_VIOLATION);
         try {
             multiLabelLock.lockRead();
             singleLabelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockWrite();
@@ -374,7 +374,7 @@ public class SchemaGraph implements Graph {
 
     public TypeVertex update(TypeVertex vertex, String oldLabel, @Nullable String oldScope, String newLabel, @Nullable String newScope) {
         assert storage.isOpen();
-        if (isReadOnly) throw GraknException.of(SESSION_SCHEMA_VIOLATION);
+        if (isReadOnly) throw GraknException.of(SCHEMA_READ_VIOLATION);
         final String oldScopedLabel = scopedLabel(oldLabel, oldScope);
         final String newScopedLabel = scopedLabel(newLabel, newScope);
         try {
@@ -393,7 +393,7 @@ public class SchemaGraph implements Graph {
 
     public RuleStructure update(RuleStructure vertex, String oldLabel, String newLabel) {
         assert storage.isOpen();
-        if (isReadOnly) throw GraknException.of(SESSION_SCHEMA_VIOLATION);
+        if (isReadOnly) throw GraknException.of(SCHEMA_READ_VIOLATION);
         try {
             final RuleStructure rule = getRule(newLabel);
             multiLabelLock.lockWrite();
@@ -410,7 +410,7 @@ public class SchemaGraph implements Graph {
 
     public void delete(TypeVertex vertex) {
         assert storage.isOpen();
-        if (isReadOnly) throw GraknException.of(SESSION_SCHEMA_VIOLATION);
+        if (isReadOnly) throw GraknException.of(SCHEMA_READ_VIOLATION);
         try { // we intentionally use READ on multiLabelLock, as delete() only concerns one label
             multiLabelLock.lockRead();
             singleLabelLocks.computeIfAbsent(vertex.scopedLabel(), x -> new ManagedReadWriteLock()).lockWrite();
@@ -427,7 +427,7 @@ public class SchemaGraph implements Graph {
 
     public void delete(RuleStructure vertex) {
         assert storage.isOpen();
-        if (isReadOnly) throw GraknException.of(SESSION_SCHEMA_VIOLATION);
+        if (isReadOnly) throw GraknException.of(SCHEMA_READ_VIOLATION);
         try { // we intentionally use READ on multiLabelLock, as delete() only concerns one label
             // TODO do we need all these locks here? Are they applicable for this method?
             multiLabelLock.lockRead();
