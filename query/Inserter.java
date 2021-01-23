@@ -115,8 +115,7 @@ public class Inserter {
 
     private Thing insert(ThingVariable var) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
-            Thing thing;
-            Reference ref = var.reference();
+            Thing thing; Reference ref = var.reference();
 
             if (ref.isName() && (thing = inserted.get(ref.asName())) != null) return thing;
             else if (matchedContains(var) && var.constraints().isEmpty()) return matchedGet(var);
@@ -261,7 +260,7 @@ public class Inserter {
             }
         }
     }
-    
+
     private void insertHas(Thing thing, Set<HasConstraint> hasConstraints) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_has")) {
             hasConstraints.forEach(has -> thing.setHas(insert(has.attribute()).asAttribute()));
