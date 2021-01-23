@@ -232,12 +232,6 @@ public class Inserter {
         Relation relation = relationType.create();
     }
 
-    private void insertHas(Thing thing, Set<HasConstraint> hasConstraints) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_has")) {
-            hasConstraints.forEach(has -> thing.setHas(insert(has.attribute()).asAttribute()));
-        }
-    }
-
     private Relation extendRelation(Relation relation, ThingVariable var) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_relation")) {
             if (var.relation().size() == 1) {
@@ -265,6 +259,12 @@ public class Inserter {
             } else { // var.relation().isEmpty()
                 throw GraknException.of(RELATION_CONSTRAINT_MISSING, var.reference());
             }
+        }
+    }
+    
+    private void insertHas(Thing thing, Set<HasConstraint> hasConstraints) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_has")) {
+            hasConstraints.forEach(has -> thing.setHas(insert(has.attribute()).asAttribute()));
         }
     }
 }
