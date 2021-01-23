@@ -128,9 +128,11 @@ public class Inserter {
                 }
             } else if (var.isa().isPresent()) thing = insertIsa(var.isa().get(), var);
             else throw GraknException.of(THING_ISA_MISSING, ref);
+            assert thing != null;
+            
             if (ref.isName()) inserted.put(ref.asName(), thing);
-            if (!var.has().isEmpty()) insertHas(thing, var.has());
             if (!var.relation().isEmpty()) extendRelation(thing.asRelation(), var);
+            if (!var.has().isEmpty()) insertHas(thing, var.has());
             return thing;
         }
     }
@@ -228,11 +230,13 @@ public class Inserter {
     }
 
     private Relation insertRelation(RelationType relationType, ThingVariable var) {
-        Relation relation = relationType.create();
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_relation")) {
+            return relationType.create();
+        }
     }
 
     private Relation extendRelation(Relation relation, ThingVariable var) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_relation")) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "extend_relation")) {
             if (var.relation().size() == 1) {
                 var.relation().iterator().next().players().forEach(rolePlayer -> {
                     final RoleType roleType;
