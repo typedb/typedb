@@ -131,7 +131,7 @@ public class Inserter {
             else throw GraknException.of(THING_ISA_MISSING, ref);
             if (ref.isName()) inserted.put(ref.asName(), thing);
             if (!var.has().isEmpty()) insertHas(thing, var.has());
-            if (!var.relation().isEmpty()) extendRelation((Relation) thing, var);
+            if (!var.relation().isEmpty()) extendRelation(thing.asRelation(), var);
             return thing;
         }
     }
@@ -230,7 +230,6 @@ public class Inserter {
 
     private Relation insertRelation(RelationType relationType, ThingVariable var) {
         Relation relation = relationType.create();
-        return extendRelation(relation, var);
     }
 
     private void insertHas(Thing thing, Set<HasConstraint> hasConstraints) {
