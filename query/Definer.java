@@ -55,7 +55,6 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_DEFINE_
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_NOT_SUPERTYPE;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROLE_DEFINED_OUTSIDE_OF_RELATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_CONSTRAINT_UNACCEPTED;
-import static grakn.core.query.common.Util.getThingType;
 import static graql.lang.common.GraqlToken.Constraint.IS;
 
 public class Definer {
@@ -106,12 +105,14 @@ public class Definer {
             } else if (labelConstraint.scope().isPresent()) return null; // do nothing
             else if (created.contains(variable)) return conceptMgr.getThingType(labelConstraint.scopedLabel());
 
-            ThingType type = getThingType(conceptMgr, labelConstraint);
+            ThingType type = getThingType(labelConstraint);
             if (variable.sub().isPresent()) {
                 type = defineSub(type, variable.sub().get(), variable);
             } else if (variable.valueType().isPresent()) { // && variable.sub().size() == 0
-                throw GraknException.of(ATTRIBUTE_VALUE_TYPE_MODIFIED,
-                                        variable.valueType().get().valueType().name(), labelConstraint.label());
+                String valueType = variable.valueType().get().valueType().name();
+                throw GraknException.of(ATTRIBUTE_VALUE_TYPE_MODIFIED, valueType, labelConstraint.label());
+            } else if (type == null) {
+                throw GraknException.of(TYPE_NOT_FOUND, labelConstraint.label());
             }
 
             if (variable.valueType().isPresent() && !(type instanceof AttributeType)) {
@@ -146,6 +147,14 @@ public class Definer {
                     throw GraknException.of(CYCLIC_TYPE_HIERARCHY, hierarchy);
                 }
             }
+        }
+    }
+
+    private ThingType getThingType(LabelConstraint label) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "get_thing_type")) {
+            final ThingType thingType;
+            if ((thingType = conceptMgr.getThingType(label.label())) != null) return thingType;
+            else return null;
         }
     }
 
