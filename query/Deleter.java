@@ -88,7 +88,7 @@ public class Deleter {
     public void execute() {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
             variables.forEach(this::delete);
-            variables.forEach(this::delete_isa);
+            variables.forEach(this::deleteIsa);
         }
     }
 
@@ -155,7 +155,7 @@ public class Deleter {
         }
     }
 
-    private void delete_isa(ThingVariable var) {
+    private void deleteIsa(ThingVariable var) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete_isa")) {
             Thing thing = detached.get(var);
             if (var.isa().isPresent() && !thing.isDeleted()) {
