@@ -119,8 +119,8 @@ public class Inserter {
 
             if (matchedContains(var)) {
                 thing = matchedGet(var);
-                ThingType type = getThingType(conceptMgr, var.isa().get().type().label().get());
-                if (var.isa().isPresent() && !thing.getType().equals(type)) {
+                if (var.isa().isPresent() &&
+                        !thing.getType().equals(getThingType(conceptMgr, var.isa().get().type().label().get()))) {
                     throw GraknException.of(THING_ISA_REINSERTION, ref, var.isa().get().type());
                 }
             } else if (var.isa().isPresent()) thing = insertIsa(var.isa().get(), var);
