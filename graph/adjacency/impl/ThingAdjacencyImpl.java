@@ -19,7 +19,6 @@
 package grakn.core.graph.adjacency.impl;
 
 import grakn.core.common.concurrent.ConcurrentSet;
-import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.adjacency.ThingAdjacency;
 import grakn.core.graph.common.Encoding;
@@ -204,8 +203,8 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
     @Override
     public void commit() {
-        Iterators.iterate(edges.values()).flatMap(edgeMap -> Iterators.iterate(edgeMap.values())).filter(e -> !e.isInferred())
-                .forEachRemaining(Edge::commit);
+        iterate(edges.values()).flatMap(edgeMap -> iterate(edgeMap.values()))
+                .filter(e -> !e.isInferred()).forEachRemaining(Edge::commit);
     }
 
     static class ThingIteratorBuilderImpl implements ThingIteratorBuilder {
@@ -267,10 +266,14 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
         private ResourceIterator<ThingEdge> edgeIterator(Encoding.Edge.Thing encoding, IID... lookahead) {
             byte[] iid = join(owner.iid().bytes(), infixIID(encoding, lookahead).bytes());
-            ResourceIterator<ThingEdge> storageIterator =
-                    owner.graph().storage().iterate(iid, (key, value) -> cache(new ThingEdgeImpl.Persisted(owner.graph(), EdgeIID.Thing.of(key))));
+            ResourceIterator<ThingEdge> storageIterator = owner.graph().storage()
+                    .iterate(iid, (key, value) -> cache(newPersistedEdge(EdgeIID.Thing.of(key))));
             ResourceIterator<ThingEdge> bufferedIterator = bufferedEdgeIterator(encoding, lookahead);
             return link(bufferedIterator, storageIterator).distinct();
+        }
+
+        private ThingEdgeImpl.Persisted newPersistedEdge(EdgeIID.Thing of) {
+            return new ThingEdgeImpl.Persisted(owner.graph(), of);
         }
 
         @Override
@@ -291,7 +294,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
             EdgeIID.Thing edgeIID = EdgeIID.Thing.of(owner.iid(), infixIID(encoding), adjacent.iid());
             if (owner.graph().storage().get(edgeIID.bytes()) == null) return null;
-            else return cache(new ThingEdgeImpl.Persisted(owner.graph(), edgeIID));
+            else return cache(newPersistedEdge(edgeIID));
         }
 
         @Override
@@ -305,7 +308,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
                     adjacent.iid(), SuffixIID.of(optimised.iid().key())
             );
             if (owner.graph().storage().get(edgeIID.bytes()) == null) return null;
-            else return cache(new ThingEdgeImpl.Persisted(owner.graph(), edgeIID));
+            else return cache(newPersistedEdge(edgeIID));
         }
 
         @Override

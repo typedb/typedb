@@ -143,7 +143,8 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
 
         private ResourceIterator<TypeEdge> edgeIterator(Encoding.Edge.Type encoding) {
             byte[] iid = join(owner.iid().bytes(), direction.isOut() ? encoding.out().bytes() : encoding.in().bytes());
-            final ResourceIterator<TypeEdge> storageIterator = owner.graph().storage().iterate(iid, (key, value) -> cache(newPersistedEdge(key, value)));
+            final ResourceIterator<TypeEdge> storageIterator = owner.graph().storage()
+                    .iterate(iid, (key, value) -> cache(newPersistedEdge(key, value)));
             if (edges.get(encoding) == null) return storageIterator;
             else return link(edges.get(encoding).iterator(), storageIterator).distinct();
         }
@@ -160,7 +161,8 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
                     ? e -> e.to().equals(adjacent)
                     : e -> e.from().equals(adjacent);
 
-            if (edges.containsKey(encoding) && (container = edges.get(encoding).stream().filter(predicate).findAny()).isPresent()) {
+            if (edges.containsKey(encoding) &&
+                    (container = edges.get(encoding).stream().filter(predicate).findAny()).isPresent()) {
                 return container.get();
             } else {
                 final byte[] edgeIID = edgeIID(encoding, adjacent);
