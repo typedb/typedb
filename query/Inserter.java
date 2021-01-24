@@ -24,7 +24,6 @@ import grakn.core.common.parameters.Context;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
@@ -69,15 +68,15 @@ public class Inserter {
 
     private final ConceptManager conceptMgr;
     private final Context.Query context;
-    private final ConceptMap existing;
+    private final ConceptMap matched;
     private final Map<Reference.Name, Thing> inserted;
     private final Set<ThingVariable> variables;
 
-    private Inserter(ConceptManager conceptMgr, Set<ThingVariable> vars, ConceptMap existing, Context.Query context) {
+    private Inserter(ConceptManager conceptMgr, Set<ThingVariable> vars, ConceptMap matched, Context.Query context) {
         this.conceptMgr = conceptMgr;
         this.variables = vars;
         this.context = context;
-        this.existing = existing;
+        this.matched = matched;
         this.inserted = new HashMap<>();
     }
 
@@ -87,29 +86,30 @@ public class Inserter {
     }
 
     public static Inserter create(ConceptManager conceptMgr, List<graql.lang.pattern.variable.ThingVariable<?>> vars,
-                                  ConceptMap existing, Context.Query context) {
+                                  ConceptMap matched, Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             VariableRegistry registry = VariableRegistry.createFromThings(vars);
             iterate(registry.types()).filter(t -> !t.reference().isLabel()).forEachRemaining(t -> {
                 throw GraknException.of(ILLEGAL_TYPE_VARIABLE_IN_INSERT, t.reference());
             });
-            return new Inserter(conceptMgr, registry.things(), existing, context);
+            return new Inserter(conceptMgr, registry.things(), matched, context);
         }
     }
 
     public ConceptMap execute() {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
             variables.forEach(this::insert);
+            matched.forEach((ref, concept) -> inserted.putIfAbsent(ref, concept.asThing()));
             return new ConceptMap(inserted);
         }
     }
 
-    private boolean existingContains(ThingVariable var) {
-        return var.reference().isName() && existing.contains(var.reference().asName());
+    private boolean matchedContains(ThingVariable var) {
+        return var.reference().isName() && matched.contains(var.reference().asName());
     }
 
-    public Thing existingGet(ThingVariable var) {
-        return existing.get(var.reference().asName()).asThing();
+    public Thing matchedGet(ThingVariable var) {
+        return matched.get(var.reference().asName()).asThing();
     }
 
     private Thing insert(ThingVariable var) {
@@ -117,17 +117,20 @@ public class Inserter {
             Thing thing; Reference ref = var.reference();
 
             if (ref.isName() && (thing = inserted.get(ref.asName())) != null) return thing;
-            else if (existingContains(var) && var.constraints().isEmpty()) return existingGet(var);
+            else if (matchedContains(var) && var.constraints().isEmpty()) return matchedGet(var);
             else validate(var);
 
-            if (existingContains(var)) {
-                thing = existingGet(var);
+            if (matchedContains(var)) {
+                thing = matchedGet(var);
                 if (var.isa().isPresent() && !thing.getType().equals(getThingType(var.isa().get().type()))) {
                     throw GraknException.of(THING_ISA_REINSERTION, ref, var.isa().get().type());
                 }
             } else if (var.isa().isPresent()) thing = insertIsa(var.isa().get(), var);
             else throw GraknException.of(THING_ISA_MISSING, ref);
+            assert thing != null;
+
             if (ref.isName()) inserted.put(ref.asName(), thing);
+            if (!var.relation().isEmpty()) insertRolePlayers(thing.asRelation(), var);
             if (!var.has().isEmpty()) insertHas(thing, var.has());
             return thing;
         }
@@ -153,13 +156,13 @@ public class Inserter {
         }
     }
 
-    private RoleType getRoleType(TypeVariable var) {
+    private RoleType getRoleType(TypeVariable var, RelationType relation) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "get_role_type")) {
             assert var.reference().isLabel() && var.label().isPresent();
-            final RelationType relationType;
+            final RelationType relationType = relation != null ?
+                    relation : conceptMgr.getRelationType(var.label().get().scope().get());
             final RoleType roleType;
-            if ((relationType = conceptMgr.getRelationType(var.label().get().scope().get())) != null &&
-                    (roleType = relationType.getRelates(var.label().get().label())) != null) {
+            if ((relationType != null && (roleType = relationType.getRelates(var.label().get().label())) != null)) {
                 return roleType;
             } else {
                 throw GraknException.of(TYPE_NOT_FOUND, var.label().get().scopedLabel());
@@ -172,23 +175,18 @@ public class Inserter {
             final ThingType thingType = getThingType(isaConstraint.type());
 
             if (thingType instanceof EntityType) {
-                return insertEntity(thingType.asEntityType());
+                return thingType.asEntityType().create();
+            } else if (thingType instanceof RelationType) {
+                if (!var.relation().isEmpty()) return thingType.asRelationType().create();
+                else throw GraknException.of(RELATION_CONSTRAINT_MISSING, var.reference());
             } else if (thingType instanceof AttributeType) {
                 return insertAttribute(thingType.asAttributeType(), var);
-            } else if (thingType instanceof RelationType) {
-                return insertRelation(thingType.asRelationType(), var);
             } else if (thingType instanceof ThingTypeImpl.Root) {
                 throw GraknException.of(ILLEGAL_ABSTRACT_WRITE, Thing.class.getSimpleName(), thingType.getLabel());
             } else {
                 assert false;
                 return null;
             }
-        }
-    }
-
-    private Entity insertEntity(EntityType entityType) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_entity")) {
-            return entityType.create();
         }
     }
 
@@ -221,18 +219,18 @@ public class Inserter {
         }
     }
 
-    private Relation insertRelation(RelationType relationType, ThingVariable var) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_relation")) {
+    private Relation insertRolePlayers(Relation relation, ThingVariable var) {
+        assert !var.relation().isEmpty();
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "extend_relation")) {
             if (var.relation().size() == 1) {
-                Relation relation = relationType.create();
                 var.relation().iterator().next().players().forEach(rolePlayer -> {
                     final RoleType roleType;
                     final Thing player = insert(rolePlayer.player());
                     final Set<RoleType> inferred;
                     if (rolePlayer.roleType().isPresent()) {
-                        roleType = getRoleType(rolePlayer.roleType().get());
+                        roleType = getRoleType(rolePlayer.roleType().get(), relation.getType());
                     } else if ((inferred = player.getType().getPlays()
-                            .filter(rt -> rt.getRelationType().equals(relationType))
+                            .filter(rt -> rt.getRelationType().equals(relation.getType()))
                             .collect(toSet())).size() == 1) {
                         roleType = inferred.iterator().next();
                     } else if (inferred.size() > 1) {
@@ -244,10 +242,8 @@ public class Inserter {
                     relation.addPlayer(roleType, player);
                 });
                 return relation;
-            } else if (var.relation().size() > 1) {
+            } else { // var.relation().size() > 1
                 throw GraknException.of(RELATION_CONSTRAINT_TOO_MANY, var.reference());
-            } else { // var.relation().isEmpty()
-                throw GraknException.of(RELATION_CONSTRAINT_MISSING, var.reference());
             }
         }
     }
