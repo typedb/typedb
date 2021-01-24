@@ -57,5 +57,5 @@ def graknlabs_behaviour():
     git_repository(
         name = "graknlabs_behaviour",
         remote = "https://github.com/graknlabs/behaviour",
-        commit = "dad2c72dc8f0eee43a18b1626183fb6d4d9c1260", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_behaviour
+        commit = "de69edaf88b4a130834094eee220365cc1a316aa", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_behaviour
     )

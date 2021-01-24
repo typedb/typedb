@@ -129,7 +129,7 @@ public class Inserter {
             } else if (var.isa().isPresent()) thing = insertIsa(var.isa().get(), var);
             else throw GraknException.of(THING_ISA_MISSING, ref);
             assert thing != null;
-            
+
             if (ref.isName()) inserted.put(ref.asName(), thing);
             if (!var.relation().isEmpty()) extendRelation(thing.asRelation(), var);
             if (!var.has().isEmpty()) insertHas(thing, var.has());
@@ -231,11 +231,13 @@ public class Inserter {
 
     private Relation insertRelation(RelationType relationType, ThingVariable var) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_relation")) {
+            if (var.relation().isEmpty()) throw GraknException.of(RELATION_CONSTRAINT_MISSING, var.reference());
             return relationType.create();
         }
     }
 
     private Relation extendRelation(Relation relation, ThingVariable var) {
+        assert !var.relation().isEmpty();
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "extend_relation")) {
             if (var.relation().size() == 1) {
                 var.relation().iterator().next().players().forEach(rolePlayer -> {
@@ -257,10 +259,8 @@ public class Inserter {
                     relation.addPlayer(roleType, player);
                 });
                 return relation;
-            } else if (var.relation().size() > 1) {
+            } else { // var.relation().size() > 1
                 throw GraknException.of(RELATION_CONSTRAINT_TOO_MANY, var.reference());
-            } else { // var.relation().isEmpty()
-                throw GraknException.of(RELATION_CONSTRAINT_MISSING, var.reference());
             }
         }
     }
