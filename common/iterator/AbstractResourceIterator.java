@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -165,6 +166,11 @@ public abstract class AbstractResourceIterator<T> implements ResourceIterator<T>
         for (; hasNext(); count++) next();
         recycle();
         return count;
+    }
+
+    @Override
+    public ResourceIterator<T> onConsumed(Runnable function) {
+        return new ConsumeHandledIterator<>(this, function);
     }
 
     @Override

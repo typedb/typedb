@@ -73,6 +73,8 @@ public interface ResourceIterator<T> extends Iterator<T> {
 
     long count();
 
+    ResourceIterator<T> onConsumed(Runnable function);
+
     ResourceIterator<T> onError(Function<Exception, GraknException> exceptionFn);
 
     void recycle();
