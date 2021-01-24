@@ -24,7 +24,6 @@ import grakn.core.common.parameters.Context;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
@@ -131,7 +130,7 @@ public class Inserter {
             assert thing != null;
 
             if (ref.isName()) inserted.put(ref.asName(), thing);
-            if (!var.relation().isEmpty()) extendRelation(thing.asRelation(), var);
+            if (!var.relation().isEmpty()) insertRolePlayers(thing.asRelation(), var);
             if (!var.has().isEmpty()) insertHas(thing, var.has());
             return thing;
         }
@@ -180,23 +179,18 @@ public class Inserter {
             final ThingType thingType = getThingType(isaConstraint.type());
 
             if (thingType instanceof EntityType) {
-                return insertEntity(thingType.asEntityType());
+                return thingType.asEntityType().create();
+            } else if (thingType instanceof RelationType) {
+                if (!var.relation().isEmpty()) return thingType.asRelationType().create();
+                else throw GraknException.of(RELATION_CONSTRAINT_MISSING, var.reference());
             } else if (thingType instanceof AttributeType) {
                 return insertAttribute(thingType.asAttributeType(), var);
-            } else if (thingType instanceof RelationType) {
-                return insertRelation(thingType.asRelationType(), var);
             } else if (thingType instanceof ThingTypeImpl.Root) {
                 throw GraknException.of(ILLEGAL_ABSTRACT_WRITE, Thing.class.getSimpleName(), thingType.getLabel());
             } else {
                 assert false;
                 return null;
             }
-        }
-    }
-
-    private Entity insertEntity(EntityType entityType) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_entity")) {
-            return entityType.create();
         }
     }
 
@@ -229,14 +223,7 @@ public class Inserter {
         }
     }
 
-    private Relation insertRelation(RelationType relationType, ThingVariable var) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_relation")) {
-            if (var.relation().isEmpty()) throw GraknException.of(RELATION_CONSTRAINT_MISSING, var.reference());
-            return relationType.create();
-        }
-    }
-
-    private Relation extendRelation(Relation relation, ThingVariable var) {
+    private Relation insertRolePlayers(Relation relation, ThingVariable var) {
         assert !var.relation().isEmpty();
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "extend_relation")) {
             if (var.relation().size() == 1) {
