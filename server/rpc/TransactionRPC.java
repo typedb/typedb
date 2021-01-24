@@ -28,7 +28,7 @@ import grakn.core.server.rpc.concept.TypeHandler;
 import grakn.core.server.rpc.logic.LogicManagerHandler;
 import grakn.core.server.rpc.logic.RuleHandler;
 import grakn.core.server.rpc.query.QueryHandler;
-import grakn.core.server.rpc.util.RequestReader;
+import grakn.core.server.rpc.common.RequestReader;
 import grakn.protocol.TransactionProto;
 
 import java.time.Duration;
@@ -47,8 +47,8 @@ import static grakn.core.common.exception.ErrorMessage.Server.ITERATION_WITH_UNK
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
 import static grakn.core.common.exception.ErrorMessage.Transaction.BAD_TRANSACTION_TYPE;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_ALREADY_OPENED;
-import static grakn.core.server.rpc.util.ResponseBuilder.Transaction.continueRes;
-import static grakn.core.server.rpc.util.ResponseBuilder.Transaction.done;
+import static grakn.core.server.rpc.common.ResponseBuilder.Transaction.continueRes;
+import static grakn.core.server.rpc.common.ResponseBuilder.Transaction.done;
 
 public class TransactionRPC {
 

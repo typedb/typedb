@@ -31,8 +31,8 @@ import grakn.protocol.TransactionProto.Transaction;
 
 import static grakn.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
-import static grakn.core.server.rpc.util.ResponseBuilder.Concept.thing;
-import static grakn.core.server.rpc.util.ResponseBuilder.Concept.type;
+import static grakn.core.server.rpc.common.ResponseBuilder.Concept.thing;
+import static grakn.core.server.rpc.common.ResponseBuilder.Concept.type;
 
 public class ConceptManagerHandler {
 

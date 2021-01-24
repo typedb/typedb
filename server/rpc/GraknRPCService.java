@@ -40,8 +40,8 @@ import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
 import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Server.SERVER_SHUTDOWN;
 import static grakn.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
-import static grakn.core.server.rpc.util.RequestReader.getOptions;
-import static grakn.core.server.rpc.util.ResponseBuilder.exception;
+import static grakn.core.server.rpc.common.RequestReader.getOptions;
+import static grakn.core.server.rpc.common.ResponseBuilder.exception;
 import static java.util.stream.Collectors.toList;
 
 public class GraknRPCService extends GraknGrpc.GraknImplBase {

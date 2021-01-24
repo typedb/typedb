@@ -26,7 +26,7 @@ import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.NumericGroup;
 import grakn.core.query.QueryManager;
 import grakn.core.server.rpc.TransactionRPC;
-import grakn.core.server.rpc.util.ResponseBuilder;
+import grakn.core.server.rpc.common.ResponseBuilder;
 import grakn.protocol.QueryProto;
 import grakn.protocol.TransactionProto;
 import grakn.protocol.TransactionProto.Transaction;
@@ -38,7 +38,7 @@ import graql.lang.query.GraqlMatch;
 import graql.lang.query.GraqlUndefine;
 
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
-import static grakn.core.server.rpc.util.RequestReader.getOptions;
+import static grakn.core.server.rpc.common.RequestReader.getOptions;
 import static java.util.stream.Collectors.toList;
 
 public class QueryHandler {

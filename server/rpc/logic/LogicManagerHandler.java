@@ -23,7 +23,7 @@ import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
 import grakn.core.server.rpc.TransactionRPC;
-import grakn.core.server.rpc.util.ResponseBuilder;
+import grakn.core.server.rpc.common.ResponseBuilder;
 import grakn.protocol.LogicProto;
 import grakn.protocol.TransactionProto;
 import graql.lang.Graql;
@@ -31,7 +31,7 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 
-import static grakn.core.server.rpc.util.ResponseBuilder.Logic.rule;
+import static grakn.core.server.rpc.common.ResponseBuilder.Logic.rule;
 import static java.util.stream.Collectors.toList;
 
 

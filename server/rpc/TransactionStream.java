@@ -38,7 +38,7 @@ import static grakn.core.common.collection.Bytes.bytesToUUID;
 import static grakn.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_ALREADY_OPENED;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_NOT_OPENED;
-import static grakn.core.server.rpc.util.ResponseBuilder.exception;
+import static grakn.core.server.rpc.common.ResponseBuilder.exception;
 
 /**
  * A StreamObserver that implements the transaction connection between a client

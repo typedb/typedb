@@ -29,7 +29,7 @@ import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
 import grakn.core.server.rpc.TransactionRPC;
-import grakn.core.server.rpc.util.ResponseBuilder;
+import grakn.core.server.rpc.common.ResponseBuilder;
 import grakn.protocol.ConceptProto;
 import grakn.protocol.TransactionProto.Transaction;
 
@@ -45,9 +45,9 @@ import static grakn.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
 import static grakn.core.common.exception.ErrorMessage.Server.MISSING_FIELD;
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ILLEGAL_SUPERTYPE_ENCODING;
-import static grakn.core.server.rpc.util.ResponseBuilder.Concept.thing;
-import static grakn.core.server.rpc.util.ResponseBuilder.Concept.type;
-import static grakn.core.server.rpc.util.ResponseBuilder.Concept.valueType;
+import static grakn.core.server.rpc.common.ResponseBuilder.Concept.thing;
+import static grakn.core.server.rpc.common.ResponseBuilder.Concept.type;
+import static grakn.core.server.rpc.common.ResponseBuilder.Concept.valueType;
 
 public class TypeHandler {
 
