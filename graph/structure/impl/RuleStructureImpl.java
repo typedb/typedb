@@ -20,10 +20,10 @@ package grakn.core.graph.structure.impl;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.SchemaGraph;
+import grakn.core.graph.common.Encoding;
 import grakn.core.graph.iid.IndexIID;
 import grakn.core.graph.iid.StructureIID;
 import grakn.core.graph.structure.RuleStructure;
-import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunctable;
@@ -43,9 +43,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static grakn.core.common.collection.Bytes.join;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
-import static grakn.core.graph.util.Encoding.Property.LABEL;
-import static grakn.core.graph.util.Encoding.Property.THEN;
-import static grakn.core.graph.util.Encoding.Property.WHEN;
+import static grakn.core.graph.common.Encoding.Property.LABEL;
+import static grakn.core.graph.common.Encoding.Property.THEN;
+import static grakn.core.graph.common.Encoding.Property.WHEN;
 
 public abstract class RuleStructureImpl implements RuleStructure {
 

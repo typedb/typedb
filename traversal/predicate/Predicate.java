@@ -18,14 +18,14 @@
 
 package grakn.core.traversal.predicate;
 
-import grakn.core.graph.util.Encoding;
+import grakn.core.graph.common.Encoding;
 import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.traversal.Traversal;
 import graql.lang.common.GraqlToken;
 
 import java.util.Objects;
 
-import static grakn.core.graph.util.Encoding.ValueType.DOUBLE_PRECISION;
+import static grakn.core.graph.common.Encoding.ValueType.DOUBLE_PRECISION;
 
 public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG extends PredicateArgument> {
 

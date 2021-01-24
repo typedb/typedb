@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.graph.util;
+package grakn.core.graph.common;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;

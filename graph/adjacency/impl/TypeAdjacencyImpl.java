@@ -21,12 +21,12 @@ package grakn.core.graph.adjacency.impl;
 import grakn.core.common.concurrent.ConcurrentSet;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.adjacency.TypeAdjacency;
+import grakn.core.graph.common.Encoding;
 import grakn.core.graph.edge.Edge;
 import grakn.core.graph.edge.TypeEdge;
 import grakn.core.graph.edge.impl.TypeEdgeImpl;
 import grakn.core.graph.iid.EdgeIID;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
 
 import java.util.Optional;

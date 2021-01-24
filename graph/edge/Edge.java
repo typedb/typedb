@@ -18,8 +18,8 @@
 
 package grakn.core.graph.edge;
 
+import grakn.core.graph.common.Encoding;
 import grakn.core.graph.iid.EdgeIID;
-import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.Vertex;
 
 public interface Edge<

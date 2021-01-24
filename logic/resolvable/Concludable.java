@@ -24,7 +24,7 @@ import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.Type;
-import grakn.core.graph.util.Encoding;
+import grakn.core.graph.common.Encoding;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
 import grakn.core.pattern.Conjunction;

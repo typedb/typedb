@@ -19,7 +19,7 @@
 package grakn.core.graph.iid;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.graph.util.Encoding;
+import grakn.core.graph.common.Encoding;
 
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
@@ -38,8 +38,8 @@ import static grakn.core.common.collection.Bytes.sortedBytesToDouble;
 import static grakn.core.common.collection.Bytes.sortedBytesToLong;
 import static grakn.core.common.collection.Bytes.stringToBytes;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.graph.util.Encoding.ValueType.STRING_ENCODING;
-import static grakn.core.graph.util.Encoding.ValueType.TIME_ZONE_ID;
+import static grakn.core.graph.common.Encoding.ValueType.STRING_ENCODING;
+import static grakn.core.graph.common.Encoding.ValueType.TIME_ZONE_ID;
 import static java.util.Arrays.copyOfRange;
 
 public abstract class IndexIID extends IID {

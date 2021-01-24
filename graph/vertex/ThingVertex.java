@@ -21,8 +21,8 @@ package grakn.core.graph.vertex;
 import grakn.core.graph.DataGraph;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.adjacency.ThingAdjacency;
+import grakn.core.graph.common.Encoding;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.util.Encoding;
 
 public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thing> {
 

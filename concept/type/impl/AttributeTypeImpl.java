@@ -26,7 +26,7 @@ import grakn.core.concept.thing.impl.AttributeImpl;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.graph.GraphManager;
-import grakn.core.graph.util.Encoding;
+import grakn.core.graph.common.Encoding;
 import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
@@ -50,16 +50,16 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_UNSET
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES;
 import static grakn.core.common.iterator.Iterators.link;
-import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
-import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
-import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
-import static grakn.core.graph.util.Encoding.ValueType.BOOLEAN;
-import static grakn.core.graph.util.Encoding.ValueType.DATETIME;
-import static grakn.core.graph.util.Encoding.ValueType.DOUBLE;
-import static grakn.core.graph.util.Encoding.ValueType.LONG;
-import static grakn.core.graph.util.Encoding.ValueType.STRING;
-import static grakn.core.graph.util.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
-import static grakn.core.graph.util.Encoding.Vertex.Type.Root.ATTRIBUTE;
+import static grakn.core.graph.common.Encoding.Edge.Type.OWNS;
+import static grakn.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
+import static grakn.core.graph.common.Encoding.Edge.Type.SUB;
+import static grakn.core.graph.common.Encoding.ValueType.BOOLEAN;
+import static grakn.core.graph.common.Encoding.ValueType.DATETIME;
+import static grakn.core.graph.common.Encoding.ValueType.DOUBLE;
+import static grakn.core.graph.common.Encoding.ValueType.LONG;
+import static grakn.core.graph.common.Encoding.ValueType.STRING;
+import static grakn.core.graph.common.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
+import static grakn.core.graph.common.Encoding.Vertex.Type.Root.ATTRIBUTE;
 
 public abstract class AttributeTypeImpl extends ThingTypeImpl implements AttributeType {
 

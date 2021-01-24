@@ -22,10 +22,10 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.graph.DataGraph;
 import grakn.core.graph.adjacency.ThingAdjacency;
 import grakn.core.graph.adjacency.impl.ThingAdjacencyImpl;
+import grakn.core.graph.common.Encoding;
 import grakn.core.graph.iid.EdgeIID;
 import grakn.core.graph.iid.IndexIID;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.AttributeVertex;
 
 import java.time.LocalDateTime;

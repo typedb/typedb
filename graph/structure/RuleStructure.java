@@ -18,8 +18,8 @@
 package grakn.core.graph.structure;
 
 import grakn.core.common.parameters.Label;
+import grakn.core.graph.common.Encoding;
 import grakn.core.graph.iid.StructureIID;
-import grakn.core.graph.util.Encoding;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;

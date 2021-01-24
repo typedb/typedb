@@ -19,7 +19,7 @@
 package grakn.core.traversal.structure;
 
 import grakn.core.common.parameters.Label;
-import grakn.core.graph.util.Encoding;
+import grakn.core.graph.common.Encoding;
 import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.graph.TraversalVertex;
 import grakn.core.traversal.predicate.Predicate;

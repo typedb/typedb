@@ -22,6 +22,7 @@ import grakn.core.common.concurrent.ConcurrentSet;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.graph.adjacency.ThingAdjacency;
+import grakn.core.graph.common.Encoding;
 import grakn.core.graph.edge.Edge;
 import grakn.core.graph.edge.ThingEdge;
 import grakn.core.graph.edge.impl.ThingEdgeImpl;
@@ -29,7 +30,6 @@ import grakn.core.graph.iid.EdgeIID;
 import grakn.core.graph.iid.IID;
 import grakn.core.graph.iid.InfixIID;
 import grakn.core.graph.iid.SuffixIID;
-import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 
 import java.util.HashSet;

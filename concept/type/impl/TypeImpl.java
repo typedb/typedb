@@ -24,8 +24,8 @@ import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptImpl;
 import grakn.core.concept.type.Type;
 import grakn.core.graph.GraphManager;
+import grakn.core.graph.common.Encoding;
 import grakn.core.graph.structure.RuleStructure;
-import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
@@ -42,7 +42,7 @@ import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEM
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_REFERENCED_IN_RULES;
 import static grakn.core.common.iterator.Iterators.tree;
-import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
+import static grakn.core.graph.common.Encoding.Edge.Type.SUB;
 
 public abstract class TypeImpl extends ConceptImpl implements Type {
 

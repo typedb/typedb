@@ -18,7 +18,7 @@
 
 package grakn.core.graph.iid;
 
-import grakn.core.graph.util.Encoding;
+import grakn.core.graph.common.Encoding;
 
 import static grakn.core.common.collection.Bytes.join;
 import static java.util.Arrays.copyOfRange;

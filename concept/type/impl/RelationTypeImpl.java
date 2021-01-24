@@ -45,11 +45,10 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.RELATION_RELATE
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.RELATION_RELATES_ROLE_NOT_AVAILABLE;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_SUBTYPES;
-import static grakn.core.graph.util.Encoding.Edge.Type.RELATES;
-import static grakn.core.graph.util.Encoding.Vertex.Type.RELATION_TYPE;
-import static grakn.core.graph.util.Encoding.Vertex.Type.Root.RELATION;
-import static grakn.core.graph.util.Encoding.Vertex.Type.Root.ROLE;
+import static grakn.core.graph.common.Encoding.Edge.Type.RELATES;
+import static grakn.core.graph.common.Encoding.Vertex.Type.RELATION_TYPE;
+import static grakn.core.graph.common.Encoding.Vertex.Type.Root.RELATION;
+import static grakn.core.graph.common.Encoding.Vertex.Type.Root.ROLE;
 
 public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 

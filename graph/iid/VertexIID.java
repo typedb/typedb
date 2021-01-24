@@ -21,8 +21,8 @@ package grakn.core.graph.iid;
 import grakn.core.common.exception.GraknCheckedException;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
-import grakn.core.graph.util.Encoding;
-import grakn.core.graph.util.KeyGenerator;
+import grakn.core.graph.common.Encoding;
+import grakn.core.graph.common.KeyGenerator;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.collection.Bytes.DATETIME_SIZE;
@@ -43,12 +43,12 @@ import static grakn.core.common.collection.Bytes.stringToBytes;
 import static grakn.core.common.collection.Bytes.unsignedBytesToShort;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_IID_CASTING;
-import static grakn.core.graph.util.Encoding.ValueType.STRING_ENCODING;
-import static grakn.core.graph.util.Encoding.ValueType.STRING_MAX_SIZE;
-import static grakn.core.graph.util.Encoding.ValueType.STRING_SIZE_ENCODING;
-import static grakn.core.graph.util.Encoding.ValueType.TIME_ZONE_ID;
-import static grakn.core.graph.util.Encoding.Vertex.Thing.ATTRIBUTE;
-import static grakn.core.graph.util.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
+import static grakn.core.graph.common.Encoding.ValueType.STRING_ENCODING;
+import static grakn.core.graph.common.Encoding.ValueType.STRING_MAX_SIZE;
+import static grakn.core.graph.common.Encoding.ValueType.STRING_SIZE_ENCODING;
+import static grakn.core.graph.common.Encoding.ValueType.TIME_ZONE_ID;
+import static grakn.core.graph.common.Encoding.Vertex.Thing.ATTRIBUTE;
+import static grakn.core.graph.common.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
 import static java.util.Arrays.copyOfRange;
 
 public abstract class VertexIID extends IID {

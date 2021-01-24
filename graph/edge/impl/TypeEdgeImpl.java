@@ -19,10 +19,10 @@
 package grakn.core.graph.edge.impl;
 
 import grakn.core.graph.SchemaGraph;
+import grakn.core.graph.common.Encoding;
 import grakn.core.graph.edge.TypeEdge;
 import grakn.core.graph.iid.EdgeIID;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;

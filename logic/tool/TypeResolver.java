@@ -22,7 +22,7 @@ import grakn.common.collection.Bytes;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
-import grakn.core.graph.util.Encoding;
+import grakn.core.graph.common.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.logic.LogicCache;
 import grakn.core.pattern.Conjunction;

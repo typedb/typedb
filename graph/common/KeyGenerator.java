@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.graph.util;
+package grakn.core.graph.common;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
@@ -38,13 +38,13 @@ import static grakn.core.common.collection.Bytes.sortedBytesToShort;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.MAX_RULE_REACHED;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.MAX_INSTANCE_REACHED;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.MAX_SUBTYPE_REACHED;
+import static grakn.core.graph.common.Encoding.Key.BUFFERED;
+import static grakn.core.graph.common.Encoding.Key.PERSISTED;
+import static grakn.core.graph.common.Encoding.Vertex.Thing.ENTITY;
+import static grakn.core.graph.common.Encoding.Vertex.Thing.RELATION;
+import static grakn.core.graph.common.Encoding.Vertex.Thing.ROLE;
 import static grakn.core.graph.iid.VertexIID.Thing.DEFAULT_LENGTH;
 import static grakn.core.graph.iid.VertexIID.Thing.PREFIX_W_TYPE_LENGTH;
-import static grakn.core.graph.util.Encoding.Key.BUFFERED;
-import static grakn.core.graph.util.Encoding.Key.PERSISTED;
-import static grakn.core.graph.util.Encoding.Vertex.Thing.ENTITY;
-import static grakn.core.graph.util.Encoding.Vertex.Thing.RELATION;
-import static grakn.core.graph.util.Encoding.Vertex.Thing.ROLE;
 import static java.util.Arrays.copyOfRange;
 
 public class KeyGenerator {

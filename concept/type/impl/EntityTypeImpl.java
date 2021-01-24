@@ -33,8 +33,8 @@ import java.util.stream.Stream;
 
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
-import static grakn.core.graph.util.Encoding.Vertex.Type.ENTITY_TYPE;
-import static grakn.core.graph.util.Encoding.Vertex.Type.Root.ENTITY;
+import static grakn.core.graph.common.Encoding.Vertex.Type.ENTITY_TYPE;
+import static grakn.core.graph.common.Encoding.Vertex.Type.Root.ENTITY;
 
 public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 

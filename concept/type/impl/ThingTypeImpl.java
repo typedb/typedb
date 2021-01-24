@@ -28,8 +28,8 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.graph.GraphManager;
+import grakn.core.graph.common.Encoding;
 import grakn.core.graph.edge.TypeEdge;
-import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
@@ -43,6 +43,10 @@ import java.util.stream.Stream;
 
 import static grakn.core.common.collection.Streams.compareSize;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_OWNS;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_PLAYS;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_NONEXISTENT_OWNS;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_NONEXISTENT_PLAYS;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_OWNS_HAS_INSTANCES;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_PLAYS_HAS_INSTANCES;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_NOT_SUPERTYPE;
@@ -59,16 +63,12 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_NOT_
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_SUBTYPES;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_OWNS;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_PLAYS;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_NONEXISTENT_OWNS;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_NONEXISTENT_PLAYS;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.loop;
-import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
-import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
-import static grakn.core.graph.util.Encoding.Edge.Type.PLAYS;
-import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
+import static grakn.core.graph.common.Encoding.Edge.Type.OWNS;
+import static grakn.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
+import static grakn.core.graph.common.Encoding.Edge.Type.PLAYS;
+import static grakn.core.graph.common.Encoding.Edge.Type.SUB;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.Stream.concat;
 

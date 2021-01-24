@@ -23,7 +23,7 @@ import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.impl.RoleImpl;
 import grakn.core.concept.type.RoleType;
 import grakn.core.graph.GraphManager;
-import grakn.core.graph.util.Encoding;
+import grakn.core.graph.common.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
@@ -36,9 +36,9 @@ import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMAT
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_RELATES_HAS_INSTANCES;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static grakn.core.common.iterator.Iterators.loop;
-import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
-import static grakn.core.graph.util.Encoding.Vertex.Type.ROLE_TYPE;
-import static grakn.core.graph.util.Encoding.Vertex.Type.Root.ROLE;
+import static grakn.core.graph.common.Encoding.Edge.Type.SUB;
+import static grakn.core.graph.common.Encoding.Vertex.Type.ROLE_TYPE;
+import static grakn.core.graph.common.Encoding.Vertex.Type.Root.ROLE;
 
 public class RoleTypeImpl extends TypeImpl implements RoleType {
 
