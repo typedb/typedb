@@ -27,6 +27,7 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
+import grakn.core.pattern.constraint.type.LabelConstraint;
 import grakn.core.pattern.variable.TypeVariable;
 
 import java.util.Set;
@@ -41,11 +42,10 @@ public class Util {
 
     private static final String TRACE_PREFIX = "util.";
 
-    public static ThingType getThingType(ConceptManager conceptMgr, TypeVariable var) {
+    public static ThingType getThingType(ConceptManager conceptMgr, LabelConstraint labelConstraint) {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "get_thing_type")) {
-            assert var.reference().isLabel() && var.label().isPresent();
-            final ThingType thingType = conceptMgr.getThingType(var.label().get().label());
-            if (thingType == null) throw GraknException.of(TYPE_NOT_FOUND, var.label().get().label());
+            final ThingType thingType = conceptMgr.getThingType(labelConstraint.label());
+            if (thingType == null) throw GraknException.of(TYPE_NOT_FOUND, labelConstraint.label());
             else return thingType.asThingType();
         }
     }

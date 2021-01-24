@@ -37,7 +37,6 @@ import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.VariableRegistry;
-import grakn.core.query.common.Util;
 import graql.lang.pattern.variable.Reference;
 
 import java.util.HashMap;
@@ -120,7 +119,8 @@ public class Inserter {
 
             if (matchedContains(var)) {
                 thing = matchedGet(var);
-                if (var.isa().isPresent() && !thing.getType().equals(getThingType(conceptMgr, var.isa().get().type()))) {
+                ThingType type = getThingType(conceptMgr, var.isa().get().type().label().get());
+                if (var.isa().isPresent() && !thing.getType().equals(type)) {
                     throw GraknException.of(THING_ISA_REINSERTION, ref, var.isa().get().type());
                 }
             } else if (var.isa().isPresent()) thing = insertIsa(var.isa().get(), var);
@@ -147,7 +147,8 @@ public class Inserter {
 
     private Thing insertIsa(IsaConstraint isaConstraint, ThingVariable var) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_isa")) {
-            final ThingType thingType = getThingType(conceptMgr, isaConstraint.type());
+            assert isaConstraint.type().label().isPresent();
+            final ThingType thingType = getThingType(conceptMgr, isaConstraint.type().label().get());
 
             if (thingType instanceof EntityType) {
                 return thingType.asEntityType().create();

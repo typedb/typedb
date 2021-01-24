@@ -98,7 +98,7 @@ public class QueryManager {
     }
 
     public Numeric match(GraqlMatch.Aggregate query, boolean isParallel, Options.Query options) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match-aggregate")) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match_aggregate")) {
             return Matcher.create(reasoner, query, options).execute(isParallel);
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
@@ -118,7 +118,7 @@ public class QueryManager {
     }
 
     public ResourceIterator<ConceptMapGroup> match(GraqlMatch.Group query, boolean isParallel, Options.Query options) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match-group")) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match_group")) {
             return Matcher.create(reasoner, query, options).execute(isParallel).onError(conceptMgr::exception);
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
@@ -138,7 +138,7 @@ public class QueryManager {
     }
 
     public ResourceIterator<NumericGroup> match(GraqlMatch.Group.Aggregate query, boolean isParallel, Options.Query options) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match-group-aggregate")) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match_group_aggregate")) {
             return Matcher.create(reasoner, query, options).execute(isParallel).onError(conceptMgr::exception);
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
