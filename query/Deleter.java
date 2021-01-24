@@ -28,11 +28,9 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.variable.ThingVariable;
-import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.VariableRegistry;
 import graql.lang.pattern.variable.Reference;
 
@@ -49,12 +47,9 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_V
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE_HAS;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE_THING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_CONSTRAINT_TOO_MANY;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.ROLE_TYPE_AMBIGUOUS;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.ROLE_TYPE_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_IID_NOT_INSERTABLE;
-import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static grakn.core.common.iterator.Iterators.iterate;
-import static java.util.stream.Collectors.toSet;
+import static grakn.core.query.common.Util.getRoleType;
 
 public class Deleter {
 
@@ -132,21 +127,8 @@ public class Deleter {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete_relation")) {
             if (var.relation().size() == 1) {
                 var.relation().iterator().next().players().forEach(rolePlayer -> {
-                    RoleType roleType;
                     Thing player = matched.get(rolePlayer.player().reference().asName()).asThing();
-                    Set<RoleType> inferred;
-                    if (rolePlayer.roleType().isPresent()) {
-                        roleType = getRoleType(rolePlayer.roleType().get());
-                    } else if ((inferred = player.getType().getPlays()
-                            .filter(rt -> rt.getRelationType().equals(relation.getType()))
-                            .collect(toSet())).size() == 1) {
-                        roleType = inferred.iterator().next();
-                    } else if (inferred.size() > 1) {
-                        throw GraknException.of(ROLE_TYPE_AMBIGUOUS, rolePlayer.player().reference());
-                    } else {
-                        throw GraknException.of(ROLE_TYPE_MISSING, rolePlayer.player().reference());
-                    }
-
+                    RoleType roleType = getRoleType(relation, player, rolePlayer);
                     relation.removePlayer(roleType, player);
                 });
             } else {
@@ -162,20 +144,6 @@ public class Deleter {
                 Label typeLabel = var.isa().get().type().label().get().properLabel();
                 if (thing.getType().getSupertypes().anyMatch(t -> t.getLabel().equals(typeLabel))) thing.delete();
                 else throw GraknException.of(INVALID_DELETE_THING, var.reference(), typeLabel);
-            }
-        }
-    }
-
-    private RoleType getRoleType(TypeVariable var) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "get_role_type")) {
-            assert var.reference().isLabel() && var.label().isPresent();
-            final RelationType relationType;
-            final RoleType roleType;
-            if ((relationType = conceptMgr.getRelationType(var.label().get().scope().get())) != null &&
-                    (roleType = relationType.getRelates(var.label().get().label())) != null) {
-                return roleType;
-            } else {
-                throw GraknException.of(TYPE_NOT_FOUND, var.label().get().scopedLabel());
             }
         }
     }

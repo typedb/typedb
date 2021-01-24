@@ -57,6 +57,8 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_IID_NOT_
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_REINSERTION;
 import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.query.common.Util.getRoleType;
+import static grakn.core.query.common.Util.getThingType;
 
 public class Inserter {
 
@@ -118,7 +120,7 @@ public class Inserter {
 
             if (matchedContains(var)) {
                 thing = matchedGet(var);
-                if (var.isa().isPresent() && !thing.getType().equals(Util.getThingType(conceptMgr, var.isa().get().type()))) {
+                if (var.isa().isPresent() && !thing.getType().equals(getThingType(conceptMgr, var.isa().get().type()))) {
                     throw GraknException.of(THING_ISA_REINSERTION, ref, var.isa().get().type());
                 }
             } else if (var.isa().isPresent()) thing = insertIsa(var.isa().get(), var);
@@ -145,7 +147,7 @@ public class Inserter {
 
     private Thing insertIsa(IsaConstraint isaConstraint, ThingVariable var) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_isa")) {
-            final ThingType thingType = Util.getThingType(conceptMgr, isaConstraint.type());
+            final ThingType thingType = getThingType(conceptMgr, isaConstraint.type());
 
             if (thingType instanceof EntityType) {
                 return thingType.asEntityType().create();
@@ -198,7 +200,7 @@ public class Inserter {
             if (var.relation().size() == 1) {
                 var.relation().iterator().next().players().forEach(rolePlayer -> {
                     Thing player = insert(rolePlayer.player());
-                    RoleType roleType = Util.getRoleType(relation, player, rolePlayer);
+                    RoleType roleType = getRoleType(relation, player, rolePlayer);
                     relation.addPlayer(roleType, player);
                 });
             } else { // var.relation().size() > 1
