@@ -156,10 +156,6 @@ public class Inserter {
         }
     }
 
-    private RoleType getRoleType(TypeVariable var) {
-        return getRoleType(var, null);
-    }
-
     private RoleType getRoleType(TypeVariable var, RelationType relation) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "get_role_type")) {
             assert var.reference().isLabel() && var.label().isPresent();
