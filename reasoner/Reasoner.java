@@ -79,7 +79,7 @@ public class Reasoner {
                                                 Options.Query options) {
         ResourceIterator<Conjunction> conjunctions = iterate(disjunction.conjunctions());
         if (!options.isParallel()) return conjunctions.flatMap(conj -> iterator(conj, filter));
-        else return produce(conjunctions.flatMap(conj -> producers(conj, filter)).toList()).distinct();
+        else return produce(conjunctions.flatMap(conj -> producers(conj, filter)).toList());
     }
 
     private ResourceIterator<Producer<ConceptMap>> producers(Conjunction conjunction) {
@@ -94,7 +94,7 @@ public class Reasoner {
         Conjunction conj = logicMgr.typeResolver().resolve(conjunction);
         if (conj.isSatisfiable()) {
             answerProducers.add(traversalEng.producer(conj.traversal(filter), PARALLELISATION_FACTOR).map(conceptMgr::conceptMap));
-            if (context.options().isInfer() && !context.transactionType().isWrite())
+            if (context.options().infer() && !context.transactionType().isWrite())
                 answerProducers.add(this.resolve(conj));
         } else if (!filter.isEmpty() && iterate(filter).anyMatch(id -> conj.variable(id).isThing()) ||
                 iterate(conjunction.variables()).anyMatch(Variable::isThing)) {
@@ -128,7 +128,7 @@ public class Reasoner {
         Conjunction conj = logicMgr.typeResolver().resolve(conjunction);
         if (conj.isSatisfiable()) {
             answers = traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
-            if (context.options().isInfer() && !context.transactionType().isWrite())
+            if (context.options().infer() && !context.transactionType().isWrite())
                 answers = link(answers, produce(resolve(conj)));
         } else if (!filter.isEmpty() && iterate(filter).anyMatch(id -> conj.variable(id).isThing()) ||
                 iterate(conjunction.variables()).anyMatch(Variable::isThing)) {

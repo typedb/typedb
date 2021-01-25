@@ -19,8 +19,6 @@ package grakn.core.common.parameters;
 
 import grakn.core.common.exception.GraknException;
 
-import java.util.Optional;
-
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 
 public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options<?, ?>> {
@@ -46,13 +44,13 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         return getThis();
     }
 
-    public boolean isInfer() {
+    public boolean infer() {
         if (infer != null) return infer;
-        else if (parent != null) return parent.isInfer();
+        else if (parent != null) return parent.infer();
         else return DEFAULT_INFER;
     }
 
-    public SELF isInfer(boolean infer) {
+    public SELF infer(boolean infer) {
         this.infer = infer;
         return getThis();
     }

@@ -78,6 +78,5 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
         public Query(Context.Transaction context, Options.Query options) {
             super(context, options.parent(context.options()));
         }
-
     }
 }
