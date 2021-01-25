@@ -24,6 +24,8 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concurrent.common.ConcurrentSet;
+import grakn.core.concurrent.producer.ProducerIterator;
+import grakn.core.concurrent.producer.Producers;
 import grakn.core.graph.common.Encoding;
 import grakn.core.graph.common.KeyGenerator;
 import grakn.core.graph.common.StatisticsBytes;
@@ -55,8 +57,12 @@ import static grakn.core.common.collection.Bytes.longToBytes;
 import static grakn.core.common.collection.Bytes.stripPrefix;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
+import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.tree;
+import static grakn.core.concurrent.common.ExecutorService.PARALLELISATION_FACTOR;
+import static grakn.core.concurrent.producer.Producers.async;
+import static grakn.core.concurrent.producer.Producers.produce;
 import static grakn.core.graph.common.Encoding.Edge.Type.SUB;
 import static grakn.core.graph.common.Encoding.Prefix.VERTEX_ATTRIBUTE_TYPE;
 import static grakn.core.graph.common.Encoding.Prefix.VERTEX_ENTITY_TYPE;
@@ -430,10 +436,14 @@ public class DataGraph implements Graph {
      */
     @Override
     public void commit() {
-        // TODO: replace this parallel stream with our AsyncProducer
-        thingsByIID.values().parallelStream().filter(v -> v.status().equals(BUFFERED) && !v.isInferred()).forEach(
-                vertex -> vertex.iid(generate(storage.dataKeyGenerator(), vertex.type().iid(), vertex.type().properLabel()))
-        ); // thingByIID no longer contains valid mapping from IID to TypeVertex
+        ResourceIterator<ResourceIterator<Void>> iters = iterate(thingsByIID.values())
+                .filter(v -> v.status().equals(BUFFERED) && !v.isInferred()).map(vertex -> {
+                    vertex.iid(generate(storage.dataKeyGenerator(), vertex.type().iid(), vertex.type().properLabel()));
+                    return (Void) null;
+                }).split(PARALLELISATION_FACTOR);
+        ProducerIterator<Void> keyGenerations = produce(async(iters, PARALLELISATION_FACTOR));
+        while (keyGenerations.hasNext()) keyGenerations.next();
+        // thingByIID no longer contains valid mapping from IID to TypeVertex
         thingsByIID.values().stream().filter(v -> !v.isInferred()).forEach(Vertex::commit);
         attributesByIID.valuesIterator().forEachRemaining(Vertex::commit);
         statistics.commit();

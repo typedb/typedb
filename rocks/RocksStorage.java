@@ -192,19 +192,6 @@ public class RocksStorage implements Storage {
         return e;
     }
 
-    @Override
-    public void close() {
-        if (isOpen.compareAndSet(true, false)) {
-            iterators.parallelStream().forEach(RocksIterator::close);
-            recycled.forEach(AbstractImmutableNativeReference::close);
-            snapshot.close();
-            storageTransaction.close();
-            transactionOptions.close();
-            readOptions.close();
-            writeOptions.close();
-        }
-    }
-
     void validateTransactionIsOpen() {
         if (!isOpen()) throw GraknException.of(TRANSACTION_CLOSED);
     }
@@ -223,6 +210,19 @@ public class RocksStorage implements Storage {
 
     void remove(RocksIterator<?> iterator) {
         iterators.remove(iterator);
+    }
+
+    @Override
+    public void close() {
+        if (isOpen.compareAndSet(true, false)) {
+            iterators.parallelStream().forEach(RocksIterator::close);
+            recycled.forEach(AbstractImmutableNativeReference::close);
+            snapshot.close();
+            storageTransaction.close();
+            transactionOptions.close();
+            readOptions.close();
+            writeOptions.close();
+        }
     }
 
     static abstract class TransactionBounded extends RocksStorage {

@@ -183,7 +183,7 @@ public final class ConceptManager {
                 .filter(v -> !v.isInferred() && v.isModified() && !v.encoding().equals(ROLE))
                 .map(v -> { ThingImpl.of(v).validate(); return (Void) null; }).split(PARALLELISATION_FACTOR);
         ProducerIterator<Void> validations = produce(async(toValidate, PARALLELISATION_FACTOR));
-        while (validations.hasNext()) {validations.next();}
+        while (validations.hasNext()) validations.next();
     }
 
     public GraknException exception(ErrorMessage error) {
