@@ -31,7 +31,6 @@ java_library(
         "@graknlabs_common//:common",
 
         # External Maven Dependencies
-#        "@maven//:com_github_ben_manes_caffeine_caffeine",
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:org_slf4j_slf4j_api",
     ],
