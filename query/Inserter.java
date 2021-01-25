@@ -18,6 +18,7 @@
 
 package grakn.core.query;
 
+import grabl.tracing.client.GrablTracingThreadStatic;
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Context;
@@ -35,6 +36,7 @@ import grakn.core.concept.type.impl.ThingTypeImpl;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
+import grakn.core.pattern.constraint.type.LabelConstraint;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.VariableRegistry;
 import graql.lang.pattern.variable.Reference;
@@ -55,9 +57,9 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_CONST
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_IID_NOT_INSERTABLE;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_REINSERTION;
+import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.query.common.Util.getRoleType;
-import static grakn.core.query.common.Util.getThingType;
 
 public class Inserter {
 
@@ -121,7 +123,7 @@ public class Inserter {
             if (matchedContains(var)) {
                 thing = matchedGet(var);
                 if (var.isa().isPresent() &&
-                        !thing.getType().equals(getThingType(conceptMgr, var.isa().get().type().label().get()))) {
+                        !thing.getType().equals(getThingType(var.isa().get().type().label().get()))) {
                     throw GraknException.of(THING_ISA_REINSERTION, ref, var.isa().get().type());
                 }
             } else if (var.isa().isPresent()) thing = insertIsa(var.isa().get(), var);
@@ -146,10 +148,18 @@ public class Inserter {
         }
     }
 
+    public ThingType getThingType(LabelConstraint labelConstraint) {
+        try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "get_thing_type")) {
+            ThingType thingType = conceptMgr.getThingType(labelConstraint.label());
+            if (thingType == null) throw GraknException.of(TYPE_NOT_FOUND, labelConstraint.label());
+            else return thingType.asThingType();
+        }
+    }
+
     private Thing insertIsa(IsaConstraint isaConstraint, ThingVariable var) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_isa")) {
             assert isaConstraint.type().label().isPresent();
-            final ThingType thingType = getThingType(conceptMgr, isaConstraint.type().label().get());
+            ThingType thingType = getThingType(isaConstraint.type().label().get());
 
             if (thingType instanceof EntityType) {
                 return thingType.asEntityType().create();
