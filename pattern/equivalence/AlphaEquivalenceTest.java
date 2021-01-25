@@ -238,7 +238,22 @@ public class AlphaEquivalenceTest {
     }
 
     @Test
-    public void test_relation_with_different_variable_bindings(){
+    public void test_relation_as_player_with_different_binding_configurations(){
+        List<ThingVariable> variables = Stream.of(
+                parseVariables("r1","$r1 ($x)", "($r1, $y)"),
+                parseVariables("r2","$r2 ($x)", "($r2, $y)", "($r2, $z)"),
+                parseVariables("r3","$r3 ($x)", "($r3, $join)", "($r3, $join)"),
+                parseVariables("r4","$r4 ($x)", "(from: $r4, to: $x)", "(from: $r4, to: $y)"),
+                parseVariables("r5","$r5 ($x)", "(from: $r5, to: $join)", "(from: $r5, to: $join)"),
+                parseVariables("r6","$r6 ($x)", "(from: $r6, to: $join)", "(from: $join, to: $r6)")
+        )
+                .map(Variable::asThing)
+                .collect(Collectors.toList());
+        variables.forEach(var -> testAlphaEquivalence(var.asThing(), variables, new HashSet<>()));
+    }
+
+    @Test
+    public void test_relation_with_different_roleplayer_variable_bindings(){
         List<ThingVariable> variables = Stream.of(
                 parseVariables("r1","$r1 (employer: $x, employee: $y)"),
                 parseVariables("r2","$r2 (employer: $x, employee: $x)"),
