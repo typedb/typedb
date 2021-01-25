@@ -153,8 +153,11 @@ public class RootResolver extends Resolver<RootResolver> {
     @Override
     protected void receiveExhausted(Response.Exhausted fromDownstream, int iteration) {
         LOG.trace("{}: received Exhausted: {}", name(), fromDownstream);
+        Request toDownstream = fromDownstream.sourceRequest();
+        Request fromUpstream = fromUpstream(toDownstream);
+
         responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
-        onExhausted.accept(iteration);
+        tryAnswer(fromUpstream, iteration);
     }
 
     @Override

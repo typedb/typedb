@@ -48,7 +48,7 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
 
     public RetrievableResolver(Actor<RetrievableResolver> self, Retrievable retrievable, ResolverRegistry registry,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean explanations) {
-        super(self, RetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable + ")", registry, traversalEngine, explanations);
+        super(self, RetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable.conjunction() + ")", registry, traversalEngine, explanations);
         this.retrievable = retrievable;
         this.conceptMgr = conceptMgr;
         this.responseProducers = new HashMap<>();

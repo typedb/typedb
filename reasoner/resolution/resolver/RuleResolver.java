@@ -150,7 +150,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
         ResponseProducer responseProducer = responseProducers.get(fromUpstream);
 
         responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
-        respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
+        tryAnswer(fromUpstream, responseProducer, iteration);
     }
 
     @Override
