@@ -187,8 +187,6 @@ public class TypeResolver {
             resolver.relates().forEach(constraint -> registerRelates(resolver, constraint));
             resolver.sub().ifPresent(constraint -> registerSub(resolver, constraint));
             resolver.valueType().ifPresent(constraint -> registerValueType(resolver, constraint));
-
-            resolver.addTo(traversal);
             return resolver;
         }
 
