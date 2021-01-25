@@ -282,24 +282,32 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new ThingWrite(18, "Illegal anonymous variable in delete query: '%s'.  You can only delete named variables that were matched.");
         public static final ThingWrite INVALID_DELETE_THING =
                 new ThingWrite(19, "The thing '%s' cannot be deleted, as the provided type '%s' is not a valid type or supertype.");
+        public static final ThingWrite INVALID_DELETE_THING_DIRECT =
+                new ThingWrite(20, "The thing '%s' cannot be deleted, as the provided direct type '%s' is not valid.");
         public static final ThingWrite INVALID_DELETE_HAS =
-                new ThingWrite(20, "Invalid attempt to delete attribute ownership. The thing '%s' does not have attribute '%s'.");
+                new ThingWrite(21, "Invalid attempt to delete attribute ownership. The thing '%s' does not have attribute '%s'.");
+        public static final ThingWrite INVALID_DELETE_HAS_ROOT =
+                new ThingWrite(22, "Invalid attempt to delete attribute ownership. Provided root 'thing' type for attribute '%s' is insufficiently specific.");
         public static final ThingWrite ILLEGAL_IS_CONSTRAINT =
-                new ThingWrite(21, "The 'is' constraint, e.g. used in '%s', is not accepted in an insert/delete query.");
+                new ThingWrite(23, "The 'is' constraint, e.g. used in '%s', is not accepted in an insert/delete query.");
         public static final ThingWrite ATTRIBUTE_VALUE_TOO_MANY =
-                new ThingWrite(22, "Unable to insert attribute '%s' of type '%s' with more than one value operations.");
+                new ThingWrite(24, "Unable to insert attribute '%s' of type '%s' with more than one value operations.");
         public static final ThingWrite ATTRIBUTE_VALUE_MISSING =
-                new ThingWrite(23, "Unable to insert attribute '%s' of type '%s' without a value assigned to the variable.");
-        public static final ThingWrite RELATION_CONSTRAINT_TOO_MANY =
-                new ThingWrite(24, "Unable to insert relation '%s' as it has more than one relation tuple describing the role players.");
+                new ThingWrite(25, "Unable to insert attribute '%s' of type '%s' without a value assigned to the variable.");
+        public static final ThingWrite INSERT_RELATION_CONSTRAINT_TOO_MANY =
+                new ThingWrite(26, "Unable to insert relation '%s' as it has more than one relation tuple describing the role players.");
         public static final ThingWrite RELATION_CONSTRAINT_MISSING =
-                new ThingWrite(25, "Unable to insert relation '%s' as it is missing the relation tuple describing the role players.");
+                new ThingWrite(27, "Unable to insert relation '%s' as it is missing the relation tuple describing the role players.");
         public static final ThingWrite ROLE_TYPE_AMBIGUOUS =
-                new ThingWrite(26, "Unable to add role player '%s' to the relation, as there are more than one possible role type it could play.");
+                new ThingWrite(28, "Unable to add role player '%s' to the relation, as there are more than one possible role type it could play.");
         public static final ThingWrite ROLE_TYPE_MISSING =
-                new ThingWrite(27, "Unable to add role player '%s' to the relation, as there is no provided or inferrable role type.");
+                new ThingWrite(29, "Unable to add role player '%s' to the relation, as there is no provided or inferrable role type.");
         public static final ThingWrite MAX_INSTANCE_REACHED =
-                new ThingWrite(28, "The maximum number of instances for type '%s' has been reached: '%s'");
+                new ThingWrite(30, "The maximum number of instances for type '%s' has been reached: '%s'");
+        public static final ThingWrite DELETE_RELATION_CONSTRAINT_TOO_MANY =
+                new ThingWrite(31, "Could not perform delete of role players due to multiple relation constraints being present for relation '%s'.");
+        public static final ThingWrite DELETE_ROLEPLAYER_NOT_PRESENT =
+                new ThingWrite(32, "Could not delete roleplayer '%s' as relation '%s' does not relate it.");
 
         private static final String codePrefix = "THW";
         private static final String messagePrefix = "Invalid Thing Write";

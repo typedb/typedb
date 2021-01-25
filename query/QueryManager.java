@@ -150,7 +150,7 @@ public class QueryManager {
             filterVars.retainAll(query.namedVariablesUnbound());
             assert !filterVars.isEmpty();
             List<ConceptMap> matched = match(query.match().get(filterVars), context).toList();
-            matched.forEach(existing -> Deleter.create(query.variables(), existing, context).execute());
+            matched.forEach(existing -> Deleter.create(conceptMgr, query.variables(), existing, context).execute());
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }
