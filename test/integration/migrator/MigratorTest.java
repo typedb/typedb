@@ -78,7 +78,7 @@ public class MigratorTest {
     private void runSchema(Grakn grakn, String schema) {
         try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
             try (Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                final GraqlDefine query = Graql.parseQuery(schema);
+                GraqlDefine query = Graql.parseQuery(schema);
                 tx.query().define(query);
                 tx.commit();
             }

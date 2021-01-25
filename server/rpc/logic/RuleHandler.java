@@ -41,8 +41,8 @@ public class RuleHandler {
     }
 
     public void handleRequest(Transaction.Req request) {
-        final LogicProto.Rule.Req ruleReq = request.getRuleReq();
-        final Rule rule = notNull(logicMgr.getRule(ruleReq.getLabel()));
+        LogicProto.Rule.Req ruleReq = request.getRuleReq();
+        Rule rule = notNull(logicMgr.getRule(ruleReq.getLabel()));
         switch (ruleReq.getReqCase()) {
             case RULE_DELETE_REQ:
                 delete(request, rule);

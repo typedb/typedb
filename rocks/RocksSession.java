@@ -137,7 +137,7 @@ public abstract class RocksSession implements Grakn.Session {
             if (!isOpen.get()) throw GraknException.of(SESSION_CLOSED);
             try {
                 if (type.isWrite()) writeLock.lock();
-                final RocksTransaction.Schema transaction = txSchemaFactory.transaction(this, type, options);
+                RocksTransaction.Schema transaction = txSchemaFactory.transaction(this, type, options);
                 transactions.put(transaction, 0L);
                 return transaction;
             } catch (InterruptedException e) {
@@ -180,14 +180,14 @@ public abstract class RocksSession implements Grakn.Session {
         public RocksTransaction.Data transaction(Arguments.Transaction.Type type, Options.Transaction options) {
             if (!isOpen.get()) throw GraknException.of(SESSION_CLOSED);
             long lock = database().dataWriteSchemaLock().readLock();
-            final RocksTransaction.Data transaction = txDataFactory.transaction(this, type, options);
+            RocksTransaction.Data transaction = txDataFactory.transaction(this, type, options);
             transactions.put(transaction, lock);
             return transaction;
         }
 
         @Override
         void remove(RocksTransaction transaction) {
-            final long lock = transactions.remove(transaction);
+            long lock = transactions.remove(transaction);
             if (transaction.type().isWrite()) database().dataWriteSchemaLock().unlockRead(lock);
         }
     }

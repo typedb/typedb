@@ -386,7 +386,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         @Nullable
         private static String getScope(SchemaGraph graph, VertexIID.Type iid) {
-            final byte[] scopeBytes = graph.storage().get(join(iid.bytes(), SCOPE.infix().bytes()));
+            byte[] scopeBytes = graph.storage().get(join(iid.bytes(), SCOPE.infix().bytes()));
             if (scopeBytes != null) return new String(scopeBytes);
             else return null;
         }
@@ -422,7 +422,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         @Override
         public boolean isAbstract() {
             if (isAbstract != null) return isAbstract;
-            final byte[] flag = graph.storage().get(join(iid.bytes(), ABSTRACT.infix().bytes()));
+            byte[] flag = graph.storage().get(join(iid.bytes(), ABSTRACT.infix().bytes()));
             isAbstract = flag != null;
             return isAbstract;
         }
@@ -439,7 +439,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         @Override
         public Encoding.ValueType valueType() {
             if (valueType != null) return valueType;
-            final byte[] val = graph.storage().get(join(iid.bytes(), VALUE_TYPE.infix().bytes()));
+            byte[] val = graph.storage().get(join(iid.bytes(), VALUE_TYPE.infix().bytes()));
             if (val != null) valueType = Encoding.ValueType.of(val[0]);
             return valueType;
         }
@@ -455,7 +455,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         @Override
         public Pattern regex() {
             if (regexLookedUp) return regex;
-            final byte[] val = graph.storage().get(join(iid.bytes(), REGEX.infix().bytes()));
+            byte[] val = graph.storage().get(join(iid.bytes(), REGEX.infix().bytes()));
             if (val != null) regex = Pattern.compile(new String(val));
             regexLookedUp = true;
             return regex;
@@ -486,7 +486,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         private void deleteVertexFromStorage() {
             graph.storage().delete(IndexIID.Type.Label.of(label, scope).bytes());
-            final ResourceIterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
+            ResourceIterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
             while (keys.hasNext()) graph.storage().delete(keys.next());
             graph.storage().delete(StatisticsBytes.vertexCountKey(iid));
         }

@@ -89,7 +89,7 @@ public class IsaConstraint extends ThingConstraint implements AlphaEquivalent<Is
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        final IsaConstraint that = (IsaConstraint) o;
+        IsaConstraint that = (IsaConstraint) o;
         return (this.owner.equals(that.owner) &&
                 this.type.equals(that.type) &&
                 this.isExplicit == that.isExplicit);

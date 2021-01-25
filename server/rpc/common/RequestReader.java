@@ -32,7 +32,7 @@ public class RequestReader {
 
     public static <T extends Options<?, ?>> T getOptions(Supplier<T> optionsConstructor,
                                                          OptionsProto.Options requestOptions) {
-        final T options = optionsConstructor.get();
+        T options = optionsConstructor.get();
         if (requestOptions.getInferOptCase().equals(INFER)) {
             options.infer(requestOptions.getInfer());
         }

@@ -120,10 +120,10 @@ public class MockTransaction {
         }
 
         @Override
-        public boolean equals(final Object o) {
+        public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            final MockConcept that = (MockConcept) o;
+            MockConcept that = (MockConcept) o;
             return id == that.id;
         }
 

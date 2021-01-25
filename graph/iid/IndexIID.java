@@ -258,8 +258,8 @@ public abstract class IndexIID extends IID {
         @Override
         public String toString() {
             if (readableString == null) {
-                final Encoding.ValueType valueType = Encoding.ValueType.of(bytes[PrefixIID.LENGTH]);
-                final String value;
+                Encoding.ValueType valueType = Encoding.ValueType.of(bytes[PrefixIID.LENGTH]);
+                String value;
                 switch (valueType) {
                     case BOOLEAN:
                         value = byteToBoolean(bytes[VALUE_INDEX]).toString();

@@ -83,7 +83,7 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
         }
 
         static InfixIID.Thing extract(byte[] bytes, int from) {
-            final Encoding.Edge.Thing encoding = Encoding.Edge.Thing.of(bytes[from]);
+            Encoding.Edge.Thing encoding = Encoding.Edge.Thing.of(bytes[from]);
             if ((encoding.equals(Encoding.Edge.Thing.ROLEPLAYER))) {
                 return RolePlayer.extract(bytes, from);
             } else {
@@ -100,7 +100,7 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
         }
 
         public static InfixIID.Thing of(Encoding.Infix infix, IID... tail) {
-            final byte[][] iidBytes = new byte[tail.length + 1][];
+            byte[][] iidBytes = new byte[tail.length + 1][];
             iidBytes[0] = infix.bytes();
             for (int i = 0; i < tail.length; i++) {
                 iidBytes[i + 1] = tail[i].bytes();
@@ -120,14 +120,14 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
 
         public InfixIID.Thing outwards() {
             if (isOutwards()) return this;
-            final byte[] copy = Arrays.copyOf(bytes, bytes.length);
+            byte[] copy = Arrays.copyOf(bytes, bytes.length);
             copy[0] = encoding().out().key();
             return new InfixIID.Thing(copy);
         }
 
         public InfixIID.Thing inwards() {
             if (!isOutwards()) return this;
-            final byte[] copy = Arrays.copyOf(bytes, bytes.length);
+            byte[] copy = Arrays.copyOf(bytes, bytes.length);
             copy[0] = encoding().in().key();
             return new InfixIID.Thing(copy);
         }

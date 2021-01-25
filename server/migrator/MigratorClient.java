@@ -36,38 +36,38 @@ public class MigratorClient {
     private final MigratorGrpc.MigratorStub streamingStub;
     private final MigratorGrpc.MigratorBlockingStub blockingStub;
 
-    public MigratorClient(final int serverPort) {
-        final String uri = "localhost:" + serverPort;
-        final ManagedChannel channel = ManagedChannelBuilder.forTarget(uri).usePlaintext().build();
+    public MigratorClient(int serverPort) {
+        String uri = "localhost:" + serverPort;
+        ManagedChannel channel = ManagedChannelBuilder.forTarget(uri).usePlaintext().build();
         streamingStub = MigratorGrpc.newStub(channel);
         blockingStub = MigratorGrpc.newBlockingStub(channel);
     }
 
-    public boolean importData(final String database, final String filename, final Map<String, String> remapLabels) {
-        final MigratorProto.ImportData.Req req = MigratorProto.ImportData.Req.newBuilder()
+    public boolean importData(String database, String filename, Map<String, String> remapLabels) {
+        MigratorProto.ImportData.Req req = MigratorProto.ImportData.Req.newBuilder()
                 .setDatabase(database)
                 .setFilename(filename)
                 .putAllRemapLabels(remapLabels)
                 .build();
-        final ResponseObserver streamObserver = new ResponseObserver(new ProgressPrinter("import"));
+        ResponseObserver streamObserver = new ResponseObserver(new ProgressPrinter("import"));
         streamingStub.importData(req, streamObserver);
         streamObserver.await();
         return streamObserver.success();
     }
 
-    public boolean exportData(final String database, final String filename) {
-        final MigratorProto.ExportData.Req req = MigratorProto.ExportData.Req.newBuilder()
+    public boolean exportData(String database, String filename) {
+        MigratorProto.ExportData.Req req = MigratorProto.ExportData.Req.newBuilder()
                 .setDatabase(database)
                 .setFilename(filename)
                 .build();
-        final ResponseObserver streamObserver = new ResponseObserver(new ProgressPrinter("export"));
+        ResponseObserver streamObserver = new ResponseObserver(new ProgressPrinter("export"));
         streamingStub.exportData(req, streamObserver);
         streamObserver.await();
         return streamObserver.success();
     }
 
-    public void printSchema(final String database) {
-        final MigratorProto.GetSchema.Req req = MigratorProto.GetSchema.Req.newBuilder()
+    public void printSchema(String database) {
+        MigratorProto.GetSchema.Req req = MigratorProto.GetSchema.Req.newBuilder()
                 .setDatabase(database)
                 .build();
         MigratorProto.GetSchema.Res res = blockingStub.getSchema(req);
@@ -80,20 +80,20 @@ public class MigratorClient {
         private final CountDownLatch latch;
         private boolean success;
 
-        public ResponseObserver(final ProgressPrinter progressPrinter) {
+        public ResponseObserver(ProgressPrinter progressPrinter) {
             this.progressPrinter = progressPrinter;
             this.latch = new CountDownLatch(1);
         }
 
         @Override
-        public void onNext(final MigratorProto.Job.Res res) {
-            final long current = res.getProgress().getCurrent();
-            final long total = res.getProgress().getTotal();
+        public void onNext(MigratorProto.Job.Res res) {
+            long current = res.getProgress().getCurrent();
+            long total = res.getProgress().getTotal();
             progressPrinter.onProgress(current, total);
         }
 
         @Override
-        public void onError(final Throwable throwable) {
+        public void onError(Throwable throwable) {
             throwable.printStackTrace();
             success = false;
             latch.countDown();
@@ -109,7 +109,7 @@ public class MigratorClient {
         public void await() {
             try {
                 latch.await();
-            } catch (final InterruptedException e) {
+            } catch (InterruptedException e) {
                 throw GraknException.of(ErrorMessage.Internal.UNEXPECTED_INTERRUPTION);
             }
         }
@@ -141,9 +141,9 @@ public class MigratorClient {
         private int anim = 0;
         private int lines = 0;
 
-        public ProgressPrinter(final String type) {
+        public ProgressPrinter(String type) {
             this.type = type;
-            final TimerTask task = new TimerTask() {
+            TimerTask task = new TimerTask() {
                 @Override
                 public void run() {
                     step();
@@ -152,7 +152,7 @@ public class MigratorClient {
             timer.scheduleAtFixedRate(task, 0, 100);
         }
 
-        public void onProgress(final long current, final long total) {
+        public void onProgress(long current, long total) {
             status = STATUS_IN_PROGRESS;
             this.current = current;
             this.total = total;
@@ -165,12 +165,12 @@ public class MigratorClient {
         }
 
         private synchronized void step() {
-            final StringBuilder builder = new StringBuilder();
+            StringBuilder builder = new StringBuilder();
             builder.append(String.format("$x isa %s,\n    has status \"%s\"", type, status));
 
             if (status.equals(STATUS_IN_PROGRESS)) {
-                final String percent;
-                final String count;
+                String percent;
+                String count;
                 if (total > 0) {
                     percent = String.format("%.1f%%", (double) current / (double) total * 100.0);
                     count = String.format("%,d / %,d", current, total);
@@ -188,7 +188,7 @@ public class MigratorClient {
                 builder.append(" ").append(ANIM[anim]);
             }
 
-            final String output = builder.toString();
+            String output = builder.toString();
             System.out.println((lines > 0 ? "\033[" + lines + "F\033[J" : "") + output);
 
             lines = output.split("\n").length;

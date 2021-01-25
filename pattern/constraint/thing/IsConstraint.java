@@ -74,7 +74,7 @@ public class IsConstraint extends ThingConstraint {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        final IsConstraint that = (IsConstraint) o;
+        IsConstraint that = (IsConstraint) o;
         return (this.owner.equals(that.owner) && this.variable.equals(that.variable));
     }
 

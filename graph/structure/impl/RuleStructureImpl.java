@@ -289,7 +289,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
         private void deleteVertexFromStorage() {
             graph.storage().delete(IndexIID.Rule.of(label).bytes());
-            final ResourceIterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
+            ResourceIterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
             while (keys.hasNext()) graph.storage().delete(keys.next());
         }
 

@@ -1025,7 +1025,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                         }
 
                         if (ownerTypes != null && attTypes != null) {
-                            for (final TypeVertex ownerType : ownerTypes)
+                            for (TypeVertex ownerType : ownerTypes)
                                 ownerToAttributeTypes.put(ownerType, attTypes);
                         } else if (ownerTypes != null) {
                             ownerTypes.stream().map(o -> pair(o, graphMgr.schema().ownedAttributeTypes(o))).forEach(
@@ -1080,7 +1080,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                         }
 
                         if (ownerTypes != null && attTypes != null) {
-                            for (final TypeVertex attType : attTypes) attributeTypesToOwners.put(attType, ownerTypes);
+                            for (TypeVertex attType : attTypes) attributeTypesToOwners.put(attType, ownerTypes);
                         } else if (attTypes != null) {
                             attTypes.stream().map(a -> pair(a, graphMgr.schema().ownersOfAttributeType(a))).forEach(
                                     pair -> attributeTypesToOwners.put(pair.first(), pair.second())
@@ -1208,7 +1208,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                         double cost = 0;
                         if (!to.props().types().isEmpty()) {
                             cost = 0;
-                            for (final Label roleType : to.props().types()) {
+                            for (Label roleType : to.props().types()) {
                                 assert roleType.scope().isPresent();
                                 double div = graphMgr.data().stats().thingVertexCount(Label.of(roleType.scope().get()));
                                 if (div > 0) cost += graphMgr.data().stats().thingVertexCount(roleType) / div;

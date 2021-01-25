@@ -74,7 +74,7 @@ public class RelationImpl extends ThingImpl implements Relation {
             throw exception(GraknException.of(THING_ROLE_UNPLAYED, player.getType().getLabel(), roleType.getLabel().toString()));
         }
 
-        final RoleImpl role = ((RoleTypeImpl) roleType).create(isInferred);
+        RoleImpl role = ((RoleTypeImpl) roleType).create(isInferred);
         vertex.outs().put(RELATING, role.vertex, isInferred);
         ((ThingImpl) player).vertex.outs().put(PLAYING, role.vertex, isInferred);
         role.optimise();
@@ -82,7 +82,7 @@ public class RelationImpl extends ThingImpl implements Relation {
 
     @Override
     public void removePlayer(RoleType roleType, Thing player) {
-        final ResourceIterator<ThingVertex> role = vertex.outs().edge(
+        ResourceIterator<ThingVertex> role = vertex.outs().edge(
                 RELATING, PrefixIID.of(ROLE), ((RoleTypeImpl) roleType).vertex.iid()
         ).to().filter(v -> v.ins().edge(PLAYING, ((ThingImpl) player).vertex) != null);
 
@@ -117,9 +117,9 @@ public class RelationImpl extends ThingImpl implements Relation {
 
     @Override
     public Map<RoleTypeImpl, ? extends List<ThingImpl>> getPlayersByRoleType() {
-        final Map<RoleTypeImpl, List<ThingImpl>> playersByRole = new HashMap<>();
+        Map<RoleTypeImpl, List<ThingImpl>> playersByRole = new HashMap<>();
         getType().getRelates().forEach(rt -> {
-            final List<ThingImpl> players = getPlayers(rt).collect(toList());
+            List<ThingImpl> players = getPlayers(rt).collect(toList());
             if (!players.isEmpty()) playersByRole.put(rt, players);
         });
         return playersByRole;

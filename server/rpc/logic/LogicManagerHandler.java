@@ -69,23 +69,23 @@ public class LogicManagerHandler {
     }
 
     private void getRule(TransactionProto.Transaction.Req request, String label) {
-        final Rule rule = logicManager.getRule(label);
-        final LogicProto.LogicManager.GetRule.Res.Builder getRuleRes = LogicProto.LogicManager.GetRule.Res.newBuilder();
+        Rule rule = logicManager.getRule(label);
+        LogicProto.LogicManager.GetRule.Res.Builder getRuleRes = LogicProto.LogicManager.GetRule.Res.newBuilder();
         if (rule != null) getRuleRes.setRule(rule(rule));
         transactionRPC.respond(response(request, LogicProto.LogicManager.Res.newBuilder().setGetRuleRes(getRuleRes)));
     }
 
     private void putRule(TransactionProto.Transaction.Req request, LogicProto.LogicManager.PutRule.Req req) {
-        final Conjunction<? extends Pattern> when = Graql.parsePattern(req.getWhen()).asConjunction();
-        final ThingVariable<?> then = Graql.parseVariable(req.getThen()).asThing();
-        final Rule rule = logicManager.putRule(req.getLabel(), when, then);
-        final LogicProto.LogicManager.Res.Builder res = LogicProto.LogicManager.Res.newBuilder()
+        Conjunction<? extends Pattern> when = Graql.parsePattern(req.getWhen()).asConjunction();
+        ThingVariable<?> then = Graql.parseVariable(req.getThen()).asThing();
+        Rule rule = logicManager.putRule(req.getLabel(), when, then);
+        LogicProto.LogicManager.Res.Builder res = LogicProto.LogicManager.Res.newBuilder()
                 .setPutRuleRes(LogicProto.LogicManager.PutRule.Res.newBuilder().setRule(rule(rule)));
         transactionRPC.respond(response(request, res));
     }
 
     private void getRules(TransactionProto.Transaction.Req request) {
-        final ResourceIterator<Rule> rules = logicManager.rules();
+        ResourceIterator<Rule> rules = logicManager.rules();
         transactionRPC.respond(request, rules,
                                as -> response(request, LogicProto.LogicManager.Res.newBuilder().setGetRulesRes(
                                        LogicProto.LogicManager.GetRules.Res.newBuilder()

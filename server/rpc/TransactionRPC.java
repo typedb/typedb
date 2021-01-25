@@ -63,9 +63,9 @@ public class TransactionRPC {
         this.sessionRPC = sessionRPC;
         this.stream = stream;
 
-        final Arguments.Transaction.Type transactionType = Arguments.Transaction.Type.of(request.getType().getNumber());
+        Arguments.Transaction.Type transactionType = Arguments.Transaction.Type.of(request.getType().getNumber());
         if (transactionType == null) throw GraknException.of(BAD_TRANSACTION_TYPE, request.getType());
-        final Options.Transaction transactionOptions = RequestReader.getOptions(Options.Transaction::new, request.getOptions());
+        Options.Transaction transactionOptions = RequestReader.getOptions(Options.Transaction::new, request.getOptions());
 
         transaction = sessionRPC.session().transaction(transactionType, transactionOptions);
         isOpen = new AtomicBoolean(true);
@@ -192,9 +192,9 @@ public class TransactionRPC {
         }
 
         <T> void beginIteration(TransactionProto.Transaction.Req request, Iterator<T> iterator, int batchSize, Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
-            final String requestId = request.getId();
-            final int latencyMillis = request.getLatencyMillis();
-            final BatchingIterator<T> batchingIterator = new BatchingIterator<>(requestId, iterator, responseBuilderFn, batchSize, latencyMillis);
+            String requestId = request.getId();
+            int latencyMillis = request.getLatencyMillis();
+            BatchingIterator<T> batchingIterator = new BatchingIterator<>(requestId, iterator, responseBuilderFn, batchSize, latencyMillis);
             iterators.compute(requestId, (key, oldValue) -> {
                 if (oldValue == null) return batchingIterator;
                 else throw GraknException.of(DUPLICATE_REQUEST, requestId);
@@ -206,7 +206,7 @@ public class TransactionRPC {
          * Instruct an existing iterator to iterate another batch.
          */
         void continueIteration(String requestId) {
-            final BatchingIterator<?> iterator = iterators.get(requestId);
+            BatchingIterator<?> iterator = iterators.get(requestId);
             if (iterator == null) throw GraknException.of(ITERATION_WITH_UNKNOWN_ID, requestId);
             iterator.iterateBatch();
         }
@@ -229,7 +229,7 @@ public class TransactionRPC {
             }
 
             synchronized void iterateBatch() {
-                final List<T> answers = new ArrayList<>();
+                List<T> answers = new ArrayList<>();
                 Instant startTime = Instant.now();
                 for (int i = 0; i < batchSize && iterator.hasNext(); i++) {
                     answers.add(iterator.next());
@@ -255,7 +255,7 @@ public class TransactionRPC {
 
                 // Compensate for network latency
                 answers.clear();
-                final Instant endTime = Instant.now().plusMillis(latencyMillis);
+                Instant endTime = Instant.now().plusMillis(latencyMillis);
                 while (iterator.hasNext() && Instant.now().isBefore(endTime)) {
                     answers.add(iterator.next());
                     Instant currTime = Instant.now();

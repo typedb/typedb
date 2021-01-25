@@ -46,7 +46,7 @@ public class Bytes {
             length += array.length;
         }
 
-        final byte[] joint = new byte[length];
+        byte[] joint = new byte[length];
         int pos = 0;
         for (byte[] array : byteArrays) {
             System.arraycopy(array, 0, joint, pos, array.length);
@@ -69,7 +69,7 @@ public class Bytes {
     }
 
     public static byte[] unsignedShortToBytes(int num) {
-        final byte[] bytes = new byte[SHORT_SIZE];
+        byte[] bytes = new byte[SHORT_SIZE];
         bytes[1] = (byte) (num);
         bytes[0] = (byte) (num >> 8);
         return bytes;
@@ -81,7 +81,7 @@ public class Bytes {
     }
 
     public static byte[] shortToSortedBytes(int num) {
-        final byte[] bytes = new byte[SHORT_SIZE];
+        byte[] bytes = new byte[SHORT_SIZE];
         bytes[1] = (byte) (num);
         bytes[0] = (byte) ((num >> 8) ^ 0x80);
         return bytes;
@@ -94,7 +94,7 @@ public class Bytes {
     }
 
     public static byte[] integerToSortedBytes(int num) {
-        final byte[] bytes = new byte[INTEGER_SIZE];
+        byte[] bytes = new byte[INTEGER_SIZE];
         bytes[3] = (byte) (num);
         bytes[2] = (byte) (num >>= 8);
         bytes[1] = (byte) (num >>= 8);
@@ -109,7 +109,7 @@ public class Bytes {
     }
 
     public static byte[] longToSortedBytes(long num) {
-        final byte[] bytes = new byte[LONG_SIZE];
+        byte[] bytes = new byte[LONG_SIZE];
         bytes[7] = (byte) (num);
         bytes[6] = (byte) (num >>= 8);
         bytes[5] = (byte) (num >>= 8);
@@ -157,7 +157,7 @@ public class Bytes {
      * @return the sorted byte representation of the {@code double} value
      */
     public static byte[] doubleToSortedBytes(double value) {
-        final byte[] bytes = ByteBuffer.allocate(DOUBLE_SIZE).putDouble(value).array();
+        byte[] bytes = ByteBuffer.allocate(DOUBLE_SIZE).putDouble(value).array();
         if (value >= 0) {
             bytes[0] = (byte) (bytes[0] ^ 0x80);
         } else {
@@ -181,7 +181,7 @@ public class Bytes {
     }
 
     public static byte[] stringToBytes(String value, Charset encoding) throws GraknCheckedException {
-        final byte[] bytes = value.getBytes(encoding);
+        byte[] bytes = value.getBytes(encoding);
         if (bytes.length > SHORT_UNSIGNED_MAX_VALUE) {
             throw GraknCheckedException.of(ILLEGAL_STRING_SIZE, SHORT_UNSIGNED_MAX_VALUE);
         }
@@ -190,7 +190,7 @@ public class Bytes {
 
     public static String bytesToString(byte[] bytes, Charset encoding) {
         int stringLength = unsignedBytesToShort(new byte[]{bytes[0], bytes[1]});
-        final byte[] x = copyOfRange(bytes, SHORT_SIZE, SHORT_SIZE + stringLength);
+        byte[] x = copyOfRange(bytes, SHORT_SIZE, SHORT_SIZE + stringLength);
         return new String(x, encoding);
     }
 
@@ -211,16 +211,16 @@ public class Bytes {
     }
 
     public static byte[] uuidToBytes(UUID uuid) {
-        final ByteBuffer buffer = ByteBuffer.wrap(new byte[16]);
+        ByteBuffer buffer = ByteBuffer.wrap(new byte[16]);
         buffer.putLong(uuid.getMostSignificantBits());
         buffer.putLong(uuid.getLeastSignificantBits());
         return buffer.array();
     }
 
     public static UUID bytesToUUID(byte[] bytes) {
-        final ByteBuffer buffer = ByteBuffer.wrap(bytes);
-        final long firstLong = buffer.getLong();
-        final long secondLong = buffer.getLong();
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        long firstLong = buffer.getLong();
+        long secondLong = buffer.getLong();
         return new UUID(firstLong, secondLong);
     }
 

@@ -70,7 +70,7 @@ public class RegexConstraint extends TypeConstraint {
     public boolean equals(Object o) {
         if (o == this) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        final RegexConstraint that = (RegexConstraint) o;
+        RegexConstraint that = (RegexConstraint) o;
         return (this.owner.equals(that.owner) && this.regex.pattern().equals(that.regex.pattern()));
     }
 

@@ -61,7 +61,7 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
     TypeImpl(GraphManager graphMgr, String label, Encoding.Vertex.Type encoding, String scope) {
         this.graphMgr = graphMgr;
         this.vertex = graphMgr.schema().create(encoding, label, scope);
-        final TypeVertex superTypeVertex = graphMgr.schema().getType(encoding.root().label(), encoding.root().scope());
+        TypeVertex superTypeVertex = graphMgr.schema().getType(encoding.root().label(), encoding.root().scope());
         vertex.outs().put(SUB, superTypeVertex);
     }
 
@@ -122,7 +122,7 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
 
     private void validateTypeHierarchyIsNotCyclic() {
         TypeImpl type = this;
-        final LinkedHashSet<String> hierarchy = new LinkedHashSet<>();
+        LinkedHashSet<String> hierarchy = new LinkedHashSet<>();
         hierarchy.add(vertex.scopedLabel());
         while (!type.isRoot()) {
             assert type.getSupertype() != null;
@@ -182,7 +182,7 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
     public boolean equals(Object object) {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
-        final TypeImpl that = (TypeImpl) object;
+        TypeImpl that = (TypeImpl) object;
         return this.vertex.equals(that.vertex);
     }
 
