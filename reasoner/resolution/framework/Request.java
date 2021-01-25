@@ -36,9 +36,9 @@ public class Request {
     private final int planIndex;
 
     private Request(Path path,
-                   AnswerState.DownstreamVars startingConcept,
-                   ResolutionAnswer.Derivation partialDerivation,
-                   int planIndex) {
+                    AnswerState.DownstreamVars startingConcept,
+                    ResolutionAnswer.Derivation partialDerivation,
+                    int planIndex) {
         this.path = path;
         this.answerBounds = startingConcept;
         this.partialDerivation = partialDerivation;

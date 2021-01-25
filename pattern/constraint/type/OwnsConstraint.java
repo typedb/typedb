@@ -129,7 +129,7 @@ public class OwnsConstraint extends TypeConstraint {
     public OwnsConstraint clone(Conjunction.Cloner cloner) {
         return cloner.cloneVariable(owner).owns(
                 cloner.cloneVariable(attributeType),
-                overriddenAttributeType == null ? null :cloner.cloneVariable(overriddenAttributeType),
+                overriddenAttributeType == null ? null : cloner.cloneVariable(overriddenAttributeType),
                 isKey
         );
     }

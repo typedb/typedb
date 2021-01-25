@@ -50,9 +50,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
 import static grakn.core.common.test.Util.assertThrows;
 import static grakn.core.common.test.Util.assertThrowsWithMessage;
+import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;

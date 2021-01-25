@@ -43,13 +43,13 @@ public interface Response {
         private final ResolutionAnswer answer;
 
         private Answer(Request sourceRequest,
-                      ResolutionAnswer answer) {
+                       ResolutionAnswer answer) {
             this.sourceRequest = sourceRequest;
             this.answer = answer;
         }
 
         public static Answer create(Request sourceRequest,
-                      ResolutionAnswer answer) {
+                                    ResolutionAnswer answer) {
             return new Answer(sourceRequest, answer);
         }
 

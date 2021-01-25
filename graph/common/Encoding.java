@@ -174,7 +174,7 @@ public class Encoding {
         Prefix(int key, PrefixType type) {
             this.key = unsignedByte(key);
             this.type = type;
-            this.bytes = new byte[] {this.key};
+            this.bytes = new byte[]{this.key};
         }
 
         public static Prefix of(byte key) {
@@ -262,7 +262,7 @@ public class Encoding {
         Infix(int key, boolean isOptimisation) {
             this.key = signedByte(key);
             this.isOptimisation = isOptimisation;
-            this.bytes = new byte[] {this.key};
+            this.bytes = new byte[]{this.key};
         }
 
         public static Infix of(byte key) {
@@ -353,7 +353,7 @@ public class Encoding {
         ValueType(int key, Class<?> valueClass, boolean isWritable, boolean isKeyable,
                   @Nullable GraqlArg.ValueType graqlValueType) {
             this.key = unsignedByte(key);
-            this.bytes = new byte[] {this.key};
+            this.bytes = new byte[]{this.key};
             this.valueClass = valueClass;
             this.isWritable = isWritable;
             this.isKeyable = isKeyable;
@@ -793,7 +793,7 @@ public class Encoding {
 
             JobType(int key) {
                 this.key = unsignedByte(key);
-                this.bytes = new byte[] {this.key};
+                this.bytes = new byte[]{this.key};
             }
 
             public static JobType of(byte[] key) {
@@ -826,7 +826,7 @@ public class Encoding {
 
             JobOperation(int key) {
                 this.key = unsignedByte(key);
-                this.bytes = new byte[] {this.key};
+                this.bytes = new byte[]{this.key};
             }
 
             public static JobOperation of(byte[] key) {
@@ -861,7 +861,7 @@ public class Encoding {
 
             Infix(int key) {
                 this.key = unsignedByte(key);
-                this.bytes = new byte[] {this.key};
+                this.bytes = new byte[]{this.key};
             }
 
             public byte key() {

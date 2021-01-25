@@ -211,8 +211,8 @@ public class Undefiner {
                                             owns.attribute().label().get());
                 } else if (owns.isKey()) {
                     throw GraknException.of(INVALID_UNDEFINE_OWNS_KEY,
-                            owns.attribute().label().get(),
-                            owns.attribute().label().get());
+                                            owns.attribute().label().get(),
+                                            owns.attribute().label().get());
                 } else if (attributeType != null) {
                     thingType.unsetOwns(attributeType.asAttributeType());
                 }

@@ -111,6 +111,7 @@ public class SchemaGraph implements Graph {
 
         private final ConcurrentMap<TypeVertex, Set<TypeVertex>> ownersOfAttributeTypes;
         private final ConcurrentMap<Label, Set<Label>> resolvedRoleTypeLabels;
+
         Cache() {
             ownedAttributeTypes = new ConcurrentHashMap<>();
             ownersOfAttributeTypes = new ConcurrentHashMap<>();
@@ -118,6 +119,7 @@ public class SchemaGraph implements Graph {
         }
 
     }
+
     @Override
     public Storage storage() {
         return storage;

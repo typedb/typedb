@@ -22,13 +22,13 @@ import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
+import grakn.core.server.rpc.common.RequestReader;
 import grakn.core.server.rpc.concept.ConceptManagerHandler;
 import grakn.core.server.rpc.concept.ThingHandler;
 import grakn.core.server.rpc.concept.TypeHandler;
 import grakn.core.server.rpc.logic.LogicManagerHandler;
 import grakn.core.server.rpc.logic.RuleHandler;
 import grakn.core.server.rpc.query.QueryHandler;
-import grakn.core.server.rpc.common.RequestReader;
 import grakn.protocol.TransactionProto;
 
 import java.time.Duration;

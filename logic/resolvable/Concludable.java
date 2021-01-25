@@ -249,7 +249,8 @@ public abstract class Concludable extends Resolvable {
         return predicateFn;
     }
 
-    /** Relation handles these concludable patterns, where `$role` and `$relation` could be labelled, and there could
+    /**
+     * Relation handles these concludable patterns, where `$role` and `$relation` could be labelled, and there could
      * be any number of rolePlayers:
      * { $r($role: $x) isa $relation; }
      * { $r($role: $x); }

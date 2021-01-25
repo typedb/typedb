@@ -87,8 +87,8 @@ public class LogicManagerHandler {
     private void getRules(TransactionProto.Transaction.Req request) {
         final ResourceIterator<Rule> rules = logicManager.rules();
         transactionRPC.respond(request, rules,
-                as -> response(request, LogicProto.LogicManager.Res.newBuilder().setGetRulesRes(
-                        LogicProto.LogicManager.GetRules.Res.newBuilder()
-                                .addAllRules(as.stream().map(ResponseBuilder.Logic::rule).collect(toList())))));
+                               as -> response(request, LogicProto.LogicManager.Res.newBuilder().setGetRulesRes(
+                                       LogicProto.LogicManager.GetRules.Res.newBuilder()
+                                               .addAllRules(as.stream().map(ResponseBuilder.Logic::rule).collect(toList())))));
     }
 }

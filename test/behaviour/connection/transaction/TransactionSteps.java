@@ -30,6 +30,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 import static grakn.common.collection.Collections.list;
+import static grakn.core.common.test.Util.assertThrows;
+import static grakn.core.common.test.Util.assertThrowsWithMessage;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessions;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessionsParallel;
@@ -37,8 +39,6 @@ import static grakn.core.test.behaviour.connection.ConnectionSteps.sessionsParal
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessionsToTransactions;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessionsToTransactionsParallel;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.threadPool;
-import static grakn.core.common.test.Util.assertThrows;
-import static grakn.core.common.test.Util.assertThrowsWithMessage;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

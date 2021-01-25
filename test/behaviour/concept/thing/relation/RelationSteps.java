@@ -28,10 +28,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+import static grakn.core.common.test.Util.assertThrows;
 import static grakn.core.test.behaviour.concept.thing.ThingSteps.get;
 import static grakn.core.test.behaviour.concept.thing.ThingSteps.put;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
-import static grakn.core.common.test.Util.assertThrows;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;

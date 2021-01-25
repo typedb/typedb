@@ -238,7 +238,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
                     Optional<AnswerState.DownstreamVars.Unified> unified = initial.toDownstreamVars(unifier);
                     if (unified.isPresent()) {
                         Request toDownstream = Request.create(request.path().append(ruleActor), unified.get(),
-                                                           ResolutionAnswer.Derivation.EMPTY);
+                                                              ResolutionAnswer.Derivation.EMPTY);
                         responseProducer.addDownstreamProducer(toDownstream);
                     }
                 }

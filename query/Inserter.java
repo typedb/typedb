@@ -111,7 +111,8 @@ public class Inserter {
 
     private Thing insert(ThingVariable var) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
-            Thing thing; Reference ref = var.reference();
+            Thing thing;
+            Reference ref = var.reference();
 
             if (ref.isName() && (thing = inserted.get(ref.asName())) != null) return thing;
             else if (matchedContains(var) && var.constraints().isEmpty()) return matchedGet(var);

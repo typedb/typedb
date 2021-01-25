@@ -25,8 +25,8 @@ import java.util.List;
 import java.util.Set;
 
 import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class RuleSteps {
     @Then("rules contain: {type_label}")
@@ -38,6 +38,7 @@ public class RuleSteps {
     public void rules_do_not_contain_label(String ruleLabel) {
         assertTrue(tx().logic().rules().noneMatch(rule -> rule.getLabel().equals(ruleLabel)));
     }
+
     @Then("rules contain")
     public void rules_contain(List<String> ruleLabels) {
         Set<String> actuals = tx().logic().rules().map(Rule::getLabel).toSet();
