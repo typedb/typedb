@@ -84,7 +84,7 @@ public class RocksStorage implements Storage {
     public byte[] get(byte[] key) {
         validateTransactionIsOpen();
         try {
-            // We don't need to check isOpen.get() as tx.commit() does not involve this method
+            // We don't need to check isOpen() as tx.commit() does not involve this method
             if (!isReadOnly) readWriteLock.lockRead();
             return storageTransaction.get(readOptions, key);
         } catch (RocksDBException | InterruptedException e) {
@@ -112,12 +112,12 @@ public class RocksStorage implements Storage {
     public void delete(byte[] key) {
         validateTransactionIsOpen();
         try {
-            if (isOpen.get()) readWriteLock.lockWrite();
+            if (isOpen()) readWriteLock.lockWrite();
             storageTransaction.delete(key);
         } catch (RocksDBException | InterruptedException e) {
             throw exception(e);
         } finally {
-            if (isOpen.get()) readWriteLock.unlockWrite();
+            if (isOpen()) readWriteLock.unlockWrite();
         }
     }
 
@@ -130,12 +130,12 @@ public class RocksStorage implements Storage {
     public void put(byte[] key, byte[] value) {
         validateTransactionIsOpen();
         try {
-            if (isOpen.get()) readWriteLock.lockWrite();
+            if (isOpen()) readWriteLock.lockWrite();
             storageTransaction.put(key, value);
         } catch (RocksDBException | InterruptedException e) {
             throw exception(e);
         } finally {
-            if (isOpen.get()) readWriteLock.unlockWrite();
+            if (isOpen()) readWriteLock.unlockWrite();
         }
     }
 
@@ -148,7 +148,7 @@ public class RocksStorage implements Storage {
     public void putUntracked(byte[] key, byte[] value) {
         validateTransactionIsOpen();
         try {
-            readWriteLock.lockWrite();
+            if (isOpen()) readWriteLock.lockWrite();
             storageTransaction.putUntracked(key, value);
         } catch (RocksDBException | InterruptedException e) {
             throw exception(e);
@@ -161,7 +161,7 @@ public class RocksStorage implements Storage {
     public void mergeUntracked(byte[] key, byte[] value) {
         validateTransactionIsOpen();
         try {
-            readWriteLock.lockWrite();
+            if (isOpen()) readWriteLock.lockWrite();
             storageTransaction.mergeUntracked(key, value);
         } catch (RocksDBException | InterruptedException e) {
             throw exception(e);

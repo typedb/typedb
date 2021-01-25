@@ -436,14 +436,10 @@ public class DataGraph implements Graph {
      */
     @Override
     public void commit() {
-        ResourceIterator<ResourceIterator<Void>> iters = iterate(thingsByIID.values())
-                .filter(v -> v.status().equals(BUFFERED) && !v.isInferred()).map(vertex -> {
-                    vertex.iid(generate(storage.dataKeyGenerator(), vertex.type().iid(), vertex.type().properLabel()));
-                    return (Void) null;
-                }).split(PARALLELISATION_FACTOR);
-        ProducerIterator<Void> keyGenerations = produce(async(iters, PARALLELISATION_FACTOR));
-        while (keyGenerations.hasNext()) keyGenerations.next();
-        // thingByIID no longer contains valid mapping from IID to TypeVertex
+        // TODO: test this without parallel stream
+        thingsByIID.values().parallelStream().filter(v -> v.status().equals(BUFFERED) && !v.isInferred()).forEach(
+                vertex -> vertex.iid(generate(storage.dataKeyGenerator(), vertex.type().iid(), vertex.type().properLabel()))
+        ); // thingByIID no longer contains valid mapping from IID to TypeVertex
         thingsByIID.values().stream().filter(v -> !v.isInferred()).forEach(Vertex::commit);
         attributesByIID.valuesIterator().forEachRemaining(Vertex::commit);
         statistics.commit();
