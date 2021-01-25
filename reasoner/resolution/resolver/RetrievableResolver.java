@@ -106,8 +106,7 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
             responseProducers.put(fromUpstream, responseProducerCreate(fromUpstream, iteration));
         } else {
             ResponseProducer responseProducer = responseProducers.get(fromUpstream);
-            assert responseProducer.iteration() == iteration ||
-                    responseProducer.iteration() + 1 == iteration;
+            assert iteration <= responseProducer.iteration() + 1;
 
             if (responseProducer.iteration() + 1 == iteration) {
                 // when the same request for the next iteration the first time, re-initialise required state
