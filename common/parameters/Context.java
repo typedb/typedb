@@ -71,10 +71,6 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
             this.transactionType = transactionType;
             return this;
         }
-
-        public boolean isWrite() {
-            return transactionType.isWrite();
-        }
     }
 
     public static class Query extends Context<Context.Transaction, Options.Query> {
@@ -82,5 +78,6 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
         public Query(Context.Transaction context, Options.Query options) {
             super(context, options.parent(context.options()));
         }
+
     }
 }

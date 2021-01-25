@@ -35,7 +35,7 @@ public class RequestReader {
                                                          OptionsProto.Options requestOptions) {
         T options = optionsConstructor.get();
         if (requestOptions.getInferOptCase().equals(INFER)) {
-            options.infer(requestOptions.getInfer());
+            options.isInfer(requestOptions.getInfer());
         }
         if (requestOptions.getExplainOptCase().equals(EXPLAIN)) {
             options.explain(requestOptions.getExplain());

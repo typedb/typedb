@@ -46,13 +46,13 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         return getThis();
     }
 
-    public boolean infer() {
+    public boolean isInfer() {
         if (infer != null) return infer;
-        else if (parent != null) return parent.infer();
+        else if (parent != null) return parent.isInfer();
         else return DEFAULT_INFER;
     }
 
-    public SELF infer(boolean infer) {
+    public SELF isInfer(boolean infer) {
         this.infer = infer;
         return getThis();
     }
@@ -141,9 +141,20 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
 
     public static class Query extends Options<Transaction, Query> {
 
+        private Boolean parallel = null;
+
         @Override
         Query getThis() {
             return this;
+        }
+
+        public boolean isParallel() {
+            return parallel;
+        }
+
+        public Query isParallel(boolean parallel) {
+            this.parallel = parallel;
+            return getThis();
         }
     }
 }

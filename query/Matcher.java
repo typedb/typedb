@@ -98,8 +98,8 @@ public class Matcher {
         return new Group.Aggregator(group, query);
     }
 
-    public ResourceIterator<ConceptMap> execute(boolean isParallel, boolean reasoning) {
-        ResourceIterator<ConceptMap> answers = reasoner.execute(disjunction, filter, isParallel, reasoning);
+    public ResourceIterator<ConceptMap> execute() {
+        ResourceIterator<ConceptMap> answers = reasoner.execute(disjunction, filter, options);
         if (query.sort().isPresent()) answers = sort(answers, query.sort().get());
         if (query.offset().isPresent()) answers = answers.offset(query.offset().get());
         if (query.limit().isPresent()) answers = answers.limit(query.limit().get());
@@ -155,8 +155,8 @@ public class Matcher {
             this.query = query;
         }
 
-        public Numeric execute(boolean isParallel, boolean reasoning) {
-            ResourceIterator<ConceptMap> answers = matcher.execute(isParallel, reasoning);
+        public Numeric execute() {
+            ResourceIterator<ConceptMap> answers = matcher.execute();
             GraqlToken.Aggregate.Method method = query.method();
             UnboundVariable var = query.var();
             return aggregate(answers, method, var);
@@ -569,10 +569,10 @@ public class Matcher {
             this.query = query;
         }
 
-        public ResourceIterator<ConceptMapGroup> execute(boolean isParallel, boolean reasoning) {
+        public ResourceIterator<ConceptMapGroup> execute() {
             // TODO: Replace this temporary implementation of Graql Match Group query with a native grouping traversal
             List<ConceptMapGroup> answerGroups = new ArrayList<>();
-            matcher.execute(isParallel, reasoning).stream().collect(groupingBy(a -> a.get(query.var())))
+            matcher.execute().stream().collect(groupingBy(a -> a.get(query.var())))
                     .forEach((o, cm) -> answerGroups.add(new ConceptMapGroup(o, cm)));
             return iterate(answerGroups);
         }
@@ -587,10 +587,10 @@ public class Matcher {
                 this.query = query;
             }
 
-            public ResourceIterator<NumericGroup> execute(boolean isParallel, boolean reasoning) {
+            public ResourceIterator<NumericGroup> execute() {
                 // TODO: Replace this temporary implementation of Graql Match Group query with a native grouping traversal
                 List<NumericGroup> numericGroups = new ArrayList<>();
-                group.matcher.execute(isParallel, reasoning).stream()
+                group.matcher.execute().stream()
                         .collect(groupingBy(a -> a.get(query.group().var()), aggregator(query.method(), query.var())))
                         .forEach((o, n) -> numericGroups.add(new NumericGroup(o, n)));
                 return iterate(numericGroups);
