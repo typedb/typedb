@@ -521,15 +521,15 @@ public class ResolutionTest {
     }
 
     private void createRootAndAssertResponses(Conjunction conjunctionPattern, long answerCount) throws InterruptedException {
-        RocksSession session = dataSession();
-        RocksTransaction transaction = singleThreadElgTransaction(session);
-        ResolverRegistry registry = transaction.reasoner().resolverRegistry();
-        LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
-        AtomicLong doneReceived = new AtomicLong(0L);
-        Actor<RootResolver> root = registry.createRoot(transaction.logic().typeResolver().resolve(conjunctionPattern), responses::add, iterDone -> doneReceived.incrementAndGet());
-        assertResponses(root, responses, doneReceived, answerCount);
-        transaction.close();
-        session.close();
+        try (RocksSession session = schemaSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+                ResolverRegistry registry = transaction.reasoner().resolverRegistry();
+                LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
+                AtomicLong doneReceived = new AtomicLong(0L);
+                Actor<RootResolver> root = registry.createRoot(transaction.logic().typeResolver().resolve(conjunctionPattern), responses::add, iterDone -> doneReceived.incrementAndGet());
+                assertResponses(root, responses, doneReceived, answerCount);
+            }
+        }
     }
 
     private void assertResponses(Actor<RootResolver> root, LinkedBlockingQueue<ResolutionAnswer> responses,

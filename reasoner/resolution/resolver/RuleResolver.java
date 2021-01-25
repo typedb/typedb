@@ -174,7 +174,6 @@ public class RuleResolver extends Resolver<RuleResolver> {
     protected ResponseProducer responseProducerCreate(Request request, int iteration) {
         Traversal traversal = boundTraversal(rule.when().traversal(), request.answerBounds().conceptMap());
         ResourceIterator<ConceptMap> traversalIterator = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
-
         ResponseProducer responseProducer = new ResponseProducer(traversalIterator, iteration);
         Request toDownstream = Request.create(request.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
                                               AnswerState.UpstreamVars.Initial.of(request.answerBounds().conceptMap())
@@ -192,7 +191,6 @@ public class RuleResolver extends Resolver<RuleResolver> {
 
         Traversal traversal = boundTraversal(rule.when().traversal(), request.answerBounds().conceptMap());
         ResourceIterator<ConceptMap> traversalIterator = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
-
         ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversalIterator, newIteration);
         Request toDownstream = Request.create(request.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
                                               AnswerState.UpstreamVars.Initial.of(request.answerBounds().conceptMap())
@@ -212,10 +210,8 @@ public class RuleResolver extends Resolver<RuleResolver> {
         while (responseProducer.hasTraversalProducer()) {
             ConceptMap conceptMap = responseProducer.traversalProducer().next();
             LOG.trace("{}: has found via traversal: {}", name(), conceptMap);
-
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
-
                 Map<Identifier, Concept> thenMaterialisation = rule.putConclusion(conceptMap, traversalEngine, conceptMgr);
                 assert fromUpstream.answerBounds().isUnified();
                 Optional<AnswerState.UpstreamVars.Derived> derivedAnswer = fromUpstream.answerBounds().asUnified().unifyToUpstream(thenMaterialisation);
