@@ -23,7 +23,7 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT
 
 public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options<?, ?>> {
 
-    public static final boolean DEFAULT_INFER = true;
+    public static final boolean DEFAULT_INFER = false;
     public static final boolean DEFAULT_EXPLAIN = false;
     public static final boolean DEFAULT_PARALLEL = true;
     public static final int DEFAULT_RESPONSE_BATCH_SIZE = 50;
