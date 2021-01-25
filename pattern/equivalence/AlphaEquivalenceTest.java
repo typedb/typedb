@@ -93,10 +93,6 @@ public class AlphaEquivalenceTest {
 
     @Test
     public void test_isa_different_inequivalent_variants() {
-        ThingVariable a = parseVariable("a", "$a isa age").asThing();
-        ThingVariable b = parseVariable("b", "$b isa person").asThing();
-        testAlphaEquivalence(a, b, false);
-
         List<ThingVariable> variables = Stream.of(
                 parseVariables("x1", "$x1 isa organisation"),
                 parseVariables("x2", "$x2 isa company"),
