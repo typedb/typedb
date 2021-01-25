@@ -18,7 +18,6 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
-import grakn.core.common.concurrent.actor.Actor;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;

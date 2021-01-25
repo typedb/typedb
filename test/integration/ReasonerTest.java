@@ -18,7 +18,7 @@
 
 package grakn.core.test.integration;
 
-import grakn.core.common.concurrent.actor.EventLoopGroup;
+import grakn.core.concurrent.actor.EventLoopGroup;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
