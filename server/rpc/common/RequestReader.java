@@ -41,7 +41,7 @@ public class RequestReader {
             options.explain(requestOptions.getExplain());
         }
         if (requestOptions.getBatchSizeOptCase().equals(BATCH_SIZE)) {
-            options.batchSize(requestOptions.getBatchSize());
+            options.responseBatchSize(requestOptions.getBatchSize());
         }
         if (requestOptions.getPrefetchOptCase().equals(PREFETCH)) {
             options.prefetch(requestOptions.getPrefetch());

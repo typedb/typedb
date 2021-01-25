@@ -37,7 +37,7 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
         }
     }
 
-    public OPTIONS options() {
+    OPTIONS options() {
         return options;
     }
 
@@ -71,6 +71,18 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
             this.transactionType = transactionType;
             return this;
         }
+
+        public boolean isWrite() {
+            return transactionType.isWrite();
+        }
+
+        public boolean infer() {
+            return options().infer() && !isWrite();
+        }
+
+        public int responseBatchSize() {
+            return options().responseBatchSize();
+        }
     }
 
     public static class Query extends Context<Context.Transaction, Options.Query> {
@@ -78,5 +90,10 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
         public Query(Context.Transaction context, Options.Query options) {
             super(context, options.parent(context.options()));
         }
+
+        public boolean parallel() {
+            return options().parallel();
+        }
+
     }
 }
