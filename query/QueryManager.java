@@ -65,7 +65,7 @@ public class QueryManager {
     }
 
     public ResourceIterator<ConceptMap> match(GraqlMatch query) {
-        Options.Query options = (new Options.Query()).isParallel(true).infer(false);
+        Options.Query options = (new Options.Query()).parallel(true).infer(false);
         return match(query, options);
     }
 
@@ -78,7 +78,7 @@ public class QueryManager {
     }
 
     public Numeric match(GraqlMatch.Aggregate query) {
-        Options.Query options = (new Options.Query()).isParallel(true).infer(false);
+        Options.Query options = (new Options.Query()).parallel(true).infer(false);
         return match(query, options);
     }
 
@@ -91,7 +91,7 @@ public class QueryManager {
     }
 
     public ResourceIterator<ConceptMapGroup> match(GraqlMatch.Group query) {
-        Options.Query options = (new Options.Query()).isParallel(true).infer(false);
+        Options.Query options = (new Options.Query()).parallel(true).infer(false);
         return match(query, options);
     }
 
@@ -104,7 +104,7 @@ public class QueryManager {
     }
 
     public ResourceIterator<NumericGroup> match(GraqlMatch.Group.Aggregate query) {
-        Options.Query options = (new Options.Query()).isParallel(true).infer(false);
+        Options.Query options = (new Options.Query()).parallel(true).infer(false);
         return match(query, options);
     }
 

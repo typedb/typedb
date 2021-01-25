@@ -146,11 +146,11 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
             return this;
         }
 
-        public boolean isParallel() {
+        public boolean parallel() {
             return parallel;
         }
 
-        public Query isParallel(boolean parallel) {
+        public Query parallel(boolean parallel) {
             this.parallel = parallel;
             return getThis();
         }
