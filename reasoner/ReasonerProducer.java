@@ -69,7 +69,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     private void requestFailed(int iteration) {
-        LOG.error("New iteration {}", iteration);
+        LOG.trace("New iteration {}", iteration);
         assert this.iteration == iteration || this.iteration == iteration + 1;
 
         if (iteration == this.iteration && mustReiterate()) {

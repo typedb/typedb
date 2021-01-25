@@ -62,7 +62,9 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
     public ConcludableResolver(Actor<ConcludableResolver> self, Concludable concludable,
                                Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
-                               boolean explanations) { super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.conjunction() + ")", registry, traversalEngine, explanations);
+                               boolean explanations) {
+        super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.conjunction() + ")",
+              registry, traversalEngine, explanations);
         this.concludable = concludable;
         this.resolutionRecorder = resolutionRecorder;
         this.conceptMgr = conceptMgr;
