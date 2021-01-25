@@ -23,7 +23,7 @@ java_test(
     srcs = [
         "VariableRolesTest.java",
     ],
-    test_class = "grakn.core.test.behaviour.resolution.reasoner.variable_roles.VariableRolesTest",
+    test_class = "grakn.core.test.behaviour.resolution.tests.variable_roles.VariableRolesTest",
     deps = [
         # External dependencies from Maven
         "@maven//:io_cucumber_cucumber_junit",

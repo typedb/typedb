@@ -23,7 +23,7 @@ java_test(
     srcs = [
         "AttributeAttachmentTest.java",
     ],
-    test_class = "grakn.core.test.behaviour.resolution.reasoner.attribute_attachment.AttributeAttachmentTest",
+    test_class = "grakn.core.test.behaviour.resolution.tests.attribute_attachment.AttributeAttachmentTest",
     deps = [
         # External dependencies from Maven
         "@maven//:io_cucumber_cucumber_junit",

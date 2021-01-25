@@ -23,7 +23,7 @@ java_test(
     srcs = [
         "TypeHierarchyTest.java",
     ],
-    test_class = "grakn.core.test.behaviour.resolution.reasoner.type_hierarchy.TypeHierarchyTest",
+    test_class = "grakn.core.test.behaviour.resolution.tests.type_hierarchy.TypeHierarchyTest",
     deps = [
         # External dependencies from Maven
         "@maven//:io_cucumber_cucumber_junit",

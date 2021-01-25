@@ -23,7 +23,7 @@ java_test(
     srcs = [
         "NegationTest.java",
     ],
-    test_class = "grakn.core.test.behaviour.resolution.reasoner.negation.NegationTest",
+    test_class = "grakn.core.test.behaviour.resolution.tests.negation.NegationTest",
     deps = [
         # External dependencies from Maven
         "@maven//:io_cucumber_cucumber_junit",

@@ -37,6 +37,7 @@ import java.util.Set;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessions;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 public class ResolutionSteps {
 
@@ -93,7 +94,7 @@ public class ResolutionSteps {
         if (expectedCount != resultCount) {
             String msg = String.format("Query had an incorrect number of answers. Expected [%d] answers, " +
                                                "but found [%d] answers, for query :\n %s", expectedCount, resultCount, queryToTest);
-//            throw new Resolution.CorrectnessException(msg);
+            fail(msg);
         }
     }
 

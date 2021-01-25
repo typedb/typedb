@@ -23,7 +23,7 @@ java_test(
     srcs = [
         "ResolutionTestFrameworkTest.java",
     ],
-    test_class = "grakn.core.test.behaviour.resolution.reasoner.resolution_test_framework.ResolutionTestFrameworkTest",
+    test_class = "grakn.core.test.behaviour.resolution.tests.resolution_test_framework.ResolutionTestFrameworkTest",
     deps = [
         # External dependencies from Maven
         "@maven//:io_cucumber_cucumber_junit",

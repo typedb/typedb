@@ -23,7 +23,7 @@ java_test(
     srcs = [
         "RelationInferenceTest.java",
     ],
-    test_class = "grakn.core.test.behaviour.resolution.reasoner.relation_inference.RelationInferenceTest",
+    test_class = "grakn.core.test.behaviour.resolution.tests.relation_inference.RelationInferenceTest",
     deps = [
         # External dependencies from Maven
         "@maven//:io_cucumber_cucumber_junit",
