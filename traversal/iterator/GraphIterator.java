@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.traversal.producer;
+package grakn.core.traversal.iterator;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.AbstractResourceIterator;
