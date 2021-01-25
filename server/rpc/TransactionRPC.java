@@ -134,8 +134,8 @@ public class TransactionRPC {
 
     public <T> void respond(TransactionProto.Transaction.Req request, Iterator<T> iterator, Options.Query queryOptions,
                             Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
-        assert queryOptions.prefetch().isPresent();
-        iterators.createNewIterator(request, iterator, queryOptions.prefetch().get(), queryOptions.batchSize(), responseBuilderFn);
+        assert queryOptions.prefetch() != null;
+        iterators.createNewIterator(request, iterator, queryOptions.prefetch(), queryOptions.batchSize(), responseBuilderFn);
     }
 
     private void commit(String requestId) {

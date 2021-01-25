@@ -35,7 +35,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     private Boolean infer = null;
     private Boolean explain = null;
     private Integer batchSize = null;
-    private Optional<Boolean> prefetch = null;
+    private Boolean prefetch = null;
     private Integer sessionIdlTimeoutMillis = null;
     private Integer schemaLockAcquireTimeoutMillis = null;
 
@@ -79,12 +79,12 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         return getThis();
     }
 
-    public Optional<Boolean> prefetch() {
+    public Boolean prefetch() {
         return prefetch;
     }
 
     public SELF prefetch(boolean prefetch) {
-        this.prefetch = Optional.of(prefetch);
+        this.prefetch = prefetch;
         return getThis();
     }
 
