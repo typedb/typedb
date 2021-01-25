@@ -105,9 +105,9 @@ public class KeyGenerator {
 
             private void syncTypeKeys(Storage storage) {
                 for (Encoding.Vertex.Type encoding : Encoding.Vertex.Type.values()) {
-                    final byte[] prefix = encoding.prefix().bytes();
-                    final byte[] lastIID = storage.getLastKey(prefix);
-                    final AtomicInteger nextValue = lastIID != null ?
+                    byte[] prefix = encoding.prefix().bytes();
+                    byte[] lastIID = storage.getLastKey(prefix);
+                    AtomicInteger nextValue = lastIID != null ?
                             new AtomicInteger(sortedBytesToShort(copyOfRange(lastIID, PrefixIID.LENGTH, VertexIID.Type.LENGTH)) + delta) :
                             new AtomicInteger(initialValue);
                     typeKeys.put(PrefixIID.of(encoding), nextValue);
@@ -115,8 +115,8 @@ public class KeyGenerator {
             }
 
             private void syncRuleKey(Storage storage) {
-                final byte[] prefix = Encoding.Structure.RULE.prefix().bytes();
-                final byte[] lastIID = storage.getLastKey(prefix);
+                byte[] prefix = Encoding.Structure.RULE.prefix().bytes();
+                byte[] lastIID = storage.getLastKey(prefix);
                 if (lastIID != null) {
                     ruleKey.set(sortedBytesToShort(copyOfRange(lastIID, PrefixIID.LENGTH, StructureIID.Rule.LENGTH)) + delta);
                 } else {
@@ -167,17 +167,17 @@ public class KeyGenerator {
             }
 
             public void sync(Storage storage) {
-                final Encoding.Vertex.Thing[] thingsWithGeneratedIID = new Encoding.Vertex.Thing[]{ENTITY, RELATION, ROLE};
+                Encoding.Vertex.Thing[] thingsWithGeneratedIID = new Encoding.Vertex.Thing[]{ENTITY, RELATION, ROLE};
 
                 for (Encoding.Vertex.Thing thingEncoding : thingsWithGeneratedIID) {
-                    final byte[] typeEncoding = Encoding.Vertex.Type.of(thingEncoding).prefix().bytes();
-                    final ResourceIterator<byte[]> typeIterator = storage.iterate(typeEncoding, (iid, value) -> iid)
+                    byte[] typeEncoding = Encoding.Vertex.Type.of(thingEncoding).prefix().bytes();
+                    ResourceIterator<byte[]> typeIterator = storage.iterate(typeEncoding, (iid, value) -> iid)
                             .filter(iid1 -> iid1.length == VertexIID.Type.LENGTH);
                     while (typeIterator.hasNext()) {
-                        final byte[] typeIID = typeIterator.next();
-                        final byte[] prefix = join(thingEncoding.prefix().bytes(), typeIID);
-                        final byte[] lastIID = storage.getLastKey(prefix);
-                        final AtomicLong nextValue = lastIID != null ?
+                        byte[] typeIID = typeIterator.next();
+                        byte[] prefix = join(thingEncoding.prefix().bytes(), typeIID);
+                        byte[] lastIID = storage.getLastKey(prefix);
+                        AtomicLong nextValue = lastIID != null ?
                                 new AtomicLong(sortedBytesToLong(copyOfRange(lastIID, PREFIX_W_TYPE_LENGTH, DEFAULT_LENGTH)) + delta) :
                                 new AtomicLong(initialValue);
                         thingKeys.put(VertexIID.Type.of(typeIID), nextValue);

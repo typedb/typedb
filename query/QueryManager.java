@@ -152,7 +152,7 @@ public class QueryManager {
     public ResourceIterator<ConceptMap> insert(GraqlInsert query, Options.Query options) {
         if (transactionCtx.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION);
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
-            final Context.Query context = new Context.Query(transactionCtx, options);
+            Context.Query context = new Context.Query(transactionCtx, options);
             if (query.match().isPresent()) {
                 GraqlMatch.Unfiltered match = query.match().get();
                 List<UnboundVariable> filterVars = new ArrayList<>(match.namedVariablesUnbound());
@@ -177,11 +177,11 @@ public class QueryManager {
     public void delete(GraqlDelete query, Options.Query options) {
         if (transactionCtx.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION);
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete")) {
-            final Context.Query context = new Context.Query(transactionCtx, options);
+            Context.Query context = new Context.Query(transactionCtx, options);
             List<UnboundVariable> filterVars = new ArrayList<>(query.match().namedVariablesUnbound());
             filterVars.retainAll(query.namedVariablesUnbound());
             assert !filterVars.isEmpty();
-            final List<ConceptMap> matched = match(query.match().get(filterVars), options).toList();
+            List<ConceptMap> matched = match(query.match().get(filterVars), options).toList();
             matched.forEach(existing -> Deleter.create(query.variables(), existing, context).execute());
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);

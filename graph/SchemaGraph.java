@@ -22,7 +22,7 @@ import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
-import grakn.core.concurrent.common.ManagedReadWriteLock;
+import grakn.core.concurrent.lock.ManagedReadWriteLock;
 import grakn.core.graph.common.Encoding;
 import grakn.core.graph.common.KeyGenerator;
 import grakn.core.graph.common.Storage;
@@ -111,6 +111,7 @@ public class SchemaGraph implements Graph {
 
         private final ConcurrentMap<TypeVertex, Set<TypeVertex>> ownersOfAttributeTypes;
         private final ConcurrentMap<Label, Set<Label>> resolvedRoleTypeLabels;
+
         Cache() {
             ownedAttributeTypes = new ConcurrentHashMap<>();
             ownersOfAttributeTypes = new ConcurrentHashMap<>();
@@ -118,6 +119,7 @@ public class SchemaGraph implements Graph {
         }
 
     }
+
     @Override
     public Storage storage() {
         return storage;
@@ -140,11 +142,11 @@ public class SchemaGraph implements Graph {
     }
 
     public void initialise() throws GraknException {
-        final TypeVertex rootThingType = create(THING_TYPE, THING.label()).isAbstract(true);
-        final TypeVertex rootEntityType = create(ENTITY_TYPE, ENTITY.label()).isAbstract(true);
-        final TypeVertex rootAttributeType = create(ATTRIBUTE_TYPE, ATTRIBUTE.label()).isAbstract(true).valueType(OBJECT);
-        final TypeVertex rootRelationType = create(RELATION_TYPE, RELATION.label()).isAbstract(true);
-        final TypeVertex rootRoleType = create(ROLE_TYPE, ROLE.label(), RELATION.label()).isAbstract(true);
+        TypeVertex rootThingType = create(THING_TYPE, THING.label()).isAbstract(true);
+        TypeVertex rootEntityType = create(ENTITY_TYPE, ENTITY.label()).isAbstract(true);
+        TypeVertex rootAttributeType = create(ATTRIBUTE_TYPE, ATTRIBUTE.label()).isAbstract(true).valueType(OBJECT);
+        TypeVertex rootRelationType = create(RELATION_TYPE, RELATION.label()).isAbstract(true);
+        TypeVertex rootRoleType = create(ROLE_TYPE, ROLE.label(), RELATION.label()).isAbstract(true);
 
         rootEntityType.outs().put(SUB, rootThingType);
         rootAttributeType.outs().put(SUB, rootThingType);
@@ -205,7 +207,7 @@ public class SchemaGraph implements Graph {
     }
 
     public Set<TypeVertex> ownersOfAttributeType(TypeVertex attType) {
-        final Supplier<Set<TypeVertex>> fn = () -> link(
+        Supplier<Set<TypeVertex>> fn = () -> link(
                 attType.ins().edge(OWNS).from(), attType.ins().edge(OWNS_KEY).from()
         ).toSet();
         if (isReadOnly) return cache.ownersOfAttributeTypes.computeIfAbsent(attType, a -> fn.get());
@@ -237,7 +239,7 @@ public class SchemaGraph implements Graph {
 
     public TypeVertex convert(VertexIID.Type iid) {
         return typesByIID.computeIfAbsent(iid, i -> {
-            final TypeVertex vertex = new TypeVertexImpl.Persisted(this, i);
+            TypeVertex vertex = new TypeVertexImpl.Persisted(this, i);
             typesByLabel.putIfAbsent(vertex.scopedLabel(), vertex);
             return vertex;
         });
@@ -253,7 +255,7 @@ public class SchemaGraph implements Graph {
 
     public TypeVertex getType(String label, @Nullable String scope) {
         assert storage.isOpen();
-        final String scopedLabel = scopedLabel(label, scope);
+        String scopedLabel = scopedLabel(label, scope);
         try {
             if (!isReadOnly) {
                 multiLabelLock.lockRead();
@@ -263,8 +265,8 @@ public class SchemaGraph implements Graph {
             TypeVertex vertex = typesByLabel.get(scopedLabel);
             if (vertex != null) return vertex;
 
-            final IndexIID.Type index = IndexIID.Type.Label.of(label, scope);
-            final byte[] iid = storage.get(index.bytes());
+            IndexIID.Type index = IndexIID.Type.Label.of(label, scope);
+            byte[] iid = storage.get(index.bytes());
             if (iid != null) {
                 vertex = typesByIID.computeIfAbsent(
                         VertexIID.Type.of(iid), i -> new TypeVertexImpl.Persisted(this, i, label, scope)
@@ -290,12 +292,12 @@ public class SchemaGraph implements Graph {
     public TypeVertex create(Encoding.Vertex.Type encoding, String label, @Nullable String scope) {
         assert storage.isOpen();
         if (isReadOnly) throw GraknException.of(SCHEMA_READ_VIOLATION);
-        final String scopedLabel = scopedLabel(label, scope);
+        String scopedLabel = scopedLabel(label, scope);
         try { // we intentionally use READ on multiLabelLock, as put() only concerns one label
             multiLabelLock.lockRead();
             singleLabelLocks.computeIfAbsent(scopedLabel, x -> new ManagedReadWriteLock()).lockWrite();
 
-            final TypeVertex typeVertex = typesByLabel.computeIfAbsent(scopedLabel, i -> new TypeVertexImpl.Buffered(
+            TypeVertex typeVertex = typesByLabel.computeIfAbsent(scopedLabel, i -> new TypeVertexImpl.Buffered(
                     this, VertexIID.Type.generate(keyGenerator, encoding), label, scope
             ));
             typesByIID.put(typeVertex.iid(), typeVertex);
@@ -312,10 +314,10 @@ public class SchemaGraph implements Graph {
     public TypeVertex update(TypeVertex vertex, String oldLabel, @Nullable String oldScope, String newLabel, @Nullable String newScope) {
         assert storage.isOpen();
         if (isReadOnly) throw GraknException.of(SCHEMA_READ_VIOLATION);
-        final String oldScopedLabel = scopedLabel(oldLabel, oldScope);
-        final String newScopedLabel = scopedLabel(newLabel, newScope);
+        String oldScopedLabel = scopedLabel(oldLabel, oldScope);
+        String newScopedLabel = scopedLabel(newLabel, newScope);
         try {
-            final TypeVertex type = getType(newLabel, newScope);
+            TypeVertex type = getType(newLabel, newScope);
             multiLabelLock.lockWrite();
             if (type != null) throw GraknException.of(INVALID_SCHEMA_WRITE, newScopedLabel);
             typesByLabel.remove(oldScopedLabel);
@@ -420,7 +422,7 @@ public class SchemaGraph implements Graph {
 
         public RuleStructure convert(StructureIID.Rule iid) {
             return rulesByIID.computeIfAbsent(iid, i -> {
-                final RuleStructure structure = new RuleStructureImpl.Persisted(SchemaGraph.this, i);
+                RuleStructure structure = new RuleStructureImpl.Persisted(SchemaGraph.this, i);
                 rulesByLabel.putIfAbsent(structure.label(), structure);
                 return structure;
             });
@@ -437,8 +439,8 @@ public class SchemaGraph implements Graph {
                 RuleStructure vertex = rulesByLabel.get(label);
                 if (vertex != null) return vertex;
 
-                final IndexIID.Rule index = IndexIID.Rule.of(label);
-                final byte[] iid = storage.get(index.bytes());
+                IndexIID.Rule index = IndexIID.Rule.of(label);
+                byte[] iid = storage.get(index.bytes());
                 if (iid != null) vertex = convert(StructureIID.Rule.of(iid));
                 return vertex;
             } catch (InterruptedException e) {
@@ -457,7 +459,7 @@ public class SchemaGraph implements Graph {
                 multiLabelLock.lockRead();
                 singleLabelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockWrite();
 
-                final RuleStructure rule = rulesByLabel.computeIfAbsent(label, i -> new RuleStructureImpl.Buffered(
+                RuleStructure rule = rulesByLabel.computeIfAbsent(label, i -> new RuleStructureImpl.Buffered(
                         SchemaGraph.this, StructureIID.Rule.generate(keyGenerator), label, when, then
                 ));
                 rulesByIID.put(rule.iid(), rule);
@@ -473,7 +475,7 @@ public class SchemaGraph implements Graph {
         public RuleStructure update(RuleStructure vertex, String oldLabel, String newLabel) {
             assert storage.isOpen();
             try {
-                final RuleStructure rule = get(newLabel);
+                RuleStructure rule = get(newLabel);
                 multiLabelLock.lockWrite();
                 if (rule != null) throw GraknException.of(INVALID_SCHEMA_WRITE, newLabel);
                 rulesByLabel.remove(oldLabel);

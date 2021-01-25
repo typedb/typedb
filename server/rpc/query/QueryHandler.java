@@ -52,8 +52,8 @@ public class QueryHandler {
     }
 
     public void handleRequest(Transaction.Req request) {
-        final QueryProto.Query.Req req = request.getQueryReq();
-        final Options.Query options = getOptions(Options.Query::new, req.getOptions());
+        QueryProto.Query.Req req = request.getQueryReq();
+        Options.Query options = getOptions(Options.Query::new, req.getOptions());
         switch (req.getReqCase()) {
             case DELETE_REQ:
                 this.delete(request, req.getDeleteReq(), options);
@@ -102,8 +102,8 @@ public class QueryHandler {
     }
 
     private void match(Transaction.Req request, QueryProto.Query.MatchAggregate.Req req, Options.Query options) {
-        final GraqlMatch.Aggregate query = Graql.parseQuery(req.getQuery()).asMatchAggregate();
-        final Numeric answer = queryManager.match(query, options);
+        GraqlMatch.Aggregate query = Graql.parseQuery(req.getQuery()).asMatchAggregate();
+        Numeric answer = queryManager.match(query, options);
         transactionRPC.respond(
                 response(request, QueryProto.Query.Res.newBuilder().setMatchAggregateRes(
                         QueryProto.Query.MatchAggregate.Res.newBuilder().setAnswer(ResponseBuilder.Answer.numeric(answer))))
@@ -150,19 +150,19 @@ public class QueryHandler {
     }
 
     private void delete(Transaction.Req request, QueryProto.Query.Delete.Req req, Options.Query options) {
-        final GraqlDelete query = Graql.parseQuery(req.getQuery()).asDelete();
+        GraqlDelete query = Graql.parseQuery(req.getQuery()).asDelete();
         queryManager.delete(query, options);
         transactionRPC.respond(response(request, QueryProto.Query.Res.newBuilder().setDeleteRes(QueryProto.Query.Delete.Res.getDefaultInstance())));
     }
 
     private void define(Transaction.Req request, QueryProto.Query.Define.Req req) {
-        final GraqlDefine query = Graql.parseQuery(req.getQuery()).asDefine();
+        GraqlDefine query = Graql.parseQuery(req.getQuery()).asDefine();
         queryManager.define(query);
         transactionRPC.respond(response(request, QueryProto.Query.Res.newBuilder().setDefineRes(QueryProto.Query.Define.Res.getDefaultInstance())));
     }
 
     private void undefine(Transaction.Req request, QueryProto.Query.Undefine.Req req) {
-        final GraqlUndefine query = Graql.parseQuery(req.getQuery()).asUndefine();
+        GraqlUndefine query = Graql.parseQuery(req.getQuery()).asUndefine();
         queryManager.undefine(query);
         transactionRPC.respond(response(request, QueryProto.Query.Res.newBuilder().setUndefineRes(QueryProto.Query.Undefine.Res.getDefaultInstance())));
     }

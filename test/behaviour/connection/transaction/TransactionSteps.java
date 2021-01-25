@@ -30,6 +30,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 import static grakn.common.collection.Collections.list;
+import static grakn.core.common.test.Util.assertThrows;
+import static grakn.core.common.test.Util.assertThrowsWithMessage;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessions;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessionsParallel;
@@ -37,8 +39,6 @@ import static grakn.core.test.behaviour.connection.ConnectionSteps.sessionsParal
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessionsToTransactions;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessionsToTransactionsParallel;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.threadPool;
-import static grakn.core.common.test.Util.assertThrows;
-import static grakn.core.common.test.Util.assertThrowsWithMessage;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -57,9 +57,9 @@ public class TransactionSteps {
     @When("(for each )session(,) open transaction(s) of type:")
     public void for_each_session_open_transactions_of_type(List<Arguments.Transaction.Type> types) {
         for (Grakn.Session session : sessions) {
-            final List<Grakn.Transaction> transactions = new ArrayList<>();
+            List<Grakn.Transaction> transactions = new ArrayList<>();
             for (Arguments.Transaction.Type type : types) {
-                final Grakn.Transaction transaction = session.transaction(type);
+                Grakn.Transaction transaction = session.transaction(type);
                 transactions.add(transaction);
             }
             sessionsToTransactions.put(session, transactions);
@@ -149,11 +149,11 @@ public class TransactionSteps {
     @Then("(for each )session(,) transaction(s) has/have type:")
     public void for_each_session_transactions_have_type(List<Arguments.Transaction.Type> types) {
         for (Grakn.Session session : sessions) {
-            final List<Grakn.Transaction> transactions = sessionsToTransactions.get(session);
+            List<Grakn.Transaction> transactions = sessionsToTransactions.get(session);
             assertEquals(types.size(), transactions.size());
 
-            final Iterator<Arguments.Transaction.Type> typesIterator = types.iterator();
-            final Iterator<Grakn.Transaction> transactionIterator = transactions.iterator();
+            Iterator<Arguments.Transaction.Type> typesIterator = types.iterator();
+            Iterator<Grakn.Transaction> transactionIterator = transactions.iterator();
             while (typesIterator.hasNext()) {
                 assertEquals(typesIterator.next(), transactionIterator.next().type());
             }
@@ -168,7 +168,7 @@ public class TransactionSteps {
     public void for_each_session_open_transactions_in_parallel_of_type(List<Arguments.Transaction.Type> types) {
         assertTrue(THREAD_POOL_SIZE >= types.size());
         for (Grakn.Session session : sessions) {
-            final List<CompletableFuture<Grakn.Transaction>> transactionsParallel = new ArrayList<>();
+            List<CompletableFuture<Grakn.Transaction>> transactionsParallel = new ArrayList<>();
             for (Arguments.Transaction.Type type : types) {
                 transactionsParallel.add(CompletableFuture.supplyAsync(() -> session.transaction(type), threadPool));
             }
@@ -187,7 +187,7 @@ public class TransactionSteps {
     }
 
     private void for_each_session_transactions_in_parallel_are(Consumer<Grakn.Transaction> assertion) {
-        final List<CompletableFuture<Void>> assertions = new ArrayList<>();
+        List<CompletableFuture<Void>> assertions = new ArrayList<>();
         for (Grakn.Session session : sessions) {
             for (CompletableFuture<Grakn.Transaction> futureTransaction :
                     sessionsToTransactionsParallel.get(session)) {
@@ -203,18 +203,18 @@ public class TransactionSteps {
 
     @Then("(for each )session(,) transactions in parallel have type:")
     public void for_each_session_transactions_in_parallel_have_type(List<Arguments.Transaction.Type> types) {
-        final List<CompletableFuture<Void>> assertions = new ArrayList<>();
+        List<CompletableFuture<Void>> assertions = new ArrayList<>();
         for (Grakn.Session session : sessions) {
-            final List<CompletableFuture<Grakn.Transaction>> futureTxs =
+            List<CompletableFuture<Grakn.Transaction>> futureTxs =
                     sessionsToTransactionsParallel.get(session);
 
             assertEquals(types.size(), futureTxs.size());
 
-            final Iterator<Arguments.Transaction.Type> typesIter = types.iterator();
-            final Iterator<CompletableFuture<Grakn.Transaction>> futureTxsIter = futureTxs.iterator();
+            Iterator<Arguments.Transaction.Type> typesIter = types.iterator();
+            Iterator<CompletableFuture<Grakn.Transaction>> futureTxsIter = futureTxs.iterator();
 
             while (typesIter.hasNext()) {
-                final Arguments.Transaction.Type type = typesIter.next();
+                Arguments.Transaction.Type type = typesIter.next();
                 futureTxsIter.next().thenApplyAsync(tx -> {
                     assertEquals(type, tx.type());
                     return null;
@@ -240,7 +240,7 @@ public class TransactionSteps {
     }
 
     private void for_each_session_in_parallel_transactions_in_parallel_are(Consumer<Grakn.Transaction> assertion) {
-        final List<CompletableFuture<Void>> assertions = new ArrayList<>();
+        List<CompletableFuture<Void>> assertions = new ArrayList<>();
         for (CompletableFuture<Grakn.Session> futureSession : sessionsParallel) {
             for (CompletableFuture<Grakn.Transaction> futureTransaction : sessionsParallelToTransactionsParallel.get(futureSession)) {
                 assertions.add(futureTransaction.thenApply(transaction -> {

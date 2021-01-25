@@ -165,7 +165,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        final ValueConstraint<?> that = (ValueConstraint<?>) o;
+        ValueConstraint<?> that = (ValueConstraint<?>) o;
         return (this.owner.equals(that.owner) &&
                 this.predicate.equals(that.predicate) &&
                 this.value.equals(that.value));

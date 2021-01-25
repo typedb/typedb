@@ -43,11 +43,11 @@ public class RocksDatabaseManager implements Grakn.DatabaseManager {
     }
 
     void loadAll() {
-        final File[] databaseDirectories = grakn.directory().toFile().listFiles(File::isDirectory);
+        File[] databaseDirectories = grakn.directory().toFile().listFiles(File::isDirectory);
         if (databaseDirectories != null && databaseDirectories.length > 0) {
             Arrays.stream(databaseDirectories).parallel().forEach(directory -> {
-                final String name = directory.getName();
-                final RocksDatabase database = databaseFactory.databaseLoadAndOpen(grakn, name);
+                String name = directory.getName();
+                RocksDatabase database = databaseFactory.databaseLoadAndOpen(grakn, name);
                 databases.put(name, database);
             });
         }
@@ -62,7 +62,7 @@ public class RocksDatabaseManager implements Grakn.DatabaseManager {
     public RocksDatabase create(String name) {
         if (databases.containsKey(name)) throw GraknException.of(DATABASE_EXISTS, name);
 
-        final RocksDatabase database = databaseFactory.databaseCreateAndOpen(grakn, name);
+        RocksDatabase database = databaseFactory.databaseCreateAndOpen(grakn, name);
         databases.put(name, database);
         return database;
     }

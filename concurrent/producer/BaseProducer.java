@@ -45,7 +45,8 @@ public class BaseProducer<T> implements Producer<T> {
         future = future.thenRunAsync(() -> {
             try {
                 int unfulfilled = request;
-                for (; unfulfilled > 0 && iterator.hasNext() && !isDone.get(); unfulfilled--) queue.put(iterator.next());
+                for (; unfulfilled > 0 && iterator.hasNext() && !isDone.get(); unfulfilled--)
+                    queue.put(iterator.next());
                 if (unfulfilled > 0 && !isDone.get()) done(queue);
             } catch (Throwable e) {
                 queue.done(e);

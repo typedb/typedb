@@ -87,11 +87,11 @@ public class ResolverRegistry {
     public Actor<RuleResolver> registerRule(Rule rule) {
         LOG.debug("Register retrieval for rule actor: '{}'", rule);
         return rules.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new RuleResolver(
-                        self, r, this, traversalEngine, conceptMgr, logicMgr, planner,
-                        explanations)));
+                self, r, this, traversalEngine, conceptMgr, logicMgr, planner,
+                explanations)));
     }
 
-    public Actor<RootResolver> createRoot(final Conjunction pattern, final Consumer<ResolutionAnswer> onAnswer, Consumer<Integer> onExhausted) {
+    public Actor<RootResolver> createRoot(Conjunction pattern, Consumer<ResolutionAnswer> onAnswer, Consumer<Integer> onExhausted) {
         LOG.debug("Creating Conjunction Actor for pattern: '{}'", pattern);
         return Actor.create(
                 elg, self -> new RootResolver(
@@ -126,7 +126,6 @@ public class ResolverRegistry {
         concludableActors.put(concludable, concludableActor);
         return AlphaEquivalentResolver.createDirect(concludableActor, concludable);
     }
-
 
 
     public static class AlphaEquivalentResolver {

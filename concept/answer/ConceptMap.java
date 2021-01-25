@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class ConceptMap implements Answer {
@@ -75,10 +74,10 @@ public class ConceptMap implements Answer {
     }
 
     @Override
-    public boolean equals(final Object o) {
+    public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        final ConceptMap that = (ConceptMap) o;
+        ConceptMap that = (ConceptMap) o;
         return concepts.equals(that.concepts);
     }
 

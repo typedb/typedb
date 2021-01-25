@@ -87,7 +87,7 @@ public class LabelConstraint extends TypeConstraint implements AlphaEquivalent<L
     public boolean equals(Object o) {
         if (o == this) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        final LabelConstraint that = (LabelConstraint) o;
+        LabelConstraint that = (LabelConstraint) o;
         return this.owner.equals(that.owner) && this.label.equals(that.label);
     }
 

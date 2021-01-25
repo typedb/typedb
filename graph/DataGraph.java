@@ -166,8 +166,8 @@ public class DataGraph implements Graph {
     public ThingVertex create(TypeVertex typeVertex, boolean isInferred) {
         assert storage.isOpen();
         assert !typeVertex.isAttributeType();
-        final VertexIID.Thing iid = generate(keyGenerator, typeVertex.iid(), typeVertex.properLabel());
-        final ThingVertex vertex = new ThingVertexImpl.Buffered(this, iid, isInferred);
+        VertexIID.Thing iid = generate(keyGenerator, typeVertex.iid(), typeVertex.properLabel());
+        ThingVertex vertex = new ThingVertexImpl.Buffered(this, iid, isInferred);
         thingsByIID.put(iid, vertex);
         thingsByTypeIID.computeIfAbsent(typeVertex.iid(), t -> new ConcurrentSet<>()).add(vertex);
         if (!isInferred) statistics.vertexCreated(typeVertex.iid());
@@ -177,14 +177,14 @@ public class DataGraph implements Graph {
     private <VALUE, ATT_IID extends VertexIID.Attribute<VALUE>, ATT_VERTEX extends AttributeVertex<VALUE>>
     ATT_VERTEX getOrReadFromStorage(Map<ATT_IID, ATT_VERTEX> map, ATT_IID attIID, Function<ATT_IID, ATT_VERTEX> vertexConstructor) {
         return map.computeIfAbsent(attIID, iid -> {
-            final byte[] val = storage.get(iid.bytes());
+            byte[] val = storage.get(iid.bytes());
             if (val != null) return vertexConstructor.apply(iid);
             else return null;
         });
     }
 
     public ResourceIterator<ThingVertex> get(TypeVertex typeVertex) {
-        final ResourceIterator<ThingVertex> storageIterator = storage.iterate(
+        ResourceIterator<ThingVertex> storageIterator = storage.iterate(
                 join(typeVertex.iid().bytes(), Encoding.Edge.ISA.in().bytes()),
                 (key, value) -> convert(EdgeIID.InwardsISA.of(key).end())
         );
@@ -264,10 +264,10 @@ public class DataGraph implements Graph {
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(Boolean.class);
 
-        final AttributeVertex<Boolean> vertex = attributesByIID.booleans.computeIfAbsent(
+        AttributeVertex<Boolean> vertex = attributesByIID.booleans.computeIfAbsent(
                 new VertexIID.Attribute.Boolean(type.iid(), value),
                 iid -> {
-                    final AttributeVertex<Boolean> v = new AttributeVertexImpl.Boolean(this, iid, isInferred);
+                    AttributeVertex<Boolean> v = new AttributeVertexImpl.Boolean(this, iid, isInferred);
                     thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     if (!isInferred) statistics.attributeVertexCreated(v.iid());
                     return v;
@@ -286,10 +286,10 @@ public class DataGraph implements Graph {
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(Long.class);
 
-        final AttributeVertex<Long> vertex = attributesByIID.longs.computeIfAbsent(
+        AttributeVertex<Long> vertex = attributesByIID.longs.computeIfAbsent(
                 new VertexIID.Attribute.Long(type.iid(), value),
                 iid -> {
-                    final AttributeVertex<Long> v = new AttributeVertexImpl.Long(this, iid, isInferred);
+                    AttributeVertex<Long> v = new AttributeVertexImpl.Long(this, iid, isInferred);
                     thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     if (!isInferred) statistics.attributeVertexCreated(v.iid());
                     return v;
@@ -308,10 +308,10 @@ public class DataGraph implements Graph {
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(Double.class);
 
-        final AttributeVertex<Double> vertex = attributesByIID.doubles.computeIfAbsent(
+        AttributeVertex<Double> vertex = attributesByIID.doubles.computeIfAbsent(
                 new VertexIID.Attribute.Double(type.iid(), value),
                 iid -> {
-                    final AttributeVertex<Double> v = new AttributeVertexImpl.Double(this, iid, isInferred);
+                    AttributeVertex<Double> v = new AttributeVertexImpl.Double(this, iid, isInferred);
                     thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     if (!isInferred) statistics.attributeVertexCreated(v.iid());
                     return v;
@@ -342,9 +342,9 @@ public class DataGraph implements Graph {
             }
         }
 
-        final AttributeVertex<String> vertex = attributesByIID.strings.computeIfAbsent(
+        AttributeVertex<String> vertex = attributesByIID.strings.computeIfAbsent(
                 attIID, iid -> {
-                    final AttributeVertex<String> v = new AttributeVertexImpl.String(this, iid, isInferred);
+                    AttributeVertex<String> v = new AttributeVertexImpl.String(this, iid, isInferred);
                     thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     if (!isInferred) statistics.attributeVertexCreated(v.iid());
                     return v;
@@ -363,10 +363,10 @@ public class DataGraph implements Graph {
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(LocalDateTime.class);
 
-        final AttributeVertex<LocalDateTime> vertex = attributesByIID.dateTimes.computeIfAbsent(
+        AttributeVertex<LocalDateTime> vertex = attributesByIID.dateTimes.computeIfAbsent(
                 new VertexIID.Attribute.DateTime(type.iid(), value),
                 iid -> {
-                    final AttributeVertex<LocalDateTime> v = new AttributeVertexImpl.DateTime(this, iid, isInferred);
+                    AttributeVertex<LocalDateTime> v = new AttributeVertexImpl.DateTime(this, iid, isInferred);
                     thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     if (!isInferred) statistics.attributeVertexCreated(v.iid());
                     return v;

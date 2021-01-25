@@ -114,7 +114,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        final RelationConstraint that = (RelationConstraint) o;
+        RelationConstraint that = (RelationConstraint) o;
         return (this.owner.equals(that.owner) && this.rolePlayers.equals(that.rolePlayers));
     }
 
@@ -124,7 +124,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
     }
 
     private static Set<Variable> rolePlayerVariables(Set<RolePlayer> rolePlayers) {
-        final Set<grakn.core.pattern.variable.Variable> variables = new HashSet<>();
+        Set<grakn.core.pattern.variable.Variable> variables = new HashSet<>();
         rolePlayers.forEach(player -> {
             variables.add(player.player());
             if (player.roleType().isPresent()) variables.add(player.roleType().get());
@@ -198,7 +198,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            final RolePlayer that = (RolePlayer) o;
+            RolePlayer that = (RolePlayer) o;
             return (Objects.equals(this.roleType, that.roleType) &&
                     this.player.equals(that.player) &&
                     this.repetition == that.repetition);

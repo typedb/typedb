@@ -213,10 +213,10 @@ public class PlannerTest {
 
     @Test
     public void test_planner_prioritises_concludable_with_least_applicable_rules() {
-        final EntityType person = conceptMgr.putEntityType("person");
-        final RelationType friendship = conceptMgr.putRelationType("friendship");
+        EntityType person = conceptMgr.putEntityType("person");
+        RelationType friendship = conceptMgr.putRelationType("friendship");
         friendship.setRelates("friend");
-        final RelationType marriage = conceptMgr.putRelationType("marriage");
+        RelationType marriage = conceptMgr.putRelationType("marriage");
         marriage.setRelates("spouse");
         person.setPlays(friendship.getRelates("friend"));
         person.setPlays(marriage.getRelates("spouse"));

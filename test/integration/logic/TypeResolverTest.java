@@ -86,13 +86,13 @@ public class TypeResolverTest {
     }
 
     private static void define_standard_schema(String fileName) throws IOException {
-        final GraqlDefine query = Graql.parseQuery(
+        GraqlDefine query = Graql.parseQuery(
                 new String(Files.readAllBytes(Paths.get("test/integration/logic/" + fileName + ".gql")), UTF_8));
         transaction.query().define(query);
     }
 
     private static void define_custom_schema(String schema) {
-        final GraqlDefine query = Graql.parseQuery(schema);
+        GraqlDefine query = Graql.parseQuery(schema);
         transaction.query().define(query);
     }
 

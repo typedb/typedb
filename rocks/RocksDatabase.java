@@ -260,7 +260,7 @@ public class RocksDatabase implements Grakn.Database {
 
     void remove(RocksSession session) {
         if (statisticsBackgroundCounterSession != session) {
-            final long lock = sessions.remove(session.uuid()).second();
+            long lock = sessions.remove(session.uuid()).second();
             if (session.type().isSchema()) dataWriteSchemaLock().unlockWrite(lock);
         }
     }

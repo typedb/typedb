@@ -187,7 +187,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         public final boolean equals(Object object) {
             if (this == object) return true;
             if (object == null || getClass() != object.getClass()) return false;
-            final ThingEdgeImpl.Buffered that = (ThingEdgeImpl.Buffered) object;
+            ThingEdgeImpl.Buffered that = (ThingEdgeImpl.Buffered) object;
             return (this.encoding.equals(that.encoding) &&
                     this.from.equals(that.from) &&
                     this.to.equals(that.to) &&
@@ -352,7 +352,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         public final boolean equals(Object object) {
             if (this == object) return true;
             if (object == null || getClass() != object.getClass()) return false;
-            final ThingEdgeImpl.Persisted that = (ThingEdgeImpl.Persisted) object;
+            ThingEdgeImpl.Persisted that = (ThingEdgeImpl.Persisted) object;
             return (this.encoding.equals(that.encoding) &&
                     this.fromIID.equals(that.fromIID) &&
                     this.toIID.equals(that.toIID) &&

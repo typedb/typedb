@@ -54,7 +54,7 @@ class SessionRPC {
     }
 
     TransactionRPC transaction(TransactionStream transactionStream, TransactionProto.Transaction.Open.Req request) {
-        final TransactionRPC transactionRPC = new TransactionRPC(this, transactionStream, request);
+        TransactionRPC transactionRPC = new TransactionRPC(this, transactionStream, request);
         transactionRPCs.put(transactionRPC.hashCode(), transactionRPC);
         return transactionRPC;
     }
@@ -74,7 +74,7 @@ class SessionRPC {
     void close() {
         if (idleTimeoutTask != null) idleTimeoutTask.cancel(false);
         if (isOpen.compareAndSet(true, false)) {
-            final ConcurrentHashMap<Integer, TransactionRPC> transactionRPCsCopy = new ConcurrentHashMap<>(transactionRPCs);
+            ConcurrentHashMap<Integer, TransactionRPC> transactionRPCsCopy = new ConcurrentHashMap<>(transactionRPCs);
             transactionRPCsCopy.values().parallelStream().forEach(TransactionRPC::close);
             session.close();
             graknRPCService.removeSession(session.uuid());
@@ -83,7 +83,7 @@ class SessionRPC {
 
     void closeWithError(Throwable error) {
         if (isOpen.compareAndSet(true, false)) {
-            final ConcurrentHashMap<Integer, TransactionRPC> transactionRPCsCopy = new ConcurrentHashMap<>(transactionRPCs);
+            ConcurrentHashMap<Integer, TransactionRPC> transactionRPCsCopy = new ConcurrentHashMap<>(transactionRPCs);
             transactionRPCsCopy.values().parallelStream().forEach(tr -> tr.closeWithError(error));
             session.close();
             graknRPCService.removeSession(session.uuid());

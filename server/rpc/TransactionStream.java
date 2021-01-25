@@ -71,9 +71,9 @@ public class TransactionStream implements StreamObserver<Transaction.Req> {
             LOG.trace("Request: {}", request);
 
             if (GrablTracingThreadStatic.isTracingEnabled()) {
-                final Map<String, String> metadata = request.getMetadataMap();
-                final String rootId = metadata.get("traceRootId");
-                final String parentId = metadata.get("traceParentId");
+                Map<String, String> metadata = request.getMetadataMap();
+                String rootId = metadata.get("traceRootId");
+                String parentId = metadata.get("traceParentId");
                 if (rootId != null && parentId != null) {
                     handleRequestWithTracing(request, rootId, parentId);
                     return;
@@ -138,17 +138,17 @@ public class TransactionStream implements StreamObserver<Transaction.Req> {
     }
 
     private void open(Transaction.Req request) {
-        final Instant processingStartTime = Instant.now();
-        final Transaction.Open.Req openReq = request.getOpenReq();
-        final UUID sessionID = bytesToUUID(openReq.getSessionId().toByteArray());
-        final SessionRPC sessionRPC = graknRPCService.getSession(sessionID);
+        Instant processingStartTime = Instant.now();
+        Transaction.Open.Req openReq = request.getOpenReq();
+        UUID sessionID = bytesToUUID(openReq.getSessionId().toByteArray());
+        SessionRPC sessionRPC = graknRPCService.getSession(sessionID);
         if (sessionRPC == null) throw GraknException.of(SESSION_NOT_FOUND, sessionID);
 
         if (!transactionRPC.compareAndSet(null, sessionRPC.transaction(this, openReq))) {
             throw GraknException.of(TRANSACTION_ALREADY_OPENED);
         }
 
-        final int processingTimeMillis = (int) Duration.between(processingStartTime, Instant.now()).toMillis();
+        int processingTimeMillis = (int) Duration.between(processingStartTime, Instant.now()).toMillis();
         responder.onNext(Transaction.Res.newBuilder().setId(request.getId()).setOpenRes(
                 Transaction.Open.Res.newBuilder().setProcessingTimeMillis(processingTimeMillis)
         ).build());

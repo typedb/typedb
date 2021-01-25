@@ -29,9 +29,9 @@ import io.cucumber.java.en.When;
 import java.util.HashMap;
 import java.util.Map;
 
+import static grakn.core.common.test.Util.assertThrows;
 import static grakn.core.test.behaviour.concept.type.thingtype.ThingTypeSteps.get_thing_type;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
-import static grakn.core.common.test.Util.assertThrows;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -64,7 +64,7 @@ public class ThingSteps {
 
     @Then("{root_label} {var} has type: {type_label}")
     public void thing_has_type(RootLabel rootLabel, String var, String typeLabel) {
-        final ThingType type = get_thing_type(rootLabel, typeLabel);
+        ThingType type = get_thing_type(rootLabel, typeLabel);
         assertEquals(type, get(var).getType());
     }
 

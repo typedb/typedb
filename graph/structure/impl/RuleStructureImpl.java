@@ -164,7 +164,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
     private Set<Variable> connectedVars(Variable var, Set<Variable> visited) {
         visited.add(var);
-        Set<Variable> vars = iterate(var.constraints()).flatMap(c -> iterate(c.variables())).map(v -> (Variable)v).toSet();
+        Set<Variable> vars = iterate(var.constraints()).flatMap(c -> iterate(c.variables())).map(v -> (Variable) v).toSet();
         if (visited.containsAll(vars)) return visited;
         else {
             visited.addAll(vars);
@@ -289,7 +289,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
         private void deleteVertexFromStorage() {
             graph.storage().delete(IndexIID.Rule.of(label).bytes());
-            final ResourceIterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
+            ResourceIterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
             while (keys.hasNext()) graph.storage().delete(keys.next());
         }
 

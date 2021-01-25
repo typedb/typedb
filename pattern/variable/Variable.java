@@ -117,7 +117,7 @@ public abstract class Variable implements Pattern {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        final Variable that = (Variable) o;
+        Variable that = (Variable) o;
         return this.identifier.equals(that.identifier);
     }
 

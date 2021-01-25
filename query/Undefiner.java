@@ -54,7 +54,6 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFIN
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_SUB;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROLE_DEFINED_OUTSIDE_OF_RELATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_CONSTRAINT_UNACCEPTED;
-import static grakn.core.query.common.Util.getThingType;
 import static graql.lang.common.GraqlToken.Constraint.IS;
 
 public class Undefiner {
@@ -75,7 +74,7 @@ public class Undefiner {
         this.undefined = new HashSet<>();
         this.rules = rules;
 
-        final Set<TypeVariable> sorted = new HashSet<>();
+        Set<TypeVariable> sorted = new HashSet<>();
         variables.forEach(variable -> {
             if (!sorted.contains(variable)) sort(variable, sorted);
         });
@@ -108,7 +107,7 @@ public class Undefiner {
     private void undefine(TypeVariable variable) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefine")) {
             assert variable.label().isPresent();
-            final LabelConstraint labelConstraint = variable.label().get();
+            LabelConstraint labelConstraint = variable.label().get();
 
             if (labelConstraint.scope().isPresent() && variable.constraints().size() > 1) {
                 throw GraknException.of(ROLE_DEFINED_OUTSIDE_OF_RELATION, labelConstraint.scopedLabel());
@@ -117,7 +116,7 @@ public class Undefiner {
             } else if (labelConstraint.scope().isPresent()) return; // do nothing
             else if (undefined.contains(variable)) return; // do nothing
 
-            final ThingType type = getThingType(conceptMgr, labelConstraint);
+            ThingType type = getThingType(labelConstraint);
 
             if (!variable.plays().isEmpty()) undefinePlays(type, variable.plays());
             if (!variable.owns().isEmpty()) undefineOwns(type, variable.owns());
@@ -139,10 +138,18 @@ public class Undefiner {
         }
     }
 
+    private ThingType getThingType(LabelConstraint label) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "gettype")) {
+            ThingType thingType;
+            if ((thingType = conceptMgr.getThingType(label.label())) != null) return thingType;
+            else return null;
+        }
+    }
+
     private RoleType getRoleType(LabelConstraint label) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "get_role_type")) {
             assert label.scope().isPresent();
-            final ThingType thingType = conceptMgr.getThingType(label.scope().get());
+            ThingType thingType = conceptMgr.getThingType(label.scope().get());
             if (thingType != null) return thingType.asRelationType().getRelates(label.label());
             return null;
         }
@@ -153,7 +160,7 @@ public class Undefiner {
             if (thingType instanceof RoleType) {
                 throw GraknException.of(ROLE_DEFINED_OUTSIDE_OF_RELATION, thingType.getLabel());
             }
-            final ThingType supertype = getThingType(conceptMgr, subConstraint.type().label().get());
+            ThingType supertype = getThingType(subConstraint.type().label().get());
             if (supertype == null) {
                 throw GraknException.of(TYPE_NOT_FOUND, subConstraint.type().label().get());
             } else if (thingType.getSupertypes().noneMatch(t -> t.equals(supertype))) {
@@ -184,7 +191,7 @@ public class Undefiner {
     private void undefineRelates(RelationType relationType, Set<RelatesConstraint> relatesConstraints) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefine_relates")) {
             relatesConstraints.forEach(relates -> {
-                final String roleTypeLabel = relates.role().label().get().label();
+                String roleTypeLabel = relates.role().label().get().label();
                 if (roleTypeLabel == null) {
                     throw GraknException.of(TYPE_NOT_FOUND, relates.role().label().get().label());
                 } else if (relates.overridden().isPresent()) {
@@ -202,7 +209,7 @@ public class Undefiner {
     private void undefineOwns(ThingType thingType, Set<OwnsConstraint> ownsConstraints) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefine_owns")) {
             ownsConstraints.forEach(owns -> {
-                final Type attributeType = getThingType(conceptMgr, owns.attribute().label().get());
+                Type attributeType = getThingType(owns.attribute().label().get());
                 if (attributeType == null && !undefined.contains(owns.attribute())) {
                     throw GraknException.of(TYPE_NOT_FOUND, owns.attribute().label().get().label());
                 } else if (owns.overridden().isPresent()) {
@@ -211,8 +218,8 @@ public class Undefiner {
                                             owns.attribute().label().get());
                 } else if (owns.isKey()) {
                     throw GraknException.of(INVALID_UNDEFINE_OWNS_KEY,
-                            owns.attribute().label().get(),
-                            owns.attribute().label().get());
+                                            owns.attribute().label().get(),
+                                            owns.attribute().label().get());
                 } else if (attributeType != null) {
                     thingType.unsetOwns(attributeType.asAttributeType());
                 }
@@ -223,7 +230,7 @@ public class Undefiner {
     private void undefinePlays(ThingType thingType, Set<PlaysConstraint> playsConstraints) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefine_plays")) {
             playsConstraints.forEach(plays -> {
-                final Type roleType = getRoleType(plays.role().label().get());
+                Type roleType = getRoleType(plays.role().label().get());
                 if (roleType == null && !undefined.contains(plays.role())) {
                     throw GraknException.of(TYPE_NOT_FOUND, plays.role().label().get().label());
                 } else if (plays.overridden().isPresent()) {

@@ -22,7 +22,7 @@ import grakn.common.collection.Either;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.AbstractResourceIterator;
 import grakn.core.concurrent.common.ExecutorService;
-import grakn.core.concurrent.common.ManagedBlockingQueue;
+import grakn.core.concurrent.queue.ManagedBlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

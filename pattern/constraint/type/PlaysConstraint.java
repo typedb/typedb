@@ -60,16 +60,16 @@ public class PlaysConstraint extends TypeConstraint {
 
     static PlaysConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Plays constraint,
                               VariableRegistry registry) {
-        final TypeVariable roleType = registry.register(constraint.role());
-        final TypeVariable relationType = constraint.relation().map(registry::register).orElse(null);
-        final TypeVariable overriddenType = constraint.overridden().map(registry::register).orElse(null);
+        TypeVariable roleType = registry.register(constraint.role());
+        TypeVariable relationType = constraint.relation().map(registry::register).orElse(null);
+        TypeVariable overriddenType = constraint.overridden().map(registry::register).orElse(null);
         return new PlaysConstraint(owner, relationType, roleType, overriddenType);
     }
 
     static PlaysConstraint of(TypeVariable owner, PlaysConstraint role, VariableCloner cloner) {
-        final TypeVariable roleType = cloner.clone(role.role());
-        final TypeVariable relationType = role.relation().map(cloner::clone).orElse(null);
-        final TypeVariable overriddenType = role.overridden().map(cloner::clone).orElse(null);
+        TypeVariable roleType = cloner.clone(role.role());
+        TypeVariable relationType = role.relation().map(cloner::clone).orElse(null);
+        TypeVariable overriddenType = role.overridden().map(cloner::clone).orElse(null);
         return new PlaysConstraint(owner, relationType, roleType, overriddenType);
     }
 
@@ -105,7 +105,7 @@ public class PlaysConstraint extends TypeConstraint {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        final PlaysConstraint that = (PlaysConstraint) o;
+        PlaysConstraint that = (PlaysConstraint) o;
         return (this.owner.equals(that.owner) &&
                 this.roleType.equals(that.roleType) &&
                 Objects.equals(this.relationType, that.relationType) &&
@@ -138,7 +138,7 @@ public class PlaysConstraint extends TypeConstraint {
     }
 
     private static Set<TypeVariable> additionalTypes(TypeVariable roleType, TypeVariable relationType, TypeVariable overriddenRoleType) {
-        final Set<TypeVariable> variables = new HashSet<>();
+        Set<TypeVariable> variables = new HashSet<>();
         variables.add(roleType);
         if (relationType != null) variables.add(relationType);
         if (overriddenRoleType != null) variables.add(overriddenRoleType);

@@ -19,14 +19,11 @@ package grakn.core.reasoner.resolution.answer;
 
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.logic.resolvable.Concludable;
 import graql.lang.pattern.variable.Reference;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class Mapping {
@@ -47,7 +44,7 @@ public class Mapping {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        final Mapping that = (Mapping) o;
+        Mapping that = (Mapping) o;
         return mapping.equals(that.mapping) &&
                 Objects.equals(reverseMapping, that.reverseMapping);
     }

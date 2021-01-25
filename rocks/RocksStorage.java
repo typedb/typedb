@@ -22,7 +22,7 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concurrent.common.ConcurrentSet;
-import grakn.core.concurrent.common.ManagedReadWriteLock;
+import grakn.core.concurrent.lock.ManagedReadWriteLock;
 import grakn.core.graph.common.KeyGenerator;
 import grakn.core.graph.common.Storage;
 import org.rocksdb.AbstractImmutableNativeReference;
@@ -97,7 +97,7 @@ public class RocksStorage implements Storage {
     @Override
     public byte[] getLastKey(byte[] prefix) {
         validateTransactionIsOpen();
-        final byte[] upperBound = Arrays.copyOf(prefix, prefix.length);
+        byte[] upperBound = Arrays.copyOf(prefix, prefix.length);
         upperBound[upperBound.length - 1] = (byte) (upperBound[upperBound.length - 1] + 1);
         assert upperBound[upperBound.length - 1] != Byte.MIN_VALUE;
 
@@ -173,7 +173,7 @@ public class RocksStorage implements Storage {
     @Override
     public <G> ResourceIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
         validateTransactionIsOpen();
-        final RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
+        RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
         iterators.add(iterator);
         return iterator;
     }
@@ -211,7 +211,7 @@ public class RocksStorage implements Storage {
 
     org.rocksdb.RocksIterator getInternalRocksIterator() {
         if (isReadOnly) {
-            final org.rocksdb.RocksIterator iterator = recycled.poll();
+            org.rocksdb.RocksIterator iterator = recycled.poll();
             if (iterator != null) return iterator;
         }
         return storageTransaction.getIterator(readOptions);

@@ -161,7 +161,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         public final boolean equals(Object object) {
             if (this == object) return true;
             if (object == null || getClass() != object.getClass()) return false;
-            final TypeEdgeImpl.Buffered that = (TypeEdgeImpl.Buffered) object;
+            TypeEdgeImpl.Buffered that = (TypeEdgeImpl.Buffered) object;
             return (this.encoding.equals(that.encoding) &&
                     this.from.equals(that.from) &&
                     this.to.equals(that.to));
@@ -339,7 +339,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         public final boolean equals(Object object) {
             if (this == object) return true;
             if (object == null || getClass() != object.getClass()) return false;
-            final TypeEdgeImpl.Persisted that = (TypeEdgeImpl.Persisted) object;
+            TypeEdgeImpl.Persisted that = (TypeEdgeImpl.Persisted) object;
             return (this.encoding.equals(that.encoding) &&
                     this.fromIID.equals(that.fromIID) &&
                     this.toIID.equals(that.toIID));

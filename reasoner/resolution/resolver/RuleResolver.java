@@ -136,9 +136,9 @@ public class RuleResolver extends Resolver<RuleResolver> {
             int planIndex = fromDownstream.planIndex() + 1;
             ResolverRegistry.AlphaEquivalentResolver nextPlannedDownstream = downstreamResolvers.get(plan.get(planIndex));
             Request downstreamRequest = Request.create(fromUpstream.path().append(nextPlannedDownstream.resolver()),
-                                                    AnswerState.UpstreamVars.Initial.of(whenAnswer).toDownstreamVars(
-                                                            Mapping.of(nextPlannedDownstream.mapping())),
-                                                    derivation, planIndex);
+                                                       AnswerState.UpstreamVars.Initial.of(whenAnswer).toDownstreamVars(
+                                                               Mapping.of(nextPlannedDownstream.mapping())),
+                                                       derivation, planIndex);
             responseProducer.addDownstreamProducer(downstreamRequest);
             requestFromDownstream(downstreamRequest, fromUpstream, iteration);
         }
@@ -177,9 +177,9 @@ public class RuleResolver extends Resolver<RuleResolver> {
         Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(rule.when(), new ConceptMap());
         ResponseProducer responseProducer = new ResponseProducer(traversal, iteration);
         Request toDownstream = Request.create(request.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
-                                           AnswerState.UpstreamVars.Initial.of(request.answerBounds().conceptMap())
-                                                   .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
-                                           new ResolutionAnswer.Derivation(map()), 0);
+                                              AnswerState.UpstreamVars.Initial.of(request.answerBounds().conceptMap())
+                                                      .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
+                                              new ResolutionAnswer.Derivation(map()), 0);
         responseProducer.addDownstreamProducer(toDownstream);
 
         return responseProducer;
@@ -193,9 +193,9 @@ public class RuleResolver extends Resolver<RuleResolver> {
         Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(rule.when(), new ConceptMap());
         ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversal, newIteration);
         Request toDownstream = Request.create(request.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
-                                           AnswerState.UpstreamVars.Initial.of(request.answerBounds().conceptMap())
-                                                   .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
-                                           new ResolutionAnswer.Derivation(map()), 0);
+                                              AnswerState.UpstreamVars.Initial.of(request.answerBounds().conceptMap())
+                                                      .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
+                                              new ResolutionAnswer.Derivation(map()), 0);
         responseProducerNewIter.addDownstreamProducer(toDownstream);
         return responseProducerNewIter;
     }

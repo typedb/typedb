@@ -28,8 +28,8 @@ import io.cucumber.java.en.When;
 import java.util.List;
 import java.util.Set;
 
-import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
 import static grakn.core.common.test.Util.assertThrows;
+import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
 import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
@@ -98,13 +98,13 @@ public class RelationTypeSteps {
 
     @Then("relation\\( ?{type_label} ?) get related roles contain:")
     public void relation_type_get_related_roles_contain(String relationLabel, List<Parameters.ScopedLabel> roleLabels) {
-        final Set<Parameters.ScopedLabel> actuals = relation_type_get_related_roles_actuals(relationLabel);
+        Set<Parameters.ScopedLabel> actuals = relation_type_get_related_roles_actuals(relationLabel);
         assertTrue(actuals.containsAll(roleLabels));
     }
 
     @Then("relation\\( ?{type_label} ?) get related roles do not contain:")
     public void relation_type_get_related_roles_do_not_contain(String relationLabel, List<Parameters.ScopedLabel> roleLabels) {
-        final Set<Parameters.ScopedLabel> actuals = relation_type_get_related_roles_actuals(relationLabel);
+        Set<Parameters.ScopedLabel> actuals = relation_type_get_related_roles_actuals(relationLabel);
         for (Parameters.ScopedLabel roleLabel : roleLabels) {
             assertFalse(actuals.contains(roleLabel));
         }
@@ -112,7 +112,7 @@ public class RelationTypeSteps {
 
     @Then("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) get supertype: {scoped_label}")
     public void relation_type_get_role_type_get_supertype(String relationLabel, String roleLabel, Parameters.ScopedLabel superLabel) {
-        final RoleType superType = tx().concepts().getRelationType(superLabel.scope()).getRelates(superLabel.label());
+        RoleType superType = tx().concepts().getRelationType(superLabel.scope()).getRelates(superLabel.label());
         assertEquals(superType, tx().concepts().getRelationType(relationLabel).getRelates(roleLabel).getSupertype());
     }
 
@@ -123,13 +123,13 @@ public class RelationTypeSteps {
 
     @Then("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) get supertypes contain:")
     public void relation_type_get_role_type_get_supertypes_contain(String relationLabel, String roleLabel, List<Parameters.ScopedLabel> superLabels) {
-        final Set<Parameters.ScopedLabel> actuals = relation_type_get_role_type_supertypes_actuals(relationLabel, roleLabel);
+        Set<Parameters.ScopedLabel> actuals = relation_type_get_role_type_supertypes_actuals(relationLabel, roleLabel);
         assertTrue(actuals.containsAll(superLabels));
     }
 
     @Then("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) get supertypes do not contain:")
     public void relation_type_get_role_type_get_supertypes_do_not_contain(String relationLabel, String roleLabel, List<Parameters.ScopedLabel> superLabels) {
-        final Set<Parameters.ScopedLabel> actuals = relation_type_get_role_type_supertypes_actuals(relationLabel, roleLabel);
+        Set<Parameters.ScopedLabel> actuals = relation_type_get_role_type_supertypes_actuals(relationLabel, roleLabel);
         for (Parameters.ScopedLabel superLabel : superLabels) {
             assertFalse(actuals.contains(superLabel));
         }
@@ -141,13 +141,13 @@ public class RelationTypeSteps {
 
     @Then("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) get players contain:")
     public void relation_type_get_role_type_get_players_contain(String relationLabel, String roleLabel, List<String> playerLabels) {
-        final Set<String> actuals = relation_type_get_role_type_players_actuals(relationLabel, roleLabel);
+        Set<String> actuals = relation_type_get_role_type_players_actuals(relationLabel, roleLabel);
         assertTrue(actuals.containsAll(playerLabels));
     }
 
     @Then("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) get players do not contain:")
     public void relation_type_get_role_type_get_plays_do_not_contain(String relationLabel, String roleLabel, List<String> playerLabels) {
-        final Set<String> actuals = relation_type_get_role_type_players_actuals(relationLabel, roleLabel);
+        Set<String> actuals = relation_type_get_role_type_players_actuals(relationLabel, roleLabel);
         for (String superLabel : playerLabels) {
             assertFalse(actuals.contains(superLabel));
         }
@@ -160,13 +160,13 @@ public class RelationTypeSteps {
 
     @Then("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) get subtypes contain:")
     public void relation_type_get_role_type_get_subtypes_contain(String relationLabel, String roleLabel, List<Parameters.ScopedLabel> subLabels) {
-        final Set<Parameters.ScopedLabel> actuals = relation_type_get_role_type_subtypes_actuals(relationLabel, roleLabel);
+        Set<Parameters.ScopedLabel> actuals = relation_type_get_role_type_subtypes_actuals(relationLabel, roleLabel);
         assertTrue(actuals.containsAll(subLabels));
     }
 
     @Then("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) get subtypes do not contain:")
     public void relation_type_get_role_type_get_subtypes_do_not_contain(String relationLabel, String roleLabel, List<Parameters.ScopedLabel> subLabels) {
-        final Set<Parameters.ScopedLabel> actuals = relation_type_get_role_type_subtypes_actuals(relationLabel, roleLabel);
+        Set<Parameters.ScopedLabel> actuals = relation_type_get_role_type_subtypes_actuals(relationLabel, roleLabel);
         System.out.println(actuals);
         for (Parameters.ScopedLabel subLabel : subLabels) {
             assertFalse(actuals.contains(subLabel));

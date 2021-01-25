@@ -74,7 +74,7 @@ public class ValueTypeConstraint extends TypeConstraint implements AlphaEquivale
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        final ValueTypeConstraint that = (ValueTypeConstraint) o;
+        ValueTypeConstraint that = (ValueTypeConstraint) o;
         return (this.owner.equals(that.owner) && this.valueType.equals(that.valueType));
     }
 

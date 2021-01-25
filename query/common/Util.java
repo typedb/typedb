@@ -20,14 +20,11 @@ package grakn.core.query.common;
 
 import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.core.common.exception.GraknException;
-import grakn.core.concept.ConceptManager;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
-import grakn.core.concept.type.ThingType;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
-import grakn.core.pattern.constraint.type.LabelConstraint;
 import grakn.core.pattern.variable.TypeVariable;
 
 import java.util.Set;
@@ -42,17 +39,10 @@ public class Util {
 
     private static final String TRACE_PREFIX = "util.";
 
-    public static ThingType getThingType(ConceptManager conceptMgr, LabelConstraint labelConstraint) {
-        try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "get_thing_type")) {
-            final ThingType thingType = conceptMgr.getThingType(labelConstraint.label());
-            if (thingType == null) throw GraknException.of(TYPE_NOT_FOUND, labelConstraint.label());
-            else return thingType.asThingType();
-        }
-    }
-
     public static RoleType getRoleType(Relation relation, Thing player, RelationConstraint.RolePlayer rolePlayer) {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "get_role_type")) {
-            RoleType roleType; Set<RoleType> inferred;
+            RoleType roleType;
+            Set<RoleType> inferred;
             if (rolePlayer.roleType().isPresent()) {
                 RelationType relationType = relation.getType();
                 TypeVariable var = rolePlayer.roleType().get();

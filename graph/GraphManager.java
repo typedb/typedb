@@ -60,7 +60,7 @@ public class GraphManager {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        final GraphManager graphMgr = (GraphManager) o;
+        GraphManager graphMgr = (GraphManager) o;
         return schemaGraph.equals(graphMgr.schemaGraph) && dataGraph.equals(graphMgr.dataGraph);
     }
 

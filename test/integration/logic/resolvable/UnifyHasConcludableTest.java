@@ -149,7 +149,7 @@ public class UnifyHasConcludableTest {
 
     private Rule createRule(String label, String whenConjunctionPattern, String thenThingPattern) {
         return logicMgr.putRule(label, Graql.parsePattern(whenConjunctionPattern).asConjunction(),
-                                     Graql.parseVariable(thenThingPattern).asThing());
+                                Graql.parseVariable(thenThingPattern).asThing());
     }
 
     //TODO: create more tests when type inference is working to test unifier pruning

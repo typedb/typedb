@@ -90,7 +90,7 @@ public class Reasoner {
         if (context.isSchemaWrite()) LOG.warn("Reasoning is disabled in schema write transactions");
 
         List<Producer<ConceptMap>> answerProducers = new ArrayList<>();
-        final Conjunction conj = logicMgr.typeResolver().resolve(conjunction);
+        Conjunction conj = logicMgr.typeResolver().resolve(conjunction);
         if (conj.isSatisfiable()) {
             answerProducers.add(traversalEng.producer(conj.traversal(filter), PARALLELISATION_FACTOR).map(conceptMgr::conceptMap));
             if (!context.isSchemaWrite()) answerProducers.add(this.resolve(conj));
@@ -123,7 +123,7 @@ public class Reasoner {
         if (context.isSchemaWrite()) LOG.warn("Reasoning is disabled in schema write transactions");
 
         ResourceIterator<ConceptMap> answers;
-        final Conjunction conj = logicMgr.typeResolver().resolve(conjunction);
+        Conjunction conj = logicMgr.typeResolver().resolve(conjunction);
         if (conj.isSatisfiable()) {
             answers = traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
             if (!context.isSchemaWrite()) answers = link(answers, produce(resolve(conj)));
