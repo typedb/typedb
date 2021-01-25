@@ -30,12 +30,11 @@ native_java_libraries(
     name = "reasoner",
     srcs = glob(
         ["*.java",
-         "resolution/*.java",
-         "resolution/framework/*.java",
-         "resolution/resolver/*.java",
-         "resolution/answer/*.java",
-         ],
-        exclude = ["*Test.java", "**/*Test.java"],
+        "resolution/*.java",
+        "resolution/framework/*.java",
+        "resolution/resolver/*.java",
+        "resolution/answer/*.java",
+        ], exclude = ["*Test.java", "**/*Test.java"],
     ),
     native_libraries_deps = [
         "//concept:concept",
@@ -79,7 +78,6 @@ host_compatible_java_test(
         "//common",
 
         # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
         "@graknlabs_graql//java/pattern",
     ],
 )
