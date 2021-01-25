@@ -76,9 +76,9 @@ public class Reasoner {
     }
 
     public ResourceIterator<ConceptMap> execute(Disjunction disjunction, List<Identifier.Variable.Name> filter,
-                                                Options.Query options) {
+                                                Context.Query context) {
         ResourceIterator<Conjunction> conjunctions = iterate(disjunction.conjunctions());
-        if (!options.parallel()) return conjunctions.flatMap(conj -> iterator(conj, filter));
+        if (!context.options().parallel()) return conjunctions.flatMap(conj -> iterator(conj, filter));
         else return produce(conjunctions.flatMap(conj -> producers(conj, filter)).toList());
     }
 

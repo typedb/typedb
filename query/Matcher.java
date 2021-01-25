@@ -20,6 +20,7 @@ package grakn.core.query;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ConceptMapGroup;
@@ -68,38 +69,38 @@ public class Matcher {
     private final GraqlMatch query;
     private final Disjunction disjunction;
     private final List<Identifier.Variable.Name> filter;
-    private final Options.Query options;
+    private final Context.Query context;
 
-    public Matcher(Reasoner reasoner, GraqlMatch query, Options.Query options) {
+    public Matcher(Reasoner reasoner, GraqlMatch query, Context.Query context) {
         this.reasoner = reasoner;
         this.query = query;
         this.disjunction = Disjunction.create(query.conjunction().normalise());
         this.filter = iterate(query.filter()).map(v -> Identifier.Variable.of(v.reference().asName())).toList();
-        this.options = options;
+        this.context = context;
     }
 
-    public static Matcher create(Reasoner reasoner, GraqlMatch query, Options.Query options) {
-        return new Matcher(reasoner, query, options);
+    public static Matcher create(Reasoner reasoner, GraqlMatch query, Context.Query context) {
+        return new Matcher(reasoner, query, context);
     }
 
-    public static Matcher.Aggregator create(Reasoner reasoner, GraqlMatch.Aggregate query, Options.Query options) {
-        Matcher matcher = new Matcher(reasoner, query.match(), options);
+    public static Matcher.Aggregator create(Reasoner reasoner, GraqlMatch.Aggregate query, Context.Query context) {
+        Matcher matcher = new Matcher(reasoner, query.match(), context);
         return new Aggregator(matcher, query);
     }
 
-    public static Matcher.Group create(Reasoner reasoner, GraqlMatch.Group query, Options.Query options) {
-        Matcher matcher = new Matcher(reasoner, query.match(), options);
+    public static Matcher.Group create(Reasoner reasoner, GraqlMatch.Group query, Context.Query context) {
+        Matcher matcher = new Matcher(reasoner, query.match(), context);
         return new Group(matcher, query);
     }
 
-    public static Matcher.Group.Aggregator create(Reasoner reasoner, GraqlMatch.Group.Aggregate query, Options.Query options) {
-        Matcher matcher = new Matcher(reasoner, query.group().match(), options);
+    public static Matcher.Group.Aggregator create(Reasoner reasoner, GraqlMatch.Group.Aggregate query, Context.Query context) {
+        Matcher matcher = new Matcher(reasoner, query.group().match(), context);
         Group group = new Group(matcher, query.group());
         return new Group.Aggregator(group, query);
     }
 
     public ResourceIterator<ConceptMap> execute() {
-        ResourceIterator<ConceptMap> answers = reasoner.execute(disjunction, filter, options);
+        ResourceIterator<ConceptMap> answers = reasoner.execute(disjunction, filter, context);
         if (query.sort().isPresent()) answers = sort(answers, query.sort().get());
         if (query.offset().isPresent()) answers = answers.offset(query.offset().get());
         if (query.limit().isPresent()) answers = answers.limit(query.limit().get());

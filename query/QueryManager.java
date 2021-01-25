@@ -65,39 +65,39 @@ public class QueryManager {
     }
 
     public ResourceIterator<ConceptMap> match(GraqlMatch query) {
-        Options.Query options = (new Options.Query()).parallel(true).infer(false);
-        return match(query, options);
+        return match(query, new Options.Query());
     }
 
     public ResourceIterator<ConceptMap> match(GraqlMatch query, Options.Query options) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match")) {
-            return Matcher.create(reasoner, query, options).execute().onError(conceptMgr::exception);
+            Context.Query context = new Context.Query(transactionCtx, options);
+            return Matcher.create(reasoner, query, context).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }
     }
 
     public Numeric match(GraqlMatch.Aggregate query) {
-        Options.Query options = (new Options.Query()).parallel(true).infer(false);
-        return match(query, options);
+        return match(query, new Options.Query());
     }
 
     public Numeric match(GraqlMatch.Aggregate query, Options.Query options) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match_aggregate")) {
-            return Matcher.create(reasoner, query, options).execute();
+            Context.Query context = new Context.Query(transactionCtx, options);
+            return Matcher.create(reasoner, query, context).execute();
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }
     }
 
     public ResourceIterator<ConceptMapGroup> match(GraqlMatch.Group query) {
-        Options.Query options = (new Options.Query()).parallel(true).infer(false);
-        return match(query, options);
+        return match(query, new Options.Query());
     }
 
     public ResourceIterator<ConceptMapGroup> match(GraqlMatch.Group query, Options.Query options) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match_group")) {
-            return Matcher.create(reasoner, query, options).execute().onError(conceptMgr::exception);
+            Context.Query context = new Context.Query(transactionCtx, options);
+            return Matcher.create(reasoner, query, context).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }
@@ -110,7 +110,8 @@ public class QueryManager {
 
     public ResourceIterator<NumericGroup> match(GraqlMatch.Group.Aggregate query, Options.Query options) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match_group_aggregate")) {
-            return Matcher.create(reasoner, query, options).execute().onError(conceptMgr::exception);
+            Context.Query context = new Context.Query(transactionCtx, options);
+            return Matcher.create(reasoner, query, context).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }

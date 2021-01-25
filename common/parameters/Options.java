@@ -25,6 +25,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
 
     public static final boolean DEFAULT_INFER = true;
     public static final boolean DEFAULT_EXPLAIN = false;
+    public static final boolean DEFAULT_PARALLEL = true;
     public static final int DEFAULT_BATCH_SIZE = 50;
     public static final int DEFAULT_SESSION_IDLE_TIMEOUT_MILLIS = 10_000;
     public static final int DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS = 10_000;
@@ -147,7 +148,8 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         }
 
         public boolean parallel() {
-            return parallel;
+            if (parallel != null) return parallel;
+            return DEFAULT_PARALLEL;
         }
 
         public Query parallel(boolean parallel) {
