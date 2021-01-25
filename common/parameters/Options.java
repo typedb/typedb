@@ -33,6 +33,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     public static final boolean DEFAULT_PARALLEL = true;
     public static final boolean DEFAULT_QUERY_READ_PREFETCH = true;
     public static final boolean DEFAULT_QUERY_WRITE_PREFETCH = false;
+    public static final boolean DEFAULT_PRIMARY_REPLICA = true;
 
     private PARENT parent;
     private Boolean infer = null;
@@ -40,6 +41,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     private Integer batchSize = null;
     private Integer sessionIdlTimeoutMillis = null;
     private Integer schemaLockAcquireTimeoutMillis = null;
+    private Boolean primaryReplica = null;
 
     protected Boolean prefetch = null;
 
@@ -102,6 +104,17 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
 
     public SELF schemaLockTimeoutMillis(int acquireSchemaLockTimeoutMillis) {
         this.schemaLockAcquireTimeoutMillis = acquireSchemaLockTimeoutMillis;
+        return getThis();
+    }
+
+    public boolean primaryReplica() {
+        if (primaryReplica != null) return primaryReplica;
+        else if (parent != null) return parent.primaryReplica();
+        else return DEFAULT_PRIMARY_REPLICA;
+    }
+
+    public SELF primaryReplica(boolean primaryReplica) {
+        this.primaryReplica = primaryReplica;
         return getThis();
     }
 
