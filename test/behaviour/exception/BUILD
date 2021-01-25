@@ -15,40 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//test/behaviour/graql/language/define:__subpackages__"])
+package(default_visibility = ["//test/behaviour:__subpackages__"])
 
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_library")
 
 host_compatible_java_library(
-    name = "steps",
+    name = "exception",
     srcs = [
-        "GraqlSteps.java"
+        "ScenarioDefinitionException.java"
     ],
-    deps = [
-        # Package dependencies
-        "//test/behaviour/exception",
-        "//test/behaviour/connection:steps",
-        "//common/test:util",
-
-        # External dependencies from Grakn Labs
-        "@graknlabs_graql//java:graql",
-        "@graknlabs_graql//java/pattern",
-        "@graknlabs_graql//java/query",
-        "@graknlabs_common//:common",
-
-        # External dependencies from Maven
-        "@maven//:junit_junit",
-        "@maven//:io_cucumber_cucumber_java",
-    ],
-    native_libraries_deps = [
-        "//concept:concept",
-    ],
-    runtime_deps = [
-        "//test/behaviour/connection/database:steps",
-        "//test/behaviour/connection/transaction:steps",
-    ],
-    visibility = ["//visibility:public"],
 )
 
 checkstyle_test(

@@ -27,6 +27,7 @@ import grakn.core.concept.answer.NumericGroup;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.Type;
+import grakn.core.test.behaviour.exception.ScenarioDefinitionException;
 import graql.lang.Graql;
 import graql.lang.pattern.variable.Reference;
 import graql.lang.query.GraqlDefine;
@@ -522,12 +523,6 @@ public class GraqlSteps {
         }
     }
 
-    private static class ScenarioDefinitionException extends RuntimeException {
-        ScenarioDefinitionException(String message) {
-            super(message);
-        }
-    }
-
     private interface UniquenessCheck {
         boolean check(Concept concept);
     }
@@ -601,7 +596,7 @@ public class GraqlSteps {
                     return dateTime.equals(attribute.asDateTime().getValue());
                 case OBJECT:
                 default:
-                    throw new GraqlSteps.ScenarioDefinitionException("Unrecognised value type " + attribute.getType().getValueType());
+                    throw new ScenarioDefinitionException("Unrecognised value type " + attribute.getType().getValueType());
             }
         }
     }
@@ -639,7 +634,7 @@ public class GraqlSteps {
                         break;
                     case OBJECT:
                     default:
-                        throw new GraqlSteps.ScenarioDefinitionException("Unrecognised value type " + key.getType().getValueType());
+                        throw new ScenarioDefinitionException("Unrecognised value type " + key.getType().getValueType());
                 }
 
                 keyMap.put(key.getType().getLabel().toString(), keyValue);
