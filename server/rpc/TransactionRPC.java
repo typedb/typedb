@@ -129,13 +129,13 @@ public class TransactionRPC {
 
     public <T> void respond(TransactionProto.Transaction.Req request, Iterator<T> iterator,
                             Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
-        iterators.createNewIterator(request, iterator, responseBuilderFn);
+        iterators.iterate(request, iterator, responseBuilderFn);
     }
 
     public <T> void respond(TransactionProto.Transaction.Req request, Iterator<T> iterator, Options.Query queryOptions,
                             Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
         assert queryOptions.prefetch() != null;
-        iterators.createNewIterator(request, iterator, queryOptions.prefetch(), queryOptions.batchSize(), responseBuilderFn);
+        iterators.iterate(request, iterator, queryOptions.prefetch(), queryOptions.batchSize(), responseBuilderFn);
     }
 
     private void commit(String requestId) {
@@ -188,8 +188,8 @@ public class TransactionRPC {
         /**
          * Spin up a new iterator and begin streaming responses immediately.
          */
-        <T> void createNewIterator(TransactionProto.Transaction.Req request, Iterator<T> iterator, Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
-            createNewIterator(request, iterator, true, transaction.options().batchSize(), responseBuilderFn);
+        <T> void iterate(TransactionProto.Transaction.Req request, Iterator<T> iterator, Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
+            iterate(request, iterator, true, transaction.options().batchSize(), responseBuilderFn);
         }
 
         /**
@@ -201,7 +201,7 @@ public class TransactionRPC {
          * @param responseBuilderFn The projection function that serialises raw answers to RPC messages.
          * @param <T> The type of answers being fetched.
          */
-        <T> void createNewIterator(TransactionProto.Transaction.Req request, Iterator<T> iterator, boolean prefetch, int batchSize, Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
+        <T> void iterate(TransactionProto.Transaction.Req request, Iterator<T> iterator, boolean prefetch, int batchSize, Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
             String requestId = request.getId();
             int latencyMillis = request.getLatencyMillis();
             BatchingIterator<T> batchingIterator = new BatchingIterator<>(requestId, iterator, responseBuilderFn, batchSize, latencyMillis);
