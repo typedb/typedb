@@ -35,6 +35,7 @@ import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlMatch;
+import graql.lang.query.GraqlQuery;
 import graql.lang.query.GraqlUndefine;
 
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
@@ -91,6 +92,7 @@ public class QueryHandler {
 
     private void match(Transaction.Req request, QueryProto.Query.Match.Req req, Options.Query options) {
         GraqlMatch query = Graql.parseQuery(req.getQuery()).asMatch();
+        setPrefetchOption(options, query);
         ResourceIterator<ConceptMap> answers = queryManager.match(query, options);
         transactionRPC.respond(
                 request, answers, options,
@@ -111,6 +113,7 @@ public class QueryHandler {
 
     private void match(Transaction.Req request, QueryProto.Query.MatchGroup.Req req, Options.Query options) {
         GraqlMatch.Group query = Graql.parseQuery(req.getQuery()).asMatchGroup();
+        setPrefetchOption(options, query);
         ResourceIterator<ConceptMapGroup> answers = queryManager.match(query, options);
         transactionRPC.respond(
                 request, answers, options,
@@ -123,6 +126,7 @@ public class QueryHandler {
 
     private void match(Transaction.Req request, QueryProto.Query.MatchGroupAggregate.Req req, Options.Query options) {
         GraqlMatch.Group.Aggregate query = Graql.parseQuery(req.getQuery()).asMatchGroupAggregate();
+        setPrefetchOption(options, query);
         ResourceIterator<NumericGroup> answers = queryManager.match(query, options);
         transactionRPC.respond(
                 request, answers, options,
@@ -136,6 +140,7 @@ public class QueryHandler {
 
     private void insert(Transaction.Req request, QueryProto.Query.Insert.Req req, Options.Query options) {
         GraqlInsert query = Graql.parseQuery(req.getQuery()).asInsert();
+        setPrefetchOption(options, query);
         ResourceIterator<ConceptMap> answers = queryManager.insert(query, options);
         transactionRPC.respond(
                 request, answers, options,
@@ -161,5 +166,9 @@ public class QueryHandler {
         GraqlUndefine query = Graql.parseQuery(req.getQuery()).asUndefine();
         queryManager.undefine(query);
         transactionRPC.respond(response(request, QueryProto.Query.Res.newBuilder().setUndefineRes(QueryProto.Query.Undefine.Res.getDefaultInstance())));
+    }
+
+    private void setPrefetchOption(Options.Query options, GraqlQuery query) {
+        if (options.prefetch() == null) options.prefetch(!(query instanceof GraqlInsert));
     }
 }

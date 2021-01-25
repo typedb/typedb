@@ -19,6 +19,8 @@ package grakn.core.common.parameters;
 
 import grakn.core.common.exception.GraknException;
 
+import java.util.Optional;
+
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 
 public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options<?, ?>> {
@@ -33,6 +35,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     private Boolean infer = null;
     private Boolean explain = null;
     private Integer batchSize = null;
+    private Boolean prefetch = null;
     private Integer sessionIdlTimeoutMillis = null;
     private Integer schemaLockAcquireTimeoutMillis = null;
 
@@ -73,6 +76,15 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
 
     public SELF batchSize(int batchSize) {
         this.batchSize = batchSize;
+        return getThis();
+    }
+
+    public Boolean prefetch() {
+        return prefetch;
+    }
+
+    public SELF prefetch(boolean prefetch) {
+        this.prefetch = prefetch;
         return getThis();
     }
 
