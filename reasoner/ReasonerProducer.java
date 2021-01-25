@@ -65,7 +65,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private void requestAnswered(ResolutionAnswer answer) {
         if (answer.isInferred()) iterationInferredAnswer = true;
-        queue.put(answer.derived().conceptMap());
+        queue.put(answer.derived().withInitial());
     }
 
     private void requestFailed(int iteration) {

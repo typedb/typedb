@@ -115,7 +115,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
                 derivation = null;
             }
 
-            ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.answerBounds().asMapped().aggregateToUpstream(conceptMap),
+            ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.answerBounds().asMapped().mapToUpstream(conceptMap),
                                                            concludable.toString(), derivation, self(), fromDownstream.answer().isInferred());
 
             respondToUpstream(Answer.create(fromUpstream, answer), iteration);
@@ -199,7 +199,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
         while (responseProducer.hasTraversalProducer()) {
             ConceptMap conceptMap = responseProducer.traversalProducer().next();
             assert fromUpstream.answerBounds().isMapped();
-            AnswerState.UpstreamVars.Derived derivedAnswer = fromUpstream.answerBounds().asMapped().aggregateToUpstream(conceptMap);
+            AnswerState.UpstreamVars.Derived derivedAnswer = fromUpstream.answerBounds().asMapped().mapToUpstream(conceptMap);
             LOG.trace("{}: has found via traversal: {}", name(), conceptMap);
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);

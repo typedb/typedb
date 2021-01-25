@@ -121,9 +121,9 @@ public class RuleResolver extends Resolver<RuleResolver> {
         if (fromDownstream.planIndex() == plan.size() - 1) {
             Map<Identifier, Concept> thenMaterialisation = rule.putConclusion(whenAnswer, traversalEngine, conceptMgr);
             assert fromUpstream.answerBounds().isUnified();
-            Optional<AnswerState.UpstreamVars.Derived> unifiedAnswer = fromUpstream.answerBounds().asUnified().aggregateToUpstream(thenMaterialisation);
-            if (unifiedAnswer.isPresent() && !responseProducer.hasProduced(unifiedAnswer.get().conceptMap())) {
-                responseProducer.recordProduced(unifiedAnswer.get().conceptMap());
+            Optional<AnswerState.UpstreamVars.Derived> unifiedAnswer = fromUpstream.answerBounds().asUnified().unifyToUpstream(thenMaterialisation);
+            if (unifiedAnswer.isPresent() && !responseProducer.hasProduced(unifiedAnswer.get().withInitial())) {
+                responseProducer.recordProduced(unifiedAnswer.get().withInitial());
                 // TODO revisit whether using `rule.when()` is the correct pattern to associate with the unified answer? Variables won't match
                 ResolutionAnswer answer = new ResolutionAnswer(unifiedAnswer.get(), rule.when().toString(), derivation, self(), true);
                 respondToUpstream(Answer.create(fromUpstream, answer), iteration);
@@ -218,7 +218,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
 
                 Map<Identifier, Concept> thenMaterialisation = rule.putConclusion(conceptMap, traversalEngine, conceptMgr);
                 assert fromUpstream.answerBounds().isUnified();
-                Optional<AnswerState.UpstreamVars.Derived> derivedAnswer = fromUpstream.answerBounds().asUnified().aggregateToUpstream(thenMaterialisation);
+                Optional<AnswerState.UpstreamVars.Derived> derivedAnswer = fromUpstream.answerBounds().asUnified().unifyToUpstream(thenMaterialisation);
                 if (derivedAnswer.isPresent()) {
                     ResolutionAnswer answer = new ResolutionAnswer(derivedAnswer.get(), rule.when().toString(),
                                                                    ResolutionAnswer.Derivation.EMPTY, self(), true);

@@ -121,7 +121,7 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
     private void tryAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
         while (responseProducer.hasTraversalProducer()) {
             ConceptMap conceptMap = responseProducer.traversalProducer().next();
-            AnswerState.UpstreamVars.Derived derivedAnswer = fromUpstream.answerBounds().asMapped().aggregateToUpstream(conceptMap);
+            AnswerState.UpstreamVars.Derived derivedAnswer = fromUpstream.answerBounds().asMapped().mapToUpstream(conceptMap);
             LOG.trace("{}: has found via traversal: {}", name(), conceptMap);
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);

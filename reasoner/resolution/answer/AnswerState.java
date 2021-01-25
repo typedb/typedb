@@ -188,10 +188,8 @@ public abstract class AnswerState {
                 this.mapping = mapping;
             }
 
-            public UpstreamVars.Derived aggregateToUpstream(ConceptMap additionalConcepts) {
-                Map<Reference.Name, Concept> merged = new HashMap<>(mapping.unTransform(additionalConcepts).concepts());
-                merged.putAll(initial.conceptMap().concepts());
-                return new UpstreamVars.Derived(new ConceptMap(merged), initial);
+            public UpstreamVars.Derived mapToUpstream(ConceptMap additionalConcepts) {
+                return new UpstreamVars.Derived(new ConceptMap(mapping.unTransform(additionalConcepts).concepts()), initial);
             }
 
             @Override
@@ -235,15 +233,9 @@ public abstract class AnswerState {
                 this.unifier = unifier;
             }
 
-            public Optional<UpstreamVars.Derived> aggregateToUpstream(Map<Identifier, Concept> identifiedConcepts) {
+            public Optional<UpstreamVars.Derived> unifyToUpstream(Map<Identifier, Concept> identifiedConcepts) {
                 Optional<ConceptMap> reversed = unifier.unUnify(identifiedConcepts);
-                if (reversed.isPresent()) {
-                    HashMap<Reference.Name, Concept> merged = new HashMap<>(reversed.get().concepts());
-                    merged.putAll(initial.conceptMap().concepts());
-                    return Optional.of(new UpstreamVars.Derived(new ConceptMap(merged), initial));
-                } else {
-                    return Optional.empty();
-                }
+                return reversed.map(map -> new UpstreamVars.Derived(new ConceptMap(map.concepts()), initial));
             }
 
             @Override

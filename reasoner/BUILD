@@ -35,7 +35,7 @@ native_java_libraries(
          "resolution/resolver/*.java",
          "resolution/answer/*.java",
          ],
-        exclude = ["*Test.java", "*/*Test.java"],
+        exclude = ["*Test.java", "**/*Test.java"],
     ),
     native_libraries_deps = [
         "//concept:concept",
@@ -61,6 +61,27 @@ native_java_libraries(
         "@maven//:ch_qos_logback_logback_classic",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-reasoner:{pom_version}"],
+)
+
+host_compatible_java_test(
+    name = "test-answer-state",
+    srcs = [
+        "resolution/answer/AnswerStateTest.java",
+    ],
+    test_class = "grakn.core.reasoner.resolution.answer.AnswerStateTest",
+    native_libraries_deps = [
+        "//concept:concept",
+        "//pattern:pattern",
+        "//reasoner:reasoner",
+    ],
+    deps = [
+        # Internal dependencies
+        "//common",
+
+        # External dependencies from Grakn Labs
+        "@graknlabs_common//:common",
+        "@graknlabs_graql//java/pattern",
+    ],
 )
 
 checkstyle_test(
