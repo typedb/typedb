@@ -27,7 +27,7 @@ import org.junit.runner.RunWith;
         strict = true,
         plugin = "pretty",
         glue = "grakn.core.test.behaviour",
-        features = "external/graknlabs_verification/behaviour/graql/reasoner/resolution-test-framework.feature",
+        features = "external/graknlabs_behaviour/graql/reasoner/resolution-test-framework.feature",
         tags = "not @ignore and not @ignore-grakn-core"
 )
 public class ResolutionTestFrameworkTest {

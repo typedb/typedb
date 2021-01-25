@@ -27,7 +27,7 @@ import org.junit.runner.RunWith;
         strict = true,
         plugin = "pretty",
         glue = "grakn.core.test.behaviour",
-        features = "external/graknlabs_verification/behaviour/graql/reasoner/attribute-attachment.feature",
+        features = "external/graknlabs_behaviour/graql/reasoner/attribute-attachment.feature",
         tags = "not @ignore and not @ignore-grakn-core"
 )
 public class AttributeAttachmentTest {

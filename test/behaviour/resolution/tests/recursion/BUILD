@@ -23,7 +23,7 @@ java_test(
     srcs = [
         "RecursionTest.java",
     ],
-    test_class = "grakn.core.test.behaviour.resolution.reasoner.recursion.RecursionTest",
+    test_class = "grakn.core.test.behaviour.resolution.tests.recursion.RecursionTest",
     deps = [
         # External dependencies from Maven
         "@maven//:io_cucumber_cucumber_junit",

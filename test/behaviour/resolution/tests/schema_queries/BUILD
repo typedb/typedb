@@ -23,7 +23,7 @@ java_test(
     srcs = [
         "SchemaQueriesTest.java",
     ],
-    test_class = "grakn.core.test.behaviour.resolution.reasoner.schema_queries.SchemaQueriesTest",
+    test_class = "grakn.core.test.behaviour.resolution.tests.schema_queries.SchemaQueriesTest",
     deps = [
         # External dependencies from Maven
         "@maven//:io_cucumber_cucumber_junit",

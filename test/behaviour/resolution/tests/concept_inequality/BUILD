@@ -23,7 +23,7 @@ java_test(
     srcs = [
         "ConceptInequalityTest.java",
     ],
-    test_class = "grakn.core.test.behaviour.resolution.reasoner.concept_inequality.ConceptInequalityTest",
+    test_class = "grakn.core.test.behaviour.resolution.tests.concept_inequality.ConceptInequalityTest",
     deps = [
         # External dependencies from Maven
         "@maven//:io_cucumber_cucumber_junit",

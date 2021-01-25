@@ -23,7 +23,7 @@ java_test(
     srcs = [
         "ValuePredicateTest.java",
     ],
-    test_class = "grakn.core.test.behaviour.resolution.reasoner.value_predicate.ValuePredicateTest",
+    test_class = "grakn.core.test.behaviour.resolution.tests.value_predicate.ValuePredicateTest",
     deps = [
         # External dependencies from Maven
         "@maven//:io_cucumber_cucumber_junit",
