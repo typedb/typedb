@@ -90,12 +90,11 @@ public class Reasoner {
                                                              List<Identifier.Variable.Name> filter) {
         if (context.transactionType().isWrite()) LOG.warn("Reasoning is disabled in write transactions");
 
-        List<Producer<ConceptMap>> answerProducers = new ArrayList<>();
+        List<Producer<ConceptMap>> producers = new ArrayList<>();
         Conjunction conj = logicMgr.typeResolver().resolve(conjunction);
         if (conj.isSatisfiable()) {
-            answerProducers.add(traversalEng.producer(conj.traversal(filter), PARALLELISATION_FACTOR).map(conceptMgr::conceptMap));
-            if (context.options().infer() && !context.transactionType().isWrite())
-                answerProducers.add(this.resolve(conj));
+            producers.add(traversalEng.producer(conj.traversal(filter), PARALLELISATION_FACTOR).map(conceptMgr::conceptMap));
+            if (context.options().infer() && !context.transactionType().isWrite()) producers.add(this.resolve(conj));
         } else if (!filter.isEmpty() && iterate(filter).anyMatch(id -> conj.variable(id).isThing()) ||
                 iterate(conjunction.variables()).anyMatch(Variable::isThing)) {
             throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction);
@@ -103,8 +102,8 @@ public class Reasoner {
             return single(Producers.empty());
         }
 
-        if (conjunction.negations().isEmpty()) return iterate(answerProducers);
-        else return iterate(answerProducers).map(p -> p.filter(answer -> !produce(
+        if (conjunction.negations().isEmpty()) return iterate(producers);
+        else return iterate(producers).map(p -> p.filter(answer -> !produce(
                 iterate(conjunction.negations()).flatMap(n -> iterate(producers(n.disjunction(), answer))).toList()
         ).hasNext()));
     }
@@ -128,8 +127,9 @@ public class Reasoner {
         Conjunction conj = logicMgr.typeResolver().resolve(conjunction);
         if (conj.isSatisfiable()) {
             answers = traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
-            if (context.options().infer() && !context.transactionType().isWrite())
+            if (context.options().infer() && !context.transactionType().isWrite()) {
                 answers = link(answers, produce(resolve(conj)));
+            }
         } else if (!filter.isEmpty() && iterate(filter).anyMatch(id -> conj.variable(id).isThing()) ||
                 iterate(conjunction.variables()).anyMatch(Variable::isThing)) {
             throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction);

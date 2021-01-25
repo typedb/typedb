@@ -104,8 +104,7 @@ public class QueryManager {
     }
 
     public ResourceIterator<NumericGroup> match(GraqlMatch.Group.Aggregate query) {
-        Options.Query options = (new Options.Query()).parallel(true).infer(false);
-        return match(query, options);
+        return match(query, new Options.Query());
     }
 
     public ResourceIterator<NumericGroup> match(GraqlMatch.Group.Aggregate query, Options.Query options) {
