@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.concurrent.common;
+package grakn.core.concurrent.queue;
 
 import grakn.common.collection.Either;
 import grakn.core.common.exception.GraknException;

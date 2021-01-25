@@ -77,7 +77,7 @@ public class HasConstraint extends ThingConstraint implements AlphaEquivalent<Ha
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        final HasConstraint that = (HasConstraint) o;
+        HasConstraint that = (HasConstraint) o;
         return (this.owner.equals(that.owner) && this.attribute.equals(that.attribute));
     }
 

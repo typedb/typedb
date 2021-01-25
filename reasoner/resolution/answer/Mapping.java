@@ -44,7 +44,7 @@ public class Mapping {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        final Mapping that = (Mapping) o;
+        Mapping that = (Mapping) o;
         return mapping.equals(that.mapping) &&
                 Objects.equals(reverseMapping, that.reverseMapping);
     }

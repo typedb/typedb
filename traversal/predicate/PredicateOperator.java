@@ -175,15 +175,15 @@ public abstract class PredicateOperator {
             }
 
             private boolean containsIgnoreCase(String str1, String str2) {
-                final int len2 = str2.length();
+                int len2 = str2.length();
                 if (len2 == 0) return true; // Empty string is contained
 
-                final char first2Lo = Character.toLowerCase(str2.charAt(0));
-                final char first2Up = Character.toUpperCase(str2.charAt(0));
+                char first2Lo = Character.toLowerCase(str2.charAt(0));
+                char first2Up = Character.toUpperCase(str2.charAt(0));
 
                 for (int i = 0; i <= str1.length() - len2; i++) {
                     // Quick check before calling the more expensive regionMatches() method:
-                    final char first1 = str1.charAt(i);
+                    char first1 = str1.charAt(i);
                     if (first1 != first2Lo && first1 != first2Up) continue;
                     if (str1.regionMatches(true, i, str2, 0, len2)) return true;
                 }

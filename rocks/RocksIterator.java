@@ -53,7 +53,7 @@ public final class RocksIterator<T> extends AbstractResourceIterator<T> implemen
     }
 
     private boolean fetchAndCheck() {
-        final byte[] key;
+        byte[] key;
         if (!internalRocksIterator.isValid() || !bytesHavePrefix(key = internalRocksIterator.key(), prefix)) {
             state = State.COMPLETED;
             recycle();

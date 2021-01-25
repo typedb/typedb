@@ -532,8 +532,8 @@ public class ResolutionTest {
         }
     }
 
-    private void assertResponses(final Actor<RootResolver> root, final LinkedBlockingQueue<ResolutionAnswer> responses,
-                                 final AtomicLong doneReceived, final long answerCount)
+    private void assertResponses(Actor<RootResolver> root, LinkedBlockingQueue<ResolutionAnswer> responses,
+                                 AtomicLong doneReceived, long answerCount)
             throws InterruptedException {
         long startTime = System.currentTimeMillis();
         long n = answerCount + 1; //total number of traversal answers, plus one expected Exhausted (-1 answer)

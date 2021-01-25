@@ -99,7 +99,7 @@ public class SessionSteps {
 
     @Then("sessions in parallel are null: {bool}")
     public void sessions_in_parallel_are_null(Boolean isNull) {
-        final Stream<CompletableFuture<Void>> assertions = sessionsParallel
+        Stream<CompletableFuture<Void>> assertions = sessionsParallel
                 .stream().map(futureSession -> futureSession.thenApplyAsync(session -> {
                     assertEquals(isNull, isNull(session));
                     return null;
@@ -110,7 +110,7 @@ public class SessionSteps {
 
     @Then("sessions in parallel are open: {bool}")
     public void sessions_in_parallel_are_open(Boolean isOpen) {
-        final Stream<CompletableFuture<Void>> assertions = sessionsParallel.stream().map(
+        Stream<CompletableFuture<Void>> assertions = sessionsParallel.stream().map(
                 futureSession -> futureSession.thenApplyAsync(session -> {
                     assertEquals(isOpen, session.isOpen());
                     return null;
@@ -127,7 +127,7 @@ public class SessionSteps {
     @Then("session(s) has/have database(s):")
     public void sessions_have_databases(List<String> names) {
         assertEquals(names.size(), sessions.size());
-        final Iterator<Grakn.Session> sessionIter = sessions.iterator();
+        Iterator<Grakn.Session> sessionIter = sessions.iterator();
 
         for (String name : names) {
             assertEquals(name, sessionIter.next().database().name());
@@ -137,8 +137,8 @@ public class SessionSteps {
     @Then("sessions in parallel have databases:")
     public void sessions_in_parallel_have_databases(List<String> names) {
         assertEquals(names.size(), sessionsParallel.size());
-        final Iterator<CompletableFuture<Grakn.Session>> futureSessionIter = sessionsParallel.iterator();
-        final CompletableFuture<?>[] assertions = new CompletableFuture<?>[names.size()];
+        Iterator<CompletableFuture<Grakn.Session>> futureSessionIter = sessionsParallel.iterator();
+        CompletableFuture<?>[] assertions = new CompletableFuture<?>[names.size()];
 
         int i = 0;
         for (String name : names) {

@@ -65,7 +65,7 @@ public class Iterators {
 
     @SuppressWarnings("unchecked")
     public static <T> ResourceIterator<T> link(List<? extends Iterator<? extends T>> iterators) {
-        final List<ResourceIterator<T>> converted = new ArrayList<>();
+        List<ResourceIterator<T>> converted = new ArrayList<>();
         iterators.forEach(iterator -> {
             if (iterator instanceof AbstractResourceIterator<?>) {
                 converted.add((ResourceIterator<T>) iterator);

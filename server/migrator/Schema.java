@@ -48,7 +48,7 @@ public class Schema {
     private final Grakn grakn;
     private final String database;
 
-    public Schema(final Grakn grakn, final String database) {
+    public Schema(Grakn grakn, String database) {
         this.grakn = grakn;
         this.database = database;
     }
@@ -56,8 +56,8 @@ public class Schema {
     public String getSchema() {
         StringBuilder builder = new StringBuilder();
         builder.append("define\n\n");
-        try (final Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA);
-             final Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
+        try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA);
+             Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
             tx.concepts()
                     .getRootAttributeType()
                     .getSubtypesExplicit()

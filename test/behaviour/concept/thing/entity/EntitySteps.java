@@ -46,24 +46,24 @@ public class EntitySteps {
 
     @When("{var} = entity\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {int}")
     public void entity_type_create_new_instance_with_key(String var, String type, String keyType, int keyValue) {
-        final Attribute.Long key = tx().concepts().getAttributeType(keyType).asLong().put(keyValue);
-        final Entity entity = tx().concepts().getEntityType(type).create();
+        Attribute.Long key = tx().concepts().getAttributeType(keyType).asLong().put(keyValue);
+        Entity entity = tx().concepts().getEntityType(type).create();
         entity.setHas(key);
         put(var, entity);
     }
 
     @When("{var} = entity\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {word}")
     public void entity_type_create_new_instance_with_key(String var, String type, String keyType, String keyValue) {
-        final Attribute.String key = tx().concepts().getAttributeType(keyType).asString().put(keyValue);
-        final Entity entity = tx().concepts().getEntityType(type).create();
+        Attribute.String key = tx().concepts().getAttributeType(keyType).asString().put(keyValue);
+        Entity entity = tx().concepts().getEntityType(type).create();
         entity.setHas(key);
         put(var, entity);
     }
 
     @When("{var} = entity\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {datetime}")
     public void entity_type_create_new_instance_with_key(String var, String type, String keyType, LocalDateTime keyValue) {
-        final Attribute.DateTime key = tx().concepts().getAttributeType(keyType).asDateTime().put(keyValue);
-        final Entity entity = tx().concepts().getEntityType(type).create();
+        Attribute.DateTime key = tx().concepts().getAttributeType(keyType).asDateTime().put(keyValue);
+        Entity entity = tx().concepts().getEntityType(type).create();
         entity.setHas(key);
         put(var, entity);
     }

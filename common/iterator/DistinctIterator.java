@@ -52,7 +52,7 @@ class DistinctIterator<T> extends AbstractResourceIterator<T> {
     @Override
     public T next() {
         if (!hasNext()) throw new NoSuchElementException();
-        final T result = next;
+        T result = next;
         next = null;
         return result;
     }

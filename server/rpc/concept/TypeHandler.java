@@ -60,10 +60,10 @@ public class TypeHandler {
     }
 
     public void handleRequest(Transaction.Req request) {
-        final ConceptProto.Type.Req typeReq = request.getTypeReq();
-        final String label = typeReq.getLabel();
-        final String scope = typeReq.getScope();
-        final Type type = scope != null && !scope.isEmpty() ?
+        ConceptProto.Type.Req typeReq = request.getTypeReq();
+        String label = typeReq.getLabel();
+        String scope = typeReq.getScope();
+        Type type = scope != null && !scope.isEmpty() ?
                 notNull(conceptManager.getRelationType(scope)).getRelates(label) :
                 notNull(conceptManager.getThingType(label));
         switch (typeReq.getReqCase()) {
@@ -201,7 +201,7 @@ public class TypeHandler {
     }
 
     private void isAbstract(Transaction.Req request, Type type) {
-        final ConceptProto.Type.Res.Builder response = ConceptProto.Type.Res.newBuilder()
+        ConceptProto.Type.Res.Builder response = ConceptProto.Type.Res.newBuilder()
                 .setTypeIsAbstractRes(ConceptProto.Type.IsAbstract.Res.newBuilder().setAbstract(type.isAbstract()));
         transactionRPC.respond(response(request, response));
     }
@@ -210,13 +210,13 @@ public class TypeHandler {
         ConceptProto.Type.GetSupertype.Res.Builder getSupertypeRes = ConceptProto.Type.GetSupertype.Res.newBuilder();
         Type superType = type.getSupertype();
         if (superType != null) getSupertypeRes.setType(type(superType));
-        final ConceptProto.Type.Res.Builder response = ConceptProto.Type.Res.newBuilder()
+        ConceptProto.Type.Res.Builder response = ConceptProto.Type.Res.newBuilder()
                 .setTypeGetSupertypeRes(getSupertypeRes);
         transactionRPC.respond(response(request, response));
     }
 
     private void setSupertype(Transaction.Req request, Type type, ConceptProto.Type supertype) {
-        final Type sup = getThingType(supertype);
+        Type sup = getThingType(supertype);
 
         if (type instanceof EntityType) {
             type.asEntityType().setSupertype(sup.asEntityType());
@@ -300,11 +300,11 @@ public class TypeHandler {
     }
 
     private void setOwns(Transaction.Req request, ThingType thingType, ConceptProto.ThingType.SetOwns.Req req) {
-        final AttributeType attributeType = getThingType(req.getAttributeType()).asAttributeType();
-        final boolean isKey = req.getIsKey();
+        AttributeType attributeType = getThingType(req.getAttributeType()).asAttributeType();
+        boolean isKey = req.getIsKey();
 
         if (req.hasOverriddenType()) {
-            final AttributeType overriddenType = getThingType(req.getOverriddenType()).asAttributeType();
+            AttributeType overriddenType = getThingType(req.getOverriddenType()).asAttributeType();
             thingType.setOwns(attributeType, overriddenType, isKey);
         } else {
             thingType.setOwns(attributeType, isKey);
@@ -315,9 +315,9 @@ public class TypeHandler {
     }
 
     private void setPlays(Transaction.Req request, ThingType thingType, ConceptProto.ThingType.SetPlays.Req setPlaysReq) {
-        final RoleType role = getRoleType(setPlaysReq.getRole());
+        RoleType role = getRoleType(setPlaysReq.getRole());
         if (setPlaysReq.hasOverriddenRole()) {
-            final RoleType overriddenRole = getRoleType(setPlaysReq.getOverriddenRole());
+            RoleType overriddenRole = getRoleType(setPlaysReq.getOverriddenRole());
             thingType.setPlays(role, overriddenRole);
         } else {
             thingType.setPlays(role);
@@ -328,7 +328,7 @@ public class TypeHandler {
     }
 
     private void unsetOwns(Transaction.Req request, ThingType thingType, ConceptProto.Type protoAttributeType) {
-        final AttributeType attributeType = getThingType(protoAttributeType).asAttributeType();
+        AttributeType attributeType = getThingType(protoAttributeType).asAttributeType();
         thingType.unsetOwns(attributeType);
         transactionRPC.respond(response(request, ConceptProto.Type.Res.newBuilder().setThingTypeUnsetOwnsRes(
                 ConceptProto.ThingType.UnsetOwns.Res.getDefaultInstance()
@@ -336,7 +336,7 @@ public class TypeHandler {
     }
 
     private void unsetPlays(Transaction.Req request, ThingType thingType, ConceptProto.Type protoRoleType) {
-        final RoleType role = notNull(getRoleType(protoRoleType));
+        RoleType role = notNull(getRoleType(protoRoleType));
         thingType.unsetPlays(role);
         transactionRPC.respond(response(request, ConceptProto.Type.Res.newBuilder().setThingTypeUnsetPlaysRes(
                 ConceptProto.ThingType.UnsetPlays.Res.getDefaultInstance()
@@ -344,8 +344,8 @@ public class TypeHandler {
     }
 
     private void create(Transaction.Req request, EntityType entityType) {
-        final Entity entity = entityType.create();
-        final ConceptProto.Type.Res.Builder response = ConceptProto.Type.Res.newBuilder()
+        Entity entity = entityType.create();
+        ConceptProto.Type.Res.Builder response = ConceptProto.Type.Res.newBuilder()
                 .setEntityTypeCreateRes(ConceptProto.EntityType.Create.Res.newBuilder().setEntity(thing(entity)));
         transactionRPC.respond(response(request, response));
     }
@@ -360,7 +360,7 @@ public class TypeHandler {
     }
 
     private void put(Transaction.Req request, AttributeType attributeType, ConceptProto.Attribute.Value protoValue) {
-        final Attribute attribute;
+        Attribute attribute;
         switch (protoValue.getValueCase()) {
             case STRING:
                 attribute = attributeType.asString().put(protoValue.getString());
@@ -385,13 +385,13 @@ public class TypeHandler {
                 throw GraknException.of(BAD_VALUE_TYPE, protoValue.getValueCase());
         }
 
-        final ConceptProto.Type.Res.Builder response = ConceptProto.Type.Res.newBuilder()
+        ConceptProto.Type.Res.Builder response = ConceptProto.Type.Res.newBuilder()
                 .setAttributeTypePutRes(ConceptProto.AttributeType.Put.Res.newBuilder().setAttribute(thing(attribute)));
         transactionRPC.respond(response(request, response));
     }
 
     private void get(Transaction.Req request, AttributeType attributeType, ConceptProto.Attribute.Value protoValue) {
-        final Attribute attribute;
+        Attribute attribute;
         switch (protoValue.getValueCase()) {
             case STRING:
                 attribute = attributeType.asString().get(protoValue.getString());
@@ -416,14 +416,14 @@ public class TypeHandler {
                 throw GraknException.of(BAD_VALUE_TYPE);
         }
 
-        final ConceptProto.AttributeType.Get.Res.Builder getAttributeTypeRes = ConceptProto.AttributeType.Get.Res.newBuilder();
+        ConceptProto.AttributeType.Get.Res.Builder getAttributeTypeRes = ConceptProto.AttributeType.Get.Res.newBuilder();
         if (attribute != null) getAttributeTypeRes.setAttribute(thing(attribute));
         transactionRPC.respond(response(request, ConceptProto.Type.Res.newBuilder().setAttributeTypeGetRes(getAttributeTypeRes)));
     }
 
     private void getRegex(Transaction.Req request, AttributeType attributeType) {
-        final Pattern regex = attributeType.asString().getRegex();
-        final ConceptProto.Type.Res.Builder response = ConceptProto.Type.Res.newBuilder().setAttributeTypeGetRegexRes(
+        Pattern regex = attributeType.asString().getRegex();
+        ConceptProto.Type.Res.Builder response = ConceptProto.Type.Res.newBuilder().setAttributeTypeGetRegexRes(
                 ConceptProto.AttributeType.GetRegex.Res.newBuilder().setRegex((regex != null) ? regex.pattern() : "")
         );
         transactionRPC.respond(response(request, response));
@@ -438,8 +438,8 @@ public class TypeHandler {
     }
 
     private void create(Transaction.Req request, RelationType relationType) {
-        final Relation relation = relationType.create();
-        final ConceptProto.Type.Res.Builder response = ConceptProto.Type.Res.newBuilder().setRelationTypeCreateRes(
+        Relation relation = relationType.create();
+        ConceptProto.Type.Res.Builder response = ConceptProto.Type.Res.newBuilder().setRelationTypeCreateRes(
                 ConceptProto.RelationType.Create.Res.newBuilder().setRelation(thing(relation))
         );
         transactionRPC.respond(response(request, response));
@@ -455,8 +455,8 @@ public class TypeHandler {
     }
 
     private void getRelatesForRoleLabel(Transaction.Req request, RelationType relationType, String roleLabel) {
-        final RoleType roleType = relationType.getRelates(roleLabel);
-        final ConceptProto.RelationType.GetRelatesForRoleLabel.Res.Builder getRelatesRes = ConceptProto.RelationType.GetRelatesForRoleLabel.Res.newBuilder();
+        RoleType roleType = relationType.getRelates(roleLabel);
+        ConceptProto.RelationType.GetRelatesForRoleLabel.Res.Builder getRelatesRes = ConceptProto.RelationType.GetRelatesForRoleLabel.Res.newBuilder();
         if (roleType != null) getRelatesRes.setRoleType(type(roleType));
         transactionRPC.respond(response(request, ConceptProto.Type.Res.newBuilder().setRelationTypeGetRelatesForRoleLabelRes(getRelatesRes)));
     }

@@ -58,14 +58,14 @@ public class RelatesConstraint extends TypeConstraint {
 
     static RelatesConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Relates constraint,
                                 VariableRegistry registry) {
-        final TypeVariable roleType = registry.register(constraint.role());
-        final TypeVariable overriddenRoleType = constraint.overridden().map(registry::register).orElse(null);
+        TypeVariable roleType = registry.register(constraint.role());
+        TypeVariable overriddenRoleType = constraint.overridden().map(registry::register).orElse(null);
         return new RelatesConstraint(owner, roleType, overriddenRoleType);
     }
 
     static RelatesConstraint of(TypeVariable owner, RelatesConstraint constraint, VariableCloner cloner) {
-        final TypeVariable roleType = cloner.clone(constraint.role());
-        final TypeVariable overriddenRoleType = constraint.overridden().map(cloner::clone).orElse(null);
+        TypeVariable roleType = cloner.clone(constraint.role());
+        TypeVariable overriddenRoleType = constraint.overridden().map(cloner::clone).orElse(null);
         return new RelatesConstraint(owner, roleType, overriddenRoleType);
     }
 
@@ -97,7 +97,7 @@ public class RelatesConstraint extends TypeConstraint {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        final RelatesConstraint that = (RelatesConstraint) o;
+        RelatesConstraint that = (RelatesConstraint) o;
         return (this.owner.equals(that.owner) &&
                 this.roleType.equals(that.roleType) &&
                 Objects.equals(this.overriddenRoleType, that.overriddenRoleType));

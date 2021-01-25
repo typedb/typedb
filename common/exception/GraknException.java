@@ -60,7 +60,7 @@ public class GraknException extends RuntimeException {
     }
 
     public static GraknException of(List<GraknException> exceptions) {
-        final StringBuilder messages = new StringBuilder();
+        StringBuilder messages = new StringBuilder();
         for (GraknException exception : exceptions) {
             messages.append(exception.getMessage()).append("\n");
         }

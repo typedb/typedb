@@ -59,7 +59,7 @@ public class GraknRPCService extends GraknGrpc.GraknImplBase {
     @Override
     public void databaseContains(DatabaseProto.Database.Contains.Req request, StreamObserver<DatabaseProto.Database.Contains.Res> responder) {
         try {
-            final boolean contains = grakn.databases().contains(request.getName());
+            boolean contains = grakn.databases().contains(request.getName());
             responder.onNext(DatabaseProto.Database.Contains.Res.newBuilder().setContains(contains).build());
             responder.onCompleted();
         } catch (RuntimeException e) {
@@ -86,7 +86,7 @@ public class GraknRPCService extends GraknGrpc.GraknImplBase {
     @Override
     public void databaseAll(DatabaseProto.Database.All.Req request, StreamObserver<DatabaseProto.Database.All.Res> responder) {
         try {
-            final List<String> databaseNames = grakn.databases().all().stream().map(Grakn.Database::name).collect(toList());
+            List<String> databaseNames = grakn.databases().all().stream().map(Grakn.Database::name).collect(toList());
             responder.onNext(DatabaseProto.Database.All.Res.newBuilder().addAllNames(databaseNames).build());
             responder.onCompleted();
         } catch (RuntimeException e) {
@@ -98,14 +98,14 @@ public class GraknRPCService extends GraknGrpc.GraknImplBase {
     @Override
     public void databaseDelete(DatabaseProto.Database.Delete.Req request, StreamObserver<DatabaseProto.Database.Delete.Res> responder) {
         try {
-            final String databaseName = request.getName();
+            String databaseName = request.getName();
             if (!grakn.databases().contains(databaseName)) {
                 throw GraknException.of(DATABASE_NOT_FOUND, databaseName);
             }
-            final Grakn.Database database = grakn.databases().get(databaseName);
+            Grakn.Database database = grakn.databases().get(databaseName);
             database.sessions().parallel().forEach(session -> {
-                final UUID sessionId = session.uuid();
-                final SessionRPC sessionRPC = rpcSessions.get(sessionId);
+                UUID sessionId = session.uuid();
+                SessionRPC sessionRPC = rpcSessions.get(sessionId);
                 if (sessionRPC != null) {
                     sessionRPC.closeWithError(GraknException.of(DATABASE_DELETED, databaseName));
                     rpcSessions.remove(sessionId);
@@ -123,10 +123,10 @@ public class GraknRPCService extends GraknGrpc.GraknImplBase {
     @Override
     public void sessionOpen(SessionProto.Session.Open.Req request, StreamObserver<SessionProto.Session.Open.Res> responder) {
         try {
-            final Arguments.Session.Type sessionType = Arguments.Session.Type.of(request.getType().getNumber());
-            final Options.Session options = getOptions(Options.Session::new, request.getOptions());
-            final Grakn.Session session = grakn.session(request.getDatabase(), sessionType, options);
-            final SessionRPC sessionRPC = new SessionRPC(this, session, options);
+            Arguments.Session.Type sessionType = Arguments.Session.Type.of(request.getType().getNumber());
+            Options.Session options = getOptions(Options.Session::new, request.getOptions());
+            Grakn.Session session = grakn.session(request.getDatabase(), sessionType, options);
+            SessionRPC sessionRPC = new SessionRPC(this, session, options);
             rpcSessions.put(sessionRPC.session().uuid(), sessionRPC);
             responder.onNext(SessionProto.Session.Open.Res.newBuilder().setSessionId(sessionRPC.uuidAsByteString()).build());
             responder.onCompleted();
@@ -139,8 +139,8 @@ public class GraknRPCService extends GraknGrpc.GraknImplBase {
     @Override
     public void sessionClose(SessionProto.Session.Close.Req request, StreamObserver<SessionProto.Session.Close.Res> responder) {
         try {
-            final UUID sessionID = bytesToUUID(request.getSessionId().toByteArray());
-            final SessionRPC sessionRPC = rpcSessions.get(sessionID);
+            UUID sessionID = bytesToUUID(request.getSessionId().toByteArray());
+            SessionRPC sessionRPC = rpcSessions.get(sessionID);
             if (sessionRPC == null) throw GraknException.of(SESSION_NOT_FOUND, sessionID);
             sessionRPC.close();
             responder.onNext(SessionProto.Session.Close.Res.newBuilder().build());
@@ -154,9 +154,9 @@ public class GraknRPCService extends GraknGrpc.GraknImplBase {
     @Override
     public void sessionPulse(SessionProto.Session.Pulse.Req request, StreamObserver<SessionProto.Session.Pulse.Res> responder) {
         try {
-            final UUID sessionID = bytesToUUID(request.getSessionId().toByteArray());
-            final SessionRPC sessionRPC = rpcSessions.get(sessionID);
-            final boolean isAlive = sessionRPC != null && sessionRPC.isOpen();
+            UUID sessionID = bytesToUUID(request.getSessionId().toByteArray());
+            SessionRPC sessionRPC = rpcSessions.get(sessionID);
+            boolean isAlive = sessionRPC != null && sessionRPC.isOpen();
             if (isAlive) sessionRPC.keepAlive();
             responder.onNext(SessionProto.Session.Pulse.Res.newBuilder().setAlive(isAlive).build());
             responder.onCompleted();

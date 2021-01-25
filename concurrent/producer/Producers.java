@@ -29,6 +29,10 @@ public class Producers {
 
     public static <T> BaseProducer<T> empty() { return producer(Iterators.empty()); }
 
+    public static <T> Producer<T> async(ResourceIterator<ResourceIterator<T>> iterators, int parallelisation) {
+        return new AsyncProducer<>(iterators, parallelisation);
+    }
+
     public static <T> BaseProducer<T> producer(ResourceIterator<T> iterator) {
         return new BaseProducer<>(iterator);
     }

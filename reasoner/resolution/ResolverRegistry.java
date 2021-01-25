@@ -91,7 +91,7 @@ public class ResolverRegistry {
                 explanations)));
     }
 
-    public Actor<RootResolver> createRoot(final Conjunction pattern, final Consumer<ResolutionAnswer> onAnswer, Consumer<Integer> onExhausted) {
+    public Actor<RootResolver> createRoot(Conjunction pattern, Consumer<ResolutionAnswer> onAnswer, Consumer<Integer> onExhausted) {
         LOG.debug("Creating Conjunction Actor for pattern: '{}'", pattern);
         return Actor.create(
                 elg, self -> new RootResolver(

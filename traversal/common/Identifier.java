@@ -96,7 +96,7 @@ public abstract class Identifier {
             if (this == o) return true;
             else if (o == null || getClass() != o.getClass()) return false;
 
-            final Scoped that = (Scoped) o;
+            Scoped that = (Scoped) o;
             return this.relation.equals(that.relation) && this.repetition == that.repetition;
         }
 
@@ -181,7 +181,7 @@ public abstract class Identifier {
             if (this == o) return true;
             else if (o == null || getClass() != o.getClass()) return false;
 
-            final Variable that = (Variable) o;
+            Variable that = (Variable) o;
             return this.reference.equals(that.reference) && Objects.equals(this.id, that.id);
         }
 

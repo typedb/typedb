@@ -180,7 +180,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
             if (!scopedLabel.contains(":")) {
                 throw exception(GraknException.of(INVALID_ROLE_TYPE_LABEL, scopedLabel));
             }
-            final String[] label = scopedLabel.split(":");
+            String[] label = scopedLabel.split(":");
             return RoleTypeImpl.of(vertex.graphs(), vertex.graph().schema().getType(label[1], label[0]));
         }).toArray(RoleType[]::new));
     }
@@ -206,7 +206,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     @Override
     public void validate() {
         if (getHas(true).map(Attribute::getType).count() < getType().getOwns(true).count()) {
-            final Set<AttributeType> missing = getType().getOwns(true).collect(toSet());
+            Set<AttributeType> missing = getType().getOwns(true).collect(toSet());
             missing.removeAll(getHas(true).map(Attribute::getType).collect(toSet()));
             throw exception(GraknException.of(THING_KEY_MISSING, getType().getLabel(), printTypeSet(missing)));
         }
@@ -219,8 +219,8 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     public boolean isThing() { return true; }
 
     private String printTypeSet(Set<? extends Type> types) {
-        final Type[] array = types.toArray(new Type[0]);
-        final StringBuilder string = new StringBuilder();
+        Type[] array = types.toArray(new Type[0]);
+        StringBuilder string = new StringBuilder();
         for (int i = 0; i < array.length; i++) {
             string.append('\'').append(array[i].getLabel()).append('\'');
             if (i < array.length - 1) string.append(", ");
@@ -242,7 +242,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     public boolean equals(Object object) {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
-        final ThingImpl that = (ThingImpl) object;
+        ThingImpl that = (ThingImpl) object;
         return this.vertex.equals(that.vertex);
     }
 

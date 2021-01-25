@@ -97,7 +97,7 @@ public class Test1 {
                         "        owns city,\n" +
                         "        owns age,\n" +
                         "        owns is-customer;\n";
-                final GraqlDefine query = parseQuery(queryString);
+                GraqlDefine query = parseQuery(queryString);
                 transaction.query().define(query);
                 transaction.commit();
             }
@@ -124,7 +124,7 @@ public class Test1 {
                     "(caller: $suspect, callee: $target) isa call, has started-at $target-call-date;\n" +
                     "$target-call-date > $pattern-call-date;\n" +
                     "get $phone-number;";
-            final GraqlMatch query = parseQuery(queryString);
+            GraqlMatch query = parseQuery(queryString);
             transaction.query().match(query);
             transaction.commit();
         }

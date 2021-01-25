@@ -106,12 +106,12 @@ public class ResponseBuilder {
         }
 
         public static ConceptProto.Thing thing(Thing thing) {
-            final ConceptProto.Thing.Builder builder = ConceptProto.Thing.newBuilder()
+            ConceptProto.Thing.Builder builder = ConceptProto.Thing.newBuilder()
                     .setIid(ByteString.copyFrom(thing.getIID()))
                     .setEncoding(getEncoding(thing));
 
             if (thing instanceof Attribute) {
-                final Attribute attribute = thing.asAttribute();
+                Attribute attribute = thing.asAttribute();
                 builder.setValueType(valueType(attribute))
                         .setValue(attributeValue(attribute));
             }
@@ -120,7 +120,7 @@ public class ResponseBuilder {
         }
 
         public static ConceptProto.Type type(Type type) {
-            final ConceptProto.Type.Builder builder = ConceptProto.Type.newBuilder()
+            ConceptProto.Type.Builder builder = ConceptProto.Type.newBuilder()
                     .setLabel(type.getLabel().name())
                     .setEncoding(getEncoding(type));
             if (type instanceof AttributeType) builder.setValueType(valueType(type.asAttributeType()));
@@ -183,7 +183,7 @@ public class ResponseBuilder {
         }
 
         public static ConceptProto.Attribute.Value attributeValue(Attribute attribute) {
-            final ConceptProto.Attribute.Value.Builder builder = ConceptProto.Attribute.Value.newBuilder();
+            ConceptProto.Attribute.Value.Builder builder = ConceptProto.Attribute.Value.newBuilder();
 
             if (attribute instanceof Attribute.String) {
                 builder.setString(attribute.asString().getValue());
@@ -248,7 +248,7 @@ public class ResponseBuilder {
     public static class Logic {
 
         public static LogicProto.Rule rule(Rule rule) {
-            final LogicProto.Rule.Builder builder = LogicProto.Rule.newBuilder()
+            LogicProto.Rule.Builder builder = LogicProto.Rule.newBuilder()
                     .setLabel(rule.getLabel())
                     .setWhen(rule.getWhenPreNormalised().toString())
                     .setThen(rule.getThenPreNormalised().toString());
@@ -263,10 +263,10 @@ public class ResponseBuilder {
     public static class Answer {
 
         public static AnswerProto.ConceptMap conceptMap(ConceptMap answer) {
-            final AnswerProto.ConceptMap.Builder conceptMapProto = AnswerProto.ConceptMap.newBuilder();
+            AnswerProto.ConceptMap.Builder conceptMapProto = AnswerProto.ConceptMap.newBuilder();
             // TODO: needs testing
             answer.concepts().forEach((ref, concept) -> {
-                final ConceptProto.Concept conceptProto = ResponseBuilder.Concept.concept(concept);
+                ConceptProto.Concept conceptProto = ResponseBuilder.Concept.concept(concept);
                 conceptMapProto.putMap(ref.name(), conceptProto);
             });
 

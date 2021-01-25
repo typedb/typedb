@@ -155,7 +155,7 @@ public class Rule {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
 
-        final Rule that = (Rule) object;
+        Rule that = (Rule) object;
         return this.structure.equals(that.structure);
     }
 

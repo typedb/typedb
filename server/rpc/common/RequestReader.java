@@ -25,6 +25,7 @@ import java.util.function.Supplier;
 import static grakn.protocol.OptionsProto.Options.BatchSizeOptCase.BATCH_SIZE;
 import static grakn.protocol.OptionsProto.Options.ExplainOptCase.EXPLAIN;
 import static grakn.protocol.OptionsProto.Options.InferOptCase.INFER;
+import static grakn.protocol.OptionsProto.Options.PrefetchOptCase.PREFETCH;
 import static grakn.protocol.OptionsProto.Options.SchemaLockAcquireTimeoutOptCase.SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS;
 import static grakn.protocol.OptionsProto.Options.SessionIdleTimeoutOptCase.SESSION_IDLE_TIMEOUT_MILLIS;
 
@@ -32,7 +33,7 @@ public class RequestReader {
 
     public static <T extends Options<?, ?>> T getOptions(Supplier<T> optionsConstructor,
                                                          OptionsProto.Options requestOptions) {
-        final T options = optionsConstructor.get();
+        T options = optionsConstructor.get();
         if (requestOptions.getInferOptCase().equals(INFER)) {
             options.infer(requestOptions.getInfer());
         }
@@ -41,6 +42,9 @@ public class RequestReader {
         }
         if (requestOptions.getBatchSizeOptCase().equals(BATCH_SIZE)) {
             options.batchSize(requestOptions.getBatchSize());
+        }
+        if (requestOptions.getPrefetchOptCase().equals(PREFETCH)) {
+            options.prefetch(requestOptions.getPrefetch());
         }
         if (requestOptions.getSessionIdleTimeoutOptCase().equals(SESSION_IDLE_TIMEOUT_MILLIS)) {
             options.sessionIdleTimeoutMillis(requestOptions.getSessionIdleTimeoutMillis());
