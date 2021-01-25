@@ -72,12 +72,8 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
             return this;
         }
 
-        public boolean isSchemaWrite() {
-            return sessionType.isSchema() && transactionType.isWrite();
-        }
-
-        public boolean isDataWrite() {
-            return sessionType.isData() && transactionType.isWrite();
+        public boolean isWrite() {
+            return transactionType.isWrite();
         }
     }
 
