@@ -135,7 +135,7 @@ public class TransactionRPC {
     public <T> void respond(TransactionProto.Transaction.Req request, Iterator<T> iterator, Options.Query queryOptions,
                             Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
         assert queryOptions.prefetch() != null;
-        iterators.iterate(request, iterator, queryOptions.prefetch(), queryOptions.batchSize(), responseBuilderFn);
+        iterators.iterate(request, iterator, queryOptions.prefetch(), queryOptions.responseBatchSize(), responseBuilderFn);
     }
 
     private void commit(String requestId) {
@@ -189,7 +189,7 @@ public class TransactionRPC {
          * Spin up a new iterator and begin streaming responses immediately.
          */
         <T> void iterate(TransactionProto.Transaction.Req request, Iterator<T> iterator, Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
-            iterate(request, iterator, true, transaction.options().batchSize(), responseBuilderFn);
+            iterate(request, iterator, true, transaction.context().responseBatchSize(), responseBuilderFn);
         }
 
         /**

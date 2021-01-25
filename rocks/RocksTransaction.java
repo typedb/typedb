@@ -84,11 +84,6 @@ public abstract class RocksTransaction implements Grakn.Transaction {
     }
 
     @Override
-    public Options.Transaction options() {
-        return context.options();
-    }
-
-    @Override
     public boolean isOpen() {
         return this.isOpen.get();
     }

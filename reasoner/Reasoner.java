@@ -22,6 +22,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Context;
+import grakn.core.common.parameters.Options;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
@@ -75,9 +76,9 @@ public class Reasoner {
     }
 
     public ResourceIterator<ConceptMap> execute(Disjunction disjunction, List<Identifier.Variable.Name> filter,
-                                                boolean isParallel) {
+                                                Context.Query context) {
         ResourceIterator<Conjunction> conjunctions = iterate(disjunction.conjunctions());
-        if (!isParallel) return conjunctions.flatMap(conj -> iterator(conj, filter));
+        if (!context.parallel()) return conjunctions.flatMap(conj -> iterator(conj, filter));
         else return produce(conjunctions.flatMap(conj -> producers(conj, filter)).toList());
     }
 
@@ -87,13 +88,13 @@ public class Reasoner {
 
     private ResourceIterator<Producer<ConceptMap>> producers(Conjunction conjunction,
                                                              List<Identifier.Variable.Name> filter) {
-        if (context.isSchemaWrite()) LOG.warn("Reasoning is disabled in schema write transactions");
+        if (context.isWrite()) LOG.warn("Reasoning is disabled in write transactions");
 
-        List<Producer<ConceptMap>> answerProducers = new ArrayList<>();
+        List<Producer<ConceptMap>> producers = new ArrayList<>();
         Conjunction conj = logicMgr.typeResolver().resolve(conjunction);
         if (conj.isSatisfiable()) {
-            answerProducers.add(traversalEng.producer(conj.traversal(filter), PARALLELISATION_FACTOR).map(conceptMgr::conceptMap));
-            if (!context.isSchemaWrite()) answerProducers.add(this.resolve(conj));
+            producers.add(traversalEng.producer(conj.traversal(filter), PARALLELISATION_FACTOR).map(conceptMgr::conceptMap));
+            if (context.infer()) producers.add(this.resolve(conj));
         } else if (!filter.isEmpty() && iterate(filter).anyMatch(id -> conj.variable(id).isThing()) ||
                 iterate(conjunction.variables()).anyMatch(Variable::isThing)) {
             throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction);
@@ -101,8 +102,8 @@ public class Reasoner {
             return single(Producers.empty());
         }
 
-        if (conjunction.negations().isEmpty()) return iterate(answerProducers);
-        else return iterate(answerProducers).map(p -> p.filter(answer -> !produce(
+        if (conjunction.negations().isEmpty()) return iterate(producers);
+        else return iterate(producers).map(p -> p.filter(answer -> !produce(
                 iterate(conjunction.negations()).flatMap(n -> iterate(producers(n.disjunction(), answer))).toList()
         ).hasNext()));
     }
@@ -120,13 +121,13 @@ public class Reasoner {
     }
 
     private ResourceIterator<ConceptMap> iterator(Conjunction conjunction, List<Identifier.Variable.Name> filter) {
-        if (context.isSchemaWrite()) LOG.warn("Reasoning is disabled in schema write transactions");
+        if (context.isWrite()) LOG.warn("Reasoning is disabled in write transactions");
 
         ResourceIterator<ConceptMap> answers;
         Conjunction conj = logicMgr.typeResolver().resolve(conjunction);
         if (conj.isSatisfiable()) {
             answers = traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
-            if (!context.isSchemaWrite()) answers = link(answers, produce(resolve(conj)));
+            if (context.infer()) answers = link(answers, produce(resolve(conj)));
         } else if (!filter.isEmpty() && iterate(filter).anyMatch(id -> conj.variable(id).isThing()) ||
                 iterate(conjunction.variables()).anyMatch(Variable::isThing)) {
             throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction);
@@ -167,8 +168,6 @@ public class Reasoner {
     }
 
     private Producer<ConceptMap> resolve(Conjunction conjunction) {
-        return Producers.empty();
-        // TODO enable reasoner when ready!
-        // return new ReasonerProducer(conjunction, resolverRegistry);
+        return new ReasonerProducer(conjunction, resolverRegistry);
     }
 }
