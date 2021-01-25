@@ -91,8 +91,8 @@ public class QueryHandler {
 
     private void match(Transaction.Req request, QueryProto.Query.Match.Req req, Options.Query options) {
         if (!options.prefetch().isPresent()) options.prefetch(true);
-        final GraqlMatch query = Graql.parseQuery(req.getQuery()).asMatch();
-        final ResourceIterator<ConceptMap> answers = queryManager.match(query, options);
+        GraqlMatch query = Graql.parseQuery(req.getQuery()).asMatch();
+        ResourceIterator<ConceptMap> answers = queryManager.match(query, options);
         transactionRPC.respond(
                 request, answers, options,
                 as -> response(request, QueryProto.Query.Res.newBuilder().setMatchRes(
@@ -112,7 +112,7 @@ public class QueryHandler {
 
     private void match(Transaction.Req request, QueryProto.Query.MatchGroup.Req req, Options.Query options) {
         if (!options.prefetch().isPresent()) options.prefetch(true);
-        final GraqlMatch.Group query = Graql.parseQuery(req.getQuery()).asMatchGroup();
+        GraqlMatch.Group query = Graql.parseQuery(req.getQuery()).asMatchGroup();
         ResourceIterator<ConceptMapGroup> answers = queryManager.match(query, options);
         transactionRPC.respond(
                 request, answers, options,
@@ -125,7 +125,7 @@ public class QueryHandler {
 
     private void match(Transaction.Req request, QueryProto.Query.MatchGroupAggregate.Req req, Options.Query options) {
         if (!options.prefetch().isPresent()) options.prefetch(true);
-        final GraqlMatch.Group.Aggregate query = Graql.parseQuery(req.getQuery()).asMatchGroupAggregate();
+        GraqlMatch.Group.Aggregate query = Graql.parseQuery(req.getQuery()).asMatchGroupAggregate();
         ResourceIterator<NumericGroup> answers = queryManager.match(query, options);
         transactionRPC.respond(
                 request, answers, options,
@@ -139,8 +139,8 @@ public class QueryHandler {
 
     private void insert(Transaction.Req request, QueryProto.Query.Insert.Req req, Options.Query options) {
         if (!options.prefetch().isPresent()) options.prefetch(false);
-        final GraqlInsert query = Graql.parseQuery(req.getQuery()).asInsert();
-        final ResourceIterator<ConceptMap> answers = queryManager.insert(query, options);
+        GraqlInsert query = Graql.parseQuery(req.getQuery()).asInsert();
+        ResourceIterator<ConceptMap> answers = queryManager.insert(query, options);
         transactionRPC.respond(
                 request, answers, options,
                 as -> response(request, QueryProto.Query.Res.newBuilder().setInsertRes(

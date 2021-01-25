@@ -202,9 +202,9 @@ public class TransactionRPC {
          * @param <T> The type of answers being fetched.
          */
         <T> void createNewIterator(TransactionProto.Transaction.Req request, Iterator<T> iterator, boolean prefetch, int batchSize, Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
-            final String requestId = request.getId();
-            final int latencyMillis = request.getLatencyMillis();
-            final BatchingIterator<T> batchingIterator = new BatchingIterator<>(requestId, iterator, responseBuilderFn, batchSize, latencyMillis);
+            String requestId = request.getId();
+            int latencyMillis = request.getLatencyMillis();
+            BatchingIterator<T> batchingIterator = new BatchingIterator<>(requestId, iterator, responseBuilderFn, batchSize, latencyMillis);
             iterators.compute(requestId, (key, oldValue) -> {
                 if (oldValue == null) return batchingIterator;
                 else throw GraknException.of(DUPLICATE_REQUEST, requestId);
