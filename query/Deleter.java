@@ -23,7 +23,6 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Label;
-import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Relation;
@@ -55,28 +54,26 @@ public class Deleter {
 
     private static final String TRACE_PREFIX = "deleter.";
 
-    private final ConceptManager conceptMgr;
     private final Context.Query context;
     private final ConceptMap matched;
     private final Set<ThingVariable> variables;
     private final Map<ThingVariable, Thing> detached;
 
-    private Deleter(ConceptManager conceptMgr, Set<ThingVariable> vars, ConceptMap matched, Context.Query context) {
-        this.conceptMgr = conceptMgr;
+    private Deleter(Set<ThingVariable> vars, ConceptMap matched, Context.Query context) {
         this.context = context;
         this.matched = matched;
         this.variables = vars;
         this.detached = new HashMap<>();
     }
 
-    public static Deleter create(ConceptManager conceptMgr, List<graql.lang.pattern.variable.ThingVariable<?>> vars,
+    public static Deleter create(List<graql.lang.pattern.variable.ThingVariable<?>> vars,
                                  ConceptMap matched, Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             VariableRegistry registry = VariableRegistry.createFromThings(vars);
             iterate(registry.types()).filter(t -> !t.reference().isLabel()).forEachRemaining(t -> {
                 throw GraknException.of(ILLEGAL_TYPE_VARIABLE_IN_DELETE, t.reference());
             });
-            return new Deleter(conceptMgr, VariableRegistry.createFromThings(vars).things(), matched, context);
+            return new Deleter(VariableRegistry.createFromThings(vars).things(), matched, context);
         }
     }
 
