@@ -23,7 +23,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
-import grakn.core.concurrent.common.ManagedLock;
+import grakn.core.concurrent.lock.ManagedLock;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;

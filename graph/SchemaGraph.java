@@ -22,7 +22,7 @@ import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
-import grakn.core.concurrent.common.ManagedReadWriteLock;
+import grakn.core.concurrent.lock.ManagedReadWriteLock;
 import grakn.core.graph.common.Encoding;
 import grakn.core.graph.common.KeyGenerator;
 import grakn.core.graph.common.Storage;

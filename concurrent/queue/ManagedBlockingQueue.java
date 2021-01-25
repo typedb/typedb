@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.concurrent.common;
+package grakn.core.concurrent.queue;
 
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.LinkedBlockingQueue;
