@@ -31,6 +31,8 @@ import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
 import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -57,11 +59,20 @@ public class ReasonerTest {
         return transaction;
     }
 
-    @Test
-    public void test_basic() throws IOException {
+    @Before
+    public void setUp() throws IOException {
         Util.resetDirectory(directory);
         grakn = RocksGrakn.open(directory);
         grakn.databases().create(database);
+    }
+
+    @After
+    public void tearDown() {
+        grakn.close();
+    }
+
+    @Test
+    public void test_basic() {
         session = grakn.session(database, Arguments.Session.Type.SCHEMA);
         rocksTransaction = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE);
         conceptMgr = rocksTransaction.concepts();
@@ -96,10 +107,7 @@ public class ReasonerTest {
     }
 
     @Test
-    public void test_has_explicit_rule() throws IOException {
-        Util.resetDirectory(directory);
-        grakn = RocksGrakn.open(directory);
-        grakn.databases().create(database);
+    public void test_has_explicit_rule() {
         session = grakn.session(database, Arguments.Session.Type.SCHEMA);
         rocksTransaction = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE);
         conceptMgr = rocksTransaction.concepts();
@@ -142,52 +150,47 @@ public class ReasonerTest {
     }
 
     @Test
-    public void test_relation_rule() throws IOException {
-        Util.resetDirectory(directory);
+    public void test_relation_rule() {
+        try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+                final ConceptManager conceptMgr = txn.concepts();
+                final LogicManager logicMgr = txn.logic();
 
-        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
-            grakn.databases().create(database);
-            try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
-                try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
-                    final ConceptManager conceptMgr = txn.concepts();
-                    final LogicManager logicMgr = txn.logic();
-
-                    final EntityType person = conceptMgr.putEntityType("person");
-                    final AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
-                    person.setOwns(name);
-                    final RelationType friendship = conceptMgr.putRelationType("friendship");
-                    friendship.setRelates("friend");
-                    final RelationType marriage = conceptMgr.putRelationType("marriage");
-                    marriage.setRelates("husband");
-                    marriage.setRelates("wife");
-                    person.setPlays(friendship.getRelates("friend"));
-                    person.setPlays(marriage.getRelates("husband"));
-                    person.setPlays(marriage.getRelates("wife"));
-                    logicMgr.putRule(
-                            "marriage-is-friendship",
-                            Graql.parsePattern("{ $x isa person; $y isa person; (husband: $x, wife: $y) isa marriage; }").asConjunction(),
-                            Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
-                    txn.commit();
-                }
+                final EntityType person = conceptMgr.putEntityType("person");
+                final AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
+                person.setOwns(name);
+                final RelationType friendship = conceptMgr.putRelationType("friendship");
+                friendship.setRelates("friend");
+                final RelationType marriage = conceptMgr.putRelationType("marriage");
+                marriage.setRelates("husband");
+                marriage.setRelates("wife");
+                person.setPlays(friendship.getRelates("friend"));
+                person.setPlays(marriage.getRelates("husband"));
+                person.setPlays(marriage.getRelates("wife"));
+                logicMgr.putRule(
+                        "marriage-is-friendship",
+                        Graql.parsePattern("{ $x isa person; $y isa person; (husband: $x, wife: $y) isa marriage; }").asConjunction(),
+                        Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
+                txn.commit();
             }
-            try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
-                try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
-                    txn.query().insert(Graql.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (husband: $x, wife: $y) isa marriage;").asInsert());
-                    txn.commit();
-                }
-                try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
-                    List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $f (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;").asMatch()).toList();
-                    System.out.println("Got answer: " + ans);
+        }
+        try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+                txn.query().insert(Graql.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (husband: $x, wife: $y) isa marriage;").asInsert());
+                txn.commit();
+            }
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+                List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $f (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;").asMatch()).toList();
+                System.out.println("Got answer: " + ans);
 
-                    ans.iterator().forEachRemaining(a -> {
-                        assertEquals("friendship", a.get("f").asThing().getType().getLabel().scopedName());
-                        assertEquals("person", a.get("p1").asThing().getType().getLabel().scopedName());
-                        assertEquals("person", a.get("p2").asThing().getType().getLabel().scopedName());
-                        assertEquals("name", a.get("na").asAttribute().getType().getLabel().scopedName());
-                    });
+                ans.iterator().forEachRemaining(a -> {
+                    assertEquals("friendship", a.get("f").asThing().getType().getLabel().scopedName());
+                    assertEquals("person", a.get("p1").asThing().getType().getLabel().scopedName());
+                    assertEquals("person", a.get("p2").asThing().getType().getLabel().scopedName());
+                    assertEquals("name", a.get("na").asAttribute().getType().getLabel().scopedName());
+                });
 
-                    assertEquals(2, ans.size());
-                }
+                assertEquals(2, ans.size());
             }
         }
     }
