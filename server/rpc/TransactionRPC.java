@@ -129,12 +129,13 @@ public class TransactionRPC {
 
     public <T> void respond(TransactionProto.Transaction.Req request, Iterator<T> iterator,
                             Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
-        iterators.beginIteration(request, iterator, responseBuilderFn);
+        iterators.createNewIterator(request, iterator, responseBuilderFn);
     }
 
     public <T> void respond(TransactionProto.Transaction.Req request, Iterator<T> iterator, Options.Query queryOptions,
                             Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
-        iterators.beginIteration(request, iterator, queryOptions.batchSize(), responseBuilderFn);
+        assert queryOptions.prefetch().isPresent();
+        iterators.createNewIterator(request, iterator, queryOptions.prefetch().get(), queryOptions.batchSize(), responseBuilderFn);
     }
 
     private void commit(String requestId) {
@@ -185,13 +186,22 @@ public class TransactionRPC {
         private final ConcurrentMap<String, BatchingIterator<?>> iterators = new ConcurrentHashMap<>();
 
         /**
-         * Spin up an iterator and begin batch iterating.
+         * Spin up a new iterator and begin streaming responses immediately.
          */
-        <T> void beginIteration(TransactionProto.Transaction.Req request, Iterator<T> iterator, Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
-            beginIteration(request, iterator, transaction.options().batchSize(), responseBuilderFn);
+        <T> void createNewIterator(TransactionProto.Transaction.Req request, Iterator<T> iterator, Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
+            createNewIterator(request, iterator, true, transaction.options().batchSize(), responseBuilderFn);
         }
 
-        <T> void beginIteration(TransactionProto.Transaction.Req request, Iterator<T> iterator, int batchSize, Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
+        /**
+         * Spin up a new iterator.
+         * @param request The request that this iterator is serving.
+         * @param iterator The iterator that contains the raw answers from the database.
+         * @param prefetch If set to true, the first batch will be streamed to the client immediately. If false, the client must request it.
+         * @param batchSize The base batch size, before network latency is accounted for.
+         * @param responseBuilderFn The projection function that serialises raw answers to RPC messages.
+         * @param <T> The type of answers being fetched.
+         */
+        <T> void createNewIterator(TransactionProto.Transaction.Req request, Iterator<T> iterator, boolean prefetch, int batchSize, Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
             final String requestId = request.getId();
             final int latencyMillis = request.getLatencyMillis();
             final BatchingIterator<T> batchingIterator = new BatchingIterator<>(requestId, iterator, responseBuilderFn, batchSize, latencyMillis);
@@ -199,11 +209,12 @@ public class TransactionRPC {
                 if (oldValue == null) return batchingIterator;
                 else throw GraknException.of(DUPLICATE_REQUEST, requestId);
             });
-            batchingIterator.iterateBatch();
+            if (prefetch) batchingIterator.iterateBatch();
+            else respond(continueRes(requestId));
         }
 
         /**
-         * Instruct an existing iterator to iterate another batch.
+         * Instruct an existing iterator to iterate its next batch.
          */
         void continueIteration(String requestId) {
             final BatchingIterator<?> iterator = iterators.get(requestId);
