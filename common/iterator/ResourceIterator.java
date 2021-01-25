@@ -39,6 +39,8 @@ public interface ResourceIterator<T> extends Iterator<T> {
 
     <U> ResourceIterator<U> flatMap(Function<T, ResourceIterator<U>> flatMappingFn);
 
+    ResourceIterator<ResourceIterator<T>> split(int count);
+
     ResourceIterator<T> filter(Predicate<T> predicate);
 
     ResourceIterator<T> offset(long offset);

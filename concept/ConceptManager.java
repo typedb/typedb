@@ -33,8 +33,8 @@ import grakn.core.concept.type.impl.EntityTypeImpl;
 import grakn.core.concept.type.impl.RelationTypeImpl;
 import grakn.core.concept.type.impl.ThingTypeImpl;
 import grakn.core.concept.type.impl.TypeImpl;
+import grakn.core.concurrent.producer.ProducerIterator;
 import grakn.core.graph.GraphManager;
-import grakn.core.graph.common.Encoding;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
@@ -50,6 +50,10 @@ import java.util.Map;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Transaction.UNSUPPORTED_OPERATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MISSING;
+import static grakn.core.concurrent.common.ExecutorService.PARALLELISATION_FACTOR;
+import static grakn.core.concurrent.producer.Producers.async;
+import static grakn.core.concurrent.producer.Producers.produce;
+import static grakn.core.graph.common.Encoding.Vertex.Thing.ROLE;
 
 public final class ConceptManager {
 
@@ -175,9 +179,11 @@ public final class ConceptManager {
     }
 
     public void validateThings() {
-        graphMgr.data().vertices()
-                .filter(v -> !v.isInferred() && v.isModified() && !v.encoding().equals(Encoding.Vertex.Thing.ROLE))
-                .forEachRemaining(v -> ThingImpl.of(v).validate());
+        ResourceIterator<ResourceIterator<Void>> toValidate = graphMgr.data().vertices()
+                .filter(v -> !v.isInferred() && v.isModified() && !v.encoding().equals(ROLE))
+                .map(v -> { ThingImpl.of(v).validate(); return (Void) null; }).split(PARALLELISATION_FACTOR);
+        ProducerIterator<Void> validations = produce(async(toValidate, PARALLELISATION_FACTOR));
+        while (validations.hasNext()) {validations.next();}
     }
 
     public GraknException exception(ErrorMessage error) {

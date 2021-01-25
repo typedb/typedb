@@ -62,6 +62,11 @@ public abstract class AbstractResourceIterator<T> implements ResourceIterator<T>
     }
 
     @Override
+    public ResourceIterator<ResourceIterator<T>> split(int count) {
+        return new SplitIterator<>(this, count);
+    }
+
+    @Override
     public ResourceIterator<T> filter(Predicate<T> predicate) {
         return new FilteredIterator<>(this, predicate);
     }

@@ -63,6 +63,7 @@ import static grakn.core.graph.common.Encoding.Prefix.VERTEX_ENTITY_TYPE;
 import static grakn.core.graph.common.Encoding.Prefix.VERTEX_RELATION_TYPE;
 import static grakn.core.graph.common.Encoding.Statistics.JobOperation.CREATED;
 import static grakn.core.graph.common.Encoding.Statistics.JobOperation.DELETED;
+import static grakn.core.graph.common.Encoding.Status.BUFFERED;
 import static grakn.core.graph.common.Encoding.ValueType.STRING_MAX_SIZE;
 import static grakn.core.graph.common.Encoding.Vertex.Thing.ATTRIBUTE;
 import static grakn.core.graph.common.StatisticsBytes.attributeCountJobKey;
@@ -429,7 +430,8 @@ public class DataGraph implements Graph {
      */
     @Override
     public void commit() {
-        thingsByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Status.BUFFERED) && !v.isInferred()).forEach(
+        // TODO: replace this parallel stream with our AsyncProducer
+        thingsByIID.values().parallelStream().filter(v -> v.status().equals(BUFFERED) && !v.isInferred()).forEach(
                 vertex -> vertex.iid(generate(storage.dataKeyGenerator(), vertex.type().iid(), vertex.type().properLabel()))
         ); // thingByIID no longer contains valid mapping from IID to TypeVertex
         thingsByIID.values().stream().filter(v -> !v.isInferred()).forEach(Vertex::commit);
