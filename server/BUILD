@@ -60,6 +60,7 @@ native_java_libraries(
         # Internal dependencies
         ":version",
         "//common:common",
+        "//concurrent:concurrent",
 
         # External dependencies from Grakn Labs
         "@graknlabs_common//:common",

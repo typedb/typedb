@@ -22,12 +22,12 @@ host_compatible_java_test(
     name = "test-resolution",
     srcs = ["ResolutionTest.java"],
     native_libraries_deps = [
+        "//concept:concept",
+        "//logic:logic",
+        "//pattern:pattern",
+        "//reasoner:reasoner",
         "//rocks:rocks",
         "//:grakn",
-        "//concept:concept",
-        "//pattern:pattern",
-        "//logic:logic",
-        "//reasoner:reasoner",
     ],
     resource_strip_prefix = "common/test",
     resources = [
@@ -36,8 +36,9 @@ host_compatible_java_test(
     test_class = "grakn.core.reasoner.ResolutionTest",
     deps = [
         # Internal dependencies
+        "//common:common",
+        "//concurrent:concurrent",
         "//test/integration/util",
-        "//common",
         "@graknlabs_graql//java:graql",
     ],
 )

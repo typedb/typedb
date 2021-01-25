@@ -19,8 +19,8 @@
 package grakn.core.traversal.procedure;
 
 import grakn.core.common.iterator.ResourceIterator;
-import grakn.core.common.producer.Producer;
-import grakn.core.common.producer.Producers;
+import grakn.core.concurrent.producer.Producer;
+import grakn.core.concurrent.producer.Producers;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.Traversal;

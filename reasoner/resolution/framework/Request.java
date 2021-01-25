@@ -18,7 +18,7 @@
 
 package grakn.core.reasoner.resolution.framework;
 
-import grakn.core.common.concurrent.actor.Actor;
+import grakn.core.concurrent.actor.Actor;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
 

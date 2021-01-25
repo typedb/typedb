@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.common.producer;
+package grakn.core.concurrent.producer;
 
 import grakn.core.common.iterator.ResourceIterator;
 
@@ -24,7 +24,7 @@ import javax.annotation.concurrent.ThreadSafe;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static grakn.core.common.concurrent.ExecutorService.forkJoinPool;
+import static grakn.core.concurrent.common.ExecutorService.forkJoinPool;
 
 @ThreadSafe
 public class BaseProducer<T> implements Producer<T> {

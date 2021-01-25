@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.common.producer;
+package grakn.core.concurrent.producer;
 
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;

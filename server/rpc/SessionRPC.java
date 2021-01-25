@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.protobuf.ByteString.copyFrom;
 import static grakn.core.common.collection.Bytes.uuidToBytes;
-import static grakn.core.common.concurrent.ExecutorService.scheduledThreadPool;
+import static grakn.core.concurrent.common.ExecutorService.scheduledThreadPool;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 class SessionRPC {

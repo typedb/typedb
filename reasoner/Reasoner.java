@@ -18,17 +18,17 @@
 
 package grakn.core.reasoner;
 
-import grakn.core.common.concurrent.ExecutorService;
-import grakn.core.common.concurrent.actor.Actor;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Context;
-import grakn.core.common.producer.Producer;
-import grakn.core.common.producer.Producers;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concurrent.actor.Actor;
+import grakn.core.concurrent.common.ExecutorService;
+import grakn.core.concurrent.producer.Producer;
+import grakn.core.concurrent.producer.Producers;
 import grakn.core.logic.LogicManager;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
@@ -44,14 +44,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static grakn.common.collection.Collections.list;
-import static grakn.core.common.concurrent.ExecutorService.PARALLELISATION_FACTOR;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CONJUNCTION;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.CONTRADICTORY_BOUND_VARIABLE;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.single;
-import static grakn.core.common.producer.Producers.produce;
+import static grakn.core.concurrent.common.ExecutorService.PARALLELISATION_FACTOR;
+import static grakn.core.concurrent.producer.Producers.produce;
 
 public class Reasoner {
     private static final Logger LOG = LoggerFactory.getLogger(Reasoner.class);

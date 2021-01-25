@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.common.concurrent.actor;
+package grakn.core.concurrent.actor;
 
 import javax.annotation.CheckReturnValue;
 import java.util.concurrent.CompletableFuture;

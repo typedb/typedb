@@ -23,7 +23,6 @@ import grakn.common.collection.Either;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -83,19 +82,6 @@ public class Iterators {
 
     public static <T> ResourceIterator<T> tree(T root, Function<T, ResourceIterator<T>> childrenFn) {
         return new TreeIterator<>(root, childrenFn);
-    }
-
-    public static <T> ResourceIterator<T> parallel(List<ResourceIterator<T>> iterators) {
-        return new ParallelIterators<>(iterators);
-    }
-
-    public static <T> ResourceIterator<T> parallel(List<ResourceIterator<T>> iterators, int bufferSize) {
-        return new ParallelIterators<>(iterators, bufferSize);
-    }
-
-    public static <T> ResourceIterator<T> parallel(List<ResourceIterator<T>> iterators,
-                                                   int bufferSize, int bufferMultiplier) {
-        return new ParallelIterators<>(iterators, bufferSize, bufferMultiplier);
     }
 
     public static <T> ResourceIterator<T> synchronised(ResourceIterator<T> iterator) {

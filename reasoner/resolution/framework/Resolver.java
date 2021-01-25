@@ -18,7 +18,7 @@
 
 package grakn.core.reasoner.resolution.framework;
 
-import grakn.core.common.concurrent.actor.Actor;
+import grakn.core.concurrent.actor.Actor;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;

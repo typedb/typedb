@@ -16,13 +16,13 @@
  *
  */
 
-package grakn.core.common.producer;
+package grakn.core.concurrent.producer;
 
 import grakn.common.collection.Either;
-import grakn.core.common.concurrent.ExecutorService;
-import grakn.core.common.concurrent.ManagedBlockingQueue;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.AbstractResourceIterator;
+import grakn.core.concurrent.common.ExecutorService;
+import grakn.core.concurrent.common.ManagedBlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

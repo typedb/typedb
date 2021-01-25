@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.common.producer;
+package grakn.core.concurrent.producer;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.function.Function;

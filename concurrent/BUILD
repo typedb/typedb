@@ -16,36 +16,26 @@
 #
 
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-package(
-    default_visibility = [
-        "//concept:__pkg__",
-        "//rocks:__pkg__",
-        "//traversal:__pkg__",
-        "//reasoner:__pkg__"
-    ]
-)
+load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
+package(default_visibility = ["//visibility:public"])
+
 
 java_library(
-    name = "graph",
-    srcs = glob(["*.java", "*/*.java", "*/*/*.java"]),
+    name = "concurrent",
+    srcs = glob(["*/*.java", "*/*/*.java"], exclude=["test/*", "*Test.java", "*/*Test.java"]),
     deps = [
+        # Internal Repository Dependencies
+        "//common:common",
+
         # External dependencies from Grakn Labs
         "@graknlabs_common//:common",
 
-        # Internal dependencies
-        "//common:common",
-        "//concurrent:concurrent",
-
-        # External dependencies from Grakn Labs
-        "@graknlabs_graql//java:graql",
-        "@graknlabs_graql//java/common:common",
-        "@graknlabs_graql//java/pattern:pattern",
-
         # External Maven Dependencies
+#        "@maven//:com_github_ben_manes_caffeine_caffeine",
         "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:org_slf4j_slf4j_api",
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-graph:{pom_version}"],
-    visibility = ["//visibility:public"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-concurrent:{pom_version}"],
 )
 
 checkstyle_test(

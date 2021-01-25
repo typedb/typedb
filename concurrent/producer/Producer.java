@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.common.producer;
+package grakn.core.concurrent.producer;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.function.Function;

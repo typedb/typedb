@@ -17,9 +17,9 @@
 
 package grakn.core.reasoner;
 
-import grakn.core.common.concurrent.actor.Actor;
-import grakn.core.common.producer.Producer;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concurrent.actor.Actor;
+import grakn.core.concurrent.producer.Producer;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.framework.Request;

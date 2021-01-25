@@ -16,9 +16,9 @@
  *
  */
 
-package grakn.core.common.concurrent;
+package grakn.core.concurrent.common;
 
-import grakn.core.common.concurrent.actor.EventLoopGroup;
+import grakn.core.concurrent.actor.EventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

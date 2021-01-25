@@ -18,10 +18,10 @@
 
 package grakn.core.traversal.producer;
 
-import grakn.core.common.concurrent.ConcurrentSet;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
-import grakn.core.common.producer.Producer;
+import grakn.core.concurrent.common.ConcurrentSet;
+import grakn.core.concurrent.producer.Producer;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.Traversal;
@@ -36,8 +36,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static grakn.core.common.concurrent.ExecutorService.forkJoinPool;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.concurrent.common.ExecutorService.forkJoinPool;
 
 @ThreadSafe
 public class GraphProducer implements Producer<VertexMap> {

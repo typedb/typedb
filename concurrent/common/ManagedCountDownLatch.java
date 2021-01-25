@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.common.concurrent;
+package grakn.core.concurrent.common;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ForkJoinPool;

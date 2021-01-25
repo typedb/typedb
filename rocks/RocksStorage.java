@@ -18,11 +18,11 @@
 
 package grakn.core.rocks;
 
-import grakn.core.common.concurrent.ConcurrentSet;
-import grakn.core.common.concurrent.ManagedReadWriteLock;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.concurrent.common.ConcurrentSet;
+import grakn.core.concurrent.common.ManagedReadWriteLock;
 import grakn.core.graph.common.KeyGenerator;
 import grakn.core.graph.common.Storage;
 import org.rocksdb.AbstractImmutableNativeReference;

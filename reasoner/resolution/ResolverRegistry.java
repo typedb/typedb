@@ -18,10 +18,10 @@
 
 package grakn.core.reasoner.resolution;
 
-import grakn.core.common.concurrent.actor.Actor;
-import grakn.core.common.concurrent.actor.EventLoopGroup;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.ConceptManager;
+import grakn.core.concurrent.actor.Actor;
+import grakn.core.concurrent.actor.EventLoopGroup;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Concludable;
@@ -47,9 +47,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.iterator.Iterators.iterate;
 
 public class ResolverRegistry {
 
