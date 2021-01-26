@@ -175,7 +175,7 @@ public class RocksStorage implements Storage {
         validateTransactionIsOpen();
         RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
         iterators.add(iterator);
-        return iterator;
+        return iterator.onFinalise(iterator::close);
     }
 
     public GraknException exception(ErrorMessage error) {
