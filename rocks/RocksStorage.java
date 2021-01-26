@@ -337,7 +337,7 @@ public abstract class RocksStorage implements Storage {
 
         @Override
         public void put(byte[] key, byte[] value) {
-            assert isOpen() && !isReadOnly && !transaction.isOpen();
+            assert isOpen() && !isReadOnly;
             try {
                 storageTransaction.put(key, value);
             } catch (RocksDBException e) {
@@ -347,7 +347,7 @@ public abstract class RocksStorage implements Storage {
 
         @Override
         public void putUntracked(byte[] key, byte[] value) {
-            assert isOpen() && !isReadOnly && !transaction.isOpen();
+            assert isOpen() && !isReadOnly;
             try {
                 storageTransaction.putUntracked(key, value);
             } catch (RocksDBException e) {
