@@ -978,7 +978,7 @@ public class TypeResolverTest {
     }
 
     @Test
-    public void role_labels_infer_further() {
+    public void role_labels_reduced_by_full_type_resolver() {
         define_custom_schema("define" +
                                      " person sub entity, plays partnership:partner;" +
                                      " partnership sub relation, relates partner;" +

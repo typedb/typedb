@@ -22,7 +22,6 @@ import grakn.common.collection.Bytes;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
-import grakn.core.concept.type.Type;
 import grakn.core.graph.common.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.logic.LogicCache;
@@ -62,7 +61,6 @@ import static grakn.core.common.exception.ErrorMessage.ThingRead.THING_NOT_FOUND
 import static grakn.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.iterator.Iterators.tree;
 import static graql.lang.common.GraqlToken.Type.ATTRIBUTE;
 
 public class TypeResolver {
