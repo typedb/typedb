@@ -38,7 +38,7 @@ java_test(
     data = [
         "@graknlabs_behaviour//graql/language:delete.feature",
     ],
-    size = "small",
+    size = "medium",
     visibility = ["//visibility:public"],
     resources = [
         "//common/test:logback"
