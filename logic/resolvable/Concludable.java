@@ -403,7 +403,7 @@ public abstract class Concludable extends Resolvable {
             Variable generatedRelation = generating();
             Set<Label> relationTypes = generatedRelation.resolvedTypes();
             // may never be empty as its always known to be at least a relation
-            assert generatedRelation.isSatisfiable() && !relationTypes.isEmpty();
+            assert generatedRelation.isSatisfiable();
 
             Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
             relationTypes.forEach(type -> logicMgr.rulesConcluding(type)
@@ -538,8 +538,8 @@ public abstract class Concludable extends Resolvable {
         Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
             Variable attribute = generating();
             Set<Label> attributeTypes = attribute.resolvedTypes();
-            // may never be empty as its always known to be at least a relation
-            assert attribute.isSatisfiable() && !attributeTypes.isEmpty();
+            // may never be empty as its always known to be at least an attribute
+            assert attribute.isSatisfiable();
 
             Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
             attributeTypes.forEach(type -> logicMgr.rulesConcludingHas(type)
