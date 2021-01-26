@@ -178,8 +178,8 @@ public abstract class AbstractResourceIterator<T> implements ResourceIterator<T>
     }
 
     @Override
-    protected void finalize() {
-        recycle();
+    public ResourceIterator<T> onFinalise(Runnable function) {
+        return new FinaliseHandledIterator<>(this, function);
     }
 
     @Override

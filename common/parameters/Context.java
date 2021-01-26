@@ -37,7 +37,7 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
         }
     }
 
-    public OPTIONS options() {
+    OPTIONS options() {
         return options;
     }
 
@@ -72,8 +72,16 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
             return this;
         }
 
-        public boolean isSchemaWrite() {
-            return sessionType.isSchema() && this.transactionType.isWrite();
+        public boolean isWrite() {
+            return transactionType.isWrite();
+        }
+
+        public boolean infer() {
+            return options().infer() && !isWrite();
+        }
+
+        public int responseBatchSize() {
+            return options().responseBatchSize();
         }
     }
 
@@ -82,5 +90,10 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
         public Query(Context.Transaction context, Options.Query options) {
             super(context, options.parent(context.options()));
         }
+
+        public boolean parallel() {
+            return options().parallel();
+        }
+
     }
 }

@@ -77,5 +77,7 @@ public interface ResourceIterator<T> extends Iterator<T> {
 
     ResourceIterator<T> onError(Function<Exception, GraknException> exceptionFn);
 
+    ResourceIterator<T> onFinalise(Runnable function);
+
     void recycle();
 }

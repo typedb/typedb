@@ -84,11 +84,6 @@ public abstract class RocksTransaction implements Grakn.Transaction {
     }
 
     @Override
-    public Options.Transaction options() {
-        return context.options();
-    }
-
-    @Override
     public boolean isOpen() {
         return this.isOpen.get();
     }
@@ -151,7 +146,8 @@ public abstract class RocksTransaction implements Grakn.Transaction {
 
         protected final RocksStorage.Data dataStorage;
 
-        protected Schema(RocksSession.Schema session, Arguments.Transaction.Type type, Options.Transaction options, Factory.Storage storageFactory) {
+        protected Schema(RocksSession.Schema session, Arguments.Transaction.Type type,
+                         Options.Transaction options, Factory.Storage storageFactory) {
             super(session, type, options);
 
             schemaStorage = storageFactory.storageSchema(session.database(), this);
@@ -250,7 +246,8 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         protected final RocksStorage.Data dataStorage;
         private final RocksDatabase.Cache cache;
 
-        public Data(RocksSession.Data session, Arguments.Transaction.Type type, Options.Transaction options, Factory.Storage storageFactory) {
+        public Data(RocksSession.Data session, Arguments.Transaction.Type type,
+                    Options.Transaction options, Factory.Storage storageFactory) {
             super(session, type, options);
 
             cache = session.database().cacheBorrow();
