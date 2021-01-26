@@ -169,6 +169,7 @@ public class QueryHandler {
     }
 
     private void setPrefetchOption(Options.Query options, GraqlQuery query) {
+        // TODO: remove this method and encode the default values somewhere appropriate
         if (options.prefetch() == null) options.prefetch(!(query instanceof GraqlInsert));
     }
 }
