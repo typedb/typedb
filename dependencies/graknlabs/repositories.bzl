@@ -36,7 +36,7 @@ def graknlabs_graql():
     git_repository(
         name = "graknlabs_graql",
         remote = "https://github.com/Phillammon/graql",
-        commit = "f978a83fa4bb120e711290ee6389f96f66ad0ad3",
+        commit = "166bfe4416f312d0da9f845d2977a43575dcc344",
     )
 
 def graknlabs_protocol():
