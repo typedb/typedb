@@ -999,4 +999,25 @@ public class TypeResolverTest {
 
         assertEquals(expectedResolvedTypes, getHintMap(conjunction).get("$_relation:partner"));
     }
+
+    @Test
+    public void james_test() {
+        define_custom_schema("define" +
+                                     " number-of-letters sub attribute, value long; " +
+                                     " number-of-letters owns number-of-letters; " +
+                                     " person sub entity;"
+        );
+
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String queryString = "match $a has $b;";
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$a", set("number-of-letters"));
+            put("$b", set("number-of-letters"));
+        }};
+
+        assertEquals(expected, getHintMap(conjunction));
+
+    }
+
 }
