@@ -45,7 +45,6 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ANONYM
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_IS_CONSTRAINT;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_DELETE;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE_HAS;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE_HAS_ROOT;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE_THING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE_THING_DIRECT;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_IID_NOT_INSERTABLE;
@@ -74,11 +73,11 @@ public class Deleter {
     public static Deleter create(ConceptManager conceptMgr, List<graql.lang.pattern.variable.ThingVariable<?>> vars,
                                  ConceptMap matched, Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            VariableRegistry registry = VariableRegistry.createFromThings(vars);
+            VariableRegistry registry = VariableRegistry.createFromThings(vars, false);
             iterate(registry.types()).filter(t -> !t.reference().isLabel()).forEachRemaining(t -> {
                 throw GraknException.of(ILLEGAL_TYPE_VARIABLE_IN_DELETE, t.reference());
             });
-            return new Deleter(conceptMgr, VariableRegistry.createFromThings(vars).things(), matched, context);
+            return new Deleter(conceptMgr, registry.things(), matched, context);
         }
     }
 
@@ -119,10 +118,7 @@ public class Deleter {
             for (HasConstraint hasConstraint : var.has()) {
                 Reference.Name attRef = hasConstraint.attribute().reference().asName();
                 Attribute att = matched.get(attRef).asAttribute();
-                String attTypeLabel = hasConstraint.attribute().isa().get().type().label().get().label();
-                if (attTypeLabel.equals(conceptMgr.getRootThingType().getLabel().toString()))
-                    throw GraknException.of(INVALID_DELETE_HAS_ROOT, attRef);
-                else if (thing.getHas(att.getType()).anyMatch(a -> a.equals(att))) thing.unsetHas(att);
+                if (thing.getHas(att.getType()).anyMatch(a -> a.equals(att))) thing.unsetHas(att);
                 else throw GraknException.of(INVALID_DELETE_HAS, var.reference(), attRef);
             }
         }

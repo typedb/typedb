@@ -79,6 +79,7 @@ build:
         bazel test --config=rbe //test/behaviour/graql/language/define/... --test_output=streamed
         bazel test --config=rbe //test/behaviour/graql/language/undefine/... --test_output=streamed
         bazel test --config=rbe //test/behaviour/graql/language/insert/... --test_output=streamed
+        bazel test --config=rbe //test/behaviour/graql/language/delete/... --test_output=streamed
       # TODO: add more Graql Language tests as they are fixed
     test-assembly-linux-targz:
       image: graknlabs-ubuntu-20.04

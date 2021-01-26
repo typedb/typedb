@@ -18,6 +18,7 @@
 
 package grakn.core.pattern.variable;
 
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.thing.HasConstraint;
@@ -46,8 +47,7 @@ import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_THING_CONSTRAINT_IID;
-import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_THING_CONSTRAINT_ISA;
+import static grakn.core.common.exception.ErrorMessage.Pattern.*;
 import static graql.lang.common.GraqlToken.Char.COMMA;
 import static graql.lang.common.GraqlToken.Char.SPACE;
 
@@ -73,7 +73,12 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     }
 
     ThingVariable constrainThing(List<graql.lang.pattern.constraint.ThingConstraint> constraints, VariableRegistry registry) {
-        constraints.forEach(constraint -> this.constrain(ThingConstraint.of(this, constraint, registry)));
+        constraints.forEach(constraint -> {
+            if (constraint.isIsa() && constraint.asIsa().isDerived() && !registry.allowsDerived()) {
+                throw GraknException.of(ILLEGAL_DERIVED_THING_CONSTRAINT_ISA, id(), constraint.asIsa().type());
+            }
+            this.constrain(ThingConstraint.of(this, constraint, registry));
+        });
         return this;
     }
 
@@ -114,7 +119,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
             iidConstraint = constraint.asIID();
         } else if (constraint.isIsa()) {
             if (isaConstraint != null && !isaConstraint.equals(constraint)) {
-                throw GraknException.of(MULTIPLE_THING_CONSTRAINT_ISA, id());
+                throw GraknException.of(MULTIPLE_THING_CONSTRAINT_ISA, id(), constraint.asIsa().type(), isaConstraint.type());
             }
             isaConstraint = constraint.asIsa();
         } else if (constraint.isIs()) isConstraints.add(constraint.asIs());
