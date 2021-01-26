@@ -43,6 +43,9 @@ import java.util.function.BiFunction;
 
 import static grakn.core.common.collection.Bytes.bytesHavePrefix;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_DATA_READ_VIOLATION;
+import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_SCHEMA_READ_VIOLATION;
 
 public abstract class RocksStorage implements Storage {
 
@@ -222,7 +225,12 @@ public abstract class RocksStorage implements Storage {
 
         @Override
         public void delete(byte[] key) {
-            assert isOpen() && !isReadOnly && transaction.isOpen();
+            assert isOpen() && transaction.isOpen();
+            if (isReadOnly) {
+                if (transaction.isSchema()) throw exception(TRANSACTION_SCHEMA_READ_VIOLATION);
+                else if (transaction.isData()) throw exception(TRANSACTION_DATA_READ_VIOLATION);
+                else throw exception(ILLEGAL_STATE);
+            }
             try {
                 readWriteLock.lockWrite();
                 storageTransaction.delete(key);

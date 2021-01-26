@@ -128,7 +128,6 @@ public class Deleter {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete_relation")) {
             if (var.relation().size() == 1) {
                 var.relation().iterator().next().players().forEach(rolePlayer -> {
-                    System.out.println(rolePlayer);
                     Thing player = matched.get(rolePlayer.player().reference().asName()).asThing();
                     RoleType roleType = getRoleType(relation, player, rolePlayer);
                     relation.removePlayer(roleType, player);

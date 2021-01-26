@@ -86,13 +86,18 @@ public class RelationImpl extends ThingImpl implements Relation {
         ResourceIterator<ThingVertex> role = vertex.outs().edge(
                 RELATING, PrefixIID.of(ROLE), ((RoleTypeImpl) roleType).vertex.iid()
         ).to().filter(v -> v.ins().edge(PLAYING, ((ThingImpl) player).vertex) != null);
-
         if (role.hasNext()) {
             RoleImpl.of(role.next()).delete();
             deleteIfNoPlayer();
         } else {
             throw exception(GraknException.of(DELETE_ROLEPLAYER_NOT_PRESENT, player.getType().getLabel(), roleType.getLabel().toString()));
         }
+    }
+
+    @Override
+    public void delete() {
+        vertex.ins().edge(RELATING).from().map(RoleImpl::of).forEachRemaining(RoleImpl::delete);
+        super.delete();
     }
 
     void deleteIfNoPlayer() {
