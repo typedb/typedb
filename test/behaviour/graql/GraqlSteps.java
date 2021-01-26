@@ -67,13 +67,6 @@ public class GraqlSteps {
     HashMap<String, UniquenessCheck> identifierChecks = new HashMap<>();
     private Map<String, Map<String, String>> rules;
 
-    @Given("the integrity is validated")
-    public void integrity_is_validated() {
-
-        // TODO
-
-    }
-
     @Given("graql define")
     public void graql_define(String defineQueryStatements) {
         GraqlDefine graqlQuery = Graql.parseQuery(String.join("\n", defineQueryStatements)).asDefine();
