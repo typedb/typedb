@@ -38,6 +38,7 @@ import grakn.core.pattern.constraint.type.PlaysConstraint;
 import grakn.core.pattern.constraint.type.RegexConstraint;
 import grakn.core.pattern.constraint.type.RelatesConstraint;
 import grakn.core.pattern.constraint.type.SubConstraint;
+import grakn.core.pattern.constraint.type.TypeConstraint;
 import grakn.core.pattern.constraint.type.ValueTypeConstraint;
 import grakn.core.pattern.variable.SystemReference;
 import grakn.core.pattern.variable.ThingVariable;
@@ -179,14 +180,19 @@ public class TypeResolver {
             resolverRegister.put(var.id(), resolver);
             variableRegister.putIfAbsent(resolver.reference(), var);
             if (!var.resolvedTypes().isEmpty()) traversal.labels(resolver.id(), var.resolvedTypes());
-            resolver.abstractConstraint().ifPresent(constraint -> registerAbstract(resolver));
-            resolver.is().forEach(constraint -> registerIsType(resolver, constraint));
-            resolver.owns().forEach(constraint -> registerOwns(resolver, constraint));
-            resolver.plays().forEach(constraint -> registerPlays(resolver, constraint));
-            resolver.regex().ifPresent(constraint -> registerRegex(resolver, constraint));
-            resolver.relates().forEach(constraint -> registerRelates(resolver, constraint));
-            resolver.sub().ifPresent(constraint -> registerSub(resolver, constraint));
-            resolver.valueType().ifPresent(constraint -> registerValueType(resolver, constraint));
+
+            for (TypeConstraint constraint : var.constraints()) {
+                if (constraint.isAbstract()) registerAbstract(resolver);
+                else if (constraint.isIs()) registerIsType(resolver, constraint.asIs());
+                else if (constraint.isOwns()) registerOwns(resolver, constraint.asOwns());
+                else if (constraint.isPlays()) registerPlays(resolver, constraint.asPlays());
+                else if (constraint.isRegex()) registerRegex(resolver, constraint.asRegex());
+                else if (constraint.isRelates()) registerRelates(resolver, constraint.asRelates());
+                else if (constraint.isSub()) registerSub(resolver, constraint.asSub());
+                else if (constraint.asValueType()) registerValueType(resolver, constraint.asValueType());
+                else throw GraknException.of(ILLEGAL_STATE);
+            }
+
             return resolver;
         }
 
