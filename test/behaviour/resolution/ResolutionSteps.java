@@ -32,9 +32,11 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
+import java.util.List;
 import java.util.Set;
 
 import static grakn.core.test.behaviour.connection.ConnectionSteps.sessions;
+import static grakn.core.test.behaviour.connection.ConnectionSteps.sessionsToTransactions;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
@@ -56,26 +58,26 @@ public class ResolutionSteps {
         graql_query(insertQueryStatements);
     }
 
-    @Given("materialised keyspace is named: {word}")
-    public void materialised_keyspace_is_named(String keyspaceName) {
+    @Given("materialised database is named: {word}")
+    public void materialised_database_is_named(String databaseName) {
         Grakn.Session materialisedSession = sessions.stream()
-                .filter(s -> s.database().name().equals(keyspaceName))
+                .filter(s -> s.database().name().equals(databaseName))
                 .findAny()
                 .orElse(null);
         setMaterialisedSession(materialisedSession);
     }
 
-    @Given("reasoned keyspace is named: {word}")
-    public void reasoned_keyspace_is_named(String keyspaceName) {
+    @Given("reasoned database is named: {word}")
+    public void reasoned_database_is_named(String databaseName) {
         Grakn.Session reasonedSession = sessions.stream()
-                .filter(s -> s.database().name().equals(keyspaceName))
+                .filter(s -> s.database().name().equals(databaseName))
                 .findAny()
                 .orElse(null);
         setReasonedSession(reasonedSession);
     }
 
-    @When("materialised keyspace is completed")
-    public void materialised_keyspace_is_completed() {
+    @When("materialised database is completed")
+    public void materialised_database_is_completed() {
         // TODO
     }
 
@@ -84,13 +86,12 @@ public class ResolutionSteps {
         queryToTest = Graql.parseQuery(graqlQuery).asMatch();
     }
 
-    @Then("answer size in reasoned keyspace is: {number}")
-    public void answer_size_in_reasoned_keyspace_is(int expectedCount) {
+    @Then("answer size in reasoned database is: {number}")
+    public void answer_size_in_reasoned_database_is(int expectedCount) {
         int resultCount;
-        try (Grakn.Transaction transaction = reasonedSession.transaction(Arguments.Transaction.Type.READ)) {
-            answers = transaction.query().match(queryToTest, (new Options.Query().infer(true))).toSet();
-            resultCount = answers.size();
-        }
+        Grakn.Transaction tx = getTransaction(reasonedSession);
+        answers = tx.query().match(queryToTest, (new Options.Query().infer(true))).toSet();
+        resultCount = answers.size();
         if (expectedCount != resultCount) {
             String msg = String.format("Query had an incorrect number of answers. Expected [%d] answers, " +
                                                "but found [%d] answers, for query :\n %s", expectedCount, resultCount, queryToTest);
@@ -98,12 +99,11 @@ public class ResolutionSteps {
         }
     }
 
-    @Then("answers are consistent across {int} executions in reasoned keyspace")
-    public void answers_are_consistent_across_n_executions_in_reasoned_keyspace(int executionCount) {
+    @Then("answers are consistent across {int} executions in reasoned database")
+    public void answers_are_consistent_across_n_executions_in_reasoned_database(int executionCount) {
         Set<ConceptMap> oldAnswers;
-        try (Grakn.Transaction transaction = reasonedSession.transaction(Arguments.Transaction.Type.READ)) {
-            oldAnswers = transaction.query().match(queryToTest, (new Options.Query().infer(true))).toSet();
-        }
+        Grakn.Transaction tx = getTransaction(reasonedSession);
+        oldAnswers = tx.query().match(queryToTest, (new Options.Query().infer(true))).toSet();
         for (int i = 0; i < executionCount - 1; i++) {
             try (Grakn.Transaction transaction = reasonedSession.transaction(Arguments.Transaction.Type.READ)) {
                 Set<ConceptMap> answers = transaction.query().match(queryToTest, (new Options.Query().infer(true))).toSet();
@@ -116,26 +116,25 @@ public class ResolutionSteps {
     public void equivalent_answer_set(String equivalentQuery) {
         assertNotNull("A graql query must have been previously loaded in order to test answer equivalence.", queryToTest);
         assertNotNull("There are no previous answers to test against; was the reference query ever executed?", answers);
-        try (Grakn.Transaction transaction = reasonedSession.transaction(Arguments.Transaction.Type.READ)) {
-            Set<ConceptMap> newAnswers = transaction.query().match(Graql.parseQuery(equivalentQuery).asMatch(),
-                                                                   (new Options.Query().infer(true))).toSet();
-            assertEquals(answers, newAnswers);
-        }
+        Grakn.Transaction tx = getTransaction(reasonedSession);
+        Set<ConceptMap> newAnswers = tx.query().match(Graql.parseQuery(equivalentQuery).asMatch(),
+                                                      (new Options.Query().infer(true))).toSet();
+        assertEquals(answers, newAnswers);
     }
 
-    @Then("all answers are correct in reasoned keyspace")
-    public void reasoned_keyspace_all_answers_are_correct() {
+    @Then("all answers are correct in reasoned database")
+    public void reasoned_database_all_answers_are_correct() {
         // TODO
     }
 
-    @Then("materialised and reasoned keyspaces are the same size")
-    public void keyspaces_are_the_same_size() {
+    @Then("materialised and reasoned databases are the same size")
+    public void databases_are_the_same_size() {
         // TODO
     }
 
     private void graql_query(String queryStatements) {
         sessions.forEach(session -> {
-            Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE);
+            Grakn.Transaction tx = getTransaction(session);
             GraqlQuery query = Graql.parseQuery(String.join("\n", queryStatements));
             if (query instanceof GraqlMatch) {
                 tx.query().match(query.asMatch(), (new Options.Query().infer(true)));
@@ -146,16 +145,13 @@ public class ResolutionSteps {
             } else {
                 throw new ScenarioDefinitionException("Query not handled in ResolutionSteps" + queryStatements);
             }
-            tx.commit();
         });
     }
 
-    private Grakn.Session getReasonedSession() {
-        return reasonedSession;
-    }
-
-    private Grakn.Session getMaterialisedSession() {
-        return materialisedSession;
+    private Grakn.Transaction getTransaction(Grakn.Session session) {
+        List<Grakn.Transaction> transactions = sessionsToTransactions.get(session);
+        assert transactions.size() == 1;
+        return transactions.get(0);
     }
 
     private void setReasonedSession(Grakn.Session value) {

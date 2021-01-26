@@ -429,7 +429,6 @@ public class DataGraph implements Graph {
      */
     @Override
     public void commit() {
-        storage.lock()
         thingsByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Status.BUFFERED) && !v.isInferred()).forEach(
                 vertex -> vertex.iid(generate(storage.dataKeyGenerator(), vertex.type().iid(), vertex.type().properLabel()))
         ); // thingByIID no longer contains valid mapping from IID to TypeVertex
