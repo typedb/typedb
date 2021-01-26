@@ -19,6 +19,7 @@ package grakn.core.server.rpc.query;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ConceptMapGroup;
@@ -35,11 +36,12 @@ import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlMatch;
-import graql.lang.query.GraqlQuery;
 import graql.lang.query.GraqlUndefine;
 
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
+import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.server.rpc.common.RequestReader.getOptions;
+import static grakn.core.server.rpc.common.ResponseBuilder.Answer.numeric;
 import static java.util.stream.Collectors.toList;
 
 public class QueryHandler {
@@ -60,10 +62,10 @@ public class QueryHandler {
                 this.delete(request, req.getDeleteReq(), options);
                 return;
             case DEFINE_REQ:
-                this.define(request, req.getDefineReq());
+                this.define(request, req.getDefineReq(), options);
                 return;
             case UNDEFINE_REQ:
-                this.undefine(request, req.getUndefineReq());
+                this.undefine(request, req.getUndefineReq(), options);
                 return;
             case MATCH_REQ:
                 this.match(request, req.getMatchReq(), options);
@@ -92,10 +94,10 @@ public class QueryHandler {
 
     private void match(Transaction.Req request, QueryProto.Query.Match.Req req, Options.Query options) {
         GraqlMatch query = Graql.parseQuery(req.getQuery()).asMatch();
-        setPrefetchOption(options, query);
-        ResourceIterator<ConceptMap> answers = queryManager.match(query, options);
+        Context.Query context = new Context.Query(transactionRPC.context(), options, query);
+        ResourceIterator<ConceptMap> answers = queryManager.match(query, context);
         transactionRPC.respond(
-                request, answers, options,
+                request, answers, context,
                 as -> response(request, QueryProto.Query.Res.newBuilder().setMatchRes(
                         QueryProto.Query.Match.Res.newBuilder().addAllAnswers(
                                 as.stream().map(ResponseBuilder.Answer::conceptMap).collect(toList()))))
@@ -104,32 +106,33 @@ public class QueryHandler {
 
     private void match(Transaction.Req request, QueryProto.Query.MatchAggregate.Req req, Options.Query options) {
         GraqlMatch.Aggregate query = Graql.parseQuery(req.getQuery()).asMatchAggregate();
-        Numeric answer = queryManager.match(query, options);
+        Context.Query context = new Context.Query(transactionRPC.context(), options, query);
+        Numeric answer = queryManager.match(query, context);
         transactionRPC.respond(
                 response(request, QueryProto.Query.Res.newBuilder().setMatchAggregateRes(
-                        QueryProto.Query.MatchAggregate.Res.newBuilder().setAnswer(ResponseBuilder.Answer.numeric(answer))))
+                        QueryProto.Query.MatchAggregate.Res.newBuilder().setAnswer(numeric(answer))))
         );
     }
 
     private void match(Transaction.Req request, QueryProto.Query.MatchGroup.Req req, Options.Query options) {
         GraqlMatch.Group query = Graql.parseQuery(req.getQuery()).asMatchGroup();
-        setPrefetchOption(options, query);
-        ResourceIterator<ConceptMapGroup> answers = queryManager.match(query, options);
+        Context.Query context = new Context.Query(transactionRPC.context(), options, query);
+        ResourceIterator<ConceptMapGroup> answers = queryManager.match(query, context);
         transactionRPC.respond(
-                request, answers, options,
+                request, answers, context,
                 as -> response(request, QueryProto.Query.Res.newBuilder().setMatchGroupRes(
                         QueryProto.Query.MatchGroup.Res.newBuilder()
-                                .addAllAnswers(as.stream().map(ResponseBuilder.Answer::conceptMapGroup).collect(toList())))
+                                .addAllAnswers(iterate(as).map(ResponseBuilder.Answer::conceptMapGroup).toList()))
                 )
         );
     }
 
     private void match(Transaction.Req request, QueryProto.Query.MatchGroupAggregate.Req req, Options.Query options) {
         GraqlMatch.Group.Aggregate query = Graql.parseQuery(req.getQuery()).asMatchGroupAggregate();
-        setPrefetchOption(options, query);
-        ResourceIterator<NumericGroup> answers = queryManager.match(query, options);
+        Context.Query context = new Context.Query(transactionRPC.context(), options, query);
+        ResourceIterator<NumericGroup> answers = queryManager.match(query, context);
         transactionRPC.respond(
-                request, answers, options,
+                request, answers, context,
                 as -> response(request, QueryProto.Query.Res.newBuilder().setMatchGroupAggregateRes(
                         QueryProto.Query.MatchGroupAggregate.Res.newBuilder().addAllAnswers(
                                 as.stream().map(ResponseBuilder.Answer::numericGroup).collect(toList())
@@ -140,10 +143,10 @@ public class QueryHandler {
 
     private void insert(Transaction.Req request, QueryProto.Query.Insert.Req req, Options.Query options) {
         GraqlInsert query = Graql.parseQuery(req.getQuery()).asInsert();
-        setPrefetchOption(options, query);
-        ResourceIterator<ConceptMap> answers = queryManager.insert(query, options);
+        Context.Query context = new Context.Query(transactionRPC.context(), options, query);
+        ResourceIterator<ConceptMap> answers = queryManager.insert(query, context);
         transactionRPC.respond(
-                request, answers, options,
+                request, answers, context,
                 as -> response(request, QueryProto.Query.Res.newBuilder().setInsertRes(
                         QueryProto.Query.Insert.Res.newBuilder().addAllAnswers(
                                 as.stream().map(ResponseBuilder.Answer::conceptMap).collect(toList()))))
@@ -152,24 +155,22 @@ public class QueryHandler {
 
     private void delete(Transaction.Req request, QueryProto.Query.Delete.Req req, Options.Query options) {
         GraqlDelete query = Graql.parseQuery(req.getQuery()).asDelete();
-        queryManager.delete(query, options);
-        transactionRPC.respond(response(request, QueryProto.Query.Res.newBuilder().setDeleteRes(QueryProto.Query.Delete.Res.getDefaultInstance())));
+        Context.Query context = new Context.Query(transactionRPC.context(), options, query);
+        transactionRPC.respond(response(request, QueryProto.Query.Res.newBuilder()
+                .setDeleteRes(QueryProto.Query.Delete.Res.getDefaultInstance())));
     }
 
-    private void define(Transaction.Req request, QueryProto.Query.Define.Req req) {
+    private void define(Transaction.Req request, QueryProto.Query.Define.Req req, Options.Query options) {
         GraqlDefine query = Graql.parseQuery(req.getQuery()).asDefine();
-        queryManager.define(query);
-        transactionRPC.respond(response(request, QueryProto.Query.Res.newBuilder().setDefineRes(QueryProto.Query.Define.Res.getDefaultInstance())));
+        Context.Query context = new Context.Query(transactionRPC.context(), options, query);
+        transactionRPC.respond(response(request, QueryProto.Query.Res.newBuilder()
+                .setDefineRes(QueryProto.Query.Define.Res.getDefaultInstance())));
     }
 
-    private void undefine(Transaction.Req request, QueryProto.Query.Undefine.Req req) {
+    private void undefine(Transaction.Req request, QueryProto.Query.Undefine.Req req, Options.Query options) {
         GraqlUndefine query = Graql.parseQuery(req.getQuery()).asUndefine();
-        queryManager.undefine(query);
-        transactionRPC.respond(response(request, QueryProto.Query.Res.newBuilder().setUndefineRes(QueryProto.Query.Undefine.Res.getDefaultInstance())));
-    }
-
-    private void setPrefetchOption(Options.Query options, GraqlQuery query) {
-        // TODO: remove this method and encode the default values somewhere appropriate
-        if (options.prefetch() == null) options.prefetch(!(query instanceof GraqlInsert));
+        Context.Query context = new Context.Query(transactionRPC.context(), options, query);
+        transactionRPC.respond(response(request, QueryProto.Query.Res.newBuilder()
+                .setUndefineRes(QueryProto.Query.Undefine.Res.getDefaultInstance())));
     }
 }
