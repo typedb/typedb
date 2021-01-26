@@ -45,9 +45,9 @@ build:
     build:
       image: graknlabs-ubuntu-20.04
       command: |
-        bazel build --config=rbe //...
-        bazel run --config=rbe @graknlabs_dependencies//tool/checkstyle:test-coverage
-        bazel test --config=rbe $(bazel query 'kind(checkstyle_test, //...)') --test_output=streamed
+        bazel build //...
+        bazel run @graknlabs_dependencies//tool/checkstyle:test-coverage
+        bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=streamed
     build-dependency:
       image: graknlabs-ubuntu-20.04
       command: |
