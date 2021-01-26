@@ -189,8 +189,8 @@ public class TypeResolver {
                 else if (constraint.isRegex()) registerRegex(resolver, constraint.asRegex());
                 else if (constraint.isRelates()) registerRelates(resolver, constraint.asRelates());
                 else if (constraint.isSub()) registerSub(resolver, constraint.asSub());
-                else if (constraint.asValueType()) registerValueType(resolver, constraint.asValueType());
-                else throw GraknException.of(ILLEGAL_STATE);
+                else if (constraint.isValueType()) registerValueType(resolver, constraint.asValueType());
+                else if (!constraint.isLabel()) throw GraknException.of(ILLEGAL_STATE);
             }
 
             return resolver;
