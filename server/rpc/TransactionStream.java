@@ -101,7 +101,7 @@ public class TransactionStream implements StreamObserver<Transaction.Req> {
     public void onError(Throwable error) {
         try {
             TransactionRPC t;
-            if ((t = transactionRPC.get()) != null) t.close();
+            if ((t = transactionRPC.get()) != null) t.closeWithError(error);
         } catch (Exception e) {
             LOG.error(e.getMessage(), e);
         } finally {
