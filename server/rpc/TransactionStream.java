@@ -97,23 +97,11 @@ public class TransactionStream implements StreamObserver<Transaction.Req> {
         }
     }
 
-    /**
-     * This method is invoked when a client abruptly terminates a connection to
-     * the server. So, we want to make sure to also close and delete the current
-     * session and all the transactions associated to the same client.
-     *
-     * This might create issues if a session is used by other concurrent clients,
-     * the better approach would be to signal a closure intent to the session
-     * and the session should be able to detect whether it's been used by other
-     * connections, if not close it completely.
-     *
-     * TODO: improve by sending closure intent to the session
-     */
     @Override
     public void onError(Throwable error) {
         try {
             TransactionRPC t;
-            if ((t = transactionRPC.get()) != null) t.sessionRPC().closeWithError(error);
+            if ((t = transactionRPC.get()) != null) t.closeWithError(error);
         } catch (Exception e) {
             LOG.error(e.getMessage(), e);
         } finally {
