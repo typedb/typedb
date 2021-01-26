@@ -18,7 +18,6 @@
 
 package grakn.core.pattern.variable;
 
-import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.thing.HasConstraint;
@@ -47,7 +46,9 @@ import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Pattern.*;
+import static grakn.core.common.exception.ErrorMessage.Pattern.ILLEGAL_DERIVED_THING_CONSTRAINT_ISA;
+import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_THING_CONSTRAINT_IID;
+import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_THING_CONSTRAINT_ISA;
 import static graql.lang.common.GraqlToken.Char.COMMA;
 import static graql.lang.common.GraqlToken.Char.SPACE;
 
