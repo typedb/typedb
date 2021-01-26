@@ -107,9 +107,9 @@ build:
       command: |
         export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
-        bazel run --config=rbe --define version=$(git rev-parse HEAD) //server:deploy-linux-targz -- snapshot
-        bazel run --config=rbe --define version=$(git rev-parse HEAD) //server:deploy-mac-zip -- snapshot
-        bazel run --config=rbe --define version=$(git rev-parse HEAD) //server:deploy-windows-zip -- snapshot
+        bazel run --define version=$(git rev-parse HEAD) //server:deploy-linux-targz -- snapshot
+        bazel run --define version=$(git rev-parse HEAD) //server:deploy-mac-zip -- snapshot
+        bazel run --define version=$(git rev-parse HEAD) //server:deploy-windows-zip -- snapshot
     deploy-apt-snapshot:
       image: graknlabs-ubuntu-20.04
       filter:
@@ -228,6 +228,6 @@ release:
       command: |
         export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
-        bazel run --config=rbe --define version=$(cat VERSION) //server:deploy-linux-targz -- release
-        bazel run --config=rbe --define version=$(cat VERSION) //server:deploy-mac-zip -- release
-        bazel run --config=rbe --define version=$(cat VERSION) //server:deploy-windows-zip -- release
+        bazel run --define version=$(cat VERSION) //server:deploy-linux-targz -- release
+        bazel run --define version=$(cat VERSION) //server:deploy-mac-zip -- release
+        bazel run --define version=$(cat VERSION) //server:deploy-windows-zip -- release
