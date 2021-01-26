@@ -188,8 +188,10 @@ public class TransactionRPC {
         /**
          * Spin up a new iterator and begin streaming responses immediately.
          */
-        <T> void iterate(TransactionProto.Transaction.Req request, Iterator<T> iterator, Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
-            iterate(request, iterator, true, transaction.context().responseBatchSize(), responseBuilderFn);
+        <T> void iterate(TransactionProto.Transaction.Req request, Iterator<T> iterator,
+                         Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
+            int size = transaction.context().options().responseBatchSize();
+            iterate(request, iterator, true, size, responseBuilderFn);
         }
 
         /**
