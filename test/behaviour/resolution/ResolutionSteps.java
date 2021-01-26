@@ -58,22 +58,22 @@ public class ResolutionSteps {
         graql_query(insertQueryStatements);
     }
 
-    @Given("materialised database is named: {word}")
-    public void materialised_database_is_named(String databaseName) {
+    @Given("materialised session has database name: {word}")
+    public void materialised_session_has_database_name(String databaseName) {
         Grakn.Session materialisedSession = sessions.stream()
                 .filter(s -> s.database().name().equals(databaseName))
                 .findAny()
                 .orElse(null);
-        setMaterialisedSession(materialisedSession);
+        this.materialisedSession = materialisedSession;
     }
 
-    @Given("reasoned database is named: {word}")
-    public void reasoned_database_is_named(String databaseName) {
+    @Given("reasoned session has database name: {word}")
+    public void reasoned_session_has_database_name(String databaseName) {
         Grakn.Session reasonedSession = sessions.stream()
                 .filter(s -> s.database().name().equals(databaseName))
                 .findAny()
                 .orElse(null);
-        setReasonedSession(reasonedSession);
+        this.reasonedSession = reasonedSession;
     }
 
     @When("materialised database is completed")
@@ -154,11 +154,4 @@ public class ResolutionSteps {
         return transactions.get(0);
     }
 
-    private void setReasonedSession(Grakn.Session value) {
-        reasonedSession = value;
-    }
-
-    private void setMaterialisedSession(Grakn.Session value) {
-        materialisedSession = value;
-    }
 }
