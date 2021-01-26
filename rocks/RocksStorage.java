@@ -357,7 +357,7 @@ public abstract class RocksStorage implements Storage {
 
         @Override
         public void mergeUntracked(byte[] key, byte[] value) {
-            assert isOpen() && !isReadOnly && !transaction.isOpen();
+            assert isOpen() && !isReadOnly;
             try {
                 storageTransaction.mergeUntracked(key, value);
             } catch (RocksDBException e) {
