@@ -18,6 +18,7 @@
 
 package grakn.core.test.integration;
 
+import grakn.core.common.parameters.Options;
 import grakn.core.concurrent.actor.EventLoopGroup;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.concept.ConceptManager;
@@ -50,7 +51,7 @@ public class ReasonerTest {
     private static RocksGrakn grakn;
 
     private RocksTransaction singleThreadElgTransaction(RocksSession session, Arguments.Transaction.Type transactionType) {
-        RocksTransaction transaction = session.transaction(transactionType);
+        RocksTransaction transaction = session.transaction(transactionType, new Options.Transaction().infer(true));
         transaction.reasoner().resolverRegistry().setEventLoopGroup(new EventLoopGroup(1, "grakn-elg"));
         return transaction;
     }
