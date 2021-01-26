@@ -85,7 +85,7 @@ build:
         bazel test --config=rbe //test/behaviour/graql/language/match/... --test_output=streamed
         bazel test --config=rbe //test/behaviour/graql/language/get/... --test_output=streamed
 
-    test-behaviour-writeable:
+    test-behaviour-writable:
       image: graknlabs-ubuntu-20.04
       command: |
         bazel test --config=rbe //test/behaviour/graql/language/insert/... --test_output=streamed

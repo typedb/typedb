@@ -44,8 +44,6 @@ public class RoleImpl {
     }
 
     public void delete() {
-        System.out.println("*************************************");
-        System.out.println(this);
         ThingVertex relation = vertex.ins().edge(RELATING).from().next();
         ThingVertex player = vertex.ins().edge(PLAYING).from().next();
         relation.outs().edge(ROLEPLAYER, player, vertex).delete();
