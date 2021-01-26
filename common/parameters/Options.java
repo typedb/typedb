@@ -37,9 +37,10 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     private Boolean infer = null;
     private Boolean explain = null;
     private Integer batchSize = null;
-    private Boolean prefetch = null;
     private Integer sessionIdlTimeoutMillis = null;
     private Integer schemaLockAcquireTimeoutMillis = null;
+
+    protected Boolean prefetch = null;
 
     abstract SELF getThis();
 
@@ -152,6 +153,13 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
             return this;
         }
 
+        Query setPrefetchIfAbsent(GraqlQuery query) {
+            if (prefetch == null) {
+                prefetch = query.type().isRead() ? DEFAULT_QUERY_READ_PREFETCH : DEFAULT_QUERY_WRITE_PREFETCH;
+            }
+            return this;
+        }
+
         public boolean parallel() {
             if (parallel != null) return parallel;
             return DEFAULT_PARALLEL;
@@ -159,11 +167,6 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
 
         public Query parallel(boolean parallel) {
             this.parallel = parallel;
-            return this;
-        }
-
-        public Query query(GraqlQuery query) {
-            this.prefetch(query.type().isRead() ? DEFAULT_QUERY_READ_PREFETCH : DEFAULT_QUERY_WRITE_PREFETCH);
             return this;
         }
     }

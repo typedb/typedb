@@ -83,7 +83,7 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
 
         public Query(Transaction context, Options.Query options, GraqlQuery query) {
             super(context, options.parent(context.options()));
-            options.query(query);
+            options.setPrefetchIfAbsent(query);
         }
     }
 }

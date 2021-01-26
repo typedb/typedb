@@ -156,6 +156,7 @@ public class QueryHandler {
     private void delete(Transaction.Req request, QueryProto.Query.Delete.Req req, Options.Query options) {
         GraqlDelete query = Graql.parseQuery(req.getQuery()).asDelete();
         Context.Query context = new Context.Query(transactionRPC.context(), options, query);
+        queryManager.delete(query, context);
         transactionRPC.respond(response(request, QueryProto.Query.Res.newBuilder()
                 .setDeleteRes(QueryProto.Query.Delete.Res.getDefaultInstance())));
     }
@@ -163,6 +164,7 @@ public class QueryHandler {
     private void define(Transaction.Req request, QueryProto.Query.Define.Req req, Options.Query options) {
         GraqlDefine query = Graql.parseQuery(req.getQuery()).asDefine();
         Context.Query context = new Context.Query(transactionRPC.context(), options, query);
+        queryManager.define(query, context);
         transactionRPC.respond(response(request, QueryProto.Query.Res.newBuilder()
                 .setDefineRes(QueryProto.Query.Define.Res.getDefaultInstance())));
     }
@@ -170,6 +172,7 @@ public class QueryHandler {
     private void undefine(Transaction.Req request, QueryProto.Query.Undefine.Req req, Options.Query options) {
         GraqlUndefine query = Graql.parseQuery(req.getQuery()).asUndefine();
         Context.Query context = new Context.Query(transactionRPC.context(), options, query);
+        queryManager.undefine(query, context);
         transactionRPC.respond(response(request, QueryProto.Query.Res.newBuilder()
                 .setUndefineRes(QueryProto.Query.Undefine.Res.getDefaultInstance())));
     }
