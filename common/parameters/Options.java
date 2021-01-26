@@ -41,6 +41,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     private Integer schemaLockAcquireTimeoutMillis = null;
 
     protected Boolean prefetch = null;
+    protected GraqlQuery query = null;
 
     abstract SELF getThis();
 
@@ -85,6 +86,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     public boolean prefetch() {
         if (prefetch != null) return prefetch;
         else if (parent != null) return parent.prefetch();
+        else if (query != null) return query.type().isRead() ? DEFAULT_QUERY_READ_PREFETCH : DEFAULT_QUERY_WRITE_PREFETCH;
         else return DEFAULT_QUERY_READ_PREFETCH;
     }
 
@@ -153,10 +155,8 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
             return this;
         }
 
-        Query setPrefetchIfAbsent(GraqlQuery query) {
-            if (prefetch == null) {
-                prefetch = query.type().isRead() ? DEFAULT_QUERY_READ_PREFETCH : DEFAULT_QUERY_WRITE_PREFETCH;
-            }
+        Query query(GraqlQuery query) {
+            this.query = query;
             return this;
         }
 
