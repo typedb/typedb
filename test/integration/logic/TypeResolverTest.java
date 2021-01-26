@@ -999,5 +999,4 @@ public class TypeResolverTest {
 
         assertEquals(expectedResolvedTypes, getHintMap(conjunction).get("$_relation:partner"));
     }
-
 }
