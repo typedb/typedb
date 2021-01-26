@@ -69,32 +69,6 @@ host_compatible_java_test(
     resource_strip_prefix = "common/test",
 )
 
-host_compatible_java_test(
-    name = "test-reasoner",
-    srcs = ["ReasonerTest.java"],
-    test_class = "grakn.core.test.integration.ReasonerTest",
-    native_libraries_deps = [
-        "//rocks:rocks",
-        "//logic:logic",
-        "//:grakn",
-        "//concept:concept",
-    ],
-    deps = [
-        # Internal dependencies
-        "//test/integration/util:util",
-        "//common:common",
-        "//concurrent:concurrent",
-
-        # External dependencies from Grakn Labs
-        "@graknlabs_graql//java:graql",
-    ],
-    data = [":schema.gql"],
-    resources = [
-        "//common/test:logback"
-    ],
-    resource_strip_prefix = "common/test",
-)
-
 checkstyle_test(
     name = "checkstyle",
     include = glob([

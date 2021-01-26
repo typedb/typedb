@@ -166,7 +166,7 @@ public class Reasoner {
         return newClone;
     }
 
-    public ResolverRegistry resolverRegistry() {
+    ResolverRegistry resolverRegistry() {
         return resolverRegistry;
     }
 
