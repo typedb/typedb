@@ -54,7 +54,8 @@ def graknlabs_grabl_tracing():
     )
 
 def graknlabs_behaviour():
-    native.local_repository(
+    git_repository(
         name = "graknlabs_behaviour",
-        path = "../behaviour"
+        remote = "https://github.com/graknlabs/behaviour",
+        commit = "195def974d303d59a3beff3d4803c1b5ecc2141c", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_behaviour
     )
