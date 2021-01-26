@@ -68,7 +68,7 @@ public class ReasonerTest {
     }
 
     @Test
-    public void test_basic() {
+    public void test_no_rules() {
         try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();

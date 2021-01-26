@@ -57,14 +57,7 @@ public abstract class AnswerState {
     public int hashCode() {
         return Objects.hash(conceptMap);
     }
-
-    @Override
-    public String toString() {
-        return "AnswerState{" +
-                "conceptMap=" + conceptMap +
-                '}';
-    }
-
+    
     public static class UpstreamVars {
 
         public static class Initial extends AnswerState {

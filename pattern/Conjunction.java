@@ -124,9 +124,7 @@ public class Conjunction implements Pattern, Cloneable {
     }
 
     public Traversal traversal() {
-        Traversal traversal = new Traversal();
-        variableSet.forEach(variable -> variable.addTo(traversal));
-        return traversal;
+        return traversal(new ArrayList<>());
     }
 
     private boolean printable(Variable variable) {
