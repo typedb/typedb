@@ -88,7 +88,7 @@ public class AlphaEquivalenceTest {
         ThingVariable b = parseVariable("b", "$b isa age").asThing();
         AlphaEquivalence alphaEq = a.alphaEquals(b);
         assertEquals(map(new Pair<>("$a", "$b"), new Pair<>("$_age", "$_age")), alphaMapToStringMap(alphaEq.asValid()));
-        testAlphaEquivalence(a, b, true);
+        testAlphaEquivalenceSymmetricReflexive(a, b, true);
     }
 
     @Test
@@ -101,7 +101,7 @@ public class AlphaEquivalenceTest {
         )
                 .map(Variable::asThing)
                 .collect(Collectors.toList());
-        variables.forEach(var -> testAlphaEquivalence(var.asThing(), variables, new HashSet<>()));
+        variables.forEach(var -> testAlphaEquivalenceSymmetricReflexive(var.asThing(), variables, new HashSet<>()));
     }
 
     @Test
@@ -113,14 +113,14 @@ public class AlphaEquivalenceTest {
         assertEquals(varNameMap.get("$p"), "$q");
         assertEquals(varNameMap.get("$_age"), "$_age");
         assertEquals(varNameMap.get("$_person"), "$_person");
-        testAlphaEquivalence(p, q, true);
+        testAlphaEquivalenceSymmetricReflexive(p, q, true);
     }
 
     @Test
     public void test_multiple_value_and_has_label_equivalent() {
         ThingVariable p = parseVariables("p", "$p has $a", "$a 30 isa age", "$p has $n", "$n \"Alice\" isa name", "$p isa person").asThing();
         ThingVariable q = parseVariables("q", "$q has $b", "$b 30 isa age", "$q has $m", "$m \"Alice\" isa name", "$q isa person").asThing();
-        testAlphaEquivalence(p, q, true);
+        testAlphaEquivalenceSymmetricReflexive(p, q, true);
         AlphaEquivalence alphaEq = p.alphaEquals(q);
         Map<String, String> varNameMap = alphaMapToStringMap(alphaEq.asValid());
         assertEquals(varNameMap.get("$p"), "$q");
@@ -135,14 +135,14 @@ public class AlphaEquivalenceTest {
     public void test_value_not_equivalent() {
         ThingVariable p = parseVariables("p", "$p has age 30", "$p isa person").asThing();
         ThingVariable q = parseVariables("q", "$q has age 20", "$q isa person").asThing();
-        testAlphaEquivalence(p, q, false);
+        testAlphaEquivalenceSymmetricReflexive(p, q, false);
     }
 
     @Test
     public void test_has_label_not_equivalent() {
         ThingVariable p = parseVariables("p", "$p has age 30", "$p isa person").asThing();
         ThingVariable q = parseVariables("q", "$q has years 30", "$q isa person").asThing();
-        testAlphaEquivalence(p, q, false);
+        testAlphaEquivalenceSymmetricReflexive(p, q, false);
     }
 
     @Test
@@ -157,7 +157,7 @@ public class AlphaEquivalenceTest {
         assertEquals(varNameMap.get("$_parentship:parent"), "$_parentship:parent");
         assertEquals(varNameMap.get("$_parentship:child"), "$_parentship:child");
         assertEquals(varNameMap.get("$_parentship"), "$_parentship");
-        testAlphaEquivalence(r, q, true);
+        testAlphaEquivalenceSymmetricReflexive(r, q, true);
     }
 
     @Test
@@ -172,7 +172,7 @@ public class AlphaEquivalenceTest {
         assertEquals(varNameMap.get("$_parentship:parent"), "$_parentship:parent");
         assertEquals(varNameMap.get("$_parentship:child"), "$_parentship:child");
         assertEquals(varNameMap.get("$_parentship"), "$_parentship");
-        testAlphaEquivalence(r, q, true);
+        testAlphaEquivalenceSymmetricReflexive(r, q, true);
     }
 
     @Test
@@ -187,14 +187,14 @@ public class AlphaEquivalenceTest {
         assertEquals(varNameMap.get("$_parentship:parent"), "$_parentship:parent");
         assertEquals(varNameMap.get("$_parentship:child"), "$_parentship:child");
         assertEquals(varNameMap.get("$_parentship"), "$_parentship");
-        testAlphaEquivalence(r, q, true);
+        testAlphaEquivalenceSymmetricReflexive(r, q, true);
     }
 
     @Test
     public void test_relation_with_duplicate_roles_equivalent() {
         ThingVariable r = parseVariables("r", "$r(sibling: $p, sibling: $c) isa siblingship", "$p isa person").asThing();
         ThingVariable q = parseVariables("q", "$q(sibling: $s, sibling: $t) isa siblingship", "$s isa person").asThing();
-        testAlphaEquivalence(r, q, true);
+        testAlphaEquivalenceSymmetricReflexive(r, q, true);
         AlphaEquivalence alphaEq = r.alphaEquals(q);
         Map<String, String> varNameMap = alphaMapToStringMap(alphaEq.asValid());
         assertEquals(varNameMap.get("$r"), "$q");
@@ -209,7 +209,7 @@ public class AlphaEquivalenceTest {
     public void test_relation_with_duplicate_roleplayers_equivalent() {
         ThingVariable r = parseVariables("r", "$r(friend: $p, friend: $p) isa friendship").asThing();
         ThingVariable q = parseVariables("q", "$q(friend: $s, friend: $s) isa friendship").asThing();
-        testAlphaEquivalence(r, q, true);
+        testAlphaEquivalenceSymmetricReflexive(r, q, true);
         AlphaEquivalence alphaEq = r.alphaEquals(q);
         Map<String, String> varNameMap = alphaMapToStringMap(alphaEq.asValid());
         assertEquals(varNameMap.get("$r"), "$q");
@@ -234,7 +234,7 @@ public class AlphaEquivalenceTest {
         assertEquals(varNameMap.get("$_transaction:seller"), "$_transaction:seller");
         assertEquals(varNameMap.get("$_transaction:produce"), "$_transaction:produce");
         assertEquals(varNameMap.get("$_transaction"), "$_transaction");
-        testAlphaEquivalence(r, q, true);
+        testAlphaEquivalenceSymmetricReflexive(r, q, true);
     }
 
     @Test
@@ -249,7 +249,7 @@ public class AlphaEquivalenceTest {
         )
                 .map(Variable::asThing)
                 .collect(Collectors.toList());
-        variables.forEach(var -> testAlphaEquivalence(var.asThing(), variables, new HashSet<>()));
+        variables.forEach(var -> testAlphaEquivalenceSymmetricReflexive(var.asThing(), variables, new HashSet<>()));
     }
 
     @Test
@@ -262,7 +262,7 @@ public class AlphaEquivalenceTest {
         )
                 .map(Variable::asThing)
                 .collect(Collectors.toList());
-        variables.forEach(var -> testAlphaEquivalence(var.asThing(), variables, new HashSet<>()));
+        variables.forEach(var -> testAlphaEquivalenceSymmetricReflexive(var.asThing(), variables, new HashSet<>()));
     }
 
     @Test
@@ -277,7 +277,7 @@ public class AlphaEquivalenceTest {
         )
                 .map(Variable::asThing)
                 .collect(Collectors.toList());
-        variables.forEach(var -> testAlphaEquivalence(var.asThing(), variables, new HashSet<>()));
+        variables.forEach(var -> testAlphaEquivalenceSymmetricReflexive(var.asThing(), variables, new HashSet<>()));
     }
 
     @Test
@@ -305,12 +305,12 @@ public class AlphaEquivalenceTest {
                 parseVariables("r8","$r8 (employer: $x, employee: $y)", "$x isa organisation", "$y isa organisation"))
                 .map(Variable::asThing)
                 .collect(Collectors.toList());
-        testAlphaEquivalence(variables.get(0), variables, Collections.set(1));
-        testAlphaEquivalence(variables.get(1), variables, Collections.set(0));
-        testAlphaEquivalence(variables.get(2), variables, Collections.set(3));
-        testAlphaEquivalence(variables.get(3), variables, Collections.set(2));
+        testAlphaEquivalenceSymmetricReflexive(variables.get(0), variables, Collections.set(1));
+        testAlphaEquivalenceSymmetricReflexive(variables.get(1), variables, Collections.set(0));
+        testAlphaEquivalenceSymmetricReflexive(variables.get(2), variables, Collections.set(3));
+        testAlphaEquivalenceSymmetricReflexive(variables.get(3), variables, Collections.set(2));
         for (int vari = 4 ; vari < variables.size() ; vari++)
-            testAlphaEquivalence(variables.get(vari), variables, new HashSet<>());
+            testAlphaEquivalenceSymmetricReflexive(variables.get(vari), variables, new HashSet<>());
     }
 
     @Test
@@ -323,7 +323,7 @@ public class AlphaEquivalenceTest {
         )
                 .map(Variable::asThing)
                 .collect(Collectors.toList());
-        variables.forEach(var -> testAlphaEquivalence(var.asThing(), variables, new HashSet<>()));
+        variables.forEach(var -> testAlphaEquivalenceSymmetricReflexive(var.asThing(), variables, new HashSet<>()));
     }
 
     @Test
@@ -338,13 +338,13 @@ public class AlphaEquivalenceTest {
                 parseVariables("r7", "$r7 ($x, $y)", "$y 'Bob' isa name", "$x 'Alice' isa name"))
                 .map(Variable::asThing)
                 .collect(Collectors.toList());
-        testAlphaEquivalence(variables.get(0), variables, new HashSet<>());
-        testAlphaEquivalence(variables.get(1), variables, new HashSet<>());
-        testAlphaEquivalence(variables.get(2), variables, Collections.set(3));
-        testAlphaEquivalence(variables.get(3), variables, Collections.set(2));
-        testAlphaEquivalence(variables.get(4), variables, new HashSet<>());
-        testAlphaEquivalence(variables.get(5), variables, Collections.set(6));
-        testAlphaEquivalence(variables.get(6), variables, Collections.set(5));
+        testAlphaEquivalenceSymmetricReflexive(variables.get(0), variables, new HashSet<>());
+        testAlphaEquivalenceSymmetricReflexive(variables.get(1), variables, new HashSet<>());
+        testAlphaEquivalenceSymmetricReflexive(variables.get(2), variables, Collections.set(3));
+        testAlphaEquivalenceSymmetricReflexive(variables.get(3), variables, Collections.set(2));
+        testAlphaEquivalenceSymmetricReflexive(variables.get(4), variables, new HashSet<>());
+        testAlphaEquivalenceSymmetricReflexive(variables.get(5), variables, Collections.set(6));
+        testAlphaEquivalenceSymmetricReflexive(variables.get(6), variables, Collections.set(5));
     }
 
     @Test
@@ -385,23 +385,23 @@ public class AlphaEquivalenceTest {
         )
                 .map(Variable::asThing)
                 .collect(Collectors.toList());
-        variables.forEach(var -> testAlphaEquivalence(var.asThing(), variables, new HashSet<>()));
+        variables.forEach(var -> testAlphaEquivalenceSymmetricReflexive(var.asThing(), variables, new HashSet<>()));
     }
 
-    private void testAlphaEquivalence(ThingVariable varA, ThingVariable varB, boolean isValid){
+    private void testAlphaEquivalenceSymmetricReflexive(ThingVariable varA, ThingVariable varB, boolean isValid){
         assertTrue(varA.alphaEquals(varA).isValid());
         assertTrue(varB.alphaEquals(varB).isValid());
         assertEquals("Variable:\n" + varA + "\n=?\n" + varB, isValid, varA.alphaEquals(varB).isValid());
         assertEquals("Variable:\n" + varB + "\n=?\n" + varA, isValid, varB.alphaEquals(varA).isValid());
     }
 
-    private void testAlphaEquivalence(ThingVariable sourceVar, List<ThingVariable> toCheck, Set<Integer> validVars){
+    private void testAlphaEquivalenceSymmetricReflexive(ThingVariable sourceVar, List<ThingVariable> toCheck, Set<Integer> validVars){
         //use var index as .equals on Variable doesn't seem reliable
         for (int varIndex = 0 ; varIndex < toCheck.size(); varIndex++) {
             ThingVariable var = toCheck.get(varIndex);
             //compare only by reference
             if ( var != sourceVar){
-                testAlphaEquivalence(sourceVar, var, validVars.contains(varIndex));
+                testAlphaEquivalenceSymmetricReflexive(sourceVar, var, validVars.contains(varIndex));
             }
         }
     }
