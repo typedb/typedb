@@ -96,7 +96,7 @@ public class RelationImpl extends ThingImpl implements Relation {
 
     @Override
     public void delete() {
-        vertex.ins().edge(RELATING).from().map(RoleImpl::of).forEachRemaining(RoleImpl::delete);
+        vertex.outs().edge(RELATING).to().map(RoleImpl::of).forEachRemaining(RoleImpl::delete);
         super.delete();
     }
 
