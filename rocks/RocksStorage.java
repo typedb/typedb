@@ -81,6 +81,41 @@ public abstract class RocksStorage implements Storage {
     }
 
     @Override
+    public byte[] getLastKey(byte[] prefix) {
+        throw exception(ILLEGAL_OPERATION);
+    }
+
+    @Override
+    public void delete(byte[] key) {
+        throw exception(ILLEGAL_OPERATION);
+    }
+
+    @Override
+    public void put(byte[] key) {
+        put(key, EMPTY_ARRAY);
+    }
+
+    @Override
+    public void put(byte[] key, byte[] value) {
+        throw exception(ILLEGAL_OPERATION);
+    }
+
+    @Override
+    public void putUntracked(byte[] key) {
+        putUntracked(key, EMPTY_ARRAY);
+    }
+
+    @Override
+    public void putUntracked(byte[] key, byte[] value) {
+        throw exception(ILLEGAL_OPERATION);
+    }
+
+    @Override
+    public void mergeUntracked(byte[] key, byte[] value) {
+        throw exception(ILLEGAL_OPERATION);
+    }
+
+    @Override
     public <G> ResourceIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
         assert isOpen();
         RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
@@ -148,41 +183,6 @@ public abstract class RocksStorage implements Storage {
                 throw exception(e);
             }
         }
-
-        @Override
-        public byte[] getLastKey(byte[] prefix) {
-            throw exception(ILLEGAL_OPERATION);
-        }
-
-        @Override
-        public void delete(byte[] key) {
-            throw exception(ILLEGAL_OPERATION);
-        }
-
-        @Override
-        public void put(byte[] key) {
-            throw exception(ILLEGAL_OPERATION);
-        }
-
-        @Override
-        public void put(byte[] key, byte[] value) {
-            throw exception(ILLEGAL_OPERATION);
-        }
-
-        @Override
-        public void putUntracked(byte[] key) {
-            throw exception(ILLEGAL_OPERATION);
-        }
-
-        @Override
-        public void putUntracked(byte[] key, byte[] value) {
-            throw exception(ILLEGAL_OPERATION);
-        }
-
-        @Override
-        public void mergeUntracked(byte[] key, byte[] value) {
-            throw exception(ILLEGAL_OPERATION);
-        }
     }
 
     static abstract class TransactionBounded extends RocksStorage {
@@ -239,16 +239,6 @@ public abstract class RocksStorage implements Storage {
             } finally {
                 readWriteLock.unlockWrite();
             }
-        }
-
-        @Override
-        public void put(byte[] key) {
-            put(key, EMPTY_ARRAY);
-        }
-
-        @Override
-        public void putUntracked(byte[] key) {
-            putUntracked(key, EMPTY_ARRAY);
         }
 
         @Override
@@ -313,11 +303,6 @@ public abstract class RocksStorage implements Storage {
             } finally {
                 if (transaction.isOpen()) readWriteLock.unlockWrite();
             }
-        }
-
-        @Override
-        public void mergeUntracked(byte[] key, byte[] value) {
-            throw exception(ILLEGAL_OPERATION);
         }
     }
 
