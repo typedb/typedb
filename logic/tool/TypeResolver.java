@@ -306,6 +306,7 @@ public class TypeResolver {
         }
 
         private void registerSubAttribute(Variable resolver) {
+            assert variableRegister.get(resolver.reference()).isThing();
             if (variableRegister.get(resolver.reference()).asThing().isa().isPresent()) return;
             Identifier.Variable attributeID = Identifier.Variable.of(Reference.label(ATTRIBUTE.toString()));
             traversal.labels(attributeID, Label.of(ATTRIBUTE.toString()));
