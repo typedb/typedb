@@ -33,10 +33,8 @@ import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.reasoner.Reasoner;
 import graql.lang.pattern.variable.Reference;
-import graql.lang.pattern.variable.UnboundVariable;
 import graql.lang.query.GraqlDelete;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,19 +58,14 @@ public class Deleter {
 
     private static final String TRACE_PREFIX = "deleter.";
 
-    private final Reasoner reasoner;
+    private final Matcher matcher;
     private final ConceptManager conceptMgr;
-    private final GraqlDelete query;
-    private final List<UnboundVariable> filter;
     private final Set<ThingVariable> variables;
     private final Context.Query context;
 
-    public Deleter(Reasoner reasoner, ConceptManager conceptMgr, GraqlDelete query, List<UnboundVariable> filter,
-                   Set<ThingVariable> variables, Context.Query context) {
-        this.reasoner = reasoner;
+    public Deleter(Matcher matcher, ConceptManager conceptMgr, Set<ThingVariable> variables, Context.Query context) {
+        this.matcher = matcher;
         this.conceptMgr = conceptMgr;
-        this.query = query;
-        this.filter = filter;
         this.variables = variables;
         this.context = context;
         this.context.producer(EXHAUSTIVE);
@@ -80,26 +73,27 @@ public class Deleter {
 
     public static Deleter create(Reasoner reasoner, ConceptManager conceptMgr, GraqlDelete query, Context.Query context) {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            List<UnboundVariable> filter = new ArrayList<>(query.match().namedVariablesUnbound());
-            filter.retainAll(query.namedVariablesUnbound());
-            assert !filter.isEmpty();
-
             VariableRegistry registry = VariableRegistry.createFromThings(query.variables(), false);
             iterate(registry.types()).filter(t -> !t.reference().isLabel()).forEachRemaining(t -> {
                 throw GraknException.of(ILLEGAL_TYPE_VARIABLE_IN_DELETE, t.reference());
             });
 
-            return new Deleter(reasoner, conceptMgr, query, filter, registry.things(), context);
+            assert query.match().namedVariablesUnbound().containsAll(query.namedVariablesUnbound());
+            Matcher matcher = Matcher.create(reasoner, query.match().get(query.namedVariablesUnbound()));
+            return new Deleter(matcher, conceptMgr, registry.things(), context);
         }
     }
 
     public void execute() {
-        Matcher matcher = Matcher.create(reasoner, query.match());
-        List<ConceptMap> matches = matcher.execute(context).onError(conceptMgr::exception).toList();
-        matches.forEach(matched -> new Operation(matched).execute());
+        try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
+            List<ConceptMap> matches = matcher.execute(context).onError(conceptMgr::exception).toList();
+            matches.forEach(matched -> new Operation(matched).execute());
+        }
     }
 
     private class Operation {
+
+        private static final String TRACE_PREFIX = "operation.";
 
         private final ConceptMap matched;
         private final Map<ThingVariable, Thing> detached;

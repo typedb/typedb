@@ -29,7 +29,6 @@ import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.NumericGroup;
 import grakn.core.logic.LogicManager;
 import grakn.core.reasoner.Reasoner;
-import graql.lang.pattern.variable.UnboundVariable;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlInsert;
@@ -38,16 +37,11 @@ import graql.lang.query.GraqlUndefine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_DATA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_DATA_READ_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_SCHEMA_READ_VIOLATION;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.iterator.Iterators.single;
 
 public class QueryManager {
 
@@ -122,18 +116,7 @@ public class QueryManager {
         if (context.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION);
         if (context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_DATA_READ_VIOLATION);
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
-            if (query.match().isPresent()) {
-                GraqlMatch.Unfiltered match = query.match().get();
-                List<UnboundVariable> filterVars = new ArrayList<>(match.namedVariablesUnbound());
-                filterVars.retainAll(query.namedVariablesUnbound());
-                assert !filterVars.isEmpty();
-                List<ConceptMap> matched = match(match.get(filterVars), context).toList();
-                return iterate(iterate(matched).map(answer -> Inserter.create(
-                        conceptMgr, query.variables(), answer, context
-                ).execute()).toList());
-            } else {
-                return single(Inserter.create(conceptMgr, query.variables(), context).execute());
-            }
+            return Inserter.create(reasoner, conceptMgr, query, context).execute();
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }
