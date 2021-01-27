@@ -87,7 +87,7 @@ public class Actor<STATE extends Actor.State<STATE>> {
     public static abstract class State<STATE extends State<STATE>> {
         private final Actor<STATE> self;
 
-        protected abstract void exception(Exception e);
+        protected abstract void exception(Throwable e);
 
         protected State(Actor<STATE> self) {
             this.self = self;
