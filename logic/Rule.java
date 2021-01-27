@@ -331,11 +331,12 @@ public class Rule {
                 Optional<grakn.core.concept.thing.Relation> relationInstance = matchRelation(relationType, players, traversalEng, conceptMgr);
 
                 Map<Identifier, Concept> thenConcepts = new HashMap<>();
+                thenConcepts.put(relationTypeIdentifier, relationType);
                 if (relationInstance.isPresent()) {
-                    thenConcepts.put(relationTypeIdentifier, relationInstance.get());
+                    thenConcepts.put(isa().owner().id(), relationInstance.get());
                 } else {
                     grakn.core.concept.thing.Relation relation = insertRelation(relationType, players);
-                    thenConcepts.put(relationTypeIdentifier, relation);
+                    thenConcepts.put(isa().owner().id(), relation);
                 }
                 players.forEach(rp -> {
                     thenConcepts.putIfAbsent(rp.roleTypeIdentifier, rp.roleType);

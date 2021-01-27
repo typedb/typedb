@@ -18,13 +18,13 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Unifier;
-import grakn.core.reasoner.resolution.MockTransaction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
@@ -33,13 +33,13 @@ import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.Response.Answer;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
+import grakn.core.traversal.Traversal;
 import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -63,7 +63,8 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
                                Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
                                boolean explanations) {
-        super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable + ")", registry, traversalEngine, explanations);
+        super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.conjunction() + ")",
+              registry, traversalEngine, explanations);
         this.concludable = concludable;
         this.resolutionRecorder = resolutionRecorder;
         this.conceptMgr = conceptMgr;
@@ -114,7 +115,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
                 derivation = null;
             }
 
-            ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.answerBounds().asMapped().aggregateToUpstream(conceptMap),
+            ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.answerBounds().asMapped().mapToUpstream(conceptMap),
                                                            concludable.toString(), derivation, self(), fromDownstream.answer().isInferred());
 
             respondToUpstream(Answer.create(fromUpstream, answer), iteration);
@@ -160,8 +161,10 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
         iterationStates.putIfAbsent(root, new IterationState(iteration));
         IterationState iterationState = iterationStates.get(root);
 
-        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.answerBounds().conceptMap());
-        ResponseProducer responseProducer = new ResponseProducer(traversal, iteration);
+        Traversal traversal = boundTraversal(concludable.conjunction().traversal(), request.answerBounds().conceptMap());
+        ResourceIterator<ConceptMap> traversalProducer = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
+
+        ResponseProducer responseProducer = new ResponseProducer(traversalProducer, iteration);
         mayRegisterRules(request, iterationState, responseProducer);
         return responseProducer;
     }
@@ -178,8 +181,10 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
             iterationState.nextIteration(newIteration);
         }
 
-        Iterator<ConceptMap> traversal = (new MockTransaction(3L)).query(concludable.conjunction(), request.answerBounds().conceptMap());
-        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversal, newIteration);
+        Traversal traversal = boundTraversal(concludable.conjunction().traversal(), request.answerBounds().conceptMap());
+        ResourceIterator<ConceptMap> traversalProducer = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
+
+        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversalProducer, newIteration);
         mayRegisterRules(request, iterationState, responseProducerNewIter);
         return responseProducerNewIter;
     }
@@ -194,12 +199,13 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
         while (responseProducer.hasTraversalProducer()) {
             ConceptMap conceptMap = responseProducer.traversalProducer().next();
             assert fromUpstream.answerBounds().isMapped();
-            AnswerState.UpstreamVars.Derived derivedAnswer = fromUpstream.answerBounds().asMapped().aggregateToUpstream(conceptMap);
+            AnswerState.UpstreamVars.Derived derivedAnswer = fromUpstream.answerBounds().asMapped().mapToUpstream(conceptMap);
             LOG.trace("{}: has found via traversal: {}", name(), conceptMap);
             if (!responseProducer.hasProduced(conceptMap)) {
                 responseProducer.recordProduced(conceptMap);
                 ResolutionAnswer answer = new ResolutionAnswer(derivedAnswer, concludable.toString(), new ResolutionAnswer.Derivation(map()), self(), false);
                 respondToUpstream(Answer.create(fromUpstream, answer), iteration);
+                return;
             }
         }
 

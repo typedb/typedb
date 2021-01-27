@@ -49,6 +49,10 @@ public class Unifier {
         this.unUnifier = reverse(this.unifier);
     }
 
+    public static Unifier.Builder builder() {
+        return new Builder();
+    }
+
     /*
     Returns a best-effort forward unification. It may produce an empty concept map, or a not-present Optional.
     An empty concept map means that none of the concepts were required by this unifier.
@@ -58,6 +62,7 @@ public class Unifier {
 
     the latter will never be valid as it is a contradiction, the former empty map is the result of the unifier's filtering
      */
+
     public Optional<ConceptMap> unify(ConceptMap conceptMap) {
         Map<Identifier, Concept> unifiedMap = new HashMap<>();
 
@@ -99,6 +104,10 @@ public class Unifier {
         else return Optional.empty();
     }
 
+    public Map<Identifier, Set<Identifier>> mapping() {
+        return unifier;
+    }
+
     Requirements requirements() {
         return requirements;
     }
@@ -114,14 +123,6 @@ public class Unifier {
 
     private String unifierString(Map<Identifier, Set<Identifier>> unifier) {
         return "{" + unifier.entrySet().stream().map(e -> e.getKey() + "->" + e.getValue()).collect(Collectors.joining(",")) + "}";
-    }
-
-    public Map<Identifier, Set<Identifier>> mapping() {
-        return unifier;
-    }
-
-    public static Unifier.Builder builder() {
-        return new Builder();
     }
 
     private Map<Identifier, Set<Identifier>> reverse(Map<Identifier, Set<Identifier>> unifier) {

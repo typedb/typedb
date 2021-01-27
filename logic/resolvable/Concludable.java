@@ -249,6 +249,12 @@ public abstract class Concludable extends Resolvable {
         return predicateFn;
     }
 
+    protected void addValueEqualsRequirements(Unifier.Builder unifierBuilder, Set<ValueConstraint<?>> values) {
+        for (ValueConstraint<?> value : equalsConstraints(values)) {
+            unifierBuilder.requirements().predicates(value.owner().id(), valueEqualsFunction(value));
+        }
+    }
+
     /**
      * Relation handles these concludable patterns, where `$role` and `$relation` could be labelled, and there could
      * be any number of rolePlayers:
@@ -397,7 +403,7 @@ public abstract class Concludable extends Resolvable {
             Variable generatedRelation = generating();
             Set<Label> relationTypes = generatedRelation.resolvedTypes();
             // may never be empty as its always known to be at least a relation
-            assert generatedRelation.isSatisfiable() && !relationTypes.isEmpty();
+            assert generatedRelation.isSatisfiable();
 
             Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
             relationTypes.forEach(type -> logicMgr.rulesConcluding(type)
@@ -501,11 +507,7 @@ public abstract class Concludable extends Resolvable {
                     Label attrLabel = attr.isa().get().type().label().get().properLabel();
                     unifierBuilder.requirements().isaExplicit(attr.id(),
                                                               subtypeLabels(attrLabel, conceptMgr).collect(Collectors.toSet()));
-
-                    ValueConstraint<?> value = attr.value().iterator().next();
-                    assert value.predicate().equals(EQ);
-                    Function<grakn.core.concept.thing.Attribute, Boolean> predicateFn = valueEqualsFunction(value);
-                    unifierBuilder.requirements().predicates(attr.id(), predicateFn);
+                    addValueEqualsRequirements(unifierBuilder, values);
                 } else if (attr.reference().isName() && attr.isa().isPresent() && attr.isa().get().type().label().isPresent()) {
                     // form: $x has age $a (may also handle $x has $a; $a isa age)   -> require ISA age
                     Label attrLabel = attr.isa().get().type().label().get().properLabel();
@@ -536,8 +538,8 @@ public abstract class Concludable extends Resolvable {
         Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
             Variable attribute = generating();
             Set<Label> attributeTypes = attribute.resolvedTypes();
-            // may never be empty as its always known to be at least a relation
-            assert attribute.isSatisfiable() && !attributeTypes.isEmpty();
+            // may never be empty as its always known to be at least an attribute
+            assert attribute.isSatisfiable();
 
             Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
             attributeTypes.forEach(type -> logicMgr.rulesConcludingHas(type)
@@ -616,9 +618,7 @@ public abstract class Concludable extends Resolvable {
                     unifierBuilder.requirements().types(type.id(),
                                                         subtypeLabels(type.resolvedTypes(), conceptMgr).collect(Collectors.toSet()));
                 }
-                for (ValueConstraint<?> value : equalsConstraints(values)) {
-                    unifierBuilder.requirements().predicates(value.owner().id(), valueEqualsFunction(value));
-                }
+                addValueEqualsRequirements(unifierBuilder, values);
             } else return Iterators.empty();
 
             return single(unifierBuilder.build());
@@ -709,19 +709,17 @@ public abstract class Concludable extends Resolvable {
 
         @Override
         ResourceIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
-            if (conclusion.isValue()) return unify(conclusion.asValue(), conceptMgr);
+            if (conclusion.isValue()) return unify(conclusion.asValue());
             return Iterators.empty();
         }
 
-        ResourceIterator<Unifier> unify(Rule.Conclusion.Value valueConclusion, ConceptManager conceptMgr) {
+        ResourceIterator<Unifier> unify(Rule.Conclusion.Value valueConclusion) {
             assert iterate(values).filter(ValueConstraint::isVariable).toSet().size() == 0;
             Unifier.Builder unifierBuilder = Unifier.builder();
             if (unificationSatisfiable(attribute, valueConclusion.value().owner())) {
                 unifierBuilder.add(attribute.id(), valueConclusion.value().owner().id());
             } else return Iterators.empty();
-            for (ValueConstraint<?> value : equalsConstraints(values)) {
-                unifierBuilder.requirements().predicates(value.owner().id(), valueEqualsFunction(value));
-            }
+            addValueEqualsRequirements(unifierBuilder, values);
             return single(unifierBuilder.build());
         }
 

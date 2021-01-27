@@ -92,7 +92,7 @@ public class ResolverRegistry {
     }
 
     public Actor<RootResolver> createRoot(Conjunction pattern, Consumer<ResolutionAnswer> onAnswer, Consumer<Integer> onExhausted) {
-        LOG.debug("Creating Conjunction Actor for pattern: '{}'", pattern);
+        LOG.debug("Creating RootResolver for pattern: '{}'", pattern);
         return Actor.create(
                 elg, self -> new RootResolver(
                         self, pattern, onAnswer, onExhausted, resolutionRecorder, this, traversalEngine,
@@ -105,14 +105,14 @@ public class ResolverRegistry {
     }
 
     private AlphaEquivalentResolver registerRetrievable(Retrievable retrievable) {
-        LOG.debug("Register retrieval for retrievable actor: '{}'", retrievable.conjunction());
+        LOG.debug("Register RetrievableResolver: '{}'", retrievable.conjunction());
         Actor<RetrievableResolver> retrievableActor = Actor.create(elg, self -> new RetrievableResolver(
-                self, retrievable, this, traversalEngine, explanations));
+                self, retrievable, this, traversalEngine, conceptMgr, explanations));
         return AlphaEquivalentResolver.createDirect(retrievableActor, retrievable);
     }
 
     private AlphaEquivalentResolver registerConcludable(Concludable concludable) {
-        LOG.debug("Register retrieval for concludable actor: '{}'", concludable.conjunction());
+        LOG.debug("Register ConcludableResolver: '{}'", concludable.conjunction());
         for (Map.Entry<Concludable, Actor<ConcludableResolver>> c : concludableActors.entrySet()) {
             // TODO This needs to be optimised from a linear search to use an alpha hash
             AlphaEquivalence alphaEquality = c.getKey().alphaEquals(concludable);

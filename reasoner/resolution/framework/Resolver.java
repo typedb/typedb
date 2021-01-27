@@ -19,8 +19,11 @@
 package grakn.core.reasoner.resolution.framework;
 
 import grakn.core.concurrent.actor.Actor;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.reasoner.resolution.ResolverRegistry;
+import grakn.core.traversal.Traversal;
 import grakn.core.traversal.TraversalEngine;
+import grakn.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +83,6 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
 
     protected void respondToUpstream(Response response, int iteration) {
         Actor<? extends Resolver<?>> receiver = response.sourceRequest().sender();
-        assert receiver != null;
         if (response.isAnswer()) {
             LOG.trace("{} : Sending a new Response.Answer to upstream", name());
             receiver.tell(actor -> actor.receiveAnswer(response.asAnswer(), iteration));
@@ -90,5 +92,13 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
         } else {
             throw new RuntimeException(("Unknown response type " + response.getClass().getSimpleName()));
         }
+    }
+
+    protected Traversal boundTraversal(Traversal traversal, ConceptMap bounds) {
+        bounds.concepts().forEach((ref, concept) -> {
+            if (concept.isThing()) traversal.iid(Identifier.Variable.of(ref), concept.asThing().getIID());
+            else traversal.labels(Identifier.Variable.of(ref), concept.asType().getLabel());
+        });
+        return traversal;
     }
 }

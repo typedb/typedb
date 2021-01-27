@@ -83,7 +83,7 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        long atomicTraversalAnswerCount = 3L;
+        long atomicTraversalAnswerCount = 0L;
         long conjunctionTraversalAnswerCount = 3L;
         long answerCount = atomicTraversalAnswerCount + conjunctionTraversalAnswerCount;
         Conjunction conjunctionPattern = parseConjunction("{ $p1 has age 24; }");
@@ -526,7 +526,7 @@ public class ResolutionTest {
                 ResolverRegistry registry = transaction.reasoner().resolverRegistry();
                 LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
                 AtomicLong doneReceived = new AtomicLong(0L);
-                Actor<RootResolver> root = registry.createRoot(conjunctionPattern, responses::add, iterDone -> doneReceived.incrementAndGet());
+                Actor<RootResolver> root = registry.createRoot(transaction.logic().typeResolver().resolve(conjunctionPattern), responses::add, iterDone -> doneReceived.incrementAndGet());
                 assertResponses(root, responses, doneReceived, answerCount);
             }
         }
@@ -544,11 +544,12 @@ public class ResolutionTest {
                                       0)
             );
         }
-
-        for (int i = 0; i < n - 1; i++) {
+        int i;
+        for (i = 0; i < n - 1; i++) {
             ResolutionAnswer answer = responses.take();
         }
         Thread.sleep(1000);
+        assertEquals(answerCount, i);
         assertEquals(1, doneReceived.get());
         assertTrue(responses.isEmpty());
         System.out.println("Time : " + (System.currentTimeMillis() - startTime));
