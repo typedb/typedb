@@ -207,7 +207,8 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
 
     @Override
     public void validate() {
-        if (getHas(true).map(Attribute::getType).count() < getType().getOwns(true).count()) {
+        long requiredKeys = getType().getOwns(true).count();
+        if (requiredKeys > 0 && getHas(true).map(Attribute::getType).count() < requiredKeys) {
             Set<AttributeType> missing = getType().getOwns(true).collect(toSet());
             missing.removeAll(getHas(true).map(Attribute::getType).collect(toSet()));
             throw exception(GraknException.of(THING_KEY_MISSING, getType().getLabel(), printTypeSet(missing)));
