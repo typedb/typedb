@@ -31,7 +31,7 @@ import java.util.function.Supplier;
 
 public class EventLoop {
     private static final Logger LOG = LoggerFactory.getLogger(EventLoop.class);
-    private static final Consumer<Throwable> DEFAULT_EXCEPTION_HANDLER = e -> LOG.error("An unexpected error has occurred.", e);
+    private static final Consumer<Throwable> DEFAULT_ERROR_HANDLER = e -> LOG.error("An unexpected error has occurred.", e);
 
     private enum State {READY, RUNNING, STOPPED}
 
@@ -66,7 +66,7 @@ public class EventLoop {
     }
 
     public synchronized void stop() throws InterruptedException {
-        schedule(() -> state = State.STOPPED, DEFAULT_EXCEPTION_HANDLER);
+        schedule(() -> state = State.STOPPED, DEFAULT_ERROR_HANDLER);
         await();
     }
 
@@ -111,7 +111,7 @@ public class EventLoop {
         }
 
         public void cancel() {
-            EventLoop.this.schedule(() -> scheduled.cancel(), DEFAULT_EXCEPTION_HANDLER);
+            EventLoop.this.schedule(() -> scheduled.cancel(), DEFAULT_ERROR_HANDLER);
         }
     }
 
