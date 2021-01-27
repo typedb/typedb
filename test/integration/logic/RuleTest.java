@@ -18,8 +18,8 @@
 package grakn.core.logic;
 
 import grakn.core.Grakn;
-import grakn.core.common.exception.GraknException;
 import grakn.core.common.exception.ErrorMessage;
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.Concept;
@@ -57,11 +57,11 @@ import static grakn.common.collection.Collections.map;
 import static grakn.common.collection.Collections.pair;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CANNOT_BE_SATISFIED;
-import static grakn.core.common.test.Util.assertThrows;
-import static grakn.core.common.test.Util.assertThrowsWithMessage;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.test.Util.assertNotThrows;
+import static grakn.core.common.test.Util.assertThrows;
 import static grakn.core.common.test.Util.assertThrowsGraknException;
+import static grakn.core.common.test.Util.assertThrowsWithMessage;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertFalse;

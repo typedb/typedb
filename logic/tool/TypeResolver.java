@@ -308,12 +308,12 @@ public class TypeResolver {
             }
         }
 
-        private void registerInsertableRelation(TypeVariable owner, RelationConstraint constraint) {
+        private void registerInsertableRelation(TypeVariable resolver, RelationConstraint constraint) {
             for (RelationConstraint.RolePlayer rolePlayer : constraint.players()) {
                 TypeVariable playerResolver = register(rolePlayer.player());
                 TypeVariable roleResolver = register(rolePlayer.roleType().isPresent() ?
                                                              rolePlayer.roleType().get() : new TypeVariable(newSystemId()));
-                traversal.relates(owner.id(), roleResolver.id());
+                traversal.relates(resolver.id(), roleResolver.id());
                 traversal.plays(playerResolver.id(), roleResolver.id());
             }
         }

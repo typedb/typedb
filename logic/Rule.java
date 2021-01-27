@@ -64,7 +64,6 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CANNOT_BE_SATISFIED;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CAN_IMPLY_UNINSERTABLE_RESULTS;
-import static grakn.core.logic.LogicManager.validateRuleStructureLabels;
 
 
 public class Rule {
@@ -83,7 +82,7 @@ public class Rule {
         this.then = thenPattern(structure.then(), logicMgr);
         pruneThenResolvedTypes();
         validateSatisfiable();
-        validateInsertable();
+        validateInsertable(logicMgr);
         this.conclusion = Conclusion.create(this.then);
         this.requiredWhenConcludables = Concludable.create(this.when);
         validateCycles();
@@ -91,13 +90,12 @@ public class Rule {
 
     private Rule(GraphManager graphMgr, LogicManager logicMgr, String label,
                  graql.lang.pattern.Conjunction<? extends Pattern> when, ThingVariable<?> then) {
-        this.logicManager = logicManager;
-        this.structure = graphMgr.schema().create(label, when, then);
-        this.when = logicManager.typeResolver().resolve(whenPattern(structure.when()), false);
-        this.then = logicManager.typeResolver().resolve(thenPattern(structure.then()), false); ;
+        this.structure = graphMgr.schema().rules().create(label, when, then);
+        this.when = logicMgr.typeResolver().resolve(whenPattern(structure.when(), logicMgr), false);
+        this.then = logicMgr.typeResolver().resolve(thenPattern(structure.then(), logicMgr), false); ;
         pruneThenResolvedTypes();
         validateSatisfiable();
-        validateInsertable();
+        validateInsertable(logicMgr);
         this.conclusion = Conclusion.create(this.then);
         this.requiredWhenConcludables = Concludable.create(this.when);
         validateCycles();
@@ -179,9 +177,9 @@ public class Rule {
         });
     }
 
-    public void validateInsertable() {
-        ResourceIterator<Map<Reference.Name, Label>> possibleWhenPerms = logicManager.typeResolver().combinations(when, false);
-        Set<Map<Reference.Name, Label>> possibleThenSet = logicManager.typeResolver().combinations(then, true).toSet();
+    public void validateInsertable(LogicManager logicMgr) {
+        ResourceIterator<Map<Reference.Name, Label>> possibleWhenPerms = logicMgr.typeResolver().combinations(when, false);
+        Set<Map<Reference.Name, Label>> possibleThenSet = logicMgr.typeResolver().combinations(then, true).toSet();
 
         possibleWhenPerms.forEachRemaining(nameLabelMap -> {
             if (possibleThenSet.stream().noneMatch(thenMap -> nameLabelMap.entrySet().containsAll(thenMap.entrySet())))
