@@ -69,7 +69,7 @@ build:
         bazel test //test/integration/reasoner/... --test_output=streamed
         bazel test //test/integration/migrator/... --test_output=streamed
         bazel test //test/integration/logic/... --test_output=streamed
-#        bazel test //test/integration/traversal/... --test_output=streamed
+      # bazel test //test/integration/traversal/... --test_output=streamed
     test-behaviour-connection:
       image: graknlabs-ubuntu-20.04
       command: |
