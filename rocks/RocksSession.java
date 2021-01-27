@@ -183,7 +183,8 @@ public abstract class RocksSession implements Grakn.Session {
             if (!isOpen.get()) throw GraknException.of(SESSION_CLOSED);
             long lock;
             try {
-                lock = database().dataWriteSchemaLock().tryReadLock(options.schemaLockAcquireTimeoutMillis(), TimeUnit.MILLISECONDS);
+                int timeout = options.schemaLockAcquireTimeoutMillis();
+                lock = database().dataWriteSchemaLock().tryReadLock(timeout, TimeUnit.MILLISECONDS);
             } catch (InterruptedException err) {
                 throw GraknException.of(DATA_ACQUIRE_LOCK_TIMEOUT);
             }
