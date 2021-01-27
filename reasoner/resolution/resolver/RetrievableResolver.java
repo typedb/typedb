@@ -130,7 +130,7 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
     }
 
     @Override
-    protected void exception(Exception e) {
+    protected void exception(Throwable e) {
         LOG.error("Actor exception", e);
     }
 
