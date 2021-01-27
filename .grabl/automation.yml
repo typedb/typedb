@@ -53,49 +53,49 @@ build:
       command: |
         dependencies/maven/update.sh
         git diff --exit-code dependencies/maven/artifacts.snapshot
-        bazel run --config=rbe @graknlabs_dependencies//tool/unuseddeps:unused-deps -- list
+        bazel run @graknlabs_dependencies//tool/unuseddeps:unused-deps -- list
     test-unit:
       image: graknlabs-ubuntu-20.04
       command: |
-        bazel test --config=rbe //common/... --test_output=streamed
-        bazel test --config=rbe //pattern/... --test_output=streamed
-        bazel test --config=rbe //logic/... --test_output=streamed
-        bazel test --config=rbe //reasoner/... --test_output=streamed
+        bazel test //common/... --test_output=streamed
+        bazel test //pattern/... --test_output=streamed
+        bazel test //logic/... --test_output=streamed
+        bazel test //reasoner/... --test_output=streamed
     test-integration:
       image: graknlabs-ubuntu-20.04
       command: |
-        bazel test --config=rbe //test/integration:test-basic --test_output=streamed
-        bazel test --config=rbe //test/integration:test-query --test_output=streamed
-        bazel test --config=rbe //test/integration/migrator/... --test_output=streamed
-        bazel test --config=rbe //test/integration/logic/... --test_output=streamed
+        bazel test //test/integration:test-basic --test_output=streamed
+        bazel test //test/integration:test-query --test_output=streamed
+        bazel test //test/integration/migrator/... --test_output=streamed
+        bazel test //test/integration/logic/... --test_output=streamed
       # bazel test //test/integration/traversal/... --test_output=streamed
     test-behaviour-connection:
       image: graknlabs-ubuntu-20.04
       command: |
-        bazel test --config=rbe //test/behaviour/connection/... --test_output=streamed
+        bazel test //test/behaviour/connection/... --test_output=streamed
 
     test-behaviour-concept:
       image: graknlabs-ubuntu-20.04
       command: |
-        bazel test --config=rbe //test/behaviour/concept/... --test_output=streamed
+        bazel test //test/behaviour/concept/... --test_output=streamed
 
     test-behaviour-match:
       image: graknlabs-ubuntu-20.04
       command: |
-        bazel test --config=rbe //test/behaviour/graql/language/match/... --test_output=streamed
-        bazel test --config=rbe //test/behaviour/graql/language/get/... --test_output=streamed
+        bazel test //test/behaviour/graql/language/match/... --test_output=streamed
+        bazel test //test/behaviour/graql/language/get/... --test_output=streamed
 
     test-behaviour-writable:
       image: graknlabs-ubuntu-20.04
       command: |
-        bazel test --config=rbe //test/behaviour/graql/language/insert/... --test_output=streamed
-        bazel test --config=rbe //test/behaviour/graql/language/delete/... --test_output=streamed
+        bazel test //test/behaviour/graql/language/insert/... --test_output=streamed
+        bazel test //test/behaviour/graql/language/delete/... --test_output=streamed
 
     test-behaviour-definable:
       image: graknlabs-ubuntu-20.04
       command: |
-        bazel test --config=rbe //test/behaviour/graql/language/define/... --test_output=streamed
-        bazel test --config=rbe //test/behaviour/graql/language/undefine/... --test_output=streamed
+        bazel test //test/behaviour/graql/language/define/... --test_output=streamed
+        bazel test //test/behaviour/graql/language/undefine/... --test_output=streamed
 
     test-assembly-linux-targz:
       image: graknlabs-ubuntu-20.04
@@ -106,7 +106,7 @@ build:
       command: |
         export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
-        bazel test --config=rbe //test/assembly:assembly --test_output=streamed
+        bazel test //test/assembly:assembly --test_output=streamed
     test-assembly-docker:
       image: graknlabs-ubuntu-20.04
       filter:
@@ -114,7 +114,7 @@ build:
         branch: master
       dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour-connection, test-behaviour-concept, test-behaviour-match, test-behaviour-writable, test-behaviour-definable]
       command: |
-        bazel test --config=rbe //test/assembly:docker --test_output=streamed
+        bazel test //test/assembly:docker --test_output=streamed
     deploy-artifact-snapshot:
       image: graknlabs-ubuntu-20.04
       filter:
@@ -141,8 +141,8 @@ build:
         sudo unlink /usr/bin/python3
         sudo ln -s $(which python3) /usr/bin/python3
         sudo ln -s /usr/share/pyshared/lsb_release.py /opt/pyenv/versions/3.7.9/lib/python3.7/site-packages/lsb_release.py
-        bazel run --config=rbe --define version=$(git rev-parse HEAD) //server:deploy-apt -- snapshot
-        bazel run --config=rbe --define version=$(git rev-parse HEAD) //:deploy-apt -- snapshot
+        bazel run --define version=$(git rev-parse HEAD) //server:deploy-apt -- snapshot
+        bazel run --define version=$(git rev-parse HEAD) //:deploy-apt -- snapshot
     test-deployment-apt:
       image: graknlabs-ubuntu-20.04
       filter:
@@ -150,7 +150,7 @@ build:
         branch: master
       dependencies: [deploy-apt-snapshot]
       command: |
-        bazel test --config=rbe //test/deployment:apt --action_env=GRABL_COMMIT --test_output=streamed
+        bazel test //test/deployment:apt --action_env=GRABL_COMMIT --test_output=streamed
     # TODO: comment out the job until the flakiness has been ironed out
     #    deploy-rpm-snapshot:
     #      image: graknlabs-ubuntu-20.04
@@ -190,7 +190,7 @@ release:
         export RELEASE_NOTES_TOKEN=$REPO_GITHUB_TOKEN
         bazel run @graknlabs_dependencies//tool/release:create-notes -- grakn $(cat VERSION) ./RELEASE_TEMPLATE.md
         export DEPLOY_GITHUB_TOKEN=$REPO_GITHUB_TOKEN
-        bazel run --config=rbe --define version=$(cat VERSION) //:deploy-github -- $GRABL_COMMIT
+        bazel run --define version=$(cat VERSION) //:deploy-github -- $GRABL_COMMIT
     deploy-brew:
       image: graknlabs-ubuntu-20.04
       dependencies: [deploy-github]
@@ -199,7 +199,7 @@ release:
         branch: master
       command: |
         export DEPLOY_BREW_TOKEN=$REPO_GITHUB_TOKEN
-        bazel run --config=rbe --define version=$(cat VERSION) //:deploy-brew -- release
+        bazel run --define version=$(cat VERSION) //:deploy-brew -- release
     deploy-apt-release:
       image: graknlabs-ubuntu-20.04
       filter:
@@ -214,8 +214,8 @@ release:
         sudo ln -s /usr/share/pyshared/lsb_release.py /opt/pyenv/versions/3.7.9/lib/python3.7/site-packages/lsb_release.py
         export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
-        bazel run --config=rbe --define version=$(cat VERSION) //server:deploy-apt -- release
-        bazel run --config=rbe --define version=$(cat VERSION) //:deploy-apt -- release
+        bazel run --define version=$(cat VERSION) //server:deploy-apt -- release
+        bazel run --define version=$(cat VERSION) //:deploy-apt -- release
     #    deploy-rpm-release:
     #      image: graknlabs-ubuntu-20.04
     #      filter:
@@ -235,7 +235,7 @@ release:
       dependencies: [deploy-github]
       command: |
         docker login -u $REPO_DOCKER_USERNAME -p $REPO_DOCKER_PASSWORD
-        bazel run --config=rbe //:deploy-docker
+        bazel run //:deploy-docker
     deploy-artifact-release:
       image: graknlabs-ubuntu-20.04
       filter:
