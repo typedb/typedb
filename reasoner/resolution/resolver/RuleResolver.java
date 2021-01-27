@@ -201,7 +201,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
     }
 
     @Override
-    protected void exception(Exception e) {
+    protected void exception(Throwable e) {
         LOG.error("Actor exception", e);
         // TODO, once integrated into the larger flow of executing queries, kill the actors and report and exception to root
     }
