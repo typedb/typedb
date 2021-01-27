@@ -44,7 +44,7 @@ import static org.junit.Assert.fail;
 public class ResolutionSteps {
 
     private static final String MATERIALISED_DATABASE = "materialised";
-    private static final String REASONED_DATABASE = "materialised";
+    private static final String REASONED_DATABASE = "reasoned";
 
     private GraqlMatch queryToTest;
     private Set<ConceptMap> answers;
