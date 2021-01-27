@@ -20,8 +20,8 @@ package grakn.core.query;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Context;
-import grakn.core.common.parameters.Options;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ConceptMapGroup;
 import grakn.core.concept.answer.Numeric;
@@ -37,6 +37,7 @@ import graql.lang.pattern.variable.UnboundVariable;
 import graql.lang.query.GraqlMatch;
 import graql.lang.query.builder.Sortable;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -59,6 +60,7 @@ import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_C
 import static grakn.core.common.exception.ErrorMessage.ThingRead.SORT_ATTRIBUTE_NOT_COMPARABLE;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.SORT_VARIABLE_NOT_ATTRIBUTE;
 import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
 import static grakn.core.query.Matcher.Aggregator.aggregator;
 import static java.lang.Math.sqrt;
 import static java.util.stream.Collectors.groupingBy;
@@ -71,15 +73,20 @@ public class Matcher {
     private final List<Identifier.Variable.Name> filter;
     private final Context.Query context;
 
-    public Matcher(Reasoner reasoner, GraqlMatch query, Context.Query context) {
+    public Matcher(Reasoner reasoner, GraqlMatch query, @Nullable Context.Query context) {
         this.reasoner = reasoner;
         this.query = query;
         this.disjunction = Disjunction.create(query.conjunction().normalise());
         this.filter = iterate(query.filter()).map(v -> Identifier.Variable.of(v.reference().asName())).toList();
         this.context = context;
+        if (context != null) this.context.producer(INCREMENTAL);
     }
 
-    public static Matcher create(Reasoner reasoner, GraqlMatch query, Context.Query context) {
+    public static Matcher create(Reasoner reasoner, GraqlMatch query) {
+        return create(reasoner, query, null);
+    }
+
+    public static Matcher create(Reasoner reasoner, GraqlMatch query, @Nullable Context.Query context) {
         return new Matcher(reasoner, query, context);
     }
 
@@ -100,6 +107,11 @@ public class Matcher {
     }
 
     public ResourceIterator<ConceptMap> execute() {
+        assert context != null;
+        return execute(context);
+    }
+
+    ResourceIterator<ConceptMap> execute(Context.Query context) {
         ResourceIterator<ConceptMap> answers = reasoner.execute(disjunction, filter, context);
         if (query.sort().isPresent()) answers = sort(answers, query.sort().get());
         if (query.offset().isPresent()) answers = answers.offset(query.offset().get());

@@ -20,6 +20,7 @@ package grakn.core.query;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.parameters.Context;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RelationType;
@@ -27,7 +28,6 @@ import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
 import grakn.core.logic.LogicManager;
-import grakn.core.logic.Rule;
 import grakn.core.pattern.constraint.type.LabelConstraint;
 import grakn.core.pattern.constraint.type.OwnsConstraint;
 import grakn.core.pattern.constraint.type.PlaysConstraint;
@@ -36,6 +36,7 @@ import grakn.core.pattern.constraint.type.RelatesConstraint;
 import grakn.core.pattern.constraint.type.SubConstraint;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.VariableRegistry;
+import graql.lang.query.GraqlUndefine;
 
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -63,16 +64,18 @@ public class Undefiner {
     private final LogicManager logicMgr;
     private final ConceptManager conceptMgr;
     private final LinkedList<TypeVariable> variables;
+    private final Context.Query context;
     private final Set<TypeVariable> undefined;
     private final List<graql.lang.pattern.schema.Rule> rules;
 
     private Undefiner(ConceptManager conceptMgr, LogicManager logicMgr, Set<TypeVariable> variables,
-                      List<graql.lang.pattern.schema.Rule> rules) {
+                      List<graql.lang.pattern.schema.Rule> rules, Context.Query context) {
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
+        this.rules = rules;
+        this.context = context;
         this.variables = new LinkedList<>();
         this.undefined = new HashSet<>();
-        this.rules = rules;
 
         Set<TypeVariable> sorted = new HashSet<>();
         variables.forEach(variable -> {
@@ -81,10 +84,10 @@ public class Undefiner {
     }
 
     public static Undefiner create(ConceptManager conceptMgr, LogicManager logicMgr,
-                                   List<graql.lang.pattern.variable.TypeVariable> variables,
-                                   List<graql.lang.pattern.schema.Rule> rules) {
+                                   GraqlUndefine query, Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            return new Undefiner(conceptMgr, logicMgr, VariableRegistry.createFromTypes(variables).types(), rules);
+            Set<TypeVariable> types = VariableRegistry.createFromTypes(query.variables()).types();
+            return new Undefiner(conceptMgr, logicMgr, types, query.rules(), context);
         }
     }
 
@@ -249,7 +252,7 @@ public class Undefiner {
             if (rule.when() != null || rule.then() != null) {
                 throw GraknException.of(INVALID_UNDEFINE_RULE_BODY, rule.label());
             }
-            Rule r = logicMgr.getRule(rule.label());
+            grakn.core.logic.Rule r = logicMgr.getRule(rule.label());
             if (r == null) throw GraknException.of(RULE_NOT_FOUND, rule.label());
             r.delete();
         }

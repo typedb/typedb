@@ -31,7 +31,7 @@ import java.util.function.Supplier;
 
 public class EventLoop {
     private static final Logger LOG = LoggerFactory.getLogger(EventLoop.class);
-    private static final Consumer<Exception> DEFAULT_EXCEPTION_HANDLER = e -> LOG.error("An unexpected error has occurred.", e);
+    private static final Consumer<Throwable> DEFAULT_ERROR_HANDLER = e -> LOG.error("An unexpected error has occurred.", e);
 
     private enum State {READY, RUNNING, STOPPED}
 
@@ -50,13 +50,13 @@ public class EventLoop {
         thread.start();
     }
 
-    public void schedule(Runnable job, Consumer<Exception> errorHandler) {
+    public void schedule(Runnable job, Consumer<Throwable> errorHandler) {
         assert state != State.STOPPED : "unexpected state: " + state;
 
         jobs.offer(new Job(job, errorHandler));
     }
 
-    public EventLoop.Cancellable schedule(long deadline, Runnable job, Consumer<Exception> errorHandler) {
+    public EventLoop.Cancellable schedule(long deadline, Runnable job, Consumer<Throwable> errorHandler) {
         assert state != State.STOPPED : "unexpected state: " + state;
         return new Cancellable(deadline, job, errorHandler);
     }
@@ -66,7 +66,7 @@ public class EventLoop {
     }
 
     public synchronized void stop() throws InterruptedException {
-        schedule(() -> state = State.STOPPED, DEFAULT_EXCEPTION_HANDLER);
+        schedule(() -> state = State.STOPPED, DEFAULT_ERROR_HANDLER);
         await();
     }
 
@@ -105,21 +105,21 @@ public class EventLoop {
     public class Cancellable {
         private ScheduledJobQueue.Scheduled scheduled;
 
-        public Cancellable(long scheduleMs, Runnable job, Consumer<Exception> errorHandler) {
+        public Cancellable(long scheduleMs, Runnable job, Consumer<Throwable> errorHandler) {
             scheduled = null;
             EventLoop.this.schedule(() -> scheduled = scheduledJobs.offer(scheduleMs, new Job(job, errorHandler)), errorHandler);
         }
 
         public void cancel() {
-            EventLoop.this.schedule(() -> scheduled.cancel(), DEFAULT_EXCEPTION_HANDLER);
+            EventLoop.this.schedule(() -> scheduled.cancel(), DEFAULT_ERROR_HANDLER);
         }
     }
 
     private static class Job {
         private final Runnable job;
-        private final Consumer<Exception> errorHandler;
+        private final Consumer<Throwable> errorHandler;
 
-        public Job(Runnable job, Consumer<Exception> errorHandler) {
+        public Job(Runnable job, Consumer<Throwable> errorHandler) {
             this.job = job;
             this.errorHandler = errorHandler;
         }
@@ -127,7 +127,7 @@ public class EventLoop {
         public void run() {
             try {
                 job.run();
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 errorHandler.accept(e);
             }
         }

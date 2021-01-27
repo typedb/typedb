@@ -40,7 +40,7 @@ import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
 import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Server.SERVER_SHUTDOWN;
 import static grakn.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
-import static grakn.core.server.rpc.common.RequestReader.getOptions;
+import static grakn.core.server.rpc.common.RequestReader.setDefaultOptions;
 import static grakn.core.server.rpc.common.ResponseBuilder.exception;
 import static java.util.stream.Collectors.toList;
 
@@ -124,7 +124,7 @@ public class GraknRPCService extends GraknGrpc.GraknImplBase {
     public void sessionOpen(SessionProto.Session.Open.Req request, StreamObserver<SessionProto.Session.Open.Res> responder) {
         try {
             Arguments.Session.Type sessionType = Arguments.Session.Type.of(request.getType().getNumber());
-            Options.Session options = getOptions(Options.Session::new, request.getOptions());
+            Options.Session options = setDefaultOptions(new Options.Session(), request.getOptions());
             Grakn.Session session = grakn.session(request.getDatabase(), sessionType, options);
             SessionRPC sessionRPC = new SessionRPC(this, session, options);
             rpcSessions.put(sessionRPC.session().uuid(), sessionRPC);

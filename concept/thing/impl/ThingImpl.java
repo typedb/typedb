@@ -47,6 +47,7 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_OVER
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_TAKEN;
 import static grakn.core.graph.common.Encoding.Edge.Thing.HAS;
 import static grakn.core.graph.common.Encoding.Edge.Thing.PLAYING;
+import static grakn.core.graph.common.Encoding.Edge.Thing.RELATING;
 import static grakn.core.graph.common.Encoding.Edge.Thing.ROLEPLAYER;
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toList;
@@ -199,13 +200,15 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     @Override
     public void delete() {
         Set<RelationImpl> relations = vertex.ins().edge(ROLEPLAYER).from().map(RelationImpl::of).toSet();
+        vertex.outs().edge(PLAYING).to().map(RoleImpl::of).forEachRemaining(RoleImpl::delete);
         vertex.delete();
         relations.forEach(RelationImpl::deleteIfNoPlayer);
     }
 
     @Override
     public void validate() {
-        if (getHas(true).map(Attribute::getType).count() < getType().getOwns(true).count()) {
+        long requiredKeys = getType().getOwns(true).count();
+        if (requiredKeys > 0 && getHas(true).map(Attribute::getType).count() < requiredKeys) {
             Set<AttributeType> missing = getType().getOwns(true).collect(toSet());
             missing.removeAll(getHas(true).map(Attribute::getType).collect(toSet()));
             throw exception(GraknException.of(THING_KEY_MISSING, getType().getLabel(), printTypeSet(missing)));

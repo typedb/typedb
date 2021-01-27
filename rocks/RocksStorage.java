@@ -36,6 +36,7 @@ import org.rocksdb.WriteOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.concurrent.NotThreadSafe;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -43,17 +44,20 @@ import java.util.function.BiFunction;
 
 import static grakn.core.common.collection.Bytes.bytesHavePrefix;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_DATA_READ_VIOLATION;
+import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_SCHEMA_READ_VIOLATION;
 
 public abstract class RocksStorage implements Storage {
 
     private static final Logger LOG = LoggerFactory.getLogger(RocksStorage.class);
     private static final byte[] EMPTY_ARRAY = new byte[]{};
 
+    protected final ConcurrentSet<RocksIterator<?>> iterators;
     protected final Transaction storageTransaction;
     protected final ReadOptions readOptions;
     protected final boolean isReadOnly;
 
-    private final ConcurrentSet<RocksIterator<?>> iterators;
     private final ConcurrentLinkedQueue<org.rocksdb.RocksIterator> recycled;
     private final OptimisticTransactionOptions transactionOptions;
     private final WriteOptions writeOptions;
@@ -78,11 +82,38 @@ public abstract class RocksStorage implements Storage {
     }
 
     @Override
-    public <G> ResourceIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
-        assert isOpen();
-        RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
-        iterators.add(iterator);
-        return iterator.onFinalise(iterator::close);
+    public byte[] getLastKey(byte[] prefix) {
+        throw exception(ILLEGAL_OPERATION);
+    }
+
+    @Override
+    public void delete(byte[] key) {
+        throw exception(ILLEGAL_OPERATION);
+    }
+
+    @Override
+    public void put(byte[] key) {
+        put(key, EMPTY_ARRAY);
+    }
+
+    @Override
+    public void put(byte[] key, byte[] value) {
+        throw exception(ILLEGAL_OPERATION);
+    }
+
+    @Override
+    public void putUntracked(byte[] key) {
+        putUntracked(key, EMPTY_ARRAY);
+    }
+
+    @Override
+    public void putUntracked(byte[] key, byte[] value) {
+        throw exception(ILLEGAL_OPERATION);
+    }
+
+    @Override
+    public void mergeUntracked(byte[] key, byte[] value) {
+        throw exception(ILLEGAL_OPERATION);
     }
 
     org.rocksdb.RocksIterator getInternalRocksIterator() {
@@ -147,38 +178,11 @@ public abstract class RocksStorage implements Storage {
         }
 
         @Override
-        public byte[] getLastKey(byte[] prefix) {
-            throw exception(ILLEGAL_OPERATION);
-        }
-
-        @Override
-        public void delete(byte[] key) {
-            throw exception(ILLEGAL_OPERATION);
-        }
-
-        @Override
-        public void put(byte[] key) {
-            throw exception(ILLEGAL_OPERATION);
-        }
-
-        @Override
-        public void put(byte[] key, byte[] value) {
-            throw exception(ILLEGAL_OPERATION);
-        }
-
-        @Override
-        public void putUntracked(byte[] key) {
-            throw exception(ILLEGAL_OPERATION);
-        }
-
-        @Override
-        public void putUntracked(byte[] key, byte[] value) {
-            throw exception(ILLEGAL_OPERATION);
-        }
-
-        @Override
-        public void mergeUntracked(byte[] key, byte[] value) {
-            throw exception(ILLEGAL_OPERATION);
+        public <G> ResourceIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
+            assert isOpen();
+            RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
+            iterators.add(iterator);
+            return iterator.onFinalise(iterator::close);
         }
     }
 
@@ -222,7 +226,12 @@ public abstract class RocksStorage implements Storage {
 
         @Override
         public void delete(byte[] key) {
-            assert isOpen() && !isReadOnly && transaction.isOpen();
+            assert isOpen() && transaction.isOpen();
+            if (isReadOnly) {
+                if (transaction.isSchema()) throw exception(TRANSACTION_SCHEMA_READ_VIOLATION);
+                else if (transaction.isData()) throw exception(TRANSACTION_DATA_READ_VIOLATION);
+                else throw exception(ILLEGAL_STATE);
+            }
             try {
                 readWriteLock.lockWrite();
                 storageTransaction.delete(key);
@@ -234,13 +243,11 @@ public abstract class RocksStorage implements Storage {
         }
 
         @Override
-        public void put(byte[] key) {
-            put(key, EMPTY_ARRAY);
-        }
-
-        @Override
-        public void putUntracked(byte[] key) {
-            putUntracked(key, EMPTY_ARRAY);
+        public <G> ResourceIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
+            assert isOpen();
+            RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
+            iterators.add(iterator);
+            return iterator;
         }
 
         @Override
@@ -306,13 +313,9 @@ public abstract class RocksStorage implements Storage {
                 if (transaction.isOpen()) readWriteLock.unlockWrite();
             }
         }
-
-        @Override
-        public void mergeUntracked(byte[] key, byte[] value) {
-            throw exception(ILLEGAL_OPERATION);
-        }
     }
 
+    @NotThreadSafe
     public static class Data extends TransactionBounded implements Storage.Data {
 
         private final KeyGenerator.Data dataKeyGenerator;
@@ -329,7 +332,7 @@ public abstract class RocksStorage implements Storage {
 
         @Override
         public void put(byte[] key, byte[] value) {
-            assert isOpen() && !isReadOnly && !transaction.isOpen();
+            assert isOpen() && !isReadOnly;
             try {
                 storageTransaction.put(key, value);
             } catch (RocksDBException e) {
@@ -339,7 +342,7 @@ public abstract class RocksStorage implements Storage {
 
         @Override
         public void putUntracked(byte[] key, byte[] value) {
-            assert isOpen() && !isReadOnly && !transaction.isOpen();
+            assert isOpen() && !isReadOnly;
             try {
                 storageTransaction.putUntracked(key, value);
             } catch (RocksDBException e) {
@@ -349,7 +352,7 @@ public abstract class RocksStorage implements Storage {
 
         @Override
         public void mergeUntracked(byte[] key, byte[] value) {
-            assert isOpen() && !isReadOnly && !transaction.isOpen();
+            assert isOpen() && !isReadOnly;
             try {
                 storageTransaction.mergeUntracked(key, value);
             } catch (RocksDBException e) {

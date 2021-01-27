@@ -513,6 +513,8 @@ public class DataGraph implements Graph {
     }
 
     public static class Statistics {
+
+        private static int COUNT_JOB_BATCH_SIZE = 10000;
         private final ConcurrentMap<VertexIID.Type, Long> persistedVertexCount;
         private final ConcurrentMap<VertexIID.Type, Long> persistedVertexTransitiveCount;
         private final ConcurrentMap<VertexIID.Type, Long> deltaVertexCount;
@@ -725,9 +727,9 @@ public class DataGraph implements Graph {
             hasEdgeCountJobs.clear();
         }
 
-        public void processCountJobs() {
+        public boolean processCountJobs() {
             ResourceIterator<CountJob> countJobs = storage.iterate(StatisticsBytes.countJobKey(), CountJob::of);
-            while (countJobs.hasNext()) {
+            for (long processed = 0; processed < COUNT_JOB_BATCH_SIZE && countJobs.hasNext(); processed++) {
                 CountJob countJob = countJobs.next();
                 if (countJob instanceof CountJob.Attribute) {
                     processAttributeCountJob(countJob);
@@ -739,6 +741,7 @@ public class DataGraph implements Graph {
                 storage.delete(countJob.key());
             }
             storage.mergeUntracked(snapshotKey(), longToBytes(1));
+            return countJobs.hasNext();
         }
 
         private void processAttributeCountJob(CountJob countJob) {

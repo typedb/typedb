@@ -48,12 +48,18 @@ public class VariableRegistry {
     private static final String TRACE_PREFIX = "variableregistry.";
 
     private final VariableRegistry bounds;
+    private final boolean allowDerived;
     private final Map<Reference, TypeVariable> types;
     private final Map<Reference, ThingVariable> things;
     private final Set<ThingVariable> anonymous;
 
-    public VariableRegistry(@Nullable VariableRegistry bounds) {
+    private VariableRegistry(@Nullable VariableRegistry bounds) {
+        this(bounds, true);
+    }
+
+    private VariableRegistry(@Nullable VariableRegistry bounds, boolean allowDerived) {
         this.bounds = bounds;
+        this.allowDerived = allowDerived;
         types = new HashMap<>();
         things = new HashMap<>();
         anonymous = new HashSet<>();
@@ -68,16 +74,25 @@ public class VariableRegistry {
     }
 
     public static VariableRegistry createFromThings(List<graql.lang.pattern.variable.ThingVariable<?>> variables) {
+        return createFromThings(variables, true);
+    }
+
+    public static VariableRegistry createFromThings(List<graql.lang.pattern.variable.ThingVariable<?>> variables, boolean allowDerived) {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "things")) {
-            return createFromVariables(variables, null);
+            return createFromVariables(variables, null, allowDerived);
         }
     }
 
     public static VariableRegistry createFromVariables(List<? extends BoundVariable> variables,
                                                        @Nullable VariableRegistry bounds) {
+        return createFromVariables(variables, bounds, true);
+    }
+
+    public static VariableRegistry createFromVariables(List<? extends BoundVariable> variables,
+                                                       @Nullable VariableRegistry bounds, boolean allowDerived) {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "variables")) {
             List<ConceptVariable> unboundedVariables = new ArrayList<>();
-            VariableRegistry registry = new VariableRegistry(bounds);
+            VariableRegistry registry = new VariableRegistry(bounds, allowDerived);
             variables.forEach(graqlVar -> {
                 if (graqlVar.isConcept()) unboundedVariables.add(graqlVar.asConcept());
                 else registry.register(graqlVar);
@@ -130,6 +145,10 @@ public class VariableRegistry {
             graknVar = computeThingIfAbsent(graqlVar.reference(), r -> new ThingVariable(Identifier.Variable.of(r.asReferable())));
         }
         return graknVar.constrainThing(graqlVar.constraints(), this);
+    }
+
+    public boolean allowsDerived() {
+        return allowDerived;
     }
 
     public Set<TypeVariable> types() {

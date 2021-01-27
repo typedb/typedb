@@ -37,8 +37,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ProducerIterator<T> extends AbstractResourceIterator<T> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProducerIterator.class);
-    private static final int BUFFER_MIN_SIZE = 32;
-    private static final int BUFFER_MAX_SIZE = 64;
 
     // TODO: why does 'producers' have to be ConcurrentLinkedQueue? see method recycle() below
     private final ConcurrentLinkedQueue<Producer<T>> producers;
@@ -47,15 +45,11 @@ public class ProducerIterator<T> extends AbstractResourceIterator<T> {
     private T next;
     private State state;
 
-    public ProducerIterator(List<Producer<T>> producers) {
-        this(producers, BUFFER_MIN_SIZE, BUFFER_MAX_SIZE);
-    }
-
-    public ProducerIterator(List<Producer<T>> producers, int bufferMinSize, int bufferMaxSize) {
+    public ProducerIterator(List<Producer<T>> producers, int batchSize) {
         // TODO: Could we optimise IterableProducer by accepting ResourceIterator<Producer<T>> instead?
-        assert !producers.isEmpty();
+        assert !producers.isEmpty() && batchSize < Integer.MAX_VALUE / 2;
         this.producers = new ConcurrentLinkedQueue<>(producers);
-        this.queue = new Queue(bufferMinSize, bufferMaxSize);
+        this.queue = new Queue(batchSize, batchSize * 2);
         this.state = State.EMPTY;
     }
 
@@ -141,8 +135,8 @@ public class ProducerIterator<T> extends AbstractResourceIterator<T> {
         private final int max;
         private int pending;
 
-        private Queue(int bufferMinSize, int max) {
-            this.min = bufferMinSize;
+        private Queue(int min, int max) {
+            this.min = min;
             this.max = max;
             this.blockingQueue = new ManagedBlockingQueue<>();
             this.isError = new AtomicBoolean(false);
