@@ -49,6 +49,7 @@ import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.test.Util.assertThrows;
+import static grakn.core.common.test.Util.assertThrowsWithMessage;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -928,6 +929,79 @@ public class TypeResolverTest {
         }};
 
         assertEquals(expected, getHintMap(conjunction));
+    }
+
+//    TEST RULE INSERT
+
+    @Test
+    public void cannot_insert_unsatisfiable_rule() throws IOException {
+        define_standard_schema("basic-schema");
+        assertThrows(() -> transaction.logic().putRule(
+                "animals-are-named-fido",
+                Graql.parsePattern("{$x isa animal;}").asConjunction(),
+                Graql.parseVariable("$x has name 'fido'").asThing()));
+    }
+
+    @Test
+    public void cannot_insert_abstract_attributes() {
+        define_custom_schema("define " +
+                                     " person sub entity, owns name;" +
+                                     " woman sub person, owns maiden-name as name;" +
+                                     " name sub attribute, value string, abstract;" +
+                                     " maiden-name sub name, value string;");
+        String queryString = "match $x isa woman, has name 'smith';";
+
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        resolveConjunction(typeResolver, queryString);
+
+        transaction.logic().putRule(
+                "women-called-smith",
+                Graql.parsePattern("{$x isa woman;}").asConjunction(),
+                Graql.parseVariable("$x has name 'smith'").asThing());
+    }
+
+    @Test
+    public void cannot_insert_if_relation_type_too_general() {
+        define_custom_schema("define" +
+                                     " person sub entity, plays marriage:husband, plays marriage:wife;" +
+                                     " partnership sub relation, relates partner;" +
+                                     " marriage sub partnership, relates husband as partner, relates wife as partner;");
+        String queryString = "match $x isa person; (wife: $x) isa partnership;";
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        resolveConjunction(typeResolver, queryString);
+
+        transaction.logic().putRule(
+                "marriage-rule",
+                Graql.parsePattern("{$x isa person;}").asConjunction(),
+                Graql.parseVariable("(wife: $x) isa partnership").asThing());
+    }
+
+    @Test
+    public void cannot_insert_if_role_is_too_general() {
+        define_custom_schema("define" +
+                                     " person sub entity, plays marriage:husband, plays marriage:wife;" +
+                                     " partnership sub relation, relates partner;" +
+                                     " marriage sub partnership, relates husband as partner, relates wife as partner;");
+        String queryString = "match $x isa person; (partner: $x) isa marriage;";
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        resolveConjunction(typeResolver, queryString);
+
+        transaction.logic().putRule(
+                "marriage-rule",
+                Graql.parsePattern("{$x isa person;}").asConjunction(),
+                Graql.parseVariable("(partner: $x) isa marriage").asThing());
+    }
+
+    @Test
+    public void variable_relations_allowed_only_if_all_possibilities_are_insertable() {
+        define_custom_schema("define" +
+                                     " person sub entity, plays marriage:husband, plays marriage:wife;" +
+                                     " partnership sub relation, relates partner;" +
+                                     " marriage sub partnership, relates husband as partner, relates wife as partner;");
+        transaction.logic().putRule(
+                "marriage-rule",
+                Graql.parsePattern("{$x isa person; $t isa marriage;}").asConjunction(),
+                Graql.parseVariable("(wife: $x) isa $t").asThing());
     }
 
 }
