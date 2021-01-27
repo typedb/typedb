@@ -268,7 +268,7 @@ public class TypeResolver {
         private void registerHas(TypeVariable resolver, HasConstraint hasConstraint) {
             TypeVariable attributeResolver = register(hasConstraint.attribute());
             traversal.owns(resolver.id(), attributeResolver.id(), false);
-            registerSubAttribute(attributeResolver);
+            maySubMetaAttribute(attributeResolver);
         }
 
         private void registerRelation(TypeVariable resolver, RelationConstraint constraint) {
@@ -289,7 +289,7 @@ public class TypeResolver {
             if (constraint.isVariable()) {
                 TypeVariable comparableVar = register(constraint.asVariable().value());
                 assert valueTypeRegister.containsKey(comparableVar.id()); //This will fail without careful ordering.
-                registerSubAttribute(comparableVar);
+                maySubMetaAttribute(comparableVar);
                 valueTypes = valueTypeRegister.get(comparableVar.id());
             } else {
                 valueTypes = iterate(Encoding.ValueType.of(constraint.value().getClass()).comparables())
@@ -302,10 +302,10 @@ public class TypeResolver {
             } else if (!valueTypeRegister.get(resolver.id()).containsAll(valueTypes)) {
                 throw GraknException.of(UNSATISFIABLE_CONJUNCTION, constraint);
             }
-            registerSubAttribute(resolver);
+            maySubMetaAttribute(resolver);
         }
 
-        private void registerSubAttribute(Variable resolver) {
+        private void maySubMetaAttribute(Variable resolver) {
             assert variableRegister.get(resolver.reference()).isThing();
             if (variableRegister.get(resolver.reference()).asThing().isa().isPresent()) return;
             Identifier.Variable attributeID = Identifier.Variable.of(Reference.label(ATTRIBUTE.toString()));
