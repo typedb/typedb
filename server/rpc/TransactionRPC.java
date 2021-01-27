@@ -21,6 +21,7 @@ import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
+import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
 import grakn.core.server.rpc.common.RequestReader;
 import grakn.core.server.rpc.concept.ConceptManagerHandler;
@@ -71,6 +72,10 @@ public class TransactionRPC {
         isOpen = new AtomicBoolean(true);
         iterators = new Iterators();
         handlers = new RequestHandlers();
+    }
+
+    public Context.Transaction context() {
+        return transaction.context();
     }
 
     SessionRPC sessionRPC() {
@@ -132,10 +137,10 @@ public class TransactionRPC {
         iterators.iterate(request, iterator, responseBuilderFn);
     }
 
-    public <T> void respond(TransactionProto.Transaction.Req request, Iterator<T> iterator, Options.Query queryOptions,
+    public <T> void respond(TransactionProto.Transaction.Req request, Iterator<T> iterator, Context.Query context,
                             Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
-        assert queryOptions.prefetch() != null;
-        iterators.iterate(request, iterator, queryOptions.prefetch(), queryOptions.responseBatchSize(), responseBuilderFn);
+        iterators.iterate(request, iterator, context.options().prefetch(),
+                          context.options().responseBatchSize(), responseBuilderFn);
     }
 
     private void commit(String requestId) {
@@ -196,17 +201,20 @@ public class TransactionRPC {
 
         /**
          * Spin up a new iterator.
-         * @param request The request that this iterator is serving.
-         * @param iterator The iterator that contains the raw answers from the database.
-         * @param prefetch If set to true, the first batch will be streamed to the client immediately. If false, the client must request it.
-         * @param batchSize The base batch size, before network latency is accounted for.
+         *
+         * @param request           The request that this iterator is serving.
+         * @param iterator          The iterator that contains the raw answers from the database.
+         * @param prefetch          If set to true, the first batch will be streamed to the client immediately.
+         * @param batchSize         The base batch size, before network latency is accounted for.
          * @param responseBuilderFn The projection function that serialises raw answers to RPC messages.
-         * @param <T> The type of answers being fetched.
+         * @param <T>               The type of answers being fetched.
          */
-        <T> void iterate(TransactionProto.Transaction.Req request, Iterator<T> iterator, boolean prefetch, int batchSize, Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
+        <T> void iterate(TransactionProto.Transaction.Req request, Iterator<T> iterator, boolean prefetch, int batchSize,
+                         Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
             String requestId = request.getId();
             int latencyMillis = request.getLatencyMillis();
-            BatchingIterator<T> batchingIterator = new BatchingIterator<>(requestId, iterator, responseBuilderFn, batchSize, latencyMillis);
+            BatchingIterator<T> batchingIterator =
+                    new BatchingIterator<>(requestId, iterator, responseBuilderFn, batchSize, latencyMillis);
             iterators.compute(requestId, (key, oldValue) -> {
                 if (oldValue == null) return batchingIterator;
                 else throw GraknException.of(DUPLICATE_REQUEST, requestId);

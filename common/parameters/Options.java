@@ -18,25 +18,29 @@
 package grakn.core.common.parameters;
 
 import grakn.core.common.exception.GraknException;
+import graql.lang.query.GraqlQuery;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 
 public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options<?, ?>> {
 
-    public static final boolean DEFAULT_INFER = false;
-    public static final boolean DEFAULT_EXPLAIN = false;
-    public static final boolean DEFAULT_PARALLEL = true;
     public static final int DEFAULT_RESPONSE_BATCH_SIZE = 50;
     public static final int DEFAULT_SESSION_IDLE_TIMEOUT_MILLIS = 10_000;
     public static final int DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS = 10_000;
+    public static final boolean DEFAULT_INFER = false;
+    public static final boolean DEFAULT_EXPLAIN = false;
+    public static final boolean DEFAULT_PARALLEL = true;
+    public static final boolean DEFAULT_QUERY_READ_PREFETCH = true;
+    public static final boolean DEFAULT_QUERY_WRITE_PREFETCH = false;
 
     private PARENT parent;
     private Boolean infer = null;
     private Boolean explain = null;
     private Integer batchSize = null;
-    private Boolean prefetch = null;
     private Integer sessionIdlTimeoutMillis = null;
     private Integer schemaLockAcquireTimeoutMillis = null;
+
+    protected Boolean prefetch = null;
 
     abstract SELF getThis();
 
@@ -78,8 +82,10 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         return getThis();
     }
 
-    public Boolean prefetch() {
-        return prefetch;
+    public boolean prefetch() {
+        if (prefetch != null) return prefetch;
+        else if (parent != null) return parent.prefetch();
+        else return DEFAULT_QUERY_READ_PREFETCH;
     }
 
     public SELF prefetch(boolean prefetch) {
@@ -147,6 +153,13 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
             return this;
         }
 
+        Query setPrefetchIfAbsent(GraqlQuery query) {
+            if (prefetch == null) {
+                prefetch = query.type().isRead() ? DEFAULT_QUERY_READ_PREFETCH : DEFAULT_QUERY_WRITE_PREFETCH;
+            }
+            return this;
+        }
+
         public boolean parallel() {
             if (parallel != null) return parallel;
             return DEFAULT_PARALLEL;
@@ -154,7 +167,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
 
         public Query parallel(boolean parallel) {
             this.parallel = parallel;
-            return getThis();
+            return this;
         }
     }
 }

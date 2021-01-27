@@ -20,6 +20,7 @@ package grakn.core.query;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.parameters.Context;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.AttributeType.ValueType;
@@ -36,7 +37,6 @@ import grakn.core.pattern.constraint.type.RelatesConstraint;
 import grakn.core.pattern.constraint.type.SubConstraint;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.VariableRegistry;
-import graql.lang.pattern.schema.Rule;
 
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -63,23 +63,27 @@ public class Definer {
 
     private final LogicManager logicMgr;
     private final ConceptManager conceptMgr;
-    private final Set<TypeVariable> created;
     private final Set<TypeVariable> variables;
     private final List<graql.lang.pattern.schema.Rule> rules;
+    private final Context.Query context;
+    private final Set<TypeVariable> defined;
 
-    private Definer(ConceptManager conceptMgr, LogicManager logicMgr, Set<TypeVariable> variables, List<Rule> rules) {
+    private Definer(ConceptManager conceptMgr, LogicManager logicMgr, Set<TypeVariable> variables,
+                    List<graql.lang.pattern.schema.Rule> rules, Context.Query context) {
         this.logicMgr = logicMgr;
         this.conceptMgr = conceptMgr;
         this.variables = variables;
         this.rules = rules;
-        this.created = new HashSet<>();
+        this.context = context;
+        this.defined = new HashSet<>();
     }
 
     public static Definer create(ConceptManager conceptMgr, LogicManager logicMgr,
                                  List<graql.lang.pattern.variable.TypeVariable> variables,
-                                 List<Rule> rules) {
+                                 List<graql.lang.pattern.schema.Rule> rules, Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            return new Definer(conceptMgr, logicMgr, VariableRegistry.createFromTypes(variables).types(), rules);
+            Set<TypeVariable> types = VariableRegistry.createFromTypes(variables).types();
+            return new Definer(conceptMgr, logicMgr, types, rules, context);
         }
     }
 
@@ -87,7 +91,7 @@ public class Definer {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
             validateTypeHierarchyIsNotCyclic(variables);
             variables.forEach(variable -> {
-                if (!created.contains(variable)) define(variable);
+                if (!defined.contains(variable)) define(variable);
             });
             rules.forEach(this::define);
         }
@@ -103,7 +107,7 @@ public class Definer {
             } else if (!variable.is().isEmpty()) {
                 throw GraknException.of(TYPE_CONSTRAINT_UNACCEPTED, IS);
             } else if (labelConstraint.scope().isPresent()) return null; // do nothing
-            else if (created.contains(variable)) return conceptMgr.getThingType(labelConstraint.scopedLabel());
+            else if (defined.contains(variable)) return conceptMgr.getThingType(labelConstraint.scopedLabel());
 
             ThingType type = getThingType(labelConstraint);
             if (variable.sub().isPresent()) {
@@ -119,7 +123,7 @@ public class Definer {
                 throw GraknException.of(ATTRIBUTE_VALUE_TYPE_DEFINED_NOT_ON_ATTRIBUTE_TYPE, labelConstraint.label());
             }
 
-            created.add(variable);
+            defined.add(variable);
 
             if (variable.abstractConstraint().isPresent()) defineAbstract(type);
             if (variable.regex().isPresent()) defineRegex(type.asAttributeType().asString(), variable.regex().get());
@@ -219,11 +223,11 @@ public class Definer {
                 if (relates.overridden().isPresent()) {
                     String overriddenTypeLabel = relates.overridden().get().label().get().label();
                     relationType.setRelates(roleTypeLabel, overriddenTypeLabel);
-                    created.add(relates.overridden().get());
+                    defined.add(relates.overridden().get());
                 } else {
                     relationType.setRelates(roleTypeLabel);
                 }
-                created.add(relates.role());
+                defined.add(relates.role());
             });
         }
     }

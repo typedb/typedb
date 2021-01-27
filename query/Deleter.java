@@ -45,8 +45,9 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_IS_CON
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_DELETE;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE_HAS;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE_THING;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_CONSTRAINT_TOO_MANY;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE_THING_DIRECT;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_IID_NOT_INSERTABLE;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.DELETE_RELATION_CONSTRAINT_TOO_MANY;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.query.common.Util.getRoleType;
 
@@ -69,11 +70,11 @@ public class Deleter {
     public static Deleter create(List<graql.lang.pattern.variable.ThingVariable<?>> vars,
                                  ConceptMap matched, Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            VariableRegistry registry = VariableRegistry.createFromThings(vars);
+            VariableRegistry registry = VariableRegistry.createFromThings(vars, false);
             iterate(registry.types()).filter(t -> !t.reference().isLabel()).forEachRemaining(t -> {
                 throw GraknException.of(ILLEGAL_TYPE_VARIABLE_IN_DELETE, t.reference());
             });
-            return new Deleter(VariableRegistry.createFromThings(vars).things(), matched, context);
+            return new Deleter(registry.things(), matched, context);
         }
     }
 
@@ -129,7 +130,7 @@ public class Deleter {
                     relation.removePlayer(roleType, player);
                 });
             } else {
-                throw GraknException.of(RELATION_CONSTRAINT_TOO_MANY, var.reference());
+                throw GraknException.of(DELETE_RELATION_CONSTRAINT_TOO_MANY, var.reference());
             }
         }
     }
@@ -139,8 +140,13 @@ public class Deleter {
             Thing thing = detached.get(var);
             if (var.isa().isPresent() && !thing.isDeleted()) {
                 Label typeLabel = var.isa().get().type().label().get().properLabel();
-                if (thing.getType().getSupertypes().anyMatch(t -> t.getLabel().equals(typeLabel))) thing.delete();
-                else throw GraknException.of(INVALID_DELETE_THING, var.reference(), typeLabel);
+                if (var.isa().get().isExplicit()) {
+                    if (thing.getType().getLabel().equals(typeLabel)) thing.delete();
+                    else throw GraknException.of(INVALID_DELETE_THING_DIRECT, var.reference(), typeLabel);
+                } else {
+                    if (thing.getType().getSupertypes().anyMatch(t -> t.getLabel().equals(typeLabel))) thing.delete();
+                    else throw GraknException.of(INVALID_DELETE_THING, var.reference(), typeLabel);
+                }
             }
         }
     }

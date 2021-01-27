@@ -20,6 +20,7 @@ package grakn.core.query.common;
 
 import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.parameters.Label;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.RelationType;
@@ -46,8 +47,8 @@ public class Util {
             if (rolePlayer.roleType().isPresent()) {
                 RelationType relationType = relation.getType();
                 TypeVariable var = rolePlayer.roleType().get();
-                if (relationType == null || (roleType = relationType.getRelates(var.label().get().label())) == null) {
-                    throw GraknException.of(TYPE_NOT_FOUND, var.label().get().scopedLabel());
+                if ((roleType = relationType.getRelates(var.label().get().label())) == null) {
+                    throw GraknException.of(TYPE_NOT_FOUND, Label.of(var.label().get().label(), relationType.getLabel().name()));
                 }
             } else if ((inferred = player.getType().getPlays()
                     .filter(rt -> rt.getRelationType().equals(relation.getType()))
