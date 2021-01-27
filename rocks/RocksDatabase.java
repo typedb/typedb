@@ -370,7 +370,8 @@ public class RocksDatabase implements Grakn.Database {
         private void countFn() {
             do {
                 try (RocksTransaction.Data tx = session.transaction(WRITE)) {
-                    tx.graphMgr.data().stats().processCountJobs();
+                    boolean shouldRestart = tx.graphMgr.data().stats().processCountJobs();
+                    if (shouldRestart) countJobNotifications.release();
                     tx.commit();
                 } catch (GraknException e) {
                     if (e.code().isPresent() && e.code().get().equals(DATABASE_CLOSED.code())) {
