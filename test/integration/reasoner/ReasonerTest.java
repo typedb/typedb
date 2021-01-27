@@ -33,6 +33,7 @@ import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -67,6 +68,7 @@ public class ReasonerTest {
         grakn.close();
     }
 
+    @Ignore
     @Test
     public void test_no_rules() {
         try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {

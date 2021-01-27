@@ -82,7 +82,7 @@ public class Reasoner {
                                                 Context.Query context) {
         ResourceIterator<Conjunction> conjunctions = iterate(disjunction.conjunctions());
         if (!context.options().parallel()) return conjunctions.flatMap(conj -> iterator(conj, filter));
-        else return produce(conjunctions.flatMap(conj -> producers(conj, filter)).toList()).distinct();
+        else return produce(conjunctions.flatMap(conj -> producers(conj, filter)).toList());
     }
 
     private ResourceIterator<Producer<ConceptMap>> producers(Conjunction conjunction) {
