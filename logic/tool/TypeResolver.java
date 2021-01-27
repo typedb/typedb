@@ -214,7 +214,9 @@ public class TypeResolver {
         }
 
         private void registerHas(TypeVariable owner, HasConstraint hasConstraint) {
-            traversal.owns(owner.id(), register(hasConstraint.attribute()).id(), false);
+            TypeVariable attributeResolver = register(hasConstraint.attribute());
+            traversal.owns(owner.id(), attributeResolver.id(), false);
+            registerSubAttribute(attributeResolver);
         }
 
         private void registerRelation(TypeVariable owner, RelationConstraint constraint) {
@@ -235,7 +237,7 @@ public class TypeResolver {
             if (constraint.isVariable()) {
                 TypeVariable comparableVar = register(constraint.asVariable().value());
                 assert valueTypeRegister.containsKey(comparableVar.id()); //This will fail without careful ordering.
-                registerSubAttribute(comparableVar.id());
+                registerSubAttribute(comparableVar);
                 valueTypes = valueTypeRegister.get(comparableVar.id());
             } else {
                 valueTypes = iterate(Encoding.ValueType.of(constraint.value().getClass()).comparables())
@@ -248,13 +250,14 @@ public class TypeResolver {
             } else if (!valueTypeRegister.get(owner.id()).containsAll(valueTypes)) {
                 throw GraknException.of(UNSATISFIABLE_CONJUNCTION, constraint);
             }
-            registerSubAttribute(owner.id());
+            registerSubAttribute(owner);
         }
 
-        private void registerSubAttribute(Identifier.Variable variable) {
+        private void registerSubAttribute(Variable resolver) {
+            if (variableRegister.get(resolver.reference()).asThing().isa().isPresent()) return;
             Identifier.Variable attributeID = Identifier.Variable.of(Reference.label(ATTRIBUTE.toString()));
             traversal.labels(attributeID, Label.of(ATTRIBUTE.toString()));
-            traversal.sub(variable, attributeID, true);
+            traversal.sub(resolver.id(), attributeID, true);
         }
 
         private Identifier.Variable newSystemId() {
