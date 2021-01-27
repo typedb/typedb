@@ -26,13 +26,15 @@ import grakn.core.common.parameters.Options;
 import grakn.core.concurrent.lock.ManagedLock;
 
 import java.util.UUID;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static grakn.core.common.exception.ErrorMessage.Session.ACQUIRE_LOCK_TIMEOUT;
 import static grakn.core.common.exception.ErrorMessage.Session.SESSION_CLOSED;
+import static grakn.core.common.exception.ErrorMessage.Transaction.DATA_ACQUIRE_LOCK_TIMEOUT;
 
 public abstract class RocksSession implements Grakn.Session {
 
@@ -183,7 +185,7 @@ public abstract class RocksSession implements Grakn.Session {
             try {
                 lock = database().dataWriteSchemaLock().tryReadLock(options.schemaLockAcquireTimeoutMillis(), TimeUnit.MILLISECONDS);
             } catch (InterruptedException err) {
-                throw GraknException.of(ACQUIRE_LOCK_TIMEOUT);
+                throw GraknException.of(DATA_ACQUIRE_LOCK_TIMEOUT);
             }
             RocksTransaction.Data transaction = txDataFactory.transaction(this, type, options);
             transactions.put(transaction, lock);
