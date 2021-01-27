@@ -999,4 +999,20 @@ public class TypeResolverTest {
 
         assertEquals(expectedResolvedTypes, getHintMap(conjunction).get("$_relation:partner"));
     }
+
+    @Test
+    public void roles_can_handle_type_constraints() throws IOException {
+        define_standard_schema("basic-schema");
+        String queryString = "match ($role: $x) isa $y; $role type marriage:wife;";
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
+        HashMap<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$y", set("marriage", "relation", "thing"));
+            put("$x", set("woman"));
+            put("$role", set("marriage:wife"));
+            put("$_0", set("marriage"));
+        }};
+
+        assertEquals(expected, getHintMap(conjunction));
+    }
 }
