@@ -60,7 +60,7 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
         LOG.trace("{}: received Request: {}", name(), fromUpstream);
         ResponseProducer responseProducer = mayUpdateAndGetResponseProducer(fromUpstream, iteration);
         if (iteration < responseProducer.iteration()) {
-            // short circuit if the request came from a prior iteration
+            // short circuit old iteration exhausted messages to upstream
             respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
         } else {
             assert iteration == responseProducer.iteration();

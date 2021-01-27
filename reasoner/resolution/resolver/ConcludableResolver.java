@@ -140,7 +140,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
         ResponseProducer responseProducer = responseProducers.get(fromUpstream);
 
         if (iteration < responseProducer.iteration()) {
-            // short circuit old iteration exhausted messages back out of the actor model
+            // short circuit old iteration exhausted messages to upstream
             respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
             return;
         }

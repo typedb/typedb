@@ -150,7 +150,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
         ResponseProducer responseProducer = responseProducers.get(fromUpstream);
 
         if (iteration < responseProducer.iteration()) {
-            // short circuit old iteration exhausted messages back out of the actor model
+            // short circuit old iteration exhausted messages to upstream
             respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
             return;
         }
