@@ -36,6 +36,7 @@ import org.rocksdb.WriteOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.concurrent.NotThreadSafe;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -314,6 +315,7 @@ public abstract class RocksStorage implements Storage {
         }
     }
 
+    @NotThreadSafe
     public static class Data extends TransactionBounded implements Storage.Data {
 
         private final KeyGenerator.Data dataKeyGenerator;

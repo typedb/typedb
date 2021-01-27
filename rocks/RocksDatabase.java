@@ -310,7 +310,7 @@ public class RocksDatabase implements Grakn.Database {
         private boolean invalidated;
 
         private Cache(RocksDatabase database) {
-            this.schemaStorage = new RocksStorage.Cache(database.rocksSchema());
+            schemaStorage = new RocksStorage.Cache(database.rocksSchema());
             schemaGraph = new SchemaGraph(schemaStorage, true);
             traversalCache = new TraversalCache();
             logicCache = new LogicCache();

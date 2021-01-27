@@ -22,6 +22,8 @@ import graql.lang.query.GraqlQuery;
 
 import javax.annotation.Nullable;
 
+import static grakn.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
+
 public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>> {
 
     Arguments.Session.Type sessionType;
@@ -77,13 +79,26 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
 
     public static class Query extends Context<Context.Transaction, Options.Query> {
 
+        private Arguments.Query.Producer producer;
+        private static final Arguments.Query.Producer DEFAULT_PRODUCER = INCREMENTAL;
+
         public Query(Transaction context, Options.Query options) {
             super(context, options.parent(context.options()));
         }
 
         public Query(Transaction context, Options.Query options, GraqlQuery query) {
             super(context, options.parent(context.options()));
-            options.setPrefetchIfAbsent(query);
+            options.query(query);
+        }
+
+        public Arguments.Query.Producer producer() {
+            if (producer != null) return producer;
+            else return DEFAULT_PRODUCER;
+        }
+
+        public Query producer(Arguments.Query.Producer producer) {
+            this.producer = producer;
+            return this;
         }
     }
 }

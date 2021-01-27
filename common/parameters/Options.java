@@ -82,17 +82,6 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         return getThis();
     }
 
-    public boolean prefetch() {
-        if (prefetch != null) return prefetch;
-        else if (parent != null) return parent.prefetch();
-        else return DEFAULT_QUERY_READ_PREFETCH;
-    }
-
-    public SELF prefetch(boolean prefetch) {
-        this.prefetch = prefetch;
-        return getThis();
-    }
-
     public int sessionIdleTimeoutMillis() {
         if (sessionIdlTimeoutMillis != null) return sessionIdlTimeoutMillis;
         else if (parent != null) return parent.sessionIdleTimeoutMillis();
@@ -147,16 +136,30 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     public static class Query extends Options<Transaction, Query> {
 
         private Boolean parallel = null;
+        private GraqlQuery query = null;
 
         @Override
         Query getThis() {
             return this;
         }
 
-        Query setPrefetchIfAbsent(GraqlQuery query) {
-            if (prefetch == null) {
-                prefetch = query.type().isRead() ? DEFAULT_QUERY_READ_PREFETCH : DEFAULT_QUERY_WRITE_PREFETCH;
+        public Query query(GraqlQuery query) {
+            this.query = query;
+            return this;
+        }
+
+        public boolean prefetch() {
+            if (prefetch != null) {
+                return prefetch;
+            } else if (query != null) {
+                return query.type().isRead() ? DEFAULT_QUERY_READ_PREFETCH : DEFAULT_QUERY_WRITE_PREFETCH;
+            } else {
+                return DEFAULT_QUERY_READ_PREFETCH;
             }
+        }
+
+        public Query prefetch(boolean prefetch) {
+            this.prefetch = prefetch;
             return this;
         }
 

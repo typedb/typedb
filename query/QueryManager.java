@@ -57,32 +57,29 @@ public class QueryManager {
     private final LogicManager logicMgr;
     private final Reasoner reasoner;
     private final ConceptManager conceptMgr;
-    private final Context.Transaction context;
-    private final Context.Query defaultOptions;
+    private final Context.Query defaultContext;
 
     public QueryManager(ConceptManager conceptMgr, LogicManager logicMgr, Reasoner reasoner, Context.Transaction context) {
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
         this.reasoner = reasoner;
-        this.context = context;
-        this.defaultOptions = new Context.Query(context, new Options.Query());
+        this.defaultContext = new Context.Query(context, new Options.Query());
     }
 
     public ResourceIterator<ConceptMap> match(GraqlMatch query) {
-        return match(query, defaultOptions);
+        return match(query, defaultContext);
     }
 
-    public ResourceIterator<ConceptMap> match(GraqlMatch query, Context.Query queryContext) {
+    public ResourceIterator<ConceptMap> match(GraqlMatch query, Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match")) {
-
-            return Matcher.create(reasoner, query, queryContext).execute().onError(conceptMgr::exception);
+            return Matcher.create(reasoner, query, context).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }
     }
 
     public Numeric match(GraqlMatch.Aggregate query) {
-        return match(query, defaultOptions);
+        return match(query, defaultContext);
     }
 
     public Numeric match(GraqlMatch.Aggregate query, Context.Query queryContext) {
@@ -94,7 +91,7 @@ public class QueryManager {
     }
 
     public ResourceIterator<ConceptMapGroup> match(GraqlMatch.Group query) {
-        return match(query, defaultOptions);
+        return match(query, defaultContext);
     }
 
     public ResourceIterator<ConceptMapGroup> match(GraqlMatch.Group query, Context.Query queryContext) {
@@ -106,7 +103,7 @@ public class QueryManager {
     }
 
     public ResourceIterator<NumericGroup> match(GraqlMatch.Group.Aggregate query) {
-        return match(query, defaultOptions);
+        return match(query, defaultContext);
     }
 
     public ResourceIterator<NumericGroup> match(GraqlMatch.Group.Aggregate query, Context.Query queryContext) {
@@ -118,24 +115,24 @@ public class QueryManager {
     }
 
     public ResourceIterator<ConceptMap> insert(GraqlInsert query) {
-        return insert(query, defaultOptions);
+        return insert(query, defaultContext);
     }
 
-    public ResourceIterator<ConceptMap> insert(GraqlInsert query, Context.Query queryContext) {
-        if (this.context.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION);
-        if (this.context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_DATA_READ_VIOLATION);
+    public ResourceIterator<ConceptMap> insert(GraqlInsert query, Context.Query context) {
+        if (context.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION);
+        if (context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_DATA_READ_VIOLATION);
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
             if (query.match().isPresent()) {
                 GraqlMatch.Unfiltered match = query.match().get();
                 List<UnboundVariable> filterVars = new ArrayList<>(match.namedVariablesUnbound());
                 filterVars.retainAll(query.namedVariablesUnbound());
                 assert !filterVars.isEmpty();
-                List<ConceptMap> matched = match(match.get(filterVars), queryContext).toList();
+                List<ConceptMap> matched = match(match.get(filterVars), context).toList();
                 return iterate(iterate(matched).map(answer -> Inserter.create(
-                        conceptMgr, query.variables(), answer, queryContext
+                        conceptMgr, query.variables(), answer, context
                 ).execute()).toList());
             } else {
-                return single(Inserter.create(conceptMgr, query.variables(), queryContext).execute());
+                return single(Inserter.create(conceptMgr, query.variables(), context).execute());
             }
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
@@ -143,46 +140,42 @@ public class QueryManager {
     }
 
     public void delete(GraqlDelete query) {
-        delete(query, defaultOptions);
+        delete(query, defaultContext);
     }
 
-    public void delete(GraqlDelete query, Context.Query queryContext) {
-        if (this.context.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION);
-        if (this.context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_DATA_READ_VIOLATION);
+    public void delete(GraqlDelete query, Context.Query context) {
+        if (context.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION);
+        if (context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_DATA_READ_VIOLATION);
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete")) {
-            List<UnboundVariable> filterVars = new ArrayList<>(query.match().namedVariablesUnbound());
-            filterVars.retainAll(query.namedVariablesUnbound());
-            assert !filterVars.isEmpty();
-            List<ConceptMap> matched = match(query.match().get(filterVars), queryContext).toList();
-            matched.forEach(existing -> Deleter.create(query.variables(), existing, queryContext).execute());
+            Deleter.create(reasoner, conceptMgr, query, context).execute();
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }
     }
 
     public void define(GraqlDefine query) {
-        define(query, defaultOptions);
+        define(query, defaultContext);
     }
 
-    public void define(GraqlDefine query, Context.Query queryContext) {
-        if (this.context.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION);
-        if (this.context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_SCHEMA_READ_VIOLATION);
+    public void define(GraqlDefine query, Context.Query context) {
+        if (context.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION);
+        if (context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_SCHEMA_READ_VIOLATION);
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "define")) {
-            Definer.create(conceptMgr, logicMgr, query.variables(), query.rules(), queryContext).execute();
+            Definer.create(conceptMgr, logicMgr, query, context).execute();
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }
     }
 
     public void undefine(GraqlUndefine query) {
-        undefine(query, defaultOptions);
+        undefine(query, defaultContext);
     }
 
-    public void undefine(GraqlUndefine query, Context.Query queryContext) {
-        if (this.context.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION);
-        if (this.context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_SCHEMA_READ_VIOLATION);
+    public void undefine(GraqlUndefine query, Context.Query context) {
+        if (context.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION);
+        if (context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_SCHEMA_READ_VIOLATION);
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefine")) {
-            Undefiner.create(conceptMgr, logicMgr, query.variables(), query.rules(), queryContext).execute();
+            Undefiner.create(conceptMgr, logicMgr, query, context).execute();
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }

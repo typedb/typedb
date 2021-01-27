@@ -20,8 +20,6 @@ package grakn.core.server.rpc.common;
 import grakn.core.common.parameters.Options;
 import grakn.protocol.OptionsProto;
 
-import java.util.function.Supplier;
-
 import static grakn.protocol.OptionsProto.Options.BatchSizeOptCase.BATCH_SIZE;
 import static grakn.protocol.OptionsProto.Options.ExplainOptCase.EXPLAIN;
 import static grakn.protocol.OptionsProto.Options.InferOptCase.INFER;
@@ -31,28 +29,29 @@ import static grakn.protocol.OptionsProto.Options.SessionIdleTimeoutOptCase.SESS
 
 public class RequestReader {
 
-    public static <T extends Options<?, ?>> T getOptions(Supplier<T> optionsConstructor,
-                                                         OptionsProto.Options requestOptions) {
-        T options = optionsConstructor.get();
-        if (requestOptions.getInferOptCase().equals(INFER)) {
-            options.infer(requestOptions.getInfer());
+    public static <T extends Options<?, ?>> T setDefaultOptions(T options, OptionsProto.Options request) {
+        if (request.getInferOptCase().equals(INFER)) {
+            options.infer(request.getInfer());
         }
-        if (requestOptions.getExplainOptCase().equals(EXPLAIN)) {
-            options.explain(requestOptions.getExplain());
+        if (request.getExplainOptCase().equals(EXPLAIN)) {
+            options.explain(request.getExplain());
         }
-        if (requestOptions.getBatchSizeOptCase().equals(BATCH_SIZE)) {
-            options.responseBatchSize(requestOptions.getBatchSize());
+        if (request.getBatchSizeOptCase().equals(BATCH_SIZE)) {
+            options.responseBatchSize(request.getBatchSize());
         }
-        if (requestOptions.getPrefetchOptCase().equals(PREFETCH)) {
-            options.prefetch(requestOptions.getPrefetch());
+        if (request.getSessionIdleTimeoutOptCase().equals(SESSION_IDLE_TIMEOUT_MILLIS)) {
+            options.sessionIdleTimeoutMillis(request.getSessionIdleTimeoutMillis());
         }
-        if (requestOptions.getSessionIdleTimeoutOptCase().equals(SESSION_IDLE_TIMEOUT_MILLIS)) {
-            options.sessionIdleTimeoutMillis(requestOptions.getSessionIdleTimeoutMillis());
+        if (request.getSchemaLockAcquireTimeoutOptCase().equals(SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS)) {
+            options.schemaLockAcquireTimeoutMillis(request.getSchemaLockAcquireTimeoutMillis());
         }
-        if (requestOptions.getSchemaLockAcquireTimeoutOptCase().equals(SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS)) {
-            options.schemaLockAcquireTimeoutMillis(requestOptions.getSchemaLockAcquireTimeoutMillis());
-        }
+        return options;
+    }
 
+    public static Options.Query setQueryOptions(Options.Query options, OptionsProto.Options request) {
+        if (request.getPrefetchOptCase().equals(PREFETCH)) {
+            options.prefetch(request.getPrefetch());
+        }
         return options;
     }
 }

@@ -73,4 +73,31 @@ public class Arguments {
             public boolean isWrite() { return isWrite; }
         }
     }
+
+    public static class Query {
+
+        public enum Producer {
+            INCREMENTAL(0),
+            EXHAUSTIVE(1);
+
+            private final int id;
+            private final boolean isExhaustive;
+
+            Producer(int id) {
+                this.id = id;
+                this.isExhaustive = id == 1;
+            }
+
+            public static Producer of(int value) {
+                for (Producer t : values()) {
+                    if (t.id == value) return t;
+                }
+                return null;
+            }
+
+            public boolean isIncremental() { return !isExhaustive; }
+
+            public boolean isExhaustive() { return isExhaustive; }
+        }
+    }
 }

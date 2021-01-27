@@ -37,6 +37,7 @@ import grakn.core.pattern.constraint.type.RelatesConstraint;
 import grakn.core.pattern.constraint.type.SubConstraint;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.VariableRegistry;
+import graql.lang.query.GraqlDefine;
 
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -79,11 +80,10 @@ public class Definer {
     }
 
     public static Definer create(ConceptManager conceptMgr, LogicManager logicMgr,
-                                 List<graql.lang.pattern.variable.TypeVariable> variables,
-                                 List<graql.lang.pattern.schema.Rule> rules, Context.Query context) {
+                                 GraqlDefine query, Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            Set<TypeVariable> types = VariableRegistry.createFromTypes(variables).types();
-            return new Definer(conceptMgr, logicMgr, types, rules, context);
+            Set<TypeVariable> types = VariableRegistry.createFromTypes(query.variables()).types();
+            return new Definer(conceptMgr, logicMgr, types, query.rules(), context);
         }
     }
 

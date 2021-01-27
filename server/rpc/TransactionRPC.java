@@ -23,7 +23,6 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
-import grakn.core.server.rpc.common.RequestReader;
 import grakn.core.server.rpc.concept.ConceptManagerHandler;
 import grakn.core.server.rpc.concept.ThingHandler;
 import grakn.core.server.rpc.concept.TypeHandler;
@@ -48,6 +47,7 @@ import static grakn.core.common.exception.ErrorMessage.Server.ITERATION_WITH_UNK
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
 import static grakn.core.common.exception.ErrorMessage.Transaction.BAD_TRANSACTION_TYPE;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_ALREADY_OPENED;
+import static grakn.core.server.rpc.common.RequestReader.setDefaultOptions;
 import static grakn.core.server.rpc.common.ResponseBuilder.Transaction.continueRes;
 import static grakn.core.server.rpc.common.ResponseBuilder.Transaction.done;
 
@@ -66,9 +66,9 @@ public class TransactionRPC {
 
         Arguments.Transaction.Type transactionType = Arguments.Transaction.Type.of(request.getType().getNumber());
         if (transactionType == null) throw GraknException.of(BAD_TRANSACTION_TYPE, request.getType());
-        Options.Transaction transactionOptions = RequestReader.getOptions(Options.Transaction::new, request.getOptions());
+        Options.Transaction options = setDefaultOptions(new Options.Transaction(), request.getOptions());
 
-        transaction = sessionRPC.session().transaction(transactionType, transactionOptions);
+        transaction = sessionRPC.session().transaction(transactionType, options);
         isOpen = new AtomicBoolean(true);
         iterators = new Iterators();
         handlers = new RequestHandlers();

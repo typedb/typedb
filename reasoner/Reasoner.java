@@ -22,6 +22,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Context;
+import grakn.core.common.parameters.Options;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
@@ -37,6 +38,7 @@ import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
+import grakn.core.traversal.common.VertexMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +52,7 @@ import static grakn.core.common.exception.ErrorMessage.ThingRead.CONTRADICTORY_B
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.single;
+import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
 import static grakn.core.concurrent.common.ExecutorService.PARALLELISATION_FACTOR;
 import static grakn.core.concurrent.producer.Producers.produce;
 
@@ -59,45 +62,50 @@ public class Reasoner {
     private final TraversalEngine traversalEng;
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
-    private final Context.Transaction context;
     private final ResolverRegistry resolverRegistry;
     private final Actor<ResolutionRecorder> resolutionRecorder; // for explanations
+    private final Context.Query defaultContext;
 
-    public Reasoner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr, Context.Transaction context) {
+    public Reasoner(ConceptManager conceptMgr, LogicManager logicMgr,
+                    TraversalEngine traversalEng, Context.Transaction context) {
         this.conceptMgr = conceptMgr;
         this.traversalEng = traversalEng;
         this.logicMgr = logicMgr;
-        this.context = context;
+        this.defaultContext = new Context.Query(context, new Options.Query());
+        this.defaultContext.producer(EXHAUSTIVE);
         this.resolutionRecorder = Actor.create(ExecutorService.eventLoopGroup(), ResolutionRecorder::new);
         this.resolverRegistry = new ResolverRegistry(
                 ExecutorService.eventLoopGroup(), resolutionRecorder, traversalEng, conceptMgr, logicMgr
         );
     }
 
-    private boolean isInfer() {
+    private boolean isInfer(Context.Query context) {
         return context.options().infer() && !context.transactionType().isWrite();
     }
 
     public ResourceIterator<ConceptMap> execute(Disjunction disjunction, List<Identifier.Variable.Name> filter,
                                                 Context.Query context) {
-        ResourceIterator<Conjunction> conjunctions = iterate(disjunction.conjunctions());
-        if (!context.options().parallel()) return conjunctions.flatMap(conj -> iterator(conj, filter));
-        else return produce(conjunctions.flatMap(conj -> producers(conj, filter)).toList());
+        ResourceIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
+        if (!context.options().parallel()) return conjs.flatMap(conj -> iterator(conj, filter, context));
+        else return produce(conjs.flatMap(conj -> producers(conj, filter, context)).toList(), context.producer());
     }
 
     private ResourceIterator<Producer<ConceptMap>> producers(Conjunction conjunction) {
-        return producers(conjunction, list());
+        return producers(conjunction, list(), defaultContext);
     }
 
     private ResourceIterator<Producer<ConceptMap>> producers(Conjunction conjunction,
-                                                             List<Identifier.Variable.Name> filter) {
-        if (!isInfer()) LOG.warn("Reasoning is disabled in write transactions");
+                                                             List<Identifier.Variable.Name> filter,
+                                                             Context.Query context) {
+        if (!isInfer(context)) LOG.warn("Reasoning is disabled in write transactions");
 
         List<Producer<ConceptMap>> producers = new ArrayList<>();
         Conjunction conj = logicMgr.typeResolver().resolve(conjunction);
         if (conj.isSatisfiable()) {
-            producers.add(traversalEng.producer(conj.traversal(filter), PARALLELISATION_FACTOR).map(conceptMgr::conceptMap));
-            if (isInfer()) producers.add(this.resolve(conj));
+            Producer<VertexMap> producer =
+                    traversalEng.producer(conj.traversal(filter), context.producer(), PARALLELISATION_FACTOR);
+            producers.add(producer.map(conceptMgr::conceptMap));
+            if (isInfer(context)) producers.add(resolve(conj));
         } else if (!filter.isEmpty() && iterate(filter).anyMatch(id -> conj.variable(id).isThing()) ||
                 iterate(conjunction.variables()).anyMatch(Variable::isThing)) {
             throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction);
@@ -106,8 +114,8 @@ public class Reasoner {
         }
 
         if (conjunction.negations().isEmpty()) return iterate(producers);
-        else return iterate(producers).map(p -> p.filter(answer -> !produce(
-                iterate(conjunction.negations()).flatMap(n -> iterate(producers(n.disjunction(), answer))).toList()
+        else return iterate(producers).map(p -> p.filter(a -> !produce(
+                iterate(conjunction.negations()).flatMap(n -> iterate(producers(n.disjunction(), a))).toList(), EXHAUSTIVE
         ).hasNext()));
     }
 
@@ -120,17 +128,18 @@ public class Reasoner {
     }
 
     private ResourceIterator<ConceptMap> iterator(Conjunction conjunction) {
-        return iterator(conjunction, list());
+        return iterator(conjunction, list(), defaultContext);
     }
 
-    private ResourceIterator<ConceptMap> iterator(Conjunction conjunction, List<Identifier.Variable.Name> filter) {
-        if (!isInfer()) LOG.warn("Reasoning is disabled in write transactions");
+    private ResourceIterator<ConceptMap> iterator(Conjunction conjunction, List<Identifier.Variable.Name> filter,
+                                                  Context.Query context) {
+        if (!isInfer(context)) LOG.warn("Reasoning is disabled in write transactions");
 
         ResourceIterator<ConceptMap> answers;
         Conjunction conj = logicMgr.typeResolver().resolve(conjunction);
         if (conj.isSatisfiable()) {
             answers = traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
-            if (isInfer()) answers = link(answers, produce(resolve(conj)));
+            if (isInfer(context)) answers = link(answers, produce(resolve(conj), context.producer()));
         } else if (!filter.isEmpty() && iterate(filter).anyMatch(id -> conj.variable(id).isThing()) ||
                 iterate(conjunction.variables()).anyMatch(Variable::isThing)) {
             throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction);

@@ -36,6 +36,7 @@ import grakn.core.pattern.constraint.type.RelatesConstraint;
 import grakn.core.pattern.constraint.type.SubConstraint;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.VariableRegistry;
+import graql.lang.query.GraqlUndefine;
 
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -83,11 +84,10 @@ public class Undefiner {
     }
 
     public static Undefiner create(ConceptManager conceptMgr, LogicManager logicMgr,
-                                   List<graql.lang.pattern.variable.TypeVariable> variables,
-                                   List<graql.lang.pattern.schema.Rule> rules, Context.Query context) {
+                                   GraqlUndefine query, Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            Set<TypeVariable> types = VariableRegistry.createFromTypes(variables).types();
-            return new Undefiner(conceptMgr, logicMgr, types, rules, context);
+            Set<TypeVariable> types = VariableRegistry.createFromTypes(query.variables()).types();
+            return new Undefiner(conceptMgr, logicMgr, types, query.rules(), context);
         }
     }
 
