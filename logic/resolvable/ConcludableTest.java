@@ -163,6 +163,7 @@ public class ConcludableTest {
         assertEquals(0, relationConcludablesCount(concludables));
         assertEquals(0, attributeConcludablesCount(concludables));
     }
+
     @Test
     public void test_conjunction_only_creates_has_concludable_when_attribute_has_value_constraints() {
         String conjunction = "{ $x has $a; $a isa age; $a > 5; $a <= 10; }";

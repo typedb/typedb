@@ -19,16 +19,15 @@
 package grakn.core.traversal.procedure;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.BaseIterator;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.SchemaGraph;
+import grakn.core.graph.common.Encoding;
 import grakn.core.graph.edge.ThingEdge;
 import grakn.core.graph.edge.TypeEdge;
 import grakn.core.graph.iid.PrefixIID;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
@@ -54,21 +53,21 @@ import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.loop;
 import static grakn.core.common.iterator.Iterators.single;
 import static grakn.core.common.iterator.Iterators.tree;
-import static grakn.core.graph.util.Encoding.Direction.Edge.BACKWARD;
-import static grakn.core.graph.util.Encoding.Direction.Edge.FORWARD;
-import static grakn.core.graph.util.Encoding.Edge.ISA;
-import static grakn.core.graph.util.Encoding.Edge.Thing.HAS;
-import static grakn.core.graph.util.Encoding.Edge.Thing.PLAYING;
-import static grakn.core.graph.util.Encoding.Edge.Thing.RELATING;
-import static grakn.core.graph.util.Encoding.Edge.Thing.ROLEPLAYER;
-import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
-import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
-import static grakn.core.graph.util.Encoding.Edge.Type.PLAYS;
-import static grakn.core.graph.util.Encoding.Edge.Type.RELATES;
-import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
-import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ATTRIBUTE;
-import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ROLE;
-import static grakn.core.graph.util.Encoding.Vertex.Thing.RELATION;
+import static grakn.core.graph.common.Encoding.Direction.Edge.BACKWARD;
+import static grakn.core.graph.common.Encoding.Direction.Edge.FORWARD;
+import static grakn.core.graph.common.Encoding.Edge.ISA;
+import static grakn.core.graph.common.Encoding.Edge.Thing.HAS;
+import static grakn.core.graph.common.Encoding.Edge.Thing.PLAYING;
+import static grakn.core.graph.common.Encoding.Edge.Thing.RELATING;
+import static grakn.core.graph.common.Encoding.Edge.Thing.ROLEPLAYER;
+import static grakn.core.graph.common.Encoding.Edge.Type.OWNS;
+import static grakn.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
+import static grakn.core.graph.common.Encoding.Edge.Type.PLAYS;
+import static grakn.core.graph.common.Encoding.Edge.Type.RELATES;
+import static grakn.core.graph.common.Encoding.Edge.Type.SUB;
+import static grakn.core.graph.common.Encoding.Prefix.VERTEX_ATTRIBUTE;
+import static grakn.core.graph.common.Encoding.Prefix.VERTEX_ROLE;
+import static grakn.core.graph.common.Encoding.Vertex.Thing.RELATION;
 import static grakn.core.traversal.predicate.PredicateOperator.Equality.EQ;
 import static grakn.core.traversal.procedure.ProcedureVertex.Thing.filterAttributes;
 
@@ -1016,7 +1015,7 @@ public abstract class ProcedureEdge<
                         boolean filteredIID = false, filteredTypes = false;
 
                         if (!roleTypes.isEmpty()) {
-                            BaseIterator<TypeVertex> resolveRoleTypesIter = iterate(resolvedRoleTypes(graphMgr.schema()));
+                            ResourceIterator<TypeVertex> resolveRoleTypesIter = iterate(resolvedRoleTypes(graphMgr.schema()));
                             if (to.props().hasIID()) {
                                 assert to.id().isVariable();
                                 filteredIID = true;
@@ -1077,7 +1076,7 @@ public abstract class ProcedureEdge<
                         boolean filteredIID = false, filteredTypes = false;
 
                         if (!roleTypes.isEmpty()) {
-                            BaseIterator<TypeVertex> resolveRoleTypesIter = iterate(resolvedRoleTypes(graphMgr.schema()));
+                            ResourceIterator<TypeVertex> resolveRoleTypesIter = iterate(resolvedRoleTypes(graphMgr.schema()));
                             if (to.props().hasIID()) {
                                 assert to.id().isVariable();
                                 filteredIID = true;

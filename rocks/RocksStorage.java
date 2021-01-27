@@ -18,12 +18,13 @@
 
 package grakn.core.rocks;
 
-import grakn.core.common.concurrent.ManagedReadWriteLock;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
-import grakn.core.graph.util.KeyGenerator;
-import grakn.core.graph.util.Storage;
+import grakn.core.concurrent.common.ConcurrentSet;
+import grakn.core.concurrent.lock.ManagedReadWriteLock;
+import grakn.core.graph.common.KeyGenerator;
+import grakn.core.graph.common.Storage;
 import org.rocksdb.AbstractImmutableNativeReference;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.OptimisticTransactionOptions;
@@ -32,43 +33,45 @@ import org.rocksdb.RocksDBException;
 import org.rocksdb.Snapshot;
 import org.rocksdb.Transaction;
 import org.rocksdb.WriteOptions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 
 import static grakn.core.common.collection.Bytes.bytesHavePrefix;
-import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_DATA_READ_VIOLATION;
+import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_SCHEMA_READ_VIOLATION;
 
-public class RocksStorage implements Storage {
+public abstract class RocksStorage implements Storage {
 
+    private static final Logger LOG = LoggerFactory.getLogger(RocksStorage.class);
     private static final byte[] EMPTY_ARRAY = new byte[]{};
 
+    protected final ConcurrentSet<RocksIterator<?>> iterators;
     protected final Transaction storageTransaction;
-    private final boolean isReadOnly;
-    private final Set<RocksIterator<?>> iterators;
+    protected final ReadOptions readOptions;
+    protected final boolean isReadOnly;
+
     private final ConcurrentLinkedQueue<org.rocksdb.RocksIterator> recycled;
     private final OptimisticTransactionOptions transactionOptions;
     private final WriteOptions writeOptions;
-    private final ReadOptions readOptions;
-    private final Snapshot snapshot;
-    private final ManagedReadWriteLock readWriteLock;
     private final AtomicBoolean isOpen;
+    private final Snapshot snapshot;
 
-    public RocksStorage(OptimisticTransactionDB rocksDB, boolean isReadOnly) {
+    private RocksStorage(OptimisticTransactionDB rocksDB, boolean isReadOnly) {
         this.isReadOnly = isReadOnly;
-        iterators = ConcurrentHashMap.newKeySet();
+        iterators = new ConcurrentSet<>();
         recycled = new ConcurrentLinkedQueue<>();
-        readWriteLock = new ManagedReadWriteLock();
         writeOptions = new WriteOptions();
         transactionOptions = new OptimisticTransactionOptions().setSetSnapshot(true);
         storageTransaction = rocksDB.beginTransaction(writeOptions, transactionOptions);
         snapshot = storageTransaction.getSnapshot();
         readOptions = new ReadOptions().setSnapshot(snapshot);
-
         isOpen = new AtomicBoolean(true);
     }
 
@@ -78,44 +81,13 @@ public class RocksStorage implements Storage {
     }
 
     @Override
-    public byte[] get(byte[] key) {
-        validateTransactionIsOpen();
-        try {
-            // We don't need to check isOpen.get() as tx.commit() does not involve this method
-            if (!isReadOnly) readWriteLock.lockRead();
-            return storageTransaction.get(readOptions, key);
-        } catch (RocksDBException | InterruptedException e) {
-            throw exception(e);
-        } finally {
-            if (!isReadOnly) readWriteLock.unlockRead();
-        }
-    }
-
-    @Override
     public byte[] getLastKey(byte[] prefix) {
-        validateTransactionIsOpen();
-        final byte[] upperBound = Arrays.copyOf(prefix, prefix.length);
-        upperBound[upperBound.length - 1] = (byte) (upperBound[upperBound.length - 1] + 1);
-        assert upperBound[upperBound.length - 1] != Byte.MIN_VALUE;
-
-        try (org.rocksdb.RocksIterator iterator = getInternalRocksIterator()) {
-            iterator.seekForPrev(upperBound);
-            if (bytesHavePrefix(iterator.key(), prefix)) return iterator.key();
-            else return null;
-        }
+        throw exception(ILLEGAL_OPERATION);
     }
 
     @Override
     public void delete(byte[] key) {
-        validateTransactionIsOpen();
-        try {
-            if (isOpen.get()) readWriteLock.lockWrite();
-            storageTransaction.delete(key);
-        } catch (RocksDBException | InterruptedException e) {
-            throw exception(e);
-        } finally {
-            if (isOpen.get()) readWriteLock.unlockWrite();
-        }
+        throw exception(ILLEGAL_OPERATION);
     }
 
     @Override
@@ -125,15 +97,7 @@ public class RocksStorage implements Storage {
 
     @Override
     public void put(byte[] key, byte[] value) {
-        validateTransactionIsOpen();
-        try {
-            if (isOpen.get()) readWriteLock.lockWrite();
-            storageTransaction.put(key, value);
-        } catch (RocksDBException | InterruptedException e) {
-            throw exception(e);
-        } finally {
-            if (isOpen.get()) readWriteLock.unlockWrite();
-        }
+        throw exception(ILLEGAL_OPERATION);
     }
 
     @Override
@@ -143,47 +107,44 @@ public class RocksStorage implements Storage {
 
     @Override
     public void putUntracked(byte[] key, byte[] value) {
-        validateTransactionIsOpen();
-        try {
-            readWriteLock.lockWrite();
-            storageTransaction.putUntracked(key, value);
-        } catch (RocksDBException | InterruptedException e) {
-            throw exception(e);
-        } finally {
-            if (isOpen()) readWriteLock.unlockWrite();
-        }
+        throw exception(ILLEGAL_OPERATION);
     }
 
     @Override
     public void mergeUntracked(byte[] key, byte[] value) {
-        validateTransactionIsOpen();
-        try {
-            readWriteLock.lockWrite();
-            storageTransaction.mergeUntracked(key, value);
-        } catch (RocksDBException | InterruptedException e) {
-            throw exception(e);
-        } finally {
-            if (isOpen()) readWriteLock.unlockWrite();
-        }
+        throw exception(ILLEGAL_OPERATION);
     }
 
-    @Override
-    public <G> ResourceIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
-        validateTransactionIsOpen();
-        final RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
-        iterators.add(iterator);
-        return iterator;
+    org.rocksdb.RocksIterator getInternalRocksIterator() {
+        if (isReadOnly) {
+            org.rocksdb.RocksIterator iterator = recycled.poll();
+            if (iterator != null) return iterator;
+        }
+        return storageTransaction.getIterator(readOptions);
+    }
+
+    void recycle(org.rocksdb.RocksIterator rocksIterator) {
+        recycled.add(rocksIterator);
+    }
+
+    void remove(RocksIterator<?> iterator) {
+        iterators.remove(iterator);
     }
 
     @Override
     public GraknException exception(ErrorMessage error) {
-        return GraknException.of(error);
+        GraknException e = GraknException.of(error);
+        LOG.error(e.getMessage(), e);
+        return e;
     }
 
     @Override
     public GraknException exception(Exception exception) {
-        if (exception instanceof GraknException) return (GraknException) exception;
-        else return GraknException.of(exception);
+        GraknException e;
+        if (exception instanceof GraknException) e = (GraknException) exception;
+        else e = GraknException.of(exception);
+        LOG.error(e.getMessage(), e);
+        return e;
     }
 
     @Override
@@ -199,33 +160,93 @@ public class RocksStorage implements Storage {
         }
     }
 
-    void validateTransactionIsOpen() {
-        if (!isOpen()) throw GraknException.of(TRANSACTION_CLOSED);
-    }
+    static class Cache extends RocksStorage {
 
-    org.rocksdb.RocksIterator getInternalRocksIterator() {
-        if (isReadOnly) {
-            final org.rocksdb.RocksIterator iterator = recycled.poll();
-            if (iterator != null) return iterator;
+        public Cache(OptimisticTransactionDB rocksDB) {
+            super(rocksDB, true);
         }
-        return storageTransaction.getIterator(readOptions);
-    }
 
-    public void recycle(org.rocksdb.RocksIterator rocksIterator) {
-        recycled.add(rocksIterator);
-    }
+        @Override
+        public byte[] get(byte[] key) {
+            assert isOpen();
+            try {
+                return storageTransaction.get(readOptions, key);
+            } catch (RocksDBException e) {
+                throw exception(e);
+            }
+        }
 
-    void remove(RocksIterator<?> iterator) {
-        iterators.remove(iterator);
+        @Override
+        public <G> ResourceIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
+            assert isOpen();
+            RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
+            iterators.add(iterator);
+            return iterator.onFinalise(iterator::close);
+        }
     }
 
     static abstract class TransactionBounded extends RocksStorage {
 
-        private final RocksTransaction transaction;
+        protected final ManagedReadWriteLock readWriteLock;
+        protected final RocksTransaction transaction;
 
         TransactionBounded(OptimisticTransactionDB rocksDB, RocksTransaction transaction) {
             super(rocksDB, transaction.type().isRead());
             this.transaction = transaction;
+            readWriteLock = new ManagedReadWriteLock();
+        }
+
+        @Override
+        public byte[] get(byte[] key) {
+            assert isOpen();
+            try {
+                if (!isReadOnly) readWriteLock.lockRead();
+                return storageTransaction.get(readOptions, key);
+            } catch (RocksDBException | InterruptedException e) {
+                throw exception(e);
+            } finally {
+                if (!isReadOnly) readWriteLock.unlockRead();
+            }
+        }
+
+        @Override
+        public byte[] getLastKey(byte[] prefix) {
+            assert isOpen();
+            byte[] upperBound = Arrays.copyOf(prefix, prefix.length);
+            upperBound[upperBound.length - 1] = (byte) (upperBound[upperBound.length - 1] + 1);
+            assert upperBound[upperBound.length - 1] != Byte.MIN_VALUE;
+
+            try (org.rocksdb.RocksIterator iterator = getInternalRocksIterator()) {
+                iterator.seekForPrev(upperBound);
+                if (bytesHavePrefix(iterator.key(), prefix)) return iterator.key();
+                else return null;
+            }
+        }
+
+        @Override
+        public void delete(byte[] key) {
+            assert isOpen() && transaction.isOpen();
+            if (isReadOnly) {
+                if (transaction.isSchema()) throw exception(TRANSACTION_SCHEMA_READ_VIOLATION);
+                else if (transaction.isData()) throw exception(TRANSACTION_DATA_READ_VIOLATION);
+                else throw exception(ILLEGAL_STATE);
+            }
+            try {
+                readWriteLock.lockWrite();
+                storageTransaction.delete(key);
+            } catch (RocksDBException | InterruptedException e) {
+                throw exception(e);
+            } finally {
+                readWriteLock.unlockWrite();
+            }
+        }
+
+        @Override
+        public <G> ResourceIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
+            assert isOpen();
+            RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
+            iterators.add(iterator);
+            return iterator;
         }
 
         @Override
@@ -265,6 +286,32 @@ public class RocksStorage implements Storage {
         public KeyGenerator.Schema schemaKeyGenerator() {
             return schemaKeyGenerator;
         }
+
+        @Override
+        public void put(byte[] key, byte[] value) {
+            assert isOpen() && !isReadOnly;
+            try {
+                if (transaction.isOpen()) readWriteLock.lockWrite();
+                storageTransaction.put(key, value);
+            } catch (RocksDBException | InterruptedException e) {
+                throw exception(e);
+            } finally {
+                if (transaction.isOpen()) readWriteLock.unlockWrite();
+            }
+        }
+
+        @Override
+        public void putUntracked(byte[] key, byte[] value) {
+            assert isOpen() && !isReadOnly;
+            try {
+                if (transaction.isOpen()) readWriteLock.lockWrite();
+                storageTransaction.putUntracked(key, value);
+            } catch (RocksDBException | InterruptedException e) {
+                throw exception(e);
+            } finally {
+                if (transaction.isOpen()) readWriteLock.unlockWrite();
+            }
+        }
     }
 
     public static class Data extends TransactionBounded implements Storage.Data {
@@ -279,6 +326,36 @@ public class RocksStorage implements Storage {
         @Override
         public KeyGenerator.Data dataKeyGenerator() {
             return dataKeyGenerator;
+        }
+
+        @Override
+        public void put(byte[] key, byte[] value) {
+            assert isOpen() && !isReadOnly;
+            try {
+                storageTransaction.put(key, value);
+            } catch (RocksDBException e) {
+                throw exception(e);
+            }
+        }
+
+        @Override
+        public void putUntracked(byte[] key, byte[] value) {
+            assert isOpen() && !isReadOnly;
+            try {
+                storageTransaction.putUntracked(key, value);
+            } catch (RocksDBException e) {
+                throw exception(e);
+            }
+        }
+
+        @Override
+        public void mergeUntracked(byte[] key, byte[] value) {
+            assert isOpen() && !isReadOnly;
+            try {
+                storageTransaction.mergeUntracked(key, value);
+            } catch (RocksDBException e) {
+                throw exception(e);
+            }
         }
     }
 }

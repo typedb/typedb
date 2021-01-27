@@ -22,8 +22,8 @@ package grakn.core.graph.vertex;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.adjacency.TypeAdjacency;
+import grakn.core.graph.common.Encoding;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.util.Encoding;
 
 import java.util.regex.Pattern;
 

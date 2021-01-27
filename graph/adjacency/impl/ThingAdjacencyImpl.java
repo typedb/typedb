@@ -18,9 +18,10 @@
 
 package grakn.core.graph.adjacency.impl;
 
-import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.concurrent.common.ConcurrentSet;
 import grakn.core.graph.adjacency.ThingAdjacency;
+import grakn.core.graph.common.Encoding;
 import grakn.core.graph.edge.Edge;
 import grakn.core.graph.edge.ThingEdge;
 import grakn.core.graph.edge.impl.ThingEdgeImpl;
@@ -28,10 +29,8 @@ import grakn.core.graph.iid.EdgeIID;
 import grakn.core.graph.iid.IID;
 import grakn.core.graph.iid.InfixIID;
 import grakn.core.graph.iid.SuffixIID;
-import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -44,14 +43,13 @@ import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
 import static java.util.Arrays.copyOfRange;
 import static java.util.Collections.emptyIterator;
-import static java.util.concurrent.ConcurrentHashMap.newKeySet;
 
 public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
     final ThingVertex owner;
     final Encoding.Direction.Adjacency direction;
-    final ConcurrentMap<InfixIID.Thing, Set<InfixIID.Thing>> infixes;
-    final ConcurrentMap<InfixIID.Thing, Map<EdgeIID.Thing, ThingEdge>> edges;
+    final ConcurrentMap<InfixIID.Thing, ConcurrentSet<InfixIID.Thing>> infixes;
+    final ConcurrentMap<InfixIID.Thing, ConcurrentMap<EdgeIID.Thing, ThingEdge>> edges;
 
     ThingAdjacencyImpl(ThingVertex owner, Encoding.Direction.Adjacency direction) {
         this.owner = owner;
@@ -136,12 +134,12 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         assert encoding.lookAhead() == infixes.length;
         InfixIID.Thing infixIID = infixIID(encoding);
         for (int i = 0; i < encoding.lookAhead(); i++) {
-            this.infixes.computeIfAbsent(infixIID, x -> newKeySet()).add(
+            this.infixes.computeIfAbsent(infixIID, x -> new ConcurrentSet<>()).add(
                     infixIID = infixIID(encoding, copyOfRange(infixes, 0, i + 1))
             );
         }
 
-        Map<EdgeIID.Thing, ThingEdge> edgesByOutIID = edges.computeIfAbsent(infixIID, iid -> new HashMap<>());
+        Map<EdgeIID.Thing, ThingEdge> edgesByOutIID = edges.computeIfAbsent(infixIID, iid -> new ConcurrentHashMap<>());
         if (edgesByOutIID.containsKey(edge.outIID())) {
             ThingEdge thingEdge = edgesByOutIID.get(edge.outIID());
             if (thingEdge.isInferred() && !edge.isInferred()) thingEdge.isInferred(false);
@@ -205,8 +203,8 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
     @Override
     public void commit() {
-        Iterators.iterate(edges.values()).flatMap(edgeMap -> Iterators.iterate(edgeMap.values())).filter(e -> !e.isInferred())
-                .forEachRemaining(Edge::commit);
+        iterate(edges.values()).flatMap(edgeMap -> iterate(edgeMap.values()))
+                .filter(e -> !e.isInferred()).forEachRemaining(Edge::commit);
     }
 
     static class ThingIteratorBuilderImpl implements ThingIteratorBuilder {
@@ -268,10 +266,14 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
         private ResourceIterator<ThingEdge> edgeIterator(Encoding.Edge.Thing encoding, IID... lookahead) {
             byte[] iid = join(owner.iid().bytes(), infixIID(encoding, lookahead).bytes());
-            ResourceIterator<ThingEdge> storageIterator =
-                    owner.graph().storage().iterate(iid, (key, value) -> cache(new ThingEdgeImpl.Persisted(owner.graph(), EdgeIID.Thing.of(key))));
+            ResourceIterator<ThingEdge> storageIterator = owner.graph().storage()
+                    .iterate(iid, (key, value) -> cache(newPersistedEdge(EdgeIID.Thing.of(key))));
             ResourceIterator<ThingEdge> bufferedIterator = bufferedEdgeIterator(encoding, lookahead);
             return link(bufferedIterator, storageIterator).distinct();
+        }
+
+        private ThingEdgeImpl.Persisted newPersistedEdge(EdgeIID.Thing of) {
+            return new ThingEdgeImpl.Persisted(owner.graph(), of);
         }
 
         @Override
@@ -292,7 +294,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
             EdgeIID.Thing edgeIID = EdgeIID.Thing.of(owner.iid(), infixIID(encoding), adjacent.iid());
             if (owner.graph().storage().get(edgeIID.bytes()) == null) return null;
-            else return cache(new ThingEdgeImpl.Persisted(owner.graph(), edgeIID));
+            else return cache(newPersistedEdge(edgeIID));
         }
 
         @Override
@@ -306,7 +308,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
                     adjacent.iid(), SuffixIID.of(optimised.iid().key())
             );
             if (owner.graph().storage().get(edgeIID.bytes()) == null) return null;
-            else return cache(new ThingEdgeImpl.Persisted(owner.graph(), edgeIID));
+            else return cache(newPersistedEdge(edgeIID));
         }
 
         @Override

@@ -18,7 +18,7 @@
 
 package grakn.core.rocks;
 
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.AbstractResourceIterator;
 
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -26,7 +26,7 @@ import java.util.function.BiFunction;
 
 import static grakn.core.common.collection.Bytes.bytesHavePrefix;
 
-public final class RocksIterator<T> implements ResourceIterator<T>, AutoCloseable {
+public final class RocksIterator<T> extends AbstractResourceIterator<T> implements AutoCloseable {
 
     private final byte[] prefix;
     private final RocksStorage storage;
@@ -53,7 +53,7 @@ public final class RocksIterator<T> implements ResourceIterator<T>, AutoCloseabl
     }
 
     private boolean fetchAndCheck() {
-        final byte[] key;
+        byte[] key;
         if (!internalRocksIterator.isValid() || !bytesHavePrefix(key = internalRocksIterator.key(), prefix)) {
             state = State.COMPLETED;
             recycle();

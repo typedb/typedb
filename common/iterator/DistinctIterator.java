@@ -23,7 +23,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 // TODO: verify (and potentially fix) this class is able to handle null objects
-public class DistinctIterator<T> implements ResourceIterator<T> {
+class DistinctIterator<T> extends AbstractResourceIterator<T> {
 
     private final ResourceIterator<T> iterator;
     private final Set<T> consumed;
@@ -52,7 +52,7 @@ public class DistinctIterator<T> implements ResourceIterator<T> {
     @Override
     public T next() {
         if (!hasNext()) throw new NoSuchElementException();
-        final T result = next;
+        T result = next;
         next = null;
         return result;
     }

@@ -20,11 +20,11 @@ package grakn.core.rocks;
 
 import com.google.ortools.Loader;
 import grakn.core.Grakn;
-import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
+import grakn.core.concurrent.common.ExecutorService;
 import org.rocksdb.RocksDB;
 import org.rocksdb.UInt64AddOperator;
 

@@ -19,7 +19,7 @@
 package grakn.core.traversal.predicate;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.graph.util.Encoding;
+import grakn.core.graph.common.Encoding;
 import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.traversal.Traversal;
 

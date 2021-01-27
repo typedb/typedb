@@ -20,129 +20,64 @@ package grakn.core.common.iterator;
 
 import grakn.core.common.exception.GraknException;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
-import static grakn.common.collection.Collections.list;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static java.util.Spliterator.IMMUTABLE;
-import static java.util.Spliterator.ORDERED;
-import static java.util.Spliterators.spliteratorUnknownSize;
 
 public interface ResourceIterator<T> extends Iterator<T> {
 
-    default ResourceIterator<T> distinct() {
-        return new DistinctIterator<>(this);
-    }
+    ResourceIterator<T> distinct();
 
-    default ResourceIterator<T> distinct(Set<T> duplicates) {
-        return new DistinctIterator<>(this, duplicates);
-    }
+    ResourceIterator<T> distinct(Set<T> duplicates);
 
-    default <U> ResourceIterator<U> map(Function<T, U> mappingFn) {
-        return new MappedIterator<>(this, mappingFn);
-    }
+    <U> ResourceIterator<U> map(Function<T, U> mappingFn);
 
-    default <U> ResourceIterator<U> flatMap(Function<T, ResourceIterator<U>> flatMappingFn) {
-        return new FlatMappedIterator<>(this, flatMappingFn);
-    }
+    <U> ResourceIterator<U> flatMap(Function<T, ResourceIterator<U>> flatMappingFn);
 
-    default ResourceIterator<T> filter(Predicate<T> predicate) {
-        return new FilteredIterator<>(this, predicate);
-    }
+    ResourceIterator<T> filter(Predicate<T> predicate);
 
-    default ResourceIterator<T> offset(long offset) {
-        return new OffsettedIterator<>(this, offset);
-    }
+    ResourceIterator<T> offset(long offset);
 
-    default ResourceIterator<T> limit(long limit) {
-        return new LimitedIterator<>(this, limit);
-    }
+    ResourceIterator<T> limit(long limit);
 
-    default ResourceIterator<T> link(ResourceIterator<T> iterator) {
-        return new LinkedIterators<>(list(this, iterator));
-    }
+    ResourceIterator<T> link(ResourceIterator<T> iterator);
 
-    default ResourceIterator<T> link(Iterator<T> iterator) {
-        if (iterator instanceof ResourceIterator<?>) return link((ResourceIterator<T>) iterator);
-        return new LinkedIterators<>(list(this, iterate(iterator)));
-    }
+    ResourceIterator<T> link(Iterator<T> iterator);
 
-    default ResourceIterator<T> noNulls() {
-        return this.filter(Objects::nonNull);
-    }
+    ResourceIterator<T> noNulls();
 
-    default boolean allMatch(Predicate<T> predicate) {
-        return !this.filter(e -> !predicate.test(e)).hasNext();
-    }
+    boolean allMatch(Predicate<T> predicate);
 
-    default boolean anyMatch(Predicate<T> predicate) {
-        return this.filter(predicate).hasNext();
-    }
+    boolean anyMatch(Predicate<T> predicate);
 
-    default boolean noneMatch(Predicate<T> predicate) {
-        return !anyMatch(predicate);
-    }
+    boolean noneMatch(Predicate<T> predicate);
 
-    default Optional<T> first() {
-        return Optional.ofNullable(firstOrNull());
-    }
+    Optional<T> first();
 
-    default T firstOrNull() {
-        if (hasNext()) return next();
-        else return null;
-    }
+    T firstOrNull();
 
-    default Stream<T> stream() {
-        return StreamSupport.stream(
-                spliteratorUnknownSize(this, ORDERED | IMMUTABLE), false
-        ).onClose(this::recycle);
-    }
+    Stream<T> stream();
 
-    default List<T> toList() {
-        ArrayList<T> list = new ArrayList<>();
-        this.forEachRemaining(list::add);
-        return list;
-    }
+    List<T> toList();
 
-    default void toList(List<T> list) {
-        this.forEachRemaining(list::add);
-    }
+    void toList(List<T> list);
 
-    default Set<T> toSet() {
-        HashSet<T> set = new HashSet<>();
-        this.forEachRemaining(set::add);
-        return set;
-    }
+    Set<T> toSet();
 
-    default LinkedHashSet<T> toLinkedSet() {
-        LinkedHashSet<T> linkedSet = new LinkedHashSet<>();
-        this.forEachRemaining(linkedSet::add);
-        return linkedSet;
-    }
+    LinkedHashSet<T> toLinkedSet();
 
-    default long count() {
-        long count = 0;
-        while (this.hasNext()) {
-            this.next();
-            count++;
-        }
-        return count;
-    }
+    long count();
 
-    default ResourceIterator<T> onError(Function<Exception, GraknException> exceptionFn) {
-        return new ErrorHandledIterator<>(this, exceptionFn);
-    }
+    ResourceIterator<T> onConsumed(Runnable function);
+
+    ResourceIterator<T> onError(Function<Exception, GraknException> exceptionFn);
+
+    ResourceIterator<T> onFinalise(Runnable function);
 
     void recycle();
 }

@@ -19,8 +19,8 @@
 package grakn.core.graph.vertex;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.graph.common.Encoding;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.util.Encoding;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;

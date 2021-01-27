@@ -18,9 +18,9 @@
 
 package grakn.core.reasoner.resolution;
 
-import grakn.core.common.concurrent.actor.Actor;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concurrent.actor.Actor;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import org.slf4j.Logger;
@@ -38,14 +38,14 @@ public class ResolutionRecorder extends Actor.State<ResolutionRecorder> {
     private final Map<Actor<? extends Resolver<?>>, Integer> actorIndices;
     private final Map<AnswerIndex, ResolutionAnswer> answers;
 
-    public ResolutionRecorder(final Actor<ResolutionRecorder> self) {
+    public ResolutionRecorder(Actor<ResolutionRecorder> self) {
         super(self);
         answers = new HashMap<>();
         actorIndices = new HashMap<>();
     }
 
     @Override
-    protected void exception(final Exception e) {
+    protected void exception(Exception e) {
         LOG.error("Actor exception", e);
     }
 
@@ -88,7 +88,7 @@ public class ResolutionRecorder extends Actor.State<ResolutionRecorder> {
         private final int actorIndex;
         private final ConceptMap conceptMap;
 
-        public AnswerIndex(int actorIndex, final ConceptMap conceptMap) {
+        public AnswerIndex(int actorIndex, ConceptMap conceptMap) {
             this.actorIndex = actorIndex;
             this.conceptMap = conceptMap;
         }

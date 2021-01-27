@@ -22,8 +22,8 @@ import grabl.tracing.client.GrablTracing;
 import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.Grakn;
-import grakn.core.common.concurrent.ExecutorService;
 import grakn.core.common.exception.GraknException;
+import grakn.core.concurrent.common.ExecutorService;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.server.migrator.MigratorClient;
 import grakn.core.server.rpc.GraknRPCService;
@@ -85,17 +85,19 @@ public class GraknServer implements AutoCloseable {
         configureAndVerifyDataDir();
         configureTracing();
 
-        if (command.debug()) {
-            LOG.info("Running Grakn Core Server in debug mode.");
-        }
+        if (command.debug()) LOG.info("Running Grakn Core Server in debug mode.");
 
         grakn = RocksGrakn.open(command.dataDir());
         graknRPCService = new GraknRPCService(grakn);
         migratorRPCService = new MigratorRPCService(grakn);
 
         server = rpcServer();
-        Runtime.getRuntime().addShutdownHook(NamedThreadFactory.create(GraknServer.class, "shutdown").newThread(this::close));
-        Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) -> LOG.error(UNCAUGHT_EXCEPTION.message(t.getName()), e));
+        Thread.setDefaultUncaughtExceptionHandler(
+                (t, e) -> LOG.error(UNCAUGHT_EXCEPTION.message(t.getName() + ": " + e.getMessage()), e)
+        );
+        Runtime.getRuntime().addShutdownHook(
+                NamedThreadFactory.create(GraknServer.class, "shutdown").newThread(this::close)
+        );
     }
 
     private int port() {
@@ -122,7 +124,7 @@ public class GraknServer implements AutoCloseable {
 
     private void configureTracing() {
         if (this.command.grablTrace()) {
-            final GrablTracing grablTracingClient;
+            GrablTracing grablTracingClient;
             grablTracingClient = GrablTracing.withLogging(GrablTracing.tracing(
                     command.grablURI().toString(),
                     command.grablUsername(),
@@ -140,7 +142,7 @@ public class GraknServer implements AutoCloseable {
     }
 
     private static Properties parseProperties() {
-        final Properties properties = new Properties();
+        Properties properties = new Properties();
         boolean error = false;
 
         try {
@@ -151,9 +153,9 @@ public class GraknServer implements AutoCloseable {
         }
 
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
-            final String val = (String) entry.getValue();
+            String val = (String) entry.getValue();
             if (val.startsWith("$")) {
-                final String envVarName = val.substring(1);
+                String envVarName = val.substring(1);
                 if (System.getenv(envVarName) == null) {
                     LOG.error(ENV_VAR_NOT_FOUND.message(val));
                     error = true;
@@ -168,11 +170,11 @@ public class GraknServer implements AutoCloseable {
     }
 
     private static ServerCommand parseCommandLine(Properties properties, String[] args) {
-        final ServerCommand.Start startCommand = new ServerCommand.Start();
-        final ServerCommand.ImportData importDataCommand = new ServerCommand.ImportData(startCommand);
-        final ServerCommand.ExportData exportDataCommand = new ServerCommand.ExportData(startCommand);
-        final ServerCommand.PrintSchema printSchemaCommand = new ServerCommand.PrintSchema(startCommand);
-        final CommandLine commandLine = new CommandLine(startCommand)
+        ServerCommand.Start startCommand = new ServerCommand.Start();
+        ServerCommand.ImportData importDataCommand = new ServerCommand.ImportData(startCommand);
+        ServerCommand.ExportData exportDataCommand = new ServerCommand.ExportData(startCommand);
+        ServerCommand.PrintSchema printSchemaCommand = new ServerCommand.PrintSchema(startCommand);
+        CommandLine commandLine = new CommandLine(startCommand)
                 .addSubcommand(importDataCommand)
                 .addSubcommand(exportDataCommand)
                 .addSubcommand(printSchemaCommand);
@@ -207,7 +209,7 @@ public class GraknServer implements AutoCloseable {
     public static void main(String[] args) {
         try {
             printASCIILogo();
-            final ServerCommand command = parseCommandLine(parseProperties(), args);
+            ServerCommand command = parseCommandLine(parseProperties(), args);
             if (command == null) System.exit(0);
 
             if (command.isStart()) {
@@ -248,7 +250,7 @@ public class GraknServer implements AutoCloseable {
 
     private static void startGraknServer(ServerCommand.Start command) throws IOException {
         Instant start = Instant.now();
-        final GraknServer server = new GraknServer(command);
+        GraknServer server = new GraknServer(command);
         server.start();
         Instant end = Instant.now();
         LOG.info("- version: {}", Version.VERSION);
@@ -263,7 +265,7 @@ public class GraknServer implements AutoCloseable {
     }
 
     private Server rpcServer() {
-        final NioEventLoopGroup workerELG = new NioEventLoopGroup(
+        NioEventLoopGroup workerELG = new NioEventLoopGroup(
                 MAX_THREADS, NamedThreadFactory.create(GraknServer.class, "worker")
         );
         return NettyServerBuilder.forPort(command.port())

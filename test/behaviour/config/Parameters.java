@@ -48,7 +48,7 @@ public class Parameters {
 
     @ParameterType("\\d\\d\\d\\d-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d")
     public LocalDateTime datetime(String dateTime) {
-        final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         return LocalDateTime.parse(dateTime, formatter);
     }
 
@@ -64,17 +64,17 @@ public class Parameters {
 
     @ParameterType("[a-zA-Z0-9-_]+:[a-zA-Z0-9-_]+")
     public ScopedLabel scoped_label(String roleLabel) {
-        final String[] labels = roleLabel.split(":");
+        String[] labels = roleLabel.split(":");
         return new ScopedLabel(Label.of(labels[1], labels[0]));
     }
 
     @DataTableType
     public List<ScopedLabel> scoped_labels(List<String> values) {
-        final Iterator<String> valuesIter = values.iterator();
+        Iterator<String> valuesIter = values.iterator();
         String next;
-        final List<ScopedLabel> scopedLabels = new ArrayList<>();
+        List<ScopedLabel> scopedLabels = new ArrayList<>();
         while (valuesIter.hasNext() && (next = valuesIter.next()).matches("[a-zA-Z0-9-_]+:[a-zA-Z0-9-_]+")) {
-            final String[] labels = next.split(":");
+            String[] labels = next.split(":");
             scopedLabels.add(new ScopedLabel(Label.of(labels[1], labels[0])));
         }
 
@@ -117,9 +117,9 @@ public class Parameters {
 
     @DataTableType
     public List<Arguments.Transaction.Type> transaction_types(List<String> values) {
-        final List<Arguments.Transaction.Type> typeList = new ArrayList<>();
+        List<Arguments.Transaction.Type> typeList = new ArrayList<>();
         for (String value : values) {
-            final Arguments.Transaction.Type type = transaction_type(value);
+            Arguments.Transaction.Type type = transaction_type(value);
             assertNotNull(type);
             typeList.add(type);
         }
@@ -179,7 +179,7 @@ public class Parameters {
         public boolean equals(Object object) {
             if (this == object) return true;
             if (object == null || getClass() != object.getClass()) return false;
-            final ScopedLabel that = (ScopedLabel) object;
+            ScopedLabel that = (ScopedLabel) object;
             return this.label.equals(that.label);
         }
 

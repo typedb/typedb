@@ -22,8 +22,8 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.GraphManager;
+import grakn.core.graph.common.Encoding;
 import grakn.core.graph.edge.ThingEdge;
-import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
@@ -52,9 +52,9 @@ import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.single;
 import static grakn.core.common.iterator.Iterators.tree;
-import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
-import static grakn.core.graph.util.Encoding.ValueType.STRING;
-import static grakn.core.graph.util.Encoding.Vertex.Thing.ROLE;
+import static grakn.core.graph.common.Encoding.Edge.Type.SUB;
+import static grakn.core.graph.common.Encoding.ValueType.STRING;
+import static grakn.core.graph.common.Encoding.Vertex.Thing.ROLE;
 import static grakn.core.traversal.predicate.PredicateOperator.Equality.EQ;
 
 public abstract class ProcedureVertex<

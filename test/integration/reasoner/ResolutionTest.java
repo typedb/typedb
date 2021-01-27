@@ -17,9 +17,9 @@
 
 package grakn.core.reasoner;
 
-import grakn.core.common.concurrent.actor.Actor;
-import grakn.core.common.concurrent.actor.EventLoopGroup;
 import grakn.core.common.parameters.Arguments;
+import grakn.core.concurrent.actor.Actor;
+import grakn.core.concurrent.actor.EventLoopGroup;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
@@ -389,7 +389,7 @@ public class ResolutionTest {
                 for (int i = 0; i < answerCount; i++) {
                     root.tell(actor ->
                                       actor.receiveRequest(
-                                              new Request(new Request.Path(root), DownstreamVars.Root.create(), null),
+                                              Request.create(new Request.Path(root), DownstreamVars.Root.create(), null),
                                               0)
                     );
                     ResolutionAnswer answer = responses.take();
@@ -453,7 +453,7 @@ public class ResolutionTest {
                 for (int i = 0; i < answerCount; i++) {
                     root.tell(actor ->
                                       actor.receiveRequest(
-                                              new Request(new Request.Path(root), DownstreamVars.Root.create(), null),
+                                              Request.create(new Request.Path(root), DownstreamVars.Root.create(), null),
                                               iteration[0])
                     );
                 }
@@ -475,7 +475,7 @@ public class ResolutionTest {
                 for (int i = 0; i < 2; i++) {
                     root.tell(actor ->
                                       actor.receiveRequest(
-                                              new Request(new Request.Path(root), DownstreamVars.Root.create(), null),
+                                              Request.create(new Request.Path(root), DownstreamVars.Root.create(), null),
                                               iteration[0])
                     );
                 }
@@ -492,7 +492,7 @@ public class ResolutionTest {
                 // confirm there are no more answers
                 root.tell(actor ->
                                   actor.receiveRequest(
-                                          new Request(new Request.Path(root), DownstreamVars.Root.create(), null),
+                                          Request.create(new Request.Path(root), DownstreamVars.Root.create(), null),
                                           iteration[0])
                 );
                 Thread.sleep(1000); // allow Exhausted message to propagate to top level
@@ -532,15 +532,15 @@ public class ResolutionTest {
         }
     }
 
-    private void assertResponses(final Actor<RootResolver> root, final LinkedBlockingQueue<ResolutionAnswer> responses,
-                                 final AtomicLong doneReceived, final long answerCount)
+    private void assertResponses(Actor<RootResolver> root, LinkedBlockingQueue<ResolutionAnswer> responses,
+                                 AtomicLong doneReceived, long answerCount)
             throws InterruptedException {
         long startTime = System.currentTimeMillis();
         long n = answerCount + 1; //total number of traversal answers, plus one expected Exhausted (-1 answer)
         for (int i = 0; i < n; i++) {
             root.tell(actor ->
                               actor.receiveRequest(
-                                      new Request(new Request.Path(root), DownstreamVars.Root.create(), ResolutionAnswer.Derivation.EMPTY),
+                                      Request.create(new Request.Path(root), DownstreamVars.Root.create(), ResolutionAnswer.Derivation.EMPTY),
                                       0)
             );
         }

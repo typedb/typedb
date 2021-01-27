@@ -72,7 +72,7 @@ public class IIDConstraint extends ThingConstraint {
     public boolean equals(Object o) {
         if (o == this) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        final IIDConstraint that = (IIDConstraint) o;
+        IIDConstraint that = (IIDConstraint) o;
         return (this.owner.equals(that.owner) && Arrays.equals(this.iid, that.iid));
     }
 

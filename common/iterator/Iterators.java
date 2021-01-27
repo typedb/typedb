@@ -20,9 +20,9 @@ package grakn.core.common.iterator;
 
 import grakn.common.collection.Either;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -42,67 +42,57 @@ public class Iterators {
         return iterate(set());
     }
 
-    public static <T> BaseIterator<T> single(T item) {
+    public static <T> ResourceIterator<T> single(T item) {
         return iterate(set(item));
     }
 
-    public static <T> BaseIterator<T> iterate(Collection<T> collection) {
+    public static <T> ResourceIterator<T> iterate(Collection<T> collection) {
         return new BaseIterator<>(Either.second(collection.iterator()));
     }
 
-    public static <T> BaseIterator<T> iterate(Iterator<T> iterator) {
+    public static <T> ResourceIterator<T> iterate(Iterator<T> iterator) {
         return new BaseIterator<>(Either.second(iterator));
     }
 
-    public static <T> LinkedIterators<T> link(Iterator<T> iter1, Iterator<T> iter2) {
+    public static <T> ResourceIterator<T> link(Iterator<? extends T> iter1, Iterator<? extends T> iter2) {
         return link(list(iter1, iter2));
     }
 
-    public static <T> LinkedIterators<T> link(Iterator<T> iter1, Iterator<T> iter2, Iterator<T> iter3) {
+    public static <T> ResourceIterator<T> link(Iterator<? extends T> iter1, Iterator<? extends T> iter2,
+                                               Iterator<? extends T> iter3) {
         return link(list(iter1, iter2, iter3));
     }
 
-    public static <T> LinkedIterators<T> link(List<? extends Iterator<T>> iterators) {
-        final LinkedList<ResourceIterator<T>> converted = new LinkedList<>();
+    @SuppressWarnings("unchecked")
+    public static <T> ResourceIterator<T> link(List<? extends Iterator<? extends T>> iterators) {
+        List<ResourceIterator<T>> converted = new ArrayList<>();
         iterators.forEach(iterator -> {
-            if (iterator instanceof ResourceIterator<?>) {
-                converted.addLast((ResourceIterator<T>) iterator);
+            if (iterator instanceof AbstractResourceIterator<?>) {
+                converted.add((ResourceIterator<T>) iterator);
             } else {
-                converted.addLast(iterate(iterator));
+                converted.add(iterate((Iterator<T>) iterator));
             }
         });
         return new LinkedIterators<>(converted);
     }
 
-    public static <T> LoopIterator<T> loop(T seed, Predicate<T> predicate, UnaryOperator<T> function) {
+    public static <T> ResourceIterator<T> loop(T seed, Predicate<T> predicate, UnaryOperator<T> function) {
         return new LoopIterator<>(seed, predicate, function);
     }
 
-    public static <T> TreeIterator<T> tree(T root, Function<T, ResourceIterator<T>> childrenFn) {
+    public static <T> ResourceIterator<T> tree(T root, Function<T, ResourceIterator<T>> childrenFn) {
         return new TreeIterator<>(root, childrenFn);
     }
 
-    public static <T> ParallelIterators<T> parallel(List<ResourceIterator<T>> iterators) {
-        return new ParallelIterators<>(iterators);
-    }
-
-    public static <T> ParallelIterators<T> parallel(List<ResourceIterator<T>> iterators, int bufferSize) {
-        return new ParallelIterators<>(iterators, bufferSize);
-    }
-
-    public static <T> ParallelIterators<T> parallel(List<ResourceIterator<T>> iterators, int bufferSize, int bufferMultiplier) {
-        return new ParallelIterators<>(iterators, bufferSize, bufferMultiplier);
-    }
-
-    public static <T> SynchronisedIterator<T> synchronised(ResourceIterator<T> iterator) {
+    public static <T> ResourceIterator<T> synchronised(ResourceIterator<T> iterator) {
         return new SynchronisedIterator<>(iterator);
     }
 
-    public static <T> CartesianIterator<T> cartesian(List<ResourceIterator<T>> iteratorProducers) {
+    public static <T> ResourceIterator<List<T>> cartesian(List<ResourceIterator<T>> iteratorProducers) {
         return new CartesianIterator<>(iteratorProducers);
     }
 
-    public static <T> PermutationIterator<T> permutation(Collection<T> list) {
+    public static <T> ResourceIterator<List<T>> permutation(Collection<T> list) {
         return new PermutationIterator<>(list);
     }
 

@@ -18,8 +18,8 @@
 
 package grakn.core.graph.vertex;
 
+import grakn.core.graph.common.Encoding;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.util.Encoding;
 
 import java.time.LocalDateTime;
 

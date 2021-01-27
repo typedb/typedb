@@ -18,7 +18,7 @@
 
 package grakn.core.reasoner.resolution.framework;
 
-import grakn.core.common.concurrent.actor.Actor;
+import grakn.core.concurrent.actor.Actor;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
 
@@ -33,17 +33,38 @@ public class Request {
     private final Path path;
     private final AnswerState.DownstreamVars answerBounds;
     private final ResolutionAnswer.Derivation partialDerivation;
+    private final int planIndex;
 
-    public Request(Path path,
-                   AnswerState.DownstreamVars startingConcept,
-                   ResolutionAnswer.Derivation partialDerivation) {
+    private Request(Path path,
+                    AnswerState.DownstreamVars startingConcept,
+                    ResolutionAnswer.Derivation partialDerivation,
+                    int planIndex) {
         this.path = path;
         this.answerBounds = startingConcept;
         this.partialDerivation = partialDerivation;
+        this.planIndex = planIndex;
+    }
+
+    public static Request create(Path path,
+                                 AnswerState.DownstreamVars startingConcept,
+                                 ResolutionAnswer.Derivation partialDerivation,
+                                 int planIndex) {
+        return new Request(path, startingConcept, partialDerivation, planIndex);
+    }
+
+    public static Request create(Path path,
+                                 AnswerState.DownstreamVars startingConcept,
+                                 ResolutionAnswer.Derivation partialDerivation) {
+        // Set the planIndex to -1 since it is unused in this case
+        return new Request(path, startingConcept, partialDerivation, -1);
     }
 
     public Path path() {
         return path;
+    }
+
+    public int planIndex() {
+        return planIndex;
     }
 
     @Nullable

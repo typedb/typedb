@@ -17,37 +17,42 @@
 
 package grakn.core.reasoner;
 
-import grakn.core.common.concurrent.actor.Actor;
-import grakn.core.common.producer.Producer;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concurrent.actor.Actor;
+import grakn.core.concurrent.producer.Producer;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
 
-import static grakn.core.reasoner.resolution.answer.AnswerState.DownstreamVars.Root;
+import javax.annotation.concurrent.ThreadSafe;
 
+import static grakn.core.reasoner.resolution.answer.AnswerState.DownstreamVars.Root;
+import static grakn.core.reasoner.resolution.framework.ResolutionAnswer.Derivation.EMPTY;
+
+@ThreadSafe // TODO: verify
 public class ReasonerProducer implements Producer<ConceptMap> {
 
     private final Actor<RootResolver> rootResolver;
+    private Queue<ConceptMap> queue;
     private Request resolveRequest;
-    private boolean done;
-    private Queue<ConceptMap> queue = null;
-    private int iteration;
     private boolean iterationInferredAnswer;
+    private boolean done;
+    private int iteration;
 
-    public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry) {
-        this.rootResolver = resolverRegistry.createRoot(conjunction, this::requestAnswered, this::requestFailed);
+    public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverMgr) {
+        this.rootResolver = resolverMgr.createRoot(conjunction, this::requestAnswered, this::requestFailed);
+        this.resolveRequest = Request.create(new Request.Path(rootResolver), Root.create(), EMPTY);
+        this.queue = null;
         this.iteration = 0;
-        this.resolveRequest = new Request(new Request.Path(rootResolver), Root.create(), ResolutionAnswer.Derivation.EMPTY);
     }
 
     @Override
-    public void produce(Queue<ConceptMap> queue, int count) {
+    public void produce(Queue<ConceptMap> queue, int request) {
         assert this.queue == null || this.queue == queue;
         this.queue = queue;
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < request; i++) {
             requestAnswer();
         }
     }
@@ -70,7 +75,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
             // fully terminated finding answers
             if (!done) {
                 done = true;
-                queue.done(this);
+                queue.done();
             }
         } else {
             // straggler request failing from prior iteration
@@ -80,7 +85,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private void nextIteration() {
         iteration++;
-        resolveRequest = new Request(new Request.Path(rootResolver), Root.create(), ResolutionAnswer.Derivation.EMPTY);
+        resolveRequest = Request.create(new Request.Path(rootResolver), Root.create(), EMPTY);
     }
 
     private boolean mustReiterate() {

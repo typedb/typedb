@@ -19,7 +19,7 @@
 package grakn.core.traversal.procedure;
 
 import grakn.core.common.iterator.ResourceIterator;
-import grakn.core.common.producer.Producer;
+import grakn.core.concurrent.producer.Producer;
 import grakn.core.graph.GraphManager;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.Identifier;

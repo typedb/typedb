@@ -88,7 +88,7 @@ public class SubConstraint extends TypeConstraint {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        final SubConstraint that = (SubConstraint) o;
+        SubConstraint that = (SubConstraint) o;
         return (this.owner.equals(that.owner) &&
                 this.type.equals(that.type) &&
                 this.isExplicit == that.isExplicit);

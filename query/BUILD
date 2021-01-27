@@ -30,7 +30,7 @@ package(
 
 native_java_libraries(
     name = "query",
-    srcs = glob(["*.java"]),
+    srcs = glob(["*.java", "*/*.java"]),
     deps = [
         # Internal dependencies
         "//common:common",

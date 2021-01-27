@@ -23,13 +23,14 @@ import grakn.core.common.exception.GraknCheckedException;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
+import grakn.core.concurrent.common.ConcurrentSet;
+import grakn.core.graph.common.Encoding;
+import grakn.core.graph.common.KeyGenerator;
+import grakn.core.graph.common.StatisticsBytes;
+import grakn.core.graph.common.Storage;
 import grakn.core.graph.iid.EdgeIID;
 import grakn.core.graph.iid.PrefixIID;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.util.Encoding;
-import grakn.core.graph.util.KeyGenerator;
-import grakn.core.graph.util.StatisticsBytes;
-import grakn.core.graph.util.Storage;
 import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
@@ -38,7 +39,6 @@ import grakn.core.graph.vertex.impl.AttributeVertexImpl;
 import grakn.core.graph.vertex.impl.ThingVertexImpl;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,6 +46,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.pair;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.collection.Bytes.bytesToLong;
@@ -56,24 +57,23 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.tree;
+import static grakn.core.graph.common.Encoding.Edge.Type.SUB;
+import static grakn.core.graph.common.Encoding.Prefix.VERTEX_ATTRIBUTE_TYPE;
+import static grakn.core.graph.common.Encoding.Prefix.VERTEX_ENTITY_TYPE;
+import static grakn.core.graph.common.Encoding.Prefix.VERTEX_RELATION_TYPE;
+import static grakn.core.graph.common.Encoding.Statistics.JobOperation.CREATED;
+import static grakn.core.graph.common.Encoding.Statistics.JobOperation.DELETED;
+import static grakn.core.graph.common.Encoding.ValueType.STRING_MAX_SIZE;
+import static grakn.core.graph.common.Encoding.Vertex.Thing.ATTRIBUTE;
+import static grakn.core.graph.common.StatisticsBytes.attributeCountJobKey;
+import static grakn.core.graph.common.StatisticsBytes.attributeCountedKey;
+import static grakn.core.graph.common.StatisticsBytes.hasEdgeCountJobKey;
+import static grakn.core.graph.common.StatisticsBytes.hasEdgeCountKey;
+import static grakn.core.graph.common.StatisticsBytes.hasEdgeTotalCountKey;
+import static grakn.core.graph.common.StatisticsBytes.snapshotKey;
+import static grakn.core.graph.common.StatisticsBytes.vertexCountKey;
+import static grakn.core.graph.common.StatisticsBytes.vertexTransitiveCountKey;
 import static grakn.core.graph.iid.VertexIID.Thing.generate;
-import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
-import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ATTRIBUTE_TYPE;
-import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ENTITY_TYPE;
-import static grakn.core.graph.util.Encoding.Prefix.VERTEX_RELATION_TYPE;
-import static grakn.core.graph.util.Encoding.Statistics.JobOperation.CREATED;
-import static grakn.core.graph.util.Encoding.Statistics.JobOperation.DELETED;
-import static grakn.core.graph.util.Encoding.ValueType.STRING_MAX_SIZE;
-import static grakn.core.graph.util.Encoding.Vertex.Thing.ATTRIBUTE;
-import static grakn.core.graph.util.StatisticsBytes.attributeCountJobKey;
-import static grakn.core.graph.util.StatisticsBytes.attributeCountedKey;
-import static grakn.core.graph.util.StatisticsBytes.hasEdgeCountJobKey;
-import static grakn.core.graph.util.StatisticsBytes.hasEdgeCountKey;
-import static grakn.core.graph.util.StatisticsBytes.hasEdgeTotalCountKey;
-import static grakn.core.graph.util.StatisticsBytes.snapshotKey;
-import static grakn.core.graph.util.StatisticsBytes.vertexCountKey;
-import static grakn.core.graph.util.StatisticsBytes.vertexTransitiveCountKey;
-import static java.util.stream.Stream.concat;
 
 public class DataGraph implements Graph {
 
@@ -81,7 +81,7 @@ public class DataGraph implements Graph {
     private final SchemaGraph schemaGraph;
     private final KeyGenerator.Data.Buffered keyGenerator;
     private final ConcurrentMap<VertexIID.Thing, ThingVertex> thingsByIID;
-    private final ConcurrentMap<VertexIID.Type, Set<ThingVertex>> thingsByTypeIID;
+    private final ConcurrentMap<VertexIID.Type, ConcurrentSet<ThingVertex>> thingsByTypeIID;
     private final AttributesByIID attributesByIID;
     private final Statistics statistics;
     private boolean isModified;
@@ -109,8 +109,8 @@ public class DataGraph implements Graph {
         return statistics;
     }
 
-    public Stream<ThingVertex> vertices() {
-        return concat(thingsByIID.values().stream(), attributesByIID.valueStream());
+    public ResourceIterator<ThingVertex> vertices() {
+        return link(thingsByIID.values().iterator(), attributesByIID.valuesIterator());
     }
 
     public ThingVertex get(VertexIID.Thing iid) {
@@ -166,10 +166,10 @@ public class DataGraph implements Graph {
     public ThingVertex create(TypeVertex typeVertex, boolean isInferred) {
         assert storage.isOpen();
         assert !typeVertex.isAttributeType();
-        final VertexIID.Thing iid = generate(keyGenerator, typeVertex.iid(), typeVertex.properLabel());
-        final ThingVertex vertex = new ThingVertexImpl.Buffered(this, iid, isInferred);
+        VertexIID.Thing iid = generate(keyGenerator, typeVertex.iid(), typeVertex.properLabel());
+        ThingVertex vertex = new ThingVertexImpl.Buffered(this, iid, isInferred);
         thingsByIID.put(iid, vertex);
-        thingsByTypeIID.computeIfAbsent(typeVertex.iid(), t -> new HashSet<>()).add(vertex);
+        thingsByTypeIID.computeIfAbsent(typeVertex.iid(), t -> new ConcurrentSet<>()).add(vertex);
         if (!isInferred) statistics.vertexCreated(typeVertex.iid());
         return vertex;
     }
@@ -177,14 +177,14 @@ public class DataGraph implements Graph {
     private <VALUE, ATT_IID extends VertexIID.Attribute<VALUE>, ATT_VERTEX extends AttributeVertex<VALUE>>
     ATT_VERTEX getOrReadFromStorage(Map<ATT_IID, ATT_VERTEX> map, ATT_IID attIID, Function<ATT_IID, ATT_VERTEX> vertexConstructor) {
         return map.computeIfAbsent(attIID, iid -> {
-            final byte[] val = storage.get(iid.bytes());
+            byte[] val = storage.get(iid.bytes());
             if (val != null) return vertexConstructor.apply(iid);
             else return null;
         });
     }
 
     public ResourceIterator<ThingVertex> get(TypeVertex typeVertex) {
-        final ResourceIterator<ThingVertex> storageIterator = storage.iterate(
+        ResourceIterator<ThingVertex> storageIterator = storage.iterate(
                 join(typeVertex.iid().bytes(), Encoding.Edge.ISA.in().bytes()),
                 (key, value) -> convert(EdgeIID.InwardsISA.of(key).end())
         );
@@ -264,11 +264,11 @@ public class DataGraph implements Graph {
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(Boolean.class);
 
-        final AttributeVertex<Boolean> vertex = attributesByIID.booleans.computeIfAbsent(
+        AttributeVertex<Boolean> vertex = attributesByIID.booleans.computeIfAbsent(
                 new VertexIID.Attribute.Boolean(type.iid(), value),
                 iid -> {
-                    final AttributeVertex<Boolean> v = new AttributeVertexImpl.Boolean(this, iid, isInferred);
-                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new HashSet<>()).add(v);
+                    AttributeVertex<Boolean> v = new AttributeVertexImpl.Boolean(this, iid, isInferred);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     if (!isInferred) statistics.attributeVertexCreated(v.iid());
                     return v;
                 }
@@ -286,11 +286,11 @@ public class DataGraph implements Graph {
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(Long.class);
 
-        final AttributeVertex<Long> vertex = attributesByIID.longs.computeIfAbsent(
+        AttributeVertex<Long> vertex = attributesByIID.longs.computeIfAbsent(
                 new VertexIID.Attribute.Long(type.iid(), value),
                 iid -> {
-                    final AttributeVertex<Long> v = new AttributeVertexImpl.Long(this, iid, isInferred);
-                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new HashSet<>()).add(v);
+                    AttributeVertex<Long> v = new AttributeVertexImpl.Long(this, iid, isInferred);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     if (!isInferred) statistics.attributeVertexCreated(v.iid());
                     return v;
                 }
@@ -308,11 +308,11 @@ public class DataGraph implements Graph {
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(Double.class);
 
-        final AttributeVertex<Double> vertex = attributesByIID.doubles.computeIfAbsent(
+        AttributeVertex<Double> vertex = attributesByIID.doubles.computeIfAbsent(
                 new VertexIID.Attribute.Double(type.iid(), value),
                 iid -> {
-                    final AttributeVertex<Double> v = new AttributeVertexImpl.Double(this, iid, isInferred);
-                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new HashSet<>()).add(v);
+                    AttributeVertex<Double> v = new AttributeVertexImpl.Double(this, iid, isInferred);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     if (!isInferred) statistics.attributeVertexCreated(v.iid());
                     return v;
                 }
@@ -342,10 +342,10 @@ public class DataGraph implements Graph {
             }
         }
 
-        final AttributeVertex<String> vertex = attributesByIID.strings.computeIfAbsent(
+        AttributeVertex<String> vertex = attributesByIID.strings.computeIfAbsent(
                 attIID, iid -> {
-                    final AttributeVertex<String> v = new AttributeVertexImpl.String(this, iid, isInferred);
-                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new HashSet<>()).add(v);
+                    AttributeVertex<String> v = new AttributeVertexImpl.String(this, iid, isInferred);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     if (!isInferred) statistics.attributeVertexCreated(v.iid());
                     return v;
                 }
@@ -363,11 +363,11 @@ public class DataGraph implements Graph {
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(LocalDateTime.class);
 
-        final AttributeVertex<LocalDateTime> vertex = attributesByIID.dateTimes.computeIfAbsent(
+        AttributeVertex<LocalDateTime> vertex = attributesByIID.dateTimes.computeIfAbsent(
                 new VertexIID.Attribute.DateTime(type.iid(), value),
                 iid -> {
-                    final AttributeVertex<LocalDateTime> v = new AttributeVertexImpl.DateTime(this, iid, isInferred);
-                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new HashSet<>()).add(v);
+                    AttributeVertex<LocalDateTime> v = new AttributeVertexImpl.DateTime(this, iid, isInferred);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     if (!isInferred) statistics.attributeVertexCreated(v.iid());
                     return v;
                 }
@@ -433,7 +433,7 @@ public class DataGraph implements Graph {
                 vertex -> vertex.iid(generate(storage.dataKeyGenerator(), vertex.type().iid(), vertex.type().properLabel()))
         ); // thingByIID no longer contains valid mapping from IID to TypeVertex
         thingsByIID.values().stream().filter(v -> !v.isInferred()).forEach(Vertex::commit);
-        attributesByIID.valueStream().forEach(Vertex::commit);
+        attributesByIID.valuesIterator().forEachRemaining(Vertex::commit);
         statistics.commit();
 
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Thing to be used again
@@ -455,12 +455,14 @@ public class DataGraph implements Graph {
             dateTimes = new ConcurrentHashMap<>();
         }
 
-        Stream<AttributeVertex<?>> valueStream() {
-            return concat(booleans.values().stream(),
-                          concat(longs.values().stream(),
-                                 concat(doubles.values().stream(),
-                                        concat(strings.values().stream(),
-                                               dateTimes.values().stream()))));
+        ResourceIterator<AttributeVertex<?>> valuesIterator() {
+            return link(list(
+                    booleans.values().iterator(),
+                    longs.values().iterator(),
+                    doubles.values().iterator(),
+                    strings.values().iterator(),
+                    dateTimes.values().iterator()
+            ));
         }
 
         void clear() {
@@ -511,6 +513,8 @@ public class DataGraph implements Graph {
     }
 
     public static class Statistics {
+
+        private static int COUNT_JOB_BATCH_SIZE = 10000;
         private final ConcurrentMap<VertexIID.Type, Long> persistedVertexCount;
         private final ConcurrentMap<VertexIID.Type, Long> persistedVertexTransitiveCount;
         private final ConcurrentMap<VertexIID.Type, Long> deltaVertexCount;
@@ -723,9 +727,9 @@ public class DataGraph implements Graph {
             hasEdgeCountJobs.clear();
         }
 
-        public void processCountJobs() {
+        public boolean processCountJobs() {
             ResourceIterator<CountJob> countJobs = storage.iterate(StatisticsBytes.countJobKey(), CountJob::of);
-            while (countJobs.hasNext()) {
+            for (long processed = 0; processed < COUNT_JOB_BATCH_SIZE && countJobs.hasNext(); processed++) {
                 CountJob countJob = countJobs.next();
                 if (countJob instanceof CountJob.Attribute) {
                     processAttributeCountJob(countJob);
@@ -737,6 +741,7 @@ public class DataGraph implements Graph {
                 storage.delete(countJob.key());
             }
             storage.mergeUntracked(snapshotKey(), longToBytes(1));
+            return countJobs.hasNext();
         }
 
         private void processAttributeCountJob(CountJob countJob) {

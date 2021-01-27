@@ -49,7 +49,7 @@ public abstract class AnswerState {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        final AnswerState that = (AnswerState) o;
+        AnswerState that = (AnswerState) o;
         return conceptMap.equals(that.conceptMap);
     }
 
@@ -173,7 +173,7 @@ public abstract class AnswerState {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
                 if (!super.equals(o)) return false;
-                final Mapped mapped = (Mapped) o;
+                Mapped mapped = (Mapped) o;
                 return Objects.equals(initial, mapped.initial) &&
                         Objects.equals(mapping, mapped.mapping);
             }
@@ -217,7 +217,7 @@ public abstract class AnswerState {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
                 if (!super.equals(o)) return false;
-                final Unified unified = (Unified) o;
+                Unified unified = (Unified) o;
                 return Objects.equals(initial, unified.initial) &&
                         Objects.equals(unifier, unified.unifier);
             }

@@ -58,14 +58,14 @@ public class OwnsConstraint extends TypeConstraint {
 
     static OwnsConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Owns constraint,
                              VariableRegistry registry) {
-        final TypeVariable attributeType = registry.register(constraint.attribute());
-        final TypeVariable overriddenType = constraint.overridden().map(registry::register).orElse(null);
+        TypeVariable attributeType = registry.register(constraint.attribute());
+        TypeVariable overriddenType = constraint.overridden().map(registry::register).orElse(null);
         return new OwnsConstraint(owner, attributeType, overriddenType, constraint.isKey());
     }
 
     static OwnsConstraint of(TypeVariable owner, OwnsConstraint clone, VariableCloner cloner) {
-        final TypeVariable attributeType = cloner.clone(clone.attribute());
-        final TypeVariable overriddenType = clone.overridden().map(cloner::clone).orElse(null);
+        TypeVariable attributeType = cloner.clone(clone.attribute());
+        TypeVariable overriddenType = clone.overridden().map(cloner::clone).orElse(null);
         return new OwnsConstraint(owner, attributeType, overriddenType, clone.isKey());
     }
 
@@ -101,7 +101,7 @@ public class OwnsConstraint extends TypeConstraint {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        final OwnsConstraint that = (OwnsConstraint) o;
+        OwnsConstraint that = (OwnsConstraint) o;
         return (this.owner.equals(that.owner) &&
                 this.attributeType.equals(that.attributeType) &&
                 Objects.equals(this.overriddenAttributeType, that.overriddenAttributeType) &&
@@ -129,7 +129,7 @@ public class OwnsConstraint extends TypeConstraint {
     public OwnsConstraint clone(Conjunction.Cloner cloner) {
         return cloner.cloneVariable(owner).owns(
                 cloner.cloneVariable(attributeType),
-                overriddenAttributeType == null ? null :cloner.cloneVariable(overriddenAttributeType),
+                overriddenAttributeType == null ? null : cloner.cloneVariable(overriddenAttributeType),
                 isKey
         );
     }

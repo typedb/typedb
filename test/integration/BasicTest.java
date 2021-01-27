@@ -64,52 +64,52 @@ public class BasicTest {
         assertTrue(transaction.isOpen());
         assertTrue(transaction.type().isRead());
 
-        final ThingType rootType = transaction.concepts().getRootThingType();
-        final EntityType rootEntityType = transaction.concepts().getRootEntityType();
-        final RelationType rootRelationType = transaction.concepts().getRootRelationType();
-        final AttributeType rootAttributeType = transaction.concepts().getRootAttributeType();
+        ThingType rootType = transaction.concepts().getRootThingType();
+        EntityType rootEntityType = transaction.concepts().getRootEntityType();
+        RelationType rootRelationType = transaction.concepts().getRootRelationType();
+        AttributeType rootAttributeType = transaction.concepts().getRootAttributeType();
         Util.assertNotNulls(rootType, rootEntityType, rootRelationType, rootAttributeType);
 
-        final Stream<Consumer<Grakn.Transaction>> typeAssertions = Stream.of(
+        Stream<Consumer<Grakn.Transaction>> typeAssertions = Stream.of(
                 tx -> {
-                    final AttributeType.String name = tx.concepts().getAttributeType("name").asString();
+                    AttributeType.String name = tx.concepts().getAttributeType("name").asString();
                     Util.assertNotNulls(name);
                     assertEquals(rootAttributeType, name.getSupertype());
                 },
                 tx -> {
-                    final AttributeType.Long age = tx.concepts().getAttributeType("age").asLong();
+                    AttributeType.Long age = tx.concepts().getAttributeType("age").asLong();
                     Util.assertNotNulls(age);
                     assertEquals(rootAttributeType, age.getSupertype());
                 },
                 tx -> {
-                    final RelationType marriage = tx.concepts().getRelationType("marriage");
-                    final RoleType husband = marriage.getRelates("husband");
-                    final RoleType wife = marriage.getRelates("wife");
+                    RelationType marriage = tx.concepts().getRelationType("marriage");
+                    RoleType husband = marriage.getRelates("husband");
+                    RoleType wife = marriage.getRelates("wife");
                     Util.assertNotNulls(marriage, husband, wife);
                     assertEquals(rootRelationType, marriage.getSupertype());
                     assertEquals(rootRelationType.getRelates("role"), husband.getSupertype());
                     assertEquals(rootRelationType.getRelates("role"), wife.getSupertype());
                 },
                 tx -> {
-                    final RelationType employment = tx.concepts().getRelationType("employment");
-                    final RoleType employee = employment.getRelates("employee");
-                    final RoleType employer = employment.getRelates("employer");
+                    RelationType employment = tx.concepts().getRelationType("employment");
+                    RoleType employee = employment.getRelates("employee");
+                    RoleType employer = employment.getRelates("employer");
                     Util.assertNotNulls(employment, employee, employer);
                     assertEquals(rootRelationType, employment.getSupertype());
                 },
                 tx -> {
-                    final EntityType person = tx.concepts().getEntityType("person");
+                    EntityType person = tx.concepts().getEntityType("person");
                     Util.assertNotNulls(person);
                     assertEquals(rootEntityType, person.getSupertype());
 
-                    final Stream<Consumer<Grakn.Transaction>> subPersonAssertions = Stream.of(
+                    Stream<Consumer<Grakn.Transaction>> subPersonAssertions = Stream.of(
                             tx2 -> {
-                                final EntityType man = tx2.concepts().getEntityType("man");
+                                EntityType man = tx2.concepts().getEntityType("man");
                                 Util.assertNotNulls(man);
                                 assertEquals(person, man.getSupertype());
                             },
                             tx2 -> {
-                                final EntityType woman = tx2.concepts().getEntityType("woman");
+                                EntityType woman = tx2.concepts().getEntityType("woman");
                                 Util.assertNotNulls(woman);
                                 assertEquals(person, woman.getSupertype());
                             }
@@ -117,7 +117,7 @@ public class BasicTest {
                     subPersonAssertions.parallel().forEach(assertions -> assertions.accept(tx));
                 },
                 tx -> {
-                    final EntityType company = tx.concepts().getEntityType("company");
+                    EntityType company = tx.concepts().getEntityType("company");
                     Util.assertNotNulls(company);
                     assertEquals(rootEntityType, company.getSupertype());
                 }
@@ -154,21 +154,21 @@ public class BasicTest {
                     assertTrue(transaction.isOpen());
                     assertTrue(transaction.type().isRead());
 
-                    final Stream<Consumer<Grakn.Transaction>> rootTypeAssertions = Stream.of(
+                    Stream<Consumer<Grakn.Transaction>> rootTypeAssertions = Stream.of(
                             tx -> {
-                                final ThingType rootType = tx.concepts().getRootThingType();
+                                ThingType rootType = tx.concepts().getRootThingType();
                                 assertNotNull(rootType);
                             },
                             tx -> {
-                                final EntityType rootEntityType = tx.concepts().getRootEntityType();
+                                EntityType rootEntityType = tx.concepts().getRootEntityType();
                                 assertNotNull(rootEntityType);
                             },
                             tx -> {
-                                final RelationType rootRelationType = tx.concepts().getRootRelationType();
+                                RelationType rootRelationType = tx.concepts().getRootRelationType();
                                 assertNotNull(rootRelationType);
                             },
                             tx -> {
-                                final AttributeType rootAttributeType = tx.concepts().getRootAttributeType();
+                                AttributeType rootAttributeType = tx.concepts().getRootAttributeType();
                                 assertNotNull(rootAttributeType);
                             }
                     );
@@ -180,51 +180,51 @@ public class BasicTest {
                     assertTrue(transaction.isOpen());
                     assertTrue(transaction.type().isWrite());
 
-                    final ThingType rootType = transaction.concepts().getRootThingType();
-                    final EntityType rootEntityType = transaction.concepts().getRootEntityType();
-                    final RelationType rootRelationType = transaction.concepts().getRootRelationType();
-                    final AttributeType rootAttributeType = transaction.concepts().getRootAttributeType();
+                    ThingType rootType = transaction.concepts().getRootThingType();
+                    EntityType rootEntityType = transaction.concepts().getRootEntityType();
+                    RelationType rootRelationType = transaction.concepts().getRootRelationType();
+                    AttributeType rootAttributeType = transaction.concepts().getRootAttributeType();
                     Util.assertNotNulls(rootType, rootEntityType, rootRelationType, rootAttributeType);
 
-                    final Stream<Consumer<Grakn.Transaction>> typeAssertions = Stream.of(
+                    Stream<Consumer<Grakn.Transaction>> typeAssertions = Stream.of(
                             tx -> {
-                                final AttributeType name = tx.concepts().putAttributeType("name", STRING).asString();
+                                AttributeType name = tx.concepts().putAttributeType("name", STRING).asString();
                                 Util.assertNotNulls(name);
                                 assertEquals(rootAttributeType, name.getSupertype());
                             },
                             tx -> {
-                                final AttributeType.Long age = tx.concepts().putAttributeType("age", LONG).asLong();
+                                AttributeType.Long age = tx.concepts().putAttributeType("age", LONG).asLong();
                                 Util.assertNotNulls(age);
                                 assertEquals(rootAttributeType, age.getSupertype());
                             },
                             tx -> {
-                                final RelationType marriage = tx.concepts().putRelationType("marriage");
+                                RelationType marriage = tx.concepts().putRelationType("marriage");
                                 marriage.setRelates("husband");
                                 marriage.setRelates("wife");
                                 Util.assertNotNulls(marriage);
                                 assertEquals(rootRelationType, marriage.getSupertype());
                             },
                             tx -> {
-                                final RelationType employment = tx.concepts().putRelationType("employment");
+                                RelationType employment = tx.concepts().putRelationType("employment");
                                 employment.setRelates("employee");
                                 employment.setRelates("employer");
                                 Util.assertNotNulls(employment);
                                 assertEquals(rootRelationType, employment.getSupertype());
                             },
                             tx -> {
-                                final EntityType person = tx.concepts().putEntityType("person");
+                                EntityType person = tx.concepts().putEntityType("person");
                                 Util.assertNotNulls(person);
                                 assertEquals(rootEntityType, person.getSupertype());
 
-                                final Stream<Consumer<Grakn.Transaction>> subPersonAssertions = Stream.of(
+                                Stream<Consumer<Grakn.Transaction>> subPersonAssertions = Stream.of(
                                         tx2 -> {
-                                            final EntityType man = tx2.concepts().putEntityType("man");
+                                            EntityType man = tx2.concepts().putEntityType("man");
                                             man.setSupertype(person);
                                             Util.assertNotNulls(man);
                                             assertEquals(person, man.getSupertype());
                                         },
                                         tx2 -> {
-                                            final EntityType woman = tx2.concepts().putEntityType("woman");
+                                            EntityType woman = tx2.concepts().putEntityType("woman");
                                             woman.setSupertype(person);
                                             Util.assertNotNulls(woman);
                                             assertEquals(person, woman.getSupertype());
@@ -233,7 +233,7 @@ public class BasicTest {
                                 subPersonAssertions.parallel().forEach(assertions -> assertions.accept(tx));
                             },
                             tx -> {
-                                final EntityType company = tx.concepts().putEntityType("company");
+                                EntityType company = tx.concepts().putEntityType("company");
                                 Util.assertNotNulls(company);
                                 assertEquals(rootEntityType, company.getSupertype());
                             }
@@ -265,24 +265,24 @@ public class BasicTest {
                 }
 
                 try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    final AttributeType.String gender = transaction.concepts().putAttributeType("gender", STRING).asString();
-                    final EntityType school = transaction.concepts().putEntityType("school");
-                    final RelationType teaching = transaction.concepts().putRelationType("teaching");
+                    AttributeType.String gender = transaction.concepts().putAttributeType("gender", STRING).asString();
+                    EntityType school = transaction.concepts().putEntityType("school");
+                    RelationType teaching = transaction.concepts().putRelationType("teaching");
                     teaching.setRelates("teacher");
                     teaching.setRelates("student");
-                    final RoleType teacher = teaching.getRelates("teacher");
-                    final RoleType student = teaching.getRelates("student");
+                    RoleType teacher = teaching.getRelates("teacher");
+                    RoleType student = teaching.getRelates("student");
                     Util.assertNotNulls(gender, school, teaching, teacher, student);
                     transaction.commit();
                 }
 
                 try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
                     assert_transaction_read(transaction);
-                    final AttributeType.String gender = transaction.concepts().getAttributeType("gender").asString();
-                    final EntityType school = transaction.concepts().getEntityType("school");
-                    final RelationType teaching = transaction.concepts().getRelationType("teaching");
-                    final RoleType teacher = teaching.getRelates("teacher");
-                    final RoleType student = teaching.getRelates("student");
+                    AttributeType.String gender = transaction.concepts().getAttributeType("gender").asString();
+                    EntityType school = transaction.concepts().getEntityType("school");
+                    RelationType teaching = transaction.concepts().getRelationType("teaching");
+                    RoleType teacher = teaching.getRelates("teacher");
+                    RoleType student = teaching.getRelates("student");
                     Util.assertNotNulls(gender, school, teaching, teacher, student);
                 }
             }
@@ -316,11 +316,11 @@ public class BasicTest {
             grakn.databases().create(database);
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    final ConceptManager conceptMgr = txn.concepts();
-                    final LogicManager logicMgr = txn.logic();
-                    final AttributeType name = conceptMgr.putAttributeType("name", STRING);
-                    final EntityType person = conceptMgr.putEntityType("person");
-                    final RelationType friendship = conceptMgr.putRelationType("friendship");
+                    ConceptManager conceptMgr = txn.concepts();
+                    LogicManager logicMgr = txn.logic();
+                    AttributeType name = conceptMgr.putAttributeType("name", STRING);
+                    EntityType person = conceptMgr.putEntityType("person");
+                    RelationType friendship = conceptMgr.putRelationType("friendship");
                     friendship.setRelates("friend");
                     person.setPlays(friendship.getRelates("friend"));
                     person.setOwns(name);
@@ -331,16 +331,16 @@ public class BasicTest {
                     txn.commit();
                 }
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
-                    final ConceptManager conceptMgr = txn.concepts();
-                    final LogicManager logicMgr = txn.logic();
-                    final EntityType person = conceptMgr.getEntityType("person");
-                    final AttributeType.String name = conceptMgr.getAttributeType("name").asString();
-                    final RelationType friendship = conceptMgr.getRelationType("friendship");
-                    final RoleType friend = friendship.getRelates("friend");
+                    ConceptManager conceptMgr = txn.concepts();
+                    LogicManager logicMgr = txn.logic();
+                    EntityType person = conceptMgr.getEntityType("person");
+                    AttributeType.String name = conceptMgr.getAttributeType("name").asString();
+                    RelationType friendship = conceptMgr.getRelationType("friendship");
+                    RoleType friend = friendship.getRelates("friend");
 
-                    final Rule rule = logicMgr.getRule("friendless-have-names");
-                    final Pattern when = rule.getWhenPreNormalised();
-                    final ThingVariable<?> then = rule.getThenPreNormalised();
+                    Rule rule = logicMgr.getRule("friendless-have-names");
+                    Pattern when = rule.getWhenPreNormalised();
+                    ThingVariable<?> then = rule.getThenPreNormalised();
                     assertEquals(Graql.parsePattern("{$x isa person; not { (friend: $x) isa friendship; }; }"), when);
                     assertEquals(Graql.parseVariable("$x has name \"i have no friends\""), then);
                 }
@@ -356,13 +356,13 @@ public class BasicTest {
             grakn.databases().create(database);
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    final ConceptManager conceptMgr = txn.concepts();
-                    final LogicManager logicMgr = txn.logic();
+                    ConceptManager conceptMgr = txn.concepts();
+                    LogicManager logicMgr = txn.logic();
 
-                    final EntityType person = conceptMgr.putEntityType("person");
-                    final RelationType friendship = conceptMgr.putRelationType("friendship");
+                    EntityType person = conceptMgr.putEntityType("person");
+                    RelationType friendship = conceptMgr.putRelationType("friendship");
                     friendship.setRelates("friend");
-                    final RelationType marriage = conceptMgr.putRelationType("marriage");
+                    RelationType marriage = conceptMgr.putRelationType("marriage");
                     marriage.setRelates("spouse");
                     person.setPlays(friendship.getRelates("friend"));
                     person.setPlays(marriage.getRelates("spouse"));
@@ -373,17 +373,17 @@ public class BasicTest {
                     txn.commit();
                 }
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
-                    final ConceptManager conceptMgr = txn.concepts();
-                    final LogicManager logicMgr = txn.logic();
-                    final EntityType person = conceptMgr.getEntityType("person");
-                    final RelationType friendship = conceptMgr.getRelationType("friendship");
-                    final RoleType friend = friendship.getRelates("friend");
-                    final RelationType marriage = conceptMgr.getRelationType("marriage");
-                    final RoleType spouse = marriage.getRelates("spouse");
+                    ConceptManager conceptMgr = txn.concepts();
+                    LogicManager logicMgr = txn.logic();
+                    EntityType person = conceptMgr.getEntityType("person");
+                    RelationType friendship = conceptMgr.getRelationType("friendship");
+                    RoleType friend = friendship.getRelates("friend");
+                    RelationType marriage = conceptMgr.getRelationType("marriage");
+                    RoleType spouse = marriage.getRelates("spouse");
 
-                    final Rule rule = logicMgr.getRule("marriage-is-friendship");
-                    final Pattern when = rule.getWhenPreNormalised();
-                    final ThingVariable<?> then = rule.getThenPreNormalised();
+                    Rule rule = logicMgr.getRule("marriage-is-friendship");
+                    Pattern when = rule.getWhenPreNormalised();
+                    ThingVariable<?> then = rule.getThenPreNormalised();
                     assertEquals(Graql.parsePattern("{$x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }"), when);
                     assertEquals(Graql.parseVariable("(friend: $x, friend: $y) isa friendship"), then);
                 }
@@ -421,7 +421,7 @@ public class BasicTest {
 
     @Test
     public void write_attributes_successfully() throws IOException {
-        final LocalDateTime date_1991_1_1_0_0 = LocalDateTime.of(1991, 1, 1, 0, 0);
+        LocalDateTime date_1991_1_1_0_0 = LocalDateTime.of(1991, 1, 1, 0, 0);
         reset_directory_and_create_attribute_types();
 
         try (Grakn grakn = RocksGrakn.open(directory)) {
@@ -452,13 +452,13 @@ public class BasicTest {
                 }
 
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
-                    final LocalDateTime dateTime = LocalDateTime.of(1991, 1, 1, 0, 0);
+                    LocalDateTime dateTime = LocalDateTime.of(1991, 1, 1, 0, 0);
 
-                    final Attribute.Boolean isAlive = isAlive(txn).get(true);
-                    final Attribute.Long age = age(txn).get(18);
-                    final Attribute.Double score = score(txn).get(90.5);
-                    final Attribute.String name = name(txn).get("alice");
-                    final Attribute.DateTime dob = dob(txn).get(dateTime);
+                    Attribute.Boolean isAlive = isAlive(txn).get(true);
+                    Attribute.Long age = age(txn).get(18);
+                    Attribute.Double score = score(txn).get(90.5);
+                    Attribute.String name = name(txn).get("alice");
+                    Attribute.DateTime dob = dob(txn).get(dateTime);
 
                     assertNotNulls(isAlive, age, score, name, dob);
                     assertEquals(true, isAlive.getValue());
@@ -497,17 +497,17 @@ public class BasicTest {
 
     @Test
     public void write_different_attributes_in_parallel_successfully() throws IOException {
-        final LocalDateTime date_1991_2_3_4_5 = LocalDateTime.of(1991, 2, 3, 4, 5);
-        final LocalDateTime date_1992_3_4_5_6 = LocalDateTime.of(1992, 3, 4, 5, 6);
-        final LocalDateTime date_1993_4_5_6_7 = LocalDateTime.of(1993, 4, 5, 6, 7);
+        LocalDateTime date_1991_2_3_4_5 = LocalDateTime.of(1991, 2, 3, 4, 5);
+        LocalDateTime date_1992_3_4_5_6 = LocalDateTime.of(1992, 3, 4, 5, 6);
+        LocalDateTime date_1993_4_5_6_7 = LocalDateTime.of(1993, 4, 5, 6, 7);
 
         reset_directory_and_create_attribute_types();
 
         try (Grakn grakn = RocksGrakn.open(directory)) {
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA)) {
-                final Grakn.Transaction txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
-                final Grakn.Transaction txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
-                final Grakn.Transaction txn3 = session.transaction(Arguments.Transaction.Type.WRITE);
+                Grakn.Transaction txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
+                Grakn.Transaction txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
+                Grakn.Transaction txn3 = session.transaction(Arguments.Transaction.Type.WRITE);
 
                 isAlive(txn1).put(true);
                 isAlive(txn2).put(false);
@@ -562,9 +562,9 @@ public class BasicTest {
                 txn3.commit();
 
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
-                    final LocalDateTime d1 = LocalDateTime.of(1991, 2, 3, 4, 5);
-                    final LocalDateTime d2 = LocalDateTime.of(1992, 3, 4, 5, 6);
-                    final LocalDateTime d3 = LocalDateTime.of(1993, 4, 5, 6, 7);
+                    LocalDateTime d1 = LocalDateTime.of(1991, 2, 3, 4, 5);
+                    LocalDateTime d2 = LocalDateTime.of(1992, 3, 4, 5, 6);
+                    LocalDateTime d3 = LocalDateTime.of(1993, 4, 5, 6, 7);
 
                     assertEquals(true, isAlive(txn).get(true).getValue());
                     assertEquals(false, isAlive(txn).get(false).getValue());
@@ -621,13 +621,13 @@ public class BasicTest {
     public void write_identical_attributes_in_parallel_successfully() throws IOException {
         reset_directory_and_create_attribute_types();
 
-        final LocalDateTime date_1992_2_3_4_5 = LocalDateTime.of(1991, 2, 3, 4, 5);
+        LocalDateTime date_1992_2_3_4_5 = LocalDateTime.of(1991, 2, 3, 4, 5);
 
         try (Grakn grakn = RocksGrakn.open(directory)) {
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA)) {
-                final Grakn.Transaction txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
-                final Grakn.Transaction txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
-                final Grakn.Transaction txn3 = session.transaction(Arguments.Transaction.Type.WRITE);
+                Grakn.Transaction txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
+                Grakn.Transaction txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
+                Grakn.Transaction txn3 = session.transaction(Arguments.Transaction.Type.WRITE);
 
                 isAlive(txn1).put(true);
                 isAlive(txn2).put(true);

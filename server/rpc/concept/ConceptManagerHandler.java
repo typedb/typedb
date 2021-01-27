@@ -31,8 +31,8 @@ import grakn.protocol.TransactionProto.Transaction;
 
 import static grakn.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
-import static grakn.core.server.rpc.util.ResponseBuilder.Concept.thing;
-import static grakn.core.server.rpc.util.ResponseBuilder.Concept.type;
+import static grakn.core.server.rpc.common.ResponseBuilder.Concept.thing;
+import static grakn.core.server.rpc.common.ResponseBuilder.Concept.type;
 
 public class ConceptManagerHandler {
 
@@ -45,7 +45,7 @@ public class ConceptManagerHandler {
     }
 
     public void handleRequest(Transaction.Req request) {
-        final ConceptProto.ConceptManager.Req conceptManagerReq = request.getConceptManagerReq();
+        ConceptProto.ConceptManager.Req conceptManagerReq = request.getConceptManagerReq();
         switch (conceptManagerReq.getReqCase()) {
             case GET_THING_TYPE_REQ:
                 getThingType(request, conceptManagerReq.getGetThingTypeReq().getLabel());
@@ -73,29 +73,29 @@ public class ConceptManagerHandler {
     }
 
     private void getThingType(Transaction.Req request, String label) {
-        final ThingType thingType = conceptManager.getThingType(label);
-        final ConceptProto.ConceptManager.GetThingType.Res.Builder getThingTypeRes = ConceptProto.ConceptManager.GetThingType.Res.newBuilder();
+        ThingType thingType = conceptManager.getThingType(label);
+        ConceptProto.ConceptManager.GetThingType.Res.Builder getThingTypeRes = ConceptProto.ConceptManager.GetThingType.Res.newBuilder();
         if (thingType != null) getThingTypeRes.setThingType(type(thingType));
         transactionRPC.respond(response(request, ConceptProto.ConceptManager.Res.newBuilder().setGetThingTypeRes(getThingTypeRes)));
     }
 
     private void getThing(Transaction.Req request, byte[] iid) {
-        final Thing thing = conceptManager.getThing(iid);
-        final ConceptProto.ConceptManager.GetThing.Res.Builder getThingRes = ConceptProto.ConceptManager.GetThing.Res.newBuilder();
+        Thing thing = conceptManager.getThing(iid);
+        ConceptProto.ConceptManager.GetThing.Res.Builder getThingRes = ConceptProto.ConceptManager.GetThing.Res.newBuilder();
         if (thing != null) getThingRes.setThing(thing(thing));
         transactionRPC.respond(response(request, ConceptProto.ConceptManager.Res.newBuilder().setGetThingRes(getThingRes)));
     }
 
     private void putEntityType(Transaction.Req request, String label) {
-        final EntityType entityType = conceptManager.putEntityType(label);
-        final ConceptProto.ConceptManager.Res.Builder res = ConceptProto.ConceptManager.Res.newBuilder()
+        EntityType entityType = conceptManager.putEntityType(label);
+        ConceptProto.ConceptManager.Res.Builder res = ConceptProto.ConceptManager.Res.newBuilder()
                 .setPutEntityTypeRes(ConceptProto.ConceptManager.PutEntityType.Res.newBuilder().setEntityType(type(entityType)));
         transactionRPC.respond(response(request, res));
     }
 
     private void putAttributeType(Transaction.Req request, ConceptProto.ConceptManager.PutAttributeType.Req attributeTypeReq) {
-        final ConceptProto.AttributeType.ValueType valueTypeProto = attributeTypeReq.getValueType();
-        final AttributeType.ValueType valueType;
+        ConceptProto.AttributeType.ValueType valueTypeProto = attributeTypeReq.getValueType();
+        AttributeType.ValueType valueType;
         switch (valueTypeProto) {
             case STRING:
                 valueType = AttributeType.ValueType.STRING;
@@ -117,15 +117,15 @@ public class ConceptManagerHandler {
             default:
                 throw GraknException.of(BAD_VALUE_TYPE, valueTypeProto);
         }
-        final AttributeType attributeType = conceptManager.putAttributeType(attributeTypeReq.getLabel(), valueType);
-        final ConceptProto.ConceptManager.Res.Builder res = ConceptProto.ConceptManager.Res.newBuilder()
+        AttributeType attributeType = conceptManager.putAttributeType(attributeTypeReq.getLabel(), valueType);
+        ConceptProto.ConceptManager.Res.Builder res = ConceptProto.ConceptManager.Res.newBuilder()
                 .setPutAttributeTypeRes(ConceptProto.ConceptManager.PutAttributeType.Res.newBuilder().setAttributeType(type(attributeType)));
         transactionRPC.respond(response(request, res));
     }
 
     private void putRelationType(Transaction.Req request, String label) {
-        final RelationType relationType = conceptManager.putRelationType(label);
-        final ConceptProto.ConceptManager.Res.Builder res = ConceptProto.ConceptManager.Res.newBuilder()
+        RelationType relationType = conceptManager.putRelationType(label);
+        ConceptProto.ConceptManager.Res.Builder res = ConceptProto.ConceptManager.Res.newBuilder()
                 .setPutRelationTypeRes(ConceptProto.ConceptManager.PutRelationType.Res.newBuilder().setRelationType(type(relationType)));
         transactionRPC.respond(response(request, res));
     }

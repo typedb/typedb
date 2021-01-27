@@ -31,12 +31,12 @@ import java.util.stream.Stream;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;
-import static grakn.core.graph.util.Encoding.Edge.Thing.HAS;
-import static grakn.core.graph.util.Encoding.ValueType.BOOLEAN;
-import static grakn.core.graph.util.Encoding.ValueType.DATETIME;
-import static grakn.core.graph.util.Encoding.ValueType.DOUBLE;
-import static grakn.core.graph.util.Encoding.ValueType.LONG;
-import static grakn.core.graph.util.Encoding.ValueType.STRING;
+import static grakn.core.graph.common.Encoding.Edge.Thing.HAS;
+import static grakn.core.graph.common.Encoding.ValueType.BOOLEAN;
+import static grakn.core.graph.common.Encoding.ValueType.DATETIME;
+import static grakn.core.graph.common.Encoding.ValueType.DOUBLE;
+import static grakn.core.graph.common.Encoding.ValueType.LONG;
+import static grakn.core.graph.common.Encoding.ValueType.STRING;
 
 public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribute {
 

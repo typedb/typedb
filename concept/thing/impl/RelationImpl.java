@@ -37,10 +37,11 @@ import java.util.stream.Stream;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_PLAYER_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_ROLE_UNRELATED;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ROLE_UNPLAYED;
-import static grakn.core.graph.util.Encoding.Edge.Thing.PLAYING;
-import static grakn.core.graph.util.Encoding.Edge.Thing.RELATING;
-import static grakn.core.graph.util.Encoding.Edge.Thing.ROLEPLAYER;
-import static grakn.core.graph.util.Encoding.Vertex.Thing.ROLE;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.DELETE_ROLEPLAYER_NOT_PRESENT;
+import static grakn.core.graph.common.Encoding.Edge.Thing.PLAYING;
+import static grakn.core.graph.common.Encoding.Edge.Thing.RELATING;
+import static grakn.core.graph.common.Encoding.Edge.Thing.ROLEPLAYER;
+import static grakn.core.graph.common.Encoding.Vertex.Thing.ROLE;
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.concat;
@@ -74,7 +75,7 @@ public class RelationImpl extends ThingImpl implements Relation {
             throw exception(GraknException.of(THING_ROLE_UNPLAYED, player.getType().getLabel(), roleType.getLabel().toString()));
         }
 
-        final RoleImpl role = ((RoleTypeImpl) roleType).create(isInferred);
+        RoleImpl role = ((RoleTypeImpl) roleType).create(isInferred);
         vertex.outs().put(RELATING, role.vertex, isInferred);
         ((ThingImpl) player).vertex.outs().put(PLAYING, role.vertex, isInferred);
         role.optimise();
@@ -82,14 +83,25 @@ public class RelationImpl extends ThingImpl implements Relation {
 
     @Override
     public void removePlayer(RoleType roleType, Thing player) {
-        final ResourceIterator<ThingVertex> role = vertex.outs().edge(
+        ResourceIterator<ThingVertex> role = vertex.outs().edge(
                 RELATING, PrefixIID.of(ROLE), ((RoleTypeImpl) roleType).vertex.iid()
         ).to().filter(v -> v.ins().edge(PLAYING, ((ThingImpl) player).vertex) != null);
-
         if (role.hasNext()) {
             RoleImpl.of(role.next()).delete();
-            if (!vertex.outs().edge(RELATING).to().hasNext()) this.delete();
+            deleteIfNoPlayer();
+        } else {
+            throw exception(GraknException.of(DELETE_ROLEPLAYER_NOT_PRESENT, player.getType().getLabel(), roleType.getLabel().toString()));
         }
+    }
+
+    @Override
+    public void delete() {
+        vertex.outs().edge(RELATING).to().map(RoleImpl::of).forEachRemaining(RoleImpl::delete);
+        super.delete();
+    }
+
+    void deleteIfNoPlayer() {
+        if (!vertex.outs().edge(RELATING).to().hasNext()) this.delete();
     }
 
     @Override
@@ -113,9 +125,9 @@ public class RelationImpl extends ThingImpl implements Relation {
 
     @Override
     public Map<RoleTypeImpl, ? extends List<ThingImpl>> getPlayersByRoleType() {
-        final Map<RoleTypeImpl, List<ThingImpl>> playersByRole = new HashMap<>();
+        Map<RoleTypeImpl, List<ThingImpl>> playersByRole = new HashMap<>();
         getType().getRelates().forEach(rt -> {
-            final List<ThingImpl> players = getPlayers(rt).collect(toList());
+            List<ThingImpl> players = getPlayers(rt).collect(toList());
             if (!players.isEmpty()) playersByRole.put(rt, players);
         });
         return playersByRole;

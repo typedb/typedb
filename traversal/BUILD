@@ -34,6 +34,7 @@ native_java_libraries(
     deps = [
         # Internal dependencies
         "//common:common",
+        "//concurrent:concurrent",
         "//graph:graph",
 
         # Grakn Labs Dependencies

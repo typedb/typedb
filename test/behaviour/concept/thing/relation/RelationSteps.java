@@ -28,10 +28,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+import static grakn.core.common.test.Util.assertThrows;
 import static grakn.core.test.behaviour.concept.thing.ThingSteps.get;
 import static grakn.core.test.behaviour.concept.thing.ThingSteps.put;
 import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
-import static grakn.core.test.behaviour.util.Util.assertThrows;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -50,24 +50,24 @@ public class RelationSteps {
 
     @When("{var} = relation\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {int}")
     public void relation_type_create_new_instance_with_key(String var, String type, String keyType, int keyValue) {
-        final Attribute.Long key = tx().concepts().getAttributeType(keyType).asLong().put(keyValue);
-        final Relation relation = tx().concepts().getRelationType(type).create();
+        Attribute.Long key = tx().concepts().getAttributeType(keyType).asLong().put(keyValue);
+        Relation relation = tx().concepts().getRelationType(type).create();
         relation.setHas(key);
         put(var, relation);
     }
 
     @When("{var} = relation\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {word}")
     public void relation_type_create_new_instance_with_key(String var, String type, String keyType, String keyValue) {
-        final Attribute.String key = tx().concepts().getAttributeType(keyType).asString().put(keyValue);
-        final Relation relation = tx().concepts().getRelationType(type).create();
+        Attribute.String key = tx().concepts().getAttributeType(keyType).asString().put(keyValue);
+        Relation relation = tx().concepts().getRelationType(type).create();
         relation.setHas(key);
         put(var, relation);
     }
 
     @When("{var} = relation\\( ?{type_label} ?) create new instance with key\\( ?{type_label} ?): {datetime}")
     public void relation_type_create_new_instance_with_key(String var, String type, String keyType, LocalDateTime keyValue) {
-        final Attribute.DateTime key = tx().concepts().getAttributeType(keyType).asDateTime().put(keyValue);
-        final Relation relation = tx().concepts().getRelationType(type).create();
+        Attribute.DateTime key = tx().concepts().getAttributeType(keyType).asDateTime().put(keyValue);
+        Relation relation = tx().concepts().getRelationType(type).create();
         relation.setHas(key);
         put(var, relation);
     }
@@ -120,15 +120,15 @@ public class RelationSteps {
 
     @Then("relation {var} get players contain:")
     public void relation_get_players_contain(String var, Map<String, String> players) {
-        final Relation relation = get(var).asRelation();
+        Relation relation = get(var).asRelation();
         players.forEach((rt, var2) -> assertTrue(relation.getPlayersByRoleType().get(relation.getType().getRelates(rt)).contains(get(var2.substring(1)))));
     }
 
     @Then("relation {var} get players do not contain:")
     public void relation_get_players_do_not_contain(String var, Map<String, String> players) {
-        final Relation relation = get(var).asRelation();
+        Relation relation = get(var).asRelation();
         players.forEach((rt, var2) -> {
-            final List<? extends Thing> p;
+            List<? extends Thing> p;
             if ((p = relation.getPlayersByRoleType().get(relation.getType().getRelates(rt))) != null) {
                 assertFalse(p.contains(get(var2.substring(1))));
             }

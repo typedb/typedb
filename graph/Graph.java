@@ -19,7 +19,7 @@
 
 package grakn.core.graph;
 
-import grakn.core.graph.util.Storage;
+import grakn.core.graph.common.Storage;
 
 public interface Graph {
 

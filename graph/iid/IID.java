@@ -45,7 +45,7 @@ public abstract class IID {
     public boolean equals(Object object) {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
-        final IID that = (IID) object;
+        IID that = (IID) object;
         return Arrays.equals(this.bytes, that.bytes);
     }
 

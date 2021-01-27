@@ -18,6 +18,8 @@
 
 package grakn.core.common.parameters;
 
+import graql.lang.query.GraqlQuery;
+
 import javax.annotation.Nullable;
 
 public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>> {
@@ -71,16 +73,17 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
             this.transactionType = transactionType;
             return this;
         }
-
-        public boolean isSchemaWrite() {
-            return sessionType.isSchema() && this.transactionType.isWrite();
-        }
     }
 
     public static class Query extends Context<Context.Transaction, Options.Query> {
 
-        public Query(Context.Transaction context, Options.Query options) {
+        public Query(Transaction context, Options.Query options) {
             super(context, options.parent(context.options()));
+        }
+
+        public Query(Transaction context, Options.Query options, GraqlQuery query) {
+            super(context, options.parent(context.options()));
+            options.setPrefetchIfAbsent(query);
         }
     }
 }

@@ -19,11 +19,13 @@
 package grakn.core.concept.type.impl;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptImpl;
 import grakn.core.concept.type.Type;
 import grakn.core.graph.GraphManager;
-import grakn.core.graph.util.Encoding;
+import grakn.core.graph.common.Encoding;
+import grakn.core.graph.structure.RuleStructure;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
@@ -38,8 +40,9 @@ import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_REFERENCED_IN_RULES;
 import static grakn.core.common.iterator.Iterators.tree;
-import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
+import static grakn.core.graph.common.Encoding.Edge.Type.SUB;
 
 public abstract class TypeImpl extends ConceptImpl implements Type {
 
@@ -58,7 +61,7 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
     TypeImpl(GraphManager graphMgr, String label, Encoding.Vertex.Type encoding, String scope) {
         this.graphMgr = graphMgr;
         this.vertex = graphMgr.schema().create(encoding, label, scope);
-        final TypeVertex superTypeVertex = graphMgr.schema().getType(encoding.root().label(), encoding.root().scope());
+        TypeVertex superTypeVertex = graphMgr.schema().getType(encoding.root().label(), encoding.root().scope());
         vertex.outs().put(SUB, superTypeVertex);
     }
 
@@ -119,7 +122,7 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
 
     private void validateTypeHierarchyIsNotCyclic() {
         TypeImpl type = this;
-        final LinkedHashSet<String> hierarchy = new LinkedHashSet<>();
+        LinkedHashSet<String> hierarchy = new LinkedHashSet<>();
         hierarchy.add(vertex.scopedLabel());
         while (!type.isRoot()) {
             assert type.getSupertype() != null;
@@ -136,6 +139,14 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
 
     <TYPE extends Type> Stream<TYPE> getSubtypesExplicit(Function<TypeVertex, TYPE> typeConstructor) {
         return vertex.ins().edge(SUB).from().map(typeConstructor).stream();
+    }
+
+    void validateDelete() {
+        TypeVertex type = graphMgr.schema().getType(getLabel());
+        ResourceIterator<RuleStructure> rules = graphMgr.schema().rules().references().get(type);
+        if (rules.hasNext()) {
+            throw exception(GraknException.of(TYPE_REFERENCED_IN_RULES, getLabel(), rules.toList()));
+        }
     }
 
     @Override
@@ -171,7 +182,7 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
     public boolean equals(Object object) {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
-        final TypeImpl that = (TypeImpl) object;
+        TypeImpl that = (TypeImpl) object;
         return this.vertex.equals(that.vertex);
     }
 

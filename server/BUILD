@@ -18,7 +18,6 @@
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip")
 load("@graknlabs_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
-load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm")
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@graknlabs_dependencies//distribution:deployment.bzl", "deployment")
 load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
@@ -61,6 +60,7 @@ native_java_libraries(
         # Internal dependencies
         ":version",
         "//common:common",
+        "//concurrent:concurrent",
 
         # External dependencies from Grakn Labs
         "@graknlabs_common//:common",
@@ -192,7 +192,6 @@ java_deps(
 assemble_deps_common = [
     ":server-deps-dev",
 #    ":server-deps-prod",
-    "@graknlabs_common//binary:assemble-bash-targz",
 ]
 
 assemble_files = {
@@ -211,7 +210,7 @@ permissions = {
 
 assemble_targz(
     name = "assemble-linux-targz",
-    targets = assemble_deps_common + ["server-deps-linux"],
+    targets = assemble_deps_common + ["server-deps-linux", "@graknlabs_common//binary:assemble-bash-targz"],
     additional_files = assemble_files,
     permissions = permissions,
     output_filename = "grakn-core-server-linux",
@@ -220,7 +219,7 @@ assemble_targz(
 
 assemble_zip(
     name = "assemble-mac-zip",
-    targets = assemble_deps_common + ["server-deps-mac"],
+    targets = assemble_deps_common + ["server-deps-mac", "@graknlabs_common//binary:assemble-bash-targz"],
     additional_files = assemble_files,
     permissions = permissions,
     output_filename = "grakn-core-server-mac",
@@ -229,7 +228,7 @@ assemble_zip(
 
 assemble_zip(
     name = "assemble-windows-zip",
-    targets = assemble_deps_common + ["server-deps-windows"],
+    targets = assemble_deps_common + ["server-deps-windows", "@graknlabs_common//binary:assemble-bat-targz"],
     additional_files = assemble_files,
     permissions = permissions,
     output_filename = "grakn-core-server-windows",
@@ -296,32 +295,6 @@ deploy_apt(
     snapshot = deployment['apt.snapshot'],
     release = deployment['apt.release']
 )
-
-# assemble_rpm(
-#     name = "assemble-linux-rpm",
-#     package_name = "grakn-core-server",
-#     installation_dir = "/opt/grakn/core/",
-#     spec_file = "//config/rpm:grakn-core-server.spec",
-#     workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
-#     archives = [":server-deps-dev", ":server-deps-linux"],
-#     empty_dirs = [
-#         "var/lib/grakn/db/",
-#      ],
-#     files = assemble_files,
-#     permissions = {
-#         "var/lib/grakn/db/": "0777",
-#     },
-#     symlinks = {
-#         "opt/grakn/core/server/data": "/var/lib/grakn/db/",
-#     },
-# )
-
-# deploy_rpm(
-#     name = "deploy-rpm",
-#     target = ":assemble-linux-rpm",
-#     snapshot = deployment['rpm.snapshot'],
-#     release = deployment['rpm.release']
-# )
 
 checkstyle_test(
     name = "checkstyle",

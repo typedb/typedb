@@ -23,10 +23,10 @@ import grakn.core.common.parameters.Label;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.adjacency.TypeAdjacency;
 import grakn.core.graph.adjacency.impl.TypeAdjacencyImpl;
+import grakn.core.graph.common.Encoding;
+import grakn.core.graph.common.StatisticsBytes;
 import grakn.core.graph.iid.IndexIID;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.util.Encoding;
-import grakn.core.graph.util.StatisticsBytes;
 import grakn.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
@@ -36,19 +36,19 @@ import java.util.regex.Pattern;
 
 import static grakn.core.common.collection.Bytes.join;
 import static grakn.core.common.iterator.Iterators.link;
-import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
-import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
-import static grakn.core.graph.util.Encoding.Edge.Type.PLAYS;
-import static grakn.core.graph.util.Encoding.Edge.Type.RELATES;
-import static grakn.core.graph.util.Encoding.Property.ABSTRACT;
-import static grakn.core.graph.util.Encoding.Property.LABEL;
-import static grakn.core.graph.util.Encoding.Property.REGEX;
-import static grakn.core.graph.util.Encoding.Property.SCOPE;
-import static grakn.core.graph.util.Encoding.Property.VALUE_TYPE;
-import static grakn.core.graph.util.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
-import static grakn.core.graph.util.Encoding.Vertex.Type.ENTITY_TYPE;
-import static grakn.core.graph.util.Encoding.Vertex.Type.RELATION_TYPE;
-import static grakn.core.graph.util.Encoding.Vertex.Type.ROLE_TYPE;
+import static grakn.core.graph.common.Encoding.Edge.Type.OWNS;
+import static grakn.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
+import static grakn.core.graph.common.Encoding.Edge.Type.PLAYS;
+import static grakn.core.graph.common.Encoding.Edge.Type.RELATES;
+import static grakn.core.graph.common.Encoding.Property.ABSTRACT;
+import static grakn.core.graph.common.Encoding.Property.LABEL;
+import static grakn.core.graph.common.Encoding.Property.REGEX;
+import static grakn.core.graph.common.Encoding.Property.SCOPE;
+import static grakn.core.graph.common.Encoding.Property.VALUE_TYPE;
+import static grakn.core.graph.common.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
+import static grakn.core.graph.common.Encoding.Vertex.Type.ENTITY_TYPE;
+import static grakn.core.graph.common.Encoding.Vertex.Type.RELATION_TYPE;
+import static grakn.core.graph.common.Encoding.Vertex.Type.ROLE_TYPE;
 import static java.lang.Math.toIntExact;
 
 public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implements TypeVertex {
@@ -337,7 +337,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         private void commitVertex() {
             graph.storage().put(iid.bytes());
-            graph.storage().put(IndexIID.Type.of(label, scope).bytes(), iid.bytes());
+            graph.storage().put(IndexIID.Type.Label.of(label, scope).bytes(), iid.bytes());
         }
 
         private void commitProperties() {
@@ -386,7 +386,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         @Nullable
         private static String getScope(SchemaGraph graph, VertexIID.Type iid) {
-            final byte[] scopeBytes = graph.storage().get(join(iid.bytes(), SCOPE.infix().bytes()));
+            byte[] scopeBytes = graph.storage().get(join(iid.bytes(), SCOPE.infix().bytes()));
             if (scopeBytes != null) return new String(scopeBytes);
             else return null;
         }
@@ -405,8 +405,8 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         public void label(String label) {
             graph.update(this, this.label, scope, label, scope);
             graph.storage().put(join(iid.bytes(), LABEL.infix().bytes()), label.getBytes());
-            graph.storage().delete(IndexIID.Type.of(this.label, scope).bytes());
-            graph.storage().put(IndexIID.Type.of(label, scope).bytes(), iid.bytes());
+            graph.storage().delete(IndexIID.Type.Label.of(this.label, scope).bytes());
+            graph.storage().put(IndexIID.Type.Label.of(label, scope).bytes(), iid.bytes());
             this.label = label;
         }
 
@@ -414,15 +414,15 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         public void scope(String scope) {
             graph.update(this, label, this.scope, label, scope);
             graph.storage().put(join(iid.bytes(), SCOPE.infix().bytes()), scope.getBytes());
-            graph.storage().delete(IndexIID.Type.of(label, this.scope).bytes());
-            graph.storage().put(IndexIID.Type.of(label, scope).bytes(), iid.bytes());
+            graph.storage().delete(IndexIID.Type.Label.of(label, this.scope).bytes());
+            graph.storage().put(IndexIID.Type.Label.of(label, scope).bytes(), iid.bytes());
             this.scope = scope;
         }
 
         @Override
         public boolean isAbstract() {
             if (isAbstract != null) return isAbstract;
-            final byte[] flag = graph.storage().get(join(iid.bytes(), ABSTRACT.infix().bytes()));
+            byte[] flag = graph.storage().get(join(iid.bytes(), ABSTRACT.infix().bytes()));
             isAbstract = flag != null;
             return isAbstract;
         }
@@ -439,7 +439,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         @Override
         public Encoding.ValueType valueType() {
             if (valueType != null) return valueType;
-            final byte[] val = graph.storage().get(join(iid.bytes(), VALUE_TYPE.infix().bytes()));
+            byte[] val = graph.storage().get(join(iid.bytes(), VALUE_TYPE.infix().bytes()));
             if (val != null) valueType = Encoding.ValueType.of(val[0]);
             return valueType;
         }
@@ -455,7 +455,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         @Override
         public Pattern regex() {
             if (regexLookedUp) return regex;
-            final byte[] val = graph.storage().get(join(iid.bytes(), REGEX.infix().bytes()));
+            byte[] val = graph.storage().get(join(iid.bytes(), REGEX.infix().bytes()));
             if (val != null) regex = Pattern.compile(new String(val));
             regexLookedUp = true;
             return regex;
@@ -485,8 +485,8 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         private void deleteVertexFromStorage() {
-            graph.storage().delete(IndexIID.Type.of(label, scope).bytes());
-            final ResourceIterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
+            graph.storage().delete(IndexIID.Type.Label.of(label, scope).bytes());
+            ResourceIterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
             while (keys.hasNext()) graph.storage().delete(keys.next());
             graph.storage().delete(StatisticsBytes.vertexCountKey(iid));
         }

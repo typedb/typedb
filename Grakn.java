@@ -19,6 +19,7 @@
 package grakn.core;
 
 import grakn.core.common.parameters.Arguments;
+import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
 import grakn.core.concept.ConceptManager;
 import grakn.core.logic.LogicManager;
@@ -108,7 +109,7 @@ public interface Grakn extends AutoCloseable {
 
         Arguments.Transaction.Type type();
 
-        Options.Transaction options();
+        Context.Transaction context();
 
         boolean isOpen();
 

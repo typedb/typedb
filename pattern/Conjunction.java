@@ -158,7 +158,7 @@ public class Conjunction implements Pattern, Cloneable {
     public boolean equals(Object obj) {
         if (this == obj) return true;
         if (obj == null || obj.getClass() != getClass()) return false;
-        final Conjunction that = (Conjunction) obj;
+        Conjunction that = (Conjunction) obj;
         // TODO This doesn't work! It doesn't compare constraints
         return (this.variableSet.equals(that.variables()) &&
                 this.negations.equals(that.negations()));
@@ -180,20 +180,20 @@ public class Conjunction implements Pattern, Cloneable {
         }
 
         public static Cloner cloneExactly(Set<? extends Constraint> s1, Constraint... s2) {
-            final LinkedHashSet<Constraint> ordered = new LinkedHashSet<>(s1);
+            LinkedHashSet<Constraint> ordered = new LinkedHashSet<>(s1);
             Collections.addAll(ordered, s2);
             return cloneExactly(ordered);
         }
 
         public static Cloner cloneExactly(Set<? extends Constraint> s1, Set<? extends Constraint> s2, Constraint... s3) {
-            final LinkedHashSet<Constraint> ordered = new LinkedHashSet<>(s1);
+            LinkedHashSet<Constraint> ordered = new LinkedHashSet<>(s1);
             ordered.addAll(s2);
             Collections.addAll(ordered, s3);
             return cloneExactly(ordered);
         }
 
         public static Cloner cloneExactly(Constraint constraint) {
-            final LinkedHashSet<Constraint> orderedSet = new LinkedHashSet<>();
+            LinkedHashSet<Constraint> orderedSet = new LinkedHashSet<>();
             orderedSet.add(constraint);
             return cloneExactly(orderedSet);
         }

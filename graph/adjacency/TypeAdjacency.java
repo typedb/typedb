@@ -19,8 +19,8 @@
 package grakn.core.graph.adjacency;
 
 import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.graph.common.Encoding;
 import grakn.core.graph.edge.TypeEdge;
-import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
 
 public interface TypeAdjacency {

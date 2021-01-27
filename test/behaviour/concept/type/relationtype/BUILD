@@ -29,7 +29,7 @@ host_compatible_java_library(
         "//common",
         "//test/behaviour/config:parameters",
         "//test/behaviour/connection:steps",
-        "//test/behaviour/util:util",
+        "//common/test:util",
 
         # External Maven Dependencies
         "@maven//:junit_junit",

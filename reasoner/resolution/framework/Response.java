@@ -42,10 +42,15 @@ public interface Response {
         private final Request sourceRequest;
         private final ResolutionAnswer answer;
 
-        public Answer(Request sourceRequest,
-                      ResolutionAnswer answer) {
+        private Answer(Request sourceRequest,
+                       ResolutionAnswer answer) {
             this.sourceRequest = sourceRequest;
             this.answer = answer;
+        }
+
+        public static Answer create(Request sourceRequest,
+                                    ResolutionAnswer answer) {
+            return new Answer(sourceRequest, answer);
         }
 
         @Override
@@ -55,6 +60,10 @@ public interface Response {
 
         public ResolutionAnswer answer() {
             return answer;
+        }
+
+        public int planIndex() {
+            return sourceRequest.planIndex();
         }
 
         @Override

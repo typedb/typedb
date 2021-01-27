@@ -23,9 +23,9 @@ import grakn.core.graph.DataGraph;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.adjacency.ThingAdjacency;
 import grakn.core.graph.adjacency.impl.ThingAdjacencyImpl;
+import grakn.core.graph.common.Encoding;
 import grakn.core.graph.iid.EdgeIID;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_VERTEX_CASTING;
 import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
-import static grakn.core.graph.util.Encoding.Vertex.Thing.ATTRIBUTE;
+import static grakn.core.graph.common.Encoding.Vertex.Thing.ATTRIBUTE;
 
 public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implements ThingVertex {
 

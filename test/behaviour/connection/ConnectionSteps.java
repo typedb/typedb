@@ -36,7 +36,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -89,13 +88,11 @@ public class ConnectionSteps {
         sessionsToTransactions.values().forEach(l -> l.forEach(Grakn.Transaction::close));
         sessionsToTransactions.clear();
         sessionsToTransactionsParallel.values().forEach(l -> l.forEach(c -> {
-            try { c.get().close(); }
-            catch (Exception e) { e.printStackTrace(); }
+            try { c.get().close(); } catch (Exception e) { e.printStackTrace(); }
         }));
         sessionsToTransactionsParallel.clear();
         sessionsParallelToTransactionsParallel.values().forEach(l -> l.forEach(c -> {
-            try { c.get().close(); }
-            catch (Exception e) { e.printStackTrace(); }
+            try { c.get().close(); } catch (Exception e) { e.printStackTrace(); }
         }));
         sessionsParallelToTransactionsParallel.clear();
         sessions.forEach(Grakn.Session::close);

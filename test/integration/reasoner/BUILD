@@ -22,12 +22,12 @@ host_compatible_java_test(
     name = "test-resolution",
     srcs = ["ResolutionTest.java"],
     native_libraries_deps = [
+        "//concept:concept",
+        "//logic:logic",
+        "//pattern:pattern",
+        "//reasoner:reasoner",
         "//rocks:rocks",
         "//:grakn",
-        "//concept:concept",
-        "//pattern:pattern",
-        "//logic:logic",
-        "//reasoner:reasoner",
     ],
     resource_strip_prefix = "common/test",
     resources = [
@@ -36,14 +36,41 @@ host_compatible_java_test(
     test_class = "grakn.core.reasoner.ResolutionTest",
     deps = [
         # Internal dependencies
+        "//common:common",
+        "//concurrent:concurrent",
+        "//test/integration/util",
+        "@graknlabs_graql//java:graql",
+    ],
+)
+
+host_compatible_java_test(
+    name = "test-resolution-planner",
+    srcs = ["resolution/PlannerTest.java"],
+    native_libraries_deps = [
+        "//rocks:rocks",
+        "//:grakn",
+        "//concept:concept",
+        "//pattern:pattern",
+        "//logic:logic",
+        "//reasoner:reasoner",
+    ],
+    test_class = "grakn.core.reasoner.resolution.PlannerTest",
+    deps = [
+        # Internal dependencies
         "//test/integration/util",
         "//common",
+
+        # External dependencies from Grakn Labs
+        "@graknlabs_common//:common",
         "@graknlabs_graql//java:graql",
     ],
 )
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*"]),
+    include = glob([
+        "*",
+        "resolution/*",
+    ]),
     license_type = "agpl",
 )

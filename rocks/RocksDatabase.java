@@ -25,8 +25,8 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
 import grakn.core.graph.SchemaGraph;
-import grakn.core.graph.util.Encoding;
-import grakn.core.graph.util.KeyGenerator;
+import grakn.core.graph.common.Encoding;
+import grakn.core.graph.common.KeyGenerator;
 import grakn.core.logic.LogicCache;
 import grakn.core.traversal.TraversalCache;
 import org.rocksdb.OptimisticTransactionDB;
@@ -260,7 +260,7 @@ public class RocksDatabase implements Grakn.Database {
 
     void remove(RocksSession session) {
         if (statisticsBackgroundCounterSession != session) {
-            final long lock = sessions.remove(session.uuid()).second();
+            long lock = sessions.remove(session.uuid()).second();
             if (session.type().isSchema()) dataWriteSchemaLock().unlockWrite(lock);
         }
     }
@@ -304,7 +304,7 @@ public class RocksDatabase implements Grakn.Database {
         private boolean invalidated;
 
         private Cache(RocksDatabase database) {
-            this.schemaStorage = new RocksStorage(database.rocksSchema(), true);
+            this.schemaStorage = new RocksStorage.Cache(database.rocksSchema());
             schemaGraph = new SchemaGraph(schemaStorage, true);
             traversalCache = new TraversalCache();
             logicCache = new LogicCache();
@@ -370,7 +370,8 @@ public class RocksDatabase implements Grakn.Database {
         private void countFn() {
             do {
                 try (RocksTransaction.Data tx = session.transaction(WRITE)) {
-                    tx.graphMgr.data().stats().processCountJobs();
+                    boolean shouldRestart = tx.graphMgr.data().stats().processCountJobs();
+                    if (shouldRestart) countJobNotifications.release();
                     tx.commit();
                 } catch (GraknException e) {
                     if (e.code().isPresent() && e.code().get().equals(DATABASE_CLOSED.code())) {

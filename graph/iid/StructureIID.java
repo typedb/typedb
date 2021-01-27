@@ -17,8 +17,8 @@
 
 package grakn.core.graph.iid;
 
-import grakn.core.graph.util.Encoding;
-import grakn.core.graph.util.KeyGenerator;
+import grakn.core.graph.common.Encoding;
+import grakn.core.graph.common.KeyGenerator;
 
 import static grakn.core.common.collection.Bytes.join;
 import static grakn.core.common.collection.Bytes.sortedBytesToShort;

@@ -60,7 +60,7 @@ public class AbstractConstraint extends TypeConstraint {
         if (o == this) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        final AbstractConstraint that = (AbstractConstraint) o;
+        AbstractConstraint that = (AbstractConstraint) o;
         return this.owner.equals(that.owner);
     }
 

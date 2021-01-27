@@ -24,8 +24,9 @@ java_library(
     name = "common",
     srcs = glob(["*/*.java", "*/*/*.java"], exclude=["test/*", "*Test.java", "*/*Test.java"]),
     deps = [
-        # Internal Repository Dependencies
+        # External dependencies from Grakn Labs
         "@graknlabs_common//:common",
+        "@graknlabs_graql//java/query:query",
 
         # External Maven Dependencies
         "@maven//:com_github_ben_manes_caffeine_caffeine",

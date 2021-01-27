@@ -22,7 +22,7 @@ import grakn.core.common.exception.GraknException;
 
 import java.util.function.Function;
 
-public class ErrorHandledIterator<T> implements ResourceIterator<T> {
+class ErrorHandledIterator<T> extends AbstractResourceIterator<T> {
 
     private final ResourceIterator<T> iterator;
     private final Function<Exception, GraknException> exceptionFn;
@@ -33,25 +33,27 @@ public class ErrorHandledIterator<T> implements ResourceIterator<T> {
     }
 
     @Override
-    public void recycle() {
-        this.iterator.recycle();
-    }
-
-    @Override
     public boolean hasNext() {
         try {
             return iterator.hasNext();
         } catch (Exception e) {
-            throw this.exceptionFn.apply(e);
+            recycle();
+            throw exceptionFn.apply(e);
         }
     }
 
     @Override
     public T next() {
         try {
-            return this.iterator.next();
+            return iterator.next();
         } catch (Exception e) {
-            throw this.exceptionFn.apply(e);
+            recycle();
+            throw exceptionFn.apply(e);
         }
+    }
+
+    @Override
+    public void recycle() {
+        iterator.recycle();
     }
 }

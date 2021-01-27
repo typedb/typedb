@@ -46,7 +46,7 @@ public class ConceptMapGroup implements Answer {
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
-        final ConceptMapGroup a2 = (ConceptMapGroup) obj;
+        ConceptMapGroup a2 = (ConceptMapGroup) obj;
         return this.owner.equals(a2.owner) &&
                 this.conceptMaps.equals(a2.conceptMaps);
     }

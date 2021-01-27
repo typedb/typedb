@@ -19,7 +19,7 @@
 package grakn.core.concept.type;
 
 import grakn.core.concept.thing.Attribute;
-import grakn.core.graph.util.Encoding;
+import grakn.core.graph.common.Encoding;
 import graql.lang.common.GraqlArg;
 
 import java.time.LocalDateTime;

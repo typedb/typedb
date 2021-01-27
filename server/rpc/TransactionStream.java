@@ -38,7 +38,7 @@ import static grakn.core.common.collection.Bytes.bytesToUUID;
 import static grakn.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_ALREADY_OPENED;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_NOT_OPENED;
-import static grakn.core.server.rpc.util.ResponseBuilder.exception;
+import static grakn.core.server.rpc.common.ResponseBuilder.exception;
 
 /**
  * A StreamObserver that implements the transaction connection between a client
@@ -71,9 +71,9 @@ public class TransactionStream implements StreamObserver<Transaction.Req> {
             LOG.trace("Request: {}", request);
 
             if (GrablTracingThreadStatic.isTracingEnabled()) {
-                final Map<String, String> metadata = request.getMetadataMap();
-                final String rootId = metadata.get("traceRootId");
-                final String parentId = metadata.get("traceParentId");
+                Map<String, String> metadata = request.getMetadataMap();
+                String rootId = metadata.get("traceRootId");
+                String parentId = metadata.get("traceParentId");
                 if (rootId != null && parentId != null) {
                     handleRequestWithTracing(request, rootId, parentId);
                     return;
@@ -97,23 +97,11 @@ public class TransactionStream implements StreamObserver<Transaction.Req> {
         }
     }
 
-    /**
-     * This method is invoked when a client abruptly terminates a connection to
-     * the server. So, we want to make sure to also close and delete the current
-     * session and all the transactions associated to the same client.
-     *
-     * This might create issues if a session is used by other concurrent clients,
-     * the better approach would be to signal a closure intent to the session
-     * and the session should be able to detect whether it's been used by other
-     * connections, if not close it completely.
-     *
-     * TODO: improve by sending closure intent to the session
-     */
     @Override
     public void onError(Throwable error) {
         try {
             TransactionRPC t;
-            if ((t = transactionRPC.get()) != null) t.sessionRPC().closeWithError(error);
+            if ((t = transactionRPC.get()) != null) t.closeWithError(error);
         } catch (Exception e) {
             LOG.error(e.getMessage(), e);
         } finally {
@@ -138,17 +126,17 @@ public class TransactionStream implements StreamObserver<Transaction.Req> {
     }
 
     private void open(Transaction.Req request) {
-        final Instant processingStartTime = Instant.now();
-        final Transaction.Open.Req openReq = request.getOpenReq();
-        final UUID sessionID = bytesToUUID(openReq.getSessionId().toByteArray());
-        final SessionRPC sessionRPC = graknRPCService.getSession(sessionID);
+        Instant processingStartTime = Instant.now();
+        Transaction.Open.Req openReq = request.getOpenReq();
+        UUID sessionID = bytesToUUID(openReq.getSessionId().toByteArray());
+        SessionRPC sessionRPC = graknRPCService.getSession(sessionID);
         if (sessionRPC == null) throw GraknException.of(SESSION_NOT_FOUND, sessionID);
 
         if (!transactionRPC.compareAndSet(null, sessionRPC.transaction(this, openReq))) {
             throw GraknException.of(TRANSACTION_ALREADY_OPENED);
         }
 
-        final int processingTimeMillis = (int) Duration.between(processingStartTime, Instant.now()).toMillis();
+        int processingTimeMillis = (int) Duration.between(processingStartTime, Instant.now()).toMillis();
         responder.onNext(Transaction.Res.newBuilder().setId(request.getId()).setOpenRes(
                 Transaction.Open.Res.newBuilder().setProcessingTimeMillis(processingTimeMillis)
         ).build());

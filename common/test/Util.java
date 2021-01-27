@@ -18,10 +18,25 @@
 
 package grakn.core.common.test;
 
+import grakn.core.common.exception.GraknException;
+
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class Util {
+
+    public static void assertThrowsGraknException(Runnable function, String errorCode) {
+        try {
+            function.run();
+            fail();
+        } catch (GraknException e) {
+            assert e.code().isPresent();
+            assertEquals(errorCode, e.code().get());
+        } catch (Exception e) {
+            fail();
+        }
+    }
 
     public static void assertThrows(Runnable function) {
         try {
@@ -29,6 +44,15 @@ public class Util {
             fail();
         } catch (RuntimeException e) {
             assertTrue(true);
+        }
+    }
+
+    public static void assertNotThrows(Runnable function) {
+        try {
+            function.run();
+        } catch (Exception e) {
+            // fail but we want to see the exception
+            throw e;
         }
     }
 

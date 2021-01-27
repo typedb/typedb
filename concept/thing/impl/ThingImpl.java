@@ -45,9 +45,10 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_CANNOT_O
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_OVER;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_TAKEN;
-import static grakn.core.graph.util.Encoding.Edge.Thing.HAS;
-import static grakn.core.graph.util.Encoding.Edge.Thing.PLAYING;
-import static grakn.core.graph.util.Encoding.Edge.Thing.ROLEPLAYER;
+import static grakn.core.graph.common.Encoding.Edge.Thing.HAS;
+import static grakn.core.graph.common.Encoding.Edge.Thing.PLAYING;
+import static grakn.core.graph.common.Encoding.Edge.Thing.RELATING;
+import static grakn.core.graph.common.Encoding.Edge.Thing.ROLEPLAYER;
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -180,7 +181,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
             if (!scopedLabel.contains(":")) {
                 throw exception(GraknException.of(INVALID_ROLE_TYPE_LABEL, scopedLabel));
             }
-            final String[] label = scopedLabel.split(":");
+            String[] label = scopedLabel.split(":");
             return RoleTypeImpl.of(vertex.graphs(), vertex.graph().schema().getType(label[1], label[0]));
         }).toArray(RoleType[]::new));
     }
@@ -198,13 +199,16 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
 
     @Override
     public void delete() {
+        Set<RelationImpl> relations = vertex.ins().edge(ROLEPLAYER).from().map(RelationImpl::of).toSet();
+        vertex.outs().edge(PLAYING).to().map(RoleImpl::of).forEachRemaining(RoleImpl::delete);
         vertex.delete();
+        relations.forEach(RelationImpl::deleteIfNoPlayer);
     }
 
     @Override
     public void validate() {
         if (getHas(true).map(Attribute::getType).count() < getType().getOwns(true).count()) {
-            final Set<AttributeType> missing = getType().getOwns(true).collect(toSet());
+            Set<AttributeType> missing = getType().getOwns(true).collect(toSet());
             missing.removeAll(getHas(true).map(Attribute::getType).collect(toSet()));
             throw exception(GraknException.of(THING_KEY_MISSING, getType().getLabel(), printTypeSet(missing)));
         }
@@ -217,8 +221,8 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     public boolean isThing() { return true; }
 
     private String printTypeSet(Set<? extends Type> types) {
-        final Type[] array = types.toArray(new Type[0]);
-        final StringBuilder string = new StringBuilder();
+        Type[] array = types.toArray(new Type[0]);
+        StringBuilder string = new StringBuilder();
         for (int i = 0; i < array.length; i++) {
             string.append('\'').append(array[i].getLabel()).append('\'');
             if (i < array.length - 1) string.append(", ");
@@ -240,7 +244,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     public boolean equals(Object object) {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
-        final ThingImpl that = (ThingImpl) object;
+        ThingImpl that = (ThingImpl) object;
         return this.vertex.equals(that.vertex);
     }
 

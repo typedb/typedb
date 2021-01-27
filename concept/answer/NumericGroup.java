@@ -45,7 +45,7 @@ public class NumericGroup implements Answer {
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
-        final NumericGroup a2 = (NumericGroup) obj;
+        NumericGroup a2 = (NumericGroup) obj;
         return this.owner.equals(a2.owner) &&
                 this.numeric.equals(a2.numeric);
     }

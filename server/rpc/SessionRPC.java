@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.protobuf.ByteString.copyFrom;
 import static grakn.core.common.collection.Bytes.uuidToBytes;
-import static grakn.core.common.concurrent.ExecutorService.scheduledThreadPool;
+import static grakn.core.concurrent.common.ExecutorService.scheduledThreadPool;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 class SessionRPC {
@@ -54,7 +54,7 @@ class SessionRPC {
     }
 
     TransactionRPC transaction(TransactionStream transactionStream, TransactionProto.Transaction.Open.Req request) {
-        final TransactionRPC transactionRPC = new TransactionRPC(this, transactionStream, request);
+        TransactionRPC transactionRPC = new TransactionRPC(this, transactionStream, request);
         transactionRPCs.put(transactionRPC.hashCode(), transactionRPC);
         return transactionRPC;
     }
@@ -74,7 +74,7 @@ class SessionRPC {
     void close() {
         if (idleTimeoutTask != null) idleTimeoutTask.cancel(false);
         if (isOpen.compareAndSet(true, false)) {
-            final ConcurrentHashMap<Integer, TransactionRPC> transactionRPCsCopy = new ConcurrentHashMap<>(transactionRPCs);
+            ConcurrentHashMap<Integer, TransactionRPC> transactionRPCsCopy = new ConcurrentHashMap<>(transactionRPCs);
             transactionRPCsCopy.values().parallelStream().forEach(TransactionRPC::close);
             session.close();
             graknRPCService.removeSession(session.uuid());
@@ -83,7 +83,7 @@ class SessionRPC {
 
     void closeWithError(Throwable error) {
         if (isOpen.compareAndSet(true, false)) {
-            final ConcurrentHashMap<Integer, TransactionRPC> transactionRPCsCopy = new ConcurrentHashMap<>(transactionRPCs);
+            ConcurrentHashMap<Integer, TransactionRPC> transactionRPCsCopy = new ConcurrentHashMap<>(transactionRPCs);
             transactionRPCsCopy.values().parallelStream().forEach(tr -> tr.closeWithError(error));
             session.close();
             graknRPCService.removeSession(session.uuid());

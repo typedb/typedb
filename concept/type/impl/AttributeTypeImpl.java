@@ -26,7 +26,7 @@ import grakn.core.concept.thing.impl.AttributeImpl;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.graph.GraphManager;
-import grakn.core.graph.util.Encoding;
+import grakn.core.graph.common.Encoding;
 import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
@@ -50,16 +50,16 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_UNSET
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES;
 import static grakn.core.common.iterator.Iterators.link;
-import static grakn.core.graph.util.Encoding.Edge.Type.OWNS;
-import static grakn.core.graph.util.Encoding.Edge.Type.OWNS_KEY;
-import static grakn.core.graph.util.Encoding.Edge.Type.SUB;
-import static grakn.core.graph.util.Encoding.ValueType.BOOLEAN;
-import static grakn.core.graph.util.Encoding.ValueType.DATETIME;
-import static grakn.core.graph.util.Encoding.ValueType.DOUBLE;
-import static grakn.core.graph.util.Encoding.ValueType.LONG;
-import static grakn.core.graph.util.Encoding.ValueType.STRING;
-import static grakn.core.graph.util.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
-import static grakn.core.graph.util.Encoding.Vertex.Type.Root.ATTRIBUTE;
+import static grakn.core.graph.common.Encoding.Edge.Type.OWNS;
+import static grakn.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
+import static grakn.core.graph.common.Encoding.Edge.Type.SUB;
+import static grakn.core.graph.common.Encoding.ValueType.BOOLEAN;
+import static grakn.core.graph.common.Encoding.ValueType.DATETIME;
+import static grakn.core.graph.common.Encoding.ValueType.DOUBLE;
+import static grakn.core.graph.common.Encoding.ValueType.LONG;
+import static grakn.core.graph.common.Encoding.ValueType.STRING;
+import static grakn.core.graph.common.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
+import static grakn.core.graph.common.Encoding.Vertex.Type.Root.ATTRIBUTE;
 
 public abstract class AttributeTypeImpl extends ThingTypeImpl implements AttributeType {
 
@@ -237,7 +237,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         // because it is possible to compare a attribute root types wrapped in different type classes
         // such as: root type wrapped in AttributeTypeImpl.Root and as in AttributeType.Boolean.Root
 
-        final AttributeTypeImpl that = (AttributeTypeImpl) object;
+        AttributeTypeImpl that = (AttributeTypeImpl) object;
         return this.vertex.equals(that.vertex);
     }
 
@@ -405,13 +405,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.Boolean put(boolean value, boolean isInferred) {
             validateIsCommittedAndNotAbstract(Attribute.class);
-            final AttributeVertex<java.lang.Boolean> attVertex = graphMgr.data().put(vertex, value, isInferred);
+            AttributeVertex<java.lang.Boolean> attVertex = graphMgr.data().put(vertex, value, isInferred);
             return new AttributeImpl.Boolean(attVertex);
         }
 
         @Override
         public Attribute.Boolean get(boolean value) {
-            final AttributeVertex<java.lang.Boolean> attVertex = graphMgr.data().get(vertex, value);
+            AttributeVertex<java.lang.Boolean> attVertex = graphMgr.data().get(vertex, value);
             if (attVertex != null) return new AttributeImpl.Boolean(attVertex);
             else return null;
         }
@@ -532,13 +532,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.Long put(long value, boolean isInferred) {
             validateIsCommittedAndNotAbstract(Attribute.class);
-            final AttributeVertex<java.lang.Long> attVertex = graphMgr.data().put(vertex, value, isInferred);
+            AttributeVertex<java.lang.Long> attVertex = graphMgr.data().put(vertex, value, isInferred);
             return new AttributeImpl.Long(attVertex);
         }
 
         @Override
         public Attribute.Long get(long value) {
-            final AttributeVertex<java.lang.Long> attVertex = graphMgr.data().get(vertex, value);
+            AttributeVertex<java.lang.Long> attVertex = graphMgr.data().get(vertex, value);
             if (attVertex != null) return new AttributeImpl.Long(attVertex);
             else return null;
         }
@@ -659,13 +659,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.Double put(double value, boolean isInferred) {
             validateIsCommittedAndNotAbstract(Attribute.class);
-            final AttributeVertex<java.lang.Double> attVertex = graphMgr.data().put(vertex, value, isInferred);
+            AttributeVertex<java.lang.Double> attVertex = graphMgr.data().put(vertex, value, isInferred);
             return new AttributeImpl.Double(attVertex);
         }
 
         @Override
         public Attribute.Double get(double value) {
-            final AttributeVertex<java.lang.Double> attVertex = graphMgr.data().get(vertex, value);
+            AttributeVertex<java.lang.Double> attVertex = graphMgr.data().get(vertex, value);
             if (attVertex != null) return new AttributeImpl.Double(attVertex);
             else return null;
         }
@@ -777,7 +777,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public void setRegex(Pattern regex) {
             if (regex != null) {
                 getInstances().parallel().forEach(attribute -> {
-                    final Matcher matcher = regex.matcher(attribute.getValue());
+                    Matcher matcher = regex.matcher(attribute.getValue());
                     if (!matcher.matches()) {
                         throw exception(GraknException.of(ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES,
                                                           getLabel(), regex, attribute.getValue()));
@@ -808,13 +808,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             if (vertex.regex() != null && !getRegex().matcher(value).matches()) {
                 throw exception(GraknException.of(ATTRIBUTE_VALUE_UNSATISFIES_REGEX, getLabel(), value, getRegex()));
             }
-            final AttributeVertex<java.lang.String> attVertex = graphMgr.data().put(vertex, value, isInferred);
+            AttributeVertex<java.lang.String> attVertex = graphMgr.data().put(vertex, value, isInferred);
             return new AttributeImpl.String(attVertex);
         }
 
         @Override
         public Attribute.String get(java.lang.String value) {
-            final AttributeVertex<java.lang.String> attVertex = graphMgr.data().get(vertex, value);
+            AttributeVertex<java.lang.String> attVertex = graphMgr.data().get(vertex, value);
             if (attVertex != null) return new AttributeImpl.String(attVertex);
             else return null;
         }
@@ -950,14 +950,14 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.DateTime put(LocalDateTime value, boolean isInferred) {
             validateIsCommittedAndNotAbstract(Attribute.class);
-            final AttributeVertex<LocalDateTime> attVertex = graphMgr.data().put(vertex, value, isInferred);
+            AttributeVertex<LocalDateTime> attVertex = graphMgr.data().put(vertex, value, isInferred);
             if (!isInferred && attVertex.isInferred()) attVertex.isInferred(false);
             return new AttributeImpl.DateTime(attVertex);
         }
 
         @Override
         public Attribute.DateTime get(LocalDateTime value) {
-            final AttributeVertex<java.time.LocalDateTime> attVertex = graphMgr.data().get(vertex, value);
+            AttributeVertex<java.time.LocalDateTime> attVertex = graphMgr.data().get(vertex, value);
             if (attVertex != null) return new AttributeImpl.DateTime(attVertex);
             else return null;
         }

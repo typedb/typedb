@@ -20,7 +20,7 @@ package grakn.core.traversal.structure;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
-import grakn.core.graph.util.Encoding;
+import grakn.core.graph.common.Encoding;
 import grakn.core.traversal.graph.TraversalEdge;
 import graql.lang.common.GraqlToken;
 
@@ -29,7 +29,7 @@ import java.util.Set;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static grakn.core.graph.util.Encoding.Edge.Thing.ROLEPLAYER;
+import static grakn.core.graph.common.Encoding.Edge.Thing.ROLEPLAYER;
 
 public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERTEX_TO extends StructureVertex<?>>
         extends TraversalEdge<VERTEX_FROM, VERTEX_TO> {

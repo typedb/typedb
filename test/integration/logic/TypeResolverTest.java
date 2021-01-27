@@ -41,7 +41,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -53,7 +52,6 @@ import static grakn.core.common.test.Util.assertThrowsWithMessage;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 public class TypeResolverTest {
     private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("type-resolver-test");
@@ -87,19 +85,19 @@ public class TypeResolverTest {
     }
 
     private static void define_standard_schema(String fileName) throws IOException {
-        final GraqlDefine query = Graql.parseQuery(
+        GraqlDefine query = Graql.parseQuery(
                 new String(Files.readAllBytes(Paths.get("test/integration/logic/" + fileName + ".gql")), UTF_8));
         transaction.query().define(query);
     }
 
     private static void define_custom_schema(String schema) {
-        final GraqlDefine query = Graql.parseQuery(schema);
+        GraqlDefine query = Graql.parseQuery(schema);
         transaction.query().define(query);
     }
 
     private Map<String, Set<String>> getHintMap(Conjunction conjunction) {
-        return conjunction.variables().stream().filter(variable -> variable.reference().isName()).collect(Collectors.toMap(
-                variable -> variable.reference().syntax(),
+        return conjunction.variables().stream().collect(Collectors.toMap(
+                variable -> variable.id().toString(),
                 variable -> variable.resolvedTypes().stream().map(Label::scopedName).collect(Collectors.toSet())
         ));
     }
@@ -123,6 +121,7 @@ public class TypeResolverTest {
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("person", "man", "woman"));
+            put("$_person", set("person"));
         }};
 
         assertEquals(expected, getHintMap(conjunction));
@@ -138,6 +137,7 @@ public class TypeResolverTest {
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("person"));
+            put("$_person", set("person"));
         }};
 
         assertEquals(expected, getHintMap(conjunction));
@@ -158,6 +158,8 @@ public class TypeResolverTest {
         Map<String, Set<String>> expectedExhaustive = new HashMap<String, Set<String>>() {{
             put("$p", set("mammal", "person", "man", "woman", "dog"));
             put("$q", set("mammal", "person", "man", "woman", "dog"));
+            put("$_entity", set("entity"));
+            put("$_mammal", set("mammal"));
         }};
 
         assertEquals(expectedExhaustive, getHintMap(conjunction));
@@ -174,6 +176,8 @@ public class TypeResolverTest {
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("person", "man", "woman", "dog"));
+            put("$_name", set("name"));
+            put("$_0", set("name"));
         }};
 
         assertEquals(expected, getHintMap(conjunction));
@@ -254,6 +258,7 @@ public class TypeResolverTest {
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("person", "man", "woman", "dog"));
             put("$a", set("name"));
+            put("$_name", set("name"));
         }};
 
         assertEquals(expected, getHintMap(conjunction));
@@ -273,6 +278,7 @@ public class TypeResolverTest {
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("triangle", "right-angled-triangle", "square"));
             put("$a", set("perimeter", "area", "label", "hypotenuse-length"));
+            put("$_shape", set("shape"));
         }};
 
         assertEquals(expected, getHintMap(conjunction));
@@ -335,6 +341,8 @@ public class TypeResolverTest {
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$yoko", set("woman"));
             put("$r", set("marriage"));
+            put("$_marriage:wife", set("marriage:wife"));
+            put("$_marriage", set("marriage"));
         }};
 
         assertEquals(expected, getHintMap(conjunction));
@@ -353,6 +361,7 @@ public class TypeResolverTest {
             put("$yoko", set("person", "man", "woman"));
             put("$role", set("marriage:husband", "marriage:wife", "marriage:spouse", "relation:role"));
             put("$r", set("marriage"));
+            put("$_marriage", set("marriage"));
         }};
 
         assertEquals(expected, getHintMap(conjunction));
@@ -371,6 +380,7 @@ public class TypeResolverTest {
             put("$yoko", set("woman"));
             put("$r", set("marriage"));
             put("$m", set("marriage", "relation", "thing"));
+            put("$_relation:wife", set("marriage:wife"));
         }};
 
         assertEquals(expected, getHintMap(conjunction));
@@ -409,6 +419,8 @@ public class TypeResolverTest {
             put("$role", set("hetero-marriage:husband", "marriage:spouse", "partnership:partner", "relation:role"));
             put("$r", set("hetero-marriage", "marriage"));
             put("$m", set("hetero-marriage", "marriage", "partnership", "relation", "thing"));
+            put("$_relation:spouse", set("marriage:spouse"));
+            put("$_man", set("man"));
         }};
 
         assertEquals(expected, getHintMap(conjunction));
@@ -425,6 +437,8 @@ public class TypeResolverTest {
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$yoko", set("woman"));
+            put("$_0", set("marriage"));
+            put("$_relation:wife", set("marriage:wife"));
         }};
 
         assertEquals(expected, getHintMap(conjunction));
@@ -441,6 +455,8 @@ public class TypeResolverTest {
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$yoko", set("man", "woman", "person"));
+            put("$_0", set("marriage"));
+            put("$_marriage", set("marriage"));
         }};
 
         assertEquals(expected, getHintMap(conjunction));
@@ -461,6 +477,8 @@ public class TypeResolverTest {
             put("$role", set("marriage:husband", "marriage:wife", "marriage:spouse", "relation:role"));
             put("$r", set("marriage"));
             put("$a", set("person", "man", "woman"));
+            put("$_marriage:husband", set("marriage:husband"));
+            put("$_marriage", set("marriage"));
         }};
 
         assertEquals(expected, getHintMap(conjunction));
@@ -480,6 +498,7 @@ public class TypeResolverTest {
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$a", set("name", "email"));
             put("$p", set("person"));
+            put("$_person", set("person"));
         }};
 
         assertEquals(expected, getHintMap(conjunction));
@@ -497,6 +516,7 @@ public class TypeResolverTest {
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("person", "man", "woman"));
+            put("$_person", set("person"));
         }};
 
         assertEquals(expected, getHintMap(conjunction));
@@ -522,6 +542,7 @@ public class TypeResolverTest {
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$p", set("man", "greek", "socrates"));
             put("$q", set("thing", "entity", "animal", "person", "man"));
+            put("$_man", set("man"));
         }};
 
         assertEquals(expected, getHintMap(conjunction));
@@ -540,7 +561,7 @@ public class TypeResolverTest {
             put("$t", set("shape"));
         }};
 
-        assertTrue(getHintMap(conjunction).entrySet().containsAll(expected.entrySet()));
+        assertEquals(expected, getHintMap(conjunction));
     }
 
     @Test
@@ -553,6 +574,9 @@ public class TypeResolverTest {
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$john", set("person", "man", "woman"));
+            put("$_0", set("marriage"));
+            put("$_marriage:spouse", set("marriage:spouse"));
+            put("$_marriage", set("marriage"));
         }};
 
         assertEquals(expected, getHintMap(conjunction));
@@ -582,6 +606,9 @@ public class TypeResolverTest {
             put("$b", set("person", "chair"));
             put("$c", set("leg-weight"));
             put("$p", set("animal", "person", "dog", "chair"));
+            put("$_0", set("leg-weight"));
+            put("$_weight", set("weight"));
+            put("$_leg-weight", set("leg-weight"));
         }};
 
         assertEquals(expected, getHintMap(conjunction));
@@ -615,7 +642,8 @@ public class TypeResolverTest {
         Conjunction conjunction = resolveConjunction(typeResolver, queryString);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$x", Collections.emptySet());
+            put("$x", set());
+            put("$_thing", set("thing"));
         }};
 
         assertEquals(expected, getHintMap(conjunction));
@@ -642,6 +670,10 @@ public class TypeResolverTest {
             put("$x", set("man"));
             put("$y", set("woman"));
             put("$t", set("thing", "entity", "person"));
+            put("$_0", set("man-name"));
+            put("$_1", set("woman-name"));
+            put("$_man-name", set("man-name"));
+            put("$_woman-name", set("woman-name"));
         }};
 
         assertEquals(expectedExhaustive, getHintMap(conjunction));
@@ -671,6 +703,7 @@ public class TypeResolverTest {
             put("$y", set("person", "man", "greek", "socrates"));
             put("$z", set("person", "man", "greek", "socrates"));
             put("$w", set("person", "man", "greek", "socrates"));
+            put("$_person", set("person"));
         }};
 
         assertEquals(expected, getHintMap(conjunction));
@@ -732,6 +765,10 @@ public class TypeResolverTest {
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$a", set("dog"));
+            put("$_name", set("name"));
+            put("$_label", set("label"));
+            put("$_0", set("name"));
+            put("$_1", set("label"));
         }};
 
         assertEquals(expected, getHintMap(conjunction));
@@ -768,6 +805,8 @@ public class TypeResolverTest {
             put("$x", set("person"));
             put("$y", set("person"));
             put("$m", set("marriage", "hetero-marriage"));
+            put("$_marriage:spouse", set("marriage:spouse"));
+            put("$_marriage", set("marriage"));
         }};
         assertEquals(expected, getHintMap(conjunction));
     }
@@ -781,6 +820,7 @@ public class TypeResolverTest {
         Conjunction relationConjunction = resolveConjunction(typeResolver, relationString);
         Map<String, Set<String>> relationExpected = new HashMap<String, Set<String>>() {{
             put("$x", set("friendship", "employment"));
+            put("$_relation", set("relation"));
         }};
         assertEquals(relationExpected, getHintMap(relationConjunction));
 
@@ -788,6 +828,7 @@ public class TypeResolverTest {
         Conjunction attributeConjunction = resolveConjunction(typeResolver, attributeString);
         Map<String, Set<String>> attributeExpected = new HashMap<String, Set<String>>() {{
             put("$x", set("name", "age", "ref"));
+            put("$_attribute", set("attribute"));
         }};
 
         assertEquals(attributeExpected, getHintMap(attributeConjunction));
@@ -796,6 +837,7 @@ public class TypeResolverTest {
         Conjunction entityConjunction = resolveConjunction(typeResolver, entityString);
         Map<String, Set<String>> entityExpected = new HashMap<String, Set<String>>() {{
             put("$x", set("person", "company"));
+            put("$_entity", set("entity"));
         }};
         assertEquals(entityExpected, getHintMap(entityConjunction));
 
@@ -804,6 +846,8 @@ public class TypeResolverTest {
         Map<String, Set<String>> roleExpected = new HashMap<String, Set<String>>() {{
             put("$role", set("friendship:friend", "employment:employer", "employment:employee", "relation:role"));
             put("$x", set("person", "company"));
+            put("$_0", set("friendship", "employment"));
+            put("$_relation", set("relation"));
         }};
         assertEquals(roleExpected, getHintMap(roleConjunction));
 
@@ -811,6 +855,7 @@ public class TypeResolverTest {
         Conjunction thingConjunction = resolveConjunction(typeResolver, thingString);
         Map<String, Set<String>> thingExpected = new HashMap<String, Set<String>>() {{
             put("$x", set());
+            put("$_thing", set("thing"));
         }};
         assertEquals(thingExpected, getHintMap(thingConjunction));
     }
@@ -926,6 +971,47 @@ public class TypeResolverTest {
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$x", set("person"));
+            put("$_0", set("name"));
+            put("$_name", set("name"));
+        }};
+
+        assertEquals(expected, getHintMap(conjunction));
+    }
+
+    @Test
+    public void role_labels_reduced_by_full_type_resolver() {
+        define_custom_schema("define" +
+                                     " person sub entity, plays partnership:partner;" +
+                                     " partnership sub relation, relates partner;" +
+                                     " business sub relation, relates partner;"
+        );
+
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        String queryString = "match (partner: $x);";
+        Conjunction conjunction = createConjunction(queryString);
+        typeResolver.resolveLabels(conjunction);
+
+        Set<String> expectedLabels = set("partnership:partner", "business:partner");
+
+        assertEquals(expectedLabels, getHintMap(conjunction).get("$_relation:partner"));
+
+        typeResolver.resolve(conjunction);
+        Set<String> expectedResolvedTypes = set("partnership:partner");
+
+        assertEquals(expectedResolvedTypes, getHintMap(conjunction).get("$_relation:partner"));
+    }
+
+    @Test
+    public void roles_can_handle_type_constraints() throws IOException {
+        define_standard_schema("basic-schema");
+        String queryString = "match ($role: $x) isa $y; $role type marriage:wife;";
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+        Conjunction conjunction = resolveConjunction(typeResolver, queryString);
+        HashMap<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$y", set("marriage", "relation", "thing"));
+            put("$x", set("woman"));
+            put("$role", set("marriage:wife"));
+            put("$_0", set("marriage"));
         }};
 
         assertEquals(expected, getHintMap(conjunction));

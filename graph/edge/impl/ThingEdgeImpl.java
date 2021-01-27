@@ -20,12 +20,12 @@ package grakn.core.graph.edge.impl;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.graph.DataGraph;
+import grakn.core.graph.common.Encoding;
 import grakn.core.graph.edge.ThingEdge;
 import grakn.core.graph.iid.EdgeIID;
 import grakn.core.graph.iid.InfixIID;
 import grakn.core.graph.iid.SuffixIID;
 import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.util.Encoding;
 import grakn.core.graph.vertex.ThingVertex;
 
 import javax.annotation.Nullable;
@@ -35,8 +35,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grakn.core.common.collection.Bytes.join;
 import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
-import static grakn.core.graph.util.Encoding.Prefix.VERTEX_ROLE;
-import static grakn.core.graph.util.Encoding.Status.BUFFERED;
+import static grakn.core.graph.common.Encoding.Prefix.VERTEX_ROLE;
+import static grakn.core.graph.common.Encoding.Status.BUFFERED;
 import static java.util.Objects.hash;
 
 public abstract class ThingEdgeImpl implements ThingEdge {
@@ -187,7 +187,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         public final boolean equals(Object object) {
             if (this == object) return true;
             if (object == null || getClass() != object.getClass()) return false;
-            final ThingEdgeImpl.Buffered that = (ThingEdgeImpl.Buffered) object;
+            ThingEdgeImpl.Buffered that = (ThingEdgeImpl.Buffered) object;
             return (this.encoding.equals(that.encoding) &&
                     this.from.equals(that.from) &&
                     this.to.equals(that.to) &&
@@ -352,7 +352,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         public final boolean equals(Object object) {
             if (this == object) return true;
             if (object == null || getClass() != object.getClass()) return false;
-            final ThingEdgeImpl.Persisted that = (ThingEdgeImpl.Persisted) object;
+            ThingEdgeImpl.Persisted that = (ThingEdgeImpl.Persisted) object;
             return (this.encoding.equals(that.encoding) &&
                     this.fromIID.equals(that.fromIID) &&
                     this.toIID.equals(that.toIID) &&
