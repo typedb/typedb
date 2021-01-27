@@ -37,7 +37,6 @@ java_test(
     data = [
         "@graknlabs_behaviour//graql/reasoner:schema-queries.feature",
     ],
-    visibility = ["//visibility:public"],
     resources = [
         "//common/test:logback"
     ],

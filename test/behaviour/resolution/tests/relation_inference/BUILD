@@ -36,7 +36,7 @@ java_test(
     ],
     data = [
         "@graknlabs_behaviour//graql/reasoner:relation-inference.feature",
-    visibility = ["//visibility:public"],
+    ],
     resources = [
         "//common/test:logback"
     ],
