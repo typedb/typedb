@@ -144,6 +144,7 @@ public class RocksDatabase implements Grakn.Database {
 
         long lock = 0;
         RocksSession session;
+
         if (type.isSchema()) {
             try {
                 dataWriteSchemaLock().tryWriteLock(options.schemaLockAcquireTimeoutMillis(), TimeUnit.MILLISECONDS);
