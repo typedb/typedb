@@ -72,20 +72,6 @@ public final class RocksIterator<T> extends AbstractResourceIterator<T> implemen
     }
 
     @Override
-    public void recycle() {
-        close();
-    }
-
-    @Override
-    public void close() {
-        if (isOpen.compareAndSet(true, false)) {
-            if (state != State.INIT) storage.recycle(internalRocksIterator);
-            state = State.COMPLETED;
-            storage.remove(this);
-        }
-    }
-
-    @Override
     public final boolean hasNext() {
         switch (state) {
             case COMPLETED:
@@ -107,5 +93,19 @@ public final class RocksIterator<T> extends AbstractResourceIterator<T> implemen
         if (!hasNext()) throw new NoSuchElementException();
         state = State.EMPTY;
         return next;
+    }
+
+    @Override
+    public void recycle() {
+        close();
+    }
+
+    @Override
+    public void close() {
+        if (isOpen.compareAndSet(true, false)) {
+            if (state != State.INIT) storage.recycle(internalRocksIterator);
+            state = State.COMPLETED;
+            storage.remove(this);
+        }
     }
 }

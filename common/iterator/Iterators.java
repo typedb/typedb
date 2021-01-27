@@ -84,7 +84,7 @@ public class Iterators {
         return new TreeIterator<>(root, childrenFn);
     }
 
-    public static <T> ResourceIterator<T> synchronised(ResourceIterator<T> iterator) {
+    public static <T> SynchronisedIterator<T> synchronised(ResourceIterator<T> iterator) {
         return new SynchronisedIterator<>(iterator);
     }
 

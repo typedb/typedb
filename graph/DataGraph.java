@@ -55,6 +55,7 @@ import static grakn.core.common.collection.Bytes.longToBytes;
 import static grakn.core.common.collection.Bytes.stripPrefix;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
+import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.iterator.Iterators.tree;
 import static grakn.core.graph.common.Encoding.Edge.Type.SUB;
@@ -63,6 +64,7 @@ import static grakn.core.graph.common.Encoding.Prefix.VERTEX_ENTITY_TYPE;
 import static grakn.core.graph.common.Encoding.Prefix.VERTEX_RELATION_TYPE;
 import static grakn.core.graph.common.Encoding.Statistics.JobOperation.CREATED;
 import static grakn.core.graph.common.Encoding.Statistics.JobOperation.DELETED;
+import static grakn.core.graph.common.Encoding.Status.BUFFERED;
 import static grakn.core.graph.common.Encoding.ValueType.STRING_MAX_SIZE;
 import static grakn.core.graph.common.Encoding.Vertex.Thing.ATTRIBUTE;
 import static grakn.core.graph.common.StatisticsBytes.attributeCountJobKey;
@@ -429,7 +431,7 @@ public class DataGraph implements Graph {
      */
     @Override
     public void commit() {
-        thingsByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Status.BUFFERED) && !v.isInferred()).forEach(
+        iterate(thingsByIID.values()).filter(v -> v.status().equals(BUFFERED) && !v.isInferred()).forEachRemaining(
                 vertex -> vertex.iid(generate(storage.dataKeyGenerator(), vertex.type().iid(), vertex.type().properLabel()))
         ); // thingByIID no longer contains valid mapping from IID to TypeVertex
         thingsByIID.values().stream().filter(v -> !v.isInferred()).forEach(Vertex::commit);
