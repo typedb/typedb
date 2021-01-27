@@ -436,6 +436,8 @@ public class UnifyHasConcludableTest {
     }
 
     @Test
+    @Ignore
+    //TODO: ignored because this rule is no longer valid
     public void has_one_to_many_unifier() {
         String conjunction = "{ $b has attribute $b; }";
         Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction));

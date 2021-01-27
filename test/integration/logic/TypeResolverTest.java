@@ -48,7 +48,6 @@ import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.test.Util.assertThrows;
-import static grakn.core.common.test.Util.assertThrowsWithMessage;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -1040,10 +1039,10 @@ public class TypeResolverTest {
         TypeResolver typeResolver = transaction.logic().typeResolver();
         resolveConjunction(typeResolver, queryString);
 
-        transaction.logic().putRule(
+        assertThrows(() -> transaction.logic().putRule(
                 "women-called-smith",
                 Graql.parsePattern("{$x isa woman;}").asConjunction(),
-                Graql.parseVariable("$x has name 'smith'").asThing());
+                Graql.parseVariable("$x has name 'smith'").asThing()));
     }
 
     @Test
@@ -1056,10 +1055,10 @@ public class TypeResolverTest {
         TypeResolver typeResolver = transaction.logic().typeResolver();
         resolveConjunction(typeResolver, queryString);
 
-        transaction.logic().putRule(
+        assertThrows(() -> transaction.logic().putRule(
                 "marriage-rule",
                 Graql.parsePattern("{$x isa person;}").asConjunction(),
-                Graql.parseVariable("(wife: $x) isa partnership").asThing());
+                Graql.parseVariable("(wife: $x) isa partnership").asThing()));
     }
 
     @Test
@@ -1072,10 +1071,10 @@ public class TypeResolverTest {
         TypeResolver typeResolver = transaction.logic().typeResolver();
         resolveConjunction(typeResolver, queryString);
 
-        transaction.logic().putRule(
+        assertThrows(() -> transaction.logic().putRule(
                 "marriage-rule",
                 Graql.parsePattern("{$x isa person;}").asConjunction(),
-                Graql.parseVariable("(partner: $x) isa marriage").asThing());
+                Graql.parseVariable("(partner: $x) isa marriage").asThing()));
     }
 
     @Test
