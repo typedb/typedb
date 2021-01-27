@@ -114,8 +114,8 @@ public class Reasoner {
         }
 
         if (conjunction.negations().isEmpty()) return iterate(producers);
-        else return iterate(producers).map(p -> p.filter(a -> !produce(
-                iterate(conjunction.negations()).flatMap(n -> iterate(producers(n.disjunction(), a))).toList(), EXHAUSTIVE
+        else return iterate(producers).map(prod -> prod.filter(ans -> !iterate(conjunction.negations()).flatMap(
+                negation -> iterator(negation.disjunction(), ans)
         ).hasNext()));
     }
 
