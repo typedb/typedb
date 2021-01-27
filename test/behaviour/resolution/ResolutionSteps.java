@@ -43,8 +43,9 @@ import static org.junit.Assert.fail;
 
 public class ResolutionSteps {
 
-    private Grakn.Session reasonedSession;
-    private Grakn.Session materialisedSession;
+    private static final String MATERIALISED_DATABASE = "materialised";
+    private static final String REASONED_DATABASE = "materialised";
+
     private GraqlMatch queryToTest;
     private Set<ConceptMap> answers;
 
@@ -56,24 +57,6 @@ public class ResolutionSteps {
     @Given("for each session, graql insert")
     public void graql_insert(String insertQueryStatements) {
         graql_query(insertQueryStatements);
-    }
-
-    @Given("materialised session has database name: {word}")
-    public void materialised_session_has_database_name(String databaseName) {
-        Grakn.Session materialisedSession = sessions.stream()
-                .filter(s -> s.database().name().equals(databaseName))
-                .findAny()
-                .orElse(null);
-        this.materialisedSession = materialisedSession;
-    }
-
-    @Given("reasoned session has database name: {word}")
-    public void reasoned_session_has_database_name(String databaseName) {
-        Grakn.Session reasonedSession = sessions.stream()
-                .filter(s -> s.database().name().equals(databaseName))
-                .findAny()
-                .orElse(null);
-        this.reasonedSession = reasonedSession;
     }
 
     @When("materialised database is completed")
@@ -89,7 +72,7 @@ public class ResolutionSteps {
     @Then("answer size in reasoned database is: {number}")
     public void answer_size_in_reasoned_database_is(int expectedCount) {
         int resultCount;
-        Grakn.Transaction tx = getTransaction(reasonedSession);
+        Grakn.Transaction tx = reasonedDbTxn();
         answers = tx.query().match(queryToTest).toSet();
         resultCount = answers.size();
         if (expectedCount != resultCount) {
@@ -102,10 +85,10 @@ public class ResolutionSteps {
     @Then("answers are consistent across {int} executions in reasoned database")
     public void answers_are_consistent_across_n_executions_in_reasoned_database(int executionCount) {
         Set<ConceptMap> oldAnswers;
-        Grakn.Transaction tx = getTransaction(reasonedSession);
+        Grakn.Transaction tx = reasonedDbTxn();
         oldAnswers = tx.query().match(queryToTest).toSet();
         for (int i = 0; i < executionCount - 1; i++) {
-            try (Grakn.Transaction transaction = reasonedSession.transaction(Arguments.Transaction.Type.READ)) {
+            try (Grakn.Transaction transaction = reasonedSession().transaction(Arguments.Transaction.Type.READ)) {
                 Set<ConceptMap> answers = transaction.query().match(queryToTest).toSet();
                 assertEquals(oldAnswers, answers);
             }
@@ -116,7 +99,7 @@ public class ResolutionSteps {
     public void equivalent_answer_set(String equivalentQuery) {
         assertNotNull("A graql query must have been previously loaded in order to test answer equivalence.", queryToTest);
         assertNotNull("There are no previous answers to test against; was the reference query ever executed?", answers);
-        Grakn.Transaction tx = getTransaction(reasonedSession);
+        Grakn.Transaction tx = reasonedDbTxn();
         Set<ConceptMap> newAnswers = tx.query().match(Graql.parseQuery(equivalentQuery).asMatch()).toSet();
         assertEquals(answers, newAnswers);
     }
@@ -145,6 +128,32 @@ public class ResolutionSteps {
                 throw new ScenarioDefinitionException("Query not handled in ResolutionSteps" + queryStatements);
             }
         });
+    }
+
+    private Grakn.Session reasonedSession() {
+        Grakn.Session reasonedSession = sessions.stream()
+                .filter(s -> s.database().name().equals(REASONED_DATABASE))
+                .findAny()
+                .orElse(null);
+        assert reasonedSession != null : "Reasoned session with database name " + REASONED_DATABASE + " does not exist";
+        return reasonedSession;
+    }
+
+    private Grakn.Session materialisedSession() {
+        Grakn.Session materialisedSession = sessions.stream()
+                .filter(s -> s.database().name().equals(MATERIALISED_DATABASE))
+                .findAny()
+                .orElse(null);
+        assert materialisedSession != null : "Materialised session with database name " + MATERIALISED_DATABASE + " does not exist";
+        return materialisedSession;
+    }
+
+    private Grakn.Transaction reasonedDbTxn() {
+        return getTransaction(reasonedSession());
+    }
+
+    private Grakn.Transaction materialisedDbTxn() {
+        return getTransaction(materialisedSession());
     }
 
     private Grakn.Transaction getTransaction(Grakn.Session session) {
