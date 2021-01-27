@@ -152,12 +152,19 @@ public class RootResolver extends Resolver<RootResolver> {
 
     @Override
     protected void receiveExhausted(Response.Exhausted fromDownstream, int iteration) {
-        LOG.trace("{}: received Exhausted: {}", name(), fromDownstream);
+        LOG.trace("{}: received Exhausted, with iter {}: {}", name(), iteration, fromDownstream);
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
 
+        if (iteration < responseProducer.iteration()) {
+            // short circuit old iteration exhausted messages back out of the actor model
+            onExhausted.accept(iteration);
+            return;
+        }
+
         responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
         tryAnswer(fromUpstream, iteration);
+
     }
 
     @Override

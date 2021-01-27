@@ -49,6 +49,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.resolveRequest = Request.create(new Request.Path(rootResolver), Root.create(), EMPTY);
         this.queue = null;
         this.iteration = 0;
+        this.done = false;
     }
 
     @Override
