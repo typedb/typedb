@@ -729,8 +729,7 @@ public class DataGraph implements Graph {
 
         public boolean processCountJobs() {
             ResourceIterator<CountJob> countJobs = storage.iterate(StatisticsBytes.countJobKey(), CountJob::of);
-            long processedCount = 0;
-            while (processedCount < COUNT_JOB_BATCH_SIZE && countJobs.hasNext()) {
+            for (long processed = 0; processed < COUNT_JOB_BATCH_SIZE && countJobs.hasNext(); processed++) {
                 CountJob countJob = countJobs.next();
                 if (countJob instanceof CountJob.Attribute) {
                     processAttributeCountJob(countJob);
@@ -740,7 +739,6 @@ public class DataGraph implements Graph {
                     assert false;
                 }
                 storage.delete(countJob.key());
-                processedCount++;
             }
             storage.mergeUntracked(snapshotKey(), longToBytes(1));
             return countJobs.hasNext();
