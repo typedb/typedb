@@ -131,6 +131,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Session(1, "Session with UUID '%s' does not exist.");
         public static final Session SESSION_CLOSED =
                 new Session(2, "Attempted to open a transaction from closed session.");
+        public static final Session SCHEMA_ACQUIRE_LOCK_TIMEOUT =
+                new Session(3, "Could not acquire lock for schema session. Another schema session may have been left open.");
 
         private static final String codePrefix = "SSN";
         private static final String messagePrefix = "Invalid Session Operation";
@@ -165,6 +167,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Transaction(11, "Transaction can not be null.");
         public static final Transaction BAD_TRANSACTION_TYPE =
                 new Transaction(12, "The transaction type '%s' was not recognised.");
+        public static final Transaction DATA_ACQUIRE_LOCK_TIMEOUT =
+                new Transaction(13, "Could not acquire lock for data transaction. A schema session may have been left open.");
 
         private static final String codePrefix = "TXN";
         private static final String messagePrefix = "Invalid Transaction Operation";

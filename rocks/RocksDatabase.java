@@ -41,6 +41,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
@@ -49,6 +50,7 @@ import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_CLOSED;
 import static grakn.core.common.exception.ErrorMessage.Internal.DIRTY_INITIALISATION;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
+import static grakn.core.common.exception.ErrorMessage.Session.SCHEMA_ACQUIRE_LOCK_TIMEOUT;
 import static grakn.core.common.parameters.Arguments.Session.Type.SCHEMA;
 import static grakn.core.common.parameters.Arguments.Transaction.Type.READ;
 import static grakn.core.common.parameters.Arguments.Transaction.Type.WRITE;
@@ -145,7 +147,11 @@ public class RocksDatabase implements Grakn.Database {
         RocksSession session;
 
         if (type.isSchema()) {
-            lock = dataWriteSchemaLock().writeLock();
+            try {
+                lock = dataWriteSchemaLock().tryWriteLock(options.schemaLockAcquireTimeoutMillis(), TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                throw GraknException.of(SCHEMA_ACQUIRE_LOCK_TIMEOUT);
+            }
             session = sessionFactory.sessionSchema(this, options);
         } else if (type.isData()) {
             session = sessionFactory.sessionData(this, options);
