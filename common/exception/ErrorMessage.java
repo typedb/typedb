@@ -131,6 +131,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Session(1, "Session with UUID '%s' does not exist.");
         public static final Session SESSION_CLOSED =
                 new Session(2, "Attempted to open a transaction from closed session.");
+        public static final Session ACQUIRE_LOCK_TIMEOUT =
+                new Session(3, "Could not acquire lock for data transaction. A schema write session may have been left open.");
 
         private static final String codePrefix = "SSN";
         private static final String messagePrefix = "Invalid Session Operation";
