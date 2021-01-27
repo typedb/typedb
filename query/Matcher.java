@@ -20,7 +20,6 @@ package grakn.core.query;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
-import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Context;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ConceptMapGroup;
@@ -60,6 +59,7 @@ import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_C
 import static grakn.core.common.exception.ErrorMessage.ThingRead.SORT_ATTRIBUTE_NOT_COMPARABLE;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.SORT_VARIABLE_NOT_ATTRIBUTE;
 import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
 import static grakn.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
 import static grakn.core.query.Matcher.Aggregator.aggregator;
 import static java.lang.Math.sqrt;
@@ -73,36 +73,43 @@ public class Matcher {
     private final List<Identifier.Variable.Name> filter;
     private final Context.Query context;
 
+    public Matcher(Reasoner reasoner, GraqlMatch query) {
+        this(reasoner, query, null);
+    }
+
     public Matcher(Reasoner reasoner, GraqlMatch query, @Nullable Context.Query context) {
         this.reasoner = reasoner;
         this.query = query;
         this.disjunction = Disjunction.create(query.conjunction().normalise());
         this.filter = iterate(query.filter()).map(v -> Identifier.Variable.of(v.reference().asName())).toList();
         this.context = context;
-        if (context != null) this.context.producer(INCREMENTAL);
+        if (context != null) {
+            if (query.sort().isPresent()) this.context.producer(EXHAUSTIVE); // TODO: remove this once sort is optimised
+            else this.context.producer(INCREMENTAL);
+        }
     }
 
     public static Matcher create(Reasoner reasoner, GraqlMatch query) {
-        return create(reasoner, query, null);
+        return new Matcher(reasoner, query);
     }
 
-    public static Matcher create(Reasoner reasoner, GraqlMatch query, @Nullable Context.Query context) {
+    public static Matcher create(Reasoner reasoner, GraqlMatch query, Context.Query context) {
         return new Matcher(reasoner, query, context);
     }
 
     public static Matcher.Aggregator create(Reasoner reasoner, GraqlMatch.Aggregate query, Context.Query context) {
-        Matcher matcher = new Matcher(reasoner, query.match(), context);
-        return new Aggregator(matcher, query);
+        Matcher matcher = new Matcher(reasoner, query.match());
+        return new Aggregator(matcher, query, context);
     }
 
     public static Matcher.Group create(Reasoner reasoner, GraqlMatch.Group query, Context.Query context) {
-        Matcher matcher = new Matcher(reasoner, query.match(), context);
-        return new Group(matcher, query);
+        Matcher matcher = new Matcher(reasoner, query.match());
+        return new Group(matcher, query, context);
     }
 
     public static Matcher.Group.Aggregator create(Reasoner reasoner, GraqlMatch.Group.Aggregate query, Context.Query context) {
-        Matcher matcher = new Matcher(reasoner, query.group().match(), context);
-        Group group = new Group(matcher, query.group());
+        Matcher matcher = new Matcher(reasoner, query.group().match());
+        Group group = new Group(matcher, query.group(), context);
         return new Group.Aggregator(group, query);
     }
 
@@ -162,14 +169,17 @@ public class Matcher {
 
         private final Matcher matcher;
         private final GraqlMatch.Aggregate query;
+        private final Context.Query context;
 
-        public Aggregator(Matcher matcher, GraqlMatch.Aggregate query) {
+        public Aggregator(Matcher matcher, GraqlMatch.Aggregate query, Context.Query context) {
             this.matcher = matcher;
             this.query = query;
+            this.context = context;
+            this.context.producer(EXHAUSTIVE);
         }
 
         public Numeric execute() {
-            ResourceIterator<ConceptMap> answers = matcher.execute();
+            ResourceIterator<ConceptMap> answers = matcher.execute(context);
             GraqlToken.Aggregate.Method method = query.method();
             UnboundVariable var = query.var();
             return aggregate(answers, method, var);
@@ -576,16 +586,19 @@ public class Matcher {
 
         private final Matcher matcher;
         private final GraqlMatch.Group query;
+        private final Context.Query context;
 
-        public Group(Matcher matcher, GraqlMatch.Group query) {
+        public Group(Matcher matcher, GraqlMatch.Group query, Context.Query context) {
             this.matcher = matcher;
             this.query = query;
+            this.context = context;
+            this.context.producer(EXHAUSTIVE);
         }
 
         public ResourceIterator<ConceptMapGroup> execute() {
             // TODO: Replace this temporary implementation of Graql Match Group query with a native grouping traversal
             List<ConceptMapGroup> answerGroups = new ArrayList<>();
-            matcher.execute().stream().collect(groupingBy(a -> a.get(query.var())))
+            matcher.execute(context).stream().collect(groupingBy(a -> a.get(query.var())))
                     .forEach((o, cm) -> answerGroups.add(new ConceptMapGroup(o, cm)));
             return iterate(answerGroups);
         }
@@ -603,7 +616,7 @@ public class Matcher {
             public ResourceIterator<NumericGroup> execute() {
                 // TODO: Replace this temporary implementation of Graql Match Group query with a native grouping traversal
                 List<NumericGroup> numericGroups = new ArrayList<>();
-                group.matcher.execute().stream()
+                group.matcher.execute(group.context).stream()
                         .collect(groupingBy(a -> a.get(query.group().var()), aggregator(query.method(), query.var())))
                         .forEach((o, n) -> numericGroups.add(new NumericGroup(o, n)));
                 return iterate(numericGroups);
