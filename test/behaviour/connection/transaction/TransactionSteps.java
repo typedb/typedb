@@ -20,6 +20,7 @@ package grakn.core.test.behaviour.connection.transaction;
 
 import grakn.core.Grakn;
 import grakn.core.common.parameters.Arguments;
+import grakn.core.common.parameters.Options;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -51,21 +52,34 @@ public class TransactionSteps {
 
     @When("(for each )session(,) open(s) transaction(s) of type: {transaction_type}")
     public void session_opens_transaction_of_type(Arguments.Transaction.Type type) {
-        for_each_session_open_transactions_of_type(list(type));
+        for_each_session_open_transactions_of_type(list(type), false);
     }
+
+    @When("(for each )session(,) open(s) transaction(s) with reasoning of type: {transaction_type}")
+    public void session_opens_transaction_with_reasoning_of_type(Arguments.Transaction.Type type) {
+        for_each_session_open_transactions_of_type(list(type), true);
+    }
+
 
     @When("(for each )session(,) open transaction(s) of type:")
     public void for_each_session_open_transactions_of_type(List<Arguments.Transaction.Type> types) {
+        for_each_session_open_transactions_of_type(types, false);
+    }
+    @When("(for each )session(,) open transaction(s) with reasoning of type:")
+    public void for_each_session_open_transactions_with_reasoning_of_type(List<Arguments.Transaction.Type> types) {
+        for_each_session_open_transactions_of_type(types, true);
+    }
+
+    private void for_each_session_open_transactions_of_type(List<Arguments.Transaction.Type> types, boolean reasoning) {
         for (Grakn.Session session : sessions) {
             List<Grakn.Transaction> transactions = new ArrayList<>();
             for (Arguments.Transaction.Type type : types) {
-                Grakn.Transaction transaction = session.transaction(type);
+                Grakn.Transaction transaction = session.transaction(type, (new Options.Transaction()).infer(reasoning));
                 transactions.add(transaction);
             }
             sessionsToTransactions.put(session, transactions);
         }
     }
-
 
     @When("(for each )session(,) open transaction(s) of type; throws exception: {transaction_type}")
     public void for_each_session_open_transactions_of_type_throws_exception(Arguments.Transaction.Type type) {

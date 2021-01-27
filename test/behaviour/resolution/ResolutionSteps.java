@@ -90,7 +90,7 @@ public class ResolutionSteps {
     public void answer_size_in_reasoned_database_is(int expectedCount) {
         int resultCount;
         Grakn.Transaction tx = getTransaction(reasonedSession);
-        answers = tx.query().match(queryToTest, (new Options.Query().infer(true))).toSet();
+        answers = tx.query().match(queryToTest).toSet();
         resultCount = answers.size();
         if (expectedCount != resultCount) {
             String msg = String.format("Query had an incorrect number of answers. Expected [%d] answers, " +
@@ -103,10 +103,10 @@ public class ResolutionSteps {
     public void answers_are_consistent_across_n_executions_in_reasoned_database(int executionCount) {
         Set<ConceptMap> oldAnswers;
         Grakn.Transaction tx = getTransaction(reasonedSession);
-        oldAnswers = tx.query().match(queryToTest, (new Options.Query().infer(true))).toSet();
+        oldAnswers = tx.query().match(queryToTest).toSet();
         for (int i = 0; i < executionCount - 1; i++) {
             try (Grakn.Transaction transaction = reasonedSession.transaction(Arguments.Transaction.Type.READ)) {
-                Set<ConceptMap> answers = transaction.query().match(queryToTest, (new Options.Query().infer(true))).toSet();
+                Set<ConceptMap> answers = transaction.query().match(queryToTest).toSet();
                 assertEquals(oldAnswers, answers);
             }
         }
@@ -117,8 +117,7 @@ public class ResolutionSteps {
         assertNotNull("A graql query must have been previously loaded in order to test answer equivalence.", queryToTest);
         assertNotNull("There are no previous answers to test against; was the reference query ever executed?", answers);
         Grakn.Transaction tx = getTransaction(reasonedSession);
-        Set<ConceptMap> newAnswers = tx.query().match(Graql.parseQuery(equivalentQuery).asMatch(),
-                                                      (new Options.Query().infer(true))).toSet();
+        Set<ConceptMap> newAnswers = tx.query().match(Graql.parseQuery(equivalentQuery).asMatch()).toSet();
         assertEquals(answers, newAnswers);
     }
 
@@ -137,7 +136,7 @@ public class ResolutionSteps {
             Grakn.Transaction tx = getTransaction(session);
             GraqlQuery query = Graql.parseQuery(String.join("\n", queryStatements));
             if (query instanceof GraqlMatch) {
-                tx.query().match(query.asMatch(), (new Options.Query().infer(true)));
+                tx.query().match(query.asMatch());
             } else if (query instanceof GraqlInsert) {
                 tx.query().insert(query.asInsert());
             } else if (query instanceof GraqlDefine) {
