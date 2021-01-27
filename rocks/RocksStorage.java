@@ -52,11 +52,11 @@ public abstract class RocksStorage implements Storage {
     private static final Logger LOG = LoggerFactory.getLogger(RocksStorage.class);
     private static final byte[] EMPTY_ARRAY = new byte[]{};
 
+    protected final ConcurrentSet<RocksIterator<?>> iterators;
     protected final Transaction storageTransaction;
     protected final ReadOptions readOptions;
     protected final boolean isReadOnly;
 
-    private final ConcurrentSet<RocksIterator<?>> iterators;
     private final ConcurrentLinkedQueue<org.rocksdb.RocksIterator> recycled;
     private final OptimisticTransactionOptions transactionOptions;
     private final WriteOptions writeOptions;
@@ -113,14 +113,6 @@ public abstract class RocksStorage implements Storage {
     @Override
     public void mergeUntracked(byte[] key, byte[] value) {
         throw exception(ILLEGAL_OPERATION);
-    }
-
-    @Override
-    public <G> ResourceIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
-        assert isOpen();
-        RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
-        iterators.add(iterator);
-        return iterator.onFinalise(iterator::close);
     }
 
     org.rocksdb.RocksIterator getInternalRocksIterator() {
@@ -183,6 +175,14 @@ public abstract class RocksStorage implements Storage {
                 throw exception(e);
             }
         }
+
+        @Override
+        public <G> ResourceIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
+            assert isOpen();
+            RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
+            iterators.add(iterator);
+            return iterator.onFinalise(iterator::close);
+        }
     }
 
     static abstract class TransactionBounded extends RocksStorage {
@@ -239,6 +239,14 @@ public abstract class RocksStorage implements Storage {
             } finally {
                 readWriteLock.unlockWrite();
             }
+        }
+
+        @Override
+        public <G> ResourceIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
+            assert isOpen();
+            RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
+            iterators.add(iterator);
+            return iterator;
         }
 
         @Override
