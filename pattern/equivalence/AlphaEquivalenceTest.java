@@ -266,21 +266,6 @@ public class AlphaEquivalenceTest {
     }
 
     @Test
-    public void test_relation_with_role_hierarchies(){
-        List<ThingVariable> variables = Stream.of(
-                parseVariables("r1","$r1 ($x, $y) isa parentship"),
-                parseVariables("r2","$r2 ($x, child: $y) isa parentship"),
-                parseVariables("r3","$r3 (parent: $x, child: $y) isa parentship"),
-                parseVariables("r4","$r4 (father: $x, child: $y) isa parentship"),
-                parseVariables("r5","$r5 (parent: $x, daughter: $y) isa parentship"),
-                parseVariables("r6","$r6 (father: $x, daughter: $y) isa parentship")
-        )
-                .map(Variable::asThing)
-                .collect(Collectors.toList());
-        variables.forEach(var -> testAlphaEquivalenceSymmetricReflexive(var.asThing(), variables, new HashSet<>()));
-    }
-
-    @Test
     public void test_relation_with_typed_roleplayers(){
         List<ThingVariable> variables = Stream.of(
                 parseAnonymousRelationVariable("($x, $y)", "$x isa organisation"),
