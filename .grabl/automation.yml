@@ -45,9 +45,9 @@ build:
     build:
       image: graknlabs-ubuntu-20.04
       command: |
-        bazel build --config=rbe //...
-        bazel run --config=rbe @graknlabs_dependencies//tool/checkstyle:test-coverage
-        bazel test --config=rbe $(bazel query 'kind(checkstyle_test, //...)') --test_output=streamed
+        bazel build //...
+        bazel run @graknlabs_dependencies//tool/checkstyle:test-coverage
+        bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=streamed
     build-dependency:
       image: graknlabs-ubuntu-20.04
       command: |
@@ -69,17 +69,34 @@ build:
         bazel test --config=rbe //test/integration/migrator/... --test_output=streamed
         bazel test --config=rbe //test/integration/logic/... --test_output=streamed
       # bazel test //test/integration/traversal/... --test_output=streamed
-    test-behaviour:
+    test-behaviour-connection:
       image: graknlabs-ubuntu-20.04
       command: |
         bazel test --config=rbe //test/behaviour/connection/... --test_output=streamed
+
+    test-behaviour-concept:
+      image: graknlabs-ubuntu-20.04
+      command: |
         bazel test --config=rbe //test/behaviour/concept/... --test_output=streamed
+
+    test-behaviour-match:
+      image: graknlabs-ubuntu-20.04
+      command: |
         bazel test --config=rbe //test/behaviour/graql/language/match/... --test_output=streamed
         bazel test --config=rbe //test/behaviour/graql/language/get/... --test_output=streamed
+
+    test-behaviour-writable:
+      image: graknlabs-ubuntu-20.04
+      command: |
+        bazel test --config=rbe //test/behaviour/graql/language/insert/... --test_output=streamed
+        bazel test --config=rbe //test/behaviour/graql/language/delete/... --test_output=streamed
+
+    test-behaviour-definable:
+      image: graknlabs-ubuntu-20.04
+      command: |
         bazel test --config=rbe //test/behaviour/graql/language/define/... --test_output=streamed
         bazel test --config=rbe //test/behaviour/graql/language/undefine/... --test_output=streamed
-        bazel test --config=rbe //test/behaviour/graql/language/insert/... --test_output=streamed
-      # TODO: add more Graql Language tests as they are fixed
+
     test-assembly-linux-targz:
       image: graknlabs-ubuntu-20.04
       filter:
@@ -107,9 +124,9 @@ build:
       command: |
         export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
-        bazel run --config=rbe --define version=$(git rev-parse HEAD) //server:deploy-linux-targz -- snapshot
-        bazel run --config=rbe --define version=$(git rev-parse HEAD) //server:deploy-mac-zip -- snapshot
-        bazel run --config=rbe --define version=$(git rev-parse HEAD) //server:deploy-windows-zip -- snapshot
+        bazel run --define version=$(git rev-parse HEAD) //server:deploy-linux-targz -- snapshot
+        bazel run --define version=$(git rev-parse HEAD) //server:deploy-mac-zip -- snapshot
+        bazel run --define version=$(git rev-parse HEAD) //server:deploy-windows-zip -- snapshot
     deploy-apt-snapshot:
       image: graknlabs-ubuntu-20.04
       filter:
@@ -228,6 +245,6 @@ release:
       command: |
         export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
-        bazel run --config=rbe --define version=$(cat VERSION) //server:deploy-linux-targz -- release
-        bazel run --config=rbe --define version=$(cat VERSION) //server:deploy-mac-zip -- release
-        bazel run --config=rbe --define version=$(cat VERSION) //server:deploy-windows-zip -- release
+        bazel run --define version=$(cat VERSION) //server:deploy-linux-targz -- release
+        bazel run --define version=$(cat VERSION) //server:deploy-mac-zip -- release
+        bazel run --define version=$(cat VERSION) //server:deploy-windows-zip -- release

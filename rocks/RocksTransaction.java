@@ -143,7 +143,6 @@ public abstract class RocksTransaction implements Grakn.Transaction {
     public static class Schema extends RocksTransaction {
 
         protected final RocksStorage.Schema schemaStorage;
-
         protected final RocksStorage.Data dataStorage;
 
         protected Schema(RocksSession.Schema session, Arguments.Transaction.Type type,
@@ -243,6 +242,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
     }
 
     public static class Data extends RocksTransaction {
+
         protected final RocksStorage.Data dataStorage;
         private final RocksDatabase.Cache cache;
 

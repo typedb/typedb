@@ -38,7 +38,7 @@ java_test(
     data = [
         "@graknlabs_behaviour//graql/language:delete.feature",
     ],
-    size = "small",
+    size = "large", #TODO: Change back to medium when Query Planner has been optimised.
     visibility = ["//visibility:public"],
     resources = [
         "//common/test:logback"
