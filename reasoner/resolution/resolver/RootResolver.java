@@ -190,12 +190,13 @@ public class RootResolver extends Resolver<RootResolver> {
         ResourceIterator<ConceptMap> traversalProducer = traversalEngine.iterator(conjunction.traversal())
                 .map(conceptMgr::conceptMap);
         ResponseProducer responseProducer = new ResponseProducer(traversalProducer, iteration);
-        Request toDownstream = Request.create(request.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
-                                              UpstreamVars.Initial.of(request.answerBounds().conceptMap())
-                                                      .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
-                                              new ResolutionAnswer.Derivation(map()), 0);
-        responseProducer.addDownstreamProducer(toDownstream);
-
+        if (!plan.isEmpty()) {
+            Request toDownstream = Request.create(request.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
+                                                  UpstreamVars.Initial.of(request.answerBounds().conceptMap())
+                                                          .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
+                                                  new ResolutionAnswer.Derivation(map()), 0);
+            responseProducer.addDownstreamProducer(toDownstream);
+        }
         return responseProducer;
     }
 
