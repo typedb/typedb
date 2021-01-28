@@ -45,7 +45,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private int iteration;
 
     public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverMgr) {
-        this.rootResolver = resolverMgr.createRoot(conjunction, this::requestAnswered, this::requestFailed);
+        this.rootResolver = resolverMgr.createRoot(conjunction, this::requestAnswered, this::requestExhausted);
         this.resolveRequest = Request.create(new Request.Path(rootResolver), Root.create(), EMPTY);
         this.queue = null;
         this.iteration = 0;
@@ -69,7 +69,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         queue.put(answer.derived().withInitial());
     }
 
-    private void requestFailed(int iteration) {
+    private void requestExhausted(int iteration) {
         LOG.trace("Failed to find answer to request in iteration: " + iteration);
 
         if (!done && iteration == this.iteration && !mustReiterate()) {
