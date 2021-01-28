@@ -59,12 +59,6 @@ import static java.time.Duration.between;
 
 public class GraphPlanner implements Planner {
 
-    // TODO: before we optimise for the first time, we can set the solver variables
-    //       with initial values, computed by a greedy algorithm. This would
-    //       allow the solver to skip the long processing to find the first
-    //       "feasible" plan. I.e. the solver will start optimising from a
-    //       "feasible" plan and get much more optimal at every cycle.
-
     private static final Logger LOG = LoggerFactory.getLogger(GraphPlanner.class);
 
     static final long TIME_LIMIT_MILLIS = 100;
