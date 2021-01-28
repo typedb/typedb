@@ -121,6 +121,8 @@ public abstract class ProcedureEdge<
 
     public boolean onlyStartsFromRelation() { return false; }
 
+    public boolean onlyEndsAtRelation() { return false; }
+
     public boolean onlyStartsFromAttributeType() { return false; }
 
     public boolean onlyStartsFromRelationType() { return false; }
@@ -935,6 +937,11 @@ public abstract class ProcedureEdge<
                                              Traversal.Parameters params) {
                         return fromVertex.asThing().ins().edge(RELATING, toVertex.asThing()) != null;
                     }
+
+                    @Override
+                    public boolean onlyEndsAtRelation() {
+                        return true;
+                    }
                 }
             }
 
@@ -1115,6 +1122,11 @@ public abstract class ProcedureEdge<
                                     e -> e.from().equals(rel) && !withinScope.contains(e.optimised().get())
                             );
                         }
+                    }
+
+                    @Override
+                    public boolean onlyEndsAtRelation() {
+                        return true;
                     }
                 }
             }
