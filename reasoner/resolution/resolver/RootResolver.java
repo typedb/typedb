@@ -62,17 +62,17 @@ import static grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars;
 public class RootResolver extends Resolver<RootResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(RootResolver.class);
 
-    private final Conjunction conjunction;
-    private final Set<Concludable> concludables;
-    private final Consumer<ResolutionAnswer> onAnswer;
-    private final Consumer<Integer> onExhausted;
-    private List<Resolvable> plan;
-    private final Actor<ResolutionRecorder> resolutionRecorder;
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
+    private final Conjunction conjunction;
+    private final Planner planner;
+    private final Actor<ResolutionRecorder> resolutionRecorder;
+    private final Consumer<ResolutionAnswer> onAnswer;
+    private final Consumer<Integer> onExhausted;
+    private final Set<Concludable> concludables;
+    private final List<Resolvable> plan;
     private boolean isInitialised;
     private ResponseProducer responseProducer;
-    private final Planner planner;
     private final Map<Resolvable, AlphaEquivalentResolver> downstreamResolvers;
 
     public RootResolver(Actor<RootResolver> self, Conjunction conjunction, Consumer<ResolutionAnswer> onAnswer,
@@ -87,7 +87,8 @@ public class RootResolver extends Resolver<RootResolver> {
         this.logicMgr = logicMgr;
         this.planner = planner;
         this.isInitialised = false;
-        this.concludables = Concludable.create(conjunction);
+        this.concludables = Iterators.iterate(Concludable.create(conjunction))
+                .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext()).toSet();
         this.plan = new ArrayList<>();
         this.downstreamResolvers = new HashMap<>();
     }
@@ -169,16 +170,16 @@ public class RootResolver extends Resolver<RootResolver> {
 
     @Override
     protected void initialiseDownstreamActors() {
-        Set<Concludable> concludablesWithApplicableRules = Iterators.iterate(concludables)
-                .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext()).toSet();
-        Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction, concludablesWithApplicableRules);
-        Set<Resolvable> resolvables = new HashSet<>();
-        resolvables.addAll(concludablesWithApplicableRules);
-        resolvables.addAll(retrievables);
-        plan = planner.plan(resolvables);
-        iterate(plan).forEachRemaining(resolvable -> {
-            downstreamResolvers.put(resolvable, registry.registerResolvable(resolvable));
-        });
+        if (!concludables.isEmpty()) {
+            Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction, concludables);
+            Set<Resolvable> resolvables = new HashSet<>();
+            resolvables.addAll(concludables);
+            resolvables.addAll(retrievables);
+            plan.addAll(planner.plan(resolvables));
+            iterate(plan).forEachRemaining(resolvable -> {
+                downstreamResolvers.put(resolvable, registry.registerResolvable(resolvable));
+            });
+        }
     }
 
     @Override
