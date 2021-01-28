@@ -399,10 +399,14 @@ public class Rule {
                 SystemReference relationRef = SystemReference.of(0);
                 Identifier.Variable relationId = Identifier.Variable.of(relationRef);
                 traversal.isa(relationId, Identifier.Variable.label(relationType.getLabel().name()), false);
+                Set<Identifier.Variable> playersWithIds = new HashSet<>();
                 players.forEach(rp -> {
                     // note: NON-transitive role player types - we require an exact role being played
                     traversal.rolePlayer(relationId, rp.playerIdentifier, set(rp.roleType.getLabel()), rp.repetition);
-                    traversal.iid(rp.playerIdentifier, rp.player.getIID());
+                    if (!playersWithIds.contains(rp.playerIdentifier)) {
+                        traversal.iid(rp.playerIdentifier, rp.player.getIID());
+                        playersWithIds.add(rp.playerIdentifier);
+                    }
                 });
                 ResourceIterator<ConceptMap> iterator = traversalEng.iterator(traversal).map(conceptMgr::conceptMap);
                 if (iterator.hasNext()) return Optional.of(iterator.next().get(relationRef).asRelation());

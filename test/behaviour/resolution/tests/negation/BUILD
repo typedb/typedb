@@ -15,40 +15,32 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//test/behaviour/graql/language/define:__subpackages__"])
-
+package(default_visibility = ["//test/behaviour:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_library")
 
-host_compatible_java_library(
-    name = "steps",
+java_test(
+    name = "test",
     srcs = [
-        "GraqlSteps.java"
+        "NegationTest.java",
     ],
+    test_class = "grakn.core.test.behaviour.resolution.tests.negation.NegationTest",
     deps = [
-        # Package dependencies
-        "//test/behaviour/exception",
-        "//test/behaviour/connection:steps",
-        "//common/test:util",
-
-        # External dependencies from Grakn Labs
-        "@graknlabs_graql//java:graql",
-        "@graknlabs_graql//java/pattern",
-        "@graknlabs_graql//java/query",
-        "@graknlabs_common//:common",
-
         # External dependencies from Maven
-        "@maven//:junit_junit",
-        "@maven//:io_cucumber_cucumber_java",
-    ],
-    native_libraries_deps = [
-        "//concept:concept",
+        "@maven//:io_cucumber_cucumber_junit",
     ],
     runtime_deps = [
-        "//test/behaviour/connection/database:steps",
-        "//test/behaviour/connection/transaction:steps",
+        "//test/behaviour/connection:steps",
+        "//test/behaviour/connection/session:steps",
+        "//test/behaviour/config:parameters",
+        "//test/behaviour/resolution:steps",
     ],
-    visibility = ["//visibility:public"],
+    data = [
+        "@graknlabs_behaviour//graql/reasoner:negation.feature",
+    ],
+    resources = [
+        "//common/test:logback"
+    ],
+    resource_strip_prefix = "common/test",
 )
 
 checkstyle_test(
