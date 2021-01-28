@@ -119,9 +119,9 @@ public class PlaysConstraint extends TypeConstraint {
 
     @Override
     public String toString() {
-        return owner.toString() + SPACE + PLAYS
-                + (relation().isPresent() ? "" + SPACE + relationType + COLON : "") + SPACE + roleType.toString()
-                + (overridden().isPresent() ? "" + SPACE + AS + SPACE + overriddenRoleType.toString() : "");
+        return owner.toString() + SPACE + PLAYS + SPACE
+                + (relationType != null ? "" + relationType + COLON : "") + roleType.toString()
+                + (overriddenRoleType != null ? "" + SPACE + AS + SPACE + overriddenRoleType.toString() : "");
     }
 
     @Override

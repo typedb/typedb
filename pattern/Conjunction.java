@@ -52,6 +52,8 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.UNBOUNDED_NEGATION;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.CONTRADICTORY_BOUND_VARIABLE;
 import static grakn.core.common.iterator.Iterators.iterate;
+import static graql.lang.common.GraqlToken.Char.CURLY_CLOSE;
+import static graql.lang.common.GraqlToken.Char.CURLY_OPEN;
 import static graql.lang.common.GraqlToken.Char.SEMICOLON;
 import static graql.lang.common.GraqlToken.Char.SPACE;
 import static java.util.Collections.unmodifiableMap;
@@ -173,7 +175,9 @@ public class Conjunction implements Pattern, Cloneable {
     @Override
     public String toString() {
         return variableSet.stream().flatMap(variable -> variable.constraints().stream()).map(Object::toString)
-                .collect(Collectors.joining("" + SEMICOLON + SPACE));
+                .collect(Collectors.joining("" + SEMICOLON + SPACE,
+                                            "" + CURLY_OPEN + SPACE,
+                                            "" + SPACE + CURLY_CLOSE));
     }
 
     @Override

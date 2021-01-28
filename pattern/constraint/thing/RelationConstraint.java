@@ -214,7 +214,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
 
         @Override
         public String toString() {
-            return (roleType().isPresent() ? roleType.toString() + COLON + SPACE : "") + player.toString();
+            return (roleType != null ? roleType.toString() + COLON : "") + player.toString();
         }
 
         @Override
@@ -233,7 +233,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
 
     @Override
     public String toString() {
-        return owner.toString() + SPACE + PARAN_OPEN
+        return owner.toString() + PARAN_OPEN
                 + rolePlayers.stream().map(RolePlayer::toString).collect(Collectors.joining("" + COMMA + SPACE))
                 + PARAN_CLOSE;
     }

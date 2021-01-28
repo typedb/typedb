@@ -116,7 +116,7 @@ public class OwnsConstraint extends TypeConstraint {
     @Override
     public String toString() {
         return owner.toString() + SPACE + OWNS + SPACE + attributeType.toString()
-                + (overridden().isPresent() ? "" + SPACE + AS + SPACE + overriddenAttributeType.toString() : "")
+                + (overriddenAttributeType != null ? "" + SPACE + AS + SPACE + overriddenAttributeType.toString() : "")
                 + (isKey ? "" + SPACE + IS_KEY : "");
     }
 

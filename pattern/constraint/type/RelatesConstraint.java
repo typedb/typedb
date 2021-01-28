@@ -111,7 +111,7 @@ public class RelatesConstraint extends TypeConstraint {
     @Override
     public String toString() {
         return owner.toString() + SPACE + RELATES + SPACE + roleType.toString()
-                + (overridden().isPresent() ? "" + SPACE + AS + SPACE + overriddenRoleType.toString() : "");
+                + (overriddenRoleType != null ? "" + SPACE + AS + SPACE + overriddenRoleType.toString() : "");
     }
 
     @Override
