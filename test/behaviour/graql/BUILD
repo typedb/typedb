@@ -27,6 +27,7 @@ host_compatible_java_library(
     ],
     deps = [
         # Package dependencies
+        "//test/behaviour/exception",
         "//test/behaviour/connection:steps",
         "//common/test:util",
 

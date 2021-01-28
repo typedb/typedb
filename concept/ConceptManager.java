@@ -33,8 +33,8 @@ import grakn.core.concept.type.impl.EntityTypeImpl;
 import grakn.core.concept.type.impl.RelationTypeImpl;
 import grakn.core.concept.type.impl.ThingTypeImpl;
 import grakn.core.concept.type.impl.TypeImpl;
+import grakn.core.concurrent.producer.ProducerIterator;
 import grakn.core.graph.GraphManager;
-import grakn.core.graph.common.Encoding;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
@@ -50,6 +50,12 @@ import java.util.Map;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Transaction.UNSUPPORTED_OPERATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MISSING;
+import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
+import static grakn.core.concurrent.common.ExecutorService.PARALLELISATION_FACTOR;
+import static grakn.core.concurrent.producer.Producers.async;
+import static grakn.core.concurrent.producer.Producers.produce;
+import static grakn.core.graph.common.Encoding.Vertex.Thing.ROLE;
 
 public final class ConceptManager {
 
@@ -175,9 +181,21 @@ public final class ConceptManager {
     }
 
     public void validateThings() {
-        graphMgr.data().vertices()
-                .filter(v -> !v.isInferred() && v.isModified() && !v.encoding().equals(Encoding.Vertex.Thing.ROLE))
-                .forEachRemaining(v -> ThingImpl.of(v).validate());
+        ResourceIterator<Thing> iterator = graphMgr.data().vertices()
+                .filter(v -> !v.isInferred() && v.isModified() && !v.encoding().equals(ROLE)).map(ThingImpl::of);
+        List<List<Thing>> lists = new ArrayList<>();
+        for (int i = 0; i < PARALLELISATION_FACTOR; i++) lists.add(new ArrayList<>());
+        int i = 0;
+        while (iterator.hasNext()) {
+            lists.get(i).add(iterator.next());
+            i++;
+            if (i == PARALLELISATION_FACTOR) i = 0;
+        }
+
+        ProducerIterator<Void> validationIterator = produce(async(iterate(lists).map(
+                list -> iterate(list).map(t -> { t.validate(); return (Void) null; })
+        ), PARALLELISATION_FACTOR), EXHAUSTIVE);
+        while (validationIterator.hasNext()) validationIterator.next();
     }
 
     public GraknException exception(ErrorMessage error) {

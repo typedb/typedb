@@ -54,19 +54,35 @@ public class Mapping {
         return Objects.hash(mapping, reverseMapping);
     }
 
-    public ConceptMap transform(ConceptMap toTransform) {
-        return undirectedTransform(toTransform, mapping);
+    @Override
+    public String toString() {
+        return "Mapping{" +
+                "mapping=" + mapping +
+                '}';
     }
 
-    public ConceptMap unTransform(ConceptMap conceptMap) {
-        return undirectedTransform(conceptMap, reverseMapping);
-    }
-
-    private static ConceptMap undirectedTransform(ConceptMap conceptMap, Map<Reference.Name, Reference.Name> mapping) {
+    public ConceptMap transform(ConceptMap conceptMap) {
         Map<Reference.Name, Concept> transformed = new HashMap<>();
-        for (Map.Entry<Reference.Name, Reference.Name> e : mapping.entrySet()) {
-            transformed.put(e.getValue(), conceptMap.get(e.getKey()));
+        for (Map.Entry<Reference.Name, ? extends Concept> entry : conceptMap.concepts().entrySet()) {
+            Reference.Name ref = entry.getKey();
+            if (mapping.containsKey(ref)) {
+                Concept concept = entry.getValue();
+                transformed.put(mapping.get(ref), concept);
+            }
         }
         return new ConceptMap(transformed);
     }
+
+    public ConceptMap unTransform(ConceptMap conceptMap) {
+        assert reverseMapping.size() == conceptMap.concepts().size();
+        Map<Reference.Name, Concept> transformed = new HashMap<>();
+        for (Map.Entry<Reference.Name, ? extends Concept> entry : conceptMap.concepts().entrySet()) {
+            Reference.Name ref = entry.getKey();
+            assert reverseMapping.containsKey(ref);
+            Concept concept = entry.getValue();
+            transformed.put(reverseMapping.get(ref), concept);
+        }
+        return new ConceptMap(transformed);
+    }
+
 }

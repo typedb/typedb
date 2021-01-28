@@ -20,12 +20,16 @@ package grakn.core.concurrent.producer;
 
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.parameters.Arguments;
 
 import java.util.List;
 
 import static grakn.common.collection.Collections.list;
 
 public class Producers {
+
+    public static final int DEFAULT_BATCH_SIZE = 32;
+    public static final int MAX_BATCH_SIZE = (Integer.MAX_VALUE / 2) - 1;
 
     public static <T> BaseProducer<T> empty() { return producer(Iterators.empty()); }
 
@@ -37,19 +41,19 @@ public class Producers {
         return new BaseProducer<>(iterator);
     }
 
-    public static <T> ProducerIterator<T> produce(Producer<T> producer) {
-        return new ProducerIterator<>(list(producer));
+    public static <T> ProducerIterator<T> produce(Producer<T> producer, Arguments.Query.Producer mode) {
+        return produce(list(producer), mode);
     }
 
-    public static <T> ProducerIterator<T> produce(Producer<T> producer, int bufferMinSize, int bufferMaxSize) {
-        return new ProducerIterator<>(list(producer), bufferMinSize, bufferMaxSize);
+    public static <T> ProducerIterator<T> produce(Producer<T> producer, int batchSize) {
+        return produce(list(producer), batchSize);
     }
 
-    public static <T> ProducerIterator<T> produce(List<Producer<T>> producers) {
-        return new ProducerIterator<>(producers);
+    public static <T> ProducerIterator<T> produce(List<Producer<T>> producers, Arguments.Query.Producer mode) {
+        return new ProducerIterator<>(producers, mode.isIncremental() ? DEFAULT_BATCH_SIZE : MAX_BATCH_SIZE);
     }
 
-    public static <T> ProducerIterator<T> produce(List<Producer<T>> producers, int bufferMinSize, int bufferMaxSize) {
-        return new ProducerIterator<>(producers, bufferMinSize, bufferMaxSize);
+    public static <T> ProducerIterator<T> produce(List<Producer<T>> producers, int batchSize) {
+        return new ProducerIterator<>(producers, batchSize);
     }
 }

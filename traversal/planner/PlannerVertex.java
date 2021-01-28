@@ -42,14 +42,18 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     private final String varPrefix = "vertex_var_" + id() + "_";
     private final String conPrefix = "vertex_con_" + id() + "_";
-    private int valueIsStartingVertex;
-    private int valueIsEndingVertex;
-    private int valueHasIncomingEdges;
-    private int valueHasOutgoingEdges;
+    private int varIsStartingVertex_init;
+    private int varIsEndingVertex_init;
+    private int varHasIncomingEdges_init;
+    private int varHasOutgoingEdges_init;
+    private int varIsStartingVertex_result;
+    private int varIsEndingVertex_result;
+    private int varHasIncomingEdges_result;
+    private int varHasOutgoingEdges_result;
     private boolean isInitialisedVariables;
     private boolean isInitialisedConstraints;
-    private double costPrevious;
     private double costNext;
+    double costLastRecorded;
     MPVariable varIsStartingVertex;
     MPVariable varIsEndingVertex;
     MPVariable varHasIncomingEdges;
@@ -60,25 +64,25 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         this.planner = planner;
         isInitialisedVariables = false;
         isInitialisedConstraints = false;
-        costPrevious = 0.01; // non-zero value for safe division
+        costLastRecorded = 0.01; // non-zero value for safe division
     }
 
     abstract void updateObjective(GraphManager graph);
 
     public boolean isStartingVertex() {
-        return valueIsStartingVertex == 1;
+        return varIsStartingVertex_result == 1;
     }
 
     public boolean isEndingVertex() {
-        return valueIsEndingVertex == 1;
+        return varIsEndingVertex_result == 1;
     }
 
     public boolean hasIncomingEdges() {
-        return valueHasIncomingEdges == 1;
+        return varHasIncomingEdges_result == 1;
     }
 
     public boolean hasOutgoingEdges() {
-        return valueHasOutgoingEdges == 1;
+        return varHasOutgoingEdges_result == 1;
     }
 
     public boolean isInitialisedVariables() {
@@ -152,35 +156,78 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         double coeff = cost * Math.pow(planner.branchingFactor, exp);
         planner.objective().setCoefficient(varIsStartingVertex, coeff);
         costNext = cost;
-        planner.updateCostNext(costPrevious, costNext);
+        planner.updateCostNext(costLastRecorded, costNext);
     }
 
     void recordCost() {
         if (costNext == 0) costNext = 0.01;
-        costPrevious = costNext;
+        costLastRecorded = costNext;
     }
 
-    void recordValues() {
-        valueIsStartingVertex = (int) Math.round(varIsStartingVertex.solutionValue());
-        valueIsEndingVertex = (int) Math.round(varIsEndingVertex.solutionValue());
-        valueHasIncomingEdges = (int) Math.round(varHasIncomingEdges.solutionValue());
-        valueHasOutgoingEdges = (int) Math.round(varHasOutgoingEdges.solutionValue());
+    void recordResults() {
+        varIsStartingVertex_result = (int) Math.round(varIsStartingVertex.solutionValue());
+        varIsEndingVertex_result = (int) Math.round(varIsEndingVertex.solutionValue());
+        varHasIncomingEdges_result = (int) Math.round(varHasIncomingEdges.solutionValue());
+        varHasOutgoingEdges_result = (int) Math.round(varHasOutgoingEdges.solutionValue());
         assert !(isStartingVertex() && isEndingVertex());
         assert (isStartingVertex() ^ hasIncomingEdges());
         assert (isEndingVertex() ^ hasOutgoingEdges());
     }
 
-    public void setStartingVertex() {
-        valueIsStartingVertex = 1;
-        valueIsEndingVertex = 0;
+    void resetInitialValue() {
+        varIsStartingVertex_init = 0;
+        varIsEndingVertex_init = 0;
+        varHasIncomingEdges_init = 0;
+        varHasOutgoingEdges_init = 0;
     }
 
-    public void setHasOutGoingEdges() {
-        valueHasOutgoingEdges = 1;
+    void setStartingVertexInitial() {
+        varIsStartingVertex_init = 1;
+        varIsEndingVertex_init = 0;
     }
 
-    public void setHasIncomingEdges() {
-        valueHasIncomingEdges = 1;
+    void setEndingVertexInitial() {
+        varIsEndingVertex_init = 1;
+        assert varIsStartingVertex_init == 0;
+        assert varHasOutgoingEdges_init == 0;
+        assert varHasIncomingEdges_init == 1;
+    }
+
+    void setHasOutgoingEdgesInitial() {
+        varHasOutgoingEdges_init = 1;
+        assert varIsEndingVertex_init == 0;
+    }
+
+    void setHasIncomingEdgesInitial() {
+        varHasIncomingEdges_init = 1;
+        assert varIsStartingVertex_init == 0;
+    }
+
+    int recordInitial(MPVariable[] variables, double[] initialValues, int index) {
+        variables[index] = varIsStartingVertex;
+        variables[index + 1] = varIsEndingVertex;
+        variables[index + 2] = varHasIncomingEdges;
+        variables[index + 3] = varHasOutgoingEdges;
+
+        initialValues[index] = varIsStartingVertex_init;
+        initialValues[index + 1] = varIsEndingVertex_init;
+        initialValues[index + 2] = varHasIncomingEdges_init;
+        initialValues[index + 3] = varHasOutgoingEdges_init;
+
+        return index + 4;
+    }
+
+    void setStartingVertex() {
+        varIsStartingVertex_result = 1;
+        varIsEndingVertex_result = 0;
+    }
+
+    void setHasOutGoingEdges() {
+        varHasOutgoingEdges_result = 1;
+    }
+
+    void setHasIncomingEdges() {
+        varHasIncomingEdges_result = 1;
     }
 
     public PlannerVertex.Thing asThing() {

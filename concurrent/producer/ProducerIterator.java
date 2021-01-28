@@ -37,8 +37,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ProducerIterator<T> extends AbstractResourceIterator<T> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProducerIterator.class);
-    private static final int BUFFER_MIN_SIZE = 32;
-    private static final int BUFFER_MAX_SIZE = 64;
 
     // TODO: why does 'producers' have to be ConcurrentLinkedQueue? see method recycle() below
     private final ConcurrentLinkedQueue<Producer<T>> producers;
@@ -47,15 +45,11 @@ public class ProducerIterator<T> extends AbstractResourceIterator<T> {
     private T next;
     private State state;
 
-    public ProducerIterator(List<Producer<T>> producers) {
-        this(producers, BUFFER_MIN_SIZE, BUFFER_MAX_SIZE);
-    }
-
-    public ProducerIterator(List<Producer<T>> producers, int bufferMinSize, int bufferMaxSize) {
+    public ProducerIterator(List<Producer<T>> producers, int batchSize) {
         // TODO: Could we optimise IterableProducer by accepting ResourceIterator<Producer<T>> instead?
-        assert !producers.isEmpty();
+        assert !producers.isEmpty() && batchSize < Integer.MAX_VALUE / 2;
         this.producers = new ConcurrentLinkedQueue<>(producers);
-        this.queue = new Queue(bufferMinSize, bufferMaxSize);
+        this.queue = new Queue(batchSize, batchSize * 2);
         this.state = State.EMPTY;
     }
 
@@ -80,10 +74,10 @@ public class ProducerIterator<T> extends AbstractResourceIterator<T> {
         else if (state == State.FETCHED) return true;
         else mayProduce();
 
-        Either<T, Done> result = queue.take();
+        Either<Result<T>, Done> result = queue.take();
 
         if (result.isFirst()) {
-            next = result.first();
+            next = result.first().value();
             state = State.FETCHED;
         } else {
             Done done = result.second();
@@ -111,6 +105,20 @@ public class ProducerIterator<T> extends AbstractResourceIterator<T> {
         producers.forEach(Producer::recycle);
     }
 
+    private static class Result<T> {
+
+        @Nullable
+        private final T value;
+
+        private Result(T value) {
+            this.value = value;
+        }
+
+        private T value() {
+            return value;
+        }
+    }
+
     private static class Done {
         @Nullable
         private final Throwable error;
@@ -119,15 +127,15 @@ public class ProducerIterator<T> extends AbstractResourceIterator<T> {
             this.error = error;
         }
 
-        public static Done success() {
+        private static Done success() {
             return new Done(null);
         }
 
-        public static Done error(Throwable e) {
+        private static Done error(Throwable e) {
             return new Done(e);
         }
 
-        public Optional<Throwable> error() {
+        private Optional<Throwable> error() {
             return Optional.ofNullable(error);
         }
     }
@@ -135,14 +143,14 @@ public class ProducerIterator<T> extends AbstractResourceIterator<T> {
     @ThreadSafe
     private class Queue implements Producer.Queue<T> {
 
-        private final ManagedBlockingQueue<Either<T, Done>> blockingQueue;
+        private final ManagedBlockingQueue<Either<Result<T>, Done>> blockingQueue;
         private final AtomicBoolean isError;
         private final int min;
         private final int max;
         private int pending;
 
-        private Queue(int bufferMinSize, int max) {
-            this.min = bufferMinSize;
+        private Queue(int min, int max) {
+            this.min = min;
             this.max = max;
             this.blockingQueue = new ManagedBlockingQueue<>();
             this.isError = new AtomicBoolean(false);
@@ -152,7 +160,7 @@ public class ProducerIterator<T> extends AbstractResourceIterator<T> {
         @Override
         public synchronized void put(T item) {
             try {
-                blockingQueue.put(Either.first(item));
+                blockingQueue.put(Either.first(new Result<>(item)));
                 pending--;
                 assert pending >= 0 || isError.get();
             } catch (InterruptedException e) {
@@ -179,7 +187,7 @@ public class ProducerIterator<T> extends AbstractResourceIterator<T> {
             }
         }
 
-        private Either<T, Done> take() {
+        private Either<Result<T>, Done> take() {
             try {
                 return blockingQueue.take();
             } catch (InterruptedException e) {

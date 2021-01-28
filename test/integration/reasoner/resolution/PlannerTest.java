@@ -62,8 +62,12 @@ public class PlannerTest {
         Util.resetDirectory(directory);
         grakn = RocksGrakn.open(directory);
         grakn.databases().create(database);
-        session = grakn.session(database, Arguments.Session.Type.SCHEMA);
-        rocksTransaction = session.transaction(Arguments.Transaction.Type.WRITE);
+        newTransaction(Arguments.Session.Type.SCHEMA, Arguments.Transaction.Type.WRITE);
+    }
+
+    private void newTransaction(Arguments.Session.Type schema, Arguments.Transaction.Type write) {
+        session = grakn.session(database, schema);
+        rocksTransaction = session.transaction(write);
         conceptMgr = rocksTransaction.concepts();
         logicMgr = rocksTransaction.logic();
     }
@@ -224,6 +228,9 @@ public class PlannerTest {
                 "marriage-is-friendship",
                 Graql.parsePattern("{$x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
                 Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
+        rocksTransaction.commit();
+        session.close();
+        newTransaction(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
 
         Concludable concludable = Concludable.create(parse("{ $b has $a; }")).iterator().next();
         Concludable concludable2 = Concludable.create(parse("{ $c($b) isa friendship; }")).iterator().next();

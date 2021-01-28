@@ -25,6 +25,8 @@ import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.ThreadSafe;
 
@@ -33,6 +35,7 @@ import static grakn.core.reasoner.resolution.framework.ResolutionAnswer.Derivati
 
 @ThreadSafe // TODO: verify
 public class ReasonerProducer implements Producer<ConceptMap> {
+    private static final Logger LOG = LoggerFactory.getLogger(ReasonerProducer.class);
 
     private final Actor<RootResolver> rootResolver;
     private Queue<ConceptMap> queue;
@@ -42,10 +45,11 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private int iteration;
 
     public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverMgr) {
-        this.rootResolver = resolverMgr.createRoot(conjunction, this::requestAnswered, this::requestFailed);
+        this.rootResolver = resolverMgr.createRoot(conjunction, this::requestAnswered, this::requestExhausted);
         this.resolveRequest = Request.create(new Request.Path(rootResolver), Root.create(), EMPTY);
         this.queue = null;
         this.iteration = 0;
+        this.done = false;
     }
 
     @Override
@@ -62,29 +66,31 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private void requestAnswered(ResolutionAnswer answer) {
         if (answer.isInferred()) iterationInferredAnswer = true;
-        queue.put(answer.derived().conceptMap());
+        queue.put(answer.derived().withInitial());
     }
 
-    private void requestFailed(int iteration) {
-        assert this.iteration == iteration || this.iteration == iteration + 1;
+    private void requestExhausted(int iteration) {
+        LOG.trace("Failed to find answer to request in iteration: " + iteration);
 
-        if (iteration == this.iteration && mustReiterate()) {
-            nextIteration();
-            retry();
-        } else if (this.iteration == iteration) {
-            // fully terminated finding answers
-            if (!done) {
-                done = true;
-                queue.done();
+        if (!done && iteration == this.iteration && !mustReiterate()) {
+            // query is completely terminated
+            done = true;
+            queue.done();
+            return;
+        }
+
+        if (!done) {
+            if (iteration == this.iteration) {
+                prepareNextIteration();
             }
-        } else {
-            // straggler request failing from prior iteration
-            retry();
+            assert iteration < this.iteration;
+            retryInNewIteration();
         }
     }
 
-    private void nextIteration() {
+    private void prepareNextIteration() {
         iteration++;
+        iterationInferredAnswer = false;
         resolveRequest = Request.create(new Request.Path(rootResolver), Root.create(), EMPTY);
     }
 
@@ -99,7 +105,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         return iterationInferredAnswer;
     }
 
-    private void retry() {
+    private void retryInNewIteration() {
         requestAnswer();
     }
 

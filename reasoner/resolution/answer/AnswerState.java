@@ -57,7 +57,7 @@ public abstract class AnswerState {
     public int hashCode() {
         return Objects.hash(conceptMap);
     }
-
+    
     public static class UpstreamVars {
 
         public static class Initial extends AnswerState {
@@ -78,6 +78,13 @@ public abstract class AnswerState {
                 Optional<ConceptMap> unified = unifier.unify(conceptMap());
                 return unified.map(conceptMap -> new DownstreamVars.Unified(this, conceptMap, unifier));
             }
+
+            @Override
+            public String toString() {
+                return "AnswerState.UpstreamVars.Initial{" +
+                        "conceptMap=" + conceptMap() +
+                        '}';
+            }
         }
 
         public static class Derived extends AnswerState {
@@ -91,8 +98,18 @@ public abstract class AnswerState {
 
             public ConceptMap withInitial() {
                 HashMap<Reference.Name, Concept> withInitial = new HashMap<>(conceptMap().concepts());
-                withInitial.putAll(initial.conceptMap().concepts());
+                if (initial != null) {
+                   withInitial.putAll(initial.conceptMap().concepts());
+                }
                 return new ConceptMap(withInitial);
+            }
+
+            @Override
+            public String toString() {
+                return "AnswerState.UpstreamVars.Derived{" +
+                        "derivedAnswer=" + conceptMap() +
+                        "initial=" + initial +
+                        '}';
             }
         }
     }
@@ -135,7 +152,7 @@ public abstract class AnswerState {
             public UpstreamVars.Derived aggregateToUpstream(ConceptMap conceptMap) {
                 if (conceptMap == null) return null;
                 if (conceptMap.concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
-                return new UpstreamVars.Derived(new ConceptMap(conceptMap().concepts()), null);
+                return new UpstreamVars.Derived(new ConceptMap(conceptMap.concepts()), null);
             }
 
             @Override
@@ -143,6 +160,14 @@ public abstract class AnswerState {
 
             @Override
             public Root asRoot() { return this; }
+
+
+            @Override
+            public String toString() {
+                return "AnswerState.DownstreamVars.Root{" +
+                        "conceptMap=" + conceptMap() +
+                        '}';
+            }
         }
 
         public static class Mapped extends DownstreamVars {
@@ -156,10 +181,8 @@ public abstract class AnswerState {
                 this.mapping = mapping;
             }
 
-            public UpstreamVars.Derived aggregateToUpstream(ConceptMap additionalConcepts) {
-                Map<Reference.Name, Concept> merged = new HashMap<>(additionalConcepts.concepts());
-                merged.putAll(conceptMap().concepts());
-                return new UpstreamVars.Derived(mapping.unTransform(new ConceptMap(merged)), initial);
+            public UpstreamVars.Derived mapToUpstream(ConceptMap additionalConcepts) {
+                return new UpstreamVars.Derived(new ConceptMap(mapping.unTransform(additionalConcepts).concepts()), initial);
             }
 
             @Override
@@ -182,6 +205,14 @@ public abstract class AnswerState {
             public int hashCode() {
                 return Objects.hash(initial, mapping);
             }
+
+            @Override
+            public String toString() {
+                return "AnswerState.DownstreamVars.Mapped{" +
+                        "initial=" + conceptMap() +
+                        "mapping=" + mapping +
+                        '}';
+            }
         }
 
         public static class Unified extends DownstreamVars {
@@ -195,15 +226,9 @@ public abstract class AnswerState {
                 this.unifier = unifier;
             }
 
-            public Optional<UpstreamVars.Derived> aggregateToUpstream(Map<Identifier, Concept> identifiedConcepts) {
+            public Optional<UpstreamVars.Derived> unifyToUpstream(Map<Identifier, Concept> identifiedConcepts) {
                 Optional<ConceptMap> reversed = unifier.unUnify(identifiedConcepts);
-                if (reversed.isPresent()) {
-                    HashMap<Reference.Name, Concept> merged = new HashMap<>(reversed.get().concepts());
-                    merged.putAll(conceptMap().concepts());
-                    return Optional.of(new UpstreamVars.Derived(new ConceptMap(merged), initial));
-                } else {
-                    return Optional.empty();
-                }
+                return reversed.map(map -> new UpstreamVars.Derived(new ConceptMap(map.concepts()), initial));
             }
 
             @Override
@@ -225,6 +250,14 @@ public abstract class AnswerState {
             @Override
             public int hashCode() {
                 return Objects.hash(initial, unifier);
+            }
+
+            @Override
+            public String toString() {
+                return "AnswerState.DownstreamVars.Unified{" +
+                        "initial=" + conceptMap() +
+                        "unifier=" + unifier +
+                        '}';
             }
         }
     }

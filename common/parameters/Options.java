@@ -18,26 +18,29 @@
 package grakn.core.common.parameters;
 
 import grakn.core.common.exception.GraknException;
-
-import java.util.Optional;
+import graql.lang.query.GraqlQuery;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 
 public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options<?, ?>> {
 
-    public static final boolean DEFAULT_INFER = true;
-    public static final boolean DEFAULT_EXPLAIN = false;
-    public static final int DEFAULT_BATCH_SIZE = 50;
+    public static final int DEFAULT_RESPONSE_BATCH_SIZE = 50;
     public static final int DEFAULT_SESSION_IDLE_TIMEOUT_MILLIS = 10_000;
     public static final int DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS = 10_000;
+    public static final boolean DEFAULT_INFER = false;
+    public static final boolean DEFAULT_EXPLAIN = false;
+    public static final boolean DEFAULT_PARALLEL = true;
+    public static final boolean DEFAULT_QUERY_READ_PREFETCH = true;
+    public static final boolean DEFAULT_QUERY_WRITE_PREFETCH = false;
 
     private PARENT parent;
     private Boolean infer = null;
     private Boolean explain = null;
     private Integer batchSize = null;
-    private Boolean prefetch = null;
     private Integer sessionIdlTimeoutMillis = null;
     private Integer schemaLockAcquireTimeoutMillis = null;
+
+    protected Boolean prefetch = null;
 
     abstract SELF getThis();
 
@@ -68,23 +71,14 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         return getThis();
     }
 
-    public int batchSize() {
+    public int responseBatchSize() {
         if (batchSize != null) return batchSize;
-        else if (parent != null) return parent.batchSize();
-        else return DEFAULT_BATCH_SIZE;
+        else if (parent != null) return parent.responseBatchSize();
+        else return DEFAULT_RESPONSE_BATCH_SIZE;
     }
 
-    public SELF batchSize(int batchSize) {
+    public SELF responseBatchSize(int batchSize) {
         this.batchSize = batchSize;
-        return getThis();
-    }
-
-    public Boolean prefetch() {
-        return prefetch;
-    }
-
-    public SELF prefetch(boolean prefetch) {
-        this.prefetch = prefetch;
         return getThis();
     }
 
@@ -141,8 +135,41 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
 
     public static class Query extends Options<Transaction, Query> {
 
+        private Boolean parallel = null;
+        private GraqlQuery query = null;
+
         @Override
         Query getThis() {
+            return this;
+        }
+
+        public Query query(GraqlQuery query) {
+            this.query = query;
+            return this;
+        }
+
+        public boolean prefetch() {
+            if (prefetch != null) {
+                return prefetch;
+            } else if (query != null) {
+                return query.type().isRead() ? DEFAULT_QUERY_READ_PREFETCH : DEFAULT_QUERY_WRITE_PREFETCH;
+            } else {
+                return DEFAULT_QUERY_READ_PREFETCH;
+            }
+        }
+
+        public Query prefetch(boolean prefetch) {
+            this.prefetch = prefetch;
+            return this;
+        }
+
+        public boolean parallel() {
+            if (parallel != null) return parallel;
+            return DEFAULT_PARALLEL;
+        }
+
+        public Query parallel(boolean parallel) {
+            this.parallel = parallel;
             return this;
         }
     }

@@ -18,7 +18,11 @@
 
 package grakn.core.common.parameters;
 
+import graql.lang.query.GraqlQuery;
+
 import javax.annotation.Nullable;
+
+import static grakn.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
 
 public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>> {
 
@@ -71,16 +75,30 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
             this.transactionType = transactionType;
             return this;
         }
-
-        public boolean isSchemaWrite() {
-            return sessionType.isSchema() && this.transactionType.isWrite();
-        }
     }
 
     public static class Query extends Context<Context.Transaction, Options.Query> {
 
-        public Query(Context.Transaction context, Options.Query options) {
+        private Arguments.Query.Producer producer;
+        private static final Arguments.Query.Producer DEFAULT_PRODUCER = INCREMENTAL;
+
+        public Query(Transaction context, Options.Query options) {
             super(context, options.parent(context.options()));
+        }
+
+        public Query(Transaction context, Options.Query options, GraqlQuery query) {
+            super(context, options.parent(context.options()));
+            options.query(query);
+        }
+
+        public Arguments.Query.Producer producer() {
+            if (producer != null) return producer;
+            else return DEFAULT_PRODUCER;
+        }
+
+        public Query producer(Arguments.Query.Producer producer) {
+            this.producer = producer;
+            return this;
         }
     }
 }

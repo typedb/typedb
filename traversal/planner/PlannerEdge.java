@@ -31,6 +31,7 @@ import grakn.core.traversal.predicate.PredicateOperator;
 import grakn.core.traversal.structure.StructureEdge;
 import graql.lang.common.GraqlToken;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -122,9 +123,20 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         backward.recordCost();
     }
 
-    void recordValues() {
-        forward.recordValues();
-        backward.recordValues();
+    void recordResults() {
+        forward.recordResults();
+        backward.recordResults();
+    }
+
+    void resetInitialValue() {
+        forward.resetInitialValue();
+        backward.resetInitialValue();
+    }
+
+    int recordInitial(MPVariable[] variables, double[] initialValues, int index) {
+        index = forward.recordInitial(variables, initialValues, index);
+        index = backward.recordInitial(variables, initialValues, index);
+        return index;
     }
 
     @Override
@@ -138,23 +150,28 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         MPVariable varIsSelected;
         MPVariable[] varOrderAssignment;
         private MPVariable varOrderNumber;
-        private int valueIsSelected;
-        private int valueOrderNumber;
+        private int varIsSelected_init;
+        private int varOrderNumber_init;
+        private int[] varOrderAssignment_init;
+        private int varIsSelected_result;
+        private int varOrderNumber_result;
         private final String varPrefix;
         private final String conPrefix;
         private final GraphPlanner planner;
         private final Encoding.Direction.Edge direction;
-        private double costPrevious;
-        private double costNext;
+        private boolean hasInitialValue;
         private boolean isInitialisedVariables;
         private boolean isInitialisedConstraints;
+        private double costNext;
+        double costLastRecorded;
+
         private Directional<VERTEX_DIR_TO, VERTEX_DIR_FROM> opposite;
 
         Directional(VERTEX_DIR_FROM from, VERTEX_DIR_TO to, Encoding.Direction.Edge direction, String symbol) {
             super(from, to, symbol);
             this.planner = from.planner;
             this.direction = direction;
-            this.costPrevious = 0.01; // non-zero value for safe division
+            this.costLastRecorded = 0.01; // non-zero value for safe division
             this.isInitialisedVariables = false;
             this.isInitialisedConstraints = false;
             this.varPrefix = "edge_var_" + this.toString() + "_";
@@ -164,11 +181,11 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         abstract void updateObjective(GraphManager graphMgr);
 
         public boolean isSelected() {
-            return valueIsSelected == 1;
+            return varIsSelected_result == 1;
         }
 
         public int orderNumber() {
-            return valueOrderNumber;
+            return varOrderNumber_result;
         }
 
         public Encoding.Direction.Edge direction() {
@@ -191,6 +208,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             varIsSelected = planner.solver().makeIntVar(0, 1, varPrefix + "is_selected");
             varOrderNumber = planner.solver().makeIntVar(0, planner.edges().size(), varPrefix + "order_number");
             varOrderAssignment = new MPVariable[planner.edges().size()];
+            varOrderAssignment_init = new int[planner.edges().size()];
             for (int i = 0; i < planner.edges().size(); i++) {
                 varOrderAssignment[i] = planner.solver().makeIntVar(0, 1, varPrefix + "order_assignment[" + i + "]");
             }
@@ -246,29 +264,68 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 planner.objective().setCoefficient(varOrderAssignment[i], coeff);
             }
             costNext = cost;
-            planner.updateCostNext(costPrevious, costNext);
+            planner.updateCostNext(costLastRecorded, costNext);
         }
 
         private void recordCost() {
             if (costNext == 0) costNext = 0.01;
-            costPrevious = costNext;
+            costLastRecorded = costNext;
         }
 
-        private void recordValues() {
-            valueIsSelected = (int) Math.round(varIsSelected.solutionValue());
-            valueOrderNumber = (int) Math.round(varOrderNumber.solutionValue());
+        private void recordResults() {
+            varIsSelected_result = (int) Math.round(varIsSelected.solutionValue());
+            varOrderNumber_result = (int) Math.round(varOrderNumber.solutionValue());
         }
 
-        public void setSelected() {
-            valueIsSelected = 1;
+        private void resetInitialValue() {
+            hasInitialValue = false;
+            varIsSelected_init = 0;
+            varOrderNumber_init = 0;
+            Arrays.fill(varOrderAssignment_init, 0);
         }
 
-        public void setUnselected() {
-            valueIsSelected = 0;
+        void setInitialValue(int order) {
+            varOrderNumber_init = order;
+            if (order > 0) {
+                varIsSelected_init = 1;
+                if (order - 1 >= varOrderAssignment_init.length) {
+                    System.out.println();
+                }
+                varOrderAssignment_init[order - 1] = 1;
+            }
+            hasInitialValue = true;
+            opposite.hasInitialValue = true;
         }
 
-        public void setOrder(int order) {
-            valueOrderNumber = order;
+        boolean hasInitialValue() {
+            return hasInitialValue;
+        }
+
+        int recordInitial(MPVariable[] variables, double[] initialValues, int index) {
+            variables[index] = varIsSelected;
+            variables[index + 1] = varOrderNumber;
+
+            initialValues[index] = varIsSelected_init;
+            initialValues[index + 1] = varOrderNumber_init;
+
+            for (int i = 0; i < planner.edges().size(); i++) {
+                variables[index + 2 + i] = varOrderAssignment[i];
+                initialValues[index + 2 + i] = varOrderAssignment_init[i];
+            }
+
+            return index + 2 + planner.edges().size();
+        }
+
+        void setSelected() {
+            varIsSelected_result = 1;
+        }
+
+        void setUnselected() {
+            varIsSelected_result = 0;
+        }
+
+        void setOrder(int order) {
+            varOrderNumber_result = order;
         }
 
         public boolean isEqual() { return false; }

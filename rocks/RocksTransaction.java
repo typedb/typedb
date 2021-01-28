@@ -65,7 +65,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         traversalEng = new TraversalEngine(graphMgr, traversalCache);
         conceptMgr = new ConceptManager(graphMgr);
         logicMgr = new LogicManager(graphMgr, conceptMgr, traversalEng, logicCache);
-        reasoner = new Reasoner(traversalEng, conceptMgr, logicMgr, context);
+        reasoner = new Reasoner(conceptMgr, logicMgr, traversalEng, context);
         queryMgr = new QueryManager(conceptMgr, logicMgr, reasoner, context);
         isOpen = new AtomicBoolean(true);
     }
@@ -81,11 +81,6 @@ public abstract class RocksTransaction implements Grakn.Transaction {
     @Override
     public Arguments.Transaction.Type type() {
         return context.transactionType();
-    }
-
-    @Override
-    public Options.Transaction options() {
-        return context.options();
     }
 
     @Override
@@ -148,10 +143,10 @@ public abstract class RocksTransaction implements Grakn.Transaction {
     public static class Schema extends RocksTransaction {
 
         protected final RocksStorage.Schema schemaStorage;
-
         protected final RocksStorage.Data dataStorage;
 
-        protected Schema(RocksSession.Schema session, Arguments.Transaction.Type type, Options.Transaction options, Factory.Storage storageFactory) {
+        protected Schema(RocksSession.Schema session, Arguments.Transaction.Type type,
+                         Options.Transaction options, Factory.Storage storageFactory) {
             super(session, type, options);
 
             schemaStorage = storageFactory.storageSchema(session.database(), this);
@@ -247,10 +242,12 @@ public abstract class RocksTransaction implements Grakn.Transaction {
     }
 
     public static class Data extends RocksTransaction {
+
         protected final RocksStorage.Data dataStorage;
         private final RocksDatabase.Cache cache;
 
-        public Data(RocksSession.Data session, Arguments.Transaction.Type type, Options.Transaction options, Factory.Storage storageFactory) {
+        public Data(RocksSession.Data session, Arguments.Transaction.Type type,
+                    Options.Transaction options, Factory.Storage storageFactory) {
             super(session, type, options);
 
             cache = session.database().cacheBorrow();

@@ -37,6 +37,7 @@ import java.util.stream.Stream;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_PLAYER_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_ROLE_UNRELATED;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ROLE_UNPLAYED;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.DELETE_ROLEPLAYER_NOT_PRESENT;
 import static grakn.core.graph.common.Encoding.Edge.Thing.PLAYING;
 import static grakn.core.graph.common.Encoding.Edge.Thing.RELATING;
 import static grakn.core.graph.common.Encoding.Edge.Thing.ROLEPLAYER;
@@ -85,11 +86,18 @@ public class RelationImpl extends ThingImpl implements Relation {
         ResourceIterator<ThingVertex> role = vertex.outs().edge(
                 RELATING, PrefixIID.of(ROLE), ((RoleTypeImpl) roleType).vertex.iid()
         ).to().filter(v -> v.ins().edge(PLAYING, ((ThingImpl) player).vertex) != null);
-
         if (role.hasNext()) {
             RoleImpl.of(role.next()).delete();
             deleteIfNoPlayer();
+        } else {
+            throw exception(GraknException.of(DELETE_ROLEPLAYER_NOT_PRESENT, player.getType().getLabel(), roleType.getLabel().toString()));
         }
+    }
+
+    @Override
+    public void delete() {
+        vertex.outs().edge(RELATING).to().map(RoleImpl::of).forEachRemaining(RoleImpl::delete);
+        super.delete();
     }
 
     void deleteIfNoPlayer() {

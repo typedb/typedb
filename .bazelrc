@@ -22,12 +22,9 @@ test --incompatible_strict_action_env
 # what is defined in this section will be applied when bazel is invoked like this: bazel ... --config=rbe ...
 build:rbe --project_id=grakn-dev
 build:rbe --remote_cache=cloud.buildbuddy.io
-build:rbe --remote_executor=cloud.buildbuddy.io
 build:rbe --bes_backend=cloud.buildbuddy.io
 build:rbe --bes_results_url=https://app.buildbuddy.io/invocation/
 build:rbe --tls_client_certificate=/opt/credentials/buildbuddy-cert.pem
 build:rbe --tls_client_key=/opt/credentials/buildbuddy-key.pem
-build:rbe --host_platform=@graknlabs_dependencies//image/buildbuddy:ubuntu-2004
-build:rbe --jobs=50
 build:rbe --remote_timeout=3600
-
+build:rbe --remote_download_minimal

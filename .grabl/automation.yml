@@ -66,26 +66,44 @@ build:
       command: |
         bazel test //test/integration:test-basic --test_output=streamed
         bazel test //test/integration:test-query --test_output=streamed
+        bazel test //test/integration/reasoner/... --test_output=streamed
         bazel test //test/integration/migrator/... --test_output=streamed
         bazel test //test/integration/logic/... --test_output=streamed
       # bazel test //test/integration/traversal/... --test_output=streamed
-    test-behaviour:
+    test-behaviour-connection:
       image: graknlabs-ubuntu-20.04
       command: |
         bazel test //test/behaviour/connection/... --test_output=streamed
+
+    test-behaviour-concept:
+      image: graknlabs-ubuntu-20.04
+      command: |
         bazel test //test/behaviour/concept/... --test_output=streamed
+
+    test-behaviour-match:
+      image: graknlabs-ubuntu-20.04
+      command: |
         bazel test //test/behaviour/graql/language/match/... --test_output=streamed
         bazel test //test/behaviour/graql/language/get/... --test_output=streamed
+
+    test-behaviour-writable:
+      image: graknlabs-ubuntu-20.04
+      command: |
+        bazel test //test/behaviour/graql/language/insert/... --test_output=streamed
+        bazel test //test/behaviour/graql/language/delete/... --test_output=streamed
+
+    test-behaviour-definable:
+      image: graknlabs-ubuntu-20.04
+      command: |
         bazel test //test/behaviour/graql/language/define/... --test_output=streamed
         bazel test //test/behaviour/graql/language/undefine/... --test_output=streamed
-        bazel test //test/behaviour/graql/language/insert/... --test_output=streamed
-      # TODO: add more Graql Language tests as they are fixed
+
     test-assembly-linux-targz:
       image: graknlabs-ubuntu-20.04
       filter:
         owner: graknlabs
         branch: master
-      dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour]
+      dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour-connection, test-behaviour-concept, test-behaviour-match, test-behaviour-writable, test-behaviour-definable]
       command: |
         export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
@@ -95,7 +113,7 @@ build:
       filter:
         owner: graknlabs
         branch: master
-      dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour]
+      dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour-connection, test-behaviour-concept, test-behaviour-match, test-behaviour-writable, test-behaviour-definable]
       command: |
         bazel test //test/assembly:docker --test_output=streamed
     deploy-artifact-snapshot:

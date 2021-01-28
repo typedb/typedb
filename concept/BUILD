@@ -38,6 +38,7 @@ native_java_libraries(
     deps = [
         # Internal dependencies
         "//common:common",
+        "//concurrent:concurrent",
         "//graph:graph",
 
         # Internal Repository Dependencies

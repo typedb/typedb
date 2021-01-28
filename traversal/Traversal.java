@@ -21,6 +21,7 @@ package grakn.core.traversal;
 import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
 import grakn.core.concurrent.producer.Producer;
 import grakn.core.concurrent.producer.Producers;
@@ -53,6 +54,7 @@ import static grakn.common.collection.Collections.pair;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.cartesian;
 import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.concurrent.producer.Producers.produce;
 import static grakn.core.graph.common.Encoding.Edge.ISA;
 import static grakn.core.graph.common.Encoding.Edge.Thing.HAS;
 import static grakn.core.graph.common.Encoding.Edge.Thing.PLAYING;
@@ -104,14 +106,14 @@ public class Traversal {
         )).map(s -> cache.get(s, Planner::create)).toList();
     }
 
-    ResourceIterator<VertexMap> iterator(GraphManager graphMgr) {
+    ResourceIterator<VertexMap> iterator(GraphManager graphMgr, boolean extraPlanningTime) {
         assert !planners.isEmpty();
         if (planners.size() == 1) {
-            planners.get(0).tryOptimise(graphMgr);
+            planners.get(0).tryOptimise(graphMgr, extraPlanningTime);
             return planners.get(0).procedure().iterator(graphMgr, parameters, filter());
         } else {
             return cartesian(planners.parallelStream().map(planner -> {
-                planner.tryOptimise(graphMgr);
+                planner.tryOptimise(graphMgr, extraPlanningTime);
                 return planner.procedure().iterator(graphMgr, parameters, filter());
             }).collect(toList())).map(partialAnswers -> {
                 Map<Reference, Vertex<?, ?>> combinedAnswers = new HashMap<>();
@@ -121,16 +123,17 @@ public class Traversal {
         }
     }
 
-    Producer<VertexMap> producer(GraphManager graphMgr, int parallelisation) {
+    Producer<VertexMap> producer(GraphManager graphMgr, Arguments.Query.Producer mode,
+                                 int parallelisation, boolean extraPlanningTime) {
         assert !planners.isEmpty();
         if (planners.size() == 1) {
-            planners.get(0).tryOptimise(graphMgr);
+            planners.get(0).tryOptimise(graphMgr, extraPlanningTime);
             return planners.get(0).procedure().producer(graphMgr, parameters, filter(), parallelisation);
         } else {
             return Producers.producer(cartesian(planners.parallelStream().map(planner -> {
-                planner.tryOptimise(graphMgr);
+                planner.tryOptimise(graphMgr, extraPlanningTime);
                 return planner.procedure().producer(graphMgr, parameters, filter(), parallelisation);
-            }).map(Producers::produce).collect(toList())).map(partialAnswers -> {
+            }).map(producer -> produce(producer, mode)).collect(toList())).map(partialAnswers -> {
                 Map<Reference, Vertex<?, ?>> combinedAnswers = new HashMap<>();
                 partialAnswers.forEach(p -> combinedAnswers.putAll(p.map()));
                 return VertexMap.of(combinedAnswers);

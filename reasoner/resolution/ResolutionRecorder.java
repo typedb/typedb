@@ -45,7 +45,7 @@ public class ResolutionRecorder extends Actor.State<ResolutionRecorder> {
     }
 
     @Override
-    protected void exception(Exception e) {
+    protected void exception(Throwable e) {
         LOG.error("Actor exception", e);
     }
 
