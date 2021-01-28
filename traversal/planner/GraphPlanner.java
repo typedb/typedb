@@ -22,6 +22,7 @@ import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPSolverParameters;
+import com.google.ortools.linearsolver.MPVariable;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concurrent.lock.ManagedCountDownLatch;
 import grakn.core.graph.GraphManager;
@@ -40,6 +41,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -56,6 +58,8 @@ import static com.google.ortools.linearsolver.MPSolverParameters.IntegerParam.PR
 import static com.google.ortools.linearsolver.MPSolverParameters.PresolveValues.PRESOLVE_ON;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_PLANNING_ERROR;
 import static java.time.Duration.between;
+import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.toList;
 
 public class GraphPlanner implements Planner {
 
@@ -336,7 +340,7 @@ public class GraphPlanner implements Planner {
                 solver.setTimeLimit(totalDuration);
 
                 start = Instant.now();
-                GraphInitialiser.create(this).execute();
+                new Initialiser().execute();
                 startSolver = Instant.now();
                 resultStatus = solver.solve(parameters);
                 endSolver = Instant.now();
@@ -396,5 +400,64 @@ public class GraphPlanner implements Planner {
         }
         str.append("\n}");
         return str.toString();
+    }
+
+    private class Initialiser {
+
+        private final LinkedHashSet<PlannerVertex<?>> queue;
+        private final MPVariable[] variables;
+        private final double[] initialValues;
+        private int edgeCount;
+
+        private Initialiser() {
+            queue = new LinkedHashSet<>();
+            edgeCount = 0;
+
+            int count = countVariables();
+            variables = new MPVariable[count];
+            initialValues = new double[count];
+        }
+
+        private int countVariables() {
+            int vertexVars = 4 * vertices.size();
+            int edgeVars = (2 + edges.size()) * edges.size() * 2;
+            return vertexVars + edgeVars;
+        }
+
+        public void execute() {
+            resetInitialValues();
+            PlannerVertex<?> start = vertices.values().stream().min(comparing(v -> v.costLastRecorded)).get();
+            start.setStartingVertexInitial();
+            queue.add(start);
+            while (!queue.isEmpty()) {
+                PlannerVertex<?> vertex = queue.iterator().next();
+                List<PlannerEdge.Directional<?, ?>> outgoing = vertex.outs().stream()
+                        .filter(e -> !e.hasInitialValue() && !(e.isSelfClosure() && e.direction().isBackward()))
+                        .sorted(comparing(e -> e.costLastRecorded)).collect(toList());
+                if (!outgoing.isEmpty()) {
+                    vertex.setHasOutgoingEdgesInitial();
+                    outgoing.forEach(e -> {
+                        e.setInitialValue(++edgeCount);
+                        e.to().setHasIncomingEdgesInitial();
+                        queue.add(e.to());
+                    });
+                } else {
+                    vertex.setEndingVertexInitial();
+                }
+                queue.remove(vertex);
+            }
+
+            int index = 0;
+            for (PlannerVertex<?> v : vertices.values()) index = v.recordInitial(variables, initialValues, index);
+            for (PlannerEdge<?, ?> e : edges) index = e.recordInitial(variables, initialValues, index);
+            assert index == variables.length && index == initialValues.length;
+
+            solver.setHint(variables, initialValues);
+        }
+
+        private void resetInitialValues() {
+            vertices.values().forEach(PlannerVertex::resetInitialValue);
+            edges.forEach(PlannerEdge::resetInitialValue);
+        }
     }
 }
