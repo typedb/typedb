@@ -26,15 +26,12 @@ host_compatible_java_library(
     deps = [
         # Package dependencies
         "//common",
-        "//common/test:util",
         "//test/behaviour/connection:steps",
         "//test/behaviour/exception",
 
         # External dependencies from Grakn Labs
         "@graknlabs_graql//java:graql",
-        "@graknlabs_graql//java/pattern",
         "@graknlabs_graql//java/query",
-        "@graknlabs_common//:common",
 
         # External dependencies from Maven
         "@maven//:junit_junit",
