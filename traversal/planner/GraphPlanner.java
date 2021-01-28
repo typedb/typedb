@@ -61,7 +61,8 @@ public class GraphPlanner implements Planner {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphPlanner.class);
 
-    static final long TIME_LIMIT_MILLIS = 100;
+    static final long DEFAULT_TIME_LIMIT_MILLIS = 100;
+    static final long HIGHER_TIME_LIMIT_MILLIS = 200;
     static final double OBJECTIVE_COEFFICIENT_MAX_EXPONENT_DEFAULT = 3.0;
     static final double OBJECTIVE_PLANNER_COST_MAX_CHANGE = 0.2;
     static final double OBJECTIVE_VARIABLE_COST_MAX_CHANGE = 2.0;
@@ -322,33 +323,31 @@ public class GraphPlanner implements Planner {
     }
 
     @SuppressWarnings("NonAtomicOperationOnVolatileField")
-    void optimise(GraphManager graph) {
+    void optimise(GraphManager graph, boolean extraTime) {
         if (isOptimising.compareAndSet(false, true)) {
             updateObjective(graph);
             if (isUpToDate() && isOptimal()) {
                 if (LOG.isDebugEnabled()) LOG.debug("Optimisation still optimal and up-to-date");
             } else {
+                // TODO: we should have a more clever logic to allocate extra time
+                long allocatedDuration = extraTime ? HIGHER_TIME_LIMIT_MILLIS : DEFAULT_TIME_LIMIT_MILLIS;
                 Instant start, startSolver, endSolver, end;
-                start = Instant.now();
-
-                GraphInitialiser.create(this).execute();
-
-                totalDuration += TIME_LIMIT_MILLIS;
+                totalDuration += allocatedDuration;
                 solver.setTimeLimit(totalDuration);
 
+                start = Instant.now();
+                GraphInitialiser.create(this).execute();
                 startSolver = Instant.now();
                 resultStatus = solver.solve(parameters);
                 endSolver = Instant.now();
-
-                totalDuration -= (TIME_LIMIT_MILLIS - between(startSolver, endSolver).toMillis());
-
                 if (isError()) throwPlanningError();
                 else assert isPlanned();
 
                 createProcedure();
-                isUpToDate = true;
                 end = Instant.now();
 
+                isUpToDate = true;
+                totalDuration -= allocatedDuration - between(startSolver, endSolver).toMillis();
                 printDebug(start, startSolver, endSolver, end);
             }
             isOptimising.set(false);

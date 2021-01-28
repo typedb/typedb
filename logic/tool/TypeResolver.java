@@ -120,7 +120,7 @@ public class TypeResolver {
     private Map<Reference, Set<Label>> executeResolverTraversals(TraversalBuilder traversalBuilder) {
         return logicCache.resolver().get(traversalBuilder.traversal(), traversal -> {
             Map<Reference, Set<Label>> mapping = new HashMap<>();
-            traversalEng.iterator(traversal).forEachRemaining(
+            traversalEng.iterator(traversal, true).forEachRemaining(
                     result -> result.forEach((ref, vertex) -> {
                         mapping.putIfAbsent(ref, new HashSet<>());
                         assert vertex.isType();

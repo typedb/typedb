@@ -45,13 +45,22 @@ public class TraversalEngine {
     }
 
     public Producer<VertexMap> producer(Traversal traversal, Arguments.Query.Producer mode, int parallelisation) {
+        return producer(traversal, mode, parallelisation, false);
+    }
+
+    public Producer<VertexMap> producer(Traversal traversal, Arguments.Query.Producer mode,
+                                        int parallelisation, boolean extraPlanningTime) {
         traversal.initialise(cache);
-        return traversal.producer(graphMgr, mode, parallelisation);
+        return traversal.producer(graphMgr, mode, parallelisation, extraPlanningTime);
     }
 
     public ResourceIterator<VertexMap> iterator(Traversal traversal) {
+        return iterator(traversal, false);
+    }
+
+    public ResourceIterator<VertexMap> iterator(Traversal traversal, boolean extraPlanningTime) {
         traversal.initialise(cache);
-        return traversal.iterator(graphMgr);
+        return traversal.iterator(graphMgr, extraPlanningTime);
     }
 
     public ResourceIterator<VertexMap> iterator(GraphProcedure procedure, Traversal.Parameters params) {

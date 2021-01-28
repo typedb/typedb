@@ -106,14 +106,14 @@ public class Traversal {
         )).map(s -> cache.get(s, Planner::create)).toList();
     }
 
-    ResourceIterator<VertexMap> iterator(GraphManager graphMgr) {
+    ResourceIterator<VertexMap> iterator(GraphManager graphMgr, boolean extraPlanningTime) {
         assert !planners.isEmpty();
         if (planners.size() == 1) {
-            planners.get(0).tryOptimise(graphMgr);
+            planners.get(0).tryOptimise(graphMgr, extraPlanningTime);
             return planners.get(0).procedure().iterator(graphMgr, parameters, filter());
         } else {
             return cartesian(planners.parallelStream().map(planner -> {
-                planner.tryOptimise(graphMgr);
+                planner.tryOptimise(graphMgr, extraPlanningTime);
                 return planner.procedure().iterator(graphMgr, parameters, filter());
             }).collect(toList())).map(partialAnswers -> {
                 Map<Reference, Vertex<?, ?>> combinedAnswers = new HashMap<>();
@@ -123,14 +123,15 @@ public class Traversal {
         }
     }
 
-    Producer<VertexMap> producer(GraphManager graphMgr, Arguments.Query.Producer mode, int parallelisation) {
+    Producer<VertexMap> producer(GraphManager graphMgr, Arguments.Query.Producer mode,
+                                 int parallelisation, boolean extraPlanningTime) {
         assert !planners.isEmpty();
         if (planners.size() == 1) {
-            planners.get(0).tryOptimise(graphMgr);
+            planners.get(0).tryOptimise(graphMgr, extraPlanningTime);
             return planners.get(0).procedure().producer(graphMgr, parameters, filter(), parallelisation);
         } else {
             return Producers.producer(cartesian(planners.parallelStream().map(planner -> {
-                planner.tryOptimise(graphMgr);
+                planner.tryOptimise(graphMgr, extraPlanningTime);
                 return planner.procedure().producer(graphMgr, parameters, filter(), parallelisation);
             }).map(producer -> produce(producer, mode)).collect(toList())).map(partialAnswers -> {
                 Map<Reference, Vertex<?, ?>> combinedAnswers = new HashMap<>();
