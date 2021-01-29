@@ -163,12 +163,13 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
             if (edge.onlyStartsFromRelation()) {
                 seekStack.addSeeks(iterate(scopedEdgeOrders.get(edge.from().id().asVariable())).toSet());
                 seekStack.addSeeks(edge.to().dependedEdgeOrders());
-            }
-            if (edge.onlyEndsAtRelation()) {
+            } else if (edge.onlyEndsAtRelation()) {
                 seekStack.addSeeks(edge.from().dependedEdgeOrders());
                 seekStack.addSeeks(iterate(scopedEdgeOrders.get(edge.to().id().asVariable())).toSet());
+            } else {
+                seekStack.addSeeks(edge.to().dependedEdgeOrders());
+                seekStack.addSeeks(edge.from().dependedEdgeOrders());
             }
-
             return false;
         }
     }
