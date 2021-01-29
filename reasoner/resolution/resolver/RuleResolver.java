@@ -162,8 +162,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
     @Override
     protected void initialiseDownstreamActors() {
         LOG.debug("{}: initialising downstream actors", name());
-
-        Set<Concludable> concludablesWithApplicableRules = Iterators.iterate(rule.whenConcludables())
+        Set<Concludable> concludablesWithApplicableRules = Iterators.iterate(Concludable.create(rule.when()))
                 .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext()).toSet();
         Set<Retrievable> retrievables = Retrievable.extractFrom(rule.when(), concludablesWithApplicableRules);
         Set<Resolvable> resolvables = new HashSet<>();

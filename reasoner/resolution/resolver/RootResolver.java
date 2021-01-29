@@ -69,7 +69,6 @@ public class RootResolver extends Resolver<RootResolver> {
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private final Consumer<ResolutionAnswer> onAnswer;
     private final Consumer<Integer> onExhausted;
-    private final Set<Concludable> concludables;
     private final List<Resolvable> plan;
     private boolean isInitialised;
     private ResponseProducer responseProducer;
@@ -87,8 +86,6 @@ public class RootResolver extends Resolver<RootResolver> {
         this.logicMgr = logicMgr;
         this.planner = planner;
         this.isInitialised = false;
-        this.concludables = Iterators.iterate(Concludable.create(conjunction))
-                .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext()).toSet();
         this.plan = new ArrayList<>();
         this.downstreamResolvers = new HashMap<>();
     }
@@ -171,6 +168,8 @@ public class RootResolver extends Resolver<RootResolver> {
     @Override
     protected void initialiseDownstreamActors() {
         if (!concludables.isEmpty()) {
+            Set<Concludable> concludables = Iterators.iterate(Concludable.create(conjunction))
+                    .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext()).toSet();
             Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction, concludables);
             Set<Resolvable> resolvables = new HashSet<>();
             resolvables.addAll(concludables);

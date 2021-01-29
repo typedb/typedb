@@ -71,7 +71,6 @@ public class Rule {
     private final Conjunction when;
     private final Conjunction then;
     private final Conclusion conclusion;
-    private final Set<Concludable> requiredWhenConcludables;
 
     private Rule(LogicManager logicMgr, RuleStructure structure) {
         this.structure = structure;
@@ -79,7 +78,6 @@ public class Rule {
         this.then = thenPattern(structure.then(), logicMgr);
         pruneThenResolvedTypes();
         this.conclusion = Conclusion.create(this.then);
-        this.requiredWhenConcludables = Concludable.create(this.when);
     }
 
     private Rule(GraphManager graphMgr, LogicManager logicMgr, String label,
@@ -90,7 +88,6 @@ public class Rule {
         validateSatisfiable();
         pruneThenResolvedTypes();
         this.conclusion = Conclusion.create(this.then);
-        this.requiredWhenConcludables = Concludable.create(this.when);
         validateInsertable();
         validateCycles();
         this.conclusion.index(this);
@@ -103,10 +100,6 @@ public class Rule {
     public static Rule of(GraphManager graphMgr, LogicManager logicMgr, String label,
                           graql.lang.pattern.Conjunction<? extends Pattern> when, ThingVariable<?> then) {
         return new Rule(graphMgr, logicMgr, label, when, then);
-    }
-
-    public Set<Concludable> whenConcludables() {
-        return requiredWhenConcludables;
     }
 
     public Conclusion conclusion() {
