@@ -35,11 +35,13 @@ import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.graph.TraversalEdge;
+import grakn.core.traversal.iterator.GraphIterator;
 import grakn.core.traversal.planner.PlannerEdge;
 import graql.lang.common.GraqlToken;
 
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import static grakn.common.util.Objects.className;
@@ -120,6 +122,8 @@ public abstract class ProcedureEdge<
     public boolean onlyStartsFromAttribute() { return false; }
 
     public boolean onlyStartsFromRelation() { return false; }
+
+    public boolean onlyEndsAtRelation() { return false; }
 
     public boolean onlyStartsFromAttributeType() { return false; }
 
@@ -935,6 +939,11 @@ public abstract class ProcedureEdge<
                                              Traversal.Parameters params) {
                         return fromVertex.asThing().ins().edge(RELATING, toVertex.asThing()) != null;
                     }
+
+                    @Override
+                    public boolean onlyEndsAtRelation() {
+                        return true;
+                    }
                 }
             }
 
@@ -967,7 +976,7 @@ public abstract class ProcedureEdge<
 
                 public abstract boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex,
                                                   Vertex<?, ?> toVertex, Traversal.Parameters params,
-                                                  Set<ThingVertex> withinScope);
+                                                  GraphIterator.Scopes.Scoped withinScope);
 
                 @Override
                 public ResourceIterator<? extends Vertex<?, ?>> branch(
@@ -1046,18 +1055,22 @@ public abstract class ProcedureEdge<
                     }
 
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
-                                             Traversal.Parameters params, Set<ThingVertex> withinScope) {
+                                             Traversal.Parameters params, GraphIterator.Scopes.Scoped scoped) {
                         ThingVertex rel = fromVertex.asThing();
                         ThingVertex player = toVertex.asThing();
+                        Optional<ThingEdge> validEdge;
                         if (!roleTypes.isEmpty()) {
-                            return iterate(resolvedRoleTypes(graphMgr.schema())).anyMatch(
+                            validEdge = iterate(resolvedRoleTypes(graphMgr.schema())).flatMap(
                                     rt -> rel.outs().edge(ROLEPLAYER, rt.iid(), player.iid().prefix(), player.iid().type()).get()
-                                            .anyMatch(e -> e.to().equals(player) && !withinScope.contains(e.optimised().get())));
+                                            .filter(e -> e.to().equals(player) && !scoped.contains(e.optimised().get())))
+                                    .first();
                         } else {
-                            return rel.outs().edge(ROLEPLAYER).get().anyMatch(
-                                    e -> e.to().equals(player) && !withinScope.contains(e.optimised().get())
-                            );
+                            validEdge = rel.outs().edge(ROLEPLAYER).get().filter(
+                                    e -> e.to().equals(player) && !scoped.contains(e.optimised().get())
+                            ).first();
                         }
+                        validEdge.ifPresent(e -> scoped.record(e.optimised().get(), order()));
+                        return validEdge.isPresent();
                     }
                 }
 
@@ -1103,18 +1116,27 @@ public abstract class ProcedureEdge<
                     }
 
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
-                                             Traversal.Parameters params, Set<ThingVertex> withinScope) {
+                                             Traversal.Parameters params, GraphIterator.Scopes.Scoped scoped) {
                         ThingVertex player = fromVertex.asThing();
                         ThingVertex rel = toVertex.asThing();
+                        Optional<ThingEdge> validEdge;
                         if (!roleTypes.isEmpty()) {
-                            return iterate(resolvedRoleTypes(graphMgr.schema())).anyMatch(
+                            validEdge = iterate(resolvedRoleTypes(graphMgr.schema())).flatMap(
                                     rt -> player.ins().edge(ROLEPLAYER, rt.iid(), rel.iid().prefix(), rel.iid().type()).get()
-                                            .anyMatch(e -> e.from().equals(rel) && !withinScope.contains(e.optimised().get())));
+                                            .filter(e -> e.from().equals(rel) && !scoped.contains(e.optimised().get())))
+                                    .first();
                         } else {
-                            return player.ins().edge(ROLEPLAYER).get().anyMatch(
-                                    e -> e.from().equals(rel) && !withinScope.contains(e.optimised().get())
-                            );
+                            validEdge = player.ins().edge(ROLEPLAYER).get().filter(
+                                    e -> e.from().equals(rel) && !scoped.contains(e.optimised().get())
+                            ).first();
                         }
+                        validEdge.ifPresent(e -> scoped.record(e.optimised().get(), order()));
+                        return validEdge.isPresent();
+                    }
+
+                    @Override
+                    public boolean onlyEndsAtRelation() {
+                        return true;
                     }
                 }
             }
