@@ -342,12 +342,12 @@ public class GraphPlanner implements Planner {
 
                 start = Instant.now();
                 resultStatus = solver.solve(parameters);
+                resetInitialValues();
                 endSolver = Instant.now();
                 if (isError()) throwPlanningError();
                 else assert isPlanned();
 
                 createProcedure();
-                solver.setHint(new MPVariable[]{}, new double[]{});
                 end = Instant.now();
 
                 isUpToDate = true;
@@ -356,6 +356,10 @@ public class GraphPlanner implements Planner {
             }
             isOptimising.set(false);
         }
+    }
+
+    private void resetInitialValues() {
+        solver.setHint(new MPVariable[]{}, new double[]{});
     }
 
     private void throwPlanningError() {
