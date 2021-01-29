@@ -186,8 +186,8 @@ public abstract class RocksSession implements Grakn.Session {
                 int timeout = options.schemaLockAcquireTimeoutMillis();
                 lock = database().dataWriteSchemaLock().tryReadLock(timeout, TimeUnit.MILLISECONDS);
                 if (lock == 0) throw GraknException.of(DATA_ACQUIRE_LOCK_TIMEOUT);
-            } catch (InterruptedException err) {
-                throw GraknException.of(DATA_ACQUIRE_LOCK_TIMEOUT);
+            } catch (InterruptedException e) {
+                throw GraknException.of(e);
             }
             RocksTransaction.Data transaction = txDataFactory.transaction(this, type, options);
             transactions.put(transaction, lock);
