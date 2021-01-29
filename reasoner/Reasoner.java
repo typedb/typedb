@@ -48,7 +48,6 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CONJUNCTION;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.CONTRADICTORY_BOUND_VARIABLE;
 import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
 import static grakn.core.concurrent.common.ExecutorService.PARALLELISATION_FACTOR;
 import static grakn.core.concurrent.producer.Producers.produce;
@@ -76,6 +75,14 @@ public class Reasoner {
         );
     }
 
+    ResolverRegistry resolverRegistry() {
+        return resolverRegistry;
+    }
+
+    private Producer<ConceptMap> resolve(Conjunction conjunction) {
+        return new ReasonerProducer(conjunction, resolverRegistry);
+    }
+
     private boolean isInfer(Context.Query context) {
         return context.options().infer() && !context.transactionType().isWrite() && logicMgr.rules().hasNext();
     }
@@ -99,10 +106,8 @@ public class Reasoner {
         Conjunction conj = logicMgr.typeResolver().resolve(conjunction);
         if (conj.isSatisfiable()) {
             if (isInfer(context)) producer = resolve(conj);
-            else {
-                producer = traversalEng.producer(conj.traversal(filter), context.producer(), PARALLELISATION_FACTOR)
-                        .map(conceptMgr::conceptMap);
-            }
+            else producer = traversalEng.producer(conj.traversal(filter), context.producer(), PARALLELISATION_FACTOR)
+                    .map(conceptMgr::conceptMap);
         } else if (!filter.isEmpty() && iterate(filter).anyMatch(id -> conj.variable(id).isThing()) ||
                 iterate(conjunction.variables()).anyMatch(Variable::isThing)) {
             throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction);
@@ -111,11 +116,9 @@ public class Reasoner {
         }
 
         if (conjunction.negations().isEmpty()) return producer;
-        else {
-            return producer.filter(ans -> !iterate(conjunction.negations())
-                    .flatMap(negation -> iterator(negation.disjunction(), ans)).hasNext()
-            );
-        }
+        else return producer.filter(ans -> !iterate(conjunction.negations())
+                .flatMap(negation -> iterator(negation.disjunction(), ans)).hasNext()
+        );
     }
 
     public Producer<ConceptMap> producer(Conjunction conjunction, ConceptMap bounds) {
@@ -128,8 +131,6 @@ public class Reasoner {
 
     private ResourceIterator<ConceptMap> iterator(Conjunction conjunction, List<Identifier.Variable.Name> filter,
                                                   Context.Query context) {
-        if (!isInfer(context)) LOG.info("Reasoning will not run");
-
         ResourceIterator<ConceptMap> answers;
         Conjunction conj = logicMgr.typeResolver().resolve(conjunction);
         if (conj.isSatisfiable()) {
@@ -168,13 +169,5 @@ public class Reasoner {
             }
         });
         return newClone;
-    }
-
-    ResolverRegistry resolverRegistry() {
-        return resolverRegistry;
-    }
-
-    private Producer<ConceptMap> resolve(Conjunction conjunction) {
-        return new ReasonerProducer(conjunction, resolverRegistry);
     }
 }
