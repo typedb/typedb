@@ -441,7 +441,7 @@ public class UnifyHasConcludableTest {
         Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
-        Rule rule = createRule("has-rule", "{ $x isa thing; }", "$x has first-name \"john\"");
+        Rule rule = createRule("has-rule", "{ $x isa self-owning-attribute; }", "$x has self-owning-attribute 5");
 
         List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
@@ -451,11 +451,10 @@ public class UnifyHasConcludableTest {
             put("$b", set("$x", "$_0"));
         }};
         assertEquals(expected, result);
-
-        // test requirements of one-to-many using valid answer (would never actually come from rule!)
+        // test requirements of one-to-many using valid answer
         Map<Identifier, Concept> identifiedConcepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("first-name", "john")), // nonsense on purpose!!
-                pair(Identifier.Variable.anon(0), instanceOf("first-name", "john"))
+                pair(Identifier.Variable.name("x"), instanceOf("self-owning-attribute")),
+                pair(Identifier.Variable.anon(0), instanceOf("self-owning-attribute"))
         );
         Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
         assertTrue(unified.isPresent());

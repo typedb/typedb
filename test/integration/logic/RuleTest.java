@@ -18,6 +18,7 @@
 package grakn.core.logic;
 
 import grakn.core.common.exception.ErrorMessage;
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.Concept;
@@ -53,9 +54,12 @@ import java.util.stream.Collectors;
 import static grakn.common.collection.Collections.map;
 import static grakn.common.collection.Collections.pair;
 import static grakn.common.collection.Collections.set;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CANNOT_BE_SATISFIED;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.test.Util.assertNotThrows;
+import static grakn.core.common.test.Util.assertThrows;
 import static grakn.core.common.test.Util.assertThrowsGraknException;
+import static grakn.core.common.test.Util.assertThrowsWithMessage;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertFalse;
@@ -627,6 +631,58 @@ public class RuleTest {
                     graphMgr.schema().thingTypes().forEachRemaining(type -> {
                         assertFalse(graphMgr.schema().rules().references().get(graphMgr.schema().getType(type.properLabel())).hasNext());
                     });
+                }
+            }
+        }
+    }
+
+    @Test
+    public void rule_that_cannot_be_satisfied_throws_an_error() throws IOException {
+        Util.resetDirectory(directory);
+
+        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+            grakn.databases().create(database);
+            try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    final ConceptManager conceptMgr = txn.concepts();
+
+                    final EntityType person = conceptMgr.putEntityType("person");
+                    final EntityType dog = conceptMgr.putEntityType("dog");
+                    final AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
+                    person.setOwns(name);
+
+                    assertThrowsWithMessage(() -> txn.logic().putRule(
+                            "dogs-are-named-fido",
+                            Graql.parsePattern("{$x isa dog;}").asConjunction(),
+                            Graql.parseVariable("$x has name 'fido'").asThing()),
+                                            GraknException.of(RULE_CANNOT_BE_SATISFIED, "dogs-are-named-fido", "$x").getMessage());
+                }
+            }
+        }
+    }
+
+    @Test
+    public void rule_that_cannot_be_inserted_throws_an_error() throws IOException {
+        Util.resetDirectory(directory);
+
+        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+            grakn.databases().create(database);
+            try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    final ConceptManager conceptMgr = txn.concepts();
+
+                    final EntityType animal = conceptMgr.putEntityType("animal");
+                    final EntityType person = conceptMgr.putEntityType("person");
+                    final EntityType dog = conceptMgr.putEntityType("dog");
+                    final AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
+                    person.setOwns(name);
+                    person.setSupertype(animal);
+                    dog.setSupertype(animal);
+
+                    assertThrows(() -> txn.logic().putRule(
+                            "animals-are-named-fido",
+                            Graql.parsePattern("{$x isa animal;}").asConjunction(),
+                            Graql.parseVariable("$x has name 'fido'").asThing()));
                 }
             }
         }
