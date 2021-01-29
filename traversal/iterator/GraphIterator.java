@@ -32,6 +32,7 @@ import grakn.core.traversal.procedure.ProcedureEdge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -251,7 +252,7 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
     private boolean isClosure(ProcedureEdge<?, ?> edge, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex) {
         if (edge.isRolePlayer()) {
             Set<ThingVertex> withinScope = scopedRoles.computeIfAbsent(edge.asRolePlayer().scope(), id -> new HashSet<>());
-            PriorityQueue<Integer> scopedEdgeOrder = scopedEdgeOrders.computeIfAbsent(edge.asRolePlayer().scope(), id -> new PriorityQueue<>());
+            PriorityQueue<Integer> scopedEdgeOrder = scopedEdgeOrders.computeIfAbsent(edge.asRolePlayer().scope(), id -> new PriorityQueue<>(Comparator.reverseOrder()));
             boolean closed = edge.asRolePlayer().isClosure(graphMgr, fromVertex, toVertex, params, withinScope);
             if (closed) {
                 assert !scopedEdgeOrder.contains(edge.order());
@@ -268,7 +269,7 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
         if (edge.to().id().isScoped()) {
             Identifier.Variable scope = edge.to().id().asScoped().scope();
             Set<ThingVertex> withinScope = scopedRoles.computeIfAbsent(scope, id -> new HashSet<>());
-            PriorityQueue<Integer> scopedEdgeOrder = scopedEdgeOrders.computeIfAbsent(scope, id -> new PriorityQueue<>());
+            PriorityQueue<Integer> scopedEdgeOrder = scopedEdgeOrders.computeIfAbsent(scope, id -> new PriorityQueue<>(Comparator.reverseOrder()));
             toIter = edge.branch(graphMgr, fromVertex, params).filter(role -> {
                 if (withinScope.contains(role.asThing())) return false;
                 else {
@@ -283,7 +284,7 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
         } else if (edge.isRolePlayer()) {
             Identifier.Variable scope = edge.asRolePlayer().scope();
             Set<ThingVertex> withinScope = scopedRoles.computeIfAbsent(scope, id -> new HashSet<>());
-            PriorityQueue<Integer> scopedEdgeOrder = scopedEdgeOrders.computeIfAbsent(scope, id -> new PriorityQueue<>());
+            PriorityQueue<Integer> scopedEdgeOrder = scopedEdgeOrders.computeIfAbsent(scope, id -> new PriorityQueue<>(Comparator.reverseOrder()));
             toIter = edge.asRolePlayer().branchEdge(graphMgr, fromVertex, params).filter(e -> {
                 if (withinScope.contains(e.optimised().get())) return false;
                 else {
