@@ -1062,14 +1062,14 @@ public abstract class ProcedureEdge<
                         if (!roleTypes.isEmpty()) {
                             validEdge = iterate(resolvedRoleTypes(graphMgr.schema())).flatMap(
                                     rt -> rel.outs().edge(ROLEPLAYER, rt.iid(), player.iid().prefix(), player.iid().type()).get()
-                                            .filter(e -> e.to().equals(player) && !scoped.isRoleVisited(e.optimised().get())))
+                                            .filter(e -> e.to().equals(player) && !scoped.contains(e.optimised().get())))
                                     .first();
                         } else {
                             validEdge = rel.outs().edge(ROLEPLAYER).get().filter(
-                                    e -> e.to().equals(player) && !scoped.isRoleVisited(e.optimised().get())
+                                    e -> e.to().equals(player) && !scoped.contains(e.optimised().get())
                             ).first();
                         }
-                        validEdge.ifPresent(e -> scoped.roleVisited(e.optimised().get(), order()));
+                        validEdge.ifPresent(e -> scoped.record(e.optimised().get(), order()));
                         return validEdge.isPresent();
                     }
                 }
@@ -1123,14 +1123,14 @@ public abstract class ProcedureEdge<
                         if (!roleTypes.isEmpty()) {
                             validEdge = iterate(resolvedRoleTypes(graphMgr.schema())).flatMap(
                                     rt -> player.ins().edge(ROLEPLAYER, rt.iid(), rel.iid().prefix(), rel.iid().type()).get()
-                                            .filter(e -> e.from().equals(rel) && !scoped.isRoleVisited(e.optimised().get())))
+                                            .filter(e -> e.from().equals(rel) && !scoped.contains(e.optimised().get())))
                                     .first();
                         } else {
                             validEdge = player.ins().edge(ROLEPLAYER).get().filter(
-                                    e -> e.from().equals(rel) && !scoped.isRoleVisited(e.optimised().get())
+                                    e -> e.from().equals(rel) && !scoped.contains(e.optimised().get())
                             ).first();
                         }
-                        validEdge.ifPresent(e -> scoped.roleVisited(e.optimised().get(), order()));
+                        validEdge.ifPresent(e -> scoped.record(e.optimised().get(), order()));
                         return validEdge.isPresent();
                     }
 
