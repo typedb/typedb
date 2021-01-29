@@ -133,7 +133,7 @@ public class Reasoner {
         ResourceIterator<ConceptMap> answers;
         Conjunction conj = logicMgr.typeResolver().resolve(conjunction);
         if (conj.isSatisfiable()) {
-            if (!isInfer(context)) answers = produce(resolve(conj), context.producer());
+            if (isInfer(context)) answers = produce(resolve(conj), context.producer());
             else answers = traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
         } else if (!filter.isEmpty() && iterate(filter).anyMatch(id -> conj.variable(id).isThing()) ||
                 iterate(conjunction.variables()).anyMatch(Variable::isThing)) {
