@@ -182,12 +182,13 @@ public class RuleResolver extends Resolver<RuleResolver> {
         Traversal traversal = boundTraversal(rule.when().traversal(), request.answerBounds().conceptMap());
         ResourceIterator<ConceptMap> traversalIterator = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
         ResponseProducer responseProducer = new ResponseProducer(traversalIterator, iteration);
-        Request toDownstream = Request.create(request.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
-                                              AnswerState.UpstreamVars.Initial.of(request.answerBounds().conceptMap())
-                                                      .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
-                                              new ResolutionAnswer.Derivation(map()), 0);
-        responseProducer.addDownstreamProducer(toDownstream);
-
+        if (!plan.isEmpty()) {
+            Request toDownstream = Request.create(request.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
+                                                  AnswerState.UpstreamVars.Initial.of(request.answerBounds().conceptMap())
+                                                          .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
+                                                  new ResolutionAnswer.Derivation(map()), 0);
+            responseProducer.addDownstreamProducer(toDownstream);
+        }
         return responseProducer;
     }
 
@@ -199,11 +200,13 @@ public class RuleResolver extends Resolver<RuleResolver> {
         Traversal traversal = boundTraversal(rule.when().traversal(), request.answerBounds().conceptMap());
         ResourceIterator<ConceptMap> traversalIterator = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
         ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversalIterator, newIteration);
-        Request toDownstream = Request.create(request.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
-                                              AnswerState.UpstreamVars.Initial.of(request.answerBounds().conceptMap())
-                                                      .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
-                                              new ResolutionAnswer.Derivation(map()), 0);
-        responseProducerNewIter.addDownstreamProducer(toDownstream);
+        if (!plan.isEmpty()) {
+            Request toDownstream = Request.create(request.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
+                                                  AnswerState.UpstreamVars.Initial.of(request.answerBounds().conceptMap())
+                                                          .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
+                                                  new ResolutionAnswer.Derivation(map()), 0);
+            responseProducerNewIter.addDownstreamProducer(toDownstream);
+        }
         return responseProducerNewIter;
     }
 

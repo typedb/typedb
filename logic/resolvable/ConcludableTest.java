@@ -24,7 +24,6 @@ import grakn.core.pattern.constraint.thing.RelationConstraint;
 import graql.lang.Graql;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.list;
@@ -65,17 +64,7 @@ public class ConcludableTest {
     }
 
     @Test
-    public void rule_concludables_built_correctly_from_rule_concerning_has_isa_value() throws IOException {
-        String conjunction = "{ $x isa milk, has age-in-days >= 10; }";
-        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
-        assertEquals(1, isaConcludablesCount(concludables));
-        assertEquals(1, hasConcludablesCount(concludables));
-        assertEquals(0, relationConcludablesCount(concludables));
-        assertEquals(0, attributeConcludablesCount(concludables));
-    }
-
-    @Test
-    public void rule_concludables_built_correctly_from_rule_concerning_has() throws IOException {
+    public void test_conjunction_isa_value_constrained_is_built() {
         String conjunction = "{ $x isa milk; $a 10 isa age-in-days; }";
         Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         assertEquals(2, isaConcludablesCount(concludables));
@@ -104,6 +93,15 @@ public class ConcludableTest {
         assertEquals(0, attributeConcludablesCount(concludables));
     }
 
+    @Test
+    public void test_conjunction_isa_has_value_constrained_is_built() {
+        String conjunction = "{ $x isa milk, has age-in-days >= 10; }";
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
+        assertEquals(1, isaConcludablesCount(concludables));
+        assertEquals(1, hasConcludablesCount(concludables));
+        assertEquals(0, relationConcludablesCount(concludables));
+        assertEquals(0, attributeConcludablesCount(concludables));
+    }
 
     @Test
     public void test_conjunction_only_relation_is_built() {
@@ -322,5 +320,4 @@ public class ConcludableTest {
             assertTrue(hasConcludable.has().attribute().isa().isPresent());
         });
     }
-
 }
