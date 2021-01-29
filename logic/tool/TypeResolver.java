@@ -20,7 +20,6 @@ package grakn.core.logic.tool;
 
 import grakn.common.collection.Bytes;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
 import grakn.core.graph.common.Encoding;
@@ -53,7 +52,6 @@ import graql.lang.pattern.variable.Reference;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.set;
@@ -77,19 +75,6 @@ public class TypeResolver {
         this.logicCache = logicCache;
     }
 
-    public ResourceIterator<Map<Reference.Name, Label>> combinations(Conjunction conjunction, boolean insertable) {
-        TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, conceptMgr, insertable);
-        return traversalEng.iterator(traversalBuilder.traversal()).map(vertexMap -> {
-            Map<Reference.Name, Label> mapping = new HashMap<>();
-            vertexMap.forEach((ref, vertex) -> {
-                assert vertex.isType();
-                traversalBuilder.getVariable(ref).map(Variable::reference).filter(Reference::isName)
-                        .map(Reference::asName).ifPresent(originalRef -> mapping.put(originalRef, vertex.asType().properLabel()));
-            });
-            return mapping;
-        });
-    }
-
     public Conjunction resolveLabels(Conjunction conjunction) {
         iterate(conjunction.variables()).filter(v -> v.isType() && v.asType().label().isPresent())
                 .forEachRemaining(typeVar -> {
@@ -108,10 +93,10 @@ public class TypeResolver {
         return conjunction;
     }
 
-    public Conjunction resolve(Conjunction conjunction, boolean insertable) {
+    public Conjunction resolve(Conjunction conjunction) {
         resolveLabels(conjunction);
-        TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, conceptMgr, insertable);
-        Map<Reference, Set<Label>> resolvedLabels = executeResolverTraversals(traversalBuilder);
+        TraversalBuilder traversalConstructor = new TraversalBuilder(conjunction, conceptMgr);
+        Map<Reference, Set<Label>> resolvedLabels = executeResolverTraversals(traversalConstructor);
         if (resolvedLabels.isEmpty()) {
             conjunction.setSatisfiable(false);
             return conjunction;
@@ -121,19 +106,15 @@ public class TypeResolver {
         long numOfConcreteTypes = traversalEng.graph().schema().stats().concreteThingTypeCount();
 
         resolvedLabels.forEach((ref, labels) -> {
-            traversalBuilder.getVariable(ref)
-                    .filter(var -> (var.isType() && labels.size() < numOfTypes) || (var.isThing() && labels.size() < numOfConcreteTypes))
-                    .ifPresent(variable -> {
-                        assert variable.resolvedTypes().isEmpty() || variable.resolvedTypes().containsAll(labels);
-                        variable.setResolvedTypes(labels);
-                    });
+            Variable variable = traversalConstructor.getVariable(ref);
+            if (variable.isType() && labels.size() < numOfTypes ||
+                    variable.isThing() && labels.size() < numOfConcreteTypes) {
+                assert variable.resolvedTypes().isEmpty() || variable.resolvedTypes().containsAll(labels);
+                variable.setResolvedTypes(labels);
+            }
         });
 
         return conjunction;
-    }
-
-    public Conjunction resolve(Conjunction conjunction) {
-        return resolve(conjunction, false);
     }
 
     private Map<Reference, Set<Label>> executeResolverTraversals(TraversalBuilder traversalBuilder) {
@@ -144,8 +125,7 @@ public class TypeResolver {
                         mapping.putIfAbsent(ref, new HashSet<>());
                         assert vertex.isType();
                         // TODO: This filter should not be needed if we enforce traversal only to return non-abstract
-                        if (!traversalBuilder.getVariable(ref).isPresent()) return;
-                        if (!(vertex.asType().isAbstract() && traversalBuilder.getVariable(ref).get().isThing()))
+                        if (!(vertex.asType().isAbstract() && traversalBuilder.getVariable(ref).isThing()))
                             mapping.get(ref).add(vertex.asType().properLabel());
                     })
             );
@@ -161,16 +141,14 @@ public class TypeResolver {
         private final ConceptManager conceptMgr;
         private final Traversal traversal;
         private int sysVarCounter;
-        private final boolean insertable;
 
-        TraversalBuilder(Conjunction conjunction, ConceptManager conceptMgr, boolean insertable) {
+        TraversalBuilder(Conjunction conjunction, ConceptManager conceptMgr) {
             this.conceptMgr = conceptMgr;
             this.traversal = new Traversal();
             this.variableRegister = new HashMap<>();
             this.resolverRegister = new HashMap<>();
             this.valueTypeRegister = new HashMap<>();
             this.sysVarCounter = 0;
-            this.insertable = insertable;
             conjunction.variables().forEach(this::register);
         }
 
@@ -178,9 +156,8 @@ public class TypeResolver {
             return traversal;
         }
 
-        Optional<Variable> getVariable(Reference reference) {
-            if (!variableRegister.containsKey(reference)) return Optional.empty();
-            return Optional.of(variableRegister.get(reference));
+        Variable getVariable(Reference reference) {
+            return variableRegister.get(reference);
         }
 
         private void register(Variable variable) {
@@ -263,8 +240,7 @@ public class TypeResolver {
             var.isa().ifPresent(constraint -> registerIsa(resolver, constraint));
             var.is().forEach(constraint -> registerIsThing(resolver, constraint));
             var.has().forEach(constraint -> registerHas(resolver, constraint));
-            if (insertable) var.relation().forEach(constraint -> registerInsertableRelation(resolver, constraint));
-            else var.relation().forEach(constraint -> registerRelation(resolver, constraint));
+            var.relation().forEach(constraint -> registerRelation(resolver, constraint));
             var.iid().ifPresent(constraint -> registerIID(resolver, constraint));
             return resolver;
         }
@@ -276,7 +252,7 @@ public class TypeResolver {
         }
 
         private void registerIsa(TypeVariable resolver, IsaConstraint isaConstraint) {
-            if (!isaConstraint.isExplicit() && !insertable)
+            if (!isaConstraint.isExplicit())
                 traversal.sub(resolver.id(), register(isaConstraint.type()).id(), true);
             else if (isaConstraint.type().reference().isName())
                 traversal.equalTypes(resolver.id(), register(isaConstraint.type()).id());
@@ -298,23 +274,13 @@ public class TypeResolver {
         private void registerRelation(TypeVariable resolver, RelationConstraint constraint) {
             for (RelationConstraint.RolePlayer rolePlayer : constraint.players()) {
                 TypeVariable playerResolver = register(rolePlayer.player());
-                TypeVariable actingRoleResolver = new TypeVariable(newSystemId());
+                TypeVariable actingRoleResolver = register(new TypeVariable(newSystemId()));
                 if (rolePlayer.roleType().isPresent()) {
                     TypeVariable roleTypeResolver = register(rolePlayer.roleType().get());
                     traversal.sub(actingRoleResolver.id(), roleTypeResolver.id(), true);
                 }
                 traversal.relates(resolver.id(), actingRoleResolver.id());
                 traversal.plays(playerResolver.id(), actingRoleResolver.id());
-            }
-        }
-
-        private void registerInsertableRelation(TypeVariable resolver, RelationConstraint constraint) {
-            for (RelationConstraint.RolePlayer rolePlayer : constraint.players()) {
-                TypeVariable playerResolver = register(rolePlayer.player());
-                TypeVariable roleResolver = register(rolePlayer.roleType().isPresent() ?
-                                                             rolePlayer.roleType().get() : new TypeVariable(newSystemId()));
-                traversal.relates(resolver.id(), roleResolver.id());
-                traversal.plays(playerResolver.id(), roleResolver.id());
             }
         }
 

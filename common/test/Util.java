@@ -61,7 +61,7 @@ public class Util {
             function.run();
             fail();
         } catch (RuntimeException e) {
-            assert (e.getMessage().contains(message));
+            assert (e.toString().contains(message));
         }
     }
 
