@@ -801,9 +801,9 @@ public class UnifyRelationConcludableTest {
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
         Rule rule = createRule("one-employee-one-employer",
-                               "{ $x isa person; $y isa company; $employment sub employment; " +
-                                       "$employee sub employment:employee; $employer sub employment:employer; }",
-                               "($employee: $x, $employer: $y) isa $employment");
+                               "{ $x isa person; $y isa company; " +
+                                       "$employee type employment:employee; $employer type employment:employer; }",
+                               "($employee: $x, $employer: $y) isa employment");
 
         ResourceIterator<Unifier> unifier = queryConcludable.unify(rule.conclusion(), conceptMgr);
         Set<Map<String, Set<String>>> result = unifier.map(u -> getStringMapping(u.mapping())).toSet();

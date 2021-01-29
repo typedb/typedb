@@ -55,12 +55,15 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CANNOT_BE_SATISFIED;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CAN_IMPLY_UNINSERTABLE_RESULTS;
 
 
 public class Rule {
@@ -78,20 +81,23 @@ public class Rule {
         this.when = whenPattern(structure.when(), logicMgr);
         this.then = thenPattern(structure.then(), logicMgr);
         pruneThenResolvedTypes();
+        validateSatisfiable();
+        validateInsertable(logicMgr);
         this.conclusion = Conclusion.create(this.then);
         this.requiredWhenConcludables = Concludable.create(this.when);
+        validateCycles();
     }
 
     private Rule(GraphManager graphMgr, LogicManager logicMgr, String label,
                  graql.lang.pattern.Conjunction<? extends Pattern> when, ThingVariable<?> then) {
         this.structure = graphMgr.schema().rules().create(label, when, then);
-        this.when = whenPattern(structure.when(), logicMgr);
-        this.then = thenPattern(structure.then(), logicMgr);
-        validateSatisfiable();
+        this.when = logicMgr.typeResolver().resolve(whenPattern(structure.when(), logicMgr), false);
+        this.then = logicMgr.typeResolver().resolve(thenPattern(structure.then(), logicMgr), false); ;
         pruneThenResolvedTypes();
+        validateSatisfiable();
+        validateInsertable(logicMgr);
         this.conclusion = Conclusion.create(this.then);
         this.requiredWhenConcludables = Concludable.create(this.when);
-        validateInsertable();
         validateCycles();
         this.conclusion.index(this);
     }
@@ -165,26 +171,20 @@ public class Rule {
     }
 
     public void validateSatisfiable() {
-        /*
-         check that none of the variables in the `when` or `then` conjunctions are marked `isSatisfiable = false`. otherwise throw an error
-         */
+        Stream.concat(then.variables().stream(), when.variables().stream()).forEach(variable -> {
+            if (!variable.isSatisfiable())
+                throw GraknException.of(RULE_CANNOT_BE_SATISFIED, structure.label(), variable.reference().toString());
+        });
     }
 
-    public void validateInsertable() {
-        /*
-        High level, we also want to ensure that every combination of possible variable types in the `then`, that may be provided
-        by the `when` of the rule, is actually compatible with the `then` of the rule. This means,
-        we need _any_ set of instances to be insertable in the `then`. Note that inserts are different from `match`
-        in that you don't check any subtyping (i think), just check what the exact concept's capabilities are.
+    public void validateInsertable(LogicManager logicMgr) {
+        ResourceIterator<Map<Reference.Name, Label>> possibleWhenPerms = logicMgr.typeResolver().combinations(when, false);
+        Set<Map<Reference.Name, Label>> possibleThenSet = logicMgr.typeResolver().combinations(then, true).toSet();
 
-        If any combination of types the `when` may produce is not compatible with the `then`, we should flag it to the user.
-
-        To do this you may want to
-        1. utilise the streaming mode of `TypeResolver` (can re-run it, thats ok) to get all combinations
-        2. utilise the `Rule.Conclusion` classes before (there's exactly 1 of the 3 per rule) to validate a combination is compatible with the conclusion
-           using these Rule.Conclusion data structures indicates that it is a "high level" logical rule validation, which is true
-         */
-
+        possibleWhenPerms.forEachRemaining(nameLabelMap -> {
+            if (possibleThenSet.stream().noneMatch(thenMap -> nameLabelMap.entrySet().containsAll(thenMap.entrySet())))
+                throw GraknException.of(RULE_CAN_IMPLY_UNINSERTABLE_RESULTS, structure.label(), nameLabelMap.toString());
+        });
     }
 
     void validateCycles() {
