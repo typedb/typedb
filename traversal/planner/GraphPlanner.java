@@ -274,7 +274,7 @@ public class GraphPlanner implements Planner {
                 totalCostLastRecorded = totalCostNext;
                 vertices.values().forEach(PlannerVertex::recordCost);
                 edges.forEach(PlannerEdge::recordCost);
-                new Initialiser().execute();
+                setInitialValues();
             }
         }
         LOG.trace(solver.exportModelAsLpFormat());
@@ -327,6 +327,14 @@ public class GraphPlanner implements Planner {
         edges.forEach(e -> e.updateObjective(graph));
     }
 
+    private void setInitialValues() {
+        new Initialiser().execute();
+    }
+
+    private void resetInitialValues() {
+        solver.setHint(new MPVariable[]{}, new double[]{});
+    }
+
     @SuppressWarnings("NonAtomicOperationOnVolatileField")
     void optimise(GraphManager graph, boolean extraTime) {
         if (isOptimising.compareAndSet(false, true)) {
@@ -356,10 +364,6 @@ public class GraphPlanner implements Planner {
             }
             isOptimising.set(false);
         }
-    }
-
-    private void resetInitialValues() {
-        solver.setHint(new MPVariable[]{}, new double[]{});
     }
 
     private void throwPlanningError() {

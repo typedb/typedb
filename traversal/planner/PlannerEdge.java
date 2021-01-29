@@ -288,9 +288,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             varOrderNumber_init = order;
             if (order > 0) {
                 varIsSelected_init = 1;
-                if (order - 1 >= varOrderAssignment_init.length) {
-                    System.out.println();
-                }
                 varOrderAssignment_init[order - 1] = 1;
             }
             hasInitialValue = true;
