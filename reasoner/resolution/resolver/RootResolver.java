@@ -167,9 +167,10 @@ public class RootResolver extends Resolver<RootResolver> {
 
     @Override
     protected void initialiseDownstreamActors() {
-        if (!concludables.isEmpty()) {
-            Set<Concludable> concludables = Iterators.iterate(Concludable.create(conjunction))
-                    .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext()).toSet();
+        LOG.debug("{}: initialising downstream actors", name());
+        Set<Concludable> concludables = Iterators.iterate(Concludable.create(conjunction))
+                .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext()).toSet();
+        if (concludables.size() > 0) {
             Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction, concludables);
             Set<Resolvable> resolvables = new HashSet<>();
             resolvables.addAll(concludables);

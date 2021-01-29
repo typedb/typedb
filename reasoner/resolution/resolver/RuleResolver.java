@@ -162,17 +162,19 @@ public class RuleResolver extends Resolver<RuleResolver> {
     @Override
     protected void initialiseDownstreamActors() {
         LOG.debug("{}: initialising downstream actors", name());
-        Set<Concludable> concludablesWithApplicableRules = Iterators.iterate(Concludable.create(rule.when()))
+        Set<Concludable> concludables = Iterators.iterate(Concludable.create(rule.when()))
                 .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext()).toSet();
-        Set<Retrievable> retrievables = Retrievable.extractFrom(rule.when(), concludablesWithApplicableRules);
-        Set<Resolvable> resolvables = new HashSet<>();
-        resolvables.addAll(concludablesWithApplicableRules);
-        resolvables.addAll(retrievables);
+        if (concludables.size() > 0) {
+            Set<Retrievable> retrievables = Retrievable.extractFrom(rule.when(), concludables);
+            Set<Resolvable> resolvables = new HashSet<>();
+            resolvables.addAll(concludables);
+            resolvables.addAll(retrievables);
 
-        plan = planner.plan(resolvables);
-        iterate(plan).forEachRemaining(resolvable -> {
-            downstreamResolvers.put(resolvable, registry.registerResolvable(resolvable));
-        });
+            plan = planner.plan(resolvables);
+            iterate(plan).forEachRemaining(resolvable -> {
+                downstreamResolvers.put(resolvable, registry.registerResolvable(resolvable));
+            });
+        }
     }
 
     @Override
