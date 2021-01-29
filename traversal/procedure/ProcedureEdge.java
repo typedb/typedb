@@ -40,6 +40,7 @@ import graql.lang.common.GraqlToken;
 
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import static grakn.common.util.Objects.className;
@@ -1056,15 +1057,19 @@ public abstract class ProcedureEdge<
                                              Traversal.Parameters params, Set<ThingVertex> withinScope) {
                         ThingVertex rel = fromVertex.asThing();
                         ThingVertex player = toVertex.asThing();
+                        Optional<ThingEdge> validEdge;
                         if (!roleTypes.isEmpty()) {
-                            return iterate(resolvedRoleTypes(graphMgr.schema())).anyMatch(
+                            validEdge = iterate(resolvedRoleTypes(graphMgr.schema())).flatMap(
                                     rt -> rel.outs().edge(ROLEPLAYER, rt.iid(), player.iid().prefix(), player.iid().type()).get()
-                                            .anyMatch(e -> e.to().equals(player) && !withinScope.contains(e.optimised().get())));
+                                            .filter(e -> e.to().equals(player) && !withinScope.contains(e.optimised().get())))
+                                    .first();
                         } else {
-                            return rel.outs().edge(ROLEPLAYER).get().anyMatch(
+                            validEdge = rel.outs().edge(ROLEPLAYER).get().filter(
                                     e -> e.to().equals(player) && !withinScope.contains(e.optimised().get())
-                            );
+                            ).first();
                         }
+                        validEdge.ifPresent(e -> withinScope.add(e.optimised().get()));
+                        return validEdge.isPresent();
                     }
                 }
 
@@ -1113,15 +1118,19 @@ public abstract class ProcedureEdge<
                                              Traversal.Parameters params, Set<ThingVertex> withinScope) {
                         ThingVertex player = fromVertex.asThing();
                         ThingVertex rel = toVertex.asThing();
+                        Optional<ThingEdge> validEdge;
                         if (!roleTypes.isEmpty()) {
-                            return iterate(resolvedRoleTypes(graphMgr.schema())).anyMatch(
+                            validEdge = iterate(resolvedRoleTypes(graphMgr.schema())).flatMap(
                                     rt -> player.ins().edge(ROLEPLAYER, rt.iid(), rel.iid().prefix(), rel.iid().type()).get()
-                                            .anyMatch(e -> e.from().equals(rel) && !withinScope.contains(e.optimised().get())));
+                                            .filter(e -> e.from().equals(rel) && !withinScope.contains(e.optimised().get())))
+                                    .first();
                         } else {
-                            return player.ins().edge(ROLEPLAYER).get().anyMatch(
+                            validEdge = player.ins().edge(ROLEPLAYER).get().filter(
                                     e -> e.from().equals(rel) && !withinScope.contains(e.optimised().get())
-                            );
+                            ).first();
                         }
+                        validEdge.ifPresent(e -> withinScope.add(e.optimised().get()));
+                        return validEdge.isPresent();
                     }
 
                     @Override

@@ -54,7 +54,7 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
     private final List<Identifier.Variable.Name> filter;
     private final Map<Identifier, ResourceIterator<? extends Vertex<?, ?>>> iterators;
     private final Map<Identifier, Vertex<?, ?>> answer;
-    private final Map<Identifier.Variable, Set<ThingVertex>> scoped;
+    private final Map<Identifier.Variable, Set<ThingVertex>> scopedRoles;
     private final Map<Identifier.Variable, PriorityQueue<Integer>> scopedEdgeOrders;
     private final Map<Identifier, ThingVertex> roles;
     private final SeekStack seekStack;
@@ -73,7 +73,7 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
         this.filter = filter;
         this.edgeCount = procedure.edgesCount();
         this.iterators = new HashMap<>();
-        this.scoped = new HashMap<>();
+        this.scopedRoles = new HashMap<>();
         this.scopedEdgeOrders = new HashMap<>();
         this.roles = new HashMap<>();
         this.answer = new HashMap<>();
@@ -113,7 +113,8 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
     private boolean computeFirstBranch(int pos) {
         ProcedureEdge<?, ?> edge = procedure.edge(pos);
         Identifier toID = edge.to().id();
-        ResourceIterator<? extends Vertex<?, ?>> toIter = branch(answer.get(edge.from().id()), edge);
+        Identifier fromId = edge.from().id();
+        ResourceIterator<? extends Vertex<?, ?>> toIter = branch(answer.get(fromId), edge);
 
         if (toIter.hasNext()) {
             iterators.put(toID, toIter);
@@ -122,15 +123,13 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
             while (!computeFirst(pos + 1)) {
                 if (pos == seekStack.peekLastPos()) {
                     seekStack.popLastPos();
-                    if (edge.onlyStartsFromRelation()) {
-                        scopedEdgeOrders.get(edge.from().id().asVariable()).remove(pos);
-                    }
                     if (toIter.hasNext()) answer.put(toID, toIter.next());
                     else {
                         backTrackCleanUp(pos);
                         answer.remove(toID);
                         if (edge.onlyStartsFromRelation()) {
-                            seekStack.addSeeks(iterate(scopedEdgeOrders.get(edge.from().id().asVariable())).toSet());
+                            assert fromId.isVariable();
+                            seekStack.addSeeks(iterate(scopedEdgeOrders.get(fromId.asVariable())).toSet());
                         } else {
                             seekStack.addSeeks(edge.from().dependedEdgeOrders());
                         }
@@ -146,7 +145,8 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
             return true;
         } else {
             if (edge.onlyStartsFromRelation()) {
-                seekStack.addSeeks(iterate(scopedEdgeOrders.get(edge.from().id().asVariable())).toSet());
+                assert fromId.isVariable();
+                seekStack.addSeeks(iterate(scopedEdgeOrders.get(fromId.asVariable())).toSet());
             } else {
                 seekStack.addSeeks(edge.from().dependedEdgeOrders());
             }
@@ -161,9 +161,11 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
             else return computeFirst(pos + 1);
         } else {
             if (edge.onlyStartsFromRelation()) {
+                assert edge.from().id().isVariable();
                 seekStack.addSeeks(iterate(scopedEdgeOrders.get(edge.from().id().asVariable())).toSet());
                 seekStack.addSeeks(edge.to().dependedEdgeOrders());
             } else if (edge.onlyEndsAtRelation()) {
+                assert edge.from().id().isVariable();
                 seekStack.addSeeks(edge.from().dependedEdgeOrders());
                 seekStack.addSeeks(iterate(scopedEdgeOrders.get(edge.to().id().asVariable())).toSet());
             } else {
@@ -182,10 +184,6 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
 
         if (pos == computeNextSeekPos) {
             computeNextSeekPos = edgeCount;
-            // this seek may have been set by the scoped seeks
-            if (edge.onlyStartsFromRelation()) {
-                scopedEdgeOrders.get(edge.from().id().asVariable()).remove(pos);
-            }
         } else if (pos > computeNextSeekPos) {
             if (!edge.isClosureEdge()) iterators.get(toID).recycle();
             if (!backTrack(pos)) return false;
@@ -252,10 +250,14 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
 
     private boolean isClosure(ProcedureEdge<?, ?> edge, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex) {
         if (edge.isRolePlayer()) {
-            Set<ThingVertex> withinScope = scoped.computeIfAbsent(edge.asRolePlayer().scope(), id -> new HashSet<>());
+            Set<ThingVertex> withinScope = scopedRoles.computeIfAbsent(edge.asRolePlayer().scope(), id -> new HashSet<>());
             PriorityQueue<Integer> scopedEdgeOrder = scopedEdgeOrders.computeIfAbsent(edge.asRolePlayer().scope(), id -> new PriorityQueue<>());
-            scopedEdgeOrder.add(edge.order());
-            return edge.asRolePlayer().isClosure(graphMgr, fromVertex, toVertex, params, withinScope);
+            boolean closed = edge.asRolePlayer().isClosure(graphMgr, fromVertex, toVertex, params, withinScope);
+            if (closed) {
+                assert !scopedEdgeOrder.contains(edge.order());
+                scopedEdgeOrder.add(edge.order());
+            }
+            return closed;
         } else {
             return edge.isClosure(graphMgr, fromVertex, toVertex, params);
         }
@@ -265,13 +267,14 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
         ResourceIterator<? extends Vertex<?, ?>> toIter;
         if (edge.to().id().isScoped()) {
             Identifier.Variable scope = edge.to().id().asScoped().scope();
-            Set<ThingVertex> withinScope = scoped.computeIfAbsent(scope, id -> new HashSet<>());
+            Set<ThingVertex> withinScope = scopedRoles.computeIfAbsent(scope, id -> new HashSet<>());
             PriorityQueue<Integer> scopedEdgeOrder = scopedEdgeOrders.computeIfAbsent(scope, id -> new PriorityQueue<>());
             toIter = edge.branch(graphMgr, fromVertex, params).filter(role -> {
                 if (withinScope.contains(role.asThing())) return false;
                 else {
                     removePreviousScopedRole(scope, edge.to().id(), edge);
                     withinScope.add(role.asThing());
+                    assert !scopedEdgeOrder.contains(edge.order());
                     scopedEdgeOrder.add(edge.order());
                     roles.put(edge.to().id(), role.asThing());
                     return true;
@@ -279,13 +282,14 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
             });
         } else if (edge.isRolePlayer()) {
             Identifier.Variable scope = edge.asRolePlayer().scope();
-            Set<ThingVertex> withinScope = scoped.computeIfAbsent(scope, id -> new HashSet<>());
+            Set<ThingVertex> withinScope = scopedRoles.computeIfAbsent(scope, id -> new HashSet<>());
             PriorityQueue<Integer> scopedEdgeOrder = scopedEdgeOrders.computeIfAbsent(scope, id -> new PriorityQueue<>());
             toIter = edge.asRolePlayer().branchEdge(graphMgr, fromVertex, params).filter(e -> {
                 if (withinScope.contains(e.optimised().get())) return false;
                 else {
                     removePreviousScopedRole(scope, edge.to().id(), edge);
                     withinScope.add(e.optimised().get());
+                    assert !scopedEdgeOrder.contains(edge.order());
                     scopedEdgeOrder.add(edge.order());
                     roles.put(edge.to().id(), e.optimised().get());
                     return true;
@@ -319,8 +323,9 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
     private void removePreviousScopedRole(Identifier.Variable scope, Identifier toId, ProcedureEdge<?, ?> edge) {
         ThingVertex previousRole = roles.remove(toId);
         if (previousRole != null) {
-            assert scoped.containsKey(scope);
-            scoped.get(scope).remove(previousRole);
+            assert scopedRoles.containsKey(scope);
+            scopedRoles.get(scope).remove(previousRole);
+            assert scopedEdgeOrders.containsKey(scope) && scopedEdgeOrders.get(scope).contains(edge.order());
             scopedEdgeOrders.get(scope).remove(edge.order());
         }
     }
