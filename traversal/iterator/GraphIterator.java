@@ -164,12 +164,11 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
     }
 
     private void closureFailure(ProcedureEdge<?, ?> edge) {
+        assert edge.from().id().isVariable();
         if (edge.onlyStartsFromRelation()) {
-            assert edge.from().id().isVariable();
             seekStack.addSeeks(scopes.get(edge.from().id().asVariable()).edgeOrders());
             seekStack.addSeeks(edge.to().dependedEdgeOrders());
         } else if (edge.onlyEndsAtRelation()) {
-            assert edge.from().id().isVariable();
             seekStack.addSeeks(edge.from().dependedEdgeOrders());
             seekStack.addSeeks(scopes.get(edge.to().id().asVariable()).edgeOrders());
         } else {
