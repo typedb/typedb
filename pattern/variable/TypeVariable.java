@@ -252,7 +252,7 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     public String toString() {
         if (reference().isLabel()) {
             assert label().isPresent();
-            return "" + label().get().toString();
+            return "" + label().get().scopedLabel();
         } else {
             return super.toString();
         }
