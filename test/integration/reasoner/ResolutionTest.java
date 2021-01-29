@@ -47,7 +47,6 @@ import java.util.stream.Stream;
 import static grakn.core.reasoner.resolution.answer.AnswerState.DownstreamVars;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertFalse;
 
 public class ResolutionTest {
 
@@ -68,33 +67,7 @@ public class ResolutionTest {
     }
 
     @Test
-    public void single_retrievable() throws InterruptedException {
-        try (RocksSession session = schemaSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                transaction.query().define(Graql.parseQuery(
-                        "define person sub entity, owns age;" +
-                                "age sub attribute, value long;"));
-                transaction.commit();
-            }
-        }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 24;"));
-                transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 24;"));
-                transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 24;"));
-                transaction.commit();
-            }
-        }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                Conjunction conjunctionPattern = parseConjunction(transaction, "{ $p1 has age 24; }");
-                createRootAndAssertResponses(transaction, conjunctionPattern, 3L);
-            }
-        }
-    }
-
-    @Test
-    public void single_retrievable_with_relation() throws InterruptedException {
+    public void test_no_rules() throws InterruptedException {
         try (RocksSession session = schemaSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(Graql.parseQuery(
@@ -121,7 +94,7 @@ public class ResolutionTest {
     }
 
     @Test
-    public void test_retrievable_with_no_answers() throws InterruptedException {
+    public void test_no_rules_with_no_answers() throws InterruptedException {
         try (RocksSession session = schemaSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(Graql.parseQuery(
@@ -149,14 +122,11 @@ public class ResolutionTest {
     }
 
     @Test
-    public void simple_rule() throws InterruptedException {
-        // TODO We would like to check that:
+    public void test_simple_rule() throws InterruptedException {
+        // TODO We would like to reach into the reasoner to check that:
         //  - 3 answers come from the direct traversal at the root,
         //  - 3 answers come from the concludable via the rule and its retrievable, checking their sent/received messages
         //  are consistent with our expectation.
-        String conjunction1 = "$p1 isa person, has name \"Bob\";";
-        String conjunction2 = "$p1 isa person, has age 42;";
-        String rulePattern = "rule bobs-are-42: when { $p1 isa person, has name \"Bob\"; } then { $p1 has age 42; };";
 
         try (RocksSession session = schemaSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
@@ -165,81 +135,69 @@ public class ResolutionTest {
                                 "age sub attribute, value long;" +
                                 "name sub attribute, value string;" +
                                 "twins sub relation, relates twin1, relates twin2;" +
-                                rulePattern));
+                                "rule bobs-are-42: when { $p1 isa person, has name \"Bob\"; } then { $p1 has age 42; };"));
                 transaction.commit();
             }
         }
         try (RocksSession session = dataSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                transaction.query().insert(Graql.parseQuery("insert " + conjunction1));
-                transaction.query().insert(Graql.parseQuery("insert " + conjunction1));
-                transaction.query().insert(Graql.parseQuery("insert " + conjunction1));
-                transaction.query().insert(Graql.parseQuery("insert " + conjunction2));
-                transaction.query().insert(Graql.parseQuery("insert " + conjunction2));
-                transaction.query().insert(Graql.parseQuery("insert " + conjunction2));
+                transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has name \"Bob\";"));
+                transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has name \"Bob\";"));
+                transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has name \"Bob\";"));
+                transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 42;"));
+                transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 42;"));
+                transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 42;"));
                 transaction.commit();
             }
         }
         try (RocksSession session = dataSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                Conjunction conjunctionPattern = parseConjunction(transaction, "{ " + conjunction2 + " }");
+                Conjunction conjunctionPattern = parseConjunction(transaction, "{ $p1 isa person, has age 42; }");
                 createRootAndAssertResponses(transaction, conjunctionPattern, 6L);
             }
         }
     }
 
-    @Ignore // TODO Un-ignore, ignored until rules are ready to use
     @Test
-    public void concludableChainWithRule() throws InterruptedException {
-        String conjunction1 = "$p1 isa person, has name \"Bob\"; $p2 isa person; (twin1: $p1, twin2: $p2) isa twins;";
-        String conjunction2 = "$p1 isa person, has age 42;";
-        String conjunction3 = "$p1 isa person; $p2 isa person; (twin1: $p1, twin2: $p2) isa twins;";
-        String rule = "rule bobs-are-42: when { $p1 has name \"Bob\"; } then { $p1 has age 42; };";
+    public void test_chained_rules() throws InterruptedException {
         try (RocksSession session = schemaSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(Graql.parseQuery(
-                        "define person sub entity, owns age, owns name, plays twins:twin1, plays twins:twin2;" +
+                        "define person sub entity, owns name, owns age, plays employment:employee;" +
                                 "age sub attribute, value long;" +
                                 "name sub attribute, value string;" +
-                                "twins sub relation, relates twin1, relates twin2;" +
-                                rule));
+                                "employment sub relation, relates employee;" +
+                                "rule bobs-are-42: when { $p1 isa person, has name \"Bob\"; } then { $p1 has age 42; };" +
+                                "rule those-aged-42-are-employed: when { $x has age 42; } then { (employee: $x) isa employment; };"));
                 transaction.commit();
             }
         }
         try (RocksSession session = dataSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                transaction.query().insert(Graql.parseQuery("insert " + conjunction1));
-                transaction.query().insert(Graql.parseQuery("insert " + conjunction1));
-                transaction.query().insert(Graql.parseQuery("insert " + conjunction1));
-                transaction.query().insert(Graql.parseQuery("insert " + conjunction2));
-                transaction.query().insert(Graql.parseQuery("insert " + conjunction2));
-                transaction.query().insert(Graql.parseQuery("insert " + conjunction2));
-                transaction.query().insert(Graql.parseQuery("insert " + conjunction3));
-                transaction.query().insert(Graql.parseQuery("insert " + conjunction3));
-                transaction.query().insert(Graql.parseQuery("insert " + conjunction3));
+                transaction.query().insert(Graql.parseQuery("insert $p isa person, has name \"Bob\";"));
+                transaction.query().insert(Graql.parseQuery("insert $p isa person, has name \"Bob\";"));
+                transaction.query().insert(Graql.parseQuery("insert $p isa person, has name \"Bob\";"));
+                transaction.query().insert(Graql.parseQuery("insert $p isa person, has age 42;"));
+                transaction.query().insert(Graql.parseQuery("insert $p isa person, has age 42;"));
+                transaction.query().insert(Graql.parseQuery("insert $p isa person, has age 42;"));
+                transaction.query().insert(Graql.parseQuery("insert $p isa person; $e(employee: $p) isa employment;"));
+                transaction.query().insert(Graql.parseQuery("insert $p isa person; $e(employee: $p) isa employment;"));
+                transaction.query().insert(Graql.parseQuery("insert $p isa person; $e(employee: $p) isa employment;"));
                 transaction.commit();
             }
         }
-        long conjunction1TraversalAnswerCount = 3L;
-        long conjunction2TraversalAnswerCount = 3L;
-        long conjunction3TraversalAnswerCount = 3L;
-        long ruleRetrievbleAnswerCount = 3L;
-        long rootTraversalAnswerCount = 0L;
-        long answerCount = rootTraversalAnswerCount + (conjunction3TraversalAnswerCount * (conjunction2TraversalAnswerCount
-                + ruleRetrievbleAnswerCount + conjunction1TraversalAnswerCount));
-
         try (RocksSession session = dataSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
 
-                String rootConjunction = "{ $p1 isa person, has age 42; $p2 isa person; (twin1: $p1, twin2: $p2) isa twins; }";
+                String rootConjunction = "{ $e(employee: $x) isa employment; }";
                 Conjunction conjunctionPattern = parseConjunction(transaction, rootConjunction);
-                createRootAndAssertResponses(transaction, conjunctionPattern, answerCount);
+                createRootAndAssertResponses(transaction, conjunctionPattern, 9L);
             }
         }
     }
 
     @Test
-    public void shallowRerequestChain() throws InterruptedException {
+    public void test_shallow_rerequest_chain() throws InterruptedException {
         try (RocksSession session = schemaSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(Graql.parseQuery(
@@ -278,7 +236,7 @@ public class ResolutionTest {
     }
 
     @Test
-    public void deepRerequestChain() throws InterruptedException {
+    public void test_deep_rerequest_chain() throws InterruptedException {
         try (RocksSession session = schemaSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(Graql.parseQuery(
@@ -319,9 +277,8 @@ public class ResolutionTest {
         }
     }
 
-    @Ignore // TODO Failing
     @Test
-    public void recursiveTerminationAndDeduplication() throws InterruptedException {
+    public void test_recursive_termination_and_deduplication_in_transitivity() throws InterruptedException {
         try (RocksSession session = schemaSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(Graql.parseQuery(
@@ -359,7 +316,7 @@ public class ResolutionTest {
 
     @Ignore // TODO Un-ignore, ignored until explanations are ready to use
     @Test
-    public void answerRecorderTest() throws InterruptedException {
+    public void test_answer_recorder() throws InterruptedException {
         String atomic1 = "$p1 isa person, has name \"Bob\";";
         String atomic2 = "$p1 isa person, has age 42;";
         String rule = "rule bobs-are-42: when { $p1 has name \"Bob\"; } then { $p1 has age 42; };";
@@ -413,110 +370,6 @@ public class ResolutionTest {
         }
     }
 
-    /*
-    This test is intended to force "reiteration" to find the complete set of answers
-    It's actually quite hard to find a case that should always reiterate... it may depend on the order of resolution
-    and implementation details of materialisations while holding open iterators
-    As a result, this test may or may not be the one we want to examine!
-     */
-    @Ignore
-    @Test
-    public void testTransitiveReiteration() throws InterruptedException {
-        try (RocksSession session = schemaSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                transaction.query().define(Graql.parseQuery(
-                        "define number-of-letters sub attribute, value long, owns  number-of-letters;" +
-                                "rule nol: when {" +
-                                "$n 5 isa number-of-letters;" +
-                                "} then {" +
-                                "$n has number-of-letters 10;" +
-                                "};" +
-                                "rule nol2: when {" +
-                                "$n 10 isa number-of-letters;" +
-                                "} then {" +
-                                "$n has number-of-letters 5;" +
-                                "};"));
-                transaction.commit();
-            }
-        }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                transaction.query().insert(Graql.parseQuery("insert $n 5 isa number-of-letters;"));
-                transaction.commit();
-            }
-        }
-
-        int answerCount = 8;
-
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                Conjunction conjunctionPattern = parseConjunction(transaction, "{ $n1 has $n2; }");
-                ResolverRegistry registry = transaction.reasoner().resolverRegistry();
-                LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
-                int[] iteration = {0};
-                int[] doneInIteration = {0};
-                boolean[] receivedInferredAnswer = {false};
-
-                Actor<RootResolver> root = registry.createRoot(conjunctionPattern, answer -> {
-                    if (answer.isInferred()) receivedInferredAnswer[0] = true;
-                    responses.add(answer);
-                }, iterDone -> {
-                    assert iteration[0] == iterDone;
-                    doneInIteration[0]++;
-                });
-
-                for (int i = 0; i < answerCount; i++) {
-                    root.tell(actor ->
-                                      actor.receiveRequest(
-                                              Request.create(new Request.Path(root), DownstreamVars.Root.create(), null),
-                                              iteration[0])
-                    );
-                }
-
-                // ONE answer (maybe) only be available in the next iteration, so taking the last answer here would block
-                for (int i = 0; i < answerCount - 1; i++) {
-                    responses.take();
-                }
-                Thread.sleep(1000); // allow Exhausted message to propagate top toplevel
-
-                assertTrue(receivedInferredAnswer[0]);
-                assertEquals(1, doneInIteration[0]);
-
-                // reset for next iteration
-                iteration[0]++;
-                receivedInferredAnswer[0] = false;
-                doneInIteration[0] = 0;
-                // get last answer and a exhausted message
-                for (int i = 0; i < 2; i++) {
-                    root.tell(actor ->
-                                      actor.receiveRequest(
-                                              Request.create(new Request.Path(root), DownstreamVars.Root.create(), null),
-                                              iteration[0])
-                    );
-                }
-                responses.take();
-                Thread.sleep(1000); // allow Exhausted message to propagate top toplevel
-
-                assertTrue(receivedInferredAnswer[0]);
-                assertEquals(1, doneInIteration[0]);
-
-                // reset for next iteration
-                iteration[0]++;
-                receivedInferredAnswer[0] = false;
-                doneInIteration[0] = 0;
-                // confirm there are no more answers
-                root.tell(actor ->
-                                  actor.receiveRequest(
-                                          Request.create(new Request.Path(root), DownstreamVars.Root.create(), null),
-                                          iteration[0])
-                );
-                Thread.sleep(1000); // allow Exhausted message to propagate to top level
-                assertFalse(receivedInferredAnswer[0]);
-                assertEquals(1, doneInIteration[0]);
-            }
-        }
-    }
-
     private Conjunction parseConjunction(RocksTransaction transaction, String query) {
         return transaction.logic().typeResolver().resolve(
                 Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next());
@@ -560,9 +413,6 @@ public class ResolutionTest {
         for (int i = 0; i < n - 1; i++) {
             ResolutionAnswer answer = responses.poll(1000, TimeUnit.MILLISECONDS); // polling prevents the test hanging
             if (answer != null) answersFound += 1;
-
-//            ResolutionAnswer answer = responses.take();
-//            answersFound += 1;
         }
         Thread.sleep(1000);
         assertEquals(answerCount, answersFound);

@@ -180,6 +180,14 @@ public class Rule {
         });
     }
 
+    @Override
+    public String toString() {
+        return "rule:" + getLabel() + ":" +
+                "when{" + when +
+                "}then{" + then +
+                "};";
+    }
+
     void validateCycles() {
         // TODO implement this when we have negation
         // TODO detect negated cycles in the rule graph

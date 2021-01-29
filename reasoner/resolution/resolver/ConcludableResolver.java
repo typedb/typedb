@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -50,7 +51,7 @@ import static grakn.common.collection.Collections.pair;
 public class ConcludableResolver extends ResolvableResolver<ConcludableResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
 
-    private final Map<Actor<RuleResolver>, Set<Unifier>> applicableRules;
+    private final LinkedHashMap<Actor<RuleResolver>, Set<Unifier>> applicableRules;
     private final Concludable concludable;
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
@@ -69,7 +70,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
         this.resolutionRecorder = resolutionRecorder;
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
-        this.applicableRules = new HashMap<>();
+        this.applicableRules = new LinkedHashMap<>();
         this.iterationStates = new HashMap<>();
         this.responseProducers = new HashMap<>();
         this.isInitialised = false;
@@ -183,7 +184,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
         Actor<RootResolver> root = request.path().root();
         assert iterationStates.containsKey(root);
         IterationState iterationState = iterationStates.get(root);
-        if (iterationState.iteration() > newIteration) {
+        if (iterationState.iteration() < newIteration) {
             iterationState.nextIteration(newIteration);
         }
 
