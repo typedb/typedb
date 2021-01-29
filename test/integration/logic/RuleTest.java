@@ -17,7 +17,6 @@
 
 package grakn.core.logic;
 
-import grakn.core.Grakn;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
@@ -32,7 +31,6 @@ import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
-import grakn.core.logic.resolvable.Concludable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.rocks.RocksGrakn;
@@ -66,140 +64,9 @@ public class RuleTest {
     private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("rule-test");
     private static String database = "rule-test";
 
-    private long isaConcludablesCount(Set<Concludable> concludables) {
-        return concludables.stream().filter(Concludable::isIsa).count();
-    }
-
-    private long hasConcludablesCount(Set<Concludable> concludables) {
-        return concludables.stream().filter(Concludable::isHas).count();
-    }
-
-    private long relationConcludablesCount(Set<Concludable> concludables) {
-        return concludables.stream().filter(Concludable::isRelation).count();
-    }
-
-    private long attributeConcludablesCount(Set<Concludable> concludables) {
-        return concludables.stream().filter(Concludable::isAttribute).count();
-    }
-
     private Variable getVariable(Set<Variable> vars, Identifier identifier) {
         return iterate(vars).filter(v -> v.id().equals(identifier)).next();
     }
-
-    @Test
-    public void rule_concludables_built_correctly_from_rule_concerning_relation() throws IOException {
-        Util.resetDirectory(directory);
-
-        try (Grakn grakn = RocksGrakn.open(directory)) {
-            grakn.databases().create(database);
-            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
-                try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    ConceptManager conceptMgr = txn.concepts();
-                    LogicManager logicMgr = txn.logic();
-
-                    EntityType person = conceptMgr.putEntityType("person");
-                    RelationType friendship = conceptMgr.putRelationType("friendship");
-                    friendship.setRelates("friend");
-                    RelationType marriage = conceptMgr.putRelationType("marriage");
-                    marriage.setRelates("spouse");
-                    person.setPlays(friendship.getRelates("friend"));
-                    person.setPlays(marriage.getRelates("spouse"));
-                    logicMgr.putRule(
-                            "marriage-is-friendship",
-                            Graql.parsePattern("{$x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
-                            Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
-                    txn.commit();
-                }
-                try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
-                    LogicManager logicMgr = txn.logic();
-                    Rule rule = logicMgr.getRule("marriage-is-friendship");
-
-                    assertTrue(rule.conclusion().isRelation());
-                    Set<Concludable> bodyConcludables = rule.whenConcludables();
-                    assertEquals(2, isaConcludablesCount(bodyConcludables));
-                    assertEquals(0, hasConcludablesCount(bodyConcludables));
-                    assertEquals(1, relationConcludablesCount(bodyConcludables));
-                    assertEquals(0, attributeConcludablesCount(bodyConcludables));
-                }
-            }
-        }
-    }
-
-    @Test
-    public void rule_concludables_built_correctly_from_rule_concerning_has_isa_value() throws IOException {
-        Util.resetDirectory(directory);
-
-        try (Grakn grakn = RocksGrakn.open(directory)) {
-            grakn.databases().create(database);
-            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
-                try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    ConceptManager conceptMgr = txn.concepts();
-                    LogicManager logicMgr = txn.logic();
-
-                    EntityType milk = conceptMgr.putEntityType("milk");
-                    AttributeType ageInDays = conceptMgr.putAttributeType("age-in-days", AttributeType.ValueType.LONG);
-                    AttributeType isStillGood = conceptMgr.putAttributeType("is-still-good", AttributeType.ValueType.BOOLEAN);
-                    milk.setOwns(ageInDays);
-                    milk.setOwns(isStillGood);
-                    logicMgr.putRule(
-                            "old-milk-is-not-good",
-                            Graql.parsePattern("{ $x isa milk, has age-in-days >= 10; }").asConjunction(),
-                            Graql.parseVariable("$x has is-still-good false").asThing());
-                    txn.commit();
-                }
-                try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
-                    LogicManager logicMgr = txn.logic();
-                    Rule rule = logicMgr.getRule("old-milk-is-not-good");
-
-                    assertTrue(rule.conclusion().isExplicitHas());
-                    Set<Concludable> bodyConcludables = rule.whenConcludables();
-                    assertEquals(1, isaConcludablesCount(bodyConcludables));
-                    assertEquals(1, hasConcludablesCount(bodyConcludables));
-                    assertEquals(0, relationConcludablesCount(bodyConcludables));
-                    assertEquals(0, attributeConcludablesCount(bodyConcludables));
-                }
-            }
-        }
-    }
-
-    @Test
-    public void rule_concludables_built_correctly_from_rule_concerning_has() throws IOException {
-        Util.resetDirectory(directory);
-
-        try (Grakn grakn = RocksGrakn.open(directory)) {
-            grakn.databases().create(database);
-            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
-                try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    ConceptManager conceptMgr = txn.concepts();
-                    LogicManager logicMgr = txn.logic();
-
-                    EntityType milk = conceptMgr.putEntityType("milk");
-                    AttributeType ageInDays = conceptMgr.putAttributeType("age-in-days", AttributeType.ValueType.LONG);
-                    AttributeType isStillGood = conceptMgr.putAttributeType("is-still-good", AttributeType.ValueType.BOOLEAN);
-                    milk.setOwns(ageInDays);
-                    milk.setOwns(isStillGood);
-                    logicMgr.putRule(
-                            "old-milk-is-not-good",
-                            Graql.parsePattern("{ $x isa milk; $a 10 isa age-in-days; }").asConjunction(),
-                            Graql.parseVariable("$x has $a").asThing());
-                    txn.commit();
-                }
-                try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
-                    LogicManager logicMgr = txn.logic();
-                    Rule rule = logicMgr.getRule("old-milk-is-not-good");
-
-                    assertTrue(rule.conclusion().isVariableHas());
-                    Set<Concludable> bodyConcludables = rule.whenConcludables();
-                    assertEquals(2, isaConcludablesCount(bodyConcludables));
-                    assertEquals(0, hasConcludablesCount(bodyConcludables));
-                    assertEquals(0, relationConcludablesCount(bodyConcludables));
-                    assertEquals(0, attributeConcludablesCount(bodyConcludables));
-                }
-            }
-        }
-    }
-
-    // ------------ materialisation test ------------
 
     @Test
     public void rule_relation_materialises_when_missing() throws IOException {
