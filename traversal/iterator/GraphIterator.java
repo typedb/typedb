@@ -126,12 +126,7 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
                     else {
                         backTrackCleanUp(pos);
                         answer.remove(toID);
-                        if (edge.onlyStartsFromRelation()) {
-                            assert fromId.isVariable();
-                            seekStack.addSeeks(scopes.get(fromId.asVariable()).edgeOrders());
-                        } else {
-                            seekStack.addSeeks(edge.from().dependedEdgeOrders());
-                        }
+                        branchFailure(edge);
                         return false;
                     }
                 } else {
@@ -143,12 +138,7 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
             }
             return true;
         } else {
-            if (edge.onlyStartsFromRelation()) {
-                assert fromId.isVariable();
-                seekStack.addSeeks(scopes.get(fromId.asVariable()).edgeOrders());
-            } else {
-                seekStack.addSeeks(edge.from().dependedEdgeOrders());
-            }
+            branchFailure(edge);
             return false;
         }
     }
@@ -159,19 +149,32 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
             if (pos == edgeCount) return true;
             else return computeFirst(pos + 1);
         } else {
-            if (edge.onlyStartsFromRelation()) {
-                assert edge.from().id().isVariable();
-                seekStack.addSeeks(scopes.get(edge.from().id().asVariable()).edgeOrders());
-                seekStack.addSeeks(edge.to().dependedEdgeOrders());
-            } else if (edge.onlyEndsAtRelation()) {
-                assert edge.from().id().isVariable();
-                seekStack.addSeeks(edge.from().dependedEdgeOrders());
-                seekStack.addSeeks(scopes.get(edge.to().id().asVariable()).edgeOrders());
-            } else {
-                seekStack.addSeeks(edge.to().dependedEdgeOrders());
-                seekStack.addSeeks(edge.from().dependedEdgeOrders());
-            }
+            closureFailure(edge);
             return false;
+        }
+    }
+
+    private void branchFailure(ProcedureEdge<?, ?> edge) {
+        if (edge.onlyStartsFromRelation()) {
+            assert edge.from().id().isVariable();
+            seekStack.addSeeks(scopes.get(edge.from().id().asVariable()).edgeOrders());
+        } else {
+            seekStack.addSeeks(edge.from().dependedEdgeOrders());
+        }
+    }
+
+    private void closureFailure(ProcedureEdge<?, ?> edge) {
+        if (edge.onlyStartsFromRelation()) {
+            assert edge.from().id().isVariable();
+            seekStack.addSeeks(scopes.get(edge.from().id().asVariable()).edgeOrders());
+            seekStack.addSeeks(edge.to().dependedEdgeOrders());
+        } else if (edge.onlyEndsAtRelation()) {
+            assert edge.from().id().isVariable();
+            seekStack.addSeeks(edge.from().dependedEdgeOrders());
+            seekStack.addSeeks(scopes.get(edge.to().id().asVariable()).edgeOrders());
+        } else {
+            seekStack.addSeeks(edge.to().dependedEdgeOrders());
+            seekStack.addSeeks(edge.from().dependedEdgeOrders());
         }
     }
 
