@@ -21,6 +21,7 @@ import grakn.core.common.exception.GraknException;
 import graql.lang.query.GraqlQuery;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
+import static grakn.core.common.exception.ErrorMessage.Reasoner.REASONING_CANNOT_BE_TOGGLED_PER_QUERY;
 
 public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options<?, ?>> {
 
@@ -156,6 +157,11 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
             } else {
                 return DEFAULT_QUERY_READ_PREFETCH;
             }
+        }
+
+        @Override
+        public Query infer(boolean infer) {
+            throw GraknException.of(REASONING_CANNOT_BE_TOGGLED_PER_QUERY);
         }
 
         public Query prefetch(boolean prefetch) {

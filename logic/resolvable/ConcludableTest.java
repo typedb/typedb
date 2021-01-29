@@ -64,6 +64,16 @@ public class ConcludableTest {
     }
 
     @Test
+    public void test_conjunction_isa_value_constrained_is_built() {
+        String conjunction = "{ $x isa milk; $a 10 isa age-in-days; }";
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
+        assertEquals(2, isaConcludablesCount(concludables));
+        assertEquals(0, hasConcludablesCount(concludables));
+        assertEquals(0, relationConcludablesCount(concludables));
+        assertEquals(0, attributeConcludablesCount(concludables));
+    }
+
+    @Test
     public void test_conjunction_only_has_is_built() {
         String conjunction = "{ $a has $b; }";
         Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
@@ -78,6 +88,16 @@ public class ConcludableTest {
         String conjunction = "{ $a has age 50; }";
         Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         assertEquals(0, isaConcludablesCount(concludables));
+        assertEquals(1, hasConcludablesCount(concludables));
+        assertEquals(0, relationConcludablesCount(concludables));
+        assertEquals(0, attributeConcludablesCount(concludables));
+    }
+
+    @Test
+    public void test_conjunction_isa_has_value_constrained_is_built() {
+        String conjunction = "{ $x isa milk, has age-in-days >= 10; }";
+        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
+        assertEquals(1, isaConcludablesCount(concludables));
         assertEquals(1, hasConcludablesCount(concludables));
         assertEquals(0, relationConcludablesCount(concludables));
         assertEquals(0, attributeConcludablesCount(concludables));
@@ -239,6 +259,10 @@ public class ConcludableTest {
         String conjunction = "{ $diag(patient-role-type: $per) isa $diagnosis; $diagnosis type diagnosis-type;" +
                 "$per isa $person; $person type person-type; }";
         Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
+        assertEquals(1, isaConcludablesCount(concludables));
+        assertEquals(0, hasConcludablesCount(concludables));
+        assertEquals(1, relationConcludablesCount(concludables));
+        assertEquals(0, attributeConcludablesCount(concludables));
         RelationConstraint relationConstraint = concludables.stream().filter(Concludable::isRelation).findFirst().get()
                 .asRelation().relation();
         IsaConstraint relationIsaConstraint = relationConstraint.owner().isa().get();
@@ -251,6 +275,10 @@ public class ConcludableTest {
     public void test_conjunction_concludables_contain_type_labels_with_anonymous_type_variable() {
         String conjunction = "{ $diag(patient-role-type: $per) isa diagnosis; $per isa person; }";
         Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
+        assertEquals(1, isaConcludablesCount(concludables));
+        assertEquals(0, hasConcludablesCount(concludables));
+        assertEquals(1, relationConcludablesCount(concludables));
+        assertEquals(0, attributeConcludablesCount(concludables));
         RelationConstraint relationConstraint = concludables.stream().filter(Concludable::isRelation).findFirst()
                 .get().asRelation().relation();
         IsaConstraint relationIsaConstraint = relationConstraint.owner().isa().get();
@@ -263,6 +291,10 @@ public class ConcludableTest {
     public void test_conjunction_concludables_contain_type_labels_with_anonymous_type_and_relation_variable() {
         String conjunction = "{ (patient-role-type: $per) isa diagnosis; $per isa person; }";
         Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
+        assertEquals(1, isaConcludablesCount(concludables));
+        assertEquals(0, hasConcludablesCount(concludables));
+        assertEquals(1, relationConcludablesCount(concludables));
+        assertEquals(0, attributeConcludablesCount(concludables));
         RelationConstraint relationConstraint = concludables.stream().filter(Concludable::isRelation).findFirst().get()
                 .asRelation().relation();
         IsaConstraint relationIsaConstraint = relationConstraint.owner().isa().get();
@@ -276,6 +308,10 @@ public class ConcludableTest {
         String conjunction = "{ (patient-role-type: $per) isa diagnosis; (patient-role-type: $p2) isa diagnosis; " +
                 "$per isa person; $per has age 50; $per has age 70; }";
         Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
+        assertEquals(1, isaConcludablesCount(concludables));
+        assertEquals(2, hasConcludablesCount(concludables));
+        assertEquals(2, relationConcludablesCount(concludables));
+        assertEquals(0, attributeConcludablesCount(concludables));
         concludables.stream().filter(Concludable::isRelation).map(Concludable::asRelation).forEach(relationConcludable -> {
             assertTrue(relationConcludable.relation().owner().isa().isPresent());
         });

@@ -62,17 +62,16 @@ import static grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars;
 public class RootResolver extends Resolver<RootResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(RootResolver.class);
 
-    private final Conjunction conjunction;
-    private final Set<Concludable> concludables;
-    private final Consumer<ResolutionAnswer> onAnswer;
-    private final Consumer<Integer> onExhausted;
-    private List<Resolvable> plan;
-    private final Actor<ResolutionRecorder> resolutionRecorder;
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
+    private final Conjunction conjunction;
+    private final Planner planner;
+    private final Actor<ResolutionRecorder> resolutionRecorder;
+    private final Consumer<ResolutionAnswer> onAnswer;
+    private final Consumer<Integer> onExhausted;
+    private final List<Resolvable> plan;
     private boolean isInitialised;
     private ResponseProducer responseProducer;
-    private final Planner planner;
     private final Map<Resolvable, AlphaEquivalentResolver> downstreamResolvers;
 
     public RootResolver(Actor<RootResolver> self, Conjunction conjunction, Consumer<ResolutionAnswer> onAnswer,
@@ -87,7 +86,6 @@ public class RootResolver extends Resolver<RootResolver> {
         this.logicMgr = logicMgr;
         this.planner = planner;
         this.isInitialised = false;
-        this.concludables = Concludable.create(conjunction);
         this.plan = new ArrayList<>();
         this.downstreamResolvers = new HashMap<>();
     }
@@ -169,16 +167,19 @@ public class RootResolver extends Resolver<RootResolver> {
 
     @Override
     protected void initialiseDownstreamActors() {
-        Set<Concludable> concludablesWithApplicableRules = Iterators.iterate(concludables)
+        LOG.debug("{}: initialising downstream actors", name());
+        Set<Concludable> concludables = Iterators.iterate(Concludable.create(conjunction))
                 .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext()).toSet();
-        Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction, concludablesWithApplicableRules);
-        Set<Resolvable> resolvables = new HashSet<>();
-        resolvables.addAll(concludablesWithApplicableRules);
-        resolvables.addAll(retrievables);
-        plan = planner.plan(resolvables);
-        iterate(plan).forEachRemaining(resolvable -> {
-            downstreamResolvers.put(resolvable, registry.registerResolvable(resolvable));
-        });
+        if (concludables.size() > 0) {
+            Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction, concludables);
+            Set<Resolvable> resolvables = new HashSet<>();
+            resolvables.addAll(concludables);
+            resolvables.addAll(retrievables);
+            plan.addAll(planner.plan(resolvables));
+            iterate(plan).forEachRemaining(resolvable -> {
+                downstreamResolvers.put(resolvable, registry.registerResolvable(resolvable));
+            });
+        }
     }
 
     @Override
@@ -189,12 +190,13 @@ public class RootResolver extends Resolver<RootResolver> {
         ResourceIterator<ConceptMap> traversalProducer = traversalEngine.iterator(conjunction.traversal())
                 .map(conceptMgr::conceptMap);
         ResponseProducer responseProducer = new ResponseProducer(traversalProducer, iteration);
-        Request toDownstream = Request.create(request.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
-                                              UpstreamVars.Initial.of(request.answerBounds().conceptMap())
-                                                      .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
-                                              new ResolutionAnswer.Derivation(map()), 0);
-        responseProducer.addDownstreamProducer(toDownstream);
-
+        if (!plan.isEmpty()) {
+            Request toDownstream = Request.create(request.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
+                                                  UpstreamVars.Initial.of(request.answerBounds().conceptMap())
+                                                          .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
+                                                  new ResolutionAnswer.Derivation(map()), 0);
+            responseProducer.addDownstreamProducer(toDownstream);
+        }
         return responseProducer;
     }
 
@@ -207,11 +209,13 @@ public class RootResolver extends Resolver<RootResolver> {
         ResourceIterator<ConceptMap> traversalIterator = traversalEngine.iterator(conjunction.traversal())
                 .map(conceptMgr::conceptMap);
         ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversalIterator, newIteration);
-        Request toDownstream = Request.create(request.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
-                                              UpstreamVars.Initial.of(request.answerBounds().conceptMap()).
-                                                      toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
-                                              new ResolutionAnswer.Derivation(map()), 0);
-        responseProducerNewIter.addDownstreamProducer(toDownstream);
+        if (!plan.isEmpty()) {
+            Request toDownstream = Request.create(request.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
+                                                  UpstreamVars.Initial.of(request.answerBounds().conceptMap()).
+                                                          toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
+                                                  new ResolutionAnswer.Derivation(map()), 0);
+            responseProducerNewIter.addDownstreamProducer(toDownstream);
+        }
         return responseProducerNewIter;
     }
 
