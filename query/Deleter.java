@@ -87,23 +87,25 @@ public class Deleter {
     public void execute() {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
             List<ConceptMap> matches = matcher.execute(context).onError(conceptMgr::exception).toList();
-            matches.forEach(matched -> new Operation(matched).execute());
+            matches.forEach(matched -> new Operation(matched, variables).execute());
         }
     }
 
-    private class Operation {
+    static class Operation {
 
         private static final String TRACE_PREFIX = "operation.";
 
         private final ConceptMap matched;
+        private final Set<ThingVariable> variables;
         private final Map<ThingVariable, Thing> detached;
 
-        private Operation(ConceptMap matched) {
+        Operation(ConceptMap matched, Set<ThingVariable> variables) {
             this.matched = matched;
+            this.variables = variables;
             this.detached = new HashMap<>();
         }
 
-        private void execute() {
+        void execute() {
             try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
                 variables.forEach(this::delete);
                 variables.forEach(this::deleteIsa);

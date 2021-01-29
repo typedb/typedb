@@ -111,22 +111,26 @@ public class Inserter {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
             if (matcher != null) {
                 List<ConceptMap> matches = matcher.execute(context).toList();
-                return iterate(iterate(matches).map(matched -> new Operation(matched).execute()).toList());
+                return iterate(iterate(matches).map(matched -> new Operation(conceptMgr, matched, variables).execute()).toList());
             } else {
-                return single(new Operation(new ConceptMap()).execute());
+                return single(new Operation(conceptMgr, new ConceptMap(), variables).execute());
             }
         }
     }
 
-    public class Operation {
+    public static class Operation {
 
         private static final String TRACE_PREFIX = "operation.";
 
+        private final ConceptManager conceptMgr;
         private final ConceptMap matched;
+        private final Set<ThingVariable> variables;
         private final Map<Reference.Name, Thing> inserted;
 
-        private Operation(ConceptMap matched) {
+        Operation(ConceptManager conceptMgr, ConceptMap matched, Set<ThingVariable> variables) {
+            this.conceptMgr = conceptMgr;
             this.matched = matched;
+            this.variables = variables;
             this.inserted = new HashMap<>();
         }
 

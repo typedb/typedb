@@ -34,6 +34,7 @@ import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlMatch;
 import graql.lang.query.GraqlUndefine;
+import graql.lang.query.GraqlUpdate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,6 +132,16 @@ public class QueryManager {
         if (context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_DATA_READ_VIOLATION);
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete")) {
             Deleter.create(reasoner, conceptMgr, query, context).execute();
+        } catch (Exception exception) {
+            throw conceptMgr.exception(exception);
+        }
+    }
+
+    public ResourceIterator<ConceptMap> update(GraqlUpdate query, Context.Query context) {
+        if (context.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION);
+        if (context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_DATA_READ_VIOLATION);
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "update")) {
+            return Updater.create(reasoner, conceptMgr, query, context).execute();
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }
