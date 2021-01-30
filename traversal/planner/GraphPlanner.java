@@ -374,10 +374,10 @@ public class GraphPlanner implements Planner {
 
     private void printDebug(Instant start, Instant endSolver, Instant end) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug(String.format("Optimisation status         : %s", resultStatus.name()));
-            LOG.debug(String.format("Solver duration             : %s (ms)", between(start, endSolver).toMillis()));
-            LOG.debug(String.format("Procedure creation duration : %s (ms)", between(endSolver, end).toMillis()));
-            LOG.debug(String.format("Total duration ------------ : %s (ms)", between(start, end).toMillis()));
+            LOG.debug("Optimisation status         : {}", resultStatus.name());
+            LOG.debug("Solver duration             : {} (ms)", between(start, endSolver).toMillis());
+            LOG.debug("Procedure creation duration : {} (ms)", between(endSolver, end).toMillis());
+            LOG.debug("Total duration ------------ : {} (ms)", between(start, end).toMillis());
         }
     }
 
