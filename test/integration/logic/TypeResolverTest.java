@@ -107,7 +107,9 @@ public class TypeResolverTest {
     }
 
     private Conjunction resolveConjunction(TypeResolver typeResolver, String matchString) {
-        return typeResolver.resolve(createConjunction(matchString));
+        Conjunction conjunction = createConjunction(matchString);
+        typeResolver.resolve(conjunction);
+        return conjunction;
     }
 
     @Test

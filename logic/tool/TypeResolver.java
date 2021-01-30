@@ -108,13 +108,13 @@ public class TypeResolver {
         return conjunction;
     }
 
-    public Conjunction resolve(Conjunction conjunction, boolean insertable) {
+    public void resolve(Conjunction conjunction, boolean insertable) {
         resolveLabels(conjunction);
         TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, conceptMgr, insertable);
         Map<Reference, Set<Label>> resolvedLabels = executeResolverTraversals(traversalBuilder);
         if (resolvedLabels.isEmpty()) {
             conjunction.setSatisfiable(false);
-            return conjunction;
+            return;
         }
 
         long numOfTypes = traversalEng.graph().schema().stats().thingTypeCount();
@@ -128,12 +128,10 @@ public class TypeResolver {
                         variable.setResolvedTypes(labels);
                     });
         });
-
-        return conjunction;
     }
 
-    public Conjunction resolve(Conjunction conjunction) {
-        return resolve(conjunction, false);
+    public void resolve(Conjunction conjunction) {
+        resolve(conjunction, false);
     }
 
     private Map<Reference, Set<Label>> executeResolverTraversals(TraversalBuilder traversalBuilder) {

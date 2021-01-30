@@ -520,13 +520,15 @@ public class ResolutionTest {
         return transaction;
     }
 
-    private void createRootAndAssertResponses(Conjunction conjunctionPattern, long answerCount) throws InterruptedException {
+    private void createRootAndAssertResponses(Conjunction conjunction, long answerCount) throws InterruptedException {
         try (RocksSession session = schemaSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 ResolverRegistry registry = transaction.reasoner().resolverRegistry();
                 LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
                 AtomicLong doneReceived = new AtomicLong(0L);
-                Actor<RootResolver> root = registry.createRoot(transaction.logic().typeResolver().resolve(conjunctionPattern), responses::add, iterDone -> doneReceived.incrementAndGet());
+                transaction.logic().typeResolver().resolve(conjunction);
+                Actor<RootResolver> root =
+                        registry.createRoot(conjunction, responses::add, iterDone -> doneReceived.incrementAndGet());
                 assertResponses(root, responses, doneReceived, answerCount);
             }
         }
@@ -538,11 +540,9 @@ public class ResolutionTest {
         long startTime = System.currentTimeMillis();
         long n = answerCount + 1; //total number of traversal answers, plus one expected Exhausted (-1 answer)
         for (int i = 0; i < n; i++) {
-            root.tell(actor ->
-                              actor.receiveRequest(
-                                      Request.create(new Request.Path(root), DownstreamVars.Root.create(), ResolutionAnswer.Derivation.EMPTY),
-                                      0)
-            );
+            root.tell(actor -> actor.receiveRequest(Request.create(
+                    new Request.Path(root), DownstreamVars.Root.create(), ResolutionAnswer.Derivation.EMPTY
+            ), 0));
         }
         int i;
         for (i = 0; i < n - 1; i++) {

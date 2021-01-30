@@ -74,30 +74,25 @@ build:
       image: graknlabs-ubuntu-20.04
       command: |
         bazel test //test/behaviour/connection/... --test_output=streamed
-
     test-behaviour-concept:
       image: graknlabs-ubuntu-20.04
       command: |
         bazel test //test/behaviour/concept/... --test_output=streamed
-
     test-behaviour-match:
       image: graknlabs-ubuntu-20.04
       command: |
         bazel test //test/behaviour/graql/language/match/... --test_output=streamed
         bazel test //test/behaviour/graql/language/get/... --test_output=streamed
-
     test-behaviour-writable:
       image: graknlabs-ubuntu-20.04
       command: |
         bazel test //test/behaviour/graql/language/insert/... --test_output=streamed
         bazel test //test/behaviour/graql/language/delete/... --test_output=streamed
-
     test-behaviour-definable:
       image: graknlabs-ubuntu-20.04
       command: |
         bazel test //test/behaviour/graql/language/define/... --test_output=streamed
         bazel test //test/behaviour/graql/language/undefine/... --test_output=streamed
-
     test-assembly-linux-targz:
       image: graknlabs-ubuntu-20.04
       filter:
