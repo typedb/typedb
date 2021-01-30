@@ -23,9 +23,10 @@ import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
-import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.Type;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.common.ExecutorService;
 import grakn.core.concurrent.producer.Producer;
@@ -44,9 +45,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 import static grakn.common.collection.Collections.list;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CONJUNCTION;
-import static grakn.core.common.exception.ErrorMessage.ThingRead.CONTRADICTORY_BOUND_VARIABLE;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
 import static grakn.core.concurrent.common.ExecutorService.PARALLELISATION_FACTOR;
@@ -114,7 +113,7 @@ public class Reasoner {
             else producer = traversalEng.producer(
                     conjunction.traversal(filter), context.producer(), PARALLELISATION_FACTOR
             ).map(conceptMgr::conceptMap);
-        } else if (conjunctionContainsThings(conjunction, filter)) {
+        } else if (!conjunction.isBounded() && conjunctionContainsThings(conjunction, filter)) {
             throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction);
         } else {
             return Producers.empty();
@@ -141,7 +140,7 @@ public class Reasoner {
         if (conjunction.isSatisfiable()) {
             if (isInfer(context)) answers = produce(resolve(conjunction), context.producer());
             else answers = traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
-        } else if (conjunctionContainsThings(conjunction, filter)) {
+        } else if (!conjunction.isBounded() && conjunctionContainsThings(conjunction, filter)) {
             throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction);
         } else {
             return Iterators.empty();
@@ -163,15 +162,7 @@ public class Reasoner {
 
     private Conjunction bound(Conjunction conjunction, ConceptMap bounds) {
         Conjunction newClone = conjunction.clone();
-        newClone.forEach(var -> {
-            if (var.id().isName() && bounds.contains(var.id().reference().asName())) {
-                Concept boundVar = bounds.get(var.id().reference().asName());
-                if (var.isType() != boundVar.isType()) throw GraknException.of(CONTRADICTORY_BOUND_VARIABLE, var);
-                else if (var.isType()) var.asType().label(boundVar.asType().getLabel());
-                else if (var.isThing()) var.asThing().iid(boundVar.asThing().getIID());
-                else throw GraknException.of(ILLEGAL_STATE);
-            }
-        });
+        newClone.bound(bounds.toMap(Type::getLabel, Thing::getIID));
         return newClone;
     }
 }
