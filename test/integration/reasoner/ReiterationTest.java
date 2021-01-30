@@ -71,7 +71,7 @@ public class ReiterationTest {
     As a result, this test may or may not be the one we want to examine!
      */
     @Test
-    public void test_infinite_recursion_in_second_iteration() throws InterruptedException {
+    public void test_first_iteration_exhausts_and_second_iteration_recurses_infinitely() throws InterruptedException {
         try (RocksSession session = schemaSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(Graql.parseQuery(
@@ -129,88 +129,68 @@ public class ReiterationTest {
                 });
 
                 Set<ResolutionAnswer> answers = new HashSet<>();
-                // =========  iteration 0  ============================================================================
-
-                root.tell(actor ->
-                                  actor.receiveRequest(
-                                          Request.create(new Request.Path(root), AnswerState.DownstreamVars.Root.create(), null),
-                                          iteration[0])
-                );
+                // iteration 0
+                sendRootRequest(root, iteration[0]);
                 answers.add(responses.take());
-                root.tell(actor ->
-                                  actor.receiveRequest(
-                                          Request.create(new Request.Path(root), AnswerState.DownstreamVars.Root.create(), null),
-                                          iteration[0])
-                );
-                exhausted.take();
-
-//                Thread.sleep(1000); // allow Exhausted message to propagate top toplevel
+                sendRootRequest(root, iteration[0]);
+                exhausted.take(); // Block and wait for an exhausted message
                 assertTrue(receivedInferredAnswer[0]);
                 assertEquals(1, doneInIteration[0]);
 
-                // =========  iteration 1  ============================================================================
-
+                // iteration 1
                 // reset for next iteration
                 iteration[0]++;
                 receivedInferredAnswer[0] = false;
                 doneInIteration[0] = 0;
 
-                root.tell(actor ->
-                                  actor.receiveRequest(
-                                          Request.create(new Request.Path(root), AnswerState.DownstreamVars.Root.create(), null),
-                                          iteration[0])
-                );
-                answers.add(responses.take());
-                root.tell(actor ->
-                                  actor.receiveRequest(
-                                          Request.create(new Request.Path(root), AnswerState.DownstreamVars.Root.create(), null),
-                                          iteration[0])
-                );
-                answers.add(responses.take()); // TODO Should be exhausted here if it weren't for the infinite recursion
-//                exhausted.take();
-//                for (int i = 2; i <= 6; i++) {
-//                    // =============================
-//                    // Add more requests than should have answers
-//                    root.tell(actor ->
-//                                      actor.receiveRequest(
-//                                              Request.create(new Request.Path(root), DownstreamVars.Root.create(), null),
-//                                              iteration[0])
-//                    );
-//                    answers.add(responses.take());
-//                    assertEquals(i, answers.size());
-//                    // =============================
-//                }
+                for (int i = 0; i <= 4; i++) {
+                    sendRootRequest(root, iteration[0]);
+                    answers.add(responses.take());
+                    assertEquals(2 + i, answers.size());
+                }
+                sendRootRequest(root, iteration[0]);
+                exhausted.take();
 
+                // iteration 2
+                // reset for next iteration
+                iteration[0]++;
+                receivedInferredAnswer[0] = false;
+                doneInIteration[0] = 0;
 
-//                // get last answer and a exhausted message
-//                for (int i = 0; i <= answerCount; i++) {
-//                    root.tell(actor ->
-//                                      actor.receiveRequest(
-//                                              Request.create(new Request.Path(root), DownstreamVars.Root.create(), null),
-//                                              iteration[0])
-//                    );
-//                    if (i != answerCount) responses.take();
-//                }
-//                Thread.sleep(50000); // allow Exhausted message to propagate top toplevel
+                for (int i = 0; i <= 3; i++) {
+                    sendRootRequest(root, iteration[0]);
+                    answers.add(responses.take());
+                }
+                sendRootRequest(root, iteration[0]);
+                exhausted.take();
+
+                // iteration 3 onwards
+                for (int j = 0; j <= 10; j++) {
+                    // iteration 3
+                    // reset for next iteration
+                    iteration[0]++;
+                    receivedInferredAnswer[0] = false;
+                    doneInIteration[0] = 0;
+
+                    for (int i = 0; i <= 3; i++) {
+                        sendRootRequest(root, iteration[0]);
+                        answers.add(responses.take());
+                    }
+                    sendRootRequest(root, iteration[0]);
+                    exhausted.take();
+                }
 
                 assertTrue(receivedInferredAnswer[0]);
-                assertEquals(0, doneInIteration[0]);
-
-//                // reset for next iteration
-//                iteration[0]++;
-//                receivedInferredAnswer[0] = false;
-//                doneInIteration[0] = 0;
-//                // confirm there are no more answers
-//                root.tell(actor ->
-//                                  actor.receiveRequest(
-//                                          Request.create(new Request.Path(root), DownstreamVars.Root.create(), null),
-//                                          iteration[0])
-//                );
-//                Thread.sleep(1000); // allow Exhausted message to propagate to top level
-//                assertFalse(receivedInferredAnswer[0]);
-//                assertEquals(1, doneInIteration[0]);
+                assertEquals(1, doneInIteration[0]);
             }
         }
+    }
+
+    private void sendRootRequest(Actor<RootResolver> root, int iteration) {
+        root.tell(actor -> actor.receiveRequest(
+                Request.create(new Request.Path(root), AnswerState.DownstreamVars.Root.create(), null),
+                iteration)
+        );
     }
 
     private Conjunction parseConjunction(RocksTransaction transaction, String query) {
