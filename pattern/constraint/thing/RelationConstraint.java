@@ -136,6 +136,8 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
     public AlphaEquivalence alphaEquals(RelationConstraint that) {
         return AlphaEquivalence.valid()
                 .validIf(players().size() == that.players().size())
+                .validIf(players().stream().map(RolePlayer::player).distinct().count()
+                        == that.players().stream().map(RolePlayer::player).distinct().count() )
                 .addOrInvalidate(() -> Iterators.permutation(players()).stream().map(playersPermutation -> {
                     Iterator<RolePlayer> thisRolePlayersIt = playersPermutation.iterator();
                     Iterator<RolePlayer> thatRolePlayersIt = that.players().iterator();
