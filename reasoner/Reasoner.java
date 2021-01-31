@@ -102,8 +102,6 @@ public class Reasoner {
 
     private Producer<ConceptMap> producer(Conjunction conjunction, List<Identifier.Variable.Name> filter,
                                           Context.Query context) {
-        if (!isInfer(context)) LOG.info("Reasoning will not run");
-
         Producer<ConceptMap> producer;
         logicMgr.typeResolver().resolve(conjunction);
         if (conjunction.isSatisfiable()) {
