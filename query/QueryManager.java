@@ -131,7 +131,7 @@ public class QueryManager {
         if (context.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION);
         if (context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_DATA_READ_VIOLATION);
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete")) {
-            Deleter.create(reasoner, conceptMgr, query, context).execute();
+            Deleter.create(reasoner, query, context).execute();
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }

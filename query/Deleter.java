@@ -62,19 +62,17 @@ public class Deleter {
     private static final String TRACE_PREFIX = "deleter.";
 
     private final Matcher matcher;
-    private final ConceptManager conceptMgr;
     private final Set<ThingVariable> variables;
     private final Context.Query context;
 
-    public Deleter(Matcher matcher, ConceptManager conceptMgr, Set<ThingVariable> variables, Context.Query context) {
+    public Deleter(Matcher matcher, Set<ThingVariable> variables, Context.Query context) {
         this.matcher = matcher;
-        this.conceptMgr = conceptMgr;
         this.variables = variables;
         this.context = context;
         this.context.producer(EXHAUSTIVE);
     }
 
-    public static Deleter create(Reasoner reasoner, ConceptManager conceptMgr, GraqlDelete query, Context.Query context) {
+    public static Deleter create(Reasoner reasoner, GraqlDelete query, Context.Query context) {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             VariableRegistry registry = VariableRegistry.createFromThings(query.variables(), false);
             iterate(registry.types()).filter(t -> !t.reference().isLabel()).forEachRemaining(t -> {
@@ -83,7 +81,7 @@ public class Deleter {
 
             assert query.match().namedVariablesUnbound().containsAll(query.namedVariablesUnbound());
             Matcher matcher = Matcher.create(reasoner, query.match().get(query.namedVariablesUnbound()));
-            return new Deleter(matcher, conceptMgr, registry.things(), context);
+            return new Deleter(matcher, registry.things(), context);
         }
     }
 
@@ -91,7 +89,7 @@ public class Deleter {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
             List<List<ConceptMap>> lists = matcher.execute(context).toLists(PARALLELISATION_FACTOR);
             produce(async(iterate(lists).map(list -> iterate(list).map(matched -> {
-                new Inserter.Operation(conceptMgr, matched, variables).execute(); return (Void) null;
+                new Operation(matched, variables).execute(); return (Void) null;
             })), PARALLELISATION_FACTOR), EXHAUSTIVE).toList();
         }
     }
