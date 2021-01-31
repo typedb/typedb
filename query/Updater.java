@@ -24,6 +24,7 @@ import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Context;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concurrent.producer.ProducerIterator;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.reasoner.Reasoner;
@@ -36,6 +37,10 @@ import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_DELETE;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_INSERT;
 import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
+import static grakn.core.concurrent.common.ExecutorService.PARALLELISATION_FACTOR;
+import static grakn.core.concurrent.producer.Producers.async;
+import static grakn.core.concurrent.producer.Producers.produce;
 
 public class Updater {
 
@@ -76,12 +81,12 @@ public class Updater {
 
     public ResourceIterator<ConceptMap> execute() {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
-            List<ConceptMap> matches = matcher.execute(context).onError(conceptMgr::exception).toList();
-            List<ConceptMap> answers = iterate(matches).map(matched -> {
+            List<List<ConceptMap>> lists = matcher.execute(context).toLists(PARALLELISATION_FACTOR);
+            List<ConceptMap> updates = produce(async(iterate(lists).map(list -> iterate(list).map(matched -> {
                 new Deleter.Operation(matched, deleteVariables).execute();
                 return new Inserter.Operation(conceptMgr, matched, insertVariables).execute();
-            }).toList();
-            return iterate(answers);
+            })), PARALLELISATION_FACTOR), EXHAUSTIVE).toList();
+            return iterate(updates);
         }
     }
 }

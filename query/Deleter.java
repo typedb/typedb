@@ -52,6 +52,9 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_IID_NOT_INSERTABLE;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
+import static grakn.core.concurrent.common.ExecutorService.PARALLELISATION_FACTOR;
+import static grakn.core.concurrent.producer.Producers.async;
+import static grakn.core.concurrent.producer.Producers.produce;
 import static grakn.core.query.common.Util.getRoleType;
 
 public class Deleter {
@@ -86,8 +89,10 @@ public class Deleter {
 
     public void execute() {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
-            List<ConceptMap> matches = matcher.execute(context).onError(conceptMgr::exception).toList();
-            matches.forEach(matched -> new Operation(matched, variables).execute());
+            List<List<ConceptMap>> lists = matcher.execute(context).toLists(PARALLELISATION_FACTOR);
+            produce(async(iterate(lists).map(list -> iterate(list).map(matched -> {
+                new Inserter.Operation(conceptMgr, matched, variables).execute(); return (Void) null;
+            })), PARALLELISATION_FACTOR), EXHAUSTIVE).toList();
         }
     }
 
