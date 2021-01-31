@@ -152,6 +152,23 @@ public abstract class AbstractResourceIterator<T> implements ResourceIterator<T>
     }
 
     @Override
+    public List<List<T>> toLists(int minSize, int maxSplit) {
+        List<List<T>> lists = new ArrayList<>(maxSplit);
+        for (int i = 0; i < maxSplit && hasNext(); i++) {
+            List<T> list = new ArrayList<>();
+            for (int j = 0; j < minSize && hasNext(); j++) list.add(next());
+            lists.add(list);
+        }
+        int i = 0;
+        while (hasNext()) {
+            lists.get(i).add(next());
+            i++;
+            if (i == maxSplit) i = 0;
+        }
+        return lists;
+    }
+
+    @Override
     public void toList(List<T> list) {
         forEachRemaining(list::add);
         recycle();

@@ -47,6 +47,7 @@ import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_S
 public class QueryManager {
 
     private static final Logger LOG = LoggerFactory.getLogger(QueryManager.class);
+    static final int PARALLELISATION_SPLIT_MIN = 16;
 
     private static final String TRACE_PREFIX = "query.";
     private final LogicManager logicMgr;

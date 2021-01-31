@@ -22,7 +22,6 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Label;
-import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Relation;
@@ -87,10 +86,16 @@ public class Deleter {
 
     public void execute() {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
-            List<List<ConceptMap>> lists = matcher.execute(context).toLists(PARALLELISATION_FACTOR);
-            produce(async(iterate(lists).map(list -> iterate(list).map(matched -> {
-                new Operation(matched, variables).execute(); return (Void) null;
-            })), PARALLELISATION_FACTOR), EXHAUSTIVE).toList();
+            List<List<ConceptMap>> lists = matcher.execute(context).toLists(QueryManager.PARALLELISATION_SPLIT_MIN, PARALLELISATION_FACTOR);
+            assert !lists.isEmpty();
+            if (lists.size() == 1) {
+                iterate(lists.get(0)).forEachRemaining(matched -> new Operation(matched, variables).execute());
+            } else {
+                produce(async(iterate(lists).map(list -> iterate(list).map(matched -> {
+                    new Operation(matched, variables).execute();
+                    return (Void) null;
+                })), PARALLELISATION_FACTOR), EXHAUSTIVE).toList();
+            }
         }
     }
 

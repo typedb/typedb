@@ -70,6 +70,7 @@ import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
 import static grakn.core.concurrent.common.ExecutorService.PARALLELISATION_FACTOR;
 import static grakn.core.concurrent.producer.Producers.async;
 import static grakn.core.concurrent.producer.Producers.produce;
+import static grakn.core.query.QueryManager.PARALLELISATION_SPLIT_MIN;
 import static grakn.core.query.common.Util.getRoleType;
 
 public class Inserter {
@@ -113,10 +114,19 @@ public class Inserter {
     public ResourceIterator<ConceptMap> execute() {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
             if (matcher != null) {
-                List<List<ConceptMap>> lists = matcher.execute(context).toLists(PARALLELISATION_FACTOR);
-                List<ConceptMap> inserts = produce(async(iterate(lists).map(list -> iterate(list).map(
-                        matched -> new Operation(conceptMgr, matched, variables).execute()
-                )), PARALLELISATION_FACTOR), EXHAUSTIVE).toList();
+                List<List<ConceptMap>> lists =
+                        matcher.execute(context).toLists(PARALLELISATION_SPLIT_MIN, PARALLELISATION_FACTOR);
+                assert !lists.isEmpty();
+                List<ConceptMap> inserts;
+                if (lists.size() == 1) {
+                    inserts = iterate(lists.get(0)).map(
+                            matched -> new Operation(conceptMgr, matched, variables).execute()
+                    ).toList();
+                } else {
+                    inserts = produce(async(iterate(lists).map(list -> iterate(list).map(
+                            matched -> new Operation(conceptMgr, matched, variables).execute()
+                    )), PARALLELISATION_FACTOR), EXHAUSTIVE).toList();
+                }
                 return iterate(inserts);
             } else {
                 return single(new Operation(conceptMgr, new ConceptMap(), variables).execute());

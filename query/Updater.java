@@ -24,7 +24,6 @@ import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Context;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concurrent.producer.ProducerIterator;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.reasoner.Reasoner;
@@ -32,6 +31,7 @@ import graql.lang.query.GraqlUpdate;
 
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_DELETE;
@@ -41,6 +41,7 @@ import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
 import static grakn.core.concurrent.common.ExecutorService.PARALLELISATION_FACTOR;
 import static grakn.core.concurrent.producer.Producers.async;
 import static grakn.core.concurrent.producer.Producers.produce;
+import static grakn.core.query.QueryManager.PARALLELISATION_SPLIT_MIN;
 
 public class Updater {
 
@@ -81,11 +82,17 @@ public class Updater {
 
     public ResourceIterator<ConceptMap> execute() {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
-            List<List<ConceptMap>> lists = matcher.execute(context).toLists(PARALLELISATION_FACTOR);
-            List<ConceptMap> updates = produce(async(iterate(lists).map(list -> iterate(list).map(matched -> {
+            List<List<ConceptMap>> lists = matcher.execute(context).toLists(PARALLELISATION_SPLIT_MIN, PARALLELISATION_FACTOR);
+            assert !lists.isEmpty();
+            List<ConceptMap> updates;
+            Function<ConceptMap, ConceptMap> updateFn = (matched) -> {
                 new Deleter.Operation(matched, deleteVariables).execute();
                 return new Inserter.Operation(conceptMgr, matched, insertVariables).execute();
-            })), PARALLELISATION_FACTOR), EXHAUSTIVE).toList();
+            };
+            if (lists.size() == 1) updates = iterate(lists.get(0)).map(updateFn).toList();
+            else updates = produce(async(
+                    iterate(lists).map(list -> iterate(list).map(updateFn)), PARALLELISATION_FACTOR
+            ), EXHAUSTIVE).toList();
             return iterate(updates);
         }
     }

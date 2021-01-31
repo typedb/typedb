@@ -59,6 +59,8 @@ import static grakn.core.graph.common.Encoding.Vertex.Thing.ROLE;
 
 public final class ConceptManager {
 
+    private static final int PARALLELISATION_SPLIT_MINIMUM = 32;
+
     private final GraphManager graphMgr;
 
     public ConceptManager(GraphManager graphMgr) {
@@ -183,11 +185,19 @@ public final class ConceptManager {
     public void validateThings() {
         List<List<Thing>> lists = graphMgr.data().vertices().filter(
                 v -> !v.isInferred() && v.isModified() && !v.encoding().equals(ROLE)
-        ).<Thing>map(ThingImpl::of).toLists(PARALLELISATION_FACTOR);
-        ProducerIterator<Void> validationIterator = produce(async(iterate(lists).map(
-                list -> iterate(list).map(t -> { t.validate(); return (Void) null; })
-        ), PARALLELISATION_FACTOR), EXHAUSTIVE);
-        while (validationIterator.hasNext()) validationIterator.next();
+        ).<Thing>map(ThingImpl::of).toLists(PARALLELISATION_SPLIT_MINIMUM, PARALLELISATION_FACTOR);
+        assert !lists.isEmpty();
+        if (lists.size() == 1) {
+            iterate(lists.get(0)).forEachRemaining(Thing::validate);
+        } else {
+            ProducerIterator<Void> validationIterator = produce(async(iterate(lists).map(
+                    list -> iterate(list).map(t -> {
+                        t.validate();
+                        return (Void) null;
+                    })
+            ), PARALLELISATION_FACTOR), EXHAUSTIVE);
+            while (validationIterator.hasNext()) validationIterator.next();
+        }
     }
 
     public GraknException exception(ErrorMessage error) {

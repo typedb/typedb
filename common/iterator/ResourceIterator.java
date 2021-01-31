@@ -67,6 +67,8 @@ public interface ResourceIterator<T> extends Iterator<T> {
 
     List<List<T>> toLists(int split);
 
+    List<List<T>> toLists(int minSize, int maxSplit);
+
     void toList(List<T> list);
 
     Set<T> toSet();
