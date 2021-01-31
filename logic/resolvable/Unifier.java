@@ -46,7 +46,7 @@ public class Unifier {
     private Unifier(Map<Identifier, Set<Identifier>> unifier, Requirements requirements) {
         this.unifier = Collections.unmodifiableMap(unifier);
         this.requirements = requirements;
-        this.unUnifier = reverse(this.unifier);
+        this.unUnifier = Collections.unmodifiableMap(reverse(this.unifier));
     }
 
     public static Unifier.Builder builder() {
@@ -107,6 +107,7 @@ public class Unifier {
     public Map<Identifier, Set<Identifier>> mapping() {
         return unifier;
     }
+    public Map<Identifier, Set<Identifier>> inverseMapping(){ return unUnifier; }
 
     Requirements requirements() {
         return requirements;
