@@ -28,7 +28,6 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.Type;
 import grakn.core.concurrent.actor.Actor;
-import grakn.core.concurrent.common.ExecutorService;
 import grakn.core.concurrent.producer.Producer;
 import grakn.core.concurrent.producer.Producers;
 import grakn.core.logic.LogicManager;
@@ -49,6 +48,7 @@ import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CON
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
 import static grakn.core.concurrent.common.ExecutorService.PARALLELISATION_FACTOR;
+import static grakn.core.concurrent.common.ExecutorService.eventLoop;
 import static grakn.core.concurrent.producer.Producers.produce;
 
 public class Reasoner {
@@ -68,10 +68,8 @@ public class Reasoner {
         this.logicMgr = logicMgr;
         this.defaultContext = new Context.Query(context, new Options.Query());
         this.defaultContext.producer(EXHAUSTIVE);
-        this.resolutionRecorder = Actor.create(ExecutorService.eventLoopGroup(), ResolutionRecorder::new);
-        this.resolverRegistry = new ResolverRegistry(
-                ExecutorService.eventLoopGroup(), resolutionRecorder, traversalEng, conceptMgr, logicMgr
-        );
+        this.resolutionRecorder = Actor.create(eventLoop(), ResolutionRecorder::new);
+        this.resolverRegistry = new ResolverRegistry(eventLoop(), resolutionRecorder, traversalEng, conceptMgr, logicMgr);
     }
 
     ResolverRegistry resolverRegistry() {

@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.concurrent.common.ExecutorService.forkJoinPool;
+import static grakn.core.concurrent.common.ExecutorService.async;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
 @ThreadSafe
@@ -71,7 +71,7 @@ public class AsyncProducer<T> implements Producer<T> {
         for (ResourceIterator<T> iterator : runningJobs.keySet()) {
             int requestSplit = Math.min(requestSplitMax, request - requestSent);
             runningJobs.computeIfPresent(iterator, (iter, asyncJob) -> asyncJob.thenRunAsync(
-                    () -> job(queue, iter, requestSplit), forkJoinPool()
+                    () -> job(queue, iter, requestSplit), async()
             ));
             requestSent += requestSplit;
             if (requestSent == request) break;
@@ -90,11 +90,10 @@ public class AsyncProducer<T> implements Producer<T> {
     }
 
     private synchronized void compensate(Queue<T> queue, int unfulfilled) {
-        ResourceIterator<T> newIter = iterators.next();
-        runningJobs.put(newIter, completedFuture(null));
+        ResourceIterator<T> it = iterators.next();
+        runningJobs.put(it, completedFuture(null));
         if (unfulfilled > 0) {
-            runningJobs.computeIfPresent(newIter, (iter, asyncJob) ->
-                    asyncJob.thenRunAsync(() -> job(queue, newIter, unfulfilled), forkJoinPool()));
+            runningJobs.computeIfPresent(it, (i, job) -> job.thenRunAsync(() -> job(queue, it, unfulfilled), async()));
         }
     }
 

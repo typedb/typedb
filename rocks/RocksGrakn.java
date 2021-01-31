@@ -51,16 +51,13 @@ public class RocksGrakn implements Grakn {
     private final AtomicBoolean isOpen;
 
     protected RocksGrakn(Path directory, Options.Database options, Factory.DatabaseManager databaseMgrFactory) {
+        if (!ExecutorService.isInitialised()) ExecutorService.initialise(MAX_THREADS);
         this.directory = directory;
         this.options = options;
+        this.rocksConfig = new org.rocksdb.Options().setCreateIfMissing(true).setMergeOperator(new UInt64AddOperator());
         this.databaseMgr = databaseMgrFactory.databaseManager(this);
-        this.rocksConfig = new org.rocksdb.Options()
-                .setCreateIfMissing(true)
-                .setMergeOperator(new UInt64AddOperator());
-
-        ExecutorService.init(MAX_THREADS);
-        databaseMgr.loadAll();
-        isOpen = new AtomicBoolean(true);
+        this.databaseMgr.loadAll();
+        this.isOpen = new AtomicBoolean(true);
     }
 
     public static RocksGrakn open(Path directory) {

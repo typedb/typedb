@@ -24,7 +24,7 @@ import javax.annotation.concurrent.ThreadSafe;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static grakn.core.concurrent.common.ExecutorService.forkJoinPool;
+import static grakn.core.concurrent.common.ExecutorService.async;
 
 @ThreadSafe
 public class BaseProducer<T> implements Producer<T> {
@@ -51,7 +51,7 @@ public class BaseProducer<T> implements Producer<T> {
             } catch (Throwable e) {
                 queue.done(e);
             }
-        }, forkJoinPool());
+        }, async());
     }
 
     private void done(Queue<T> queue) {

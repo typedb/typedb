@@ -32,6 +32,7 @@ java_library(
 
         # External Maven Dependencies
         "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:io_netty_netty_all",
         "@maven//:org_slf4j_slf4j_api",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-concurrent:{pom_version}"],

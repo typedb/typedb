@@ -516,7 +516,7 @@ public class ResolutionTest {
 
     private RocksTransaction singleThreadElgTransaction(RocksSession session) {
         RocksTransaction transaction = session.transaction(Arguments.Transaction.Type.WRITE);
-        transaction.reasoner().resolverRegistry().setEventLoopGroup(new EventLoopGroup(1, "grakn-elg"));
+        transaction.reasoner().resolverRegistry().setEventLoopGroup(new EventLoopGroup(1));
         return transaction;
     }
 

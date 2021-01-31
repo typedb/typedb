@@ -17,14 +17,14 @@
 
 package grakn.core.reasoner;
 
-import grakn.core.common.parameters.Options;
-import grakn.core.concurrent.actor.EventLoopGroup;
 import grakn.core.common.parameters.Arguments;
+import grakn.core.common.parameters.Options;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
+import grakn.core.concurrent.actor.EventLoopGroup;
 import grakn.core.logic.LogicManager;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
@@ -52,7 +52,7 @@ public class ReasonerTest {
 
     private RocksTransaction singleThreadElgTransaction(RocksSession session, Arguments.Transaction.Type transactionType) {
         RocksTransaction transaction = session.transaction(transactionType, new Options.Transaction().infer(true));
-        transaction.reasoner().resolverRegistry().setEventLoopGroup(new EventLoopGroup(1, "grakn-elg"));
+        transaction.reasoner().resolverRegistry().setEventLoopGroup(new EventLoopGroup(1));
         return transaction;
     }
 
