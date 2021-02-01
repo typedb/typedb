@@ -52,7 +52,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
     protected ConceptManager conceptMgr;
     protected AtomicBoolean isOpen;
     TraversalEngine traversalEng;
-    LogicManager logicMgr;
+    protected LogicManager logicMgr;
     Reasoner reasoner;
     QueryManager queryMgr;
 
