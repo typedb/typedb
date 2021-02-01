@@ -25,7 +25,6 @@ import graql.lang.pattern.Conjunctable;
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.core.common.iterator.Iterators.iterate;

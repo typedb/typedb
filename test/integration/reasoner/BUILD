@@ -46,6 +46,7 @@ host_compatible_java_test(
 host_compatible_java_test(
     name = "test-resolution",
     srcs = ["ResolutionTest.java"],
+    test_class = "grakn.core.reasoner.ResolutionTest",
     native_libraries_deps = [
         "//concept:concept",
         "//logic:logic",
@@ -54,17 +55,19 @@ host_compatible_java_test(
         "//rocks:rocks",
         "//:grakn",
     ],
-    resource_strip_prefix = "common/test",
-    resources = [
-        "//common/test:logback",
-    ],
-    test_class = "grakn.core.reasoner.ResolutionTest",
     deps = [
         # Internal dependencies
         "//common:common",
         "//concurrent:concurrent",
         "//test/integration/util",
+
+        # External dependencies from Grakn Labs
+        "@graknlabs_graql//java/pattern:pattern",
         "@graknlabs_graql//java:graql",
+    ],
+    resource_strip_prefix = "common/test",
+    resources = [
+        "//common/test:logback",
     ],
 )
 

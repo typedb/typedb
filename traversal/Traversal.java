@@ -41,7 +41,6 @@ import graql.lang.common.GraqlToken;
 import graql.lang.pattern.variable.Reference;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -76,26 +75,26 @@ public class Traversal {
 
     private final Parameters parameters;
     private final Structure structure;
-    private final List<Identifier.Variable.Name> filter;
+    private final Set<Identifier.Variable.Name> filter;
     private List<Planner> planners;
     private boolean modifiable;
 
     public Traversal() {
         structure = new Structure();
         parameters = new Parameters();
-        filter = new ArrayList<>();
+        filter = new HashSet<>();
         modifiable = true;
     }
 
     // TODO: We should not dynamically calculate properties like this, and then guard against 'modifiable'.
     //       We should introduce a "builder pattern" to Traversal, such that users of this library will build
     //       traversals with Traversal.Builder, and call .build() in the end to produce a final Object.
-    private List<Identifier.Variable.Name> filter() {
+    private Set<Identifier.Variable.Name> filter() {
         if (filter.isEmpty()) {
             modifiable = false;
             iterate(structure.vertices())
                     .map(TraversalVertex::id).filter(Identifier::isName)
-                    .map(id -> id.asVariable().asName()).toList(filter);
+                    .map(id -> id.asVariable().asName()).toSet(filter);
         }
         return filter;
     }
@@ -290,7 +289,7 @@ public class Traversal {
         structure.predicateEdge(structure.thingVertex(att1), structure.thingVertex(att2), predicate);
     }
 
-    public void filter(List<Identifier.Variable.Name> filter) {
+    public void filter(Set<Identifier.Variable.Name> filter) {
         assert modifiable;
         this.filter.addAll(filter);
     }

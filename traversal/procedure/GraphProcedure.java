@@ -163,13 +163,13 @@ public class GraphProcedure implements Procedure {
         ).asType();
     }
 
-    private void assertWithinFilterBounds(List<Identifier.Variable.Name> filter) {
+    private void assertWithinFilterBounds(Set<Identifier.Variable.Name> filter) {
         assert iterate(vertices.keySet()).anyMatch(id -> id.isName() && filter.contains(id.asVariable().asName()));
     }
 
     @Override
     public Producer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
-                                        List<Identifier.Variable.Name> filter, int parallelisation) {
+                                        Set<Identifier.Variable.Name> filter, int parallelisation) {
         LOG.debug(params.toString());
         LOG.debug(this.toString());
         assertWithinFilterBounds(filter);
@@ -181,7 +181,7 @@ public class GraphProcedure implements Procedure {
 
     @Override
     public ResourceIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
-                                                List<Identifier.Variable.Name> filter) {
+                                                Set<Identifier.Variable.Name> filter) {
         LOG.debug(params.toString());
         LOG.debug(this.toString());
         assertWithinFilterBounds(filter);

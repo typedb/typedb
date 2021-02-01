@@ -189,6 +189,12 @@ public abstract class AbstractResourceIterator<T> implements ResourceIterator<T>
     }
 
     @Override
+    public void toSet(Set<T> set) {
+        this.forEachRemaining(set::add);
+        recycle();
+    }
+
+    @Override
     public LinkedHashSet<T> toLinkedSet() {
         LinkedHashSet<T> linkedSet = new LinkedHashSet<>();
         forEachRemaining(linkedSet::add);

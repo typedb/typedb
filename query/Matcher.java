@@ -70,7 +70,7 @@ public class Matcher {
     private final Reasoner reasoner;
     private final GraqlMatch query;
     private final Disjunction disjunction;
-    private final List<Identifier.Variable.Name> filter;
+    private final Set<Identifier.Variable.Name> filter;
     private final Context.Query context;
 
     public Matcher(Reasoner reasoner, GraqlMatch query) {
@@ -81,7 +81,7 @@ public class Matcher {
         this.reasoner = reasoner;
         this.query = query;
         this.disjunction = Disjunction.create(query.conjunction().normalise());
-        this.filter = iterate(query.filter()).map(v -> Identifier.Variable.of(v.reference().asName())).toList();
+        this.filter = iterate(query.filter()).map(v -> Identifier.Variable.of(v.reference().asName())).toSet();
         this.context = context;
         if (context != null) {
             if (query.sort().isPresent()) this.context.producer(EXHAUSTIVE); // TODO: remove this once sort is optimised
