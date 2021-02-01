@@ -33,6 +33,7 @@ import grakn.core.pattern.constraint.thing.IsConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
+import grakn.core.pattern.constraint.type.LabelConstraint;
 import grakn.core.pattern.constraint.type.OwnsConstraint;
 import grakn.core.pattern.constraint.type.PlaysConstraint;
 import grakn.core.pattern.constraint.type.RegexConstraint;
@@ -152,13 +153,16 @@ public class TypeResolver {
 
     private static class TraversalBuilder {
 
+        private static final Identifier.Variable ROOT_ATTRIBUTE_ID = Identifier.Variable.of(Reference.label(ATTRIBUTE.toString()));
+        private static final Label ROOT_ATTRIBUTE_LABEL = Label.of(ATTRIBUTE.toString());
         private final Map<Reference, Variable> variableRegister;
         private final Map<Identifier, TypeVariable> resolverRegister;
         private final Map<Identifier, Set<ValueType>> valueTypeRegister;
         private final ConceptManager conceptMgr;
         private final Traversal traversal;
-        private int sysVarCounter;
         private final boolean insertable;
+        private boolean hasRootAttribute;
+        private int sysVarCounter;
 
         TraversalBuilder(Conjunction conjunction, ConceptManager conceptMgr, boolean insertable) {
             this.conceptMgr = conceptMgr;
@@ -168,6 +172,7 @@ public class TypeResolver {
             this.valueTypeRegister = new HashMap<>();
             this.sysVarCounter = 0;
             this.insertable = insertable;
+            this.hasRootAttribute = false;
             conjunction.variables().forEach(this::register);
         }
 
@@ -288,7 +293,7 @@ public class TypeResolver {
         private void registerHas(TypeVariable resolver, HasConstraint hasConstraint) {
             TypeVariable attributeResolver = register(hasConstraint.attribute());
             traversal.owns(resolver.id(), attributeResolver.id(), false);
-            maySubMetaAttribute(attributeResolver);
+            registerSubAttribute(attributeResolver);
         }
 
         private void registerRelation(TypeVariable resolver, RelationConstraint constraint) {
@@ -319,7 +324,7 @@ public class TypeResolver {
             if (constraint.isVariable()) {
                 TypeVariable comparableVar = register(constraint.asVariable().value());
                 assert valueTypeRegister.containsKey(comparableVar.id()); //This will fail without careful ordering.
-                maySubMetaAttribute(comparableVar);
+                registerSubAttribute(comparableVar);
                 valueTypes = valueTypeRegister.get(comparableVar.id());
             } else {
                 valueTypes = iterate(Encoding.ValueType.of(constraint.value().getClass()).comparables())
@@ -332,15 +337,29 @@ public class TypeResolver {
             } else if (!valueTypeRegister.get(resolver.id()).containsAll(valueTypes)) {
                 throw GraknException.of(UNSATISFIABLE_CONJUNCTION, constraint);
             }
-            maySubMetaAttribute(resolver);
+            registerSubAttribute(resolver);
         }
 
-        private void maySubMetaAttribute(Variable resolver) {
+        private void registerSubAttribute(Variable resolver) {
             assert variableRegister.get(resolver.reference()).isThing();
-            if (variableRegister.get(resolver.reference()).asThing().isa().isPresent()) return;
-            Identifier.Variable attributeID = Identifier.Variable.of(Reference.label(ATTRIBUTE.toString()));
-            traversal.labels(attributeID, Label.of(ATTRIBUTE.toString()));
-            traversal.sub(resolver.id(), attributeID, true);
+            Optional<IsaConstraint> isa = variableRegister.get(resolver.reference()).asThing().isa();
+            if (!isa.isPresent()) {
+                registerRootAttribute();
+                traversal.sub(resolver.id(), ROOT_ATTRIBUTE_ID, true);
+            } else {
+                Optional<LabelConstraint> label = isa.get().type().label();
+                if (label.isPresent() && !label.get().properLabel().equals(ROOT_ATTRIBUTE_LABEL)) {
+                    registerRootAttribute();
+                    traversal.sub(register(isa.get().type()).id(), ROOT_ATTRIBUTE_ID, true);
+                }
+            }
+        }
+
+        private void registerRootAttribute() {
+            if (!hasRootAttribute) {
+                traversal.labels(ROOT_ATTRIBUTE_ID, ROOT_ATTRIBUTE_LABEL);
+                hasRootAttribute = true;
+            }
         }
 
         private Identifier.Variable newSystemId() {
