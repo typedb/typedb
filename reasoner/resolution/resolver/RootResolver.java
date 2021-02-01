@@ -52,7 +52,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import static grakn.common.collection.Collections.map;
-import static grakn.common.collection.Collections.set;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars;
 
@@ -190,7 +189,6 @@ public class RootResolver extends Resolver<RootResolver> {
     @Override
     protected ResponseProducer responseProducerCreate(Request request, int iteration) {
         LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), request);
-        assert request.partialAnswer().isRoot(); // We can ignore the empty ConceptMap of the incoming request
 
         ResourceIterator<ConceptMap> traversalProducer = traversalEngine.iterator(conjunction.traversal())
                 .map(conceptMgr::conceptMap);

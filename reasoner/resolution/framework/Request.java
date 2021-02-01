@@ -31,7 +31,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.list;
-import static grakn.common.collection.Collections.set;
 
 public class Request {
     private final Path path;

@@ -18,8 +18,8 @@
 
 package grakn.core.reasoner.resolution.framework;
 
-import grakn.core.concurrent.actor.Actor;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concurrent.actor.Actor;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.TraversalEngine;

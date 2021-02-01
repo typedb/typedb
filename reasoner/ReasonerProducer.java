@@ -31,7 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.ThreadSafe;
-
 import java.util.Set;
 
 import static grakn.core.common.iterator.Iterators.iterate;
@@ -73,7 +72,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private void requestAnswered(ResolutionAnswer resolutionAnswer) {
         if (resolutionAnswer.isInferred()) iterationInferredAnswer = true;
-        queue.put(resolutionAnswer.derived().withInitialFiltered()); // withInitial includes filtering
+        queue.put(resolutionAnswer.derived().withInitialFiltered());
     }
 
     private void requestExhausted(int iteration) {

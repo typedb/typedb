@@ -53,7 +53,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.map;
 import static grakn.core.common.iterator.Iterators.iterate;
 
 public class RuleResolver extends Resolver<RuleResolver> {
