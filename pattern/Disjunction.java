@@ -23,6 +23,7 @@ import grakn.core.pattern.variable.VariableRegistry;
 import graql.lang.pattern.Conjunctable;
 
 import javax.annotation.Nullable;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -33,15 +34,15 @@ import static graql.lang.common.GraqlToken.Char.CURLY_OPEN;
 import static graql.lang.common.GraqlToken.Char.NEW_LINE;
 import static graql.lang.common.GraqlToken.Operator.OR;
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Collectors.toList;
 
 public class Disjunction implements Pattern, Cloneable {
 
     private static final String TRACE_PREFIX = "disjunction.";
-    private final Set<Conjunction> conjunctions;
+    private final List<Conjunction> conjunctions;
     private final int hash;
 
-    public Disjunction(Set<Conjunction> conjunctions) {
+    public Disjunction(List<Conjunction> conjunctions) {
         this.conjunctions = conjunctions;
         this.hash = Objects.hash(conjunctions);
     }
@@ -57,17 +58,17 @@ public class Disjunction implements Pattern, Cloneable {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             return new Disjunction(graql.patterns().stream().map(
                     conjunction -> Conjunction.create(conjunction, bounds)
-            ).collect(toSet()));
+            ).collect(toList()));
         }
     }
 
-    public Set<Conjunction> conjunctions() {
+    public List<Conjunction> conjunctions() {
         return conjunctions;
     }
 
     @Override
     public Disjunction clone() {
-        return new Disjunction(iterate(conjunctions).map(Conjunction::clone).toSet());
+        return new Disjunction(iterate(conjunctions).map(Conjunction::clone).toList());
     }
 
     @Override
