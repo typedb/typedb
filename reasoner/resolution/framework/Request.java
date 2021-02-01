@@ -21,42 +21,56 @@ package grakn.core.reasoner.resolution.framework;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
+import graql.lang.pattern.variable.Reference;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
 import static grakn.common.collection.Collections.list;
+import static grakn.common.collection.Collections.set;
 
 public class Request {
     private final Path path;
-    private final AnswerState.DownstreamVars answerBounds;
+    private final AnswerState.DownstreamVars partialAnswer;
     private final ResolutionAnswer.Derivation partialDerivation;
+    private Set<Reference.Name> answerFilter;
     private final int planIndex;
 
     private Request(Path path,
                     AnswerState.DownstreamVars startingConcept,
                     ResolutionAnswer.Derivation partialDerivation,
-                    int planIndex) {
+                    int planIndex, @Nullable Set<Reference.Name> answerFilter) {
         this.path = path;
-        this.answerBounds = startingConcept;
+        this.partialAnswer = startingConcept;
         this.partialDerivation = partialDerivation;
+        this.answerFilter = answerFilter;
         this.planIndex = planIndex;
     }
 
     public static Request create(Path path,
                                  AnswerState.DownstreamVars startingConcept,
                                  ResolutionAnswer.Derivation partialDerivation,
-                                 int planIndex) {
-        return new Request(path, startingConcept, partialDerivation, planIndex);
+                                 int planIndex, @Nullable Set<Reference.Name> answerFilter) {
+        return new Request(path, startingConcept, partialDerivation, planIndex, answerFilter);
+    }
+
+    public static Request create(Path path,
+                                 AnswerState.DownstreamVars startingConcept,
+                                 ResolutionAnswer.Derivation partialDerivation,
+                                 @Nullable Set<Reference.Name> answerFilter) {
+        // Set the planIndex to -1 since it is unused in this case
+        return new Request(path, startingConcept, partialDerivation, -1, answerFilter);
     }
 
     public static Request create(Path path,
                                  AnswerState.DownstreamVars startingConcept,
                                  ResolutionAnswer.Derivation partialDerivation) {
         // Set the planIndex to -1 since it is unused in this case
-        return new Request(path, startingConcept, partialDerivation, -1);
+        return new Request(path, startingConcept, partialDerivation, -1, null);
     }
 
     public Path path() {
@@ -66,6 +80,8 @@ public class Request {
     public int planIndex() {
         return planIndex;
     }
+
+    public Optional<Set<Reference.Name>> filter() { return Optional.ofNullable(answerFilter); }
 
     @Nullable
     public Actor<? extends Resolver<?>> sender() {
@@ -79,8 +95,8 @@ public class Request {
         return path.path.get(path.path.size() - 1);
     }
 
-    public AnswerState.DownstreamVars answerBounds() {
-        return answerBounds;
+    public AnswerState.DownstreamVars partialAnswer() {
+        return partialAnswer;
     }
 
     @Override
@@ -89,19 +105,19 @@ public class Request {
         if (o == null || getClass() != o.getClass()) return false;
         Request request = (Request) o;
         return Objects.equals(path, request.path) &&
-                Objects.equals(answerBounds, request.answerBounds());
+                Objects.equals(partialAnswer, request.partialAnswer());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(path, answerBounds);
+        return Objects.hash(path, partialAnswer);
     }
 
     @Override
     public String toString() {
         return "Request{" +
                 "path=" + path +
-                ", answerBounds=" + answerBounds +
+                ", answerBounds=" + partialAnswer +
                 ", partialDerivation=" + partialDerivation +
                 '}';
     }

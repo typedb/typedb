@@ -42,8 +42,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Set;
 
 import static grakn.common.collection.Collections.list;
+import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CONJUNCTION;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
@@ -76,20 +78,20 @@ public class Reasoner {
         return resolverRegistry;
     }
 
-    private Producer<ConceptMap> resolve(Conjunction conjunction) {
-        return new ReasonerProducer(conjunction, resolverRegistry);
+    private Producer<ConceptMap> resolve(Conjunction conjunction, Set<Identifier.Variable.Name> filter) {
+        return new ReasonerProducer(conjunction, resolverRegistry, filter);
     }
 
     private boolean isInfer(Context.Query context) {
         return context.options().infer() && !context.transactionType().isWrite() && logicMgr.rules().hasNext();
     }
 
-    private boolean conjunctionContainsThings(Conjunction conjunction, List<Identifier.Variable.Name> filter) {
+    private boolean conjunctionContainsThings(Conjunction conjunction, Set<Identifier.Variable.Name> filter) {
         return !filter.isEmpty() && iterate(filter).anyMatch(id -> conjunction.variable(id).isThing()) ||
                 iterate(conjunction.variables()).anyMatch(Variable::isThing);
     }
 
-    public ResourceIterator<ConceptMap> execute(Disjunction disjunction, List<Identifier.Variable.Name> filter,
+    public ResourceIterator<ConceptMap> execute(Disjunction disjunction, Set<Identifier.Variable.Name> filter,
                                                 Context.Query context) {
         ResourceIterator<ConceptMap> answers;
         ResourceIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
@@ -100,15 +102,15 @@ public class Reasoner {
     }
 
     private Producer<ConceptMap> producer(Conjunction conjunction) {
-        return producer(conjunction, list(), defaultContext);
+        return producer(conjunction, set(), defaultContext);
     }
 
-    private Producer<ConceptMap> producer(Conjunction conjunction, List<Identifier.Variable.Name> filter,
+    private Producer<ConceptMap> producer(Conjunction conjunction, Set<Identifier.Variable.Name> filter,
                                           Context.Query context) {
         Producer<ConceptMap> producer;
         logicMgr.typeResolver().resolve(conjunction);
         if (conjunction.isSatisfiable()) {
-            if (isInfer(context)) producer = resolve(conjunction);
+            if (isInfer(context)) producer = resolve(conjunction, filter);
             else producer = traversalEng.producer(
                     conjunction.traversal(filter), context.producer(), PARALLELISATION_FACTOR
             ).map(conceptMgr::conceptMap);
@@ -129,15 +131,15 @@ public class Reasoner {
     }
 
     private ResourceIterator<ConceptMap> iterator(Conjunction conjunction) {
-        return iterator(conjunction, list(), defaultContext);
+        return iterator(conjunction, set(), defaultContext);
     }
 
-    private ResourceIterator<ConceptMap> iterator(Conjunction conjunction, List<Identifier.Variable.Name> filter,
+    private ResourceIterator<ConceptMap> iterator(Conjunction conjunction, Set<Identifier.Variable.Name> filter,
                                                   Context.Query context) {
         ResourceIterator<ConceptMap> answers;
         logicMgr.typeResolver().resolve(conjunction);
         if (conjunction.isSatisfiable()) {
-            if (isInfer(context)) answers = produce(resolve(conjunction), context.producer());
+            if (isInfer(context)) answers = produce(resolve(conjunction, filter), context.producer());
             else answers = traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
         } else if (!conjunction.isBounded() && conjunctionContainsThings(conjunction, filter)) {
             throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction);

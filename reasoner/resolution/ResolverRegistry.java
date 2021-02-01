@@ -20,6 +20,7 @@ package grakn.core.reasoner.resolution;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.ConceptManager;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.actor.EventLoopGroup;
 import grakn.core.logic.LogicManager;
@@ -43,6 +44,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
