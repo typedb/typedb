@@ -24,7 +24,6 @@ import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPSolverParameters;
 import com.google.ortools.linearsolver.MPVariable;
 import grakn.core.common.exception.GraknException;
-import grakn.core.concurrent.lock.ManagedCountDownLatch;
 import grakn.core.graph.GraphManager;
 import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.graph.TraversalEdge;
@@ -45,6 +44,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.ortools.linearsolver.MPSolver.ResultStatus.ABNORMAL;
@@ -77,7 +77,7 @@ public class GraphPlanner implements Planner {
     private final Map<Identifier, PlannerVertex<?>> vertices;
     private final Set<PlannerEdge<?, ?>> edges;
     private final AtomicBoolean isOptimising;
-    private final ManagedCountDownLatch procedureLatch;
+    private final CountDownLatch procedureLatch;
 
     protected volatile GraphProcedure procedure;
     private volatile MPSolver.ResultStatus resultStatus;
@@ -98,7 +98,7 @@ public class GraphPlanner implements Planner {
         parameters.setIntegerParam(INCREMENTALITY, INCREMENTALITY_ON.swigValue());
         vertices = new HashMap<>();
         edges = new HashSet<>();
-        procedureLatch = new ManagedCountDownLatch(1);
+        procedureLatch = new CountDownLatch(1);
         isOptimising = new AtomicBoolean(false);
         resultStatus = MPSolver.ResultStatus.NOT_SOLVED;
         isUpToDate = false;
