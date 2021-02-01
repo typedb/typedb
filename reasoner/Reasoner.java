@@ -91,9 +91,12 @@ public class Reasoner {
 
     public ResourceIterator<ConceptMap> execute(Disjunction disjunction, List<Identifier.Variable.Name> filter,
                                                 Context.Query context) {
+        ResourceIterator<ConceptMap> answers;
         ResourceIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
-        if (!context.options().parallel()) return conjs.flatMap(conj -> iterator(conj, filter, context));
-        else return produce(conjs.map(conj -> producer(conj, filter, context)).toList(), context.producer());
+        if (!context.options().parallel()) answers = conjs.flatMap(conj -> iterator(conj, filter, context));
+        else answers = produce(conjs.map(conj -> producer(conj, filter, context)).toList(), context.producer());
+        if (disjunction.conjunctions().size() > 1) answers = answers.distinct();
+        return answers;
     }
 
     private Producer<ConceptMap> producer(Conjunction conjunction) {
@@ -116,8 +119,8 @@ public class Reasoner {
         }
 
         if (conjunction.negations().isEmpty()) return producer;
-        else return producer.filter(ans -> !iterate(conjunction.negations())
-                .flatMap(negation -> iterator(negation.disjunction(), ans)).hasNext()
+        else return producer.filter(answer -> !iterate(conjunction.negations())
+                .flatMap(negation -> iterator(negation.disjunction(), answer)).hasNext()
         );
     }
 
