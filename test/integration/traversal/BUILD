@@ -18,33 +18,6 @@
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
-host_compatible_java_test(
-    name = "test-traversal-smaller",
-    srcs = ["TraversalTestSmaller.java"],
-    test_class = "grakn.core.test.integration.traversal.TraversalTestSmaller",
-    native_libraries_deps = [
-        "//rocks:rocks",
-        "//:grakn",
-        "//traversal",
-        "//concept:concept",
-    ],
-    deps = [
-        # Internal dependencies
-        "//test/integration/util:util",
-        "//common:common",
-
-        # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
-        "@graknlabs_graql//java/query:query",
-        "@graknlabs_graql//java:graql",
-    ],
-    data = [":schema.gql"],
-    resources = [
-        "//common/test:logback"
-    ],
-    resource_strip_prefix = "common/test",
-)
-
 
 host_compatible_java_test(
     name = "test-traversal",
