@@ -240,7 +240,7 @@ public class AlphaEquivalenceTest {
 
     @Ignore("This is outside of the scope of current alpha-equiv implementation")
     @Test
-    public void test_relation_as_player_with_different_binding_configurations(){
+    public void test_relation_as_player_with_different_binding_configurations() {
         List<ThingVariable> variables = Stream.of(
                 parseVariables("r1","$r1 ($x)", "($r1, $y)"),
                 parseVariables("r2","$r2 ($x)", "($r2, $y)", "($r2, $z)"),
@@ -255,7 +255,7 @@ public class AlphaEquivalenceTest {
     }
 
     @Test
-    public void test_relation_with_different_roleplayer_variable_bindings(){
+    public void test_relation_with_different_roleplayer_variable_bindings() {
         List<ThingVariable> variables = Stream.of(
                 parseVariables("r1","$r1 (employer: $x, employee: $y)"),
                 parseVariables("r2","$r2 (employer: $x, employee: $x)"),
@@ -387,7 +387,7 @@ public class AlphaEquivalenceTest {
         for (int varIndex = 0 ; varIndex < toCheck.size(); varIndex++) {
             ThingVariable var = toCheck.get(varIndex);
             //compare only by reference
-            if ( var != sourceVar){
+            if ( var != sourceVar) {
                 testAlphaEquivalenceSymmetricReflexive(sourceVar, var, validVars.contains(varIndex));
             }
         }
