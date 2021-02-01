@@ -27,13 +27,16 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.reasoner.Reasoner;
+import graql.lang.pattern.variable.UnboundVariable;
 import graql.lang.query.GraqlUpdate;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
+import static grakn.common.collection.Collections.list;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_DELETE;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_INSERT;
 import static grakn.core.common.iterator.Iterators.iterate;
@@ -75,7 +78,9 @@ public class Updater {
             });
 
             assert query.match().namedVariablesUnbound().containsAll(query.namedDeleteVariablesUnbound());
-            Matcher matcher = Matcher.create(reasoner, query.match().get(query.namedDeleteVariablesUnbound()));
+            HashSet<UnboundVariable> filter = new HashSet<>(query.namedDeleteVariablesUnbound());
+            filter.addAll(query.namedInsertVariablesUnbound());
+            Matcher matcher = Matcher.create(reasoner, query.match().get(list(filter)));
             return new Updater(matcher, conceptMgr, deleteRegistry.things(), insertRegistry.things(), context);
         }
     }
