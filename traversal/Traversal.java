@@ -290,7 +290,7 @@ public class Traversal {
         structure.predicateEdge(structure.thingVertex(att1), structure.thingVertex(att2), predicate);
     }
 
-    public void filter(List<Identifier.Variable.Name> filter) {
+    public void filter(Set<Identifier.Variable.Name> filter) {
         assert modifiable;
         this.filter.addAll(filter);
     }
