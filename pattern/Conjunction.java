@@ -38,6 +38,7 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -133,7 +134,7 @@ public class Conjunction implements Pattern, Cloneable {
         return negations;
     }
 
-    public Traversal traversal(List<Identifier.Variable.Name> filter) {
+    public Traversal traversal(Set<Identifier.Variable.Name> filter) {
         Traversal traversal = new Traversal();
         variableSet.forEach(variable -> variable.addTo(traversal));
         assert iterate(filter).allMatch(variableMap::containsKey);
@@ -142,7 +143,7 @@ public class Conjunction implements Pattern, Cloneable {
     }
 
     public Traversal traversal() {
-        return traversal(new ArrayList<>());
+        return traversal(new HashSet<>());
     }
 
     public void setSatisfiable(boolean isSatisfiable) {
