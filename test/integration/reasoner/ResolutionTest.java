@@ -22,6 +22,7 @@ import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.actor.EventLoopGroup;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
+import grakn.core.pattern.variable.Variable;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
@@ -31,6 +32,7 @@ import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
 import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
+import graql.lang.pattern.variable.Reference;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -39,11 +41,13 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
+import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.reasoner.resolution.answer.AnswerState.DownstreamVars;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
@@ -390,24 +394,27 @@ public class ResolutionTest {
         return transaction;
     }
 
-    private void createRootAndAssertResponses(RocksTransaction transaction, Conjunction conjunction, long answerCount) throws InterruptedException {
+    private void createRootAndAssertResponses(RocksTransaction transaction, Conjunction conjunction,
+                                              long answerCount) throws InterruptedException {
         ResolverRegistry registry = transaction.reasoner().resolverRegistry();
         LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
                 transaction.logic().typeResolver().resolve(conjunction);
         Actor<RootResolver> root =
                         registry.createRoot(conjunction, responses::add, iterDone -> doneReceived.incrementAndGet());
-        assertResponses(root, responses, doneReceived, answerCount);
+        Set<Reference.Name> filter = iterate(conjunction.variables()).map(Variable::reference).filter(Reference::isName)
+                .map(Reference::asName).toSet();
+        assertResponses(root, filter, responses, doneReceived, answerCount);
     }
 
-    private void assertResponses(Actor<RootResolver> root, LinkedBlockingQueue<ResolutionAnswer> responses,
+    private void assertResponses(Actor<RootResolver> root, Set<Reference.Name> filter, LinkedBlockingQueue<ResolutionAnswer> responses,
                                  AtomicLong doneReceived, long answerCount)
             throws InterruptedException {
         long startTime = System.currentTimeMillis();
         long n = answerCount + 1; //total number of traversal answers, plus one expected Exhausted (-1 answer)
         for (int i = 0; i < n; i++) {
             root.tell(actor -> actor.receiveRequest(Request.create(
-                    new Request.Path(root), DownstreamVars.Root.create(), ResolutionAnswer.Derivation.EMPTY
+                    new Request.Path(root), DownstreamVars.Root.create(), ResolutionAnswer.Derivation.EMPTY, filter
             ), 0));
         }
         int answersFound = 0;
