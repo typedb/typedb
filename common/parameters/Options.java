@@ -94,14 +94,13 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         return getThis();
     }
 
-    // TODO: make use of this
-    public int schemaLockAcquireTimeoutMillis() {
+    public int schemaLockTimeoutMillis() {
         if (schemaLockAcquireTimeoutMillis != null) return schemaLockAcquireTimeoutMillis;
-        else if (parent != null) return parent.schemaLockAcquireTimeoutMillis();
+        else if (parent != null) return parent.schemaLockTimeoutMillis();
         else return DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS;
     }
 
-    public SELF schemaLockAcquireTimeoutMillis(int acquireSchemaLockTimeoutMillis) {
+    public SELF schemaLockTimeoutMillis(int acquireSchemaLockTimeoutMillis) {
         this.schemaLockAcquireTimeoutMillis = acquireSchemaLockTimeoutMillis;
         return getThis();
     }
