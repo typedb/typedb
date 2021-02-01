@@ -73,6 +73,8 @@ public interface ResourceIterator<T> extends Iterator<T> {
 
     Set<T> toSet();
 
+    void toSet(Set<T> set);
+
     LinkedHashSet<T> toLinkedSet();
 
     long count();

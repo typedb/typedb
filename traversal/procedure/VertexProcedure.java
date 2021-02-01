@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 
 import static grakn.common.collection.Collections.map;
 import static grakn.common.collection.Collections.pair;
@@ -90,7 +91,7 @@ public class VertexProcedure implements Procedure {
 
     @Override
     public Producer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
-                                        List<Identifier.Variable.Name> filter, int parallelisation) {
+                                        Set<Identifier.Variable.Name> filter, int parallelisation) {
         LOG.debug(params.toString());
         LOG.debug(this.toString());
         return Producers.producer(iterator(graphMgr, params, filter));
@@ -98,7 +99,7 @@ public class VertexProcedure implements Procedure {
 
     @Override
     public ResourceIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
-                                                List<Identifier.Variable.Name> filter) {
+                                                Set<Identifier.Variable.Name> filter) {
         LOG.debug(params.toString());
         LOG.debug(this.toString());
         assert vertex.id().isName() && filter.contains(vertex.id().asVariable().asName());

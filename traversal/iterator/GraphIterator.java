@@ -52,7 +52,7 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
     private final GraphManager graphMgr;
     private final GraphProcedure procedure;
     private final Traversal.Parameters params;
-    private final List<Identifier.Variable.Name> filter;
+    private final Set<Identifier.Variable.Name> filter;
     private final Map<Identifier, ResourceIterator<? extends Vertex<?, ?>>> iterators;
     private final Map<Identifier, Vertex<?, ?>> answer;
     private final Map<Identifier, ThingVertex> roles;
@@ -65,7 +65,7 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
     enum State {INIT, EMPTY, FETCHED, COMPLETED}
 
     public GraphIterator(GraphManager graphMgr, Vertex<?, ?> start, GraphProcedure procedure,
-                         Traversal.Parameters params, List<Identifier.Variable.Name> filter) {
+                         Traversal.Parameters params, Set<Identifier.Variable.Name> filter) {
         assert procedure.edgesCount() > 0;
         this.graphMgr = graphMgr;
         this.procedure = procedure;

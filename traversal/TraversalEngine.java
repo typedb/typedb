@@ -26,9 +26,9 @@ import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.common.VertexMap;
 import grakn.core.traversal.procedure.GraphProcedure;
 
-import java.util.List;
+import java.util.Set;
 
-import static grakn.common.collection.Collections.list;
+import static grakn.common.collection.Collections.set;
 
 public class TraversalEngine {
 
@@ -64,11 +64,11 @@ public class TraversalEngine {
     }
 
     public ResourceIterator<VertexMap> iterator(GraphProcedure procedure, Traversal.Parameters params) {
-        return iterator(procedure, params, list());
+        return iterator(procedure, params, set());
     }
 
     public ResourceIterator<VertexMap> iterator(GraphProcedure procedure, Traversal.Parameters params,
-                                                List<Identifier.Variable.Name> filter) {
+                                                Set<Identifier.Variable.Name> filter) {
         return procedure.iterator(graphMgr, params, filter);
     }
 }
