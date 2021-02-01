@@ -89,7 +89,10 @@ host_compatible_java_test(
         "//common:common",
         "//concurrent:concurrent",
         "//test/integration/util",
+
+        # External dependencies from Grakn Labs
         "@graknlabs_graql//java:graql",
+        "@graknlabs_common//:common",
     ],
 )
 

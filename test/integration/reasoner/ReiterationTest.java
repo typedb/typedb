@@ -17,6 +17,7 @@
 
 package grakn.core.reasoner;
 
+import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.actor.EventLoopGroup;
@@ -190,8 +191,9 @@ public class ReiterationTest {
     }
 
     private Conjunction parseConjunction(RocksTransaction transaction, String query) {
-        return transaction.logic().typeResolver().resolve(
-                Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next());
+        Conjunction conjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
+        transaction.logic().typeResolver().resolve(conjunction);
+        return conjunction;
     }
 
     private RocksSession schemaSession() {
@@ -204,7 +206,7 @@ public class ReiterationTest {
 
     private RocksTransaction singleThreadElgTransaction(RocksSession session) {
         RocksTransaction transaction = session.transaction(Arguments.Transaction.Type.WRITE);
-        transaction.reasoner().resolverRegistry().setEventLoopGroup(new EventLoopGroup(1, "grakn-elg"));
+        transaction.reasoner().resolverRegistry().setEventLoopGroup(new EventLoopGroup(1, new NamedThreadFactory("grakn-elg")));
         return transaction;
     }
 

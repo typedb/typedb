@@ -371,8 +371,9 @@ public class ResolutionTest {
     }
 
     private Conjunction parseConjunction(RocksTransaction transaction, String query) {
-        return transaction.logic().typeResolver().resolve(
-                Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next());
+        Conjunction conjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
+        transaction.logic().typeResolver().resolve(conjunction);
+        return conjunction;
     }
 
     private RocksSession schemaSession() {
