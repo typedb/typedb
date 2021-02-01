@@ -22,7 +22,6 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concurrent.common.ConcurrentSet;
-import grakn.core.concurrent.lock.ManagedReadWriteLock;
 import grakn.core.graph.common.KeyGenerator;
 import grakn.core.graph.common.Storage;
 import org.rocksdb.AbstractImmutableNativeReference;
@@ -40,6 +39,8 @@ import javax.annotation.concurrent.NotThreadSafe;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.StampedLock;
 import java.util.function.BiFunction;
 
 import static grakn.core.common.collection.Bytes.bytesHavePrefix;
@@ -188,25 +189,25 @@ public abstract class RocksStorage implements Storage {
 
     static abstract class TransactionBounded extends RocksStorage {
 
-        protected final ManagedReadWriteLock readWriteLock;
+        protected final ReadWriteLock readWriteLock;
         protected final RocksTransaction transaction;
 
         TransactionBounded(OptimisticTransactionDB rocksDB, RocksTransaction transaction) {
             super(rocksDB, transaction.type().isRead());
             this.transaction = transaction;
-            readWriteLock = new ManagedReadWriteLock();
+            readWriteLock = new StampedLock().asReadWriteLock();
         }
 
         @Override
         public byte[] get(byte[] key) {
             assert isOpen();
             try {
-                if (!isReadOnly) readWriteLock.lockRead();
+                if (!isReadOnly) readWriteLock.readLock().lock();
                 return storageTransaction.get(readOptions, key);
-            } catch (RocksDBException | InterruptedException e) {
+            } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
-                if (!isReadOnly) readWriteLock.unlockRead();
+                if (!isReadOnly) readWriteLock.readLock().unlock();
             }
         }
 
@@ -233,12 +234,12 @@ public abstract class RocksStorage implements Storage {
                 else throw exception(ILLEGAL_STATE);
             }
             try {
-                readWriteLock.lockWrite();
+                readWriteLock.writeLock().lock();
                 storageTransaction.delete(key);
-            } catch (RocksDBException | InterruptedException e) {
+            } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
-                readWriteLock.unlockWrite();
+                readWriteLock.writeLock().unlock();
             }
         }
 
@@ -292,12 +293,12 @@ public abstract class RocksStorage implements Storage {
         public void put(byte[] key, byte[] value) {
             assert isOpen() && !isReadOnly;
             try {
-                if (transaction.isOpen()) readWriteLock.lockWrite();
+                if (transaction.isOpen()) readWriteLock.writeLock().lock();
                 storageTransaction.put(key, value);
-            } catch (RocksDBException | InterruptedException e) {
+            } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
-                if (transaction.isOpen()) readWriteLock.unlockWrite();
+                if (transaction.isOpen()) readWriteLock.writeLock().unlock();
             }
         }
 
@@ -305,12 +306,12 @@ public abstract class RocksStorage implements Storage {
         public void putUntracked(byte[] key, byte[] value) {
             assert isOpen() && !isReadOnly;
             try {
-                if (transaction.isOpen()) readWriteLock.lockWrite();
+                if (transaction.isOpen()) readWriteLock.writeLock().lock();
                 storageTransaction.putUntracked(key, value);
-            } catch (RocksDBException | InterruptedException e) {
+            } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
-                if (transaction.isOpen()) readWriteLock.unlockWrite();
+                if (transaction.isOpen()) readWriteLock.writeLock().unlock();
             }
         }
     }
