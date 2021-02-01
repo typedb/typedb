@@ -53,6 +53,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static grakn.common.collection.Collections.map;
 import static grakn.core.common.iterator.Iterators.iterate;
 
 public class RuleResolver extends Resolver<RuleResolver> {
@@ -185,7 +186,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
             Request toDownstream = Request.create(request.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
                                                   AnswerState.UpstreamVars.Initial.of(request.partialAnswer().conceptMap())
                                                           .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
-                                                  ResolutionAnswer.Derivation.EMPTY, 0, null);
+                                                  new ResolutionAnswer.Derivation(map()), 0, null);
             responseProducer.addDownstreamProducer(toDownstream);
         }
         return responseProducer;
@@ -203,7 +204,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
             Request toDownstream = Request.create(request.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
                                                   AnswerState.UpstreamVars.Initial.of(request.partialAnswer().conceptMap())
                                                           .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
-                                                  ResolutionAnswer.Derivation.EMPTY, 0, null);
+                                                  new ResolutionAnswer.Derivation(map()), 0, null);
             responseProducerNewIter.addDownstreamProducer(toDownstream);
         }
         return responseProducerNewIter;
@@ -226,7 +227,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
                 Optional<AnswerState.UpstreamVars.Derived> derivedAnswer = fromUpstream.partialAnswer().asUnified().unifyToUpstream(thenMaterialisation);
                 if (derivedAnswer.isPresent()) {
                     ResolutionAnswer answer = new ResolutionAnswer(derivedAnswer.get(), rule.when().toString(),
-                                                                   ResolutionAnswer.Derivation.EMPTY, self(), true);
+                                                                   new ResolutionAnswer.Derivation(map()), self(), true);
                     respondToUpstream(Answer.create(fromUpstream, answer), iteration);
                     return;
                 }
