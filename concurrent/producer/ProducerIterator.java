@@ -21,8 +21,6 @@ package grakn.core.concurrent.producer;
 import grakn.common.collection.Either;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.AbstractResourceIterator;
-import grakn.core.concurrent.common.ExecutorService;
-import grakn.core.concurrent.queue.ManagedBlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +30,10 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static grakn.core.concurrent.common.ExecutorService.async;
 
 public class ProducerIterator<T> extends AbstractResourceIterator<T> {
 
@@ -61,7 +62,7 @@ public class ProducerIterator<T> extends AbstractResourceIterator<T> {
                 queue.pending += available;
                 assert !producers.isEmpty();
                 Producer<T> producer = producers.peek();
-                ExecutorService.forkJoinPool().submit(() -> producer.produce(queue, available));
+                async().submit(() -> producer.produce(queue, available));
             }
         }
     }
@@ -143,7 +144,7 @@ public class ProducerIterator<T> extends AbstractResourceIterator<T> {
     @ThreadSafe
     private class Queue implements Producer.Queue<T> {
 
-        private final ManagedBlockingQueue<Either<Result<T>, Done>> blockingQueue;
+        private final LinkedBlockingQueue<Either<Result<T>, Done>> blockingQueue;
         private final AtomicBoolean isError;
         private final int min;
         private final int max;
@@ -152,7 +153,7 @@ public class ProducerIterator<T> extends AbstractResourceIterator<T> {
         private Queue(int min, int max) {
             this.min = min;
             this.max = max;
-            this.blockingQueue = new ManagedBlockingQueue<>();
+            this.blockingQueue = new LinkedBlockingQueue<>();
             this.isError = new AtomicBoolean(false);
             this.pending = 0;
         }

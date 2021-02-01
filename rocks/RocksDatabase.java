@@ -41,7 +41,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
@@ -55,6 +54,7 @@ import static grakn.core.common.parameters.Arguments.Session.Type.SCHEMA;
 import static grakn.core.common.parameters.Arguments.Transaction.Type.READ;
 import static grakn.core.common.parameters.Arguments.Transaction.Type.WRITE;
 import static java.util.Comparator.reverseOrder;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class RocksDatabase implements Grakn.Database {
 
@@ -66,7 +66,7 @@ public class RocksDatabase implements Grakn.Database {
     protected RocksSession.Data statisticsBackgroundCounterSession;
     private final KeyGenerator.Schema.Persisted schemaKeyGenerator;
     private final KeyGenerator.Data.Persisted dataKeyGenerator;
-    private final StampedLock dataWriteSchemaLock;
+    private final StampedLock schemaLock;
     private final RocksGrakn grakn;
     private Cache cache;
 
@@ -80,11 +80,13 @@ public class RocksDatabase implements Grakn.Database {
         schemaKeyGenerator = new KeyGenerator.Schema.Persisted();
         dataKeyGenerator = new KeyGenerator.Data.Persisted();
         sessions = new ConcurrentHashMap<>();
-        dataWriteSchemaLock = new StampedLock();
+        schemaLock = new StampedLock();
 
         try {
-            rocksSchema = OptimisticTransactionDB.open(this.grakn.rocksOptions(), directory().resolve(Encoding.ROCKS_SCHEMA).toString());
-            rocksData = OptimisticTransactionDB.open(this.grakn.rocksOptions(), directory().resolve(Encoding.ROCKS_DATA).toString());
+            String schemaDirPath = directory().resolve(Encoding.ROCKS_SCHEMA).toString();
+            String dataDirPath = directory().resolve(Encoding.ROCKS_DATA).toString();
+            rocksSchema = OptimisticTransactionDB.open(this.grakn.rocksOptions(), schemaDirPath);
+            rocksData = OptimisticTransactionDB.open(this.grakn.rocksOptions(), dataDirPath);
         } catch (RocksDBException e) {
             throw GraknException.of(e);
         }
@@ -148,7 +150,7 @@ public class RocksDatabase implements Grakn.Database {
 
         if (type.isSchema()) {
             try {
-                lock = dataWriteSchemaLock().tryWriteLock(options.schemaLockAcquireTimeoutMillis(), TimeUnit.MILLISECONDS);
+                lock = schemaLock().tryWriteLock(options.schemaLockTimeoutMillis(), MILLISECONDS);
                 if (lock == 0) throw GraknException.of(SCHEMA_ACQUIRE_LOCK_TIMEOUT);
             } catch (InterruptedException e) {
                 throw GraknException.of(e);
@@ -240,8 +242,8 @@ public class RocksDatabase implements Grakn.Database {
      *
      * @return a {@code StampedLock} to protect data writes from concurrent schema modification
      */
-    StampedLock dataWriteSchemaLock() {
-        return dataWriteSchemaLock;
+    StampedLock schemaLock() {
+        return schemaLock;
     }
 
     @Override
@@ -268,7 +270,7 @@ public class RocksDatabase implements Grakn.Database {
     void remove(RocksSession session) {
         if (statisticsBackgroundCounterSession != session) {
             long lock = sessions.remove(session.uuid()).second();
-            if (session.type().isSchema()) dataWriteSchemaLock().unlockWrite(lock);
+            if (session.type().isSchema()) schemaLock().unlockWrite(lock);
         }
     }
 

@@ -43,7 +43,7 @@ public class RequestReader {
             options.sessionIdleTimeoutMillis(request.getSessionIdleTimeoutMillis());
         }
         if (request.getSchemaLockAcquireTimeoutOptCase().equals(SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS)) {
-            options.schemaLockAcquireTimeoutMillis(request.getSchemaLockAcquireTimeoutMillis());
+            options.schemaLockTimeoutMillis(request.getSchemaLockAcquireTimeoutMillis());
         }
         return options;
     }

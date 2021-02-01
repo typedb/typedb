@@ -32,7 +32,6 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
-import grakn.core.logic.resolvable.Concludable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
@@ -98,8 +97,10 @@ public class Rule {
     private Rule(GraphManager graphMgr, LogicManager logicMgr, String label,
                  graql.lang.pattern.Conjunction<? extends Pattern> when, ThingVariable<?> then) {
         this.structure = graphMgr.schema().rules().create(label, when, then);
-        this.when = logicMgr.typeResolver().resolve(whenPattern(structure.when(), logicMgr), false);
-        this.then = logicMgr.typeResolver().resolve(thenPattern(structure.then(), logicMgr), false); ;
+        this.when = whenPattern(structure.when(), logicMgr);
+        this.then = thenPattern(structure.then(), logicMgr);
+        logicMgr.typeResolver().resolve(this.when, false);
+        logicMgr.typeResolver().resolve(this.then, false);
         pruneThenResolvedTypes();
         validateSatisfiable();
         validateInsertable(logicMgr);
@@ -222,13 +223,16 @@ public class Rule {
     }
 
     private Conjunction whenPattern(graql.lang.pattern.Conjunction<? extends Pattern> conjunction, LogicManager logicMgr) {
-        return logicMgr.typeResolver().resolve(Conjunction.create(conjunction.normalise().patterns().get(0)));
+        Conjunction conj = Conjunction.create(conjunction.normalise().patterns().get(0));
+        logicMgr.typeResolver().resolve(conj);
+        return conj;
     }
 
     private Conjunction thenPattern(ThingVariable<?> thenVariable, LogicManager logicMgr) {
         // TODO when applying the type resolver, we should be using _insert semantics_ during the type resolution!!!
         Conjunction conj = new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
-        return logicMgr.typeResolver().resolve(conj);
+        logicMgr.typeResolver().resolve(conj);
+        return conj;
     }
 
     public void reindex() {

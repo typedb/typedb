@@ -143,7 +143,8 @@ public class UnifyIsaConcludableTest {
 
     private Conjunction resolvedConjunction(String query) {
         Conjunction conjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
-        return logicMgr.typeResolver().resolve(conjunction);
+        logicMgr.typeResolver().resolve(conjunction);
+        return conjunction;
     }
 
     private Rule createRule(String label, String whenConjunctionPattern, String thenThingPattern) {

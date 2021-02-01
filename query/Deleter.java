@@ -22,7 +22,6 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Label;
-import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Relation;
@@ -52,6 +51,9 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_IID_NOT_INSERTABLE;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
+import static grakn.core.concurrent.common.ExecutorService.PARALLELISATION_FACTOR;
+import static grakn.core.concurrent.producer.Producers.async;
+import static grakn.core.concurrent.producer.Producers.produce;
 import static grakn.core.query.common.Util.getRoleType;
 
 public class Deleter {
@@ -59,19 +61,17 @@ public class Deleter {
     private static final String TRACE_PREFIX = "deleter.";
 
     private final Matcher matcher;
-    private final ConceptManager conceptMgr;
     private final Set<ThingVariable> variables;
     private final Context.Query context;
 
-    public Deleter(Matcher matcher, ConceptManager conceptMgr, Set<ThingVariable> variables, Context.Query context) {
+    public Deleter(Matcher matcher, Set<ThingVariable> variables, Context.Query context) {
         this.matcher = matcher;
-        this.conceptMgr = conceptMgr;
         this.variables = variables;
         this.context = context;
         this.context.producer(EXHAUSTIVE);
     }
 
-    public static Deleter create(Reasoner reasoner, ConceptManager conceptMgr, GraqlDelete query, Context.Query context) {
+    public static Deleter create(Reasoner reasoner, GraqlDelete query, Context.Query context) {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             VariableRegistry registry = VariableRegistry.createFromThings(query.variables(), false);
             iterate(registry.types()).filter(t -> !t.reference().isLabel()).forEachRemaining(t -> {
@@ -80,14 +80,22 @@ public class Deleter {
 
             assert query.match().namedVariablesUnbound().containsAll(query.namedVariablesUnbound());
             Matcher matcher = Matcher.create(reasoner, query.match().get(query.namedVariablesUnbound()));
-            return new Deleter(matcher, conceptMgr, registry.things(), context);
+            return new Deleter(matcher, registry.things(), context);
         }
     }
 
     public void execute() {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
-            List<ConceptMap> matches = matcher.execute(context).onError(conceptMgr::exception).toList();
-            matches.forEach(matched -> new Operation(matched, variables).execute());
+            List<List<ConceptMap>> lists = matcher.execute(context).toLists(QueryManager.PARALLELISATION_SPLIT_MIN, PARALLELISATION_FACTOR);
+            assert !lists.isEmpty();
+            if (lists.size() == 1) {
+                iterate(lists.get(0)).forEachRemaining(matched -> new Operation(matched, variables).execute());
+            } else {
+                produce(async(iterate(lists).map(list -> iterate(list).map(matched -> {
+                    new Operation(matched, variables).execute();
+                    return (Void) null;
+                })), PARALLELISATION_FACTOR), EXHAUSTIVE).toList();
+            }
         }
     }
 

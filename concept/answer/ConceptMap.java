@@ -18,7 +18,13 @@
 
 package grakn.core.concept.answer;
 
+import grakn.common.collection.Either;
+import grakn.common.collection.Pair;
+import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.Concept;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.Type;
 import graql.lang.pattern.variable.Reference;
 import graql.lang.pattern.variable.UnboundVariable;
 
@@ -27,7 +33,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static grakn.common.collection.Collections.pair;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.iterator.Iterators.iterate;
 
 public class ConceptMap implements Answer {
 
@@ -41,6 +52,10 @@ public class ConceptMap implements Answer {
     public ConceptMap(Map<Reference.Name, ? extends Concept> concepts) {
         this.concepts = concepts;
         this.hash = Objects.hash(this.concepts);
+    }
+
+    public ResourceIterator<Pair<Reference.Name, Concept>> iterator() {
+        return iterate(concepts.entrySet()).map(e -> pair(e.getKey(), e.getValue()));
     }
 
     public boolean contains(String variable) {
@@ -73,6 +88,29 @@ public class ConceptMap implements Answer {
         return new ConceptMap(filtered);
     }
 
+    public void forEach(BiConsumer<Reference.Name, Concept> consumer) {
+        concepts.forEach(consumer);
+    }
+
+    public <T, U> Map<Reference.Name, Either<T, U>> toMap(Function<Type, T> typeFn, Function<Thing, U> thingFn) {
+        return toMap(concept -> {
+            if (concept.isType()) return Either.first(typeFn.apply(concept.asType()));
+            else if (concept.isThing()) return Either.second(thingFn.apply(concept.asThing()));
+            else throw GraknException.of(ILLEGAL_STATE);
+        });
+    }
+
+    public <T> Map<Reference.Name, T> toMap(Function<Concept, T> conceptFn) {
+        Map<Reference.Name, T> map = new HashMap<>();
+        iterate(concepts.entrySet()).forEachRemaining(e -> map.put(e.getKey(), conceptFn.apply(e.getValue())));
+        return map;
+    }
+
+    @Override
+    public String toString() {
+        return "ConceptMap{" + concepts + '}';
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -84,14 +122,5 @@ public class ConceptMap implements Answer {
     @Override
     public int hashCode() {
         return hash;
-    }
-
-    @Override
-    public String toString() {
-        return "ConceptMap{" + concepts + '}';
-    }
-
-    public void forEach(BiConsumer<Reference.Name, Concept> consumer) {
-        concepts.forEach(consumer);
     }
 }

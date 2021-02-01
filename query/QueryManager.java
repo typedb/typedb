@@ -47,6 +47,7 @@ import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_S
 public class QueryManager {
 
     private static final Logger LOG = LoggerFactory.getLogger(QueryManager.class);
+    static final int PARALLELISATION_SPLIT_MIN = 2;
 
     private static final String TRACE_PREFIX = "query.";
     private final LogicManager logicMgr;
@@ -117,7 +118,7 @@ public class QueryManager {
         if (context.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION);
         if (context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_DATA_READ_VIOLATION);
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
-            return Inserter.create(reasoner, conceptMgr, query, context).execute();
+            return Inserter.create(reasoner, conceptMgr, query, context).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }
@@ -131,7 +132,7 @@ public class QueryManager {
         if (context.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION);
         if (context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_DATA_READ_VIOLATION);
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete")) {
-            Deleter.create(reasoner, conceptMgr, query, context).execute();
+            Deleter.create(reasoner, query, context).execute();
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }
@@ -141,7 +142,7 @@ public class QueryManager {
         if (context.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION);
         if (context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_DATA_READ_VIOLATION);
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "update")) {
-            return Updater.create(reasoner, conceptMgr, query, context).execute();
+            return Updater.create(reasoner, conceptMgr, query, context).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }

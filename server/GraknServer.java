@@ -32,7 +32,6 @@ import grakn.core.server.util.ServerCommand;
 import grakn.core.server.util.ServerDefaults;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -265,13 +264,11 @@ public class GraknServer implements AutoCloseable {
     }
 
     private Server rpcServer() {
-        NioEventLoopGroup workerELG = new NioEventLoopGroup(
-                MAX_THREADS, NamedThreadFactory.create(GraknServer.class, "worker")
-        );
+        assert ExecutorService.isInitialised();
         return NettyServerBuilder.forPort(command.port())
-                .executor(ExecutorService.forkJoinPool())
-                .workerEventLoopGroup(workerELG)
-                .bossEventLoopGroup(workerELG)
+                .executor(ExecutorService.main())
+                .workerEventLoopGroup(ExecutorService.network())
+                .bossEventLoopGroup(ExecutorService.network())
                 .maxConnectionIdle(1, TimeUnit.HOURS) // TODO: why 1 hour?
                 .channelType(NioServerSocketChannel.class)
                 .addService(graknRPCService)

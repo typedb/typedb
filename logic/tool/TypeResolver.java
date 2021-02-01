@@ -18,11 +18,11 @@
 
 package grakn.core.logic.tool;
 
-import grakn.common.collection.Bytes;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
+import grakn.core.concept.thing.Thing;
 import grakn.core.graph.common.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.logic.LogicCache;
@@ -59,7 +59,6 @@ import java.util.Set;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CONJUNCTION;
-import static grakn.core.common.exception.ErrorMessage.ThingRead.THING_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static grakn.core.common.iterator.Iterators.iterate;
@@ -108,13 +107,13 @@ public class TypeResolver {
         return conjunction;
     }
 
-    public Conjunction resolve(Conjunction conjunction, boolean insertable) {
+    public void resolve(Conjunction conjunction, boolean insertable) {
         resolveLabels(conjunction);
         TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, conceptMgr, insertable);
         Map<Reference, Set<Label>> resolvedLabels = executeResolverTraversals(traversalBuilder);
         if (resolvedLabels.isEmpty()) {
             conjunction.setSatisfiable(false);
-            return conjunction;
+            return;
         }
 
         long numOfTypes = traversalEng.graph().schema().stats().thingTypeCount();
@@ -128,12 +127,10 @@ public class TypeResolver {
                         variable.setResolvedTypes(labels);
                     });
         });
-
-        return conjunction;
     }
 
-    public Conjunction resolve(Conjunction conjunction) {
-        return resolve(conjunction, false);
+    public void resolve(Conjunction conjunction) {
+        resolve(conjunction, false);
     }
 
     private Map<Reference, Set<Label>> executeResolverTraversals(TraversalBuilder traversalBuilder) {
@@ -270,9 +267,8 @@ public class TypeResolver {
         }
 
         private void registerIID(TypeVariable resolver, IIDConstraint iidConstraint) {
-            if (conceptMgr.getThing(iidConstraint.iid()) == null)
-                throw GraknException.of(THING_NOT_FOUND, Bytes.bytesToHexString(iidConstraint.iid()));
-            traversal.labels(resolver.id(), conceptMgr.getThing(iidConstraint.iid()).getType().getLabel());
+            Thing thing = conceptMgr.getThing(iidConstraint.iid());
+            if (thing != null) traversal.labels(resolver.id(), thing.getType().getLabel());
         }
 
         private void registerIsa(TypeVariable resolver, IsaConstraint isaConstraint) {
