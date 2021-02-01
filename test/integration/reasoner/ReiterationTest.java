@@ -34,6 +34,7 @@ import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -64,12 +65,7 @@ public class ReiterationTest {
         grakn.close();
     }
 
-    /*
-    This test is intended to force "reiteration" to find the complete set of answers
-    It's actually quite hard to find a case that should always reiterate... it may depend on the order of resolution
-    and implementation details of materialisations while holding open iterators
-    As a result, this test may or may not be the one we want to examine!
-     */
+    @Ignore
     @Test
     public void test_first_iteration_exhausts_and_second_iteration_recurses_infinitely() throws InterruptedException {
         try (RocksSession session = schemaSession()) {

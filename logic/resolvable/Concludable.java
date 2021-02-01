@@ -98,7 +98,7 @@ public abstract class Concludable extends Resolvable {
         synchronized (this) {
             if (applicableRules == null) applicableRules = applicableRules(conceptMgr, logicMgr);
         }
-        // This gives a deterministic ordering to the applicable rules; important for testing.
+        // This gives a deterministic ordering to the applicable rules, which is important for testing.
         return Iterators.iterate(applicableRules.keySet().stream().sorted(Comparator.comparing(Rule::getLabel)).collect(Collectors.toList()));
     }
 
