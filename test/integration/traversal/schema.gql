@@ -1,0 +1,154 @@
+define
+
+protein sub entity,
+    owns uniprot-id,
+    owns uniprot-name,
+    owns protein-name,
+    owns ec-number,
+    owns ensembl-protein-id,
+    owns ensembl-transcript-id,
+    owns interpro-id,
+    owns pdb-id,
+    owns string-id,
+    plays activity:activity-target,
+    plays string-link:string-linked;
+protein-id sub attribute, value string;
+uniprot-id sub attribute, value string;
+uniprot-name sub attribute, value string;
+protein-name sub attribute, value string;
+ec-number sub attribute, value string;
+ensembl-protein-id sub attribute, value string;
+ensembl-transcript-id sub attribute, value string;
+interpro-id sub attribute, value string;
+pdb-id sub attribute, value string;
+string-id sub attribute, value string;
+
+organism sub entity,
+    owns tax-id,
+    owns organism-name,
+    plays activity:assay-organism;
+tax-id sub attribute, value string;
+organism-name  sub attribute, value string;
+
+tissue sub entity,
+    owns uberon-id,
+    owns cgdb-tissue-id,
+    owns tissue-name,
+    owns tissue-xref,
+    owns bto-id,
+    owns caloha-id,
+    owns tissue-efo-id,
+    plays activity:assay-tissue;
+tissue-id sub attribute, value string;
+uberon-id sub attribute, value string;
+cgdb-tissue-id sub attribute, value string;
+tissue-name sub attribute, value string;
+tissue-xref sub attribute, value string;
+bto-id sub attribute, value string;
+caloha-id sub attribute, value string;
+tissue-efo-id sub attribute, value string;
+
+cell-line sub entity,
+    owns cgdb-cell-line-id,
+    owns cellosaurus-id,
+    owns cell-line-name,
+    plays activity:assay-cell-line;
+cell-line-id sub attribute, value string;
+cgdb-cell-line-id sub attribute, value string;
+cellosaurus-id sub attribute, value string;
+cell-line-name sub attribute, value string;
+
+compound sub entity,
+    owns cgdb-compound-id,
+    owns std-structure-id,
+    owns desalt-structure-id,
+    owns compound-description,
+    owns compound-name,
+    owns compound-type,
+    owns cgdb-drug-id,
+    owns max-clin-phase,
+    owns withdrawn-year,
+    owns chembl-id,
+    owns reaxys-xrn,
+    owns drugcentral-id,
+    owns drugbank-id,
+    owns pdbchem-code,
+    plays activity:activity-substance;
+cgdb-compound-id sub attribute, value string;
+std-structure-id sub attribute, value string;
+desalt-structure-id sub attribute, value string;
+compound-description sub attribute, value string;
+compound-name sub attribute, value string;
+compound-type sub attribute, value string;
+cgdb-drug-id sub attribute, value string;
+max-clin-phase sub attribute, value long;
+withdrawn-year sub attribute, value string;
+chembl-id sub attribute, value string;
+reaxys-xrn sub attribute, value string;
+drugcentral-id sub attribute, value string;
+drugbank-id sub attribute, value string;
+pdbchem-code sub attribute, value string;
+
+document sub entity,
+    owns cgdb-document-id,
+    owns pubmed-id,
+    owns patent-id,
+    owns doi,
+    owns document-title,
+    owns document-type,
+    owns evidence-in,
+    plays activity:evidence-source;
+cgdb-document-id sub attribute, value string;
+pubmed-id sub attribute, value string;
+patent-id sub attribute, value string;
+doi sub attribute, value string;
+document-title sub attribute, value string;
+document-type sub attribute, value string;
+evidence-in sub attribute, value string;
+
+assay sub entity,
+    owns cgdb-assay-id,
+    owns assay-source,
+    owns assay-description,
+    owns assay-type,
+    owns confidence-score,
+    owns reaxys-acttrg,
+    owns reaxys-effect,
+    owns reaxys-pathology,
+    owns drugcentral-action,
+    plays activity:activity-assay;
+cgdb-assay-id sub attribute, value string;
+assay-source sub attribute, value string;
+assay-description sub attribute, value string;
+assay-type sub attribute, value string;
+confidence-score sub attribute, value long;
+reaxys-acttrg sub attribute, value string;
+reaxys-effect sub attribute, value string;
+reaxys-pathology sub attribute, value string;
+drugcentral-action sub attribute, value string;
+
+activity sub relation,
+    relates activity-substance,
+    relates activity-assay,
+    relates activity-target,
+    relates assay-organism,
+    relates assay-cell-line,
+    relates assay-tissue,
+    relates evidence-source,
+    owns cgdb-activity-id,
+    owns activity-source,
+    owns activity-type,
+    owns activity-value,
+    owns activity-unit,
+    owns activity-value-modifier;
+activity-type sub attribute, value string;
+cgdb-activity-id sub attribute, value string;
+activity-source sub attribute, value string;
+activity-value sub attribute, value double;
+activity-unit sub attribute, value string;
+activity-value-modifier sub attribute, value string;
+
+string-link sub relation,
+    relates string-linked,
+    owns string-link-combined-score;
+string-link-combined-score sub attribute, value long;
