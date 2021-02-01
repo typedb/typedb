@@ -103,7 +103,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
         Request fromUpstream = fromUpstream(toDownstream);
         ResponseProducer responseProducer = responseProducers.get(fromUpstream);
 
-        ConceptMap conceptMap = fromDownstream.answer().derived().withInitial();
+        ConceptMap conceptMap = fromDownstream.answer().derived().withInitialFiltered();
         if (!responseProducer.hasProduced(conceptMap)) {
             responseProducer.recordProduced(conceptMap);
 

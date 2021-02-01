@@ -99,7 +99,7 @@ public abstract class AnswerState {
                 this.filter = filter;
             }
 
-            public ConceptMap withInitial() {
+            public ConceptMap withInitialFiltered() {
                 HashMap<Reference.Name, Concept> withInitial = new HashMap<>(conceptMap().concepts());
                 if (initial != null) {
                    withInitial.putAll(initial.conceptMap().concepts());

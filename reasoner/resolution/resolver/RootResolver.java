@@ -49,7 +49,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static grakn.common.collection.Collections.map;
@@ -128,12 +127,12 @@ public class RootResolver extends Resolver<RootResolver> {
             derivation = null;
         }
 
-        ConceptMap conceptMap = fromDownstream.answer().derived().withInitial();
+        ConceptMap conceptMap = fromDownstream.answer().derived().withInitialFiltered();
         if (fromDownstream.planIndex() == plan.size() - 1) {
             assert fromUpstream.filter().isPresent();
             AnswerState.UpstreamVars.Derived answer = AnswerState.DownstreamVars.Root.create()
                     .aggregateToUpstream(conceptMap, fromUpstream.filter().get());
-            ConceptMap filteredMap = answer.withInitial();
+            ConceptMap filteredMap = answer.withInitialFiltered();
             if (!responseProducer.hasProduced(filteredMap)) {
                 responseProducer.recordProduced(filteredMap);
                 ResolutionAnswer resolutionAnswer = new ResolutionAnswer(answer, conjunction.toString(), derivation, self(),
@@ -234,13 +233,12 @@ public class RootResolver extends Resolver<RootResolver> {
     private void tryAnswer(Request fromUpstream, int iteration) {
         while (responseProducer.hasTraversalProducer()) {
             ConceptMap conceptMap = responseProducer.traversalProducer().next();
-            assert fromUpstream.filter().isPresent();
+            assert fromUpstream.filter().isPresent() && fromUpstream.partialAnswer().isRoot();
             UpstreamVars.Derived derived = fromUpstream.partialAnswer().asRoot().aggregateToUpstream(conceptMap, fromUpstream.filter().get());
-            ConceptMap derivedAnswer = derived.conceptMap();
+            ConceptMap derivedAnswer = derived.withInitialFiltered();
             LOG.trace("{}: has found via traversal: {}", name(), derivedAnswer);
             if (!responseProducer.hasProduced(derivedAnswer)) {
                 responseProducer.recordProduced(derivedAnswer);
-                assert fromUpstream.partialAnswer().isRoot();
                 ResolutionAnswer answer = new ResolutionAnswer(derived, conjunction.toString(),
                                                                ResolutionAnswer.Derivation.EMPTY, self(), false);
                 submitAnswer(answer);

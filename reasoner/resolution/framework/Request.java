@@ -105,12 +105,13 @@ public class Request {
         if (o == null || getClass() != o.getClass()) return false;
         Request request = (Request) o;
         return Objects.equals(path, request.path) &&
-                Objects.equals(partialAnswer, request.partialAnswer());
+                Objects.equals(partialAnswer, request.partialAnswer()) &&
+                Objects.equals(answerFilter, request.answerFilter);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(path, partialAnswer);
+        return Objects.hash(path, partialAnswer, answerFilter);
     }
 
     @Override

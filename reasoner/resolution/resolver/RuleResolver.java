@@ -117,13 +117,13 @@ public class RuleResolver extends Resolver<RuleResolver> {
             derivation = null;
         }
 
-        ConceptMap whenAnswer = fromDownstream.answer().derived().withInitial();
+        ConceptMap whenAnswer = fromDownstream.answer().derived().withInitialFiltered();
         if (fromDownstream.planIndex() == plan.size() - 1) {
             Map<Identifier, Concept> thenMaterialisation = rule.putConclusion(whenAnswer, traversalEngine, conceptMgr);
             assert fromUpstream.partialAnswer().isUnified();
             Optional<AnswerState.UpstreamVars.Derived> unifiedAnswer = fromUpstream.partialAnswer().asUnified().unifyToUpstream(thenMaterialisation);
-            if (unifiedAnswer.isPresent() && !responseProducer.hasProduced(unifiedAnswer.get().withInitial())) {
-                responseProducer.recordProduced(unifiedAnswer.get().withInitial());
+            if (unifiedAnswer.isPresent() && !responseProducer.hasProduced(unifiedAnswer.get().withInitialFiltered())) {
+                responseProducer.recordProduced(unifiedAnswer.get().withInitialFiltered());
                 // TODO revisit whether using `rule.when()` is the correct pattern to associate with the unified answer? Variables won't match
                 ResolutionAnswer answer = new ResolutionAnswer(unifiedAnswer.get(), rule.when().toString(), derivation, self(), true);
                 respondToUpstream(Answer.create(fromUpstream, answer), iteration);
