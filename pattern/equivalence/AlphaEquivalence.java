@@ -25,14 +25,17 @@ import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static grakn.common.collection.Collections.set;
+
 public abstract class AlphaEquivalence {
 
     public static Valid valid() {
-        return new Valid(new HashMap<>());
+        return new Valid(new HashMap<>(), new HashMap<>());
     }
 
     public static Invalid invalid() {
@@ -55,27 +58,57 @@ public abstract class AlphaEquivalence {
 
     protected abstract AlphaEquivalence addOrInvalidate(AlphaEquivalence mapping);
 
+    static AlphaEquivalence create(Map<Variable, Variable> map) {
+        Map<Variable, Variable> reverseMap = new HashMap<>();
+        for (Map.Entry<Variable, Variable> e : map.entrySet()) {
+            reverseMap.put(e.getValue(), e.getKey());
+        }
+        if (map.size() != reverseMap.size()) return new AlphaEquivalence.Invalid();
+        return new AlphaEquivalence.Valid(map, reverseMap);
+    }
+
     public static class Valid extends AlphaEquivalence {
 
-        private final HashMap<Variable, Variable> map;
+        private Map<Variable, Variable> map;
+        private Map<Variable, Variable> reverseMap;
 
-        private Valid(HashMap<Variable, Variable> map) {
+        private Valid(Map<Variable, Variable> map, Map<Variable, Variable> reverseMap) {
+            assert map.size() == reverseMap.size();
+            assert map.keySet().equals(set(reverseMap.values()));
             this.map = map;
+            this.reverseMap = reverseMap;
         }
 
         public static AlphaEquivalence.Valid create() {
-            return new AlphaEquivalence.Valid(new HashMap<>());
-        }
-
-        public static AlphaEquivalence.Valid create(HashMap<Variable, Variable> map) {
-            return new AlphaEquivalence.Valid(map);
+            return new AlphaEquivalence.Valid(new HashMap<>(), new HashMap<>());
         }
 
         @Override
         public AlphaEquivalence addOrInvalidate(AlphaEquivalence alphaMap) {
             if (!alphaMap.isValid()) return AlphaEquivalence.invalid();
-            map.putAll(alphaMap.asValid().variableMapping());
-            return this;
+            Optional<Map<Variable, Variable>> m = mergeVariableMapping(variableMapping(), alphaMap.asValid().variableMapping());
+            Optional<Map<Variable, Variable>> r = mergeVariableMapping(reverseVariableMapping(), alphaMap.asValid().reverseVariableMapping());
+            if (m.isPresent() && r.isPresent()) {
+                map = m.get();
+                reverseMap = r.get();
+                if (map.size() != reverseMap.size()) return AlphaEquivalence.invalid();
+                return this;
+            } else {
+                return AlphaEquivalence.invalid();
+            }
+        }
+
+        private Optional<Map<Variable, Variable>> mergeVariableMapping(Map<Variable, Variable> existing, Map<Variable, Variable> toMerge) {
+            for (Map.Entry<Variable, Variable> e : toMerge.entrySet()) {
+                Variable var = toMerge.get(e.getKey());
+                if (existing.containsKey(e.getKey())) {
+                    if (!var.equals(e.getValue()))
+                        return Optional.empty();
+                } else {
+                    existing.put(e.getKey(), var);
+                }
+            }
+            return Optional.of(existing);
         }
 
         @Override
@@ -98,6 +131,7 @@ public abstract class AlphaEquivalence {
         @Override
         public Valid addMapping(Variable from, Variable to) {
             map.put(from, to);
+            reverseMap.put(to, from);
             assert from.reference().isName() == to.reference().isName();
             return this;
         }
@@ -118,10 +152,6 @@ public abstract class AlphaEquivalence {
             return this;
         }
 
-        public HashMap<Variable, Variable> variableMapping() {
-            return new HashMap<>(map);
-        }
-
         public Map<Reference.Name, Reference.Name> namedVariableMapping() {
             return variableMapping().entrySet().stream()
                     .map(e -> new AbstractMap.SimpleEntry<>(
@@ -135,6 +165,14 @@ public abstract class AlphaEquivalence {
                             Map.Entry::getKey,
                             Map.Entry::getValue
                     ));
+        }
+
+        Map<Variable, Variable> variableMapping() {
+            return new HashMap<>(map);
+        }
+
+        private Map<Variable, Variable> reverseVariableMapping() {
+            return new HashMap<>(reverseMap);
         }
     }
 
