@@ -24,6 +24,7 @@ import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
+import grakn.core.reasoner.resolution.framework.ResolutionLogger;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.variable.Reference;
@@ -72,6 +73,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     public void recycle() {}
 
     private void requestAnswered(ResolutionAnswer resolutionAnswer) {
+        if (LOG.isTraceEnabled()) ResolutionLogger.get().finish();
         if (resolutionAnswer.isInferred()) iterationInferredAnswer = true;
         queue.put(resolutionAnswer.derived().withInitialFiltered());
     }
