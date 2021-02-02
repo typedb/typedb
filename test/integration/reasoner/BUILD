@@ -98,6 +98,7 @@ host_compatible_java_test(
         "@graknlabs_graql//java/pattern",
         "@graknlabs_common//:common",
     ],
+    size = "large"
 )
 
 host_compatible_java_test(
