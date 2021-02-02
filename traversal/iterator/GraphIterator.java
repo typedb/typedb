@@ -35,7 +35,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -265,7 +264,7 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
             toIter = edge.branch(graphMgr, fromVertex, params).filter(role -> {
                 if (scoped.contains(role.asThing())) return false;
                 else {
-                    if (scoped.orderVisited(edge.order())) scoped.replace(edge.order(), role.asThing());
+                    if (scoped.orderVisited(edge.order())) scoped.replaceLast(role.asThing(), edge.order());
                     else scoped.push(role.asThing(), edge.order());
                     return true;
                 }
@@ -281,7 +280,7 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
             toIter = edge.asRolePlayer().branchEdge(graphMgr, fromVertex, params).filter(e -> {
                 if (scoped.contains(e.optimised().get())) return false;
                 else {
-                    if (scoped.orderVisited(edge.order())) scoped.replace(edge.order(), e.optimised().get());
+                    if (scoped.orderVisited(edge.order())) scoped.replaceLast(e.optimised().get(), edge.order());
                     else scoped.push(e.optimised().get(), edge.order());
                     return true;
                 }
@@ -392,7 +391,7 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
                 roles.add(role);
             }
 
-            public void replace(int order, ThingVertex newRole) {
+            public void replaceLast(ThingVertex newRole, int order) {
                 assert order == lastEdgeOrder();
                 ThingVertex oldRole = visited.remove(order);
                 assert roles.contains(oldRole);
