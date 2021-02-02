@@ -59,9 +59,9 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     public ConcludableResolver(Actor<ConcludableResolver> self, Concludable concludable,
                                Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
-                               boolean explanations) {
+                               boolean resolutionLogging) {
         super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.pattern() + ")",
-              registry, traversalEngine, conceptMgr, explanations);
+              registry, traversalEngine, conceptMgr, resolutionLogging);
         this.logicMgr = logicMgr;
         this.resolutionRecorder = resolutionRecorder;
         this.concludable = concludable;
@@ -101,7 +101,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             responseProducer.recordProduced(upstreamAnswer.conceptMap());
             answerToUpstream(upstreamAnswer, fromUpstream, iteration);
         } else {
-            if (explanations()) {
+            if (fromDownstream.answer().recordExplanations()) {
                 LOG.trace("{}: Recording deduplicated answer derivation: {}", name(), upstreamAnswer);
                 resolutionRecorder.tell(actor -> actor.record(upstreamAnswer));
             }

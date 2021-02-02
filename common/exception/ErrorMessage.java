@@ -508,6 +508,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Reasoner(1, "Reasoning cannot be enabled/disabled per query. Try using Transaction options instead");
         public static final Reasoner REVERSE_UNIFICATION_MISSING_CONCEPT =
                 new Reasoner(2, "Reverse unification failed because a concept for identifier '%s' was not found in the provided map '%s'");
+        public static final Reasoner REASONER_LOGGING_CANNOT_BE_TOGGLED_PER_QUERY =
+                new Reasoner(3, "Reasoning cannot be enabled/disabled per query. Try using Transaction options instead");
 
         private static final String codePrefix = "RSN";
         private static final String messagePrefix = "Reasoner Error";

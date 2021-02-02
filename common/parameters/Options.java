@@ -24,6 +24,7 @@ import java.nio.file.Path;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.exception.ErrorMessage.Reasoner.REASONER_LOGGING_CANNOT_BE_TOGGLED_PER_QUERY;
 import static grakn.core.common.exception.ErrorMessage.Reasoner.REASONING_CANNOT_BE_TOGGLED_PER_QUERY;
 
 public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options<?, ?>> {
@@ -31,7 +32,8 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     public static final int DEFAULT_RESPONSE_BATCH_SIZE = 50;
     public static final int DEFAULT_SESSION_IDLE_TIMEOUT_MILLIS = 10_000;
     public static final int DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS = 10_000;
-    public static final boolean DEFAULT_INFER = false;
+    public static final boolean DEFAULT_INFERENCE = false;
+    public static final boolean DEFAULT_INFERENCE_LOGGING = false;
     public static final boolean DEFAULT_EXPLAIN = false;
     public static final boolean DEFAULT_PARALLEL = true;
     public static final boolean DEFAULT_QUERY_READ_PREFETCH = true;
@@ -39,7 +41,8 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     public static final boolean DEFAULT_READ_ANY_REPLICA = false;
 
     private PARENT parent;
-    private Boolean infer = null;
+    private Boolean inference = null;
+    private Boolean inferenceLogging = null;
     private Boolean explain = null;
     private Integer batchSize = null;
     private Integer sessionIdlTimeoutMillis = null;
@@ -58,14 +61,25 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         return getThis();
     }
 
-    public boolean infer() {
-        if (infer != null) return infer;
-        else if (parent != null) return parent.infer();
-        else return DEFAULT_INFER;
+    public boolean inference() {
+        if (inference != null) return inference;
+        else if (parent != null) return parent.inference();
+        else return DEFAULT_INFERENCE;
     }
 
-    public SELF infer(boolean infer) {
-        this.infer = infer;
+    public SELF inference(boolean inference) {
+        this.inference = inference;
+        return getThis();
+    }
+
+    public boolean inferenceLogging() {
+        if (inferenceLogging != null) return inferenceLogging;
+        else if (parent != null) return parent.inferenceLogging();
+        else return DEFAULT_INFERENCE_LOGGING;
+    }
+
+    public SELF inferenceLogging(boolean inferenceLogging) {
+        this.inferenceLogging = inferenceLogging;
         return getThis();
     }
 
@@ -211,8 +225,13 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         }
 
         @Override
-        public Query infer(boolean infer) {
+        public Query inference(boolean inference) {
             throw GraknException.of(REASONING_CANNOT_BE_TOGGLED_PER_QUERY);
+        }
+
+        @Override
+        public Query inferenceLogging(boolean inference) {
+            throw GraknException.of(REASONER_LOGGING_CANNOT_BE_TOGGLED_PER_QUERY);
         }
 
         public Query prefetch(boolean prefetch) {

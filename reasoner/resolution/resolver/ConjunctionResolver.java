@@ -70,8 +70,8 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     public ConjunctionResolver(Actor<T> self, String name, grakn.core.pattern.Conjunction conjunction,
                                Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
-                               Planner planner, boolean explanations) {
-        super(self, name, registry, traversalEngine, conceptMgr, explanations);
+                               Planner planner, boolean resolutionLogging) {
+        super(self, name, registry, traversalEngine, conceptMgr, resolutionLogging);
         this.logicMgr = logicMgr;
         this.resolutionRecorder = resolutionRecorder;
         this.planner = planner;
@@ -268,9 +268,11 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
 
     public static class Nested extends ConjunctionResolver<Nested> {
 
-        public Nested(Actor<Nested> self, Conjunction conjunction, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr, Planner planner, boolean explanations) {
-            super(self, Nested.class.getSimpleName() + "(pattern: " + conjunction + ")", conjunction, resolutionRecorder,
-                  registry, traversalEngine, conceptMgr, logicMgr, planner, explanations);
+        public Nested(Actor<Nested> self, Conjunction conjunction, Actor<ResolutionRecorder> resolutionRecorder,
+                      ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
+                      LogicManager logicMgr, Planner planner, boolean resolutionLogging) {
+            super(self, Nested.class.getSimpleName() + "(pattern: " + conjunction + ")", conjunction,
+                  resolutionRecorder, registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionLogging);
         }
 
         @Override

@@ -74,7 +74,8 @@ public class Reasoner {
         this.defaultContext = new Context.Query(context, new Options.Query());
         this.defaultContext.producer(EXHAUSTIVE);
         this.resolutionRecorder = Actor.create(eventLoopGroup(), ResolutionRecorder::new);
-        this.resolverRegistry = new ResolverRegistry(eventLoopGroup(), resolutionRecorder, traversalEng, conceptMgr, logicMgr);
+        this.resolverRegistry = new ResolverRegistry(eventLoopGroup(), resolutionRecorder, traversalEng, conceptMgr,
+                                                     logicMgr, this.defaultContext.options().inferenceLogging());
     }
 
     ResolverRegistry resolverRegistry() {
@@ -102,7 +103,7 @@ public class Reasoner {
     }
 
     private boolean isInfer(Disjunction disjunction, Context.Query context) {
-        if (!context.options().infer() || context.transactionType().isWrite() || !logicMgr.rules().hasNext()) {
+        if (!context.options().inference() || context.transactionType().isWrite() || !logicMgr.rules().hasNext()) {
             return false;
         }
         return mayTriggerRules(disjunction);
@@ -128,9 +129,13 @@ public class Reasoner {
     private ResourceIterator<ConceptMap> resolve(Disjunction disjunction, GraqlMatch.Modifiers modifiers,
                                                  Context.Query context) {
         if (disjunction.conjunctions().size() == 1) {
-            return produce(new ReasonerProducer(disjunction.conjunctions().get(0), resolverRegistry, modifiers), context.producer(), asyncPool1());
+            return produce(
+                    new ReasonerProducer(disjunction.conjunctions().get(0), resolverRegistry, modifiers, context.options()),
+                    context.producer(), asyncPool1());
         } else {
-            return produce(new ReasonerProducer(disjunction, resolverRegistry, modifiers), context.producer(), asyncPool1());
+            return produce(
+                    new ReasonerProducer(disjunction, resolverRegistry, modifiers, context.options()),
+                    context.producer(), asyncPool1());
         }
     }
 

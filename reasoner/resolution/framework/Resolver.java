@@ -45,22 +45,23 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
     private static final Logger LOG = LoggerFactory.getLogger(Resolver.class);
+    static final ResolutionLogger RES_LOG = ResolutionLogger.get();
 
     private final String name;
     private final Map<Request, Request> requestRouter;
     protected final ResolverRegistry registry;
     protected final TraversalEngine traversalEngine;
     protected final ConceptManager conceptMgr;
-    private final boolean explanations;
+    private final boolean resolutionLogging;
 
     protected Resolver(Actor<T> self, String name, ResolverRegistry registry, TraversalEngine traversalEngine,
-                       ConceptManager conceptMgr, boolean explanations) {
+                      ConceptManager conceptMgr, boolean resolutionLogging) {
         super(self);
         this.name = name;
         this.registry = registry;
         this.traversalEngine = traversalEngine;
         this.conceptMgr = conceptMgr;
-        this.explanations = explanations;
+        this.resolutionLogging = resolutionLogging;
         this.requestRouter = new HashMap<>();
         // Note: initialising downstream actors in constructor will create all actors ahead of time, so it is non-lazy
         // additionally, it can cause deadlock within ResolverRegistry as different threads initialise actors
@@ -69,8 +70,6 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
     public String name() {
         return name;
     }
-
-    protected boolean explanations() { return explanations; }
 
     public abstract void receiveRequest(Request fromUpstream, int iteration);
 
@@ -91,6 +90,7 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
 
     protected void requestFromDownstream(Request request, Request fromUpstream, int iteration) {
         LOG.trace("{} : Sending a new answer Request to downstream: {}", name, request);
+        if (resolutionLogging) RES_LOG.request(this, request.receiver().state, iteration, request.partialAnswer().conceptMap().concepts().keySet().toString());
         // TODO: we may overwrite if multiple identical requests are sent, when to clean up?
         requestRouter.put(request, fromUpstream);
         Actor<? extends Resolver<?>> receiver = request.receiver();
@@ -101,12 +101,14 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
         assert answer.isPartial();
         Answer response = Answer.create(fromUpstream, answer.asPartial());
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
+        if (resolutionLogging) RES_LOG.responseAnswer(this, fromUpstream.sender().state, iteration, response.asAnswer().answer().conceptMap().concepts().keySet().toString());
         fromUpstream.sender().tell(actor -> actor.receiveAnswer(response, iteration));
     }
 
     protected void failToUpstream(Request fromUpstream, int iteration) {
         Response.Fail response = new Response.Fail(fromUpstream);
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
+        if (resolutionLogging) RES_LOG.responseExhausted(this, fromUpstream.sender().state, iteration);
         fromUpstream.sender().tell(actor -> actor.receiveFail(response, iteration));
     }
 

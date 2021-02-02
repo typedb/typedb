@@ -28,6 +28,7 @@ import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Identity;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.framework.Request;
+import grakn.core.reasoner.resolution.framework.ResolutionLogger;
 import grakn.core.reasoner.resolution.resolver.Root;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
@@ -129,12 +130,16 @@ public class ReiterationTest {
                     failed.add(iterDone);
                 });
 
+                ResolutionLogger.get().initialise();
                 Set<Top> answers = new HashSet<>();
                 // iteration 0
                 sendRootRequest(root, filter, iteration[0]);
                 answers.add(responses.take());
+                ResolutionLogger.get().finish();
+
                 sendRootRequest(root, filter, iteration[0]);
                 failed.take(); // Block and wait for an failed message
+                ResolutionLogger.get().finish();
                 assertTrue(receivedInferredAnswer[0]);
                 assertEquals(1, doneInIteration[0]);
 
@@ -145,6 +150,7 @@ public class ReiterationTest {
                     if (re == null) {
                         Integer ex = failed.poll(100, TimeUnit.MILLISECONDS);
                         if (ex == null) {
+                            ResolutionLogger.get().finish();
                             fail();
                         }
                         // Reset the iteration
@@ -152,6 +158,7 @@ public class ReiterationTest {
                         receivedInferredAnswer[0] = false;
                         doneInIteration[0] = 0;
                     }
+                    ResolutionLogger.get().finish();
                 }
             }
         }
