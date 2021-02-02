@@ -233,5 +233,25 @@ public class TraversalTest {
         }
     }
 
+
+    @Test
+    public void roleplayer_test() {
+        /*
+        2021-02-02 09:25:16,483 [main] [DEBUG] g.c.t.procedure.GraphProcedure - Graph Procedure: {
+	vertices:
+		$_0 [thing] { hasIID: false, types: [gift-delivery], predicates: [] }
+		$_1 [thing] { hasIID: false, types: [gift-delivery], predicates: [] }
+		$a [thing] { hasIID: false, types: [person], predicates: [] } (end)
+		$b [thing] { hasIID: false, types: [person], predicates: [] }
+		$c [thing] { hasIID: false, types: [person], predicates: [] } (start)
+	edges:
+		1: ($c <--[ROLEPLAYER]--* $_1) { roleTypes: [gift-delivery:recipient] }
+		2: ($_1 *--[ROLEPLAYER]--> $b) { roleTypes: [gift-delivery:sender] }
+		3: ($b <--[ROLEPLAYER]--* $_0) { roleTypes: [gift-delivery:recipient] }
+		4: ($_0 *--[ROLEPLAYER]--> $a) { roleTypes: [gift-delivery:sender] }
+}
+         */
+    }
+
 }
 
