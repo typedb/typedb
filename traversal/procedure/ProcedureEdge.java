@@ -1069,7 +1069,7 @@ public abstract class ProcedureEdge<
                                     e -> e.to().equals(player) && !scoped.contains(e.optimised().get())
                             ).first();
                         }
-                        validEdge.ifPresent(e -> scoped.record(e.optimised().get(), order()));
+                        validEdge.ifPresent(e -> scoped.push(e.optimised().get(), order()));
                         return validEdge.isPresent();
                     }
                 }
@@ -1130,7 +1130,7 @@ public abstract class ProcedureEdge<
                                     e -> e.from().equals(rel) && !scoped.contains(e.optimised().get())
                             ).first();
                         }
-                        validEdge.ifPresent(e -> scoped.record(e.optimised().get(), order()));
+                        validEdge.ifPresent(e -> scoped.push(e.optimised().get(), order()));
                         return validEdge.isPresent();
                     }
 
