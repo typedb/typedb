@@ -121,13 +121,13 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
                     seekStack.popLastPos();
                     if (toIter.hasNext()) answer.put(toID, toIter.next());
                     else {
-                        backTrackCleanUp(pos);
+                        popScope(pos);
                         answer.remove(toID);
                         branchFailure(edge);
                         return false;
                     }
                 } else {
-                    backTrackCleanUp(pos);
+                    popScope(pos);
                     answer.remove(toID);
                     toIter.recycle();
                     return false;
@@ -298,21 +298,22 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
     }
 
     private boolean backTrack(int pos) {
-        backTrackCleanUp(pos);
+        popScope(pos);
         return computeNext(pos - 1);
     }
 
-    private void backTrackCleanUp(int pos) {
+    private void popScope(int pos) {
         ProcedureEdge<?, ?> edge = procedure.edge(pos);
-        if (edge.onlyStartsFromRelation()) {
-            Identifier.Variable scope = edge.from().id().asVariable();
-            scopes.get(scope).popLast();
-        } else if (edge.onlyEndsAtRelation()) {
-            Identifier.Variable scope = edge.to().id().asVariable();
+        if (edge.to().id().isScoped()) {
+            Identifier.Variable scope = edge.to().id().asScoped().scope();
+            if (scopes.get(scope).orderVisited(pos)) scopes.get(scope).popLast();
+        } else if (edge.from().id().isScoped()) {
+            Identifier.Variable scope = edge.from().id().asScoped().scope();
+            assert scopes.get(scope).orderVisited(pos);
             scopes.get(scope).popLast();
         } else if (edge.isRolePlayer()) {
             Identifier.Variable scope = edge.asRolePlayer().scope();
-            scopes.get(scope).popLast();
+            if (scopes.get(scope).orderVisited(pos)) scopes.get(scope).popLast();
         }
     }
 
