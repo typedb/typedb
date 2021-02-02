@@ -67,6 +67,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Server(15, "Iteration was requested for ID '%s', but this ID does not correspond to an existing query iterator.");
         public static final Server DUPLICATE_REQUEST =
                 new Server(16, "The request with ID '%s' is a duplicate.");
+        public static final Server ALREADY_RUNNING =
+                new Server(17, "Another instance of Grakn Core server is already running at this port: '%s'.");
 
         private static final String codePrefix = "SRV";
         private static final String messagePrefix = "Invalid Server Operation";
