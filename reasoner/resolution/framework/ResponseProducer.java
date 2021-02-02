@@ -23,13 +23,14 @@ import grakn.core.concept.answer.ConceptMap;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
 public class ResponseProducer {
     private final Set<ConceptMap> produced;
     private final Iterator<ConceptMap> traversalProducer;
-    private final List<Request> downstreamProducer;
+    private final LinkedHashSet<Request> downstreamProducer;
     private final int iteration;
     private Iterator<Request> downstreamProducerSelector;
 
@@ -41,7 +42,7 @@ public class ResponseProducer {
         this.traversalProducer = traversalProducer;
         this.iteration = iteration;
         this.produced = produced;
-        downstreamProducer = new ArrayList<>();
+        downstreamProducer = new LinkedHashSet<>();
         downstreamProducerSelector = downstreamProducer.iterator();
     }
 
