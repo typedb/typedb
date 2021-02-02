@@ -44,6 +44,7 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
     private static final Logger LOG = LoggerFactory.getLogger(Resolver.class);
+    static final ResolutionLogger RES = ResolutionLogger.get();
 
     private final String name;
     private final Map<Request, Request> requestRouter;
@@ -87,6 +88,7 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
 
     protected void requestFromDownstream(Request request, Request fromUpstream, int iteration) {
         LOG.trace("{} : Sending a new answer Request to downstream: {}", name, request);
+        if (LOG.isTraceEnabled()) RES.request(this, request.receiver().state, iteration);
         // TODO we may overwrite if multiple identical requests are sent, when to clean up?
         requestRouter.put(request, fromUpstream);
         Actor<? extends Resolver<?>> receiver = request.receiver();
@@ -97,9 +99,11 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
         Actor<? extends Resolver<?>> receiver = response.sourceRequest().sender();
         if (response.isAnswer()) {
             LOG.trace("{} : Sending a new Response.Answer to upstream", name());
+            if (LOG.isTraceEnabled()) RES.responseAnswer(this, receiver.state, iteration);
             receiver.tell(actor -> actor.receiveAnswer(response.asAnswer(), iteration));
         } else if (response.isExhausted()) {
             LOG.trace("{}: Sending a new Response.Exhausted to upstream", name());
+            if (LOG.isTraceEnabled()) RES.responseExhausted(this, receiver.state, iteration);
             receiver.tell(actor -> actor.receiveExhausted(response.asExhausted(), iteration));
         } else {
             throw new RuntimeException(("Unknown response type " + response.getClass().getSimpleName()));
