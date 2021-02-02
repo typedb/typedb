@@ -69,10 +69,10 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - windows-assembly-test-fix
       - test-assembly-windows-zip:
           filters:
             branches:
               only:
-                - master
+                - windows-assembly-test-fix
 
