@@ -41,7 +41,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     private Integer batchSize = null;
     private Integer sessionIdlTimeoutMillis = null;
     private Integer schemaLockAcquireTimeoutMillis = null;
-    private Boolean primaryReplica = null;
+    private Boolean allowSecondaryReplica = null;
 
     protected Boolean prefetch = null;
 
@@ -107,14 +107,14 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         return getThis();
     }
 
-    public boolean primaryReplica() {
-        if (primaryReplica != null) return primaryReplica;
-        else if (parent != null) return parent.primaryReplica();
+    public boolean allowSecondaryReplica() {
+        if (allowSecondaryReplica != null) return allowSecondaryReplica;
+        else if (parent != null) return parent.allowSecondaryReplica();
         else return DEFAULT_PRIMARY_REPLICA;
     }
 
-    public SELF primaryReplica(boolean primaryReplica) {
-        this.primaryReplica = primaryReplica;
+    public SELF allowSecondaryReplica(boolean allowSecondaryReplica) {
+        this.allowSecondaryReplica = allowSecondaryReplica;
         return getThis();
     }
 
