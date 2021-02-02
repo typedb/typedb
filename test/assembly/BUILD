@@ -15,24 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_common//test/server:rules.bzl", "native_grakn_artifact")
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@graknlabs_common//test/server:rules.bzl", "grakn_java_test")
 
-
-native_grakn_artifact(
-    name = "native-grakn-artifact",
-    mac_artifact = "//server:assemble-mac-zip",
-    linux_artifact = "//server:assemble-linux-targz",
-    windows_artifact = "//server:assemble-windows-zip",
-    visibility = ["//test:__subpackages__"],
-)
 
 grakn_java_test(
     name = "assembly",
     test_class = "grakn.core.test.assembly.AssemblyTest",
     srcs = ["AssemblyTest.java"],
-    native_grakn_artifact = ":native-grakn-artifact",
+    mac_artifact = "//server:assemble-mac-zip",
+    linux_artifact = "//server:assemble-linux-targz",
+    windows_artifact = "//server:assemble-windows-zip",
 )
 
 java_test(
