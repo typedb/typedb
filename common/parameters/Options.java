@@ -33,6 +33,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     public static final boolean DEFAULT_PARALLEL = true;
     public static final boolean DEFAULT_QUERY_READ_PREFETCH = true;
     public static final boolean DEFAULT_QUERY_WRITE_PREFETCH = false;
+    public static final boolean DEFAULT_ALLOW_SECONDARY_REPLICA = false;
 
     private PARENT parent;
     private Boolean infer = null;
@@ -40,6 +41,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     private Integer batchSize = null;
     private Integer sessionIdlTimeoutMillis = null;
     private Integer schemaLockAcquireTimeoutMillis = null;
+    private Boolean allowSecondaryReplica = null;
 
     protected Boolean prefetch = null;
 
@@ -102,6 +104,17 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
 
     public SELF schemaLockTimeoutMillis(int acquireSchemaLockTimeoutMillis) {
         this.schemaLockAcquireTimeoutMillis = acquireSchemaLockTimeoutMillis;
+        return getThis();
+    }
+
+    public boolean allowSecondaryReplica() {
+        if (allowSecondaryReplica != null) return allowSecondaryReplica;
+        else if (parent != null) return parent.allowSecondaryReplica();
+        else return DEFAULT_ALLOW_SECONDARY_REPLICA;
+    }
+
+    public SELF allowSecondaryReplica(boolean allowSecondaryReplica) {
+        this.allowSecondaryReplica = allowSecondaryReplica;
         return getThis();
     }
 

@@ -43,8 +43,8 @@ public abstract class RocksSession implements Grakn.Session {
     private final RocksDatabase database;
     private final UUID uuid;
     private final Context.Session context;
-    final ConcurrentMap<RocksTransaction, Long> transactions;
-    final AtomicBoolean isOpen;
+    protected final ConcurrentMap<RocksTransaction, Long> transactions;
+    protected final AtomicBoolean isOpen;
 
     private RocksSession(RocksDatabase database, Arguments.Session.Type type, Options.Session options) {
         this.database = database;
@@ -111,9 +111,9 @@ public abstract class RocksSession implements Grakn.Session {
         }
     }
 
-    public static final class Schema extends RocksSession {
+    public static class Schema extends RocksSession {
         private final Factory.TransactionSchema txSchemaFactory;
-        private final Lock writeLock;
+        protected final Lock writeLock;
 
         public Schema(RocksDatabase database, Arguments.Session.Type type, Options.Session options,
                       Factory.TransactionSchema txSchemaFactory) {
@@ -162,7 +162,7 @@ public abstract class RocksSession implements Grakn.Session {
         }
     }
 
-    public static final class Data extends RocksSession {
+    public static class Data extends RocksSession {
 
         private final Factory.TransactionData txDataFactory;
 
