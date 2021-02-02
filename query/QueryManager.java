@@ -138,6 +138,10 @@ public class QueryManager {
         }
     }
 
+    public void update(GraqlUpdate query) {
+        update(query, defaultContext);
+    }
+
     public ResourceIterator<ConceptMap> update(GraqlUpdate query, Context.Query context) {
         if (context.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION);
         if (context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_DATA_READ_VIOLATION);
