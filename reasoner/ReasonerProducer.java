@@ -80,7 +80,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private void requestExhausted(int iteration) {
         LOG.trace("Failed to find answer to request in iteration: " + iteration);
-
+        if (LOG.isTraceEnabled()) ResolutionLogger.get().finish();
         if (!done && iteration == this.iteration && !mustReiterate()) {
             // query is completely terminated
             done = true;
