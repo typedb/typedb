@@ -219,7 +219,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
 
     private void tryAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
         while (responseProducer.hasTraversalProducer()) {
-            ConceptMap whenAnswer = responseProducer.traversalProducer().next();
+            ConceptMap whenAnswer = responseProducer.upstreamAnswers().next();
             LOG.trace("{}: has found via traversal: {}", name(), whenAnswer);
             ResourceIterator<AnswerState.UpstreamVars.Derived> newAnswers = newMaterialisations(fromUpstream, whenAnswer, responseProducer);
             if (newAnswers.hasNext()) {

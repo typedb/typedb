@@ -204,7 +204,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
 
     private void tryAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
         while (responseProducer.hasTraversalProducer()) {
-            ConceptMap conceptMap = responseProducer.traversalProducer().next();
+            ConceptMap conceptMap = responseProducer.upstreamAnswers().next();
             assert fromUpstream.partialAnswer().isMapped();
             AnswerState.UpstreamVars.Derived derivedAnswer = fromUpstream.partialAnswer().asMapped().mapToUpstream(conceptMap);
             LOG.trace("{}: has found via traversal: {}", name(), conceptMap);

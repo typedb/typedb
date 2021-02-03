@@ -87,8 +87,10 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
     protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), fromUpstream);
         Traversal traversal = boundTraversal(retrievable.conjunction().traversal(), fromUpstream.partialAnswer().conceptMap());
-        ResourceIterator<ConceptMap> traversalProducer = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
-        return new ResponseProducer(traversalProducer, iteration);
+        ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers = traversalEngine.iterator(traversal)
+                .map(conceptMgr::conceptMap)
+                .map(conceptMap -> fromUpstream.partialAnswer().asMapped().mapToUpstream(conceptMap));
+        return new ResponseProducer(upstreamAnswers, iteration);
     }
 
     @Override
@@ -98,8 +100,9 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
 
         assert newIteration > responseProducerPrevious.iteration();
         Traversal traversal = boundTraversal(retrievable.conjunction().traversal(), fromUpstream.partialAnswer().conceptMap());
-        ResourceIterator<ConceptMap> traversalProducer = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
-        return responseProducerPrevious.newIteration(traversalProducer, newIteration);
+        ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap)
+                .map(conceptMap -> fromUpstream.partialAnswer().asMapped().mapToUpstream(conceptMap));
+        return responseProducerPrevious.newIteration(upstreamAnswers, newIteration);
     }
 
     private ResponseProducer mayUpdateAndGetResponseProducer(Request fromUpstream, int iteration) {
@@ -120,12 +123,10 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
 
     private void tryAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
         while (responseProducer.hasTraversalProducer()) {
-            ConceptMap conceptMap = responseProducer.traversalProducer().next();
-            AnswerState.UpstreamVars.Derived derivedAnswer = fromUpstream.partialAnswer().asMapped().mapToUpstream(conceptMap);
-            LOG.trace("{}: has found via traversal: {}", name(), conceptMap);
-            if (!responseProducer.hasProduced(conceptMap)) {
-                responseProducer.recordProduced(conceptMap);
-                ResolutionAnswer answer = new ResolutionAnswer(derivedAnswer, retrievable.conjunction().toString(),
+            AnswerState.UpstreamVars.Derived upstreamAnswer = responseProducer.upstreamAnswers().next();
+            if (!responseProducer.hasProduced(upstreamAnswer.withInitialFiltered())) {
+                responseProducer.recordProduced(upstreamAnswer.withInitialFiltered());
+                ResolutionAnswer answer = new ResolutionAnswer(upstreamAnswer, retrievable.conjunction().toString(),
                                                                ResolutionAnswer.Derivation.EMPTY, self(), false);
                 respondToUpstream(Answer.create(fromUpstream, answer), iteration);
                 return;

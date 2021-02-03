@@ -230,7 +230,7 @@ public class RootResolver extends Resolver<RootResolver> {
 
     private void tryAnswer(Request fromUpstream, int iteration) {
         while (responseProducer.hasTraversalProducer()) {
-            ConceptMap conceptMap = responseProducer.traversalProducer().next();
+            ConceptMap conceptMap = responseProducer.upstreamAnswers().next();
             assert fromUpstream.filter().isPresent() && fromUpstream.partialAnswer().isRoot();
             UpstreamVars.Derived derived = fromUpstream.partialAnswer().asRoot().aggregateToUpstream(conceptMap, fromUpstream.filter().get());
             ConceptMap derivedAnswer = derived.withInitialFiltered();
