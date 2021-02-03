@@ -42,9 +42,9 @@ public class Unifier {
 
     private final Map<Identifier, Set<Identifier>> unifier;
     private final Map<Identifier, Set<Identifier>> unUnifier;
-    private final Requirements.Precomputed requirements;
+    private final Requirements.Constraint requirements;
 
-    private Unifier(Map<Identifier, Set<Identifier>> unifier, Requirements.Precomputed requirements) {
+    private Unifier(Map<Identifier, Set<Identifier>> unifier, Requirements.Constraint requirements) {
         this.unifier = Collections.unmodifiableMap(unifier);
         this.requirements = requirements;
         this.unUnifier = reverse(this.unifier);
@@ -64,7 +64,7 @@ public class Unifier {
     the latter will never be valid as it is a contradiction, the former empty map is the result of the unifier's filtering
      */
 
-    public Optional<Pair<ConceptMap, Requirements.Runtime>> unify(ConceptMap conceptMap) {
+    public Optional<Pair<ConceptMap, Requirements.Instance>> unify(ConceptMap conceptMap) {
         Map<Identifier, Concept> unifiedMap = new HashMap<>();
 
         for (Map.Entry<Identifier, Set<Identifier>> entry : unifier.entrySet()) {
@@ -78,30 +78,30 @@ public class Unifier {
                 }
             }
         }
-        return Optional.of(new Pair<>(conceptMap(unifiedMap), new Requirements.Runtime(unifiedMap)));
+        return Optional.of(new Pair<>(conceptMap(unifiedMap), new Requirements.Instance(unifiedMap)));
     }
 
     /**
      * Un-unify a map of concepts, with given identifiers. These must include anonymous and labelled concepts,
      * as they may be mapped to from a named variable, and may have requirements that need to be met.
      */
-    public Optional<ConceptMap> unUnify(Map<Identifier, Concept> identifiedConcepts, Requirements.Runtime runtimeRequirements) {
+    public Optional<ConceptMap> unUnify(Map<Identifier, Concept> concepts, Requirements.Instance instanceRequirements) {
         Map<Identifier, Concept> reversedConcepts = new HashMap<>();
 
         for (Map.Entry<Identifier, Set<Identifier>> entry : unUnifier.entrySet()) {
             Identifier toReverse = entry.getKey();
             Set<Identifier> reversed = entry.getValue();
-            if (!identifiedConcepts.containsKey(toReverse)) {
-                throw GraknException.of(REVERSE_UNIFICATION_MISSING_CONCEPT, toReverse, identifiedConcepts);
+            if (!concepts.containsKey(toReverse)) {
+                throw GraknException.of(REVERSE_UNIFICATION_MISSING_CONCEPT, toReverse, concepts);
             }
-            Concept concept = identifiedConcepts.get(toReverse);
+            Concept concept = concepts.get(toReverse);
             for (Identifier r : reversed) {
                 if (!reversedConcepts.containsKey(r)) reversedConcepts.put(r, concept);
                 if (!reversedConcepts.get(r).equals(concept)) return Optional.empty();
             }
         }
 
-        if (runtimeRequirements.satisfiedBy(reversedConcepts) && requirements().satisfiedBy(reversedConcepts)) {
+        if (instanceRequirements.satisfiedBy(reversedConcepts) && constraintRequirements().satisfiedBy(reversedConcepts)) {
             return Optional.of(conceptMap(reversedConcepts));
         } else {
             return Optional.empty();
@@ -112,7 +112,7 @@ public class Unifier {
         return unifier;
     }
 
-    Requirements.Precomputed requirements() {
+    Requirements.Constraint constraintRequirements() {
         return requirements;
     }
 
@@ -154,13 +154,13 @@ public class Unifier {
     public static class Builder {
 
         Map<Identifier, Set<Identifier>> unifier;
-        Requirements.Precomputed requirements;
+        Requirements.Constraint requirements;
 
         public Builder() {
-            this(new HashMap<>(), new Requirements.Precomputed());
+            this(new HashMap<>(), new Requirements.Constraint());
         }
 
-        private Builder(Map<Identifier, Set<Identifier>> unifier, Requirements.Precomputed requirements) {
+        private Builder(Map<Identifier, Set<Identifier>> unifier, Requirements.Constraint requirements) {
             this.unifier = unifier;
             this.requirements = requirements;
         }
@@ -170,7 +170,7 @@ public class Unifier {
             unifier.get(source).add(target);
         }
 
-        public Requirements.Precomputed requirements() {
+        public Requirements.Constraint requirements() {
             return requirements;
         }
 
@@ -181,7 +181,7 @@ public class Unifier {
         public Builder duplicate() {
             Map<Identifier, Set<Identifier>> unifierCopy = new HashMap<>();
             unifier.forEach(((identifier, unifieds) -> unifierCopy.put(identifier, set(unifieds))));
-            Requirements.Precomputed requirementsCopy = requirements.duplicate();
+            Requirements.Constraint requirementsCopy = requirements.duplicate();
             return new Builder(unifierCopy, requirementsCopy);
         }
     }
@@ -200,17 +200,17 @@ public class Unifier {
      */
     public static abstract class Requirements {
 
-        public static class Precomputed {
+        public static class Constraint {
             Map<Identifier, Set<Label>> types;
             Map<Identifier, Set<Label>> isaExplicit;
             Map<Identifier, Function<Attribute, Boolean>> predicates;
 
-            public Precomputed() {
+            public Constraint() {
                 this(new HashMap<>(), new HashMap<>(), new HashMap<>());
             }
 
-            public Precomputed(Map<Identifier, Set<Label>> types, Map<Identifier, Set<Label>> isaExplicit,
-                                Map<Identifier, Function<Attribute, Boolean>> predicates) {
+            public Constraint(Map<Identifier, Set<Label>> types, Map<Identifier, Set<Label>> isaExplicit,
+                              Map<Identifier, Function<Attribute, Boolean>> predicates) {
                 this.types = types;
                 this.isaExplicit = isaExplicit;
                 this.predicates = predicates;
@@ -275,22 +275,22 @@ public class Unifier {
 
             public Map<Identifier, Function<Attribute, Boolean>> predicates() { return predicates; }
 
-            private Precomputed duplicate() {
+            private Constraint duplicate() {
                 Map<Identifier, Set<Label>> typesCopy = new HashMap<>();
                 Map<Identifier, Set<Label>> isaExplicitCopy = new HashMap<>();
                 Map<Identifier, Function<Attribute, Boolean>> predicatesCopy = new HashMap<>();
                 types.forEach(((identifier, labels) -> typesCopy.put(identifier, set(labels))));
                 isaExplicit.forEach(((identifier, labels) -> isaExplicitCopy.put(identifier, set(labels))));
                 predicates.forEach((predicatesCopy::put));
-                return new Precomputed(typesCopy, isaExplicitCopy, predicatesCopy);
+                return new Constraint(typesCopy, isaExplicitCopy, predicatesCopy);
             }
         }
 
-        public static class Runtime {
+        public static class Instance {
 
             Map<Identifier, Concept> concepts;
 
-            public Runtime(Map<Identifier, Concept> concepts) {
+            public Instance(Map<Identifier, Concept> concepts) {
                 this.concepts = concepts;
             }
 
