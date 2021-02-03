@@ -141,8 +141,8 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
         edges.compute(infixIID, (iid, edgesByOutIID) -> {
             if (edgesByOutIID == null) edgesByOutIID = new ConcurrentHashMap<>();
-            if (edgesByOutIID.containsKey(edge.outIID())) {
-                ThingEdge thingEdge = edgesByOutIID.get(edge.outIID());
+            ThingEdge thingEdge = edgesByOutIID.get(edge.outIID());
+            if (thingEdge != null) {
                 if (thingEdge.isInferred() && !edge.isInferred()) thingEdge.isInferred(false);
             } else {
                 edgesByOutIID.put(edge.outIID(), edge);
