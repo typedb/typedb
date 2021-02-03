@@ -267,12 +267,14 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         @Override
         public void label(String label) {
+            assert !isDeleted();
             graph.update(this, this.label, scope, label, scope);
             this.label = label;
         }
 
         @Override
         public void scope(String scope) {
+            assert !isDeleted();
             graph.update(this, label, this.scope, label, scope);
             this.scope = scope;
         }
@@ -289,6 +291,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         @Override
         public TypeVertexImpl isAbstract(boolean isAbstract) {
+            assert !isDeleted();
             this.isAbstract = isAbstract;
             this.setModified();
             return this;
@@ -301,6 +304,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         @Override
         public TypeVertexImpl valueType(Encoding.ValueType valueType) {
+            assert !isDeleted();
             this.valueType = valueType;
             this.setModified();
             return this;
@@ -313,6 +317,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         @Override
         public TypeVertexImpl regex(Pattern regex) {
+            assert !isDeleted();
             this.regex = regex;
             this.setModified();
             return this;
@@ -403,6 +408,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         @Override
         public void label(String label) {
+            assert !isDeleted();
             graph.update(this, this.label, scope, label, scope);
             graph.storage().put(join(iid.bytes(), LABEL.infix().bytes()), label.getBytes());
             graph.storage().delete(IndexIID.Type.Label.of(this.label, scope).bytes());
@@ -412,6 +418,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         @Override
         public void scope(String scope) {
+            assert !isDeleted();
             graph.update(this, label, this.scope, label, scope);
             graph.storage().put(join(iid.bytes(), SCOPE.infix().bytes()), scope.getBytes());
             graph.storage().delete(IndexIID.Type.Label.of(label, this.scope).bytes());
@@ -429,6 +436,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         @Override
         public TypeVertexImpl isAbstract(boolean isAbstract) {
+            assert !isDeleted();
             if (isAbstract) graph.storage().put(join(iid.bytes(), ABSTRACT.infix().bytes()));
             else graph.storage().delete(join(iid.bytes(), ABSTRACT.infix().bytes()));
             this.isAbstract = isAbstract;
@@ -446,6 +454,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         @Override
         public TypeVertexImpl valueType(Encoding.ValueType valueType) {
+            assert !isDeleted();
             graph.storage().put(join(iid.bytes(), VALUE_TYPE.infix().bytes()), valueType.bytes());
             this.valueType = valueType;
             this.setModified();
@@ -463,6 +472,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         @Override
         public TypeVertexImpl regex(Pattern regex) {
+            assert !isDeleted();
             if (regex == null) graph.storage().delete(join(iid.bytes(), REGEX.infix().bytes()));
             else graph.storage().put(join(iid.bytes(), REGEX.infix().bytes()), regex.pattern().getBytes());
             this.regex = regex;

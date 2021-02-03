@@ -147,7 +147,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     }
 
     public RoleImpl create(boolean isInferred) {
-        validateIsCommittedAndNotAbstract(Entity.class);
+        validateCanHaveInstances(Entity.class);
         ThingVertex instance = graphMgr.data().create(vertex, isInferred);
         return RoleImpl.of(instance);
     }

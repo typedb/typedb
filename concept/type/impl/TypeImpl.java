@@ -40,6 +40,7 @@ import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
 import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
+import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_BEEN_DELETED;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_REFERENCED_IN_RULES;
 import static grakn.core.common.iterator.Iterators.tree;
 import static grakn.core.graph.common.Encoding.Edge.Type.SUB;
@@ -91,6 +92,7 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
 
     @Override
     public void setLabel(String label) {
+        validateIsNotDeleted();
         vertex.label(label);
     }
 
@@ -160,12 +162,17 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
     @Override
     public TypeImpl asType() { return this; }
 
-    void validateIsCommittedAndNotAbstract(Class<?> instanceClass) {
+    void validateCanHaveInstances(Class<?> instanceClass) {
+        validateIsNotDeleted();
         if (vertex.status().equals(Encoding.Status.BUFFERED)) {
             throw exception(GraknException.of(SESSION_SCHEMA_VIOLATION));
         } else if (isAbstract()) {
             throw exception(GraknException.of(ILLEGAL_ABSTRACT_WRITE, instanceClass.getSimpleName(), getLabel()));
         }
+    }
+
+    void validateIsNotDeleted() {
+        if (vertex.isDeleted()) throw exception(GraknException.of(TYPE_HAS_BEEN_DELETED, getLabel()));
     }
 
     @Override

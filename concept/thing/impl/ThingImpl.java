@@ -42,12 +42,12 @@ import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_ROLE_TYPE_LABEL;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_CANNOT_OWN_ATTRIBUTE;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_HAS_BEEN_DELETED;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_OVER;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_TAKEN;
 import static grakn.core.graph.common.Encoding.Edge.Thing.HAS;
 import static grakn.core.graph.common.Encoding.Edge.Thing.PLAYING;
-import static grakn.core.graph.common.Encoding.Edge.Thing.RELATING;
 import static grakn.core.graph.common.Encoding.Edge.Thing.ROLEPLAYER;
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toList;
@@ -102,6 +102,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
 
     @Override
     public void setHas(Attribute attribute, boolean isInferred) {
+        validateIsNotDeleted();
         if (getType().getOwns().noneMatch(t -> t.equals(attribute.getType()))) {
             throw exception(GraknException.of(THING_CANNOT_OWN_ATTRIBUTE, attribute.getType().getLabel(), vertex.type().label()));
         } else if (getType().getOwns(true).anyMatch(t -> t.equals(attribute.getType()))) {
@@ -116,6 +117,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
 
     @Override
     public void unsetHas(Attribute attribute) {
+        validateIsNotDeleted();
         vertex.outs().edge(HAS, ((AttributeImpl<?>) attribute).vertex).delete();
     }
 
@@ -213,6 +215,10 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
             missing.removeAll(getHas(true).map(Attribute::getType).collect(toSet()));
             throw exception(GraknException.of(THING_KEY_MISSING, getType().getLabel(), printTypeSet(missing)));
         }
+    }
+
+    void validateIsNotDeleted() {
+        if (vertex.isDeleted()) throw exception(GraknException.of(THING_HAS_BEEN_DELETED, getIIDForPrinting()));
     }
 
     @Override

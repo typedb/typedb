@@ -32,17 +32,16 @@ import grakn.core.graph.iid.SuffixIID;
 import grakn.core.graph.vertex.ThingVertex;
 
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Predicate;
 
 import static grakn.core.common.collection.Bytes.join;
+import static grakn.core.common.iterator.Iterators.empty;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
 import static java.util.Arrays.copyOfRange;
-import static java.util.Collections.emptyIterator;
 
 public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
@@ -77,10 +76,10 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
     }
 
     ResourceIterator<ThingEdge> bufferedEdgeIterator(Encoding.Edge.Thing encoding, IID[] lookAhead) {
-        Map<EdgeIID.Thing, ThingEdge> result;
+        ConcurrentMap<EdgeIID.Thing, ThingEdge> result;
         InfixIID.Thing infixIID = infixIID(encoding, lookAhead);
         if (lookAhead.length == encoding.lookAhead()) {
-            return iterate((result = edges.get(infixIID)) != null ? result.values().iterator() : emptyIterator());
+            return (result = edges.get(infixIID)) != null ? iterate(result.values()) : empty();
         }
 
         assert lookAhead.length < encoding.lookAhead();
@@ -95,7 +94,10 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             iids = newIIDs;
         }
 
-        return iterate(iids).flatMap(iid -> iterate(edges.get(iid) != null ? edges.get(iid).values().iterator() : emptyIterator()));
+        return iterate(iids).flatMap(iid -> {
+            ConcurrentMap<EdgeIID.Thing, ThingEdge> res;
+            return (res = edges.get(iid)) != null ? iterate(res.values()) : empty();
+        });
     }
 
     @Override
@@ -119,8 +121,10 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
     @Override
     public ThingEdge edge(Encoding.Edge.Thing encoding, ThingVertex adjacent) {
         assert !encoding.isOptimisation();
-        Predicate<ThingEdge> predicate = direction.isOut() ? e -> e.to().equals(adjacent) : e -> e.from().equals(adjacent);
-        ResourceIterator<ThingEdge> iterator = bufferedEdgeIterator(encoding, new IID[]{adjacent.iid().prefix(), adjacent.iid().type()});
+        Predicate<ThingEdge> predicate =
+                direction.isOut() ? e -> e.to().equals(adjacent) : e -> e.from().equals(adjacent);
+        ResourceIterator<ThingEdge> iterator =
+                bufferedEdgeIterator(encoding, new IID[]{adjacent.iid().prefix(), adjacent.iid().type()});
         ThingEdge edge = null;
         while (iterator.hasNext()) {
             if (predicate.test(edge = iterator.next())) break;
@@ -130,7 +134,8 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         return edge;
     }
 
-    private ThingEdgeImpl put(Encoding.Edge.Thing encoding, ThingEdgeImpl edge, IID[] infixes, boolean isModified, boolean isReflexive) {
+    private ThingEdgeImpl put(Encoding.Edge.Thing encoding, ThingEdgeImpl edge, IID[] infixes,
+                              boolean isModified, boolean isReflexive) {
         assert encoding.lookAhead() == infixes.length;
         InfixIID.Thing infixIID = infixIID(encoding);
         for (int i = 0; i < encoding.lookAhead(); i++) {
@@ -150,7 +155,10 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             return edgesByOutIID;
         });
 
-        if (isModified) owner.setModified();
+        if (isModified) {
+            assert !owner.isDeleted();
+            owner.setModified();
+        }
         if (isReflexive) {
             if (direction.isOut()) ((ThingAdjacencyImpl) edge.to().ins()).putNonReflexive(edge);
             else ((ThingAdjacencyImpl) edge.from().outs()).putNonReflexive(edge);
