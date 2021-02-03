@@ -32,7 +32,7 @@ import grakn.core.logic.resolvable.Resolvable;
 import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState;
+import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars;
 import grakn.core.reasoner.resolution.answer.Mapping;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
@@ -121,9 +121,9 @@ public class RuleResolver extends Resolver<RuleResolver> {
 
         ConceptMap whenAnswer = fromDownstream.answer().derived().withInitialFiltered();
         if (fromDownstream.planIndex() == plan.size() - 1) {
-            ResourceIterator<AnswerState.UpstreamVars.Derived> newAnswers = newMaterialisations(fromUpstream, whenAnswer, responseProducer);
+            ResourceIterator<UpstreamVars.Derived> newAnswers = materialisations(fromUpstream, whenAnswer);
             if (newAnswers.hasNext()) {
-                AnswerState.UpstreamVars.Derived upstreamAnswer = newAnswers.next();
+                UpstreamVars.Derived upstreamAnswer = newAnswers.next();
                 responseProducer.recordProduced(upstreamAnswer.withInitialFiltered());
                 // TODO revisit whether using `rule.when()` is the correct pattern to associate with the unified answer? Variables won't match
                 ResolutionAnswer answer = new ResolutionAnswer(upstreamAnswer, rule.when().toString(), derivation, self(), true);
@@ -135,7 +135,7 @@ public class RuleResolver extends Resolver<RuleResolver> {
             int planIndex = fromDownstream.planIndex() + 1;
             ResolverRegistry.AlphaEquivalentResolver nextPlannedDownstream = downstreamResolvers.get(plan.get(planIndex));
             Request downstreamRequest = Request.create(fromUpstream.path().append(nextPlannedDownstream.resolver()),
-                                                       AnswerState.UpstreamVars.Initial.of(whenAnswer).toDownstreamVars(
+                                                       UpstreamVars.Initial.of(whenAnswer).toDownstreamVars(
                                                                Mapping.of(nextPlannedDownstream.mapping())),
                                                        derivation, planIndex, null);
             responseProducer.addDownstreamProducer(downstreamRequest);
@@ -179,13 +179,15 @@ public class RuleResolver extends Resolver<RuleResolver> {
     }
 
     @Override
-    protected ResponseProducer responseProducerCreate(Request request, int iteration) {
-        Traversal traversal = boundTraversal(rule.when().traversal(), request.partialAnswer().conceptMap());
-        ResourceIterator<ConceptMap> traversalIterator = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
-        ResponseProducer responseProducer = new ResponseProducer(traversalIterator, iteration);
+    protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
+        Traversal traversal = boundTraversal(rule.when().traversal(), fromUpstream.partialAnswer().conceptMap());
+        ResourceIterator<UpstreamVars.Derived> upstreamAnswers = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap)
+                .flatMap(whenAnswer -> materialisations(fromUpstream, whenAnswer));
+        ResponseProducer responseProducer = new ResponseProducer(upstreamAnswers, iteration);
+
         if (!plan.isEmpty()) {
-            Request toDownstream = Request.create(request.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
-                                                  AnswerState.UpstreamVars.Initial.of(request.partialAnswer().conceptMap())
+            Request toDownstream = Request.create(fromUpstream.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
+                                                  UpstreamVars.Initial.of(fromUpstream.partialAnswer().conceptMap())
                                                           .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
                                                   new ResolutionAnswer.Derivation(map()), 0, null);
             responseProducer.addDownstreamProducer(toDownstream);
@@ -194,16 +196,18 @@ public class RuleResolver extends Resolver<RuleResolver> {
     }
 
     @Override
-    protected ResponseProducer responseProducerReiterate(Request request, ResponseProducer responseProducerPrevious, int newIteration) {
+    protected ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer responseProducerPrevious, int newIteration) {
         assert newIteration > responseProducerPrevious.iteration();
         LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
 
-        Traversal traversal = boundTraversal(rule.when().traversal(), request.partialAnswer().conceptMap());
-        ResourceIterator<ConceptMap> traversalIterator = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
-        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversalIterator, newIteration);
+        Traversal traversal = boundTraversal(rule.when().traversal(), fromUpstream.partialAnswer().conceptMap());
+        ResourceIterator<UpstreamVars.Derived> upstreamAnswers = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap)
+                .flatMap(whenAnswer -> materialisations(fromUpstream, whenAnswer));
+        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(upstreamAnswers, newIteration);
+
         if (!plan.isEmpty()) {
-            Request toDownstream = Request.create(request.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
-                                                  AnswerState.UpstreamVars.Initial.of(request.partialAnswer().conceptMap())
+            Request toDownstream = Request.create(fromUpstream.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
+                                                  UpstreamVars.Initial.of(fromUpstream.partialAnswer().conceptMap())
                                                           .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
                                                   new ResolutionAnswer.Derivation(map()), 0, null);
             responseProducerNewIter.addDownstreamProducer(toDownstream);
@@ -218,39 +222,31 @@ public class RuleResolver extends Resolver<RuleResolver> {
     }
 
     private void tryAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
-        while (responseProducer.hasTraversalProducer()) {
-            ConceptMap whenAnswer = responseProducer.upstreamAnswers().next();
-            LOG.trace("{}: has found via traversal: {}", name(), whenAnswer);
-            ResourceIterator<AnswerState.UpstreamVars.Derived> newAnswers = newMaterialisations(fromUpstream, whenAnswer, responseProducer);
-            if (newAnswers.hasNext()) {
-                AnswerState.UpstreamVars.Derived newAnswer = newAnswers.next();
-                responseProducer.recordProduced(newAnswer.withInitialFiltered());
-                ResolutionAnswer answer = new ResolutionAnswer(newAnswer, rule.when().toString(),
-                                                               new ResolutionAnswer.Derivation(map()), self(), true);
-                respondToUpstream(Answer.create(fromUpstream, answer), iteration);
-                return;
-            }
-        }
-
-        if (responseProducer.hasDownstreamProducer()) {
-            requestFromDownstream(responseProducer.nextDownstreamProducer(), fromUpstream, iteration);
+        if (responseProducer.hasUpstreamAnswer()) {
+            UpstreamVars.Derived upstreamAnswer = responseProducer.upstreamAnswers().next();
+            responseProducer.recordProduced(upstreamAnswer.withInitialFiltered());
+            ResolutionAnswer answer = new ResolutionAnswer(upstreamAnswer, rule.when().toString(),
+                                                           new ResolutionAnswer.Derivation(map()), self(), true);
+            respondToUpstream(Answer.create(fromUpstream, answer), iteration);
         } else {
-            respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
+            if (responseProducer.hasDownstreamProducer()) {
+                requestFromDownstream(responseProducer.nextDownstreamProducer(), fromUpstream, iteration);
+            } else {
+                respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
+            }
         }
     }
 
-    private ResourceIterator<AnswerState.UpstreamVars.Derived> newMaterialisations(Request fromUpstream, ConceptMap whenAnswer,
-                                                                                   ResponseProducer responseProducer) {
+    private ResourceIterator<UpstreamVars.Derived> materialisations(Request fromUpstream, ConceptMap whenAnswer) {
         ResourceIterator<Map<Identifier, Concept>> materialisations = rule.conclusion()
                 .materialise(whenAnswer, traversalEngine, conceptMgr);
         if (!materialisations.hasNext()) throw GraknException.of(ILLEGAL_STATE);
 
         assert fromUpstream.partialAnswer().isUnified();
-        ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers = materialisations
+        ResourceIterator<UpstreamVars.Derived> upstreamAnswers = materialisations
                 .map(concepts -> fromUpstream.partialAnswer().asUnified().unifyToUpstream(concepts))
                 .filter(Optional::isPresent)
-                .map(Optional::get)
-                .filter(derived -> !responseProducer.hasProduced(derived.withInitialFiltered()));
+                .map(Optional::get);
         return upstreamAnswers;
     }
 

@@ -20,11 +20,10 @@ package grakn.core.reasoner.resolution.resolver;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.ConceptManager;
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState;
+import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Response;
@@ -87,7 +86,8 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
     protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), fromUpstream);
         Traversal traversal = boundTraversal(retrievable.conjunction().traversal(), fromUpstream.partialAnswer().conceptMap());
-        ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers = traversalEngine.iterator(traversal)
+        assert fromUpstream.partialAnswer().isMapped();
+        ResourceIterator<UpstreamVars.Derived> upstreamAnswers = traversalEngine.iterator(traversal)
                 .map(conceptMgr::conceptMap)
                 .map(conceptMap -> fromUpstream.partialAnswer().asMapped().mapToUpstream(conceptMap));
         return new ResponseProducer(upstreamAnswers, iteration);
@@ -100,7 +100,8 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
 
         assert newIteration > responseProducerPrevious.iteration();
         Traversal traversal = boundTraversal(retrievable.conjunction().traversal(), fromUpstream.partialAnswer().conceptMap());
-        ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap)
+        assert fromUpstream.partialAnswer().isMapped();
+        ResourceIterator<UpstreamVars.Derived> upstreamAnswers = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap)
                 .map(conceptMap -> fromUpstream.partialAnswer().asMapped().mapToUpstream(conceptMap));
         return responseProducerPrevious.newIteration(upstreamAnswers, newIteration);
     }
@@ -122,17 +123,15 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
     }
 
     private void tryAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
-        while (responseProducer.hasTraversalProducer()) {
-            AnswerState.UpstreamVars.Derived upstreamAnswer = responseProducer.upstreamAnswers().next();
-            if (!responseProducer.hasProduced(upstreamAnswer.withInitialFiltered())) {
-                responseProducer.recordProduced(upstreamAnswer.withInitialFiltered());
-                ResolutionAnswer answer = new ResolutionAnswer(upstreamAnswer, retrievable.conjunction().toString(),
-                                                               ResolutionAnswer.Derivation.EMPTY, self(), false);
-                respondToUpstream(Answer.create(fromUpstream, answer), iteration);
-                return;
-            }
+        if (responseProducer.hasUpstreamAnswer()) {
+            UpstreamVars.Derived upstreamAnswer = responseProducer.upstreamAnswers().next();
+            responseProducer.recordProduced(upstreamAnswer.withInitialFiltered());
+            ResolutionAnswer answer = new ResolutionAnswer(upstreamAnswer, retrievable.conjunction().toString(),
+                                                           ResolutionAnswer.Derivation.EMPTY, self(), false);
+            respondToUpstream(Answer.create(fromUpstream, answer), iteration);
+        } else {
+            respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
         }
-        respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
     }
 
     @Override

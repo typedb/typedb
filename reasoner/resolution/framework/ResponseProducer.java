@@ -18,6 +18,7 @@
 
 package grakn.core.reasoner.resolution.framework;
 
+import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 
@@ -30,17 +31,17 @@ import java.util.Set;
 
 public class ResponseProducer {
     private final Set<ConceptMap> produced;
-    private final Iterator<AnswerState.UpstreamVars.Derived> traversalProducer;
+    private final ResourceIterator<AnswerState.UpstreamVars.Derived> traversalProducer;
     private final LinkedHashSet<Request> downstreamProducer;
     private final int iteration;
     private Iterator<Request> downstreamProducerSelector;
 
-    public ResponseProducer(Iterator<AnswerState.UpstreamVars.Derived> traversalProducer, int iteration) {
-        this(traversalProducer, iteration, new HashSet<>());
+    public ResponseProducer(ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers, int iteration) {
+        this(upstreamAnswers, iteration, new HashSet<>());
     }
 
-    private ResponseProducer(Iterator<AnswerState.UpstreamVars.Derived> upstreamAnswers, int iteration, Set<ConceptMap> produced) {
-        this.traversalProducer = upstreamAnswers;
+    private ResponseProducer(ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers, int iteration, Set<ConceptMap> produced) {
+        this.traversalProducer = upstreamAnswers.filter(derived -> !hasProduced(derived.withInitialFiltered()));
         this.iteration = iteration;
         this.produced = produced;
         downstreamProducer = new LinkedHashSet<>();
@@ -55,7 +56,7 @@ public class ResponseProducer {
         return produced.contains(conceptMap);
     }
 
-    public boolean hasTraversalProducer() {
+    public boolean hasUpstreamAnswer() {
         return traversalProducer.hasNext();
     }
 
@@ -94,7 +95,7 @@ public class ResponseProducer {
      * Prepare a response producer for the another iteration from this one
      * Notably maintains the set of produced answers for deduplication
      */
-    public ResponseProducer newIteration(Iterator<AnswerState.UpstreamVars.Derived> traversalProducer, int iteration) {
-        return new ResponseProducer(traversalProducer, iteration, this.produced);
+    public ResponseProducer newIteration(ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers, int iteration) {
+        return new ResponseProducer(upstreamAnswers, iteration, this.produced);
     }
 }
