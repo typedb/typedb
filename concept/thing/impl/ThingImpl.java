@@ -27,6 +27,7 @@ import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.Type;
 import grakn.core.concept.type.impl.RoleTypeImpl;
 import grakn.core.concept.type.impl.TypeImpl;
+import grakn.core.graph.edge.ThingEdge;
 import grakn.core.graph.iid.PrefixIID;
 import grakn.core.graph.vertex.AttributeVertex;
 import grakn.core.graph.vertex.ThingVertex;
@@ -38,9 +39,9 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
-import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_ROLE_TYPE_LABEL;
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE_HAS;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_CANNOT_OWN_ATTRIBUTE;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_HAS_BEEN_DELETED;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_MISSING;
@@ -118,7 +119,9 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     @Override
     public void unsetHas(Attribute attribute) {
         validateIsNotDeleted();
-        vertex.outs().edge(HAS, ((AttributeImpl<?>) attribute).vertex).delete();
+        ThingEdge hasEdge = vertex.outs().edge(HAS, ((AttributeImpl<?>) attribute).vertex);
+        if (hasEdge == null) throw exception(GraknException.of(INVALID_DELETE_HAS, this, attribute));
+        hasEdge.delete();
     }
 
     @Override
@@ -244,7 +247,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
 
     @Override
     public String toString() {
-        return className(this.getClass()) + " {" + vertex.toString() + "}";
+        return vertex.encoding().name() + ":" + vertex.type().properLabel() + ":" + getIIDForPrinting();
     }
 
     @Override
