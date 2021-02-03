@@ -154,22 +154,22 @@ public class UnifyAttributeConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.requirements().types().size());
-        assertEquals(0, unifier.requirements().isaExplicit().size());
-        assertEquals(1, unifier.requirements().predicates().size());
+        assertEquals(0, unifier.constraintRequirements().types().size());
+        assertEquals(0, unifier.constraintRequirements().isaExplicit().size());
+        assertEquals(1, unifier.constraintRequirements().predicates().size());
 
         // test filter allows a valid answer
         Map<Identifier, Concept> identifiedConcepts = map(
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "john"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
+        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
         assertEquals(1, unified.get().concepts().size());
 
         identifiedConcepts = map(
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "abe"))
         );
-        unified = unifier.unUnify(identifiedConcepts);
+        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.isPresent());
 
     }
@@ -196,9 +196,9 @@ public class UnifyAttributeConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.requirements().types().size());
-        assertEquals(0, unifier.requirements().isaExplicit().size());
-        assertEquals(0, unifier.requirements().predicates().size());
+        assertEquals(0, unifier.constraintRequirements().types().size());
+        assertEquals(0, unifier.constraintRequirements().isaExplicit().size());
+        assertEquals(0, unifier.constraintRequirements().predicates().size());
 
         Rule rule2 = createRule("isa-rule-2", "{ " + var + " isa person; }", "(employee: " + var + ") isa employment");
 

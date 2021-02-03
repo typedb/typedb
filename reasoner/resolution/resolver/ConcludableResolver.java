@@ -28,6 +28,7 @@ import grakn.core.logic.resolvable.Unifier;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
+import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Response;
@@ -162,37 +163,44 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
     }
 
     @Override
-    protected ResponseProducer responseProducerCreate(Request request, int iteration) {
-        LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), request);
-        Actor<RootResolver> root = request.path().root();
+    protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
+        LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), fromUpstream);
+        Actor<RootResolver> root = fromUpstream.path().root();
         iterationStates.putIfAbsent(root, new IterationState(iteration));
         IterationState iterationState = iterationStates.get(root);
 
-        Traversal traversal = boundTraversal(concludable.conjunction().traversal(), request.partialAnswer().conceptMap());
-        ResourceIterator<ConceptMap> traversalProducer = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
+        Traversal traversal = boundTraversal(concludable.conjunction().traversal(), fromUpstream.partialAnswer().conceptMap());
+        assert fromUpstream.partialAnswer().isMapped();
+        ResourceIterator<UpstreamVars.Derived> upstreamAnswers = traversalEngine.iterator(traversal)
+                .map(conceptMgr::conceptMap)
+                .map(conceptMap -> fromUpstream.partialAnswer().asMapped().mapToUpstream(conceptMap));
 
-        ResponseProducer responseProducer = new ResponseProducer(traversalProducer, iteration);
-        mayRegisterRules(request, iterationState, responseProducer);
+        ResponseProducer responseProducer = new ResponseProducer(upstreamAnswers, iteration);
+        mayRegisterRules(fromUpstream, iterationState, responseProducer);
         return responseProducer;
     }
 
     @Override
-    protected ResponseProducer responseProducerReiterate(Request request, ResponseProducer responseProducerPrevious, int newIteration) {
+    protected ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer responseProducerPrevious,
+                                                         int newIteration) {
         assert newIteration > responseProducerPrevious.iteration();
         LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
 
-        Actor<RootResolver> root = request.path().root();
+        Actor<RootResolver> root = fromUpstream.path().root();
         assert iterationStates.containsKey(root);
         IterationState iterationState = iterationStates.get(root);
         if (iterationState.iteration() < newIteration) {
             iterationState.nextIteration(newIteration);
         }
 
-        Traversal traversal = boundTraversal(concludable.conjunction().traversal(), request.partialAnswer().conceptMap());
-        ResourceIterator<ConceptMap> traversalProducer = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
+        Traversal traversal = boundTraversal(concludable.conjunction().traversal(), fromUpstream.partialAnswer().conceptMap());
+        assert fromUpstream.partialAnswer().isMapped();
+        ResourceIterator<UpstreamVars.Derived> upstreamAnswers = traversalEngine.iterator(traversal)
+                .map(conceptMgr::conceptMap)
+                .map(conceptMap -> fromUpstream.partialAnswer().asMapped().mapToUpstream(conceptMap));
 
-        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversalProducer, newIteration);
-        mayRegisterRules(request, iterationState, responseProducerNewIter);
+        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(upstreamAnswers, newIteration);
+        mayRegisterRules(fromUpstream, iterationState, responseProducerNewIter);
         return responseProducerNewIter;
     }
 
@@ -203,23 +211,18 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
     }
 
     private void tryAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
-        while (responseProducer.hasTraversalProducer()) {
-            ConceptMap conceptMap = responseProducer.traversalProducer().next();
-            assert fromUpstream.partialAnswer().isMapped();
-            AnswerState.UpstreamVars.Derived derivedAnswer = fromUpstream.partialAnswer().asMapped().mapToUpstream(conceptMap);
-            LOG.trace("{}: has found via traversal: {}", name(), conceptMap);
-            if (!responseProducer.hasProduced(conceptMap)) {
-                responseProducer.recordProduced(conceptMap);
-                ResolutionAnswer answer = new ResolutionAnswer(derivedAnswer, concludable.toString(), new ResolutionAnswer.Derivation(map()), self(), false);
-                respondToUpstream(Answer.create(fromUpstream, answer), iteration);
-                return;
-            }
-        }
-
-        if (responseProducer.hasDownstreamProducer()) {
-            requestFromDownstream(responseProducer.nextDownstreamProducer(), fromUpstream, iteration);
+        if (responseProducer.hasUpstreamAnswer()) {
+            UpstreamVars.Derived upstreamAnswer = responseProducer.upstreamAnswers().next();
+            responseProducer.recordProduced(upstreamAnswer.withInitialFiltered());
+            ResolutionAnswer answer = new ResolutionAnswer(upstreamAnswer, concludable.toString(),
+                                                           new ResolutionAnswer.Derivation(map()), self(), false);
+            respondToUpstream(Answer.create(fromUpstream, answer), iteration);
         } else {
-            respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
+            if (responseProducer.hasDownstreamProducer()) {
+                requestFromDownstream(responseProducer.nextDownstreamProducer(), fromUpstream, iteration);
+            } else {
+                respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
+            }
         }
     }
 
@@ -247,7 +250,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
             for (Map.Entry<Actor<RuleResolver>, Set<Unifier>> entry : applicableRules.entrySet()) {
                 Actor<RuleResolver> ruleActor = entry.getKey();
                 for (Unifier unifier : entry.getValue()) {
-                    AnswerState.UpstreamVars.Initial initial = AnswerState.UpstreamVars.Initial.of(request.partialAnswer().conceptMap());
+                    UpstreamVars.Initial initial = UpstreamVars.Initial.of(request.partialAnswer().conceptMap());
                     Optional<AnswerState.DownstreamVars.Unified> unified = initial.toDownstreamVars(unifier);
                     if (unified.isPresent()) {
                         Request toDownstream = Request.create(request.path().append(ruleActor), unified.get(),

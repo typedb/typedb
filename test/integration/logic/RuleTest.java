@@ -110,8 +110,9 @@ public class RuleTest {
                     ConceptMap whenAnswer = new ConceptMap(map(pair(Reference.name("x"), people.get(0)),
                                                                pair(Reference.name("y"), people.get(1))));
 
-                    Map<Identifier, Concept> thenConcepts = rule.putConclusion(whenAnswer, txn.traversal(), conceptMgr);
-                    assertEquals(5, thenConcepts.size());
+                    List<Map<Identifier, Concept>> materialisations = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr).toList();
+                    assertEquals(1, materialisations.size());
+                    assertEquals(5, materialisations.get(0).size());
 
                     RelationType friendship = conceptMgr.getRelationType("friendship");
                     List<Relation> friendshipInstances = friendship.getInstances().collect(Collectors.toList());
@@ -165,12 +166,13 @@ public class RuleTest {
                     ConceptMap whenAnswer = new ConceptMap(map(pair(Reference.name("x"), people.get(0)),
                                                                pair(Reference.name("y"), people.get(1))));
 
-                    Map<Identifier, Concept> thenConcepts = rule.putConclusion(whenAnswer, txn.traversal(), conceptMgr);
-                    assertEquals(5, thenConcepts.size());
+                    List<Map<Identifier, Concept>> materialisations = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr).toList();
+                    assertEquals(1, materialisations.size());
+                    assertEquals(5, materialisations.get(0).size());
                     friendshipInstances = friendship.getInstances().collect(Collectors.toList());
                     assertEquals(1, friendshipInstances.size());
-                    assertEquals(friendshipInstances.get(0), thenConcepts.get(Identifier.Variable.anon(0)));
-                    assertEquals(friendship, thenConcepts.get(Identifier.Variable.label("friendship")));
+                    assertEquals(friendshipInstances.get(0), materialisations.get(0).get(Identifier.Variable.anon(0)));
+                    assertEquals(friendship, materialisations.get(0).get(Identifier.Variable.label("friendship")));
                 }
             }
         }
@@ -211,8 +213,9 @@ public class RuleTest {
                     Rule rule = txn.logic().getRule("old-milk-is-not-good");
                     ConceptMap whenAnswer = new ConceptMap(map(pair(Reference.name("x"), milkInst),
                                                                pair(Reference.name("a"), ageInDays10)));
-                    Map<Identifier, Concept> thenConcepts = rule.putConclusion(whenAnswer, txn.traversal(), conceptMgr);
-                    assertEquals(2, thenConcepts.size());
+                    List<Map<Identifier, Concept>> materialisations = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr).toList();
+                    assertEquals(1, materialisations.size());
+                    assertEquals(2, materialisations.get(0).size());
 
                     List<? extends Attribute> ageInDaysOwned = milkInst.getHas(ageInDays).collect(Collectors.toList());
                     assertEquals(1, ageInDaysOwned.size());
@@ -256,8 +259,9 @@ public class RuleTest {
 
                     Rule rule = txn.logic().getRule("old-milk-is-not-good");
                     ConceptMap whenAnswer = new ConceptMap(map(pair(Reference.name("x"), milkInst)));
-                    Map<Identifier, Concept> thenConcepts = rule.putConclusion(whenAnswer, txn.traversal(), conceptMgr);
-                    assertEquals(3, thenConcepts.size());
+                    List<Map<Identifier, Concept>> materialisations = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr).toList();
+                    assertEquals(1, materialisations.size());
+                    assertEquals(3, materialisations.get(0).size());
 
                     AttributeType isStillGood = conceptMgr.getAttributeType("is-still-good");
                     List<? extends Attribute> isStillGoodOwned = milkInst.getHas(isStillGood).collect(Collectors.toList());
