@@ -67,7 +67,8 @@ import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.single;
 import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
-import static grakn.core.concurrent.common.ExecutorService.PARALLELISATION_FACTOR;
+import static grakn.core.concurrent.common.Executors.PARALLELISATION_FACTOR;
+import static grakn.core.concurrent.common.Executors.asyncPool1;
 import static grakn.core.concurrent.producer.Producers.async;
 import static grakn.core.concurrent.producer.Producers.produce;
 import static grakn.core.query.QueryManager.PARALLELISATION_SPLIT_MIN;
@@ -125,7 +126,7 @@ public class Inserter {
                 } else {
                     inserts = produce(async(iterate(lists).map(list -> iterate(list).map(
                             matched -> new Operation(conceptMgr, matched, variables).execute()
-                    )), PARALLELISATION_FACTOR), EXHAUSTIVE).toList();
+                    )), PARALLELISATION_FACTOR), EXHAUSTIVE, asyncPool1()).toList();
                 }
                 return iterate(inserts);
             } else {

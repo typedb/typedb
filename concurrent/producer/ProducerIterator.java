@@ -30,10 +30,9 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static grakn.core.concurrent.common.ExecutorService.async;
 
 public class ProducerIterator<T> extends AbstractResourceIterator<T> {
 
@@ -41,12 +40,14 @@ public class ProducerIterator<T> extends AbstractResourceIterator<T> {
 
     // TODO: why does 'producers' have to be ConcurrentLinkedQueue? see method recycle() below
     private final ConcurrentLinkedQueue<Producer<T>> producers;
+    private final ExecutorService executor;
     private final Queue queue;
 
     private T next;
     private State state;
 
-    public ProducerIterator(List<Producer<T>> producers, int batchSize) {
+    public ProducerIterator(List<Producer<T>> producers, int batchSize, ExecutorService executor) {
+        this.executor = executor;
         // TODO: Could we optimise IterableProducer by accepting ResourceIterator<Producer<T>> instead?
         assert !producers.isEmpty() && batchSize < Integer.MAX_VALUE / 2;
         this.producers = new ConcurrentLinkedQueue<>(producers);
@@ -62,7 +63,7 @@ public class ProducerIterator<T> extends AbstractResourceIterator<T> {
                 queue.pending += available;
                 assert !producers.isEmpty();
                 Producer<T> producer = producers.peek();
-                async().submit(() -> producer.produce(queue, available));
+                executor.submit(() -> producer.produce(queue, available, executor));
             }
         }
     }

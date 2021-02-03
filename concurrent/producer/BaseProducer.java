@@ -22,9 +22,8 @@ import grakn.core.common.iterator.ResourceIterator;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static grakn.core.concurrent.common.ExecutorService.async;
 
 @ThreadSafe
 public class BaseProducer<T> implements Producer<T> {
@@ -40,7 +39,7 @@ public class BaseProducer<T> implements Producer<T> {
     }
 
     @Override
-    public synchronized void produce(Queue<T> queue, int request) {
+    public synchronized void produce(Queue<T> queue, int request, ExecutorService executor) {
         if (isDone.get()) return;
         future = future.thenRunAsync(() -> {
             try {
@@ -51,7 +50,7 @@ public class BaseProducer<T> implements Producer<T> {
             } catch (Throwable e) {
                 queue.done(e);
             }
-        }, async());
+        }, executor);
     }
 
     private void done(Queue<T> queue) {

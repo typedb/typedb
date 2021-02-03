@@ -23,7 +23,7 @@ import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
-import grakn.core.concurrent.common.ExecutorService;
+import grakn.core.concurrent.common.Executors;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.server.migrator.MigratorClient;
 import grakn.core.server.rpc.GraknRPCService;
@@ -270,11 +270,11 @@ public class GraknServer implements AutoCloseable {
     }
 
     private Server rpcServer() {
-        assert ExecutorService.isInitialised();
+        assert Executors.isInitialised();
         return NettyServerBuilder.forPort(command.port())
-                .executor(ExecutorService.main())
-                .workerEventLoopGroup(ExecutorService.network())
-                .bossEventLoopGroup(ExecutorService.network())
+                .executor(Executors.mainPool())
+                .workerEventLoopGroup(Executors.networkPool())
+                .bossEventLoopGroup(Executors.networkPool())
                 .maxConnectionIdle(1, TimeUnit.HOURS) // TODO: why 1 hour?
                 .channelType(NioServerSocketChannel.class)
                 .addService(graknRPCService)

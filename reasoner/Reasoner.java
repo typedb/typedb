@@ -47,8 +47,9 @@ import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CONJUNCTION;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
-import static grakn.core.concurrent.common.ExecutorService.PARALLELISATION_FACTOR;
-import static grakn.core.concurrent.common.ExecutorService.eventLoop;
+import static grakn.core.concurrent.common.Executors.PARALLELISATION_FACTOR;
+import static grakn.core.concurrent.common.Executors.asyncPool1;
+import static grakn.core.concurrent.common.Executors.eventLoopGroup;
 import static grakn.core.concurrent.producer.Producers.produce;
 
 public class Reasoner {
@@ -68,8 +69,8 @@ public class Reasoner {
         this.logicMgr = logicMgr;
         this.defaultContext = new Context.Query(context, new Options.Query());
         this.defaultContext.producer(EXHAUSTIVE);
-        this.resolutionRecorder = Actor.create(eventLoop(), ResolutionRecorder::new);
-        this.resolverRegistry = new ResolverRegistry(eventLoop(), resolutionRecorder, traversalEng, conceptMgr, logicMgr);
+        this.resolutionRecorder = Actor.create(eventLoopGroup(), ResolutionRecorder::new);
+        this.resolverRegistry = new ResolverRegistry(eventLoopGroup(), resolutionRecorder, traversalEng, conceptMgr, logicMgr);
     }
 
     ResolverRegistry resolverRegistry() {
@@ -94,7 +95,7 @@ public class Reasoner {
         ResourceIterator<ConceptMap> answers;
         ResourceIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
         if (!context.options().parallel()) answers = conjs.flatMap(conj -> iterator(conj, filter, context));
-        else answers = produce(conjs.map(conj -> producer(conj, filter, context)).toList(), context.producer());
+        else answers = produce(conjs.map(c -> producer(c, filter, context)).toList(), context.producer(), asyncPool1());
         if (disjunction.conjunctions().size() > 1) answers = answers.distinct();
         return answers;
     }
@@ -137,7 +138,7 @@ public class Reasoner {
         ResourceIterator<ConceptMap> answers;
         logicMgr.typeResolver().resolve(conjunction);
         if (conjunction.isSatisfiable()) {
-            if (isInfer(context)) answers = produce(resolve(conjunction, filter), context.producer());
+            if (isInfer(context)) answers = produce(resolve(conjunction, filter), context.producer(), asyncPool1());
             else answers = traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
         } else if (!conjunction.isBounded() && conjunctionContainsThings(conjunction, filter)) {
             throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction);

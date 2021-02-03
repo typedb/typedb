@@ -41,7 +41,8 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_V
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_INSERT;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
-import static grakn.core.concurrent.common.ExecutorService.PARALLELISATION_FACTOR;
+import static grakn.core.concurrent.common.Executors.PARALLELISATION_FACTOR;
+import static grakn.core.concurrent.common.Executors.asyncPool1;
 import static grakn.core.concurrent.producer.Producers.async;
 import static grakn.core.concurrent.producer.Producers.produce;
 import static grakn.core.query.QueryManager.PARALLELISATION_SPLIT_MIN;
@@ -97,7 +98,7 @@ public class Updater {
             if (lists.size() == 1) updates = iterate(lists.get(0)).map(updateFn).toList();
             else updates = produce(async(
                     iterate(lists).map(list -> iterate(list).map(updateFn)), PARALLELISATION_FACTOR
-            ), EXHAUSTIVE).toList();
+            ), EXHAUSTIVE, asyncPool1()).toList();
             return iterate(updates);
         }
     }
