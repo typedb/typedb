@@ -26,6 +26,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RelationType;
@@ -122,9 +123,6 @@ public class Rule {
         return conclusion;
     }
 
-    public Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr) {
-        return conclusion.putConclusion(whenConcepts, traversalEng, conceptMgr);
-    }
 
     public Conjunction when() {
         return when;
@@ -252,7 +250,15 @@ public class Rule {
             throw GraknException.of(ILLEGAL_STATE);
         }
 
-        public abstract Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr);
+        /**
+         * Perform a put operation on the `then` of the rule. This may insert a new fact, or return an iterator of existing ones
+         * @param whenConcepts - the that satisfy the `when` of the rule. All named `then` variables must be in this map
+         * @param traversalEng - used to perform a traversal to find preexisting conclusions
+         * @param conceptMgr - used to insert the conclusion if it doesn't already exist
+         * @return - all possible conclusions: there may be multiple preexisting satisfactory conclusions, we return all
+         */
+        public abstract ResourceIterator<Map<Identifier, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
+                                                                               ConceptManager conceptMgr);
 
         abstract void index(Rule rule);
 
@@ -335,26 +341,38 @@ public class Rule {
             }
 
             @Override
-            public Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr) {
+            public ResourceIterator<Map<Identifier, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
+                                                                          ConceptManager conceptMgr) {
                 Identifier relationTypeIdentifier = isa().type().id();
                 RelationType relationType = relationType(whenConcepts, conceptMgr);
                 Set<RolePlayer> players = new HashSet<>();
                 relation().players().forEach(rp -> players.add(new RolePlayer(rp, relationType, whenConcepts)));
-                Optional<grakn.core.concept.thing.Relation> relationInstance = matchRelation(relationType, players, traversalEng, conceptMgr);
+                ResourceIterator<grakn.core.concept.thing.Relation> existingRelations = matchRelation(
+                        relationType, players, traversalEng, conceptMgr
+                );
 
-                Map<Identifier, Concept> thenConcepts = new HashMap<>();
-                thenConcepts.put(relationTypeIdentifier, relationType);
-                if (relationInstance.isPresent()) {
-                    thenConcepts.put(isa().owner().id(), relationInstance.get());
+                if (existingRelations.hasNext()) {
+                    return existingRelations.map(rel -> {
+                        Map<Identifier, Concept> thenConcepts = new HashMap<>();
+                        thenConcepts.put(relationTypeIdentifier, relationType);
+                        thenConcepts.put(isa().owner().id(), rel);
+                        players.forEach(rp -> {
+                            thenConcepts.putIfAbsent(rp.roleTypeIdentifier, rp.roleType);
+                            thenConcepts.putIfAbsent(rp.playerIdentifier, rp.player);
+                        });
+                        return thenConcepts;
+                    });
                 } else {
+                    Map<Identifier, Concept> thenConcepts = new HashMap<>();
+                    thenConcepts.put(relationTypeIdentifier, relationType);
                     grakn.core.concept.thing.Relation relation = insertRelation(relationType, players);
                     thenConcepts.put(isa().owner().id(), relation);
+                    players.forEach(rp -> {
+                        thenConcepts.putIfAbsent(rp.roleTypeIdentifier, rp.roleType);
+                        thenConcepts.putIfAbsent(rp.playerIdentifier, rp.player);
+                    });
+                    return Iterators.single(thenConcepts);
                 }
-                players.forEach(rp -> {
-                    thenConcepts.putIfAbsent(rp.roleTypeIdentifier, rp.roleType);
-                    thenConcepts.putIfAbsent(rp.playerIdentifier, rp.player);
-                });
-                return thenConcepts;
             }
 
             @Override
@@ -405,7 +423,7 @@ public class Rule {
                 return relation;
             }
 
-            private Optional<grakn.core.concept.thing.Relation> matchRelation(RelationType relationType, Set<RolePlayer> players,
+            private ResourceIterator<grakn.core.concept.thing.Relation> matchRelation(RelationType relationType, Set<RolePlayer> players,
                                                                               TraversalEngine traversalEng, ConceptManager conceptMgr) {
                 Traversal traversal = new Traversal();
                 SystemReference relationRef = SystemReference.of(0);
@@ -420,9 +438,8 @@ public class Rule {
                         playersWithIds.add(rp.playerIdentifier);
                     }
                 });
-                ResourceIterator<ConceptMap> iterator = traversalEng.iterator(traversal).map(conceptMgr::conceptMap);
-                if (iterator.hasNext()) return Optional.of(iterator.next().get(relationRef).asRelation());
-                else return Optional.empty();
+                return traversalEng.iterator(traversal).map(conceptMgr::conceptMap)
+                        .map(conceptMap -> conceptMap.get(relationRef).asRelation());
             }
 
             private RelationType relationType(ConceptMap whenConcepts, ConceptManager conceptMgr) {
@@ -509,7 +526,8 @@ public class Rule {
                 }
 
                 @Override
-                public Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr) {
+                public ResourceIterator<Map<Identifier, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
+                                                                              ConceptManager conceptMgr) {
                     Identifier.Variable ownerId = has().owner().id();
                     assert whenConcepts.contains(ownerId.reference().asName()) && whenConcepts.get(ownerId.reference().asName()).isThing();
                     Thing owner = whenConcepts.get(ownerId.reference().asName()).asThing();
@@ -523,7 +541,7 @@ public class Rule {
                     thenConcepts.put(declaredTypeIdentifier, attrType);
                     thenConcepts.put(has().attribute().id(), attribute);
                     thenConcepts.put(has().owner().id(), owner);
-                    return thenConcepts;
+                    return Iterators.single(thenConcepts);
                 }
 
                 @Override
@@ -626,7 +644,8 @@ public class Rule {
                 }
 
                 @Override
-                public Map<Identifier, Concept> putConclusion(ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr) {
+                public ResourceIterator<Map<Identifier, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
+                                                                              ConceptManager conceptMgr) {
                     Identifier.Variable ownerId = has().owner().id();
                     assert whenConcepts.contains(ownerId.reference().asName())
                             && whenConcepts.get(ownerId.reference().asName()).isThing();
@@ -638,7 +657,7 @@ public class Rule {
                     owner.setHas(attribute, true);
                     thenConcepts.put(has().attribute().id(), attribute);
                     thenConcepts.put(has().owner().id(), owner);
-                    return thenConcepts;
+                    return Iterators.single(thenConcepts);
                 }
 
                 @Override

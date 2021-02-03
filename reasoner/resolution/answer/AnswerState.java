@@ -93,21 +93,26 @@ public abstract class AnswerState {
 
             private final Initial initial;
             private final Set<Reference.Name> filter;
+            private ConceptMap withInitialFiltered;
 
             Derived(ConceptMap derivedAnswer, @Nullable UpstreamVars.Initial source, @Nullable Set<Reference.Name> filter) {
                 super(derivedAnswer);
                 this.initial = source;
                 this.filter = filter;
+                this.withInitialFiltered = null;
             }
 
             public ConceptMap withInitialFiltered() {
-                HashMap<Reference.Name, Concept> withInitial = new HashMap<>(conceptMap().concepts());
-                if (initial != null) {
-                   withInitial.putAll(initial.conceptMap().concepts());
+                if (withInitialFiltered == null) {
+                    HashMap<Reference.Name, Concept> withInitial = new HashMap<>(conceptMap().concepts());
+                    if (initial != null) {
+                        withInitial.putAll(initial.conceptMap().concepts());
+                    }
+                    ConceptMap answer = new ConceptMap(withInitial);
+                    if (filter != null) withInitialFiltered = answer.filter(filter);
+                    else withInitialFiltered = answer;
                 }
-                ConceptMap answer = new ConceptMap(withInitial);
-                if (filter != null) return answer.filter(filter);
-                else return answer;
+                return withInitialFiltered;
             }
 
             @Override

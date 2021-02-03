@@ -110,7 +110,7 @@ public class RuleTest {
                     ConceptMap whenAnswer = new ConceptMap(map(pair(Reference.name("x"), people.get(0)),
                                                                pair(Reference.name("y"), people.get(1))));
 
-                    Map<Identifier, Concept> thenConcepts = rule.putConclusion(whenAnswer, txn.traversal(), conceptMgr);
+                    Map<Identifier, Concept> thenConcepts = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr);
                     assertEquals(5, thenConcepts.size());
 
                     RelationType friendship = conceptMgr.getRelationType("friendship");
@@ -165,7 +165,7 @@ public class RuleTest {
                     ConceptMap whenAnswer = new ConceptMap(map(pair(Reference.name("x"), people.get(0)),
                                                                pair(Reference.name("y"), people.get(1))));
 
-                    Map<Identifier, Concept> thenConcepts = rule.putConclusion(whenAnswer, txn.traversal(), conceptMgr);
+                    Map<Identifier, Concept> thenConcepts = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr);
                     assertEquals(5, thenConcepts.size());
                     friendshipInstances = friendship.getInstances().collect(Collectors.toList());
                     assertEquals(1, friendshipInstances.size());
@@ -211,7 +211,7 @@ public class RuleTest {
                     Rule rule = txn.logic().getRule("old-milk-is-not-good");
                     ConceptMap whenAnswer = new ConceptMap(map(pair(Reference.name("x"), milkInst),
                                                                pair(Reference.name("a"), ageInDays10)));
-                    Map<Identifier, Concept> thenConcepts = rule.putConclusion(whenAnswer, txn.traversal(), conceptMgr);
+                    Map<Identifier, Concept> thenConcepts = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr);
                     assertEquals(2, thenConcepts.size());
 
                     List<? extends Attribute> ageInDaysOwned = milkInst.getHas(ageInDays).collect(Collectors.toList());
@@ -256,7 +256,7 @@ public class RuleTest {
 
                     Rule rule = txn.logic().getRule("old-milk-is-not-good");
                     ConceptMap whenAnswer = new ConceptMap(map(pair(Reference.name("x"), milkInst)));
-                    Map<Identifier, Concept> thenConcepts = rule.putConclusion(whenAnswer, txn.traversal(), conceptMgr);
+                    Map<Identifier, Concept> thenConcepts = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr);
                     assertEquals(3, thenConcepts.size());
 
                     AttributeType isStillGood = conceptMgr.getAttributeType("is-still-good");
