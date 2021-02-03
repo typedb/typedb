@@ -76,7 +76,7 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
 
     protected void requestFromDownstream(Request request, Request fromUpstream, int iteration) {
         LOG.trace("{} : Sending a new answer Request to downstream: {}", name, request);
-        if (LOG.isTraceEnabled()) RES.request(this, request.receiver().state, iteration);
+        if (LOG.isTraceEnabled()) RES.request(this, request.receiver().state, iteration, request.partialAnswer().conceptMap().concepts().keySet().toString());
         // TODO we may overwrite if multiple identical requests are sent, when to clean up?
         requestRouter.put(request, fromUpstream);
         Actor<? extends Resolver<?>> receiver = request.receiver();
@@ -87,7 +87,7 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
         Actor<? extends Resolver<?>> receiver = response.sourceRequest().sender();
         if (response.isAnswer()) {
             LOG.trace("{} : Sending a new Response.Answer to upstream", name());
-            if (LOG.isTraceEnabled()) RES.responseAnswer(this, receiver.state, iteration);
+            if (LOG.isTraceEnabled()) RES.responseAnswer(this, receiver.state, iteration, response.asAnswer().answer().derived().withInitialFiltered().concepts().keySet().toString());
             receiver.tell(actor -> actor.receiveAnswer(response.asAnswer(), iteration));
         } else if (response.isExhausted()) {
             LOG.trace("{}: Sending a new Response.Exhausted to upstream", name());
