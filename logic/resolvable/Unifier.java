@@ -41,9 +41,9 @@ public class Unifier {
 
     private final Map<Identifier, Set<Identifier>> unifier;
     private final Map<Identifier, Set<Identifier>> unUnifier;
-    private final Requirements requirements;
+    private final Requirements.Precomputed requirements;
 
-    private Unifier(Map<Identifier, Set<Identifier>> unifier, Requirements requirements) {
+    private Unifier(Map<Identifier, Set<Identifier>> unifier, Requirements.Precomputed requirements) {
         this.unifier = Collections.unmodifiableMap(unifier);
         this.requirements = requirements;
         this.unUnifier = reverse(this.unifier);
@@ -108,7 +108,7 @@ public class Unifier {
         return unifier;
     }
 
-    Requirements requirements() {
+    Requirements.Precomputed requirements() {
         return requirements;
     }
 
@@ -150,13 +150,13 @@ public class Unifier {
     public static class Builder {
 
         Map<Identifier, Set<Identifier>> unifier;
-        Requirements requirements;
+        Requirements.Precomputed requirements;
 
         public Builder() {
-            this(new HashMap<>(), new Requirements());
+            this(new HashMap<>(), new Requirements.Precomputed());
         }
 
-        private Builder(Map<Identifier, Set<Identifier>> unifier, Requirements requirements) {
+        private Builder(Map<Identifier, Set<Identifier>> unifier, Requirements.Precomputed requirements) {
             this.unifier = unifier;
             this.requirements = requirements;
         }
@@ -166,7 +166,7 @@ public class Unifier {
             unifier.get(source).add(target);
         }
 
-        public Requirements requirements() {
+        public Requirements.Precomputed requirements() {
             return requirements;
         }
 
@@ -177,7 +177,7 @@ public class Unifier {
         public Builder duplicate() {
             Map<Identifier, Set<Identifier>> unifierCopy = new HashMap<>();
             unifier.forEach(((identifier, unifieds) -> unifierCopy.put(identifier, set(unifieds))));
-            Requirements requirementsCopy = requirements.duplicate();
+            Requirements.Precomputed requirementsCopy = requirements.duplicate();
             return new Builder(unifierCopy, requirementsCopy);
         }
     }
@@ -194,89 +194,111 @@ public class Unifier {
      as constraints we can use to rewrite queries that are unified with. This would be more efficient,
      but query rewriting was designed _out_ of our architecture, and will have to be carefully re-added.
      */
-    public static class Requirements {
-        Map<Identifier, Set<Label>> types;
-        Map<Identifier, Set<Label>> isaExplicit;
-        Map<Identifier, Function<Attribute, Boolean>> predicates;
+    public static abstract class Requirements {
 
-        public Requirements() {
-            this(new HashMap<>(), new HashMap<>(), new HashMap<>());
-        }
+        public static class Precomputed {
+            Map<Identifier, Set<Label>> types;
+            Map<Identifier, Set<Label>> isaExplicit;
+            Map<Identifier, Function<Attribute, Boolean>> predicates;
 
-        public Requirements(Map<Identifier, Set<Label>> types, Map<Identifier, Set<Label>> isaExplicit,
-                            Map<Identifier, Function<Attribute, Boolean>> predicates) {
-            this.types = types;
-            this.isaExplicit = isaExplicit;
-            this.predicates = predicates;
-        }
+            public Precomputed() {
+                this(new HashMap<>(), new HashMap<>(), new HashMap<>());
+            }
 
-        public boolean satisfiedBy(Map<Identifier, Concept> concepts) {
-            for (Map.Entry<Identifier, Concept> identifiedConcept : concepts.entrySet()) {
-                Identifier id = identifiedConcept.getKey();
-                Concept concept = identifiedConcept.getValue();
-                if (!(typesSatisfied(id, concept) && isaXSatisfied(id, concept) && predicatesSatisfied(id, concept))) {
-                    return false;
+            public Precomputed(Map<Identifier, Set<Label>> types, Map<Identifier, Set<Label>> isaExplicit,
+                                Map<Identifier, Function<Attribute, Boolean>> predicates) {
+                this.types = types;
+                this.isaExplicit = isaExplicit;
+                this.predicates = predicates;
+            }
+
+            public boolean satisfiedBy(Map<Identifier, Concept> concepts) {
+                for (Map.Entry<Identifier, Concept> identifiedConcept : concepts.entrySet()) {
+                    Identifier id = identifiedConcept.getKey();
+                    Concept concept = identifiedConcept.getValue();
+                    if (!(typesSatisfied(id, concept) && isaXSatisfied(id, concept) && predicatesSatisfied(id, concept))) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            private boolean typesSatisfied(Identifier id, Concept concept) {
+                if (types.containsKey(id)) {
+                    assert concept.isType();
+                    return types.get(id).contains(concept.asType().getLabel());
+                } else {
+                    return true;
                 }
             }
-            return true;
-        }
 
-        private boolean typesSatisfied(Identifier id, Concept concept) {
-            if (types.containsKey(id)) {
-                assert concept.isType();
-                return types.get(id).contains(concept.asType().getLabel());
-            } else {
-                return true;
+            private boolean isaXSatisfied(Identifier id, Concept concept) {
+                if (isaExplicit.containsKey(id)) {
+                    assert concept.isThing();
+                    return isaExplicit.get(id).contains(concept.asThing().getType().getLabel());
+                } else {
+                    return true;
+                }
+            }
+
+            private boolean predicatesSatisfied(Identifier id, Concept concept) {
+                if (predicates.containsKey(id)) {
+                    assert concept.isThing() && (concept.asThing() instanceof Attribute);
+                    return predicates.get(id).apply(concept.asAttribute());
+                } else {
+                    return true;
+                }
+            }
+
+            public void types(Identifier identifier, Set<Label> labels) {
+                assert !types.containsKey(identifier) || types.get(identifier).equals(labels);
+                types.put(identifier, set(labels));
+            }
+
+            public void isaExplicit(Identifier identifier, Set<Label> labels) {
+                assert !isaExplicit.containsKey(identifier) || isaExplicit.get(identifier).equals(labels);
+                isaExplicit.put(identifier, set(labels));
+            }
+
+            public void predicates(Identifier identifier, Function<Attribute, Boolean> predicateFn) {
+                assert !predicates.containsKey(identifier);
+                predicates.put(identifier, predicateFn);
+            }
+
+            public Map<Identifier, Set<Label>> types() { return types; }
+
+            public Map<Identifier, Set<Label>> isaExplicit() { return isaExplicit; }
+
+            public Map<Identifier, Function<Attribute, Boolean>> predicates() { return predicates; }
+
+            private Precomputed duplicate() {
+                Map<Identifier, Set<Label>> typesCopy = new HashMap<>();
+                Map<Identifier, Set<Label>> isaExplicitCopy = new HashMap<>();
+                Map<Identifier, Function<Attribute, Boolean>> predicatesCopy = new HashMap<>();
+                types.forEach(((identifier, labels) -> typesCopy.put(identifier, set(labels))));
+                isaExplicit.forEach(((identifier, labels) -> isaExplicitCopy.put(identifier, set(labels))));
+                predicates.forEach((predicatesCopy::put));
+                return new Precomputed(typesCopy, isaExplicitCopy, predicatesCopy);
             }
         }
 
-        private boolean isaXSatisfied(Identifier id, Concept concept) {
-            if (isaExplicit.containsKey(id)) {
-                assert concept.isThing();
-                return isaExplicit.get(id).contains(concept.asThing().getType().getLabel());
-            } else {
+        public static class Runtime {
+
+            Map<Identifier, Concept> concepts;
+
+            public Runtime(Map<Identifier, Concept> concepts) {
+                this.concepts = concepts;
+            }
+
+            public boolean satisfiedBy(Map<Identifier, Concept> toTest) {
+                for (Map.Entry<Identifier, Concept> entry : toTest.entrySet()) {
+                    Identifier id = entry.getKey();
+                    Concept concept = entry.getValue();
+                    Concept requiredConcept = concepts.get(id);
+                    if (requiredConcept != null && !requiredConcept.equals(concept)) return false;
+                }
                 return true;
             }
-        }
-
-        private boolean predicatesSatisfied(Identifier id, Concept concept) {
-            if (predicates.containsKey(id)) {
-                assert concept.isThing() && (concept.asThing() instanceof Attribute);
-                return predicates.get(id).apply(concept.asAttribute());
-            } else {
-                return true;
-            }
-        }
-
-        public void types(Identifier identifier, Set<Label> labels) {
-            assert !types.containsKey(identifier) || types.get(identifier).equals(labels);
-            types.put(identifier, set(labels));
-        }
-
-        public void isaExplicit(Identifier identifier, Set<Label> labels) {
-            assert !isaExplicit.containsKey(identifier) || isaExplicit.get(identifier).equals(labels);
-            isaExplicit.put(identifier, set(labels));
-        }
-
-        public void predicates(Identifier identifier, Function<Attribute, Boolean> predicateFn) {
-            assert !predicates.containsKey(identifier);
-            predicates.put(identifier, predicateFn);
-        }
-
-        public Map<Identifier, Set<Label>> types() { return types; }
-
-        public Map<Identifier, Set<Label>> isaExplicit() { return isaExplicit; }
-
-        public Map<Identifier, Function<Attribute, Boolean>> predicates() { return predicates; }
-
-        private Requirements duplicate() {
-            Map<Identifier, Set<Label>> typesCopy = new HashMap<>();
-            Map<Identifier, Set<Label>> isaExplicitCopy = new HashMap<>();
-            Map<Identifier, Function<Attribute, Boolean>> predicatesCopy = new HashMap<>();
-            types.forEach(((identifier, labels) -> typesCopy.put(identifier, set(labels))));
-            isaExplicit.forEach(((identifier, labels) -> isaExplicitCopy.put(identifier, set(labels))));
-            predicates.forEach((predicatesCopy::put));
-            return new Requirements(typesCopy, isaExplicitCopy, predicatesCopy);
         }
     }
 }
