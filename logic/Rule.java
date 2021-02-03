@@ -251,7 +251,7 @@ public class Rule {
 
         /**
          * Perform a put operation on the `then` of the rule. This may insert a new fact, or return an iterator of existing ones
-         * @param whenConcepts - the that satisfy the `when` of the rule. All named `then` variables must be in this map
+         * @param whenConcepts - the concepts that satisfy the `when` of the rule. All named `then` variables must be in this map
          * @param traversalEng - used to perform a traversal to find preexisting conclusions
          * @param conceptMgr - used to insert the conclusion if it doesn't already exist
          * @return - all possible conclusions: there may be multiple preexisting satisfactory conclusions, we return all
