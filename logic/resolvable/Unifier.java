@@ -78,7 +78,7 @@ public class Unifier {
                 }
             }
         }
-        return Optional.of(new Pair<>(conceptMap(unifiedMap), new Requirements.Instance(unifiedMap)));
+        return Optional.of(new Pair<>(conceptMap(unifiedMap), new Requirements.Instance(conceptMap.concepts())));
     }
 
     /**
@@ -288,18 +288,20 @@ public class Unifier {
 
         public static class Instance {
 
-            Map<Identifier, Concept> concepts;
+            Map<Reference.Name, ? extends Concept> concepts;
 
-            public Instance(Map<Identifier, Concept> concepts) {
+            public Instance(Map<Reference.Name, ? extends Concept> concepts) {
                 this.concepts = concepts;
             }
 
             public boolean satisfiedBy(Map<Identifier, Concept> toTest) {
-                for (Map.Entry<Identifier, Concept> entry : toTest.entrySet()) {
+                for (Map.Entry<Identifier, ? extends Concept> entry : toTest.entrySet()) {
                     Identifier id = entry.getKey();
-                    Concept concept = entry.getValue();
-                    Concept requiredConcept = concepts.get(id);
-                    if (requiredConcept != null && !requiredConcept.equals(concept)) return false;
+                    if (id.isName()) {
+                        Concept concept = entry.getValue();
+                        Concept requiredConcept = concepts.get(id.asVariable().reference().asName());
+                        if (requiredConcept != null && !requiredConcept.equals(concept)) return false;
+                    }
                 }
                 return true;
             }

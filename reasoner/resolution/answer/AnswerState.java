@@ -230,18 +230,18 @@ public abstract class AnswerState {
 
             private final UpstreamVars.Initial initial;
             private final Unifier unifier;
-            private final Unifier.Requirements.Instance runtimeRequirements;
+            private final Unifier.Requirements.Instance instanceRequirements;
 
             Unified(UpstreamVars.Initial initial, ConceptMap unifiedInitial, Unifier unifier,
-                    Unifier.Requirements.Instance runtimeRequirements) {
+                    Unifier.Requirements.Instance instanceRequirements) {
                 super(unifiedInitial);
                 this.initial = initial;
                 this.unifier = unifier;
-                this.runtimeRequirements = runtimeRequirements;
+                this.instanceRequirements = instanceRequirements;
             }
 
             public Optional<UpstreamVars.Derived> unifyToUpstream(Map<Identifier, Concept> identifiedConcepts) {
-                Optional<ConceptMap> reversed = unifier.unUnify(identifiedConcepts, runtimeRequirements);
+                Optional<ConceptMap> reversed = unifier.unUnify(identifiedConcepts, instanceRequirements);
                 return reversed.map(map -> new UpstreamVars.Derived(new ConceptMap(map.concepts()), initial, null));
             }
 
