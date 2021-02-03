@@ -95,7 +95,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             iids = newIIDs;
         }
 
-        return iterate(iids).flatMap(iid -> iterate(edges.get(iid).values()));
+        return iterate(iids).flatMap(iid -> iterate(edges.get(iid) != null ? edges.get(iid).values().iterator() : emptyIterator()));
     }
 
     @Override
@@ -139,13 +139,16 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             );
         }
 
-        Map<EdgeIID.Thing, ThingEdge> edgesByOutIID = edges.computeIfAbsent(infixIID, iid -> new ConcurrentHashMap<>());
-        if (edgesByOutIID.containsKey(edge.outIID())) {
+        edges.compute(infixIID, (iid, edgesByOutIID) -> {
+            if (edgesByOutIID == null) edgesByOutIID = new ConcurrentHashMap<>();
             ThingEdge thingEdge = edgesByOutIID.get(edge.outIID());
-            if (thingEdge.isInferred() && !edge.isInferred()) thingEdge.isInferred(false);
-        } else {
-            edgesByOutIID.put(edge.outIID(), edge);
-        }
+            if (thingEdge != null) {
+                if (thingEdge.isInferred() && !edge.isInferred()) thingEdge.isInferred(false);
+            } else {
+                edgesByOutIID.put(edge.outIID(), edge);
+            }
+            return edgesByOutIID;
+        });
 
         if (isModified) owner.setModified();
         if (isReflexive) {
