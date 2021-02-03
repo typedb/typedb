@@ -48,35 +48,39 @@ public final class ResolutionLogger {
         return INSTANCE;
     }
 
-    void request(Resolver<?> sender, Resolver<?> receiver, int iteration) {
-        addMessage(sender, receiver, iteration, EdgeType.REQUEST);
+    void request(Resolver<?> sender, Resolver<?> receiver, int iteration, String conceptMap) {
+        addMessage(sender, receiver, iteration, EdgeType.REQUEST, conceptMap);
     }
 
-    void responseAnswer(Resolver<?> sender, Resolver<?> receiver, int iteration) {
-        addMessage(sender, receiver, iteration, EdgeType.ANSWER);
+    void responseAnswer(Resolver<?> sender, Resolver<?> receiver, int iteration, String conceptMap) {
+        addMessage(sender, receiver, iteration, EdgeType.ANSWER, conceptMap);
     }
 
     void responseExhausted(Resolver<?> sender, Resolver<?> receiver, int iteration) {
-        addMessage(sender, receiver, iteration, EdgeType.EXHAUSTED);
+        addMessage(sender, receiver, iteration, EdgeType.EXHAUSTED, "");
     }
 
-    private void addMessage(Resolver<?> sender, Resolver<?> receiver, int iteration, EdgeType edgeType) {
+    private void addMessage(Resolver<?> sender, Resolver<?> receiver, int iteration, EdgeType edgeType, String conceptMap) {
         if (path.get() == null) initialise();
-        writeEdge(sender.name(), receiver.name(), iteration, edgeType.colour(), messageNumber);
+        writeEdge(sender.name(), receiver.name(), iteration, edgeType.colour(), messageNumber, conceptMap);
         messageNumber ++;
     }
 
-    private void writeEdge(String fromId, String toId, int iteration, String colour, int messageNumber) {
+    private void writeEdge(String fromId, String toId, int iteration, String colour, int messageNumber, String conceptMap) {
         write(String.format("%s -> %s [style=bold,label=%s,color=%s];",
-                            doubleQuotes(escapeNewlines(fromId)),
-                            doubleQuotes(escapeNewlines(toId)),
-                            "m" + messageNumber + "_it" + iteration,
+                            doubleQuotes(escapeNewlines(escapeDoubleQuotes(fromId))),
+                            doubleQuotes(escapeNewlines(escapeDoubleQuotes(toId))),
+                            doubleQuotes("m" + messageNumber + "_it" + iteration + "_" + conceptMap),
                             doubleQuotes(colour)));
 
     }
 
     private String escapeNewlines(String toFormat) {
         return toFormat.replaceAll("\n", "\\\\l") + "\\l";
+    }
+
+    private String escapeDoubleQuotes(String toFormat) {
+        return toFormat.replaceAll("\"", "\\\\\"");
     }
 
     private String doubleQuotes(String toFormat) {
