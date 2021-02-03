@@ -88,6 +88,7 @@ build:
       command: |
         bazel test //test/behaviour/graql/language/insert/... --test_output=streamed
         bazel test //test/behaviour/graql/language/delete/... --test_output=streamed
+        bazel test //test/behaviour/graql/language/update/... --test_output=streamed
     test-behaviour-definable:
       image: graknlabs-ubuntu-20.04
       command: |
