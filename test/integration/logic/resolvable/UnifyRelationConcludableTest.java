@@ -212,7 +212,7 @@ public class UnifyRelationConcludableTest {
                 pair(Identifier.Variable.label("employment"), employment.getType()),
                 pair(Identifier.Variable.label("employment:employee"), employment.getType().getRelates("employee"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
+        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Runtime(map()));
         assertTrue(unified.isPresent());
         assertEquals(2, unified.get().concepts().size());
         assertEquals(employment, unified.get().get("r"));
@@ -228,7 +228,7 @@ public class UnifyRelationConcludableTest {
                 pair(Identifier.Variable.label("employment"), friendship.getType()),
                 pair(Identifier.Variable.label("employment:employee"), friendship.getType().getRelates("friend"))
         );
-        unified = unifier.unUnify(identifiedConcepts);
+        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Runtime(map()));
         assertFalse(unified.isPresent());
     }
 
@@ -269,7 +269,7 @@ public class UnifyRelationConcludableTest {
                 pair(Identifier.Variable.label("employment"), employment.getType()),
                 pair(Identifier.Variable.label("employment:employee"), employment.getType().getRelates("employee"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
+        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Runtime(map()));
         assertTrue(unified.isPresent());
         assertEquals(2, unified.get().concepts().size());
         assertEquals(employment.getType(), unified.get().get("rel"));
@@ -285,7 +285,7 @@ public class UnifyRelationConcludableTest {
                 pair(Identifier.Variable.label("employment"), friendship.getType()),
                 pair(Identifier.Variable.label("employment:employee"), friendship.getType().getRelates("friend"))
         );
-        unified = unifier.unUnify(identifiedConcepts);
+        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Runtime(map()));
         assertFalse(unified.isPresent());
     }
 
@@ -326,7 +326,7 @@ public class UnifyRelationConcludableTest {
                 pair(Identifier.Variable.label("employment"), employment.getType()),
                 pair(Identifier.Variable.label("employment:employee"), employment.getType().getRelates("employee"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
+        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Runtime(map()));
         assertTrue(unified.isPresent());
         assertEquals(2, unified.get().concepts().size());
         assertEquals(employment.getType().getRelates("employee"), unified.get().get("role"));
@@ -342,7 +342,7 @@ public class UnifyRelationConcludableTest {
                 pair(Identifier.Variable.label("employment"), friendship.getType()),
                 pair(Identifier.Variable.label("employment:employee"), friendship.getType().getRelates("friend"))
         );
-        unified = unifier.unUnify(identifiedConcepts);
+        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Runtime(map()));
         assertFalse(unified.isPresent());
     }
 
@@ -558,7 +558,7 @@ public class UnifyRelationConcludableTest {
                 pair(Identifier.Variable.name("employment"), employment.getType()),
                 pair(Identifier.Variable.name("employee"), employment.getType().getRelates("employee"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
+        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Runtime(map()));
         assertTrue(unified.isPresent());
         assertEquals(1, unified.get().concepts().size());
         assertEquals(person, unified.get().get("p"));
@@ -576,7 +576,7 @@ public class UnifyRelationConcludableTest {
                 pair(Identifier.Variable.name("employment"), employment.getType()),
                 pair(Identifier.Variable.name("employee"), employment.getType().getRelates("employee"))
         );
-        unified = unifier.unUnify(identifiedConcepts);
+        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Runtime(map()));
         assertFalse(unified.isPresent());
     }
 
@@ -765,7 +765,7 @@ public class UnifyRelationConcludableTest {
                 pair(Identifier.Variable.name("employment"), employment.getType()),
                 pair(Identifier.Variable.name("employee"), employment.getType().getRelates("employee"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
+        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Runtime(map()));
         assertTrue(unified.isPresent());
         assertEquals(2, unified.get().concepts().size());
         assertEquals(person, unified.get().get("p"));

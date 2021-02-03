@@ -162,14 +162,14 @@ public class UnifyAttributeConcludableTest {
         Map<Identifier, Concept> identifiedConcepts = map(
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "john"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
+        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Runtime(map()));
         assertTrue(unified.isPresent());
         assertEquals(1, unified.get().concepts().size());
 
         identifiedConcepts = map(
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "abe"))
         );
-        unified = unifier.unUnify(identifiedConcepts);
+        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Runtime(map()));
         assertFalse(unified.isPresent());
 
     }

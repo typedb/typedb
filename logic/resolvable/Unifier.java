@@ -17,6 +17,7 @@
 
 package grakn.core.logic.resolvable;
 
+import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.Concept;
@@ -63,7 +64,7 @@ public class Unifier {
     the latter will never be valid as it is a contradiction, the former empty map is the result of the unifier's filtering
      */
 
-    public Optional<ConceptMap> unify(ConceptMap conceptMap) {
+    public Optional<Pair<ConceptMap, Requirements.Runtime>> unify(ConceptMap conceptMap) {
         Map<Identifier, Concept> unifiedMap = new HashMap<>();
 
         for (Map.Entry<Identifier, Set<Identifier>> entry : unifier.entrySet()) {
@@ -77,14 +78,14 @@ public class Unifier {
                 }
             }
         }
-        return Optional.of(conceptMap(unifiedMap));
+        return Optional.of(new Pair<>(conceptMap(unifiedMap), new Requirements.Runtime(unifiedMap)));
     }
 
     /**
      * Un-unify a map of concepts, with given identifiers. These must include anonymous and labelled concepts,
      * as they may be mapped to from a named variable, and may have requirements that need to be met.
      */
-    public Optional<ConceptMap> unUnify(Map<Identifier, Concept> identifiedConcepts) {
+    public Optional<ConceptMap> unUnify(Map<Identifier, Concept> identifiedConcepts, Requirements.Runtime runtimeRequirements) {
         Map<Identifier, Concept> reversedConcepts = new HashMap<>();
 
         for (Map.Entry<Identifier, Set<Identifier>> entry : unUnifier.entrySet()) {
@@ -100,8 +101,11 @@ public class Unifier {
             }
         }
 
-        if (requirements().satisfiedBy(reversedConcepts)) return Optional.of(conceptMap(reversedConcepts));
-        else return Optional.empty();
+        if (runtimeRequirements.satisfiedBy(reversedConcepts) && requirements().satisfiedBy(reversedConcepts)) {
+            return Optional.of(conceptMap(reversedConcepts));
+        } else {
+            return Optional.empty();
+        }
     }
 
     public Map<Identifier, Set<Identifier>> mapping() {

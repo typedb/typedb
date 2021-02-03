@@ -184,7 +184,7 @@ public class UnifyHasConcludableTest {
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "john"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
+        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Runtime(map()));
         assertTrue(unified.isPresent());
         assertEquals(1, unified.get().concepts().size());
 
@@ -193,7 +193,7 @@ public class UnifyHasConcludableTest {
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("age"))
         );
-        unified = unifier.unUnify(identifiedConcepts);
+        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Runtime(map()));
         assertFalse(unified.isPresent());
 
         // filter out invalid value
@@ -201,7 +201,7 @@ public class UnifyHasConcludableTest {
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "bob"))
         );
-        unified = unifier.unUnify(identifiedConcepts);
+        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Runtime(map()));
         assertFalse(unified.isPresent());
     }
 
@@ -234,7 +234,7 @@ public class UnifyHasConcludableTest {
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.name("a"), instanceOf("last-name", "john"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
+        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Runtime(map()));
         assertTrue(unified.isPresent());
         assertEquals(1, unified.get().concepts().size());
 
@@ -243,7 +243,7 @@ public class UnifyHasConcludableTest {
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.name("a"), instanceOf("age"))
         );
-        unified = unifier.unUnify(identifiedConcepts);
+        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Runtime(map()));
         assertFalse(unified.isPresent());
 
         // filter out invalid value
@@ -251,7 +251,7 @@ public class UnifyHasConcludableTest {
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.name("a"), instanceOf("first-name", "bob"))
         );
-        unified = unifier.unUnify(identifiedConcepts);
+        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Runtime(map()));
         assertFalse(unified.isPresent());
     }
 
@@ -285,7 +285,7 @@ public class UnifyHasConcludableTest {
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "john"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
+        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Runtime(map()));
         assertTrue(unified.isPresent());
         assertEquals(2, unified.get().concepts().size());
 
@@ -318,7 +318,7 @@ public class UnifyHasConcludableTest {
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.name("a"), instanceOf("last-name", "john"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
+        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Runtime(map()));
         assertTrue(unified.isPresent());
         assertEquals(2, unified.get().concepts().size());
 
@@ -357,7 +357,7 @@ public class UnifyHasConcludableTest {
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "john"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
+        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Runtime(map()));
         assertTrue(unified.isPresent());
         assertEquals(2, unified.get().concepts().size());
 
@@ -366,7 +366,7 @@ public class UnifyHasConcludableTest {
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("age"))
         );
-        unified = unifier.unUnify(identifiedConcepts);
+        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Runtime(map()));
         assertFalse(unified.isPresent());
     }
 
@@ -399,7 +399,7 @@ public class UnifyHasConcludableTest {
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.name("a"), instanceOf("first-name", "john"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
+        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Runtime(map()));
         assertTrue(unified.isPresent());
         assertEquals(2, unified.get().concepts().size());
 
@@ -408,7 +408,7 @@ public class UnifyHasConcludableTest {
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.name("a"), instanceOf("age"))
         );
-        unified = unifier.unUnify(identifiedConcepts);
+        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Runtime(map()));
         assertFalse(unified.isPresent());
     }
 
@@ -457,7 +457,7 @@ public class UnifyHasConcludableTest {
                 pair(Identifier.Variable.name("x"), instanceOf("self-owning-attribute")),
                 pair(Identifier.Variable.anon(0), instanceOf("self-owning-attribute"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
+        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Runtime(map()));
         assertTrue(unified.isPresent());
         assertEquals(1, unified.get().concepts().size());
 
@@ -466,7 +466,7 @@ public class UnifyHasConcludableTest {
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("age"))
         );
-        unified = unifier.unUnify(identifiedConcepts);
+        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Runtime(map()));
         assertFalse(unified.isPresent());
     }
 
