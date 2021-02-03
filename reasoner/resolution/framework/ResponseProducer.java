@@ -20,18 +20,17 @@ package grakn.core.reasoner.resolution.framework;
 
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.type.RelationType;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 
 public class ResponseProducer {
     private final Set<ConceptMap> produced;
-    private final ResourceIterator<AnswerState.UpstreamVars.Derived> traversalProducer;
+    private final ResourceIterator<AnswerState.UpstreamVars.Derived> newUpstreamAnswers;
     private final LinkedHashSet<Request> downstreamProducer;
     private final int iteration;
     private Iterator<Request> downstreamProducerSelector;
@@ -41,7 +40,7 @@ public class ResponseProducer {
     }
 
     private ResponseProducer(ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers, int iteration, Set<ConceptMap> produced) {
-        this.traversalProducer = upstreamAnswers.filter(derived -> !hasProduced(derived.withInitialFiltered()));
+        this.newUpstreamAnswers = upstreamAnswers.filter(derived -> !hasProduced(derived.withInitialFiltered()));
         this.iteration = iteration;
         this.produced = produced;
         downstreamProducer = new LinkedHashSet<>();
@@ -57,11 +56,11 @@ public class ResponseProducer {
     }
 
     public boolean hasUpstreamAnswer() {
-        return traversalProducer.hasNext();
+        return newUpstreamAnswers.hasNext();
     }
 
     public Iterator<AnswerState.UpstreamVars.Derived> upstreamAnswers() {
-        return traversalProducer;
+        return newUpstreamAnswers;
     }
 
     public boolean hasDownstreamProducer() {
