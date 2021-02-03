@@ -40,9 +40,9 @@
         </rollingPolicy>
     </appender>
 
-    <root level="DEBUG"/>
+    <root level="INFO"/>
 
-    <!--    <logger name="grakn.core.server.rpc" level="DEBUG" />-->
+    <logger name="grakn.core.reasoner" level="TRACE" />
 
     <!--
     TRACE: (Extremely verbose reporting events that gives complete traceability of a server operation)
@@ -51,7 +51,7 @@
     WARN:  (Unexpected events that are not recommended to have happened)
     ERROR: (Incorrect events that disrupts the server operation, against user expectation)
     -->
-    <logger name="grakn.core" level="DEBUG">
+    <logger name="grakn.core" level="INFO">
         <appender-ref ref="LOGFILE"/>
         <appender-ref ref="STDOUT"/>
     </logger>
