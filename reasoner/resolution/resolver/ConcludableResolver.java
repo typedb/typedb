@@ -170,11 +170,10 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
         iterationStates.putIfAbsent(root, new IterationState(iteration));
         IterationState iterationState = iterationStates.get(root);
 
-        Traversal traversal = boundTraversal(concludable.conjunction().traversal(), fromUpstream.partialAnswer().conceptMap());
         assert fromUpstream.partialAnswer().isMapped();
-        ResourceIterator<UpstreamVars.Derived> upstreamAnswers = traversalEngine.iterator(traversal)
-                .map(conceptMgr::conceptMap)
-                .map(conceptMap -> fromUpstream.partialAnswer().asMapped().mapToUpstream(conceptMap));
+        ResourceIterator<UpstreamVars.Derived> upstreamAnswers =
+                compatibleBoundAnswers(conceptMgr, concludable.conjunction(), fromUpstream.partialAnswer().conceptMap())
+                        .map(conceptMap -> fromUpstream.partialAnswer().asMapped().mapToUpstream(conceptMap));
 
         ResponseProducer responseProducer = new ResponseProducer(upstreamAnswers, iteration);
         mayRegisterRules(fromUpstream, iterationState, responseProducer);
@@ -194,10 +193,9 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
             iterationState.nextIteration(newIteration);
         }
 
-        Traversal traversal = boundTraversal(concludable.conjunction().traversal(), fromUpstream.partialAnswer().conceptMap());
         assert fromUpstream.partialAnswer().isMapped();
-        ResourceIterator<UpstreamVars.Derived> upstreamAnswers = traversalEngine.iterator(traversal)
-                .map(conceptMgr::conceptMap)
+        ResourceIterator<UpstreamVars.Derived> upstreamAnswers =
+                compatibleBoundAnswers(conceptMgr, concludable.conjunction(), fromUpstream.partialAnswer().conceptMap())
                 .map(conceptMap -> fromUpstream.partialAnswer().asMapped().mapToUpstream(conceptMap));
 
         ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(upstreamAnswers, newIteration);

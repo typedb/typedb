@@ -180,8 +180,8 @@ public class RuleResolver extends Resolver<RuleResolver> {
 
     @Override
     protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
-        Traversal traversal = boundTraversal(rule.when().traversal(), fromUpstream.partialAnswer().conceptMap());
-        ResourceIterator<UpstreamVars.Derived> upstreamAnswers = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap)
+        assert fromUpstream.partialAnswer().isUnified();
+        ResourceIterator<UpstreamVars.Derived> upstreamAnswers = compatibleBoundAnswers(conceptMgr, rule.when(), fromUpstream.partialAnswer().conceptMap())
                 .flatMap(whenAnswer -> materialisations(fromUpstream, whenAnswer));
         ResponseProducer responseProducer = new ResponseProducer(upstreamAnswers, iteration);
 
@@ -200,8 +200,9 @@ public class RuleResolver extends Resolver<RuleResolver> {
         assert newIteration > responseProducerPrevious.iteration();
         LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
 
-        Traversal traversal = boundTraversal(rule.when().traversal(), fromUpstream.partialAnswer().conceptMap());
-        ResourceIterator<UpstreamVars.Derived> upstreamAnswers = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap)
+        assert fromUpstream.partialAnswer().isUnified();
+        ResourceIterator<UpstreamVars.Derived> upstreamAnswers =
+                compatibleBoundAnswers(conceptMgr, rule.when(), fromUpstream.partialAnswer().conceptMap())
                 .flatMap(whenAnswer -> materialisations(fromUpstream, whenAnswer));
         ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(upstreamAnswers, newIteration);
 
