@@ -291,7 +291,7 @@ public class Traversal {
     }
 
     public void filter(Set<Identifier.Variable.Name> filter) {
-        assert modifiable && !filter.isEmpty();
+        assert modifiable;
         this.filter.addAll(filter);
     }
 
