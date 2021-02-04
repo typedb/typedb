@@ -21,16 +21,18 @@ package grakn.core.rocks;
 import grakn.core.Grakn;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.thing.Attribute;
 import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
-import graql.lang.query.GraqlDefine;
-import graql.lang.query.GraqlInsert;
+import graql.lang.query.GraqlQuery;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
@@ -48,41 +50,68 @@ public class StatisticsTest {
             grakn.databases().create(database);
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    GraqlDefine query = Graql.parseQuery("" +
+                    GraqlQuery query = Graql.parseQuery("" +
                             "define " +
                             "person sub entity, owns age; " +
                             "age sub attribute, value long; " +
                             "");
-                    tx.query().define(query);
+                    tx.query().define(query.asDefine());
                     tx.commit();
                 }
             }
-            int personCount = 1000;
+            int personCount = 1;
             Random random = new Random(0);
             Set<Long> ages = new HashSet<>();
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
                 try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     for (int i = 0; i < personCount; i++) {
-                        long age = random.nextLong() % personCount;
+                        long age = random.nextInt(personCount);
                         ages.add(age);
-                        GraqlInsert query = Graql.parseQuery("insert $x isa person, has age " + age + ";").asInsert();
-                        tx.query().insert(query);
+                        GraqlQuery query = Graql.parseQuery("insert $x isa person, has age " + age + ";").asInsert();
+                        tx.query().insert(query.asInsert());
                     }
                     tx.commit();
                 }
             }
-            try {
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            waitForStatisticsCounter();
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
                 try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
-                    assertEquals(tx.graphMgr.data().stats().thingVertexCount(Label.of("person")), personCount);
-                    assertEquals(tx.graphMgr.data().stats().thingVertexCount(Label.of("age")), ages.size());
-                    assertEquals(tx.graphMgr.data().stats().hasEdgeCount(Label.of("person"), Label.of("age")), personCount);
+                    assertEquals(personCount, tx.graphMgr.data().stats().thingVertexCount(Label.of("person")));
+                    assertEquals(ages.size(), tx.graphMgr.data().stats().thingVertexCount(Label.of("age")));
+                    assertEquals(personCount, tx.graphMgr.data().stats().hasEdgeCount(Label.of("person"), Label.of("age")));
                 }
             }
+            try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+                try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    GraqlQuery query = Graql.parseQuery("match $x isa person, has age $y;");
+                    List<ConceptMap> conceptMaps = tx.query().match(query.asMatch()).toList();
+                    conceptMaps.forEach(cm -> {
+                        Attribute.Long attribute = cm.get("y").asAttribute().asLong();
+                        cm.get("x").asEntity().unsetHas(attribute);
+                        long newAge = attribute.getValue() + 1;
+                        Attribute.Long newAttribute = attribute.getType().asLong().put(newAge);
+                        cm.get("x").asEntity().setHas(newAttribute);
+                        ages.add(newAge);
+                    });
+                    tx.commit();
+                }
+            }
+            waitForStatisticsCounter();
+            try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+                try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
+                    assertEquals(personCount, tx.graphMgr.data().stats().thingVertexCount(Label.of("person")));
+                    assertEquals(ages.size(), tx.graphMgr.data().stats().thingVertexCount(Label.of("age")));
+                    assertEquals(personCount, tx.graphMgr.data().stats().hasEdgeCount(Label.of("person"), Label.of("age")));
+                }
+            }
+        }
+    }
+
+    private void waitForStatisticsCounter() {
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 }
