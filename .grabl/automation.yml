@@ -184,6 +184,8 @@ release:
         owner: graknlabs
         branch: master
       command: |
+        pyenv install -s 3.6.10
+        pyenv global 3.6.10 system
         pip install certifi
         export RELEASE_NOTES_TOKEN=$REPO_GITHUB_TOKEN
         bazel run @graknlabs_dependencies//tool/release:create-notes -- grakn $(cat VERSION) ./RELEASE_TEMPLATE.md
