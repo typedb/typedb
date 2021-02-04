@@ -52,6 +52,7 @@ public class VariableCloner {
     public ThingVariable clone(ThingVariable variable) {
         assert variable.id().isVariable();
         ThingVariable newClone = variables.computeIfAbsent(variable.id().asVariable(), ThingVariable::new).asThing();
+        newClone.setResolvedTypes(variable.resolvedTypes());
         newClone.constrainClone(variable, this);
         return newClone;
     }
@@ -59,6 +60,7 @@ public class VariableCloner {
     public TypeVariable clone(TypeVariable variable) {
         assert variable.id().isVariable();
         TypeVariable newClone = variables.computeIfAbsent(variable.id().asVariable(), TypeVariable::new).asType();
+        newClone.setResolvedTypes(variable.resolvedTypes());
         newClone.constrainClone(variable, this);
         return newClone;
     }
