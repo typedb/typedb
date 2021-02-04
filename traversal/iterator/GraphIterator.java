@@ -70,11 +70,18 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
         this.filter = filter;
         this.edgeCount = procedure.edgesCount();
         this.iterators = new HashMap<>();
-        this.answer = new HashMap<>();
-        this.answer.put(procedure.startVertex().id(), start);
         this.scopes = new Scopes();
         this.seekStack = new SeekStack(edgeCount);
         this.state = State.INIT;
+        this.answer = new HashMap<>();
+
+        Identifier startId = procedure.startVertex().id();
+        this.answer.put(startId, start);
+        if (startId.isScoped()) {
+            Identifier.Variable scope = startId.asScoped().scope();
+            Scopes.Scoped scoped = scopes.getOrInitialise(scope);
+            scoped.push(start.asThing(), 0);
+        }
     }
 
     @Override
@@ -269,11 +276,6 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
                     return true;
                 }
             });
-        } else if (edge.from().id().isScoped()) {
-            Identifier.Variable scope = edge.from().id().asScoped().scope();
-            Scopes.Scoped scoped = scopes.getOrInitialise(scope);
-            scoped.push(fromVertex.asThing(), edge.order());
-            toIter = edge.branch(graphMgr, fromVertex, params);
         } else if (edge.isRolePlayer()) {
             Identifier.Variable scope = edge.asRolePlayer().scope();
             Scopes.Scoped scoped = scopes.getOrInitialise(scope);
@@ -306,10 +308,10 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
         if (edge.to().id().isScoped()) {
             Identifier.Variable scope = edge.to().id().asScoped().scope();
             if (scopes.get(scope).orderVisited(pos)) scopes.get(scope).popLast();
-        } else if (edge.from().id().isScoped()) {
-            Identifier.Variable scope = edge.from().id().asScoped().scope();
-            assert scopes.get(scope).orderVisited(pos);
-            scopes.get(scope).popLast();
+//        } else if (edge.from().id().isScoped()) {
+//            Identifier.Variable scope = edge.from().id().asScoped().scope();
+//            assert scopes.get(scope).orderVisited(pos);
+//            scopes.get(scope).popLast();
         } else if (edge.isRolePlayer()) {
             Identifier.Variable scope = edge.asRolePlayer().scope();
             if (scopes.get(scope).orderVisited(pos)) scopes.get(scope).popLast();
