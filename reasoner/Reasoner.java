@@ -133,10 +133,6 @@ public class Reasoner {
         return iterator(conjunction, bounds, set(), defaultContext);
     }
 
-    private ResourceIterator<ConceptMap> iterator(Conjunction conjunction, ConceptMap bounds, Context.Query queryContext) {
-        return iterator(conjunction, bounds, set(), queryContext);
-    }
-
     private ResourceIterator<ConceptMap> iterator(Conjunction conjunction, ConceptMap bounds, Set<Identifier.Variable.Name> filter,
                                                   Context.Query context) {
         ResourceIterator<ConceptMap> answers;

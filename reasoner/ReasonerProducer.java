@@ -46,15 +46,17 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private final Actor<RootResolver> rootResolver;
     private final Set<Reference.Name> filter;
     private Queue<ConceptMap> queue;
+    private ConceptMap bounds;
     private Request resolveRequest;
     private boolean iterationInferredAnswer;
     private boolean done;
     private int iteration;
 
     public ReasonerProducer(Conjunction conjunction, Set<Identifier.Variable.Name> idFilter, ConceptMap bounds, ResolverRegistry resolverMgr) {
+        this.bounds = bounds;
         this.rootResolver = resolverMgr.createRoot(conjunction, this::requestAnswered, this::requestExhausted);
         this.filter = iterate(idFilter).map(Identifier.Variable.Name::reference).toSet();
-        this.resolveRequest = Request.create(new Request.Path(rootResolver), Root.create(), EMPTY, filter);
+        this.resolveRequest = Request.create(new Request.Path(rootResolver), new Root(bounds), EMPTY, filter);
         this.queue = null;
         this.iteration = 0;
         this.done = false;
@@ -100,7 +102,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private void prepareNextIteration() {
         iteration++;
         iterationInferredAnswer = false;
-        resolveRequest = Request.create(new Request.Path(rootResolver), Root.create(), EMPTY, filter);
+        resolveRequest = Request.create(new Request.Path(rootResolver), new Root(bounds), EMPTY, filter);
     }
 
     private boolean mustReiterate() {

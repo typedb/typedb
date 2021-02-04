@@ -128,8 +128,8 @@ public class RootResolver extends Resolver<RootResolver> {
 
         ConceptMap conceptMap = fromDownstream.answer().derived().withInitialFiltered();
         if (fromDownstream.planIndex() == plan.size() - 1) {
-            assert fromUpstream.filter().isPresent();
-            AnswerState.UpstreamVars.Derived answer = AnswerState.DownstreamVars.Root.create()
+            assert fromUpstream.filter().isPresent() && fromUpstream.partialAnswer().isRoot();
+            AnswerState.UpstreamVars.Derived answer = fromUpstream.partialAnswer().asRoot()
                     .aggregateToUpstream(conceptMap, fromUpstream.filter().get());
             ConceptMap filteredMap = answer.withInitialFiltered();
             if (!responseProducer.hasProduced(filteredMap)) {

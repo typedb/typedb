@@ -18,6 +18,7 @@
 package grakn.core.reasoner;
 
 import grakn.core.common.parameters.Arguments;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.actor.EventLoopGroup;
 import grakn.core.pattern.Conjunction;
@@ -362,7 +363,7 @@ public class ResolutionTest {
                 for (int i = 0; i < answerCount; i++) {
                     root.tell(actor ->
                                       actor.receiveRequest(
-                                              Request.create(new Request.Path(root), DownstreamVars.Root.create(), null),
+                                              Request.create(new Request.Path(root), new DownstreamVars.Root(new ConceptMap()), null),
                                               0)
                     );
                     ResolutionAnswer answer = responses.take();
@@ -414,7 +415,7 @@ public class ResolutionTest {
         long n = answerCount + 1; //total number of traversal answers, plus one expected Exhausted (-1 answer)
         for (int i = 0; i < n; i++) {
             root.tell(actor -> actor.receiveRequest(Request.create(
-                    new Request.Path(root), DownstreamVars.Root.create(), ResolutionAnswer.Derivation.EMPTY, filter
+                    new Request.Path(root), new DownstreamVars.Root(new ConceptMap()), ResolutionAnswer.Derivation.EMPTY, filter
             ), 0));
         }
         int answersFound = 0;

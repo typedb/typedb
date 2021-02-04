@@ -157,13 +157,8 @@ public abstract class AnswerState {
 
         public static class Root extends DownstreamVars {
 
-            Root(ConceptMap conceptMap) {
+            public Root(ConceptMap conceptMap) {
                 super(conceptMap);
-            }
-
-            public static Root create() {
-                // This is the entry-point answer state for the request received by the root resolver
-                return new Root(new ConceptMap());
             }
 
             public UpstreamVars.Derived aggregateToUpstream(ConceptMap conceptMap, Set<Reference.Name> filter) {
