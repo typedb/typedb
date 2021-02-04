@@ -56,6 +56,7 @@ native_java_libraries(
     ],
     native_libraries_deps = [
         "//traversal:traversal",
+#        "//logic:logic",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-query-pattern:{pom_version}"],
 )

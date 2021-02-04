@@ -127,7 +127,7 @@ public class ReasonerTest {
                 txn.commit();
             }
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
-                List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $x has is-still-good $a; limit 1;").asMatch()).toList();
+                List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $x has is-still-good $a;").asMatch()).toList();
 
                 ans.iterator().forEachRemaining(a -> {
                     assertFalse(a.get("a").asAttribute().asBoolean().getValue());
