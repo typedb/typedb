@@ -96,8 +96,12 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
 
     protected Traversal boundTraversal(Traversal traversal, ConceptMap bounds) {
         bounds.concepts().forEach((ref, concept) -> {
-            if (concept.isThing()) traversal.iid(Identifier.Variable.of(ref), concept.asThing().getIID());
-            else traversal.labels(Identifier.Variable.of(ref), concept.asType().getLabel());
+            Identifier.Variable.Name id = Identifier.Variable.of(ref);
+            if (concept.isThing()) traversal.iid(id, concept.asThing().getIID());
+            else {
+                traversal.clearLabels(id);
+                traversal.labels(id, concept.asType().getLabel());
+            }
         });
         return traversal;
     }
