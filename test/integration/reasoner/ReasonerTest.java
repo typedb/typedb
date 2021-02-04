@@ -51,7 +51,7 @@ public class ReasonerTest {
     private static RocksGrakn grakn;
 
     private RocksTransaction singleThreadElgTransaction(RocksSession session, Arguments.Transaction.Type transactionType) {
-        RocksTransaction transaction = session.transaction(transactionType, new Options.Transaction().infer(true));
+        RocksTransaction transaction = session.transaction(transactionType, new Options.Transaction().infer(true), false);
         transaction.reasoner().resolverRegistry().setEventLoopGroup(new EventLoopGroup(1));
         return transaction;
     }

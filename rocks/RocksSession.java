@@ -91,7 +91,7 @@ public abstract class RocksSession implements Grakn.Session {
     public abstract RocksTransaction transaction(Arguments.Transaction.Type type);
 
     @Override
-    public abstract RocksTransaction transaction(Arguments.Transaction.Type type, Options.Transaction options);
+    public abstract RocksTransaction transaction(Arguments.Transaction.Type type, Options.Transaction options, boolean internal);
 
     @Override
     public UUID uuid() {
@@ -134,11 +134,11 @@ public abstract class RocksSession implements Grakn.Session {
 
         @Override
         public RocksTransaction.Schema transaction(Arguments.Transaction.Type type) {
-            return transaction(type, new Options.Transaction());
+            return transaction(type, new Options.Transaction(), false);
         }
 
         @Override
-        public RocksTransaction.Schema transaction(Arguments.Transaction.Type type, Options.Transaction options) {
+        public RocksTransaction.Schema transaction(Arguments.Transaction.Type type, Options.Transaction options, boolean internal) {
             if (!isOpen.get()) throw GraknException.of(SESSION_CLOSED);
             if (type.isWrite()) {
                 try {
@@ -149,7 +149,12 @@ public abstract class RocksSession implements Grakn.Session {
                     throw GraknException.of(e);
                 }
             }
-            RocksTransaction.Schema transaction = txSchemaFactory.transaction(this, type, options);
+            RocksTransaction.Schema transaction;
+            if (internal) {
+                transaction = txSchemaFactory.transactionInternal(this, type, options);
+            } else {
+                transaction = txSchemaFactory.transaction(this, type, options);
+            }
             transactions.put(transaction, 0L);
             return transaction;
 
@@ -183,11 +188,11 @@ public abstract class RocksSession implements Grakn.Session {
 
         @Override
         public RocksTransaction.Data transaction(Arguments.Transaction.Type type) {
-            return transaction(type, new Options.Transaction());
+            return transaction(type, new Options.Transaction(), false);
         }
 
         @Override
-        public RocksTransaction.Data transaction(Arguments.Transaction.Type type, Options.Transaction options) {
+        public RocksTransaction.Data transaction(Arguments.Transaction.Type type, Options.Transaction options, boolean internal) {
             if (!isOpen.get()) throw GraknException.of(SESSION_CLOSED);
             long lock;
             try {
