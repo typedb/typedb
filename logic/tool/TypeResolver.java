@@ -64,6 +64,7 @@ import static grakn.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_NOT_FO
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static graql.lang.common.GraqlToken.Type.ATTRIBUTE;
+import static graql.lang.common.GraqlToken.Type.THING;
 
 public class TypeResolver {
 
@@ -155,6 +156,7 @@ public class TypeResolver {
 
         private static final Identifier.Variable ROOT_ATTRIBUTE_ID = Identifier.Variable.of(Reference.label(ATTRIBUTE.toString()));
         private static final Label ROOT_ATTRIBUTE_LABEL = Label.of(ATTRIBUTE.toString());
+        private static final Label ROOT_THING_LABEL = Label.of(THING.toString());
         private final Map<Reference, Variable> variableRegister;
         private final Map<Identifier, TypeVariable> resolverRegister;
         private final Map<Identifier, Set<ValueType>> valueTypeRegister;
@@ -347,8 +349,9 @@ public class TypeResolver {
                 registerRootAttribute();
                 traversal.sub(resolver.id(), ROOT_ATTRIBUTE_ID, true);
             } else {
-                Optional<LabelConstraint> label = isa.get().type().label();
-                if (label.isPresent() && !label.get().properLabel().equals(ROOT_ATTRIBUTE_LABEL)) {
+                Optional<LabelConstraint> labelCons = isa.get().type().label();
+                if (labelCons.isPresent() && !labelCons.get().properLabel().equals(ROOT_ATTRIBUTE_LABEL) &&
+                        !labelCons.get().properLabel().equals(ROOT_THING_LABEL)) {
                     registerRootAttribute();
                     traversal.sub(register(isa.get().type()).id(), ROOT_ATTRIBUTE_ID, true);
                 }
