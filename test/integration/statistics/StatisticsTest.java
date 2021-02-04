@@ -91,6 +91,7 @@ public class StatisticsTest {
                         long newAge = attribute.getValue() + 1;
                         Attribute.Long newAttribute = attribute.getType().asLong().put(newAge);
                         cm.get("x").asEntity().setHas(newAttribute);
+                        cm.get("x").asEntity().setHas(newAttribute);
                         ages.add(newAge);
                     });
                     tx.commit();
