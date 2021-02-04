@@ -49,7 +49,7 @@ public class StatisticsTest {
         try (RocksGrakn grakn = RocksGrakn.open(directory)) {
             grakn.databases().create(database);
             setupSchema(grakn);
-            int personCount = 1;
+            int personCount = 1000;
             Set<Long> ages = new HashSet<>();
             Random random = new Random(0);
             insertPersonAndAges(grakn, personCount, ages, random);
