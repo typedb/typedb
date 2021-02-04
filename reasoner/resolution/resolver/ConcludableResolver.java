@@ -105,8 +105,9 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
         ResponseProducer responseProducer = responseProducers.get(fromUpstream);
 
         ConceptMap conceptMap = fromDownstream.answer().derived().withInitialFiltered();
-        if (!responseProducer.hasProduced(conceptMap)) {
-            responseProducer.recordProduced(conceptMap);
+        UpstreamVars.Derived upstreamAnswer = fromUpstream.partialAnswer().asMapped().mapToUpstream(conceptMap);
+        if (!responseProducer.hasProduced(upstreamAnswer.withInitialFiltered())) {
+            responseProducer.recordProduced(upstreamAnswer.withInitialFiltered());
 
             ResolutionAnswer.Derivation derivation;
             if (explanations()) { // TODO this way of turning explanations on and off is both error prone and unelegant - can we centralise?
@@ -117,8 +118,8 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
                 derivation = null;
             }
 
-            ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.partialAnswer().asMapped().mapToUpstream(conceptMap),
-                                                           concludable.toString(), derivation, self(), fromDownstream.answer().isInferred());
+            ResolutionAnswer answer = new ResolutionAnswer(upstreamAnswer, concludable.toString(), derivation, self(),
+                                                           fromDownstream.answer().isInferred());
 
             respondToUpstream(Answer.create(fromUpstream, answer), iteration);
         } else {
