@@ -29,6 +29,7 @@ import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.Type;
 import grakn.core.test.behaviour.exception.ScenarioDefinitionException;
 import graql.lang.Graql;
+import graql.lang.common.exception.GraqlException;
 import graql.lang.pattern.variable.Reference;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
@@ -58,6 +59,7 @@ import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class GraqlSteps {
 
@@ -149,9 +151,16 @@ public class GraqlSteps {
 
     @When("get answers of graql match")
     public void graql_match(String graqlQueryStatements) {
-        GraqlMatch graqlQuery = Graql.parseQuery(String.join("\n", graqlQueryStatements)).asMatch();
-        clearAnswers();
-        answers = tx().query().match(graqlQuery).toList();
+        try {
+            GraqlMatch graqlQuery = Graql.parseQuery(String.join("\n", graqlQueryStatements)).asMatch();
+            clearAnswers();
+            answers = tx().query().match(graqlQuery).toList();
+        } catch (GraqlException e) {
+            // NOTE: We manually close transaction here, because we want to align with all non-java clients,
+            // where parsing happens at server-side which closes transaction if they fail
+            tx().close();
+            throw e;
+        }
     }
 
     @When("graql match; throws exception")
