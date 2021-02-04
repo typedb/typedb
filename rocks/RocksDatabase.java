@@ -126,8 +126,8 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     protected void load() {
-        try (RocksSession session = createAndOpenSession(SCHEMA, new Options.Session())) {
-            try (RocksTransaction txn = session.transaction(READ)) {
+        try (RocksSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
+            try (RocksTransaction.Schema txn = transactionSchemaFactory.transactionInternal(session, READ, new Options.Transaction())) {
                 schemaKeyGenerator.sync(txn.asSchema().schemaStorage());
                 dataKeyGenerator.sync(txn.asSchema().dataStorage());
             }
