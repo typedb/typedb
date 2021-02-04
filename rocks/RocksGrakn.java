@@ -24,7 +24,7 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
-import grakn.core.concurrent.common.ExecutorService;
+import grakn.core.concurrent.common.Executors;
 import org.rocksdb.RocksDB;
 import org.rocksdb.UInt64AddOperator;
 
@@ -51,16 +51,13 @@ public class RocksGrakn implements Grakn {
     private final AtomicBoolean isOpen;
 
     protected RocksGrakn(Path directory, Options.Database options, Factory.DatabaseManager databaseMgrFactory) {
+        if (!Executors.isInitialised()) Executors.initialise(MAX_THREADS);
         this.directory = directory;
         this.options = options;
+        this.rocksConfig = new org.rocksdb.Options().setCreateIfMissing(true).setMergeOperator(new UInt64AddOperator());
         this.databaseMgr = databaseMgrFactory.databaseManager(this);
-        this.rocksConfig = new org.rocksdb.Options()
-                .setCreateIfMissing(true)
-                .setMergeOperator(new UInt64AddOperator());
-
-        ExecutorService.init(MAX_THREADS);
-        databaseMgr.loadAll();
-        isOpen = new AtomicBoolean(true);
+        this.databaseMgr.loadAll();
+        this.isOpen = new AtomicBoolean(true);
     }
 
     public static RocksGrakn open(Path directory) {

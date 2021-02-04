@@ -19,7 +19,9 @@
 package grakn.core.pattern;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
+import grakn.common.collection.Either;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.parameters.Label;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
@@ -30,17 +32,18 @@ import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.Conjunctable;
 import graql.lang.pattern.variable.BoundVariable;
+import graql.lang.pattern.variable.Reference;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -48,6 +51,7 @@ import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.UNBOUNDED_NEGATION;
+import static grakn.core.common.exception.ErrorMessage.ThingRead.CONTRADICTORY_BOUND_VARIABLE;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static graql.lang.common.GraqlToken.Char.NEW_LINE;
 import static graql.lang.common.GraqlToken.Char.SEMICOLON;
@@ -64,6 +68,7 @@ public class Conjunction implements Pattern, Cloneable {
     private final int hash;
 
     private boolean isSatisfiable;
+    private boolean isBounded;
 
     public Conjunction(Set<Variable> variables, Set<Negation> negations) {
         this.variableSet = unmodifiableSet(variables);
@@ -71,6 +76,7 @@ public class Conjunction implements Pattern, Cloneable {
         this.negations = unmodifiableSet(negations);
         this.hash = Objects.hash(variables, negations);
         this.isSatisfiable = true;
+        this.isBounded = false;
     }
 
     private Map<Identifier.Variable, Variable> parseToMap(Set<Variable> variables) {
@@ -103,6 +109,19 @@ public class Conjunction implements Pattern, Cloneable {
         }
     }
 
+    public void bound(Map<Reference.Name, Either<Label, byte[]>> bounds) {
+        variableSet.forEach(var -> {
+            if (var.id().isName() && bounds.containsKey(var.id().reference().asName())) {
+                Either<Label, byte[]> boundVar = bounds.get(var.id().reference().asName());
+                if (var.isType() != boundVar.isFirst()) throw GraknException.of(CONTRADICTORY_BOUND_VARIABLE, var);
+                else if (var.isType()) var.asType().label(boundVar.first());
+                else if (var.isThing()) var.asThing().iid(boundVar.second());
+                else throw GraknException.of(ILLEGAL_STATE);
+            }
+        });
+        isBounded = true;
+    }
+
     public Variable variable(Identifier.Variable identifier) {
         return variableMap.get(identifier);
     }
@@ -115,7 +134,7 @@ public class Conjunction implements Pattern, Cloneable {
         return negations;
     }
 
-    public Traversal traversal(List<Identifier.Variable.Name> filter) {
+    public Traversal traversal(Set<Identifier.Variable.Name> filter) {
         Traversal traversal = new Traversal();
         variableSet.forEach(variable -> variable.addTo(traversal));
         assert iterate(filter).allMatch(variableMap::containsKey);
@@ -124,14 +143,7 @@ public class Conjunction implements Pattern, Cloneable {
     }
 
     public Traversal traversal() {
-        return traversal(new ArrayList<>());
-    }
-
-    private boolean printable(Variable variable) {
-        if (variable.reference().isName() || !variable.reference().isLabel()) return !variable.constraints().isEmpty();
-        if (variable.isThing()) return !variable.asThing().relation().isEmpty() && !variable.asThing().has().isEmpty();
-        if (variable.isType() && variable.reference().isLabel()) return variable.constraints().size() > 1;
-        throw GraknException.of(ILLEGAL_STATE);
+        return traversal(new HashSet<>());
     }
 
     public void setSatisfiable(boolean isSatisfiable) {
@@ -142,8 +154,15 @@ public class Conjunction implements Pattern, Cloneable {
         return isSatisfiable;
     }
 
-    public void forEach(Consumer<Variable> function) {
-        variableSet.forEach(function);
+    public boolean isBounded() {
+        return isBounded;
+    }
+
+    private boolean printable(Variable variable) {
+        if (variable.reference().isName() || !variable.reference().isLabel()) return !variable.constraints().isEmpty();
+        if (variable.isThing()) return !variable.asThing().relation().isEmpty() && !variable.asThing().has().isEmpty();
+        if (variable.isType() && variable.reference().isLabel()) return variable.constraints().size() > 1;
+        throw GraknException.of(ILLEGAL_STATE);
     }
 
     @Override

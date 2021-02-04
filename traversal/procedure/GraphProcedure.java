@@ -44,6 +44,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -163,13 +164,13 @@ public class GraphProcedure implements Procedure {
         ).asType();
     }
 
-    private void assertWithinFilterBounds(List<Identifier.Variable.Name> filter) {
+    private void assertWithinFilterBounds(Set<Identifier.Variable.Name> filter) {
         assert iterate(vertices.keySet()).anyMatch(id -> id.isName() && filter.contains(id.asVariable().asName()));
     }
 
     @Override
     public Producer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
-                                        List<Identifier.Variable.Name> filter, int parallelisation) {
+                                        Set<Identifier.Variable.Name> filter, int parallelisation) {
         LOG.debug(params.toString());
         LOG.debug(this.toString());
         assertWithinFilterBounds(filter);
@@ -181,7 +182,7 @@ public class GraphProcedure implements Procedure {
 
     @Override
     public ResourceIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
-                                                List<Identifier.Variable.Name> filter) {
+                                                Set<Identifier.Variable.Name> filter) {
         LOG.debug(params.toString());
         LOG.debug(this.toString());
         assertWithinFilterBounds(filter);
@@ -261,6 +262,11 @@ public class GraphProcedure implements Procedure {
         public ProcedureVertex.Type setLabel(ProcedureVertex.Type type, String label, String scope) {
             type.props().labels(Label.of(label, scope));
             return type;
+        }
+
+        public ProcedureVertex.Thing setTypes(ProcedureVertex.Thing thing, Set<String> types) {
+            thing.props().types(types.stream().map(x -> Label.of(x)).collect(Collectors.toSet()));
+            return thing;
         }
 
         public ProcedureVertex.Thing setPredicate(ProcedureVertex.Thing thing, Predicate.Value.String predicate) {

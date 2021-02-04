@@ -25,13 +25,13 @@ import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.common.VertexMap;
 
-import java.util.List;
+import java.util.Set;
 
 public interface Procedure {
 
     Producer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
-                                 List<Identifier.Variable.Name> filter, int parallelisation);
+                                 Set<Identifier.Variable.Name> filter, int parallelisation);
 
     ResourceIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
-                                         List<Identifier.Variable.Name> filter);
+                                         Set<Identifier.Variable.Name> filter);
 }

@@ -27,15 +27,25 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.reasoner.Reasoner;
+import graql.lang.pattern.variable.UnboundVariable;
 import graql.lang.query.GraqlUpdate;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
+import static grakn.common.collection.Collections.list;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_DELETE;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_INSERT;
 import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
+import static grakn.core.concurrent.common.Executors.PARALLELISATION_FACTOR;
+import static grakn.core.concurrent.common.Executors.asyncPool1;
+import static grakn.core.concurrent.producer.Producers.async;
+import static grakn.core.concurrent.producer.Producers.produce;
+import static grakn.core.query.QueryManager.PARALLELISATION_SPLIT_MIN;
 
 public class Updater {
 
@@ -69,19 +79,27 @@ public class Updater {
             });
 
             assert query.match().namedVariablesUnbound().containsAll(query.namedDeleteVariablesUnbound());
-            Matcher matcher = Matcher.create(reasoner, query.match().get(query.namedDeleteVariablesUnbound()));
+            HashSet<UnboundVariable> filter = new HashSet<>(query.namedDeleteVariablesUnbound());
+            filter.addAll(query.namedInsertVariablesUnbound());
+            Matcher matcher = Matcher.create(reasoner, query.match().get(list(filter)));
             return new Updater(matcher, conceptMgr, deleteRegistry.things(), insertRegistry.things(), context);
         }
     }
 
     public ResourceIterator<ConceptMap> execute() {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
-            List<ConceptMap> matches = matcher.execute(context).onError(conceptMgr::exception).toList();
-            List<ConceptMap> answers = iterate(matches).map(matched -> {
+            List<List<ConceptMap>> lists = matcher.execute(context).toLists(PARALLELISATION_SPLIT_MIN, PARALLELISATION_FACTOR);
+            assert !lists.isEmpty();
+            List<ConceptMap> updates;
+            Function<ConceptMap, ConceptMap> updateFn = (matched) -> {
                 new Deleter.Operation(matched, deleteVariables).execute();
                 return new Inserter.Operation(conceptMgr, matched, insertVariables).execute();
-            }).toList();
-            return iterate(answers);
+            };
+            if (lists.size() == 1) updates = iterate(lists.get(0)).map(updateFn).toList();
+            else updates = produce(async(
+                    iterate(lists).map(list -> iterate(list).map(updateFn)), PARALLELISATION_FACTOR
+            ), EXHAUSTIVE, asyncPool1()).toList();
+            return iterate(updates);
         }
     }
 }

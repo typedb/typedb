@@ -15,34 +15,37 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+
+package(default_visibility = ["//visibility:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_common//test/server:rules.bzl", "grakn_java_test")
-
-
-grakn_java_test(
-    name = "assembly",
-    test_class = "grakn.core.test.assembly.AssemblyTest",
-    srcs = ["AssemblyTest.java"],
-    mac_artifact = "//server:assemble-mac-zip",
-    linux_artifact = "//server:assemble-linux-targz",
-    windows_artifact = "//server:assemble-windows-zip",
-)
 
 java_test(
-    name = "docker",
-    srcs = ["DockerTest.java"],
-    test_class = "grakn.core.test.assembly.DockerTest",
+    name = "test",
+    srcs = [
+        "UpdateTest.java",
+    ],
+    test_class = "grakn.core.test.behaviour.graql.language.update.UpdateTest",
     deps = [
-        "@maven//:org_slf4j_slf4j_api",
-        "@maven//:org_zeroturnaround_zt_exec",
+        # External dependencies from Maven
+        "@maven//:io_cucumber_cucumber_junit",
     ],
     runtime_deps = [
-        "@maven//:ch_qos_logback_logback_classic",
+        "//test/behaviour/graql:steps",
+        "//test/behaviour/connection:steps",
+        "//test/behaviour/connection/session:steps",
+        "//test/behaviour/config:parameters",
     ],
     data = [
-        "//:assemble-docker.tar"
-    ]
+        "@graknlabs_behaviour//graql/language:update.feature",
+    ],
+    size = "medium",
+    visibility = ["//visibility:public"],
+    resources = [
+        "//common/test:logback"
+    ],
+    resource_strip_prefix = "common/test",
 )
+
 
 checkstyle_test(
     name = "checkstyle",

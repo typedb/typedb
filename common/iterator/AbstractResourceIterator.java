@@ -139,6 +139,43 @@ public abstract class AbstractResourceIterator<T> implements ResourceIterator<T>
     }
 
     @Override
+    public List<List<T>> toLists(int split) {
+        List<List<T>> lists = new ArrayList<>(split);
+        for (int i = 0; i < split; i++) lists.add(new ArrayList<>());
+        int i = 0;
+        while (hasNext()) {
+            lists.get(i).add(next());
+            i++;
+            if (i == split) i = 0;
+        }
+        return lists;
+    }
+
+    @Override
+    public List<List<T>> toLists(int minSize, int maxSplit) {
+        assert minSize > 0 && maxSplit > 0;
+        List<List<T>> lists = new ArrayList<>(maxSplit);
+
+        if (!hasNext()) {
+            lists.add(new ArrayList<>());
+            return lists;
+        }
+
+        for (int i = 0; i < maxSplit && hasNext(); i++) {
+            List<T> list = new ArrayList<>();
+            for (int j = 0; j < minSize && hasNext(); j++) list.add(next());
+            lists.add(list);
+        }
+        int i = 0;
+        while (hasNext()) {
+            lists.get(i).add(next());
+            i++;
+            if (i == maxSplit) i = 0;
+        }
+        return lists;
+    }
+
+    @Override
     public void toList(List<T> list) {
         forEachRemaining(list::add);
         recycle();
@@ -149,6 +186,12 @@ public abstract class AbstractResourceIterator<T> implements ResourceIterator<T>
         HashSet<T> set = new HashSet<>();
         this.forEachRemaining(set::add);
         return set;
+    }
+
+    @Override
+    public void toSet(Set<T> set) {
+        this.forEachRemaining(set::add);
+        recycle();
     }
 
     @Override

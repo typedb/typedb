@@ -23,11 +23,11 @@ import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
-import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.Type;
 import grakn.core.concurrent.actor.Actor;
-import grakn.core.concurrent.common.ExecutorService;
 import grakn.core.concurrent.producer.Producer;
 import grakn.core.concurrent.producer.Producers;
 import grakn.core.logic.LogicManager;
@@ -41,15 +41,15 @@ import grakn.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
+import java.util.Set;
 
-import static grakn.common.collection.Collections.list;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CONJUNCTION;
-import static grakn.core.common.exception.ErrorMessage.ThingRead.CONTRADICTORY_BOUND_VARIABLE;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
-import static grakn.core.concurrent.common.ExecutorService.PARALLELISATION_FACTOR;
+import static grakn.core.concurrent.common.Executors.PARALLELISATION_FACTOR;
+import static grakn.core.concurrent.common.Executors.asyncPool1;
+import static grakn.core.concurrent.common.Executors.eventLoopGroup;
 import static grakn.core.concurrent.producer.Producers.produce;
 
 public class Reasoner {
@@ -69,55 +69,59 @@ public class Reasoner {
         this.logicMgr = logicMgr;
         this.defaultContext = new Context.Query(context, new Options.Query());
         this.defaultContext.producer(EXHAUSTIVE);
-        this.resolutionRecorder = Actor.create(ExecutorService.eventLoopGroup(), ResolutionRecorder::new);
-        this.resolverRegistry = new ResolverRegistry(
-                ExecutorService.eventLoopGroup(), resolutionRecorder, traversalEng, conceptMgr, logicMgr
-        );
+        this.resolutionRecorder = Actor.create(eventLoopGroup(), ResolutionRecorder::new);
+        this.resolverRegistry = new ResolverRegistry(eventLoopGroup(), resolutionRecorder, traversalEng, conceptMgr, logicMgr);
     }
 
     ResolverRegistry resolverRegistry() {
         return resolverRegistry;
     }
 
-    private Producer<ConceptMap> resolve(Conjunction conjunction) {
-        return new ReasonerProducer(conjunction, resolverRegistry);
+    private Producer<ConceptMap> resolve(Conjunction conjunction, Set<Identifier.Variable.Name> filter) {
+        return new ReasonerProducer(conjunction, resolverRegistry, filter);
     }
 
     private boolean isInfer(Context.Query context) {
         return context.options().infer() && !context.transactionType().isWrite() && logicMgr.rules().hasNext();
     }
 
-    public ResourceIterator<ConceptMap> execute(Disjunction disjunction, List<Identifier.Variable.Name> filter,
+    private boolean conjunctionContainsThings(Conjunction conjunction, Set<Identifier.Variable.Name> filter) {
+        return !filter.isEmpty() && iterate(filter).anyMatch(id -> conjunction.variable(id).isThing()) ||
+                iterate(conjunction.variables()).anyMatch(Variable::isThing);
+    }
+
+    public ResourceIterator<ConceptMap> execute(Disjunction disjunction, Set<Identifier.Variable.Name> filter,
                                                 Context.Query context) {
+        ResourceIterator<ConceptMap> answers;
         ResourceIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
-        if (!context.options().parallel()) return conjs.flatMap(conj -> iterator(conj, filter, context));
-        else return produce(conjs.map(conj -> producer(conj, filter, context)).toList(), context.producer());
+        if (!context.options().parallel()) answers = conjs.flatMap(conj -> iterator(conj, filter, context));
+        else answers = produce(conjs.map(c -> producer(c, filter, context)).toList(), context.producer(), asyncPool1());
+        if (disjunction.conjunctions().size() > 1) answers = answers.distinct();
+        return answers;
     }
 
     private Producer<ConceptMap> producer(Conjunction conjunction) {
-        return producer(conjunction, list(), defaultContext);
+        return producer(conjunction, set(), defaultContext);
     }
 
-    private Producer<ConceptMap> producer(Conjunction conjunction, List<Identifier.Variable.Name> filter,
+    private Producer<ConceptMap> producer(Conjunction conjunction, Set<Identifier.Variable.Name> filter,
                                           Context.Query context) {
-        if (!isInfer(context)) LOG.info("Reasoning will not run");
-
         Producer<ConceptMap> producer;
-        Conjunction conj = logicMgr.typeResolver().resolve(conjunction);
-        if (conj.isSatisfiable()) {
-            if (isInfer(context)) producer = resolve(conj);
-            else producer = traversalEng.producer(conj.traversal(filter), context.producer(), PARALLELISATION_FACTOR)
-                    .map(conceptMgr::conceptMap);
-        } else if (!filter.isEmpty() && iterate(filter).anyMatch(id -> conj.variable(id).isThing()) ||
-                iterate(conjunction.variables()).anyMatch(Variable::isThing)) {
+        logicMgr.typeResolver().resolve(conjunction);
+        if (conjunction.isSatisfiable()) {
+            if (isInfer(context)) producer = resolve(conjunction, filter);
+            else producer = traversalEng.producer(
+                    conjunction.traversal(filter), context.producer(), PARALLELISATION_FACTOR
+            ).map(conceptMgr::conceptMap);
+        } else if (!conjunction.isBounded() && conjunctionContainsThings(conjunction, filter)) {
             throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction);
         } else {
             return Producers.empty();
         }
 
         if (conjunction.negations().isEmpty()) return producer;
-        else return producer.filter(ans -> !iterate(conjunction.negations())
-                .flatMap(negation -> iterator(negation.disjunction(), ans)).hasNext()
+        else return producer.filter(answer -> !iterate(conjunction.negations())
+                .flatMap(negation -> iterator(negation.disjunction(), answer)).hasNext()
         );
     }
 
@@ -126,18 +130,17 @@ public class Reasoner {
     }
 
     private ResourceIterator<ConceptMap> iterator(Conjunction conjunction) {
-        return iterator(conjunction, list(), defaultContext);
+        return iterator(conjunction, set(), defaultContext);
     }
 
-    private ResourceIterator<ConceptMap> iterator(Conjunction conjunction, List<Identifier.Variable.Name> filter,
+    private ResourceIterator<ConceptMap> iterator(Conjunction conjunction, Set<Identifier.Variable.Name> filter,
                                                   Context.Query context) {
         ResourceIterator<ConceptMap> answers;
-        Conjunction conj = logicMgr.typeResolver().resolve(conjunction);
-        if (conj.isSatisfiable()) {
-            if (isInfer(context)) answers = produce(resolve(conj), context.producer());
+        logicMgr.typeResolver().resolve(conjunction);
+        if (conjunction.isSatisfiable()) {
+            if (isInfer(context)) answers = produce(resolve(conjunction, filter), context.producer(), asyncPool1());
             else answers = traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
-        } else if (!filter.isEmpty() && iterate(filter).anyMatch(id -> conj.variable(id).isThing()) ||
-                iterate(conjunction.variables()).anyMatch(Variable::isThing)) {
+        } else if (!conjunction.isBounded() && conjunctionContainsThings(conjunction, filter)) {
             throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction);
         } else {
             return Iterators.empty();
@@ -159,15 +162,7 @@ public class Reasoner {
 
     private Conjunction bound(Conjunction conjunction, ConceptMap bounds) {
         Conjunction newClone = conjunction.clone();
-        newClone.forEach(var -> {
-            if (var.id().isName() && bounds.contains(var.id().reference().asName())) {
-                Concept boundVar = bounds.get(var.id().reference().asName());
-                if (var.isType() != boundVar.isType()) throw GraknException.of(CONTRADICTORY_BOUND_VARIABLE, var);
-                else if (var.isType()) var.asType().label(boundVar.asType().getLabel());
-                else if (var.isThing()) var.asThing().iid(boundVar.asThing().getIID());
-                else throw GraknException.of(ILLEGAL_STATE);
-            }
-        });
+        newClone.bound(bounds.toMap(Type::getLabel, Thing::getIID));
         return newClone;
     }
 }

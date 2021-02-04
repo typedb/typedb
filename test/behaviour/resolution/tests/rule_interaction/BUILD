@@ -15,31 +15,36 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+package(default_visibility = ["//test/behaviour:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
-package(default_visibility = ["//visibility:public"])
 
-
-java_library(
-    name = "concurrent",
-    srcs = glob(["*/*.java", "*/*/*.java"], exclude=["test/*", "*Test.java", "*/*Test.java"]),
-    deps = [
-        # Internal Repository Dependencies
-        "//common:common",
-
-        # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
-
-        # External Maven Dependencies
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:io_netty_netty_all",
-        "@maven//:org_slf4j_slf4j_api",
+java_test(
+    name = "test",
+    srcs = [
+        "RuleInteractionTest.java",
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-concurrent:{pom_version}"],
+    test_class = "grakn.core.test.behaviour.resolution.tests.rule_interaction.RuleInteractionTest",
+    deps = [
+        # External dependencies from Maven
+        "@maven//:io_cucumber_cucumber_junit",
+    ],
+    runtime_deps = [
+        "//test/behaviour/connection:steps",
+        "//test/behaviour/connection/session:steps",
+        "//test/behaviour/config:parameters",
+        "//test/behaviour/resolution:steps",
+    ],
+    data = [
+        "@graknlabs_behaviour//graql/reasoner:rule-interaction.feature",
+    ],
+    resources = [
+        "//common/test:logback"
+    ],
+    resource_strip_prefix = "common/test",
 )
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "*/*", "*/*/*"]),
+    include = glob(["*"]),
     license_type = "agpl",
 )

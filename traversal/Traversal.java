@@ -24,7 +24,6 @@ import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
 import grakn.core.concurrent.producer.Producer;
-import grakn.core.concurrent.producer.Producers;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.common.Encoding;
 import grakn.core.graph.iid.VertexIID;
@@ -41,7 +40,6 @@ import graql.lang.common.GraqlToken;
 import graql.lang.pattern.variable.Reference;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -54,6 +52,8 @@ import static grakn.common.collection.Collections.pair;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.cartesian;
 import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.concurrent.common.Executors.asyncPool2;
+import static grakn.core.concurrent.producer.Producers.async;
 import static grakn.core.concurrent.producer.Producers.produce;
 import static grakn.core.graph.common.Encoding.Edge.ISA;
 import static grakn.core.graph.common.Encoding.Edge.Thing.HAS;
@@ -76,26 +76,26 @@ public class Traversal {
 
     private final Parameters parameters;
     private final Structure structure;
-    private final List<Identifier.Variable.Name> filter;
+    private final Set<Identifier.Variable.Name> filter;
     private List<Planner> planners;
     private boolean modifiable;
 
     public Traversal() {
         structure = new Structure();
         parameters = new Parameters();
-        filter = new ArrayList<>();
+        filter = new HashSet<>();
         modifiable = true;
     }
 
     // TODO: We should not dynamically calculate properties like this, and then guard against 'modifiable'.
     //       We should introduce a "builder pattern" to Traversal, such that users of this library will build
     //       traversals with Traversal.Builder, and call .build() in the end to produce a final Object.
-    private List<Identifier.Variable.Name> filter() {
+    private Set<Identifier.Variable.Name> filter() {
         if (filter.isEmpty()) {
             modifiable = false;
             iterate(structure.vertices())
                     .map(TraversalVertex::id).filter(Identifier::isName)
-                    .map(id -> id.asVariable().asName()).toList(filter);
+                    .map(id -> id.asVariable().asName()).toSet(filter);
         }
         return filter;
     }
@@ -130,10 +130,10 @@ public class Traversal {
             planners.get(0).tryOptimise(graphMgr, extraPlanningTime);
             return planners.get(0).procedure().producer(graphMgr, parameters, filter(), parallelisation);
         } else {
-            return Producers.producer(cartesian(planners.parallelStream().map(planner -> {
+            return async(cartesian(planners.parallelStream().map(planner -> {
                 planner.tryOptimise(graphMgr, extraPlanningTime);
                 return planner.procedure().producer(graphMgr, parameters, filter(), parallelisation);
-            }).map(producer -> produce(producer, mode)).collect(toList())).map(partialAnswers -> {
+            }).map(producer -> produce(producer, mode, asyncPool2())).collect(toList())).map(partialAnswers -> {
                 Map<Reference, Vertex<?, ?>> combinedAnswers = new HashMap<>();
                 partialAnswers.forEach(p -> combinedAnswers.putAll(p.map()));
                 return VertexMap.of(combinedAnswers);
@@ -290,7 +290,7 @@ public class Traversal {
         structure.predicateEdge(structure.thingVertex(att1), structure.thingVertex(att2), predicate);
     }
 
-    public void filter(List<Identifier.Variable.Name> filter) {
+    public void filter(Set<Identifier.Variable.Name> filter) {
         assert modifiable;
         this.filter.addAll(filter);
     }

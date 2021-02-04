@@ -63,6 +63,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     @Override
     public void setSupertype(EntityType superType) {
+        validateIsNotDeleted();
         super.setSuperTypeVertex(((EntityTypeImpl) superType).vertex);
     }
 
@@ -93,7 +94,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     @Override
     public EntityImpl create(boolean isInferred) {
-        validateIsCommittedAndNotAbstract(Entity.class);
+        validateCanHaveInstances(Entity.class);
         ThingVertex instance = graphMgr.data().create(vertex, isInferred);
         return EntityImpl.of(instance);
     }

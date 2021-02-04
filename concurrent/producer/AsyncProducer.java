@@ -25,10 +25,10 @@ import javax.annotation.concurrent.ThreadSafe;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.concurrent.common.ExecutorService.forkJoinPool;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
 @ThreadSafe
@@ -50,10 +50,10 @@ public class AsyncProducer<T> implements Producer<T> {
     }
 
     @Override
-    public synchronized void produce(Producer.Queue<T> queue, int request) {
+    public synchronized void produce(Queue<T> queue, int request, ExecutorService executor) {
         if (isDone.get()) return;
         else if (!isInitialised) initialise(queue);
-        distribute(queue, request);
+        distribute(queue, request, executor);
     }
 
     private synchronized void initialise(Queue<T> queue) {
@@ -64,24 +64,24 @@ public class AsyncProducer<T> implements Producer<T> {
         if (runningJobs.isEmpty()) done(queue);
     }
 
-    private synchronized void distribute(Queue<T> queue, int request) {
+    private synchronized void distribute(Queue<T> queue, int request, ExecutorService executor) {
         if (isDone.get()) return;
         int requestSplitMax = (int) Math.ceil((double) request / runningJobs.size());
         int requestSent = 0;
         for (ResourceIterator<T> iterator : runningJobs.keySet()) {
             int requestSplit = Math.min(requestSplitMax, request - requestSent);
             runningJobs.computeIfPresent(iterator, (iter, asyncJob) -> asyncJob.thenRunAsync(
-                    () -> job(queue, iter, requestSplit), forkJoinPool()
+                    () -> job(queue, iter, requestSplit, executor), executor
             ));
             requestSent += requestSplit;
             if (requestSent == request) break;
         }
     }
 
-    private synchronized void transition(Queue<T> queue, ResourceIterator<T> iterator, int unfulfilled) {
+    private synchronized void transition(Queue<T> queue, ResourceIterator<T> iterator, int unfulfilled, ExecutorService executor) {
         if (!iterator.hasNext()) {
-            if (runningJobs.remove(iterator) != null && iterators.hasNext()) compensate(queue, unfulfilled);
-            else if (!runningJobs.isEmpty() && unfulfilled > 0) distribute(queue, unfulfilled);
+            if (runningJobs.remove(iterator) != null && iterators.hasNext()) compensate(queue, unfulfilled, executor);
+            else if (!runningJobs.isEmpty() && unfulfilled > 0) distribute(queue, unfulfilled, executor);
             else if (runningJobs.isEmpty()) done(queue);
             else if (unfulfilled != 0) throw GraknException.of(ILLEGAL_STATE);
         } else {
@@ -89,16 +89,17 @@ public class AsyncProducer<T> implements Producer<T> {
         }
     }
 
-    private synchronized void compensate(Queue<T> queue, int unfulfilled) {
-        ResourceIterator<T> newIter = iterators.next();
-        runningJobs.put(newIter, completedFuture(null));
+    private synchronized void compensate(Queue<T> queue, int unfulfilled, ExecutorService executor) {
+        ResourceIterator<T> it = iterators.next();
+        runningJobs.put(it, completedFuture(null));
         if (unfulfilled > 0) {
-            runningJobs.computeIfPresent(newIter, (iter, asyncJob) ->
-                    asyncJob.thenRunAsync(() -> job(queue, newIter, unfulfilled), forkJoinPool()));
+            runningJobs.computeIfPresent(it, (i, job) -> job.thenRunAsync(
+                    () -> job(queue, it, unfulfilled, executor), executor
+            ));
         }
     }
 
-    private void job(Queue<T> queue, ResourceIterator<T> iterator, int request) {
+    private void job(Queue<T> queue, ResourceIterator<T> iterator, int request, ExecutorService executor) {
         try {
             int unfulfilled = request;
             if (runningJobs.containsKey(iterator)) {
@@ -106,7 +107,7 @@ public class AsyncProducer<T> implements Producer<T> {
                     queue.put(iterator.next());
                 }
             }
-            if (!isDone.get()) transition(queue, iterator, unfulfilled);
+            if (!isDone.get()) transition(queue, iterator, unfulfilled, executor);
         } catch (Throwable e) {
             done(queue, e);
         }

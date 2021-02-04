@@ -22,7 +22,6 @@ import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
-import grakn.core.concurrent.lock.ManagedReadWriteLock;
 import grakn.core.graph.common.Encoding;
 import grakn.core.graph.common.KeyGenerator;
 import grakn.core.graph.common.Storage;
@@ -44,6 +43,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.StampedLock;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -82,8 +83,8 @@ public class SchemaGraph implements Graph {
     private final KeyGenerator.Schema.Buffered keyGenerator;
     private final ConcurrentMap<String, TypeVertex> typesByLabel;
     private final ConcurrentMap<VertexIID.Type, TypeVertex> typesByIID;
-    private final ConcurrentMap<String, ManagedReadWriteLock> singleLabelLocks;
-    private final ManagedReadWriteLock multiLabelLock;
+    private final ConcurrentMap<String, ReadWriteLock> singleLabelLocks;
+    private final ReadWriteLock multiLabelLock;
 
     private final Rules rules;
     private final Statistics statistics;
@@ -98,7 +99,7 @@ public class SchemaGraph implements Graph {
         typesByLabel = new ConcurrentHashMap<>();
         typesByIID = new ConcurrentHashMap<>();
         singleLabelLocks = new ConcurrentHashMap<>();
-        multiLabelLock = new ManagedReadWriteLock();
+        multiLabelLock = newReadWriteLock();
         rules = new Rules();
         statistics = new Statistics();
         cache = new Cache();
@@ -117,7 +118,10 @@ public class SchemaGraph implements Graph {
             ownersOfAttributeTypes = new ConcurrentHashMap<>();
             resolvedRoleTypeLabels = new ConcurrentHashMap<>();
         }
+    }
 
+    private static ReadWriteLock newReadWriteLock() {
+        return new StampedLock().asReadWriteLock();
     }
 
     @Override
@@ -258,8 +262,8 @@ public class SchemaGraph implements Graph {
         String scopedLabel = scopedLabel(label, scope);
         try {
             if (!isReadOnly) {
-                multiLabelLock.lockRead();
-                singleLabelLocks.computeIfAbsent(scopedLabel, x -> new ManagedReadWriteLock()).lockRead();
+                multiLabelLock.readLock().lock();
+                singleLabelLocks.computeIfAbsent(scopedLabel, x -> newReadWriteLock()).readLock().lock();
             }
 
             TypeVertex vertex = typesByLabel.get(scopedLabel);
@@ -275,12 +279,10 @@ public class SchemaGraph implements Graph {
             }
 
             return vertex;
-        } catch (InterruptedException e) {
-            throw GraknException.of(e);
         } finally {
             if (!isReadOnly) {
-                singleLabelLocks.get(scopedLabel).unlockRead();
-                multiLabelLock.unlockRead();
+                singleLabelLocks.get(scopedLabel).readLock().unlock();
+                multiLabelLock.readLock().unlock();
             }
         }
     }
@@ -294,19 +296,17 @@ public class SchemaGraph implements Graph {
         if (isReadOnly) throw GraknException.of(TRANSACTION_SCHEMA_READ_VIOLATION);
         String scopedLabel = scopedLabel(label, scope);
         try { // we intentionally use READ on multiLabelLock, as put() only concerns one label
-            multiLabelLock.lockRead();
-            singleLabelLocks.computeIfAbsent(scopedLabel, x -> new ManagedReadWriteLock()).lockWrite();
+            multiLabelLock.readLock().lock();
+            singleLabelLocks.computeIfAbsent(scopedLabel, x -> newReadWriteLock()).writeLock().lock();
 
             TypeVertex typeVertex = typesByLabel.computeIfAbsent(scopedLabel, i -> new TypeVertexImpl.Buffered(
                     this, VertexIID.Type.generate(keyGenerator, encoding), label, scope
             ));
             typesByIID.put(typeVertex.iid(), typeVertex);
             return typeVertex;
-        } catch (InterruptedException e) {
-            throw GraknException.of(e);
         } finally {
-            singleLabelLocks.get(scopedLabel).unlockWrite();
-            multiLabelLock.unlockRead();
+            singleLabelLocks.get(scopedLabel).writeLock().unlock();
+            multiLabelLock.readLock().unlock();
             rules().conclusions().isOutdated(true);
         }
     }
@@ -318,15 +318,13 @@ public class SchemaGraph implements Graph {
         String newScopedLabel = scopedLabel(newLabel, newScope);
         try {
             TypeVertex type = getType(newLabel, newScope);
-            multiLabelLock.lockWrite();
+            multiLabelLock.writeLock().lock();
             if (type != null) throw GraknException.of(INVALID_SCHEMA_WRITE, newScopedLabel);
             typesByLabel.remove(oldScopedLabel);
             typesByLabel.put(newScopedLabel, vertex);
             return vertex;
-        } catch (InterruptedException e) {
-            throw GraknException.of(e);
         } finally {
-            multiLabelLock.unlockWrite();
+            multiLabelLock.writeLock().unlock();
         }
     }
 
@@ -334,16 +332,14 @@ public class SchemaGraph implements Graph {
         assert storage.isOpen();
         if (isReadOnly) throw GraknException.of(TRANSACTION_SCHEMA_READ_VIOLATION);
         try { // we intentionally use READ on multiLabelLock, as delete() only concerns one label
-            multiLabelLock.lockRead();
-            singleLabelLocks.computeIfAbsent(vertex.scopedLabel(), x -> new ManagedReadWriteLock()).lockWrite();
+            multiLabelLock.readLock().lock();
+            singleLabelLocks.computeIfAbsent(vertex.scopedLabel(), x -> newReadWriteLock()).writeLock().lock();
 
             typesByLabel.remove(vertex.scopedLabel());
             typesByIID.remove(vertex.iid());
-        } catch (InterruptedException e) {
-            throw GraknException.of(e);
         } finally {
-            singleLabelLocks.get(vertex.scopedLabel()).unlockWrite();
-            multiLabelLock.unlockRead();
+            singleLabelLocks.get(vertex.scopedLabel()).writeLock().unlock();
+            multiLabelLock.readLock().unlock();
         }
     }
 
@@ -387,8 +383,8 @@ public class SchemaGraph implements Graph {
 
         private final ConcurrentMap<String, RuleStructure> rulesByLabel;
         private final ConcurrentMap<StructureIID.Rule, RuleStructure> rulesByIID;
-        private final ConcurrentMap<String, ManagedReadWriteLock> singleLabelLocks;
-        private final ManagedReadWriteLock multiLabelLock;
+        private final ConcurrentMap<String, ReadWriteLock> singleLabelLocks;
+        private final ReadWriteLock multiLabelLock;
         private final Conclusions conclusionsIndex;
         private final References referencesIndex;
 
@@ -396,7 +392,7 @@ public class SchemaGraph implements Graph {
             rulesByLabel = new ConcurrentHashMap<>();
             rulesByIID = new ConcurrentHashMap<>();
             singleLabelLocks = new ConcurrentHashMap<>();
-            multiLabelLock = new ManagedReadWriteLock();
+            multiLabelLock = newReadWriteLock();
             conclusionsIndex = new Conclusions();
             referencesIndex = new References();
         }
@@ -432,8 +428,8 @@ public class SchemaGraph implements Graph {
             assert storage.isOpen();
             try {
                 if (!isReadOnly) {
-                    multiLabelLock.lockRead();
-                    singleLabelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockRead();
+                    multiLabelLock.readLock().lock();
+                    singleLabelLocks.computeIfAbsent(label, x -> newReadWriteLock()).readLock().lock();
                 }
 
                 RuleStructure vertex = rulesByLabel.get(label);
@@ -443,12 +439,10 @@ public class SchemaGraph implements Graph {
                 byte[] iid = storage.get(index.bytes());
                 if (iid != null) vertex = convert(StructureIID.Rule.of(iid));
                 return vertex;
-            } catch (InterruptedException e) {
-                throw GraknException.of(e);
             } finally {
                 if (!isReadOnly) {
-                    singleLabelLocks.get(label).unlockRead();
-                    multiLabelLock.unlockRead();
+                    singleLabelLocks.get(label).readLock().unlock();
+                    multiLabelLock.readLock().unlock();
                 }
             }
         }
@@ -456,19 +450,17 @@ public class SchemaGraph implements Graph {
         public RuleStructure create(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
             assert storage.isOpen();
             try {
-                multiLabelLock.lockRead();
-                singleLabelLocks.computeIfAbsent(label, x -> new ManagedReadWriteLock()).lockWrite();
+                multiLabelLock.readLock().lock();
+                singleLabelLocks.computeIfAbsent(label, x -> newReadWriteLock()).writeLock().lock();
 
                 RuleStructure rule = rulesByLabel.computeIfAbsent(label, i -> new RuleStructureImpl.Buffered(
                         SchemaGraph.this, StructureIID.Rule.generate(keyGenerator), label, when, then
                 ));
                 rulesByIID.put(rule.iid(), rule);
                 return rule;
-            } catch (InterruptedException e) {
-                throw GraknException.of(e);
             } finally {
-                singleLabelLocks.get(label).unlockWrite();
-                multiLabelLock.unlockRead();
+                singleLabelLocks.get(label).writeLock().unlock();
+                multiLabelLock.readLock().unlock();
             }
         }
 
@@ -476,15 +468,13 @@ public class SchemaGraph implements Graph {
             assert storage.isOpen();
             try {
                 RuleStructure rule = get(newLabel);
-                multiLabelLock.lockWrite();
+                multiLabelLock.writeLock().lock();
                 if (rule != null) throw GraknException.of(INVALID_SCHEMA_WRITE, newLabel);
                 rulesByLabel.remove(oldLabel);
                 rulesByLabel.put(newLabel, vertex);
                 return vertex;
-            } catch (InterruptedException e) {
-                throw GraknException.of(e);
             } finally {
-                multiLabelLock.unlockWrite();
+                multiLabelLock.writeLock().unlock();
             }
         }
 
@@ -492,16 +482,14 @@ public class SchemaGraph implements Graph {
             assert storage.isOpen();
             try { // we intentionally use READ on multiLabelLock, as delete() only concerns one label
                 // TODO do we need all these locks here? Are they applicable for this method?
-                multiLabelLock.lockRead();
-                singleLabelLocks.computeIfAbsent(vertex.label(), x -> new ManagedReadWriteLock()).lockWrite();
+                multiLabelLock.readLock().lock();
+                singleLabelLocks.computeIfAbsent(vertex.label(), x -> newReadWriteLock()).writeLock().lock();
 
                 rulesByLabel.remove(vertex.label());
                 rulesByIID.remove(vertex.iid());
-            } catch (InterruptedException e) {
-                throw GraknException.of(e);
             } finally {
-                singleLabelLocks.get(vertex.label()).unlockWrite();
-                multiLabelLock.unlockRead();
+                singleLabelLocks.get(vertex.label()).writeLock().unlock();
+                multiLabelLock.readLock().unlock();
             }
         }
 

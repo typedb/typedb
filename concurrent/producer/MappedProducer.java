@@ -19,6 +19,7 @@
 package grakn.core.concurrent.producer;
 
 import javax.annotation.concurrent.ThreadSafe;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
 @ThreadSafe
@@ -33,8 +34,8 @@ public class MappedProducer<T, U> implements Producer<U> {
     }
 
     @Override
-    public void produce(Producer.Queue<U> queue, int request) {
-        baseProducer.produce(new Queue(queue), request);
+    public void produce(Producer.Queue<U> queue, int request, ExecutorService executor) {
+        baseProducer.produce(new Queue(queue), request, executor);
     }
 
     @Override

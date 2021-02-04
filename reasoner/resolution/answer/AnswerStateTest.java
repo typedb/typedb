@@ -52,7 +52,7 @@ public class AnswerStateTest {
         expectedDerived.put(Reference.name("a"), new MockConcept(0));
         expectedDerived.put(Reference.name("b"), new MockConcept(1));
         assertEquals(new ConceptMap(expectedDerived), derived.conceptMap());
-        assertEquals(new ConceptMap(expectedDerived), derived.withInitial());
+        assertEquals(new ConceptMap(expectedDerived), derived.withInitialFiltered());
     }
 
     @Test
@@ -80,7 +80,7 @@ public class AnswerStateTest {
         Map<Reference.Name, Concept> expectedWithInitial = new HashMap<>();
         expectedWithInitial.put(Reference.name("a"), new MockConcept(0));
         expectedWithInitial.put(Reference.name("b"), new MockConcept(1));
-        assertEquals(new ConceptMap(expectedWithInitial), derived.withInitial());
+        assertEquals(new ConceptMap(expectedWithInitial), derived.withInitialFiltered());
     }
 
     @Test
@@ -110,7 +110,7 @@ public class AnswerStateTest {
         expectedWithInitial.put(Reference.name("a"), new MockConcept(0));
         expectedWithInitial.put(Reference.name("b"), new MockConcept(1));
         expectedWithInitial.put(Reference.name("c"), new MockConcept(2));
-        assertEquals(new ConceptMap(expectedWithInitial), derived.withInitial());
+        assertEquals(new ConceptMap(expectedWithInitial), derived.withInitialFiltered());
     }
 
     public static class MockConcept extends ConceptImpl implements Concept {

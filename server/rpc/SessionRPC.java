@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.protobuf.ByteString.copyFrom;
 import static grakn.core.common.collection.Bytes.uuidToBytes;
-import static grakn.core.concurrent.common.ExecutorService.scheduledThreadPool;
+import static grakn.core.concurrent.common.Executors.scheduledPool;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 class SessionRPC {
@@ -92,7 +92,7 @@ class SessionRPC {
 
     private void setIdleTimeout() {
         if (idleTimeoutTask != null) idleTimeoutTask.cancel(false);
-        this.idleTimeoutTask = scheduledThreadPool().schedule(this::triggerIdleTimeout, idleTimeoutMillis, MILLISECONDS);
+        this.idleTimeoutTask = scheduledPool().schedule(this::triggerIdleTimeout, idleTimeoutMillis, MILLISECONDS);
     }
 
     private void triggerIdleTimeout() {

@@ -80,8 +80,10 @@ public class PlannerTest {
     }
 
     private Conjunction parse(String query) {
-        return logicMgr.typeResolver().resolve(Disjunction.create(Graql.parsePattern(query).asConjunction().normalise())
-                                                       .conjunctions().iterator().next());
+        Conjunction conjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise())
+                .conjunctions().iterator().next();
+        logicMgr.typeResolver().resolve(conjunction);
+        return conjunction;
     }
 
     @Test

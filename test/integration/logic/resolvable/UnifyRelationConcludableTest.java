@@ -237,7 +237,8 @@ public class UnifyRelationConcludableTest {
 
     private Conjunction resolvedConjunction(String query) {
         Conjunction conjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
-        return logicMgr.typeResolver().resolve(conjunction);
+        logicMgr.typeResolver().resolve(conjunction);
+        return conjunction;
     }
 
     private Rule createRule(String label, String whenConjunctionPattern, String thenThingPattern) {
@@ -265,29 +266,28 @@ public class UnifyRelationConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(2, unifier.requirements().types().size());
-        //subs of employment
+        assertEquals(2, unifier.constraintRequirements().types().size());
         assertEquals(
                 typeHierarchy("employment"),
-                unifier.requirements().types().get(Identifier.Variable.label("employment")));
+                unifier.constraintRequirements().types().get(Identifier.Variable.label("employment")));
         assertEquals(
                 roleHierarchy("employee", "employment"),
-                unifier.requirements().types().get(Identifier.Variable.label("employment:employee")));
-        assertEquals(0, unifier.requirements().isaExplicit().size());
-        assertEquals(0, unifier.requirements().predicates().size());
+                unifier.constraintRequirements().types().get(Identifier.Variable.label("employment:employee")));
+        assertEquals(0, unifier.constraintRequirements().isaExplicit().size());
+        assertEquals(0, unifier.constraintRequirements().predicates().size());
 
         // test filter allows a valid answer
         // code below tests unifier applied to an answer that is 1) satisfiable, 2) non-satisfiable
         Relation employment = instanceOf("employment").asRelation();
         Thing person = instanceOf("person");
-        //addRolePlayer(employment, "employee", person);
+        addRolePlayer(employment, "employee", person);
         Map<Identifier, Concept> identifiedConcepts = map(
                 pair(Identifier.Variable.anon(0), employment),
                 pair(Identifier.Variable.name("x"), person),
                 pair(Identifier.Variable.label("employment"), employment.getType()),
                 pair(Identifier.Variable.label("employment:employee"), employment.getType().getRelates("employee"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
+        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
         assertEquals(2, unified.get().concepts().size());
         assertEquals(employment, unified.get().get("r"));
@@ -303,7 +303,7 @@ public class UnifyRelationConcludableTest {
                 pair(Identifier.Variable.label("employment"), friendship.getType()),
                 pair(Identifier.Variable.label("employment:employee"), friendship.getType().getRelates("friend"))
         );
-        unified = unifier.unUnify(identifiedConcepts);
+        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.isPresent());
     }
 
@@ -323,12 +323,12 @@ public class UnifyRelationConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(1, unifier.requirements().types().size());
+        assertEquals(1, unifier.constraintRequirements().types().size());
         assertEquals(
                 roleHierarchy("employee", "employment"),
-                unifier.requirements().types().get(Identifier.Variable.label("relation:employee")));
-        assertEquals(0, unifier.requirements().isaExplicit().size());
-        assertEquals(0, unifier.requirements().predicates().size());
+                unifier.constraintRequirements().types().get(Identifier.Variable.label("relation:employee")));
+        assertEquals(0, unifier.constraintRequirements().isaExplicit().size());
+        assertEquals(0, unifier.constraintRequirements().predicates().size());
 
         // test filter allows a valid answer
         Relation employment = instanceOf("employment").asRelation();
@@ -340,7 +340,7 @@ public class UnifyRelationConcludableTest {
                 pair(Identifier.Variable.label("employment"), employment.getType()),
                 pair(Identifier.Variable.label("employment:employee"), employment.getType().getRelates("employee"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
+        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
         assertEquals(2, unified.get().concepts().size());
         assertEquals(employment.getType(), unified.get().get("rel"));
@@ -356,7 +356,7 @@ public class UnifyRelationConcludableTest {
                 pair(Identifier.Variable.label("employment"), friendship.getType()),
                 pair(Identifier.Variable.label("employment:employee"), friendship.getType().getRelates("friend"))
         );
-        unified = unifier.unUnify(identifiedConcepts);
+        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.isPresent());
     }
 
@@ -376,12 +376,12 @@ public class UnifyRelationConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(1, unifier.requirements().types().size());
+        assertEquals(1, unifier.constraintRequirements().types().size());
         assertEquals(
                 typeHierarchy("employment"),
-                unifier.requirements().types().get(Identifier.Variable.label("employment")));
-        assertEquals(0, unifier.requirements().isaExplicit().size());
-        assertEquals(0, unifier.requirements().predicates().size());
+                unifier.constraintRequirements().types().get(Identifier.Variable.label("employment")));
+        assertEquals(0, unifier.constraintRequirements().isaExplicit().size());
+        assertEquals(0, unifier.constraintRequirements().predicates().size());
 
         // test filter allows a valid answer
         Relation employment = instanceOf("employment").asRelation();
@@ -393,7 +393,7 @@ public class UnifyRelationConcludableTest {
                 pair(Identifier.Variable.label("employment"), employment.getType()),
                 pair(Identifier.Variable.label("employment:employee"), employment.getType().getRelates("employee"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
+        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
         assertEquals(2, unified.get().concepts().size());
         assertEquals(employment.getType().getRelates("employee"), unified.get().get("role"));
@@ -409,7 +409,7 @@ public class UnifyRelationConcludableTest {
                 pair(Identifier.Variable.label("employment"), friendship.getType()),
                 pair(Identifier.Variable.label("employment:employee"), friendship.getType().getRelates("friend"))
         );
-        unified = unifier.unUnify(identifiedConcepts);
+        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.isPresent());
     }
 
@@ -428,12 +428,12 @@ public class UnifyRelationConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(1, unifier.requirements().types().size());
+        assertEquals(1, unifier.constraintRequirements().types().size());
         assertEquals(
                 roleHierarchy("employee", "employment"),
-                unifier.requirements().types().get(Identifier.Variable.label("relation:employee")));
-        assertEquals(0, unifier.requirements().isaExplicit().size());
-        assertEquals(0, unifier.requirements().predicates().size());
+                unifier.constraintRequirements().types().get(Identifier.Variable.label("relation:employee")));
+        assertEquals(0, unifier.constraintRequirements().isaExplicit().size());
+        assertEquals(0, unifier.constraintRequirements().predicates().size());
     }
 
     @Test
@@ -456,15 +456,15 @@ public class UnifyRelationConcludableTest {
         Unifier unifier = unifiers.get(0);
 
         // test requirements
-        assertEquals(2, unifier.requirements().types().size());
+        assertEquals(2, unifier.constraintRequirements().types().size());
         assertEquals(
                 typeHierarchy("employment"),
-                unifier.requirements().types().get(Identifier.Variable.label("employment")));
+                unifier.constraintRequirements().types().get(Identifier.Variable.label("employment")));
         assertEquals(
                 roleHierarchy("employee", "employment"),
-                unifier.requirements().types().get(Identifier.Variable.label("employment:employee")));
-        assertEquals(0, unifier.requirements().isaExplicit().size());
-        assertEquals(0, unifier.requirements().predicates().size());
+                unifier.constraintRequirements().types().get(Identifier.Variable.label("employment:employee")));
+        assertEquals(0, unifier.constraintRequirements().isaExplicit().size());
+        assertEquals(0, unifier.constraintRequirements().predicates().size());
 
         // test filter allows a valid answer
         Relation employment = instanceOf("employment").asRelation();
@@ -478,7 +478,7 @@ public class UnifyRelationConcludableTest {
                 pair(Identifier.Variable.name("employment"), employment.getType()),
                 pair(Identifier.Variable.name("employee"), employment.getType().getRelates("employee"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
+        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
         assertEquals(1, unified.get().concepts().size());
         assertEquals(person, unified.get().get("p"));
@@ -496,7 +496,7 @@ public class UnifyRelationConcludableTest {
                 pair(Identifier.Variable.name("employment"), employment.getType()),
                 pair(Identifier.Variable.name("employee"), employment.getType().getRelates("employee"))
         );
-        unified = unifier.unUnify(identifiedConcepts);
+        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.isPresent());
     }
 
@@ -817,15 +817,15 @@ public class UnifyRelationConcludableTest {
 
         Unifier unifier = unifiers.get(0);
         // test requirements
-        assertEquals(2, unifier.requirements().types().size());
+        assertEquals(2, unifier.constraintRequirements().types().size());
         assertEquals(
                 typeHierarchy("employment"),
-                unifier.requirements().types().get(Identifier.Variable.label("employment")));
+                unifier.constraintRequirements().types().get(Identifier.Variable.label("employment")));
         assertEquals(
                 roleHierarchy("employee", "employment"),
-                unifier.requirements().types().get(Identifier.Variable.label("employment:employee")));
-        assertEquals(0, unifier.requirements().isaExplicit().size());
-        assertEquals(0, unifier.requirements().predicates().size());
+                unifier.constraintRequirements().types().get(Identifier.Variable.label("employment:employee")));
+        assertEquals(0, unifier.constraintRequirements().isaExplicit().size());
+        assertEquals(0, unifier.constraintRequirements().predicates().size());
 
         // test filter allows a valid answer
         Relation employment = instanceOf("employment").asRelation();
@@ -838,7 +838,7 @@ public class UnifyRelationConcludableTest {
                 pair(Identifier.Variable.name("employment"), employment.getType()),
                 pair(Identifier.Variable.name("employee"), employment.getType().getRelates("employee"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts);
+        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
         assertEquals(2, unified.get().concepts().size());
         assertEquals(person, unified.get().get("p"));
@@ -1010,7 +1010,7 @@ public class UnifyRelationConcludableTest {
         List<ConceptMap> parentAnswers = rocksTransaction.query().match(Graql.match(Graql.parsePattern(parent))).toList();
         List<ConceptMap> unifiedAnswers = childAnswers.stream()
                 .map(ans -> buildIdentifierMap(ans, unifier))
-                .map(unifier::unUnify)
+                .map(imap -> unifier.unUnify(imap, new Unifier.Requirements.Instance(map())))
                 .filter(Optional::isPresent).map(Optional::get)
                 .collect(Collectors.toList());
 

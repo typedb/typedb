@@ -33,14 +33,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.PriorityQueue;
 import java.util.Set;
+import java.util.TreeMap;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static java.util.stream.Collectors.toMap;
@@ -52,10 +50,9 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
     private final GraphManager graphMgr;
     private final GraphProcedure procedure;
     private final Traversal.Parameters params;
-    private final List<Identifier.Variable.Name> filter;
+    private final Set<Identifier.Variable.Name> filter;
     private final Map<Identifier, ResourceIterator<? extends Vertex<?, ?>>> iterators;
     private final Map<Identifier, Vertex<?, ?>> answer;
-    private final Map<Identifier, ThingVertex> roles;
     private final Scopes scopes;
     private final SeekStack seekStack;
     private final int edgeCount;
@@ -65,7 +62,7 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
     enum State {INIT, EMPTY, FETCHED, COMPLETED}
 
     public GraphIterator(GraphManager graphMgr, Vertex<?, ?> start, GraphProcedure procedure,
-                         Traversal.Parameters params, List<Identifier.Variable.Name> filter) {
+                         Traversal.Parameters params, Set<Identifier.Variable.Name> filter) {
         assert procedure.edgesCount() > 0;
         this.graphMgr = graphMgr;
         this.procedure = procedure;
@@ -73,12 +70,18 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
         this.filter = filter;
         this.edgeCount = procedure.edgesCount();
         this.iterators = new HashMap<>();
-        this.roles = new HashMap<>();
-        this.answer = new HashMap<>();
-        this.answer.put(procedure.startVertex().id(), start);
         this.scopes = new Scopes();
         this.seekStack = new SeekStack(edgeCount);
         this.state = State.INIT;
+        this.answer = new HashMap<>();
+
+        Identifier startId = procedure.startVertex().id();
+        this.answer.put(startId, start);
+        if (startId.isScoped()) {
+            Identifier.Variable scope = startId.asScoped().scope();
+            Scopes.Scoped scoped = scopes.getOrInitialise(scope);
+            scoped.push(start.asThing(), 0);
+        }
     }
 
     @Override
@@ -124,13 +127,13 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
                     seekStack.popLastPos();
                     if (toIter.hasNext()) answer.put(toID, toIter.next());
                     else {
-                        backTrackCleanUp(pos);
+                        popScope(pos);
                         answer.remove(toID);
                         branchFailure(edge);
                         return false;
                     }
                 } else {
-                    backTrackCleanUp(pos);
+                    popScope(pos);
                     answer.remove(toID);
                     toIter.recycle();
                     return false;
@@ -234,7 +237,7 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
                 newIter = branch(fromVertex, edge);
                 if (!newIter.hasNext()) {
                     if (edge.onlyStartsFromRelation() && !scopes.get(edge.from().id().asVariable()).isEmpty()) {
-                        computeNextSeekPos = scopes.get(edge.from().id().asVariable()).peekLastEdgeOrder();
+                        computeNextSeekPos = scopes.get(edge.from().id().asVariable()).lastEdgeOrder();
                     } else if (!edge.from().ins().isEmpty()) {
                         computeNextSeekPos = edge.from().branchEdge().order();
                     } else {
@@ -268,8 +271,8 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
             toIter = edge.branch(graphMgr, fromVertex, params).filter(role -> {
                 if (scoped.contains(role.asThing())) return false;
                 else {
-                    replaceScopedRole(scoped, edge, role.asThing());
-                    roles.put(edge.to().id(), role.asThing());
+                    if (scoped.orderVisited(edge.order())) scoped.replaceLast(role.asThing(), edge.order());
+                    else scoped.push(role.asThing(), edge.order());
                     return true;
                 }
             });
@@ -279,8 +282,8 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
             toIter = edge.asRolePlayer().branchEdge(graphMgr, fromVertex, params).filter(e -> {
                 if (scoped.contains(e.optimised().get())) return false;
                 else {
-                    replaceScopedRole(scoped, edge, e.optimised().get());
-                    roles.put(edge.to().id(), e.optimised().get());
+                    if (scoped.orderVisited(edge.order())) scoped.replaceLast(e.optimised().get(), edge.order());
+                    else scoped.push(e.optimised().get(), edge.order());
                     return true;
                 }
             }).map(e -> edge.direction().isForward() ? e.to() : e.from());
@@ -296,30 +299,18 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
     }
 
     private boolean backTrack(int pos) {
-        backTrackCleanUp(pos);
+        popScope(pos);
         return computeNext(pos - 1);
     }
 
-    private void backTrackCleanUp(int pos) {
+    private void popScope(int pos) {
         ProcedureEdge<?, ?> edge = procedure.edge(pos);
-        Identifier toId = edge.to().id();
-        if (roles.containsKey(toId)) {
-            if (edge.isRolePlayer()) removeScopedRole(scopes.get(edge.asRolePlayer().scope()), edge);
-            else if (toId.isScoped()) removeScopedRole(scopes.get(toId.asScoped().scope()), edge);
-        }
-    }
-
-    private void removeScopedRole(Scopes.Scoped scoped, ProcedureEdge<?, ?> edge) {
-        ThingVertex previousRole = roles.remove(edge.to().id());
-        if (previousRole != null) scoped.remove(previousRole, edge.order());
-    }
-
-    private void replaceScopedRole(Scopes.Scoped scoped, ProcedureEdge<?, ?> edge, ThingVertex newRole) {
-        ThingVertex previousRole = roles.remove(edge.to().id());
-        if (previousRole != null) {
-            scoped.replaceRole(previousRole, newRole);
-        } else {
-            scoped.record(newRole, edge.order());
+        if (edge.to().id().isScoped()) {
+            Identifier.Variable scope = edge.to().id().asScoped().scope();
+            if (scopes.get(scope).orderVisited(pos)) scopes.get(scope).popLast();
+        } else if (edge.isRolePlayer()) {
+            Identifier.Variable scope = edge.asRolePlayer().scope();
+            if (scopes.get(scope).orderVisited(pos)) scopes.get(scope).popLast();
         }
     }
 
@@ -360,48 +351,55 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
 
         public static class Scoped {
 
-            private final Set<ThingVertex> roleInstances;
-            private final PriorityQueue<Integer> edgeOrders;
+            Set<ThingVertex> roles;
+            TreeMap<Integer, ThingVertex> visited;
 
             private Scoped() {
-                this.roleInstances = new HashSet<>();
-                this.edgeOrders = new PriorityQueue<>(Comparator.reverseOrder());
+                this.roles = new HashSet<>();
+                visited = new TreeMap<>();
             }
 
             public Collection<Integer> edgeOrders() {
-                return edgeOrders;
+                return visited.keySet();
             }
 
             public boolean isEmpty() {
-                assert edgeOrders.isEmpty() == roleInstances.isEmpty();
-                return edgeOrders.isEmpty();
+                assert roles.size() == visited.size();
+                return visited.isEmpty();
             }
 
-            public Integer peekLastEdgeOrder() {
+            public Integer lastEdgeOrder() {
                 assert !isEmpty();
-                return edgeOrders.peek();
+                return visited.lastKey();
             }
 
             public boolean contains(ThingVertex roleVertex) {
-                return roleInstances.contains(roleVertex);
+                return roles.contains(roleVertex);
             }
 
-            public void record(ThingVertex roleVertex, int order) {
-                assert !roleInstances.contains(roleVertex) && !edgeOrders.contains(order);
-                roleInstances.add(roleVertex);
-                edgeOrders.add(order);
+            public void popLast() {
+                ThingVertex poppedRole = visited.remove(lastEdgeOrder());
+                assert roles.contains(poppedRole);
+                roles.remove(poppedRole);
             }
 
-            public void remove(ThingVertex previousRole, int order) {
-                assert roleInstances.contains(previousRole) && edgeOrders.contains(order);
-                roleInstances.remove(previousRole);
-                edgeOrders.remove(order);
+            public void push(ThingVertex role, int order) {
+                assert (isEmpty() || order > lastEdgeOrder()) && !roles.contains(role);
+                visited.put(order, role);
+                roles.add(role);
             }
 
-            public void replaceRole(ThingVertex previousRole, ThingVertex newRole) {
-                assert roleInstances.contains(previousRole);
-                roleInstances.remove(previousRole);
-                roleInstances.add(newRole);
+            public void replaceLast(ThingVertex newRole, int order) {
+                assert order == lastEdgeOrder();
+                ThingVertex oldRole = visited.remove(order);
+                assert roles.contains(oldRole);
+                roles.remove(oldRole);
+                visited.put(order, newRole);
+                roles.add(newRole);
+            }
+
+            public boolean orderVisited(int order) {
+                return visited.containsKey(order);
             }
         }
     }

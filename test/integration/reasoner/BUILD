@@ -46,6 +46,34 @@ host_compatible_java_test(
 host_compatible_java_test(
     name = "test-resolution",
     srcs = ["ResolutionTest.java"],
+    test_class = "grakn.core.reasoner.ResolutionTest",
+    native_libraries_deps = [
+        "//concept:concept",
+        "//logic:logic",
+        "//pattern:pattern",
+        "//reasoner:reasoner",
+        "//rocks:rocks",
+        "//:grakn",
+    ],
+    deps = [
+        # Internal dependencies
+        "//common:common",
+        "//concurrent:concurrent",
+        "//test/integration/util",
+
+        # External dependencies from Grakn Labs
+        "@graknlabs_graql//java/pattern:pattern",
+        "@graknlabs_graql//java:graql",
+    ],
+    resource_strip_prefix = "common/test",
+    resources = [
+        "//common/test:logback",
+    ],
+)
+
+host_compatible_java_test(
+    name = "test-reiteration",
+    srcs = ["ReiterationTest.java"],
     native_libraries_deps = [
         "//concept:concept",
         "//logic:logic",
@@ -58,13 +86,16 @@ host_compatible_java_test(
     resources = [
         "//common/test:logback",
     ],
-    test_class = "grakn.core.reasoner.ResolutionTest",
+    test_class = "grakn.core.reasoner.ReiterationTest",
     deps = [
         # Internal dependencies
         "//common:common",
         "//concurrent:concurrent",
         "//test/integration/util",
+
+        # External dependencies from Grakn Labs
         "@graknlabs_graql//java:graql",
+        "@graknlabs_common//:common",
     ],
 )
 

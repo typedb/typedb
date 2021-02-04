@@ -32,6 +32,7 @@ import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.ResolverRegistry.AlphaEquivalentResolver;
+import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.answer.Mapping;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
@@ -125,14 +126,17 @@ public class RootResolver extends Resolver<RootResolver> {
             derivation = null;
         }
 
-        ConceptMap conceptMap = fromDownstream.answer().derived().withInitial();
+        ConceptMap conceptMap = fromDownstream.answer().derived().withInitialFiltered();
         if (fromDownstream.planIndex() == plan.size() - 1) {
-            if (!responseProducer.hasProduced(conceptMap)) {
-                responseProducer.recordProduced(conceptMap);
-                ResolutionAnswer answer = new ResolutionAnswer(fromDownstream.answer().derived(),
-                                                               conjunction.toString(), derivation, self(),
-                                                               fromDownstream.answer().isInferred());
-                submitAnswer(answer);
+            assert fromUpstream.filter().isPresent();
+            AnswerState.UpstreamVars.Derived answer = AnswerState.DownstreamVars.Root.create()
+                    .aggregateToUpstream(conceptMap, fromUpstream.filter().get());
+            ConceptMap filteredMap = answer.withInitialFiltered();
+            if (!responseProducer.hasProduced(filteredMap)) {
+                responseProducer.recordProduced(filteredMap);
+                ResolutionAnswer resolutionAnswer = new ResolutionAnswer(answer, conjunction.toString(), derivation, self(),
+                                                                         fromDownstream.answer().isInferred());
+                submitAnswer(resolutionAnswer);
             } else {
                 tryAnswer(fromUpstream, iteration);
             }
@@ -142,7 +146,7 @@ public class RootResolver extends Resolver<RootResolver> {
             Request downstreamRequest = Request.create(fromUpstream.path().append(nextPlannedDownstream.resolver()),
                                                        UpstreamVars.Initial.of(conceptMap).toDownstreamVars(
                                                                Mapping.of(nextPlannedDownstream.mapping())),
-                                                       derivation, planIndex);
+                                                       derivation, planIndex, null);
             responseProducer.addDownstreamProducer(downstreamRequest);
             requestFromDownstream(downstreamRequest, fromUpstream, iteration);
         }
@@ -183,37 +187,41 @@ public class RootResolver extends Resolver<RootResolver> {
     }
 
     @Override
-    protected ResponseProducer responseProducerCreate(Request request, int iteration) {
-        LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), request);
-        assert request.answerBounds().isRoot(); // We can ignore the empty ConceptMap of the incoming request
+    protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
+        LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), fromUpstream);
 
-        ResourceIterator<ConceptMap> traversalProducer = traversalEngine.iterator(conjunction.traversal())
-                .map(conceptMgr::conceptMap);
-        ResponseProducer responseProducer = new ResponseProducer(traversalProducer, iteration);
+        assert fromUpstream.filter().isPresent() && fromUpstream.partialAnswer().isRoot();
+        ResourceIterator<UpstreamVars.Derived> upstreamAnswers = traversalEngine.iterator(conjunction.traversal())
+                .map(conceptMgr::conceptMap)
+                .map(conceptMap -> fromUpstream.partialAnswer().asRoot().aggregateToUpstream(conceptMap, fromUpstream.filter().get()));
+        ResponseProducer responseProducer = new ResponseProducer(upstreamAnswers, iteration);
         if (!plan.isEmpty()) {
-            Request toDownstream = Request.create(request.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
-                                                  UpstreamVars.Initial.of(request.answerBounds().conceptMap())
+            Request toDownstream = Request.create(fromUpstream.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
+                                                  UpstreamVars.Initial.of(fromUpstream.partialAnswer().conceptMap())
                                                           .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
-                                                  new ResolutionAnswer.Derivation(map()), 0);
+                                                  new ResolutionAnswer.Derivation(map()), 0, null);
             responseProducer.addDownstreamProducer(toDownstream);
         }
         return responseProducer;
     }
 
     @Override
-    protected ResponseProducer responseProducerReiterate(Request request, ResponseProducer responseProducerPrevious, int newIteration) {
+    protected ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer responseProducerPrevious, int newIteration) {
         assert newIteration > responseProducerPrevious.iteration();
         LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
 
         assert newIteration > responseProducerPrevious.iteration();
-        ResourceIterator<ConceptMap> traversalIterator = traversalEngine.iterator(conjunction.traversal())
-                .map(conceptMgr::conceptMap);
-        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(traversalIterator, newIteration);
+        assert fromUpstream.filter().isPresent() && fromUpstream.partialAnswer().isRoot();
+        ResourceIterator<UpstreamVars.Derived> upstreamAnswers = traversalEngine.iterator(conjunction.traversal())
+                .map(conceptMgr::conceptMap)
+                .map(conceptMap -> fromUpstream.partialAnswer().asRoot().aggregateToUpstream(conceptMap, fromUpstream.filter().get()));
+        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(upstreamAnswers, newIteration);
+
         if (!plan.isEmpty()) {
-            Request toDownstream = Request.create(request.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
-                                                  UpstreamVars.Initial.of(request.answerBounds().conceptMap()).
+            Request toDownstream = Request.create(fromUpstream.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
+                                                  UpstreamVars.Initial.of(fromUpstream.partialAnswer().conceptMap()).
                                                           toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
-                                                  new ResolutionAnswer.Derivation(map()), 0);
+                                                  new ResolutionAnswer.Derivation(map()), 0, null);
             responseProducerNewIter.addDownstreamProducer(toDownstream);
         }
         return responseProducerNewIter;
@@ -226,23 +234,18 @@ public class RootResolver extends Resolver<RootResolver> {
     }
 
     private void tryAnswer(Request fromUpstream, int iteration) {
-        while (responseProducer.hasTraversalProducer()) {
-            ConceptMap conceptMap = responseProducer.traversalProducer().next();
-            LOG.trace("{}: has found via traversal: {}", name(), conceptMap);
-            if (!responseProducer.hasProduced(conceptMap)) {
-                responseProducer.recordProduced(conceptMap);
-                assert fromUpstream.answerBounds().isRoot();
-                ResolutionAnswer answer = new ResolutionAnswer(fromUpstream.answerBounds().asRoot().aggregateToUpstream(conceptMap),
-                                                               conjunction.toString(), ResolutionAnswer.Derivation.EMPTY, self(), false);
-                submitAnswer(answer);
-                return;
-            }
-        }
-
-        if (responseProducer.hasDownstreamProducer()) {
-            requestFromDownstream(responseProducer.nextDownstreamProducer(), fromUpstream, iteration);
+        if (responseProducer.hasUpstreamAnswer()) {
+            UpstreamVars.Derived upstreamAnswer = responseProducer.upstreamAnswers().next();
+            responseProducer.recordProduced(upstreamAnswer.withInitialFiltered());
+            ResolutionAnswer answer = new ResolutionAnswer(upstreamAnswer, conjunction.toString(),
+                                                           ResolutionAnswer.Derivation.EMPTY, self(), false);
+            submitAnswer(answer);
         } else {
-            onExhausted.accept(iteration);
+            if (responseProducer.hasDownstreamProducer()) {
+                requestFromDownstream(responseProducer.nextDownstreamProducer(), fromUpstream, iteration);
+            } else {
+                onExhausted.accept(iteration);
+            }
         }
     }
 

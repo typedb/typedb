@@ -47,6 +47,7 @@ import graql.lang.pattern.variable.Reference;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -97,7 +98,8 @@ public abstract class Concludable extends Resolvable {
         synchronized (this) {
             if (applicableRules == null) applicableRules = applicableRules(conceptMgr, logicMgr);
         }
-        return Iterators.iterate(applicableRules.keySet());
+        // This gives a deterministic ordering to the applicable rules, which is important for testing.
+        return Iterators.iterate(applicableRules.keySet().stream().sorted(Comparator.comparing(Rule::getLabel)).collect(Collectors.toList()));
     }
 
     abstract Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr);
@@ -644,7 +646,7 @@ public abstract class Concludable extends Resolvable {
             Variable var = generating();
             Set<Label> types = var.resolvedTypes();
             // may never be empty as its always known to be at least a relation or attribute
-            assert var.isSatisfiable() && !types.isEmpty();
+            assert var.isSatisfiable();
 
             Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
             types.forEach(type -> logicMgr.rulesConcluding(type)
@@ -743,7 +745,7 @@ public abstract class Concludable extends Resolvable {
             Variable attribute = generating();
             Set<Label> attributeTypes = attribute.resolvedTypes();
             // may never be empty as its always known to be at least an attribute
-            assert attribute.isSatisfiable() && !attributeTypes.isEmpty();
+            assert attribute.isSatisfiable();
 
             Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
             attributeTypes.forEach(type -> logicMgr.rulesConcluding(type)

@@ -17,6 +17,7 @@
 
 package grakn.core.reasoner.resolution.answer;
 
+import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
@@ -29,6 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -75,8 +77,8 @@ public abstract class AnswerState {
             }
 
             public Optional<DownstreamVars.Unified> toDownstreamVars(Unifier unifier) {
-                Optional<ConceptMap> unified = unifier.unify(conceptMap());
-                return unified.map(conceptMap -> new DownstreamVars.Unified(this, conceptMap, unifier));
+                Optional<Pair<ConceptMap, Unifier.Requirements.Instance>> unified = unifier.unify(conceptMap());
+                return unified.map(unification -> new DownstreamVars.Unified(this, unification.first(), unifier, unification.second()));
             }
 
             @Override
@@ -90,18 +92,27 @@ public abstract class AnswerState {
         public static class Derived extends AnswerState {
 
             private final Initial initial;
+            private final Set<Reference.Name> filter;
+            private ConceptMap withInitialFiltered;
 
-            Derived(ConceptMap derivedAnswer, @Nullable UpstreamVars.Initial source) {
+            Derived(ConceptMap derivedAnswer, @Nullable UpstreamVars.Initial source, @Nullable Set<Reference.Name> filter) {
                 super(derivedAnswer);
                 this.initial = source;
+                this.filter = filter;
+                this.withInitialFiltered = null;
             }
 
-            public ConceptMap withInitial() {
-                HashMap<Reference.Name, Concept> withInitial = new HashMap<>(conceptMap().concepts());
-                if (initial != null) {
-                   withInitial.putAll(initial.conceptMap().concepts());
+            public ConceptMap withInitialFiltered() {
+                if (withInitialFiltered == null) {
+                    HashMap<Reference.Name, Concept> withInitial = new HashMap<>(conceptMap().concepts());
+                    if (initial != null) {
+                        withInitial.putAll(initial.conceptMap().concepts());
+                    }
+                    ConceptMap answer = new ConceptMap(withInitial);
+                    if (filter != null) withInitialFiltered = answer.filter(filter);
+                    else withInitialFiltered = answer;
                 }
-                return new ConceptMap(withInitial);
+                return withInitialFiltered;
             }
 
             @Override
@@ -149,10 +160,9 @@ public abstract class AnswerState {
                 return new Root(new ConceptMap());
             }
 
-            public UpstreamVars.Derived aggregateToUpstream(ConceptMap conceptMap) {
-                if (conceptMap == null) return null;
+            public UpstreamVars.Derived aggregateToUpstream(ConceptMap conceptMap, Set<Reference.Name> filter) {
                 if (conceptMap.concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
-                return new UpstreamVars.Derived(new ConceptMap(conceptMap.concepts()), null);
+                return new UpstreamVars.Derived(new ConceptMap(conceptMap.concepts()), null, filter);
             }
 
             @Override
@@ -182,7 +192,8 @@ public abstract class AnswerState {
             }
 
             public UpstreamVars.Derived mapToUpstream(ConceptMap additionalConcepts) {
-                return new UpstreamVars.Derived(new ConceptMap(mapping.unTransform(additionalConcepts).concepts()), initial);
+                return new UpstreamVars.Derived(new ConceptMap(mapping.unTransform(additionalConcepts).concepts()),
+                                                initial, null);
             }
 
             @Override
@@ -219,16 +230,19 @@ public abstract class AnswerState {
 
             private final UpstreamVars.Initial initial;
             private final Unifier unifier;
+            private final Unifier.Requirements.Instance instanceRequirements;
 
-            Unified(UpstreamVars.Initial initial, ConceptMap unifiedInitial, Unifier unifier) {
+            Unified(UpstreamVars.Initial initial, ConceptMap unifiedInitial, Unifier unifier,
+                    Unifier.Requirements.Instance instanceRequirements) {
                 super(unifiedInitial);
                 this.initial = initial;
                 this.unifier = unifier;
+                this.instanceRequirements = instanceRequirements;
             }
 
             public Optional<UpstreamVars.Derived> unifyToUpstream(Map<Identifier, Concept> identifiedConcepts) {
-                Optional<ConceptMap> reversed = unifier.unUnify(identifiedConcepts);
-                return reversed.map(map -> new UpstreamVars.Derived(new ConceptMap(map.concepts()), initial));
+                Optional<ConceptMap> reversed = unifier.unUnify(identifiedConcepts, instanceRequirements);
+                return reversed.map(map -> new UpstreamVars.Derived(new ConceptMap(map.concepts()), initial, null));
             }
 
             @Override

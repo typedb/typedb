@@ -25,35 +25,42 @@ import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
+import grakn.core.traversal.common.Identifier;
+import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.ThreadSafe;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
 
+import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.reasoner.resolution.answer.AnswerState.DownstreamVars.Root;
 import static grakn.core.reasoner.resolution.framework.ResolutionAnswer.Derivation.EMPTY;
 
-@ThreadSafe // TODO: verify
+@ThreadSafe
 public class ReasonerProducer implements Producer<ConceptMap> {
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerProducer.class);
 
     private final Actor<RootResolver> rootResolver;
+    private final Set<Reference.Name> filter;
     private Queue<ConceptMap> queue;
     private Request resolveRequest;
     private boolean iterationInferredAnswer;
     private boolean done;
     private int iteration;
 
-    public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverMgr) {
+    public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverMgr, Set<Identifier.Variable.Name> idFilter) {
         this.rootResolver = resolverMgr.createRoot(conjunction, this::requestAnswered, this::requestExhausted);
-        this.resolveRequest = Request.create(new Request.Path(rootResolver), Root.create(), EMPTY);
+        this.filter = iterate(idFilter).map(Identifier.Variable.Name::reference).toSet();
+        this.resolveRequest = Request.create(new Request.Path(rootResolver), Root.create(), EMPTY, filter);
         this.queue = null;
         this.iteration = 0;
         this.done = false;
     }
 
     @Override
-    public void produce(Queue<ConceptMap> queue, int request) {
+    public void produce(Queue<ConceptMap> queue, int request, ExecutorService executor) {
         assert this.queue == null || this.queue == queue;
         this.queue = queue;
         for (int i = 0; i < request; i++) {
@@ -64,9 +71,9 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     @Override
     public void recycle() {}
 
-    private void requestAnswered(ResolutionAnswer answer) {
-        if (answer.isInferred()) iterationInferredAnswer = true;
-        queue.put(answer.derived().withInitial());
+    private void requestAnswered(ResolutionAnswer resolutionAnswer) {
+        if (resolutionAnswer.isInferred()) iterationInferredAnswer = true;
+        queue.put(resolutionAnswer.derived().withInitialFiltered());
     }
 
     private void requestExhausted(int iteration) {
@@ -91,7 +98,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private void prepareNextIteration() {
         iteration++;
         iterationInferredAnswer = false;
-        resolveRequest = Request.create(new Request.Path(rootResolver), Root.create(), EMPTY);
+        resolveRequest = Request.create(new Request.Path(rootResolver), Root.create(), EMPTY, filter);
     }
 
     private boolean mustReiterate() {

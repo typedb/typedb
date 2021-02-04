@@ -69,6 +69,7 @@ public class RelationImpl extends ThingImpl implements Relation {
     @Override
     public void addPlayer(RoleType roleType, Thing player, boolean isInferred) {
         assert isInferred() == isInferred;
+        validateIsNotDeleted();
         if (this.getType().getRelates().noneMatch(t -> t.equals(roleType))) {
             throw exception(GraknException.of(RELATION_ROLE_UNRELATED, this.getType().getLabel(), roleType.getLabel()));
         } else if (player.getType().getPlays().noneMatch(t -> t.equals(roleType))) {
@@ -83,6 +84,7 @@ public class RelationImpl extends ThingImpl implements Relation {
 
     @Override
     public void removePlayer(RoleType roleType, Thing player) {
+        validateIsNotDeleted();
         ResourceIterator<ThingVertex> role = vertex.outs().edge(
                 RELATING, PrefixIID.of(ROLE), ((RoleTypeImpl) roleType).vertex.iid()
         ).to().filter(v -> v.ins().edge(PLAYING, ((ThingImpl) player).vertex) != null);

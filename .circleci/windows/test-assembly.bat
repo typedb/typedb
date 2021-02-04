@@ -21,7 +21,7 @@ REM by Chocolatey in prepare.bat is accessible
 CALL refreshenv
 
 REM build grakn-core-all-windows archive
-bazel build //test/assembly:assembly --test_output=errors
+bazel test //test/assembly:assembly --test_output=streamed --experimental_enable_runfiles --test_env=PATH
 
 :error
 IF %errorlevel% NEQ 0 EXIT /b %errorlevel%
