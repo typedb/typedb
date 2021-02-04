@@ -22,6 +22,7 @@ load("@graknlabs_common//test/server:rules.bzl", "grakn_java_test")
 
 native_grakn_artifact(
     name = "native-grakn-artifact",
+    output = "grakn-core-server.tar.gz",
     mac_artifact = "//server:assemble-mac-zip",
     linux_artifact = "//server:assemble-linux-targz",
     windows_artifact = "//server:assemble-windows-zip",
