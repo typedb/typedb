@@ -569,6 +569,10 @@ public class DataGraph implements Graph {
             }
         }
 
+        public long hasEdgeCount(Label thing, Label attribute) {
+            return hasEdgeCount(schemaGraph.getType(thing), schemaGraph.getType(attribute));
+        }
+
         public long thingVertexSum(Set<Label> labels) {
             return thingVertexSum(labels.stream().map(schemaGraph::getType));
         }
