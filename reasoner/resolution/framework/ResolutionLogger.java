@@ -61,7 +61,6 @@ public final class ResolutionLogger {
     }
 
     private void addMessage(Resolver<?> sender, Resolver<?> receiver, int iteration, EdgeType edgeType, String conceptMap) {
-        if (path.get() == null) initialise();
         writeEdge(sender.name(), receiver.name(), iteration, edgeType.colour(), messageNumber, conceptMap);
         messageNumber ++;
     }
@@ -87,7 +86,7 @@ public final class ResolutionLogger {
         return DOUBLE_QUOTE + toFormat + DOUBLE_QUOTE;
     }
 
-    private void initialise() {
+    public void initialise() {
         messageNumber = 0;
         path.set(Paths.get("./" + name() + ".dot"));
         try {

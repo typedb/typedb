@@ -119,6 +119,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     private void requestAnswer() {
+        ResolutionLogger.get().initialise();
         rootResolver.tell(actor -> actor.receiveRequest(resolveRequest, iteration));
     }
 }
