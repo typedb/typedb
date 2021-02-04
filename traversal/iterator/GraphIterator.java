@@ -308,10 +308,6 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
         if (edge.to().id().isScoped()) {
             Identifier.Variable scope = edge.to().id().asScoped().scope();
             if (scopes.get(scope).orderVisited(pos)) scopes.get(scope).popLast();
-//        } else if (edge.from().id().isScoped()) {
-//            Identifier.Variable scope = edge.from().id().asScoped().scope();
-//            assert scopes.get(scope).orderVisited(pos);
-//            scopes.get(scope).popLast();
         } else if (edge.isRolePlayer()) {
             Identifier.Variable scope = edge.asRolePlayer().scope();
             if (scopes.get(scope).orderVisited(pos)) scopes.get(scope).popLast();
