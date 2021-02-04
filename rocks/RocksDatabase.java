@@ -71,12 +71,14 @@ public class RocksDatabase implements Grakn.Database {
     private Cache cache;
 
     private final Factory.Session sessionFactory;
+    private final Factory.TransactionSchema transactionSchemaFactory;
     protected final AtomicBoolean isOpen;
 
-    protected RocksDatabase(RocksGrakn grakn, String name, Factory.Session sessionFactory) {
+    protected RocksDatabase(RocksGrakn grakn, String name, Factory.Session sessionFactory, Factory.TransactionSchema transactionSchemaFactory) {
         this.grakn = grakn;
         this.name = name;
         this.sessionFactory = sessionFactory;
+        this.transactionSchemaFactory = transactionSchemaFactory;
         schemaKeyGenerator = new KeyGenerator.Schema.Persisted();
         dataKeyGenerator = new KeyGenerator.Data.Persisted();
         sessions = new ConcurrentHashMap<>();
@@ -93,38 +95,34 @@ public class RocksDatabase implements Grakn.Database {
         isOpen = new AtomicBoolean(true);
     }
 
-    static RocksDatabase createAndOpen(RocksGrakn grakn, String name, Factory.Session sessionFactory) {
+    static RocksDatabase createAndOpen(RocksGrakn grakn, String name, Factory.Session sessionFactory, Factory.TransactionSchema transactionSchemaFactory) {
         try {
             Files.createDirectory(grakn.directory().resolve(name));
         } catch (IOException e) {
             throw GraknException.of(e);
         }
 
-        RocksDatabase database = new RocksDatabase(grakn, name, sessionFactory);
+        RocksDatabase database = new RocksDatabase(grakn, name, sessionFactory, transactionSchemaFactory);
         database.initialise();
         database.statisticsBgCounterStart();
         return database;
     }
 
-    static RocksDatabase loadAndOpen(RocksGrakn grakn, String name, Factory.Session sessionFactory) {
-        RocksDatabase database = new RocksDatabase(grakn, name, sessionFactory);
+    static RocksDatabase loadAndOpen(RocksGrakn grakn, String name, Factory.Session sessionFactory, Factory.TransactionSchema transactionSchemaFactory) {
+        RocksDatabase database = new RocksDatabase(grakn, name, sessionFactory, transactionSchemaFactory);
         database.load();
         database.statisticsBgCounterStart();
         return database;
     }
 
     protected void initialise() {
-        try (RocksSession session = createAndOpenSession(SCHEMA, new Options.Session())) {
-            try (RocksTransaction.Schema txn = initialisationTx(session)) {
+        try (RocksSession.Schema session = (RocksSession.Schema) createAndOpenSession(SCHEMA, new Options.Session())) {
+            try (RocksTransaction.Schema txn = transactionSchemaFactory.transactionInternal(session, WRITE, new Options.Transaction())) {
                 if (txn.graph().isInitialised()) throw GraknException.of(DIRTY_INITIALISATION);
                 txn.graph().initialise();
                 txn.commit();
             }
         }
-    }
-
-    protected RocksTransaction.Schema initialisationTx(RocksSession session) {
-        return session.transaction(WRITE).asSchema();
     }
 
     protected void load() {
