@@ -38,6 +38,7 @@ import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
+import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,6 +83,10 @@ public class Reasoner {
     }
 
     private Producer<ConceptMap> resolve(Conjunction conjunction, ConceptMap bounds, Set<Identifier.Variable.Name> filter) {
+        if (filter.isEmpty()) {
+            filter = iterate(conjunction.variables()).filter(var -> var.id().isName())
+                    .map(var -> var.id().asName()).toSet();
+        }
         return new ReasonerProducer(conjunction, filter, bounds, resolverRegistry);
     }
 

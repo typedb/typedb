@@ -191,8 +191,7 @@ public class RootResolver extends Resolver<RootResolver> {
         LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), fromUpstream);
 
         assert fromUpstream.filter().isPresent() && fromUpstream.partialAnswer().isRoot();
-        ResourceIterator<UpstreamVars.Derived> upstreamAnswers = traversalEngine.iterator(conjunction.traversal())
-                .map(conceptMgr::conceptMap)
+        ResourceIterator<UpstreamVars.Derived> upstreamAnswers =  compatibleBoundAnswers(conceptMgr, conjunction, fromUpstream.partialAnswer().conceptMap())
                 .map(conceptMap -> fromUpstream.partialAnswer().asRoot().aggregateToUpstream(conceptMap, fromUpstream.filter().get()));
         ResponseProducer responseProducer = new ResponseProducer(upstreamAnswers, iteration);
         if (!plan.isEmpty()) {
