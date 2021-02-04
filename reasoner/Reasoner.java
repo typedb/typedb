@@ -78,7 +78,11 @@ public class Reasoner {
     }
 
     private Producer<ConceptMap> resolve(Conjunction conjunction, Set<Identifier.Variable.Name> filter) {
-        return new ReasonerProducer(conjunction, resolverRegistry, filter);
+        return resolve(conjunction, new ConceptMap(), filter);
+    }
+
+    private Producer<ConceptMap> resolve(Conjunction conjunction, ConceptMap bounds, Set<Identifier.Variable.Name> filter) {
+        return new ReasonerProducer(conjunction, filter, bounds, resolverRegistry);
     }
 
     private boolean isInfer(Context.Query context) {
@@ -94,14 +98,10 @@ public class Reasoner {
                                                 Context.Query context) {
         ResourceIterator<ConceptMap> answers;
         ResourceIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
-        if (!context.options().parallel()) answers = conjs.flatMap(conj -> iterator(conj, filter, context));
+        if (!context.options().parallel()) answers = conjs.flatMap(conj -> iterator(conj, new ConceptMap(), filter, context));
         else answers = produce(conjs.map(c -> producer(c, filter, context)).toList(), context.producer(), asyncPool1());
         if (disjunction.conjunctions().size() > 1) answers = answers.distinct();
         return answers;
-    }
-
-    private Producer<ConceptMap> producer(Conjunction conjunction) {
-        return producer(conjunction, set(), defaultContext);
     }
 
     private Producer<ConceptMap> producer(Conjunction conjunction, Set<Identifier.Variable.Name> filter,
@@ -125,21 +125,30 @@ public class Reasoner {
         );
     }
 
-    public Producer<ConceptMap> producer(Conjunction conjunction, ConceptMap bounds) {
-        return producer(bound(conjunction, bounds));
+    private ResourceIterator<ConceptMap> iterator(Disjunction disjunction, ConceptMap bounds) {
+        return iterate(disjunction.conjunctions()).flatMap(c -> iterator(c, bounds));
     }
 
-    private ResourceIterator<ConceptMap> iterator(Conjunction conjunction) {
-        return iterator(conjunction, set(), defaultContext);
+    private ResourceIterator<ConceptMap> iterator(Conjunction conjunction, ConceptMap bounds) {
+        return iterator(conjunction, bounds, set(), defaultContext);
     }
 
-    private ResourceIterator<ConceptMap> iterator(Conjunction conjunction, Set<Identifier.Variable.Name> filter,
+    private ResourceIterator<ConceptMap> iterator(Conjunction conjunction, ConceptMap bounds, Context.Query queryContext) {
+        return iterator(conjunction, bounds, set(), queryContext);
+    }
+
+    private ResourceIterator<ConceptMap> iterator(Conjunction conjunction, ConceptMap bounds, Set<Identifier.Variable.Name> filter,
                                                   Context.Query context) {
         ResourceIterator<ConceptMap> answers;
         logicMgr.typeResolver().resolve(conjunction);
         if (conjunction.isSatisfiable()) {
-            if (isInfer(context)) answers = produce(resolve(conjunction, filter), context.producer(), asyncPool1());
-            else answers = traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
+            if (isInfer(context)) {
+                answers = produce(resolve(conjunction, bounds, filter), context.producer(), asyncPool1());
+            } else if (bounds.concepts().isEmpty()) {
+                answers = traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
+            } else {
+                answers = traversalEng.iterator(bound(conjunction, bounds).traversal(filter)).map(conceptMgr::conceptMap);
+            }
         } else if (!conjunction.isBounded() && conjunctionContainsThings(conjunction, filter)) {
             throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction);
         } else {
@@ -150,14 +159,6 @@ public class Reasoner {
         else return answers.filter(answer -> !iterate(conjunction.negations()).flatMap(
                 negation -> iterator(negation.disjunction(), answer)
         ).hasNext());
-    }
-
-    private ResourceIterator<ConceptMap> iterator(Disjunction disjunction, ConceptMap bounds) {
-        return iterate(disjunction.conjunctions()).flatMap(c -> iterator(c, bounds));
-    }
-
-    private ResourceIterator<ConceptMap> iterator(Conjunction conjunction, ConceptMap bounds) {
-        return iterator(bound(conjunction, bounds));
     }
 
     private Conjunction bound(Conjunction conjunction, ConceptMap bounds) {

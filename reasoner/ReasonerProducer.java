@@ -51,7 +51,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private boolean done;
     private int iteration;
 
-    public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverMgr, Set<Identifier.Variable.Name> idFilter) {
+    public ReasonerProducer(Conjunction conjunction, Set<Identifier.Variable.Name> idFilter, ConceptMap bounds, ResolverRegistry resolverMgr) {
         this.rootResolver = resolverMgr.createRoot(conjunction, this::requestAnswered, this::requestExhausted);
         this.filter = iterate(idFilter).map(Identifier.Variable.Name::reference).toSet();
         this.resolveRequest = Request.create(new Request.Path(rootResolver), Root.create(), EMPTY, filter);
