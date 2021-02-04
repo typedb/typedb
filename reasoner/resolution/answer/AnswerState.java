@@ -64,12 +64,16 @@ public abstract class AnswerState {
 
         public static class Initial extends AnswerState {
 
-            Initial(ConceptMap conceptMap) {
+            public Initial(ConceptMap conceptMap) {
                 super(conceptMap);
             }
 
             public static Initial of(ConceptMap conceptMap) {
                 return new Initial(conceptMap);
+            }
+
+            public DownstreamVars.Root toDownstreamVars() {
+                return new DownstreamVars.Root(this);
             }
 
             public DownstreamVars.Mapped toDownstreamVars(Mapping mapping) {
@@ -157,13 +161,17 @@ public abstract class AnswerState {
 
         public static class Root extends DownstreamVars {
 
-            public Root(ConceptMap conceptMap) {
-                super(conceptMap);
+            private UpstreamVars.Initial initial;
+
+            public Root(UpstreamVars.Initial initial) {
+                super(initial.conceptMap());
+                this.initial = initial;
             }
+
 
             public UpstreamVars.Derived aggregateToUpstream(ConceptMap conceptMap, Set<Reference.Name> filter) {
                 if (conceptMap.concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
-                return new UpstreamVars.Derived(new ConceptMap(conceptMap.concepts()), null, filter);
+                return new UpstreamVars.Derived(new ConceptMap(conceptMap.concepts()), initial, filter);
             }
 
             @Override

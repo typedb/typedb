@@ -22,6 +22,8 @@ import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.producer.Producer;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
+import grakn.core.reasoner.resolution.answer.AnswerState;
+import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.ResolutionLogger;
@@ -56,7 +58,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.bounds = bounds;
         this.rootResolver = resolverMgr.createRoot(conjunction, this::requestAnswered, this::requestExhausted);
         this.filter = iterate(idFilter).map(Identifier.Variable.Name::reference).toSet();
-        this.resolveRequest = Request.create(new Request.Path(rootResolver), new Root(bounds), EMPTY, filter);
+        this.resolveRequest = Request.create(new Request.Path(rootResolver), new UpstreamVars.Initial(bounds).toDownstreamVars(), EMPTY, filter);
         this.queue = null;
         this.iteration = 0;
         this.done = false;
@@ -102,7 +104,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private void prepareNextIteration() {
         iteration++;
         iterationInferredAnswer = false;
-        resolveRequest = Request.create(new Request.Path(rootResolver), new Root(bounds), EMPTY, filter);
+        resolveRequest = Request.create(new Request.Path(rootResolver), new UpstreamVars.Initial(bounds).toDownstreamVars(), EMPTY, filter);
     }
 
     private boolean mustReiterate() {

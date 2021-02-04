@@ -165,7 +165,7 @@ public class ReiterationTest {
 
     private void sendRootRequest(Actor<RootResolver> root, int iteration, Set<Reference.Name> filter) {
         root.tell(actor -> actor.receiveRequest(
-                Request.create(new Request.Path(root), new AnswerState.DownstreamVars.Root(new ConceptMap()), null, filter),
+                Request.create(new Request.Path(root), new AnswerState.UpstreamVars.Initial(new ConceptMap()).toDownstreamVars(), null, filter),
                 iteration)
         );
     }

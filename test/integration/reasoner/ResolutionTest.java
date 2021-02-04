@@ -25,6 +25,7 @@ import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.reasoner.resolution.ResolverRegistry;
+import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
@@ -49,7 +50,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.reasoner.resolution.answer.AnswerState.DownstreamVars;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 
@@ -217,15 +217,15 @@ public class ResolutionTest {
         }
         try (RocksSession session = dataSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                String insert  = "insert $y isa woman; $x isa man; (husband: $x, wife: $y) isa marriage;";
+                String insert = "insert $y isa woman; $x isa man; (husband: $x, wife: $y) isa marriage;";
                 transaction.query().insert(Graql.parseQuery(insert));
                 transaction.query().insert(Graql.parseQuery(insert));
 
-                String insert2  = "insert $y isa woman; $x isa woman; (wife: $x, wife: $y) isa marriage;";
+                String insert2 = "insert $y isa woman; $x isa woman; (wife: $x, wife: $y) isa marriage;";
                 transaction.query().insert(Graql.parseQuery(insert2));
                 transaction.query().insert(Graql.parseQuery(insert2));
 
-                String insert3  = "insert $y isa man;";
+                String insert3 = "insert $y isa man;";
                 transaction.query().insert(Graql.parseQuery(insert3));
                 transaction.query().insert(Graql.parseQuery(insert3));
                 transaction.commit();
@@ -233,7 +233,7 @@ public class ResolutionTest {
         }
         try (RocksSession session = dataSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                String rootConjunction  = "{ $a isa woman; $b isa man; $f(friend: $a, friend: $b) isa friendship; }";
+                String rootConjunction = "{ $a isa woman; $b isa man; $f(friend: $a, friend: $b) isa friendship; }";
                 Conjunction conjunctionPattern = parseConjunction(transaction, rootConjunction);
                 createRootAndAssertResponses(transaction, conjunctionPattern, 2L);
             }
@@ -361,10 +361,11 @@ public class ResolutionTest {
                                                                iterDone -> doneReceived.incrementAndGet());
 
                 for (int i = 0; i < answerCount; i++) {
-                    root.tell(actor ->
-                                      actor.receiveRequest(
-                                              Request.create(new Request.Path(root), new DownstreamVars.Root(new ConceptMap()), null),
-                                              0)
+                    root.tell(
+                            actor -> actor.receiveRequest(
+                                    Request.create(new Request.Path(root), new AnswerState.UpstreamVars.Initial(
+                                            new ConceptMap()).toDownstreamVars(), null),
+                                    0)
                     );
                     ResolutionAnswer answer = responses.take();
 
@@ -400,9 +401,9 @@ public class ResolutionTest {
         ResolverRegistry registry = transaction.reasoner().resolverRegistry();
         LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
-                transaction.logic().typeResolver().resolve(conjunction);
-        Actor<RootResolver> root =
-                        registry.createRoot(conjunction, responses::add, iterDone -> doneReceived.incrementAndGet());
+        transaction.logic().typeResolver().resolve(conjunction);
+        Actor<RootResolver> root = registry.createRoot(conjunction, responses::add,
+                                                       iterDone -> doneReceived.incrementAndGet());
         Set<Reference.Name> filter = iterate(conjunction.variables()).map(Variable::reference).filter(Reference::isName)
                 .map(Reference::asName).toSet();
         assertResponses(root, filter, responses, doneReceived, answerCount);
@@ -415,7 +416,8 @@ public class ResolutionTest {
         long n = answerCount + 1; //total number of traversal answers, plus one expected Exhausted (-1 answer)
         for (int i = 0; i < n; i++) {
             root.tell(actor -> actor.receiveRequest(Request.create(
-                    new Request.Path(root), new DownstreamVars.Root(new ConceptMap()), ResolutionAnswer.Derivation.EMPTY, filter
+                    new Request.Path(root), new AnswerState.UpstreamVars.Initial(new ConceptMap()).toDownstreamVars(),
+                    ResolutionAnswer.Derivation.EMPTY, filter
             ), 0));
         }
         int answersFound = 0;
