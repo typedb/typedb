@@ -269,13 +269,7 @@ public class TypeResolver {
             var.has().forEach(constraint -> registerHas(resolver, constraint));
             if (insertable) var.relation().forEach(constraint -> registerInsertableRelation(resolver, constraint));
             else var.relation().forEach(constraint -> registerRelation(resolver, constraint));
-            var.iid().ifPresent(constraint -> registerIID(resolver, constraint));
             return resolver;
-        }
-
-        private void registerIID(TypeVariable resolver, IIDConstraint iidConstraint) {
-            Thing thing = conceptMgr.getThing(iidConstraint.iid());
-            if (thing != null) traversal.labels(resolver.id(), thing.getType().getLabel());
         }
 
         private void registerIsa(TypeVariable resolver, IsaConstraint isaConstraint) {
