@@ -436,8 +436,8 @@ public class DataGraph implements Graph {
         iterate(thingsByIID.values()).filter(v -> v.status().equals(BUFFERED) && !v.isInferred()).forEachRemaining(
                 vertex -> {
                     VertexIID.Thing newIID = generate(storage.dataKeyGenerator(), vertex.type().iid(), vertex.type().properLabel());
-                    vertex.iid(newIID);
                     IIDMap.put(vertex.iid(), newIID);
+                    vertex.iid(newIID);
                 }
         ); // thingByIID no longer contains valid mapping from IID to TypeVertex
         thingsByIID.values().stream().filter(v -> !v.isInferred()).forEach(Vertex::commit);
