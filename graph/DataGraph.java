@@ -39,6 +39,7 @@ import grakn.core.graph.vertex.impl.AttributeVertexImpl;
 import grakn.core.graph.vertex.impl.ThingVertexImpl;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -431,12 +432,17 @@ public class DataGraph implements Graph {
      */
     @Override
     public void commit() {
+        Map<VertexIID.Thing, VertexIID.Thing> IIDMap = new HashMap<>();
         iterate(thingsByIID.values()).filter(v -> v.status().equals(BUFFERED) && !v.isInferred()).forEachRemaining(
-                vertex -> vertex.iid(generate(storage.dataKeyGenerator(), vertex.type().iid(), vertex.type().properLabel()))
+                vertex -> {
+                    VertexIID.Thing newIID = generate(storage.dataKeyGenerator(), vertex.type().iid(), vertex.type().properLabel());
+                    vertex.iid(newIID);
+                    IIDMap.put(vertex.iid(), newIID);
+                }
         ); // thingByIID no longer contains valid mapping from IID to TypeVertex
         thingsByIID.values().stream().filter(v -> !v.isInferred()).forEach(Vertex::commit);
         attributesByIID.valuesIterator().forEachRemaining(Vertex::commit);
-        statistics.commit();
+        statistics.commit(IIDMap);
 
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Thing to be used again
     }
@@ -652,9 +658,12 @@ public class DataGraph implements Graph {
 
         private long persistedVertexCount(VertexIID.Type typeIID, boolean isTransitive) {
             if (isTransitive) {
-                return persistedVertexTransitiveCount.computeIfAbsent(typeIID, iid -> {
-                    if (isRootTypeIID(typeIID)) {
-                        return bytesToLongOrZero(storage.get(vertexTransitiveCountKey(typeIID)));
+                if (isRootTypeIID(typeIID)) {
+                    return persistedVertexCount.computeIfAbsent(typeIID, iid ->
+                            bytesToLongOrZero(storage.get(vertexTransitiveCountKey(typeIID))));
+                } else {
+                    if (persistedVertexTransitiveCount.containsKey(typeIID)) {
+                        return persistedVertexTransitiveCount.get(typeIID);
                     } else {
                         ResourceIterator<TypeVertex> subTypes = schemaGraph.convert(typeIID).ins().edge(SUB).from();
                         long childrenPersistedCount = 0;
@@ -663,9 +672,10 @@ public class DataGraph implements Graph {
                             childrenPersistedCount += persistedVertexCount(subType.iid(), true);
                         }
                         long persistedCount = persistedVertexCount(typeIID, false);
+                        persistedVertexTransitiveCount.put(typeIID, childrenPersistedCount + persistedCount);
                         return childrenPersistedCount + persistedCount;
                     }
-                });
+                }
             } else {
                 return persistedVertexCount.computeIfAbsent(typeIID, iid ->
                         bytesToLongOrZero(storage.get(vertexCountKey(typeIID))));
@@ -698,7 +708,7 @@ public class DataGraph implements Graph {
                     typeIID.equals(schemaGraph.rootRoleType().iid());
         }
 
-        private void commit() {
+        private void commit(Map<VertexIID.Thing, VertexIID.Thing> IIDMap) {
             deltaVertexCount.forEach((typeIID, delta) -> {
                 storage.mergeUntracked(vertexCountKey(typeIID), longToBytes(delta));
                 if (typeIID.encoding().prefix() == VERTEX_ENTITY_TYPE) {
@@ -713,7 +723,7 @@ public class DataGraph implements Graph {
                     attributeCountJobKey(attIID), countWorkValue.bytes()
             ));
             hasEdgeCountJobs.forEach((hasEdge, countWorkValue) -> storage.putUntracked(
-                    hasEdgeCountJobKey(hasEdge.first(), hasEdge.second()), countWorkValue.bytes()
+                    hasEdgeCountJobKey(IIDMap.getOrDefault(hasEdge.first(), hasEdge.first()), hasEdge.second()), countWorkValue.bytes()
             ));
             if (!deltaVertexCount.isEmpty()) {
                 storage.mergeUntracked(snapshotKey(), longToBytes(1));

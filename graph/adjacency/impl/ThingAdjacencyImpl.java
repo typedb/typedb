@@ -169,7 +169,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
     @Override
     public ThingEdgeImpl put(Encoding.Edge.Thing encoding, ThingVertex adjacent, boolean isInferred) {
         assert !encoding.isOptimisation();
-        if (encoding == Encoding.Edge.Thing.HAS && direction.isOut()) {
+        if (encoding == Encoding.Edge.Thing.HAS && direction.isOut() && !isInferred) {
             owner.graph().stats().hasEdgeCreated(owner.iid(), adjacent.iid().asAttribute());
         }
         ThingEdgeImpl edge = direction.isOut()
