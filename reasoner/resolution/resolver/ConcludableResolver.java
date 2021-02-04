@@ -34,7 +34,6 @@ import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.Response.Answer;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
-import grakn.core.traversal.Traversal;
 import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +55,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
     private final Concludable concludable;
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
-    private final Map<Actor<RootResolver>, IterationState> iterationStates;
+    private final Map<Actor<RootResolver>, RecursionState> recursionStates;
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private final Map<Request, ResponseProducer> responseProducers;
     private boolean isInitialised;
@@ -72,7 +71,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
         this.applicableRules = new LinkedHashMap<>();
-        this.iterationStates = new HashMap<>();
+        this.recursionStates = new HashMap<>();
         this.responseProducers = new HashMap<>();
         this.isInitialised = false;
     }
@@ -167,8 +166,8 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
     protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), fromUpstream);
         Actor<RootResolver> root = fromUpstream.path().root();
-        iterationStates.putIfAbsent(root, new IterationState(iteration));
-        IterationState iterationState = iterationStates.get(root);
+        recursionStates.putIfAbsent(root, new RecursionState(iteration));
+        RecursionState iterationState = recursionStates.get(root);
 
         assert fromUpstream.partialAnswer().isMapped();
         ResourceIterator<UpstreamVars.Derived> upstreamAnswers =
@@ -187,8 +186,8 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
         LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
 
         Actor<RootResolver> root = fromUpstream.path().root();
-        assert iterationStates.containsKey(root);
-        IterationState iterationState = iterationStates.get(root);
+        assert recursionStates.containsKey(root);
+        RecursionState iterationState = recursionStates.get(root);
         if (iterationState.iteration() < newIteration) {
             iterationState.nextIteration(newIteration);
         }
@@ -242,10 +241,10 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
         return responseProducers.get(fromUpstream);
     }
 
-    private void mayRegisterRules(Request request, IterationState iterationState, ResponseProducer responseProducer) {
+    private void mayRegisterRules(Request request, RecursionState recursionState, ResponseProducer responseProducer) {
         // loop termination: when receiving a new request, we check if we have seen it before from this root query
         // if we have, we do not allow rules to be registered as possible downstreams
-        if (!iterationState.hasReceived(request.partialAnswer().conceptMap())) {
+        if (!recursionState.hasReceived(request.partialAnswer().conceptMap())) {
             for (Map.Entry<Actor<RuleResolver>, Set<Unifier>> entry : applicableRules.entrySet()) {
                 Actor<RuleResolver> ruleActor = entry.getKey();
                 for (Unifier unifier : entry.getValue()) {
@@ -258,7 +257,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
                     }
                 }
             }
-            iterationState.recordReceived(request.partialAnswer().conceptMap());
+            recursionState.recordReceived(request.partialAnswer().conceptMap());
         }
     }
 
@@ -267,11 +266,11 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
      * This allows us to share actors across different queries
      * while maintaining the ability to do loop termination within a single query
      */
-    private static class IterationState {
+    private static class RecursionState {
         private Set<ConceptMap> receivedMaps;
         private int iteration;
 
-        IterationState(int iteration) {
+        RecursionState(int iteration) {
             this.iteration = iteration;
             this.receivedMaps = new HashSet<>();
         }
