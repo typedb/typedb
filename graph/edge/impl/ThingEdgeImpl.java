@@ -157,7 +157,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
                     graph.storage().delete(outIID().bytes());
                     graph.storage().delete(inIID().bytes());
                 }
-                if (encoding == Encoding.Edge.Thing.HAS) {
+                if (encoding == Encoding.Edge.Thing.HAS && !isInferred) {
                     graph.stats().hasEdgeDeleted(from.iid(), to.iid().asAttribute());
                 }
             }
@@ -321,7 +321,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
                 to().ins().remove(this);
                 graph.storage().delete(this.outIID.bytes());
                 graph.storage().delete(this.inIID.bytes());
-                if (encoding == Encoding.Edge.Thing.HAS) {
+                if (encoding == Encoding.Edge.Thing.HAS && !isInferred) {
                     graph.stats().hasEdgeDeleted(fromIID, toIID.asAttribute());
                 }
             }
