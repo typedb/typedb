@@ -22,7 +22,6 @@ import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.producer.Producer;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
@@ -34,11 +33,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.ThreadSafe;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.reasoner.resolution.answer.AnswerState.DownstreamVars.Root;
 import static grakn.core.reasoner.resolution.framework.ResolutionAnswer.Derivation.EMPTY;
 
 @ThreadSafe
@@ -47,11 +53,11 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private final Actor<RootResolver> rootResolver;
     private final Set<Reference.Name> filter;
-    private Queue<ConceptMap> queue;
-    private ConceptMap bounds;
+    private final Awaiting awaiting;
+    private final ConceptMap bounds;
     private Request resolveRequest;
     private boolean iterationInferredAnswer;
-    private boolean done;
+    private AtomicBoolean done;
     private int iteration;
 
     public ReasonerProducer(Conjunction conjunction, Set<Identifier.Variable.Name> idFilter, ConceptMap bounds, ResolverRegistry resolverMgr) {
@@ -59,15 +65,14 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.rootResolver = resolverMgr.createRoot(conjunction, this::requestAnswered, this::requestExhausted);
         this.filter = iterate(idFilter).map(Identifier.Variable.Name::reference).toSet();
         this.resolveRequest = Request.create(new Request.Path(rootResolver), new UpstreamVars.Initial(bounds).toDownstreamVars(), EMPTY, filter);
-        this.queue = null;
+        this.awaiting = new Awaiting();
         this.iteration = 0;
-        this.done = false;
+        this.done = new AtomicBoolean(false);
     }
 
     @Override
     public void produce(Queue<ConceptMap> queue, int request, ExecutorService executor) {
-        assert this.queue == null || this.queue == queue;
-        this.queue = queue;
+        awaiting.add(queue, request, executor);
         for (int i = 0; i < request; i++) {
             requestAnswer();
         }
@@ -79,20 +84,18 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private void requestAnswered(ResolutionAnswer resolutionAnswer) {
         if (LOG.isTraceEnabled()) ResolutionLogger.get().finish();
         if (resolutionAnswer.isInferred()) iterationInferredAnswer = true;
-        queue.put(resolutionAnswer.derived().withInitialFiltered());
+        awaiting.submit(resolutionAnswer.derived().withInitialFiltered());
     }
 
     private void requestExhausted(int iteration) {
         LOG.trace("Failed to find answer to request in iteration: " + iteration);
         if (LOG.isTraceEnabled()) ResolutionLogger.get().finish();
-        if (!done && iteration == this.iteration && !mustReiterate()) {
-            // query is completely terminated
-            done = true;
-            queue.done();
+        if (iteration == this.iteration && !mustReiterate() && done.compareAndSet(false, true)) {
+            awaiting.done(); // query is completely terminated
             return;
         }
 
-        if (!done) {
+        if (!done.get()) {
             if (iteration == this.iteration) {
                 prepareNextIteration();
             }
@@ -125,5 +128,49 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private void requestAnswer() {
         ResolutionLogger.get().initialise();
         rootResolver.tell(actor -> actor.receiveRequest(resolveRequest, iteration));
+    }
+
+    private static class Awaiting {
+
+        private final LinkedList<Requested> requested;
+
+        Awaiting() {
+            this.requested = new LinkedList<>();
+        }
+
+        public void add(Queue<ConceptMap> queue, int request, ExecutorService executor) {
+            requested.add(new Requested(queue, request, executor));
+        }
+
+        public synchronized void submit(ConceptMap answer) {
+            assert !requested.isEmpty();
+            Requested r = requested.peek();
+            r.executor.submit(() -> r.queue.put(answer));
+            r.remaining--;
+            if (r.remaining == 0) requested.pop();
+        }
+
+        public void done() {
+            // because queues can repeat, we only signal each one once
+            Set<Queue<ConceptMap>> dispatched = new HashSet<>();
+            for (Requested r : requested) {
+                if (!dispatched.contains(r.queue)) {
+                    dispatched.add(r.queue);
+                    r.executor.submit(() -> r.queue.done());
+                }
+            }
+            requested.clear();
+        }
+
+        private static class Requested {
+            private final Queue<ConceptMap> queue;
+            private final ExecutorService executor;
+            private int remaining;
+            public Requested(Queue<ConceptMap> queue, int request, ExecutorService executor) {
+                this.queue = queue;
+                this.executor = executor;
+                this.remaining = request;
+            }
+        }
     }
 }

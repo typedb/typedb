@@ -23,6 +23,7 @@ import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
+import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Thing;
@@ -42,6 +43,8 @@ import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.set;
@@ -87,7 +90,15 @@ public class Reasoner {
             filter = iterate(conjunction.variables()).filter(var -> var.id().isName())
                     .map(var -> var.id().asName()).toSet();
         }
-        return new ReasonerProducer(conjunction, filter, bounds, resolverRegistry);
+        Map<Reference.Name, Concept> filteredConcepts = new HashMap<>();
+        for (Variable v : conjunction.variables()) {
+            Concept concept;
+            if (v.reference().isName() && null != (concept = bounds.concepts().get(v.reference().asName()))) {
+                filteredConcepts.put(v.reference().asName(), concept);
+            }
+        }
+        // filter bounds to only vars relevant to this conjunction
+        return new ReasonerProducer(conjunction, filter, new ConceptMap(filteredConcepts), resolverRegistry);
     }
 
     private boolean isInfer(Context.Query context) {
