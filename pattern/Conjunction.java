@@ -177,7 +177,7 @@ public class Conjunction implements Pattern, Cloneable {
         return variableSet.stream().flatMap(variable -> variable.constraints().stream()).map(Object::toString)
                 .collect(Collectors.joining("" + SEMICOLON + SPACE,
                                             "" + CURLY_OPEN + SPACE,
-                                            "" + SPACE + CURLY_CLOSE));
+                                            "" + SEMICOLON + SPACE + CURLY_CLOSE));
     }
 
     @Override

@@ -249,16 +249,6 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     }
 
     @Override
-    public String toString() {
-        if (reference().isLabel()) {
-            assert label().isPresent();
-            return "" + label().get().scopedLabel();
-        } else {
-            return super.toString();
-        }
-    }
-
-    @Override
     public AlphaEquivalence alphaEquals(TypeVariable that) {
         return AlphaEquivalence.valid()
                 .validIf(id().isName() == that.id().isName())
