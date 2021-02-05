@@ -149,13 +149,13 @@ public abstract class RocksSession implements Grakn.Session {
                     throw GraknException.of(e);
                 }
             }
-            RocksTransaction.Schema transaction = txSchemaFactory.transaction(this, type, options, false);
+            RocksTransaction.Schema transaction = txSchemaFactory.transaction(this, type, options);
             transactions.put(transaction, 0L);
             return transaction;
 
         }
 
-        protected RocksTransaction.Schema graphInitTransaction() {
+        protected RocksTransaction.Schema transactionGraphInit() {
             if (!isOpen.get()) throw GraknException.of(SESSION_CLOSED);
             try {
                 if (!writeLock.tryLock(new Options.Transaction().schemaLockTimeoutMillis(), MILLISECONDS)) {
@@ -164,7 +164,7 @@ public abstract class RocksSession implements Grakn.Session {
             } catch (InterruptedException e) {
                 throw GraknException.of(e);
             }
-            RocksTransaction.Schema transaction = txSchemaFactory.transaction(this, Arguments.Transaction.Type.WRITE, new Options.Transaction(), true);
+            RocksTransaction.Schema transaction = txSchemaFactory.transactionGraphInit(this);
             transactions.put(transaction, 0L);
             return transaction;
         }

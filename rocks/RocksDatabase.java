@@ -51,7 +51,6 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
 import static grakn.core.common.exception.ErrorMessage.Session.SCHEMA_ACQUIRE_LOCK_TIMEOUT;
 import static grakn.core.common.parameters.Arguments.Session.Type.SCHEMA;
-import static grakn.core.common.parameters.Arguments.Transaction.Type.READ;
 import static grakn.core.common.parameters.Arguments.Transaction.Type.WRITE;
 import static java.util.Comparator.reverseOrder;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -117,7 +116,7 @@ public class RocksDatabase implements Grakn.Database {
 
     protected void initialise() {
         try (RocksSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
-            try (RocksTransaction.Schema txn = session.graphInitTransaction()) {
+            try (RocksTransaction.Schema txn = session.transactionGraphInit()) {
                 if (txn.graph().isInitialised()) throw GraknException.of(DIRTY_INITIALISATION);
                 txn.graph().initialise();
                 txn.commit();
@@ -127,7 +126,7 @@ public class RocksDatabase implements Grakn.Database {
 
     protected void load() {
         try (RocksSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
-            try (RocksTransaction.Schema txn = session.graphInitTransaction()) {
+            try (RocksTransaction.Schema txn = session.transactionGraphInit()) {
                 schemaKeyGenerator.sync(txn.schemaStorage());
                 dataKeyGenerator.sync(txn.dataStorage());
             }
