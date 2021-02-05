@@ -104,8 +104,14 @@ public abstract class AnswerState {
 
             public ConceptMap withInitialFiltered() {
                 if (withInitialFiltered == null) {
+                    /*
+                    We MUST retain initial concepts, and add derived answers afterward. It's possible, and correct,
+                    that the derived answers overlap but are different: for example, when a subtype is found
+                    by the derived answer, but the initial already uses the supertype.
+                     */
                     HashMap<Reference.Name, Concept> withInitial = new HashMap<>(conceptMap().concepts());
                     if (initial != null) {
+                        // add the initial concept map second, to make sure we override and retain all of these
                         withInitial.putAll(initial.conceptMap().concepts());
                     }
                     ConceptMap answer = new ConceptMap(withInitial);

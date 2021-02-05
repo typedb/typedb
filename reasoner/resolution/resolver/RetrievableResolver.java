@@ -85,10 +85,9 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
     @Override
     protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), fromUpstream);
-        Traversal traversal = boundTraversal(retrievable.conjunction().traversal(), fromUpstream.partialAnswer().conceptMap());
         assert fromUpstream.partialAnswer().isMapped();
-        ResourceIterator<UpstreamVars.Derived> upstreamAnswers = traversalEngine.iterator(traversal)
-                .map(conceptMgr::conceptMap)
+        ResourceIterator<UpstreamVars.Derived> upstreamAnswers =
+                compatibleBoundAnswers(conceptMgr, retrievable.conjunction(), fromUpstream.partialAnswer().conceptMap())
                 .map(conceptMap -> fromUpstream.partialAnswer().asMapped().mapToUpstream(conceptMap));
         return new ResponseProducer(upstreamAnswers, iteration);
     }
@@ -99,9 +98,9 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
         LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
 
         assert newIteration > responseProducerPrevious.iteration();
-        Traversal traversal = boundTraversal(retrievable.conjunction().traversal(), fromUpstream.partialAnswer().conceptMap());
         assert fromUpstream.partialAnswer().isMapped();
-        ResourceIterator<UpstreamVars.Derived> upstreamAnswers = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap)
+        ResourceIterator<UpstreamVars.Derived> upstreamAnswers =
+                compatibleBoundAnswers(conceptMgr, retrievable.conjunction(), fromUpstream.partialAnswer().conceptMap())
                 .map(conceptMap -> fromUpstream.partialAnswer().asMapped().mapToUpstream(conceptMap));
         return responseProducerPrevious.newIteration(upstreamAnswers, newIteration);
     }

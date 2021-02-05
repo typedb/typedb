@@ -223,6 +223,12 @@ public class Traversal {
         structure.typeVertex(type).props().setAbstract();
     }
 
+    public void clearLabels(Identifier.Variable type) {
+        assert modifiable;
+        structure.typeVertex(type).props().clearLabels();
+    }
+
+
     public void labels(Identifier.Variable type, Label label) {
         assert modifiable;
         structure.typeVertex(type).props().labels(label);
