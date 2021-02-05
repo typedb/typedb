@@ -155,7 +155,7 @@ public abstract class RocksSession implements Grakn.Session {
 
         }
 
-        protected RocksTransaction.Schema transactionGraphInit() {
+        RocksTransaction.Schema transactionGraphInit() {
             if (!isOpen.get()) throw GraknException.of(SESSION_CLOSED);
             try {
                 if (!writeLock.tryLock(new Options.Transaction().schemaLockTimeoutMillis(), MILLISECONDS)) {
