@@ -44,18 +44,19 @@ public class ConjunctionTest {
 
     @Test
     public void test_conjunction_with_entity_attribute_and_relation() {
-        Conjunction conjunction = parse("{ $p isa person, has $n; $n \"Alice\" isa name; $e(employee: $p) isa employment; }");
+        Conjunction conjunction = parse(
+                "{ $p isa person, has $n; $n \"Alice\" isa name; $e(employee: $p) isa employment; }");
 
         Set<String> variableStrings = conjunction.variables().stream().map(Variable::toString).collect(Collectors.toSet());
-        Set<String> expectedVariableStrings = Stream.of(
-                "$p", "$_person", "$n", "$_name", "$e", "$_employment", "$_employment:employee").collect(Collectors.toSet());
+        Set<String> expectedVariableStrings = set(
+                "$p", "$_person", "$n", "$_name", "$e", "$_employment", "$_employment:employee");
         assertEquals(expectedVariableStrings, variableStrings);
 
-        Set<String> expectedConstraintStrings = Stream.of(
-                "$p isa $_person", "$_person type person", "$p has $n", "$n isa $_name", "$_name type name",
-                "$n = \"Alice\"", "$e($_employment:employee:$p)", "$e isa $_employment", "$_employment type employment",
-                "$_employment:employee type employment:employee")
-                .collect(Collectors.toSet());
+        Set<String> expectedConstraintStrings = set("$p isa $_person", "$_person type person", "$p has $n",
+                                                    "$n isa $_name", "$_name type name", "$n = \"Alice\"",
+                                                    "$e($_employment:employee:$p)", "$e isa $_employment",
+                                                    "$_employment type employment",
+                                                    "$_employment:employee type employment:employee");
         assertEquals(expectedConstraintStrings, conjunctionStringToStatementStrings(conjunction.toString()));
     }
 
@@ -67,9 +68,8 @@ public class ConjunctionTest {
         Set<String> expectedVariableStrings = Stream.of("$n", "$p", "$_name", "$_person").collect(Collectors.toSet());
         assertEquals(expectedVariableStrings, variableStrings);
 
-        Set<String> expectedConstraintStrings = Stream.of(
-                "$p isa $_person", "$_person type person", "$p has $n", "$n isa $_name", "$_name type name")
-                .collect(Collectors.toSet());
+        Set<String> expectedConstraintStrings = set("$p isa $_person", "$_person type person", "$p has $n",
+                                                    "$n isa $_name", "$_name type name");
         assertEquals(expectedConstraintStrings, conjunctionStringToStatementStrings(conjunction.toString()));
     }
 
@@ -78,13 +78,24 @@ public class ConjunctionTest {
         Conjunction conjunction = parse("{ $p sub person, plays $r; $e sub employment, relates $r; }");
 
         Set<String> variableStrings = conjunction.variables().stream().map(Variable::toString).collect(Collectors.toSet());
-        Set<String> expectedVariableStrings = Stream.of("$p", "$_person", "$r", "$e", "$_employment")
-                .collect(Collectors.toSet());
+        Set<String> expectedVariableStrings = set("$p", "$_person", "$r", "$e", "$_employment");
         assertEquals(expectedVariableStrings, variableStrings);
 
-        Set<String> expectedConstraintStrings = Stream.of(
+        Set<String> expectedConstraintStrings = set(
                 "$p sub $_person", "$_person type person", "$p plays $r", "$e sub $_employment",
-                "$_employment type employment", "$e relates $r").collect(Collectors.toSet());
+                "$_employment type employment", "$e relates $r");
+        assertEquals(expectedConstraintStrings, conjunctionStringToStatementStrings(conjunction.toString()));
+    }
+
+    @Test
+    public void test_conjunction_with_iids() {
+        Conjunction conjunction = parse("{ $x iid 0x12345678; $y iid 0x87654321; }");
+
+        Set<String> variableStrings = conjunction.variables().stream().map(Variable::toString).collect(Collectors.toSet());
+        Set<String> expectedVariableStrings = set("$x", "$y");
+        assertEquals(expectedVariableStrings, variableStrings);
+
+        Set<String> expectedConstraintStrings = set("$x iid 0x12345678", "$y iid 0x87654321");
         assertEquals(expectedConstraintStrings, conjunctionStringToStatementStrings(conjunction.toString()));
     }
 }
