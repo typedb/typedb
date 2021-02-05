@@ -151,15 +151,9 @@ public abstract class RocksSession implements Grakn.Session {
                     throw GraknException.of(e);
                 }
             }
-            RocksTransaction.Schema transaction;
-            if (internal) {
-                transaction = txSchemaFactory.transactionInternal(this, type, options);
-            } else {
-                transaction = txSchemaFactory.transaction(this, type, options);
-            }
+            RocksTransaction.Schema transaction = txSchemaFactory.transaction(this, type, options);
             transactions.put(transaction, 0L);
             return transaction;
-
         }
 
         @Override

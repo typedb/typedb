@@ -48,9 +48,6 @@ public interface Factory {
 
     interface TransactionSchema {
 
-        RocksTransaction.Schema transactionInternal(RocksSession.Schema session, Arguments.Transaction.Type type,
-                                                    Options.Transaction options);
-
         RocksTransaction.Schema transaction(RocksSession.Schema session, Arguments.Transaction.Type type,
                                             Options.Transaction options);
     }
