@@ -163,7 +163,14 @@ public abstract class RocksSession implements Grakn.Session {
         @Override
         void remove(RocksTransaction transaction) {
             transactions.remove(transaction);
-            if (transaction.type().isWrite()) writeLock.unlock();
+            if (transaction.type().isWrite()) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                writeLock.unlock();
+            }
         }
     }
 
