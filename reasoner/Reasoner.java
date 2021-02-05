@@ -91,13 +91,9 @@ public class Reasoner {
                     .map(var -> var.id().asName()).toSet();
         }
         Map<Reference.Name, Concept> filteredConcepts = new HashMap<>();
-        for (Variable v : conjunction.variables()) {
-            Concept concept;
-            if (v.reference().isName() && null != (concept = bounds.concepts().get(v.reference().asName()))) {
-                filteredConcepts.put(v.reference().asName(), concept);
-            }
-        }
-        // filter bounds to only vars relevant to this conjunction
+        iterate(conjunction.variables())
+                .filter(v -> v.reference().isName() && bounds.concepts().get(v.reference().asName()) != null)
+                .forEachRemaining(v -> filteredConcepts.put(v.reference().asName(), bounds.get(v.reference().asName())));
         return new ReasonerProducer(conjunction, filter, new ConceptMap(filteredConcepts), resolverRegistry);
     }
 

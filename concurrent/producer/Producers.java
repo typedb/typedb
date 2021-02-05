@@ -29,8 +29,8 @@ import static grakn.common.collection.Collections.list;
 
 public class Producers {
 
-    public static final int DEFAULT_BATCH_SIZE = 1;
-    public static final int MAX_BATCH_SIZE = 1;
+    public static final int DEFAULT_BATCH_SIZE = 32;
+    public static final int MAX_BATCH_SIZE = (Integer.MAX_VALUE / 2) -1;
 
     public static <T> BaseProducer<T> empty() { return async(Iterators.empty()); }
 

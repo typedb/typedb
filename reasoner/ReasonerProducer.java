@@ -25,7 +25,6 @@ import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
-import grakn.core.reasoner.resolution.framework.ResolutionLogger;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.variable.Reference;
@@ -34,13 +33,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -82,14 +76,12 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     public void recycle() {}
 
     private void requestAnswered(ResolutionAnswer resolutionAnswer) {
-        if (LOG.isTraceEnabled()) ResolutionLogger.get().finish();
         if (resolutionAnswer.isInferred()) iterationInferredAnswer = true;
         awaiting.submit(resolutionAnswer.derived().withInitialFiltered());
     }
 
     private void requestExhausted(int iteration) {
         LOG.trace("Failed to find answer to request in iteration: " + iteration);
-        if (LOG.isTraceEnabled()) ResolutionLogger.get().finish();
         if (iteration == this.iteration && !mustReiterate() && done.compareAndSet(false, true)) {
             awaiting.done(); // query is completely terminated
             return;
@@ -126,7 +118,6 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     private void requestAnswer() {
-        ResolutionLogger.get().initialise();
         rootResolver.tell(actor -> actor.receiveRequest(resolveRequest, iteration));
     }
 
