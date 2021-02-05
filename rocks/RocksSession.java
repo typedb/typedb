@@ -145,6 +145,8 @@ public abstract class RocksSession implements Grakn.Session {
                     if (!writeLock.tryLock(options.schemaLockTimeoutMillis(), MILLISECONDS)) {
                         throw GraknException.of(SCHEMA_ACQUIRE_LOCK_TIMEOUT);
                     }
+                    System.out.println(writeLock);
+                    System.out.println(Thread.currentThread());
                 } catch (InterruptedException e) {
                     throw GraknException.of(e);
                 }
