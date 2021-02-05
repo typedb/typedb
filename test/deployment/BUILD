@@ -28,22 +28,6 @@ native_grakn_artifact(
 )
 
 java_test(
-    name = "rpm",
-    test_class = "grakn.core.test.deployment.RpmTest",
-    srcs = ["RpmTest.java"],
-    deps = [
-        "@maven//:org_slf4j_slf4j_api",
-        "@maven//:org_zeroturnaround_zt_exec",
-    ],
-    runtime_deps = [
-        "@maven//:ch_qos_logback_logback_classic",
-    ],
-    data = ["@graknlabs_grakn_core_workspace_refs//:refs.json", "//:VERSION"],
-    tags = ["no-sandbox"],
-    size = "large",
-)
-
-java_test(
     name = "apt",
     test_class = "grakn.core.test.deployment.AptTest",
     srcs = ["AptTest.java"],
