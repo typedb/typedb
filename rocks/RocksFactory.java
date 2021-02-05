@@ -80,7 +80,7 @@ public final class RocksFactory implements Factory {
 
     private synchronized Factory.TransactionSchema transactionSchemaFactory() {
         if (transactionSchemaFactory == null) {
-            transactionSchemaFactory = (session, type, options) ->
+            transactionSchemaFactory = (session, type, options, internal) ->
                     new RocksTransaction.Schema(session, type, options, storageFactory());
         }
         return transactionSchemaFactory;

@@ -49,7 +49,7 @@ public interface Factory {
     interface TransactionSchema {
 
         RocksTransaction.Schema transaction(RocksSession.Schema session, Arguments.Transaction.Type type,
-                                            Options.Transaction options);
+                                            Options.Transaction options, boolean internal);
     }
 
     interface TransactionData {
