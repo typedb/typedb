@@ -90,7 +90,6 @@ host_compatible_java_test(
     deps = [
         # External dependencies from Grakn Labs
         "@graknlabs_common//:common",
-        "@graknlabs_graql//java/pattern",
         "@graknlabs_graql//java:graql",
     ],
 )
