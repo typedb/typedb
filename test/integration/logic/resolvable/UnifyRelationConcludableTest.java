@@ -1108,15 +1108,29 @@ public class UnifyRelationConcludableTest {
         unifiable(conclusions.get(1), "{$p isa part-time-organisation; $q isa student;}", parents, Lists.newArrayList());
     }
 
-    //TODO
     @Test
     public void differentReflexiveRelationVariants() {
         List<String> parents = Lists.newArrayList(
                 "{(employer: $x, employee: $x); $x isa person;}",
                 "{(part-time-employer: $x, part-time-employee: $x); $x isa person;}",
-                "{(taxi: $x, contractor: $x); $x isa organisation;}",
-                "{(taxi: $x, contractor: $x); $x isa driving-hire;}"
+                "{(taxi: $x, employee: $x); $x isa organisation;}",
+                "{(taxi: $x, employee: $x); $x isa driving-hire;}"
                 );
+        List<String> conclusions = Lists.newArrayList(
+                "(employer: $p, employee: $q) isa employment",
+                "(employer: $p, employee: $p) isa employment",
+                "(part-time-employer: $p, part-time-employee: $q) isa part-time-employment",
+                "(taxi: $p, day-shift-driver: $q) isa part-time-driving"
+        );
+        unifiable(conclusions.get(0), "{$p isa student; $q isa student-driver;}", parents, Lists.newArrayList(0));
+        unifiable(conclusions.get(1), "{$p isa student;}", parents, Lists.newArrayList(0));
+
+        unifiable(conclusions.get(2), "{$p isa part-time-organisation;$q isa student;}", parents, new ArrayList<>());
+        unifiable(conclusions.get(2), "{$p isa student;$q isa student-driver;}", parents, Lists.newArrayList(0, 1));
+
+        unifiable(conclusions.get(3), "{$p isa driving-hire; $q isa student-driver;}", parents,  new ArrayList<>());
+        unifiable(conclusions.get(3), "{$p isa driving-hire; $q isa driving-hire;}", parents, Lists.newArrayList(1, 2));
+        unifiable(conclusions.get(3), "{$p isa driving-hire; $q isa organisation;}", parents, Lists.newArrayList(1, 2));
     }
 
     @Test
@@ -1161,22 +1175,11 @@ public class UnifyRelationConcludableTest {
     private void unifiable(String ruleConclusion, String rulePremises, List<String> parents, List<Integer> unifiableParents){
         for (int parentIndex = 0; parentIndex < parents.size() ; parentIndex++) {
             String parent = parents.get(parentIndex);
-           // System.out.printf("Comparing:\nconjunction:%s\nconclusion:%s%n", parent, ruleConclusion);
-            //unifiable(parent, ruleConclusion, rulePremises, unifiableParents.contains(parentIndex));
-            /*
             assertEquals(
-                    String.format("Unexpected unification outcome at index %s:\nconjunction:%s\nconclusion:%s\npremises:%s\n",
+                    String.format("Unexpected unification outcome at index [%s]:\nconjunction: %s\nconclusion: %s\npremises: %s\n",
                             parentIndex, parent, ruleConclusion, rulePremises),
                     unifiableParents.contains(parentIndex), unifiers(parent, ruleConclusion, rulePremises).hasNext()
             );
-
-             */
-            if (unifiableParents.contains(parentIndex) != unifiers(parent, ruleConclusion, rulePremises).hasNext()){
-                System.out.println(
-                        String.format("Unexpected unification outcome [%s] at index [%s]:\nconjunction: %s\nconclusion: %s\npremises: %s\n",
-                                unifiers(parent, ruleConclusion, rulePremises).hasNext(), parentIndex, parent, ruleConclusion, rulePremises)
-                );
-            }
         }
     }
 
