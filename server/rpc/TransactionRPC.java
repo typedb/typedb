@@ -68,7 +68,7 @@ public class TransactionRPC {
         if (transactionType == null) throw GraknException.of(BAD_TRANSACTION_TYPE, request.getType());
         Options.Transaction options = setDefaultOptions(new Options.Transaction(), request.getOptions());
 
-        transaction = sessionRPC.session().transaction(transactionType, options, false);
+        transaction = sessionRPC.session().transaction(transactionType, options);
         isOpen = new AtomicBoolean(true);
         iterators = new Iterators();
         handlers = new RequestHandlers();

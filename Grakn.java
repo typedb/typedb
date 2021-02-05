@@ -89,7 +89,7 @@ public interface Grakn extends AutoCloseable {
 
         Transaction transaction(Arguments.Transaction.Type type);
 
-        Transaction transaction(Arguments.Transaction.Type type, Options.Transaction options, boolean internal);
+        Transaction transaction(Arguments.Transaction.Type type, Options.Transaction options);
 
         UUID uuid();
 

@@ -117,7 +117,7 @@ public class RocksDatabase implements Grakn.Database {
 
     protected void initialise() {
         try (RocksSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
-            try (RocksTransaction.Schema txn = session.transaction(WRITE, new Options.Transaction(), true).asSchema()) {
+            try (RocksTransaction.Schema txn = session.graphInitTransaction()) {
                 if (txn.graph().isInitialised()) throw GraknException.of(DIRTY_INITIALISATION);
                 txn.graph().initialise();
                 txn.commit();
@@ -127,9 +127,9 @@ public class RocksDatabase implements Grakn.Database {
 
     protected void load() {
         try (RocksSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
-            try (RocksTransaction txn = session.transaction(READ, new Options.Transaction(), true)) {
-                schemaKeyGenerator.sync(txn.asSchema().schemaStorage());
-                dataKeyGenerator.sync(txn.asSchema().dataStorage());
+            try (RocksTransaction.Schema txn = session.graphInitTransaction()) {
+                schemaKeyGenerator.sync(txn.schemaStorage());
+                dataKeyGenerator.sync(txn.dataStorage());
             }
         }
     }
