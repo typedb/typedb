@@ -149,7 +149,7 @@ public abstract class RocksSession implements Grakn.Session {
                     throw GraknException.of(e);
                 }
             }
-            RocksTransaction.Schema transaction = txSchemaFactory.transaction(this, type, options);
+            RocksTransaction.Schema transaction = txSchemaFactory.transaction(this, type, options, internal);
             transactions.put(transaction, 0L);
             return transaction;
 
