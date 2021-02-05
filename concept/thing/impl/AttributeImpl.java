@@ -100,6 +100,11 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
     }
 
     @Override
+    public java.lang.String toString() {
+        return vertex.encoding().name() + ":" + vertex.type().properLabel() + ":" + getValue();
+    }
+
+    @Override
     public boolean isBoolean() {
         return false;
     }

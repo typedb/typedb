@@ -24,7 +24,6 @@ import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
 import grakn.core.concurrent.producer.Producer;
-import grakn.core.concurrent.producer.Producers;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.common.Encoding;
 import grakn.core.graph.iid.VertexIID;
@@ -53,6 +52,8 @@ import static grakn.common.collection.Collections.pair;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.cartesian;
 import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.concurrent.common.Executors.asyncPool2;
+import static grakn.core.concurrent.producer.Producers.async;
 import static grakn.core.concurrent.producer.Producers.produce;
 import static grakn.core.graph.common.Encoding.Edge.ISA;
 import static grakn.core.graph.common.Encoding.Edge.Thing.HAS;
@@ -129,10 +130,10 @@ public class Traversal {
             planners.get(0).tryOptimise(graphMgr, extraPlanningTime);
             return planners.get(0).procedure().producer(graphMgr, parameters, filter(), parallelisation);
         } else {
-            return Producers.producer(cartesian(planners.parallelStream().map(planner -> {
+            return async(cartesian(planners.parallelStream().map(planner -> {
                 planner.tryOptimise(graphMgr, extraPlanningTime);
                 return planner.procedure().producer(graphMgr, parameters, filter(), parallelisation);
-            }).map(producer -> produce(producer, mode)).collect(toList())).map(partialAnswers -> {
+            }).map(producer -> produce(producer, mode, asyncPool2())).collect(toList())).map(partialAnswers -> {
                 Map<Reference, Vertex<?, ?>> combinedAnswers = new HashMap<>();
                 partialAnswers.forEach(p -> combinedAnswers.putAll(p.map()));
                 return VertexMap.of(combinedAnswers);
@@ -221,6 +222,12 @@ public class Traversal {
         assert modifiable;
         structure.typeVertex(type).props().setAbstract();
     }
+
+    public void clearLabels(Identifier.Variable type) {
+        assert modifiable;
+        structure.typeVertex(type).props().clearLabels();
+    }
+
 
     public void labels(Identifier.Variable type, Label label) {
         assert modifiable;

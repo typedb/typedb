@@ -52,12 +52,14 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
     }
 
     private void putNonRecursive(TypeEdge edge) {
+        assert !owner.isDeleted();
         cache(edge);
         owner.setModified();
     }
 
     @Override
     public TypeEdge put(Encoding.Edge.Type encoding, TypeVertex adjacent) {
+        assert !owner.isDeleted();
         TypeVertex from = direction.isOut() ? owner : adjacent;
         TypeVertex to = direction.isOut() ? adjacent : owner;
         TypeEdgeImpl edge = new TypeEdgeImpl.Buffered(encoding, from, to);

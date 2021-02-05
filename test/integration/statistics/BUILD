@@ -15,45 +15,37 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//test/behaviour/graql/language/define:__subpackages__"])
-
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_library")
+load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
-host_compatible_java_library(
-    name = "steps",
-    srcs = [
-        "GraqlSteps.java"
-    ],
-    deps = [
-        # Package dependencies
-        "//test/behaviour/exception",
-        "//test/behaviour/connection:steps",
-        "//common/test:util",
-
-        # External dependencies from Grakn Labs
-        "@graknlabs_graql//java:graql",
-        "@graknlabs_graql//java/common:common",
-        "@graknlabs_graql//java/pattern:pattern",
-        "@graknlabs_graql//java/query:query",
-        "@graknlabs_common//:common",
-
-        # External dependencies from Maven
-        "@maven//:junit_junit",
-        "@maven//:io_cucumber_cucumber_java",
-    ],
+host_compatible_java_test(
+    name = "test-statistics",
+    srcs = ["StatisticsTest.java"],
+    test_class = "grakn.core.rocks.StatisticsTest",
     native_libraries_deps = [
+        "//rocks:rocks",
+        "//:grakn",
         "//concept:concept",
     ],
-    runtime_deps = [
-        "//test/behaviour/connection/database:steps",
-        "//test/behaviour/connection/transaction:steps",
+    deps = [
+        # Internal dependencies
+        "//test/integration/util:util",
+        "//common:common",
+
+        # External dependencies from Grakn Labs
+        "@graknlabs_graql//java/query:query",
+        "@graknlabs_graql//java:graql",
     ],
-    visibility = ["//visibility:public"],
+    resources = [
+        "//common/test:logback"
+    ],
+    resource_strip_prefix = "common/test",
 )
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*"]),
+    include = glob([
+        "*",
+    ]),
     license_type = "agpl",
 )

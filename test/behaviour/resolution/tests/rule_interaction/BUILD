@@ -15,33 +15,32 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_common//test/server:rules.bzl", "native_grakn_artifact")
+package(default_visibility = ["//test/behaviour:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
-native_grakn_artifact(
-    name = "native-grakn-artifact",
-    output = "grakn-core-server.tar.gz",
-    mac_artifact = "//server:assemble-mac-zip",
-    linux_artifact = "//server:assemble-linux-targz",
-    windows_artifact = "//server:assemble-windows-zip",
-    output = "grakn-core-server-native.tar.gz",
-    visibility = ["//test:__subpackages__"],
-)
-
 java_test(
-    name = "apt",
-    test_class = "grakn.core.test.deployment.AptTest",
-    srcs = ["AptTest.java"],
+    name = "test",
+    srcs = [
+        "RuleInteractionTest.java",
+    ],
+    test_class = "grakn.core.test.behaviour.resolution.tests.rule_interaction.RuleInteractionTest",
     deps = [
-        "@maven//:org_slf4j_slf4j_api",
-        "@maven//:org_zeroturnaround_zt_exec",
-        "@maven//:com_eclipsesource_minimal_json_minimal_json",
+        # External dependencies from Maven
+        "@maven//:io_cucumber_cucumber_junit",
     ],
     runtime_deps = [
-        "@maven//:ch_qos_logback_logback_classic",
+        "//test/behaviour/connection:steps",
+        "//test/behaviour/connection/session:steps",
+        "//test/behaviour/config:parameters",
+        "//test/behaviour/resolution:steps",
     ],
-    data = ["@graknlabs_grakn_core_workspace_refs//:refs.json", "//:VERSION"],
-    tags = ["no-sandbox"],
+    data = [
+        "@graknlabs_behaviour//graql/reasoner:rule-interaction.feature",
+    ],
+    resources = [
+        "//common/test:logback"
+    ],
+    resource_strip_prefix = "common/test",
 )
 
 checkstyle_test(

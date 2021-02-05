@@ -188,7 +188,7 @@ public class RetrievableTest {
     public void test_equals_constraint_only_present_in_concludable() {
         Set<Concludable> concludables = Concludable.create(parse("{ $x has $a; $a = $b; }"));
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $x has $a; $a = $b; }"), concludables);
-        assertEquals(set(), retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
+        assertEquals(set(parse("{ $a = $b; }")), retrievables.stream().map(Retrievable::conjunction).collect(Collectors.toSet()));
     }
 
     @Test

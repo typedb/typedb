@@ -19,6 +19,7 @@
 package grakn.core.concurrent.producer;
 
 import javax.annotation.concurrent.ThreadSafe;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
 
 @ThreadSafe
@@ -33,8 +34,8 @@ public class FilteredProducer<T> implements Producer<T> {
     }
 
     @Override
-    public void produce(Producer.Queue<T> queue, int request) {
-        baseProducer.produce(new Queue(queue), request);
+    public void produce(Producer.Queue<T> queue, int request, ExecutorService executor) {
+        baseProducer.produce(new Queue(queue, executor), request, executor);
     }
 
     @Override
@@ -46,15 +47,17 @@ public class FilteredProducer<T> implements Producer<T> {
     private class Queue implements Producer.Queue<T> {
 
         private final Producer.Queue<T> baseQueue;
+        private final ExecutorService executor;
 
-        Queue(Producer.Queue<T> baseQueue) {
+        Queue(Producer.Queue<T> baseQueue, ExecutorService executor) {
             this.baseQueue = baseQueue;
+            this.executor = executor;
         }
 
         @Override
         public void put(T item) {
             if (predicate.test(item)) baseQueue.put(item);
-            else baseProducer.produce(this, 1);
+            else baseProducer.produce(this, 1, executor);
         }
 
         @Override

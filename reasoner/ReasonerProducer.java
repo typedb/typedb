@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.reasoner.resolution.answer.AnswerState.DownstreamVars.Root;
@@ -59,7 +60,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     @Override
-    public void produce(Queue<ConceptMap> queue, int request) {
+    public void produce(Queue<ConceptMap> queue, int request, ExecutorService executor) {
         assert this.queue == null || this.queue == queue;
         this.queue = queue;
         for (int i = 0; i < request; i++) {

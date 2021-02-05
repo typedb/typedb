@@ -184,6 +184,10 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
                 valueTypes = new HashSet<>();
             }
 
+            public void clearLabels() {
+                labels.clear();
+            }
+
             public Set<Label> labels() {
                 return labels;
             }

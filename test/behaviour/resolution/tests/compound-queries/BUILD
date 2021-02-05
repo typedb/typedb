@@ -15,8 +15,33 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-exports_files(["grakn-core-server.spec", "grakn-core-all.spec"])
+package(default_visibility = ["//test/behaviour:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+
+java_test(
+    name = "test",
+    srcs = [
+        "CompoundQueriesTest.java",
+    ],
+    test_class = "grakn.core.test.behaviour.resolution.tests.compound_queries.CompoundQueriesTest",
+    deps = [
+        # External dependencies from Maven
+        "@maven//:io_cucumber_cucumber_junit",
+    ],
+    runtime_deps = [
+        "//test/behaviour/connection:steps",
+        "//test/behaviour/connection/session:steps",
+        "//test/behaviour/config:parameters",
+        "//test/behaviour/resolution:steps",
+    ],
+    data = [
+        "@graknlabs_behaviour//graql/reasoner:compound-queries.feature",
+    ],
+    resources = [
+        "//common/test:logback"
+    ],
+    resource_strip_prefix = "common/test",
+)
 
 checkstyle_test(
     name = "checkstyle",

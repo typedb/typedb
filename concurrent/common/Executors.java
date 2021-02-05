@@ -25,34 +25,37 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
 
-public class ExecutorService {
+public class Executors {
 
     public static int PARALLELISATION_FACTOR = -1;
 
-    private static final Logger LOG = LoggerFactory.getLogger(ExecutorService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Executors.class);
     private static final String GRAKN_CORE_MAIN_POOL_NAME = "grakn-core-main";
-    private static final String GRAKN_CORE_ASYNC_POOL_NAME = "grakn-core-async";
+    private static final String GRAKN_CORE_ASYNC_POOL_1_NAME = "grakn-core-async-1";
+    private static final String GRAKN_CORE_ASYNC_POOL_2_NAME = "grakn-core-async-1";
     private static final String GRAKN_CORE_NETWORK_POOL_NAME = "grakn-core-network";
     private static final String GRAKN_CORE_EVENTLOOP_POOL_NAME = "grakn-core-eventloop";
     private static final String GRAKN_CORE_SCHEDULED_POOL_NAME = "grakn-core-scheduled";
     private static final int GRAKN_CORE_SCHEDULED_POOL_SIZE = 1;
 
-    private static ExecutorService singleton = null;
+    private static Executors singleton = null;
 
-    private final java.util.concurrent.ExecutorService mainPool;
-    private final java.util.concurrent.ExecutorService asyncPool;
+    private final ExecutorService mainPool;
+    private final ExecutorService asyncPool1;
+    private final ExecutorService asyncPool2;
     private final NioEventLoopGroup networkPool;
     private final EventLoopGroup eventLoopPool;
     private final ScheduledThreadPoolExecutor scheduledThreadPool;
 
-    private ExecutorService(int parallelisation) {
-        mainPool = Executors.newFixedThreadPool(parallelisation, new NamedThreadFactory(GRAKN_CORE_MAIN_POOL_NAME));
-        asyncPool = Executors.newFixedThreadPool(parallelisation, new NamedThreadFactory(GRAKN_CORE_ASYNC_POOL_NAME));
+    private Executors(int parallelisation) {
+        mainPool = java.util.concurrent.Executors.newFixedThreadPool(parallelisation, new NamedThreadFactory(GRAKN_CORE_MAIN_POOL_NAME));
+        asyncPool1 = java.util.concurrent.Executors.newFixedThreadPool(parallelisation, new NamedThreadFactory(GRAKN_CORE_ASYNC_POOL_1_NAME));
+        asyncPool2 = java.util.concurrent.Executors.newFixedThreadPool(parallelisation, new NamedThreadFactory(GRAKN_CORE_ASYNC_POOL_2_NAME));
         eventLoopPool = new EventLoopGroup(parallelisation, new NamedThreadFactory(GRAKN_CORE_EVENTLOOP_POOL_NAME));
         networkPool = new NioEventLoopGroup(parallelisation, NamedThreadFactory.create(GRAKN_CORE_NETWORK_POOL_NAME));
         scheduledThreadPool = new ScheduledThreadPoolExecutor(
@@ -64,35 +67,40 @@ public class ExecutorService {
     public static synchronized void initialise(int parallelisationFactor) {
         if (isInitialised()) throw GraknException.of(ILLEGAL_OPERATION);
         PARALLELISATION_FACTOR = parallelisationFactor;
-        singleton = new ExecutorService(parallelisationFactor);
+        singleton = new Executors(parallelisationFactor);
     }
 
     public static boolean isInitialised() {
         return singleton != null;
     }
 
-    public static java.util.concurrent.ExecutorService main() {
+    public static ExecutorService mainPool() {
         assert isInitialised();
         return singleton.mainPool;
     }
 
-    public static java.util.concurrent.ExecutorService async() {
+    public static ExecutorService asyncPool1() {
         assert isInitialised();
-        return singleton.asyncPool;
+        return singleton.asyncPool1;
     }
 
-    public static NioEventLoopGroup network() {
+    public static ExecutorService asyncPool2() {
+        assert isInitialised();
+        return singleton.asyncPool2;
+    }
+
+    public static NioEventLoopGroup networkPool() {
         assert isInitialised();
         return singleton.networkPool;
     }
 
-    public static EventLoopGroup eventLoop() {
-        assert isInitialised();
-        return singleton.eventLoopPool;
-    }
-
-    public static ScheduledThreadPoolExecutor scheduled() {
+    public static ScheduledThreadPoolExecutor scheduledPool() {
         assert isInitialised();
         return singleton.scheduledThreadPool;
+    }
+
+    public static EventLoopGroup eventLoopGroup() {
+        assert isInitialised();
+        return singleton.eventLoopPool;
     }
 }

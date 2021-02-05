@@ -23,7 +23,7 @@ import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
-import grakn.core.concurrent.common.ExecutorService;
+import grakn.core.concurrent.common.Executors;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.server.migrator.MigratorClient;
 import grakn.core.server.rpc.GraknRPCService;
@@ -42,6 +42,7 @@ import picocli.CommandLine.UnmatchedArgumentException;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.BindException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -52,6 +53,7 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
+import static grakn.core.common.exception.ErrorMessage.Server.ALREADY_RUNNING;
 import static grakn.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT_WRITABLE;
 import static grakn.core.common.exception.ErrorMessage.Server.ENV_VAR_NOT_FOUND;
@@ -222,8 +224,12 @@ public class GraknServer implements AutoCloseable {
                 printSchema(printSchemaCommand);
             }
         } catch (Exception e) {
-            LOG.error(e.getMessage());
-            LOG.error(EXITED_WITH_ERROR.message());
+            if (e instanceof GraknException) {
+                LOG.error(e.getMessage());
+            } else {
+                LOG.error(e.getMessage(), e);
+                LOG.error(EXITED_WITH_ERROR.message());
+            }
             System.exit(1);
         }
 
@@ -264,11 +270,11 @@ public class GraknServer implements AutoCloseable {
     }
 
     private Server rpcServer() {
-        assert ExecutorService.isInitialised();
+        assert Executors.isInitialised();
         return NettyServerBuilder.forPort(command.port())
-                .executor(ExecutorService.main())
-                .workerEventLoopGroup(ExecutorService.network())
-                .bossEventLoopGroup(ExecutorService.network())
+                .executor(Executors.mainPool())
+                .workerEventLoopGroup(Executors.networkPool())
+                .bossEventLoopGroup(Executors.networkPool())
                 .maxConnectionIdle(1, TimeUnit.HOURS) // TODO: why 1 hour?
                 .channelType(NioServerSocketChannel.class)
                 .addService(graknRPCService)
@@ -296,9 +302,12 @@ public class GraknServer implements AutoCloseable {
     private void start() throws IOException {
         try {
             server.start();
-        } catch (Exception e) {
-            LOG.error(e.getMessage(), e);
-            throw e;
+        } catch (IOException e) {
+            if (e.getCause() != null && e.getCause() instanceof BindException) {
+                throw GraknException.of(ALREADY_RUNNING, port());
+            } else {
+                throw e;
+            }
         }
     }
 

@@ -15,42 +15,37 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//test/behaviour/graql/language/define:__subpackages__"])
 
+package(default_visibility = ["//visibility:__subpackages__"])
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_library")
 
-host_compatible_java_library(
-    name = "steps",
+java_test(
+    name = "test",
     srcs = [
-        "GraqlSteps.java"
+        "UpdateTest.java",
     ],
+    test_class = "grakn.core.test.behaviour.graql.language.update.UpdateTest",
     deps = [
-        # Package dependencies
-        "//test/behaviour/exception",
-        "//test/behaviour/connection:steps",
-        "//common/test:util",
-
-        # External dependencies from Grakn Labs
-        "@graknlabs_graql//java:graql",
-        "@graknlabs_graql//java/common:common",
-        "@graknlabs_graql//java/pattern:pattern",
-        "@graknlabs_graql//java/query:query",
-        "@graknlabs_common//:common",
-
         # External dependencies from Maven
-        "@maven//:junit_junit",
-        "@maven//:io_cucumber_cucumber_java",
-    ],
-    native_libraries_deps = [
-        "//concept:concept",
+        "@maven//:io_cucumber_cucumber_junit",
     ],
     runtime_deps = [
-        "//test/behaviour/connection/database:steps",
-        "//test/behaviour/connection/transaction:steps",
+        "//test/behaviour/graql:steps",
+        "//test/behaviour/connection:steps",
+        "//test/behaviour/connection/session:steps",
+        "//test/behaviour/config:parameters",
     ],
+    data = [
+        "@graknlabs_behaviour//graql/language:update.feature",
+    ],
+    size = "medium",
     visibility = ["//visibility:public"],
+    resources = [
+        "//common/test:logback"
+    ],
+    resource_strip_prefix = "common/test",
 )
+
 
 checkstyle_test(
     name = "checkstyle",

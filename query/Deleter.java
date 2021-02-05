@@ -51,7 +51,8 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_IID_NOT_INSERTABLE;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
-import static grakn.core.concurrent.common.ExecutorService.PARALLELISATION_FACTOR;
+import static grakn.core.concurrent.common.Executors.PARALLELISATION_FACTOR;
+import static grakn.core.concurrent.common.Executors.asyncPool1;
 import static grakn.core.concurrent.producer.Producers.async;
 import static grakn.core.concurrent.producer.Producers.produce;
 import static grakn.core.query.common.Util.getRoleType;
@@ -94,7 +95,7 @@ public class Deleter {
                 produce(async(iterate(lists).map(list -> iterate(list).map(matched -> {
                     new Operation(matched, variables).execute();
                     return (Void) null;
-                })), PARALLELISATION_FACTOR), EXHAUSTIVE).toList();
+                })), PARALLELISATION_FACTOR), EXHAUSTIVE, asyncPool1()).toList();
             }
         }
     }

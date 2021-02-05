@@ -99,6 +99,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public void setAbstract() {
+        validateIsNotDeleted();
         if (getInstances().findFirst().isPresent()) {
             throw exception(GraknException.of(TYPE_HAS_INSTANCES, getLabel()));
         }
@@ -107,6 +108,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public void unsetAbstract() {
+        validateIsNotDeleted();
         vertex.isAbstract(false);
     }
 
@@ -130,11 +132,13 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public void setOwns(AttributeType attributeType) {
+        validateIsNotDeleted();
         setOwns(attributeType, false);
     }
 
     @Override
     public void setOwns(AttributeType attributeType, boolean isKey) {
+        validateIsNotDeleted();
         if (isKey) ownsKey((AttributeTypeImpl) attributeType);
         else ownsAttribute((AttributeTypeImpl) attributeType);
     }
@@ -146,12 +150,14 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+        validateIsNotDeleted();
         if (isKey) ownsKey((AttributeTypeImpl) attributeType, (AttributeTypeImpl) overriddenType);
         else ownsAttribute((AttributeTypeImpl) attributeType, (AttributeTypeImpl) overriddenType);
     }
 
     @Override
     public void unsetOwns(AttributeType attributeType) {
+        validateIsNotDeleted();
         TypeEdge edge;
         TypeVertex attVertex = ((AttributeTypeImpl) attributeType).vertex;
         if (getInstances().anyMatch(thing -> thing.getHas(attributeType).findAny().isPresent())) {
@@ -180,6 +186,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     private void ownsKey(AttributeTypeImpl attributeType) {
+        validateIsNotDeleted();
         if (!attributeType.isKeyable()) {
             throw exception(GraknException.of(OWNS_KEY_VALUE_TYPE, attributeType.getLabel(), attributeType.getValueType().name()));
         } else if (concat(getSupertype().getOwns(attributeType.getValueType(), true), getSupertype().overriddenOwns(false, true)).anyMatch(a -> a.equals(attributeType))) {
@@ -207,13 +214,14 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     private void ownsKey(AttributeTypeImpl attributeType, AttributeTypeImpl overriddenType) {
-        this.ownsKey(attributeType);
+        ownsKey(attributeType);
         override(OWNS_KEY, attributeType, overriddenType,
                  getSupertype().getOwns(attributeType.getValueType()),
                  declaredOwns(false));
     }
 
     private void ownsAttribute(AttributeTypeImpl attributeType) {
+        validateIsNotDeleted();
         if (getSupertypes().filter(t -> !t.equals(this)).flatMap(ThingType::getOwns).anyMatch(a -> a.equals(attributeType))) {
             throw exception(GraknException.of(OWNS_ATT_NOT_AVAILABLE, attributeType.getLabel()));
         }
@@ -316,6 +324,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public void setPlays(RoleType roleType) {
+        validateIsNotDeleted();
         if (getSupertypes().filter(t -> !t.equals(this)).flatMap(ThingType::getPlays).anyMatch(a -> a.equals(roleType))) {
             throw exception(GraknException.of(PLAYS_ROLE_NOT_AVAILABLE, roleType.getLabel()));
         }
@@ -324,6 +333,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public void setPlays(RoleType roleType, RoleType overriddenType) {
+        validateIsNotDeleted();
         setPlays(roleType);
         override(Encoding.Edge.Type.PLAYS, roleType, overriddenType, getSupertype().getPlays(),
                  vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().map(v -> RoleTypeImpl.of(graphMgr, v)).stream());
@@ -331,6 +341,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public void unsetPlays(RoleType roleType) {
+        validateIsNotDeleted();
         TypeEdge edge = vertex.outs().edge(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
         if (edge == null) {
             if (this.getPlays().anyMatch(attr -> attr.equals(roleType))) {
@@ -350,7 +361,6 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public Stream<RoleTypeImpl> getPlays() {
         if (isRoot()) return Stream.of();
-
         Set<TypeVertex> overridden = new HashSet<>();
         vertex.outs().edge(Encoding.Edge.Type.PLAYS).overridden().filter(Objects::nonNull).forEachRemaining(overridden::add);
         assert getSupertype() != null;

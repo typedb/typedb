@@ -95,6 +95,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public void setSupertype(RelationType superType) {
+        validateIsNotDeleted();
         super.setSuperTypeVertex(((RelationTypeImpl) superType).vertex);
     }
 
@@ -115,6 +116,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public void setRelates(String roleLabel) {
+        validateIsNotDeleted();
         TypeVertex roleTypeVertex = graphMgr.schema().getType(roleLabel, vertex.label());
         if (roleTypeVertex == null) {
             if (getSupertypes().filter(t -> !t.equals(this) && t.isRelationType()).map(TypeImpl::asRelationType)
@@ -132,7 +134,8 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public void setRelates(String roleLabel, String overriddenLabel) {
-        this.setRelates(roleLabel);
+        validateIsNotDeleted();
+        setRelates(roleLabel);
         RoleTypeImpl roleType = this.getRelates(roleLabel);
 
         Optional<RoleTypeImpl> inherited;
@@ -148,7 +151,8 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public void unsetRelates(String roleLabel) {
-        this.getRelates(roleLabel).delete();
+        validateIsNotDeleted();
+        getRelates(roleLabel).delete();
     }
 
     @Override
@@ -249,7 +253,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public RelationImpl create(boolean isInferred) {
-        validateIsCommittedAndNotAbstract(Relation.class);
+        validateCanHaveInstances(Relation.class);
         ThingVertex instance = graphMgr.data().create(vertex, isInferred);
         return RelationImpl.of(instance);
     }

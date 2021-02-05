@@ -196,8 +196,8 @@ public abstract class Concludable extends Resolvable {
         }
     }
 
-    private static Set<ValueConstraint<?>> equalsConstraints(Set<ValueConstraint<?>> values) {
-        return iterate(values).filter(v -> v.predicate().equals(EQ)).toSet();
+    private static Set<ValueConstraint<?>> equalsConstantConstraints(Set<ValueConstraint<?>> values) {
+        return iterate(values).filter(v -> v.predicate().equals(EQ)).filter(v -> !v.isVariable()).toSet();
     }
 
     private static Function<grakn.core.concept.thing.Attribute, Boolean> valueEqualsFunction(ValueConstraint<?> value) {
@@ -251,8 +251,8 @@ public abstract class Concludable extends Resolvable {
         return predicateFn;
     }
 
-    protected void addValueEqualsRequirements(Unifier.Builder unifierBuilder, Set<ValueConstraint<?>> values) {
-        for (ValueConstraint<?> value : equalsConstraints(values)) {
+    protected void addConstantValueRequirements(Unifier.Builder unifierBuilder, Set<ValueConstraint<?>> values) {
+        for (ValueConstraint<?> value : equalsConstantConstraints(values)) {
             unifierBuilder.requirements().predicates(value.owner().id(), valueEqualsFunction(value));
         }
     }
@@ -484,7 +484,7 @@ public abstract class Concludable extends Resolvable {
             Set<Constraint> constraints = new HashSet<>();
             constraints.add(has);
             if (isa != null) constraints.add(isa);
-            constraints.addAll(equalsConstraints(values));
+            constraints.addAll(equalsConstantConstraints(values));
             return set(constraints);
         }
 
@@ -509,13 +509,13 @@ public abstract class Concludable extends Resolvable {
                     Label attrLabel = attr.isa().get().type().label().get().properLabel();
                     unifierBuilder.requirements().isaExplicit(attr.id(),
                                                               subtypeLabels(attrLabel, conceptMgr).collect(Collectors.toSet()));
-                    addValueEqualsRequirements(unifierBuilder, values);
                 } else if (attr.reference().isName() && attr.isa().isPresent() && attr.isa().get().type().label().isPresent()) {
                     // form: $x has age $a (may also handle $x has $a; $a isa age)   -> require ISA age
                     Label attrLabel = attr.isa().get().type().label().get().properLabel();
                     unifierBuilder.requirements().isaExplicit(attr.id(),
                                                               subtypeLabels(attrLabel, conceptMgr).collect(Collectors.toSet()));
                 }
+                addConstantValueRequirements(unifierBuilder, values);
             } else return Iterators.empty();
 
             return single(unifierBuilder.build());
@@ -595,7 +595,7 @@ public abstract class Concludable extends Resolvable {
         public Set<Constraint> concludableConstraints() {
             Set<Constraint> constraints = new HashSet<>();
             constraints.add(isa);
-            constraints.addAll(equalsConstraints(values));
+            constraints.addAll(equalsConstantConstraints(values));
             return set(constraints);
         }
 
@@ -620,7 +620,7 @@ public abstract class Concludable extends Resolvable {
                     unifierBuilder.requirements().types(type.id(),
                                                         subtypeLabels(type.resolvedTypes(), conceptMgr).collect(Collectors.toSet()));
                 }
-                addValueEqualsRequirements(unifierBuilder, values);
+                addConstantValueRequirements(unifierBuilder, values);
             } else return Iterators.empty();
 
             return single(unifierBuilder.build());
@@ -645,16 +645,24 @@ public abstract class Concludable extends Resolvable {
         Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
             Variable var = generating();
             Set<Label> types = var.resolvedTypes();
-            // may never be empty as its always known to be at least a relation or attribute
             assert var.isSatisfiable();
 
             Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
-            types.forEach(type -> logicMgr.rulesConcluding(type)
-                    .forEachRemaining(rule -> unify(rule.conclusion(), conceptMgr)
-                            .forEachRemaining(unifier -> {
-                                applicableRules.putIfAbsent(rule, new HashSet<>());
-                                applicableRules.get(rule).add(unifier);
-                            })));
+            if (types.isEmpty()) {
+                logicMgr.rules()
+                        .forEachRemaining(rule -> unify(rule.conclusion(), conceptMgr)
+                                .forEachRemaining(unifier -> {
+                                    applicableRules.putIfAbsent(rule, new HashSet<>());
+                                    applicableRules.get(rule).add(unifier);
+                                }));
+            } else {
+                types.forEach(type -> logicMgr.rulesConcluding(type)
+                        .forEachRemaining(rule -> unify(rule.conclusion(), conceptMgr)
+                                .forEachRemaining(unifier -> {
+                                    applicableRules.putIfAbsent(rule, new HashSet<>());
+                                    applicableRules.get(rule).add(unifier);
+                                })));
+            }
 
             return applicableRules;
         }
@@ -706,7 +714,7 @@ public abstract class Concludable extends Resolvable {
 
         @Override
         public Set<Constraint> concludableConstraints() {
-            return new HashSet<>(equalsConstraints(values));
+            return new HashSet<>(equalsConstantConstraints(values));
         }
 
         @Override
@@ -721,7 +729,7 @@ public abstract class Concludable extends Resolvable {
             if (unificationSatisfiable(attribute, valueConclusion.value().owner())) {
                 unifierBuilder.add(attribute.id(), valueConclusion.value().owner().id());
             } else return Iterators.empty();
-            addValueEqualsRequirements(unifierBuilder, values);
+            addConstantValueRequirements(unifierBuilder, values);
             return single(unifierBuilder.build());
         }
 

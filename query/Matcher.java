@@ -82,6 +82,7 @@ public class Matcher {
         this.query = query;
         this.disjunction = Disjunction.create(query.conjunction().normalise());
         this.filter = iterate(query.filter()).map(v -> Identifier.Variable.of(v.reference().asName())).toSet();
+        assert !this.filter.isEmpty();
         this.context = context;
         if (context != null) {
             if (query.sort().isPresent()) this.context.producer(EXHAUSTIVE); // TODO: remove this once sort is optimised
