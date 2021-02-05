@@ -169,6 +169,8 @@ public abstract class RocksSession implements Grakn.Session {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+                System.out.println(writeLock);
+                System.out.println(Thread.currentThread());
                 writeLock.unlock();
             }
         }
