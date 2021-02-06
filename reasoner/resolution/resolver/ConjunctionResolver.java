@@ -107,23 +107,6 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         }
     }
 
-    private ResponseProducer mayUpdateAndGetResponseProducer(Request fromUpstream, int iteration) {
-        if (!responseProducers.containsKey(fromUpstream)) {
-            responseProducers.put(fromUpstream, responseProducerCreate(fromUpstream, iteration));
-        } else {
-            ResponseProducer responseProducer = responseProducers.get(fromUpstream);
-            assert responseProducer.iteration() == iteration ||
-                    responseProducer.iteration() + 1 == iteration;
-
-            if (responseProducer.iteration() + 1 == iteration) {
-                // when the same request for the next iteration the first time, re-initialise required state
-                ResponseProducer responseProducerNextIter = responseProducerReiterate(fromUpstream, responseProducer, iteration);
-                responseProducers.put(fromUpstream, responseProducerNextIter);
-            }
-        }
-        return responseProducers.get(fromUpstream);
-    }
-
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
         LOG.trace("{}: received Answer: {}", name(), fromDownstream);
@@ -199,13 +182,30 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
                 downstreamResolvers.put(resolvable, registry.registerResolvable(resolvable));
             });
 
-            // TODO just add negations at the end, but we will want to include them in the planner
+            // TODO just adding negations at the end, but we will want to include them in the planner
             for (Negation negation : conjunction.negations()) {
                 Negated negated = new Negated(negation.disjunction());
                 plan.add(negated);
-                downstreamResolvers.put(negated, registry.negated(negated));
+                downstreamResolvers.put(negated, registry.negated(conjunction, negated));
             }
         }
+    }
+
+    private ResponseProducer mayUpdateAndGetResponseProducer(Request fromUpstream, int iteration) {
+        if (!responseProducers.containsKey(fromUpstream)) {
+            responseProducers.put(fromUpstream, responseProducerCreate(fromUpstream, iteration));
+        } else {
+            ResponseProducer responseProducer = responseProducers.get(fromUpstream);
+            assert responseProducer.iteration() == iteration ||
+                    responseProducer.iteration() + 1 == iteration;
+
+            if (responseProducer.iteration() + 1 == iteration) {
+                // when the same request for the next iteration the first time, re-initialise required state
+                ResponseProducer responseProducerNextIter = responseProducerReiterate(fromUpstream, responseProducer, iteration);
+                responseProducers.put(fromUpstream, responseProducerNextIter);
+            }
+        }
+        return responseProducers.get(fromUpstream);
     }
 
     @Override

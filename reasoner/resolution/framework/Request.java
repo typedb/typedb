@@ -33,6 +33,9 @@ import java.util.Set;
 import static grakn.common.collection.Collections.list;
 
 public class Request {
+
+    // TODO add compute mode: single vs all (for negation vs regular)
+
     private final Path path;
     private final AnswerState.DownstreamVars partialAnswer;
     private final ResolutionAnswer.Derivation partialDerivation;
@@ -133,7 +136,7 @@ public class Request {
             this(list(sender));
         }
 
-        private Path(List<Actor<? extends Resolver<?>>> path) {
+        public Path(List<Actor<? extends Resolver<?>>> path) {
             assert !path.isEmpty() : "Path cannot be empty";
             this.path = path;
         }
