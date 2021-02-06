@@ -28,16 +28,25 @@ import grakn.core.pattern.variable.Variable;
 import java.util.HashSet;
 import java.util.Set;
 
+import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public class Retrievable extends Resolvable {
 
+    private final Set<Variable> generating;
+
     public Retrievable(Conjunction conjunction) {
         super(conjunction);
+        this.generating = set();
     }
 
     public static Set<Retrievable> extractFrom(Conjunction conjunction, Set<Concludable> toExclude) {
         return Retrievable.Extractor.of(conjunction, toExclude).extract();
+    }
+
+    @Override
+    public Set<Variable> generating() {
+        return generating;
     }
 
     @Override

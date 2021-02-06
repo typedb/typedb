@@ -145,7 +145,7 @@ public class Planner {
         private Optional<Concludable> fewestRules(Stream<Resolvable> resolvableStream) {
             // TODO Tie-break for Concludables with the same number of applicable rules
             return resolvableStream.map(Resolvable::asConcludable)
-                    .min(Comparator.comparingInt(c -> c.getApplicableRules(conceptMgr, logicMgr).toSet().size()));
+                    .min(Comparator.comparingInt(c -> (int)c.getApplicableRules(conceptMgr, logicMgr).count()));
         }
 
         private Optional<Resolvable> mostUnansweredVars(Stream<Resolvable> resolvableStream) {
@@ -158,12 +158,11 @@ public class Planner {
          */
         private Map<Resolvable, Set<Variable>> dependencies(Set<Resolvable> resolvables) {
             Map<Resolvable, Set<Variable>> deps = new HashMap<>();
-            Set<Variable> generatedVars = iterate(resolvables).filter(Resolvable::isConcludable)
-                    .map(Resolvable::asConcludable).map(Concludable::generating).toSet();
+            Set<Variable> generatedVars = iterate(resolvables).flatMap(resolvable -> iterate(resolvable.generating())).toSet();
             for (Resolvable resolvable : resolvables) {
                 for (Variable v : namedVariables(resolvable)) {
                     deps.putIfAbsent(resolvable, new HashSet<>());
-                    if (generatedVars.contains(v) && !(resolvable.isConcludable() && resolvable.asConcludable().generating().equals(v))) {
+                    if (generatedVars.contains(v) && !(resolvable.generating().contains(v))) {
                         // TODO Should this rule the Resolvable out if generates it's own dependency?
                         deps.get(resolvable).add(v);
                     }
