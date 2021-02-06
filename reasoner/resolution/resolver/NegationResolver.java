@@ -1,7 +1,6 @@
 package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.resolvable.Negated;
 import grakn.core.pattern.Conjunction;
@@ -23,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 
 import static grakn.common.collection.Collections.list;
-import static grakn.common.collection.Collections.map;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public class NegationResolver extends Resolver<NegationResolver> {
@@ -39,7 +37,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
     public NegationResolver(Actor<NegationResolver> self, Negated negated, ResolverRegistry registry,
                             TraversalEngine traversalEngine, Actor<ResolutionRecorder> resolutionRecorder,
                             boolean explanations) {
-        super(self, RetrievableResolver.class.getSimpleName() + "(pattern: " + negated.pattern() + ")",
+        super(self, NegationResolver.class.getSimpleName() + "(pattern: " + negated.pattern() + ")",
               registry, traversalEngine, explanations);
         this.negated = negated;
         this.resolutionRecorder = resolutionRecorder;
@@ -120,7 +118,6 @@ public class NegationResolver extends Resolver<NegationResolver> {
         Request fromUpstream = fromUpstream(toDownstream);
         NegationStatus negationStatus = this.statuses.get(fromUpstream);
 
-        assert negationStatus.status.isRequested();
         negationStatus.setFailed();
         for (int i = 0; i < negationStatus.requested; i++) {
             respondToUpstream(new Response.Fail(fromUpstream), negationStatus.externalIteration);

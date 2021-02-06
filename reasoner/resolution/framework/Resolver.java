@@ -99,7 +99,7 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
             LOG.trace("{} : Sending a new Response.Answer to upstream", name());
             receiver.tell(actor -> actor.receiveAnswer(response.asAnswer(), iteration));
         } else if (response.isFail()) {
-            LOG.trace("{}: Sending a new Response.Exhausted to upstream", name());
+            LOG.trace("{}: Sending a new Response.Fail to upstream", name());
             receiver.tell(actor -> actor.receiveExhausted(response.asFail(), iteration));
         } else {
             throw new RuntimeException(("Unknown response type " + response.getClass().getSimpleName()));

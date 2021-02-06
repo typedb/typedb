@@ -177,29 +177,27 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         LOG.debug("{}: initialising downstream actors", name());
         Set<Concludable> concludables = Iterators.iterate(Concludable.create(conjunction))
                 .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext()).toSet();
-        if (concludables.size() > 0 || !conjunction.negations().isEmpty()) {
-            Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction, concludables);
-            Set<Resolvable<?>> resolvables = new HashSet<>();
-            resolvables.addAll(concludables);
-            resolvables.addAll(retrievables);
+        Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction, concludables);
+        Set<Resolvable<?>> resolvables = new HashSet<>();
+        resolvables.addAll(concludables);
+        resolvables.addAll(retrievables);
 
-            plan.addAll(planner.plan(resolvables));
-            iterate(plan).forEachRemaining(resolvable -> {
-                downstreamResolvers.put(resolvable, registry.registerResolvable(resolvable));
-            });
+        plan.addAll(planner.plan(resolvables));
+        iterate(plan).forEachRemaining(resolvable -> {
+            downstreamResolvers.put(resolvable, registry.registerResolvable(resolvable));
+        });
 
-            // TODO just adding negations at the end, but we will want to include them in the planner
-            for (Negation negation : conjunction.negations()) {
-                Disjunction disjunction = negation.disjunction();
-                Set<Reference.Name> filter = iterate(conjunction.variables()).filter(v -> v.reference().isName())
-                        .map(v -> v.reference().asName()).toSet();
-                Disjunction satisfiableDisjunction = resolveTypesAndFilter(disjunction, filter);
-                if (satisfiableDisjunction.conjunctions().isEmpty()) return;
+        // TODO just adding negations at the end, but we will want to include them in the planner
+        for (Negation negation : conjunction.negations()) {
+            Disjunction disjunction = negation.disjunction();
+            Set<Reference.Name> filter = iterate(conjunction.variables()).filter(v -> v.reference().isName())
+                    .map(v -> v.reference().asName()).toSet();
+            Disjunction satisfiableDisjunction = resolveTypesAndFilter(disjunction, filter);
+            if (satisfiableDisjunction.conjunctions().isEmpty()) return;
 
-                Negated negated = new Negated(satisfiableDisjunction);
-                plan.add(negated);
-                downstreamResolvers.put(negated, registry.negated(conjunction, negated));
-            }
+            Negated negated = new Negated(satisfiableDisjunction);
+            plan.add(negated);
+            downstreamResolvers.put(negated, registry.negated(conjunction, negated));
         }
     }
 
@@ -242,18 +240,16 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), fromUpstream);
 
-        ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers = toUpstreamAnswers(
-                fromUpstream, compatibleBoundAnswers(conceptMgr, conjunction, fromUpstream.partialAnswer().conceptMap()));
-
-        ResponseProducer responseProducer = new ResponseProducer(upstreamAnswers, iteration);
-
-        if (!plan.isEmpty()) {
-            Request toDownstream = Request.create(fromUpstream.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
-                                                  Initial.of(fromUpstream.partialAnswer().conceptMap())
-                                                          .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
-                                                  new ResolutionAnswer.Derivation(map()), 0, null);
-            responseProducer.addDownstreamProducer(toDownstream);
-        }
+//        ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers = toUpstreamAnswers(
+//                fromUpstream, compatibleBoundAnswers(conceptMgr, conjunction, fromUpstream.partialAnswer().conceptMap()));
+//
+        ResponseProducer responseProducer = new ResponseProducer(Iterators.empty(), iteration);
+        assert !plan.isEmpty();
+        Request toDownstream = Request.create(fromUpstream.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
+                                              Initial.of(fromUpstream.partialAnswer().conceptMap())
+                                                      .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
+                                              new ResolutionAnswer.Derivation(map()), 0, null);
+        responseProducer.addDownstreamProducer(toDownstream);
         return responseProducer;
     }
 
@@ -263,17 +259,16 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         assert newIteration > responseProducerPrevious.iteration();
         LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
 
-        ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers =  toUpstreamAnswers(
-                fromUpstream, compatibleBoundAnswers(conceptMgr, conjunction, fromUpstream.partialAnswer().conceptMap()));
+//        ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers = toUpstreamAnswers(
+//                fromUpstream, compatibleBoundAnswers(conceptMgr, conjunction, fromUpstream.partialAnswer().conceptMap()));
 
-        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(upstreamAnswers, newIteration);
-        if (!plan.isEmpty()) {
-            Request toDownstream = Request.create(fromUpstream.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
-                                                  Initial.of(fromUpstream.partialAnswer().conceptMap())
-                                                          .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
-                                                  new ResolutionAnswer.Derivation(map()), 0, null);
-            responseProducerNewIter.addDownstreamProducer(toDownstream);
-        }
+        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(Iterators.empty(), newIteration);
+        assert !plan.isEmpty();
+        Request toDownstream = Request.create(fromUpstream.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
+                                              Initial.of(fromUpstream.partialAnswer().conceptMap())
+                                                      .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
+                                              new ResolutionAnswer.Derivation(map()), 0, null);
+        responseProducerNewIter.addDownstreamProducer(toDownstream);
         return responseProducerNewIter;
     }
 
