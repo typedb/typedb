@@ -69,10 +69,21 @@ import static graql.lang.common.GraqlToken.Predicate.Equality.EQ;
 public abstract class Concludable extends Resolvable {
 
     private Map<Rule, Set<Unifier>> applicableRules;
+    private Conjunction conjunction;
 
     private Concludable(Conjunction conjunction) {
-        super(conjunction);
+        this.conjunction = conjunction;
         applicableRules = null;
+    }
+
+    @Override
+    public Conjunction pattern() {
+        return conjunction;
+    }
+
+    @Override
+    public Set<Variable> variables() {
+        return conjunction.variables();
     }
 
     public boolean isConcludable() {

@@ -19,6 +19,7 @@ package grakn.core.logic.resolvable;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.Conjunction;
+import grakn.core.pattern.Pattern;
 import grakn.core.pattern.variable.Variable;
 
 import java.util.Set;
@@ -28,23 +29,21 @@ import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
 public abstract class Resolvable {
 
-    private final Conjunction conjunction;
-
-    public Resolvable(Conjunction conjunction) {
-        this.conjunction = conjunction;
-    }
-
-    public Conjunction conjunction() {
-        return conjunction;
-    }
+    public abstract <T extends Pattern> T pattern();
 
     public abstract Set<Variable> generating();
+
+    public abstract Set<Variable> variables();
 
     public boolean isRetrievable() {
         return false;
     }
 
     public boolean isConcludable() {
+        return false;
+    }
+
+    public boolean isNegated() {
         return false;
     }
 
@@ -56,4 +55,7 @@ public abstract class Resolvable {
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Concludable.class));
     }
 
+    public Negated asNegated() {
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Negated.class));
+    }
 }
