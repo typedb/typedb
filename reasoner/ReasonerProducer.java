@@ -60,7 +60,8 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     public ReasonerProducer(Disjunction disjunction, ResolverRegistry resolverRegistry, Set<Reference.Name> filter) {
-        // TODO
+        this.rootResolver = null;
+        this.filter = null;
     }
 
     @Override
@@ -102,7 +103,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private void prepareNextIteration() {
         iteration++;
         iterationInferredAnswer = false;
-        resolveRequest = Request.create(new Request.Path(rootResolver), Root.create(), EMPTY, filter);
+        resolveRequest = Request.create(new Request.Path(rootResolver), AnswerState.DownstreamVars.Root.create(), EMPTY, filter);
     }
 
     private boolean mustReiterate() {
