@@ -203,8 +203,8 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), fromUpstream);
 
-        ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers = toUpstreamAnswers(fromUpstream,
-                                                                                               compatibleBoundAnswers(conceptMgr, conjunction, fromUpstream.partialAnswer().conceptMap()));
+        ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers = toUpstreamAnswers(
+                fromUpstream, compatibleBoundAnswers(conceptMgr, conjunction, fromUpstream.partialAnswer().conceptMap()));
 
         ResponseProducer responseProducer = new ResponseProducer(upstreamAnswers, iteration);
 
@@ -218,20 +218,15 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         return responseProducer;
     }
 
-    protected abstract ResourceIterator<AnswerState.UpstreamVars.Derived> toUpstreamAnswers(Request fromUpstream,
-                                                                                            ResourceIterator<ConceptMap> downstreamConceptMaps);
-
-    protected abstract Optional<AnswerState.UpstreamVars.Derived> toUpstreamAnswer(Request fromUpstream, ConceptMap downstreamConceptMap);
-
     @Override
     protected ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer responseProducerPrevious,
                                                          int newIteration) {
         assert newIteration > responseProducerPrevious.iteration();
         LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
 
-        ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers = traversalEngine.iterator(conjunction.traversal())
-                .map(conceptMgr::conceptMap)
-                .map(conceptMap -> fromUpstream.partialAnswer().asIdentity().aggregateToUpstream(conceptMap, null));
+        ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers =  toUpstreamAnswers(
+                fromUpstream, compatibleBoundAnswers(conceptMgr, conjunction, fromUpstream.partialAnswer().conceptMap()));
+
         ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(upstreamAnswers, newIteration);
         if (!plan.isEmpty()) {
             Request toDownstream = Request.create(fromUpstream.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
@@ -242,6 +237,11 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         }
         return responseProducerNewIter;
     }
+
+    protected abstract ResourceIterator<AnswerState.UpstreamVars.Derived> toUpstreamAnswers(Request fromUpstream,
+                                                                                            ResourceIterator<ConceptMap> downstreamConceptMaps);
+
+    protected abstract Optional<AnswerState.UpstreamVars.Derived> toUpstreamAnswer(Request fromUpstream, ConceptMap downstreamConceptMap);
 
     public static class Simple extends ConjunctionResolver<Simple> {
 
