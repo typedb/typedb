@@ -20,16 +20,42 @@ package grakn.core.logic.resolvable;
 import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.variable.Variable;
 
+import java.util.HashSet;
 import java.util.Set;
 
-public class Negated extends Resolvable {
+import static grakn.common.collection.Collections.set;
+import static grakn.core.common.iterator.Iterators.iterate;
+
+public class Negated extends Resolvable<Disjunction> {
+
+    private final Set<Variable> generating;
+    private final Set<Variable> variables;
 
     public Negated(Disjunction disjunction) {
-        super();
-
+        super(disjunction);
+        this.generating = set();
+        this.variables = new HashSet<>();
+        pattern().conjunctions().forEach(c -> iterate(c.variables()).filter(v -> v.reference().isName())
+                .forEachRemaining(variables::add));
     }
+
     @Override
     public Set<Variable> generating() {
-        return ;
+        return generating;
+    }
+
+    @Override
+    public Set<Variable> namedVariables() {
+        return this.variables;
+    }
+
+    @Override
+    public boolean isNegated() {
+        return true;
+    }
+
+    @Override
+    public Negated asNegated() {
+        return this;
     }
 }

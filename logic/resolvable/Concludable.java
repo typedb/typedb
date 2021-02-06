@@ -66,24 +66,20 @@ import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.single;
 import static graql.lang.common.GraqlToken.Predicate.Equality.EQ;
 
-public abstract class Concludable extends Resolvable {
+public abstract class Concludable extends Resolvable<Conjunction> {
 
     private Map<Rule, Set<Unifier>> applicableRules;
-    private Conjunction conjunction;
+    private Set<Variable> namedVariables;
 
     private Concludable(Conjunction conjunction) {
-        this.conjunction = conjunction;
-        applicableRules = null;
+        super(conjunction);
+        this.namedVariables = iterate(pattern().variables()).filter(v -> v.reference().isName()).toSet();
+        this.applicableRules = null;
     }
 
     @Override
-    public Conjunction pattern() {
-        return conjunction;
-    }
-
-    @Override
-    public Set<Variable> variables() {
-        return conjunction.variables();
+    public Set<Variable> namedVariables() {
+        return namedVariables;
     }
 
     public boolean isConcludable() {

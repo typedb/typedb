@@ -119,14 +119,14 @@ public class ResolverRegistry {
     }
 
     private AlphaEquivalentResolver registerRetrievable(Retrievable retrievable) {
-        LOG.debug("Register RetrievableResolver: '{}'", retrievable.conjunction());
+        LOG.debug("Register RetrievableResolver: '{}'", retrievable.pattern());
         Actor<RetrievableResolver> retrievableActor = Actor.create(elg, self -> new RetrievableResolver(
                 self, retrievable, this, traversalEngine, conceptMgr, explanations));
         return AlphaEquivalentResolver.createDirect(retrievableActor, retrievable);
     }
 
     private AlphaEquivalentResolver registerConcludable(Concludable concludable) {
-        LOG.debug("Register ConcludableResolver: '{}'", concludable.conjunction());
+        LOG.debug("Register ConcludableResolver: '{}'", concludable.pattern());
         for (Map.Entry<Concludable, Actor<ConcludableResolver>> c : concludableActors.entrySet()) {
             // TODO This needs to be optimised from a linear search to use an alpha hash
             AlphaEquivalence alphaEquality = concludable.alphaEquals(c.getKey());
@@ -163,8 +163,8 @@ public class ResolverRegistry {
             return new AlphaEquivalentResolver(resolver, mapping);
         }
 
-        public static AlphaEquivalentResolver createDirect(Actor<? extends ResolvableResolver<?>> resolver, Resolvable resolvable) {
-            Map<Reference.Name, Reference.Name> directMapping = new HashSet<>(resolvable.conjunction().variables()).stream()
+        public static AlphaEquivalentResolver createDirect(Actor<? extends ResolvableResolver<?>> resolver, Resolvable<Conjunction> resolvable) {
+            Map<Reference.Name, Reference.Name> directMapping = new HashSet<>(resolvable.pattern().variables()).stream()
                     .filter(variable -> variable.reference().isName())
                     .map(variable -> variable.reference().asName())
                     .collect(Collectors.toMap(Function.identity(), Function.identity()));

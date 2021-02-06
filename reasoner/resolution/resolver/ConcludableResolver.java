@@ -65,7 +65,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
                                Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
                                boolean explanations) {
-        super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.conjunction() + ")",
+        super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.pattern() + ")",
               registry, traversalEngine, explanations);
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
@@ -172,7 +172,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
 
         assert fromUpstream.partialAnswer().isMapped();
         ResourceIterator<UpstreamVars.Derived> upstreamAnswers =
-                compatibleBoundAnswers(conceptMgr, concludable.conjunction(), fromUpstream.partialAnswer().conceptMap())
+                compatibleBoundAnswers(conceptMgr, concludable.pattern(), fromUpstream.partialAnswer().conceptMap())
                         .map(conceptMap -> fromUpstream.partialAnswer().asMapped().mapToUpstream(conceptMap));
 
         ResponseProducer responseProducer = new ResponseProducer(upstreamAnswers, iteration);
@@ -195,7 +195,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
 
         assert fromUpstream.partialAnswer().isMapped();
         ResourceIterator<UpstreamVars.Derived> upstreamAnswers =
-                compatibleBoundAnswers(conceptMgr, concludable.conjunction(), fromUpstream.partialAnswer().conceptMap())
+                compatibleBoundAnswers(conceptMgr, concludable.pattern(), fromUpstream.partialAnswer().conceptMap())
                 .map(conceptMap -> fromUpstream.partialAnswer().asMapped().mapToUpstream(conceptMap));
 
         ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(upstreamAnswers, newIteration);

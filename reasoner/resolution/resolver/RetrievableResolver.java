@@ -46,7 +46,7 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
 
     public RetrievableResolver(Actor<RetrievableResolver> self, Retrievable retrievable, ResolverRegistry registry,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean explanations) {
-        super(self, RetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable.conjunction() + ")",
+        super(self, RetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable.pattern() + ")",
               registry, traversalEngine, explanations);
         this.retrievable = retrievable;
         this.conceptMgr = conceptMgr;
@@ -86,7 +86,7 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
         LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), fromUpstream);
         assert fromUpstream.partialAnswer().isMapped();
         ResourceIterator<UpstreamVars.Derived> upstreamAnswers =
-                compatibleBoundAnswers(conceptMgr, retrievable.conjunction(), fromUpstream.partialAnswer().conceptMap())
+                compatibleBoundAnswers(conceptMgr, retrievable.pattern(), fromUpstream.partialAnswer().conceptMap())
                 .map(conceptMap -> fromUpstream.partialAnswer().asMapped().mapToUpstream(conceptMap));
         return new ResponseProducer(upstreamAnswers, iteration);
     }
@@ -99,7 +99,7 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
         assert newIteration > responseProducerPrevious.iteration();
         assert fromUpstream.partialAnswer().isMapped();
         ResourceIterator<UpstreamVars.Derived> upstreamAnswers =
-                compatibleBoundAnswers(conceptMgr, retrievable.conjunction(), fromUpstream.partialAnswer().conceptMap())
+                compatibleBoundAnswers(conceptMgr, retrievable.pattern(), fromUpstream.partialAnswer().conceptMap())
                 .map(conceptMap -> fromUpstream.partialAnswer().asMapped().mapToUpstream(conceptMap));
         return responseProducerPrevious.newIteration(upstreamAnswers, newIteration);
     }
@@ -124,7 +124,7 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
         if (responseProducer.hasUpstreamAnswer()) {
             UpstreamVars.Derived upstreamAnswer = responseProducer.upstreamAnswers().next();
             responseProducer.recordProduced(upstreamAnswer.withInitialFiltered());
-            ResolutionAnswer answer = new ResolutionAnswer(upstreamAnswer, retrievable.conjunction().toString(),
+            ResolutionAnswer answer = new ResolutionAnswer(upstreamAnswer, retrievable.pattern().toString(),
                                                            ResolutionAnswer.Derivation.EMPTY, self(), false);
             respondToUpstream(Answer.create(fromUpstream, answer), iteration);
         } else {

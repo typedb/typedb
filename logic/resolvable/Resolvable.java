@@ -18,7 +18,6 @@
 package grakn.core.logic.resolvable;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Pattern;
 import grakn.core.pattern.variable.Variable;
 
@@ -27,13 +26,19 @@ import java.util.Set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
-public abstract class Resolvable {
+public abstract class Resolvable<T extends Pattern> {
 
-    public abstract <T extends Pattern> T pattern();
+    private T pattern;
+
+    public Resolvable(T pattern) {this.pattern = pattern;}
+
+    public T pattern() {
+        return pattern;
+    }
 
     public abstract Set<Variable> generating();
 
-    public abstract Set<Variable> variables();
+    public abstract Set<Variable> namedVariables();
 
     public boolean isRetrievable() {
         return false;

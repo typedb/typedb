@@ -188,7 +188,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
                 .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext()).toSet();
         if (concludables.size() > 0) {
             Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction, concludables);
-            Set<Resolvable> resolvables = new HashSet<>();
+            Set<Resolvable<?>> resolvables = new HashSet<>();
             resolvables.addAll(concludables);
             resolvables.addAll(retrievables);
 
