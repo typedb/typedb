@@ -31,6 +31,7 @@ import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
+import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.Response.Answer;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
@@ -55,7 +56,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
     private final Concludable concludable;
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
-    private final Map<Actor<RootResolver>, RecursionState> recursionStates;
+    private final Map<Actor<? extends Resolver<?>>, RecursionState> recursionStates;
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private final Map<Request, ResponseProducer> responseProducers;
     private boolean isInitialised;
@@ -165,7 +166,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
     @Override
     protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), fromUpstream);
-        Actor<RootResolver> root = fromUpstream.path().root();
+        Actor<? extends Resolver<?>> root = fromUpstream.path().root();
         recursionStates.putIfAbsent(root, new RecursionState(iteration));
         RecursionState iterationState = recursionStates.get(root);
 
@@ -185,7 +186,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
         assert newIteration > responseProducerPrevious.iteration();
         LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
 
-        Actor<RootResolver> root = fromUpstream.path().root();
+        Actor<? extends Resolver<?>> root = fromUpstream.path().root();
         assert recursionStates.containsKey(root);
         RecursionState iterationState = recursionStates.get(root);
         if (iterationState.iteration() < newIteration) {

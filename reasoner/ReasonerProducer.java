@@ -23,10 +23,11 @@ import grakn.core.concurrent.producer.Producer;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
+import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
-import grakn.core.reasoner.resolution.resolver.RootResolver;
-import grakn.core.traversal.common.Identifier;
+import grakn.core.reasoner.resolution.framework.Resolver;
+import grakn.core.reasoner.resolution.resolver.Root;
 import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,15 +36,13 @@ import javax.annotation.concurrent.ThreadSafe;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.reasoner.resolution.answer.AnswerState.DownstreamVars.Root;
 import static grakn.core.reasoner.resolution.framework.ResolutionAnswer.Derivation.EMPTY;
 
 @ThreadSafe
 public class ReasonerProducer implements Producer<ConceptMap> {
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerProducer.class);
 
-    private final Actor<RootResolver> rootResolver;
+    private final Actor<? extends Resolver<?>> rootResolver;
     private final Set<Reference.Name> filter;
     private Queue<ConceptMap> queue;
     private Request resolveRequest;
@@ -52,9 +51,9 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private int iteration;
 
     public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverMgr, Set<Reference.Name> filter) {
-        this.rootResolver = resolverMgr.createRoot(conjunction, this::requestAnswered, this::requestExhausted);
+        this.rootResolver = resolverMgr.rootConjunction(conjunction, this::requestAnswered, this::requestExhausted);
         this.filter = filter;
-        this.resolveRequest = Request.create(new Request.Path(rootResolver), Root.create(), EMPTY, this.filter);
+        this.resolveRequest = Request.create(new Request.Path(rootResolver), AnswerState.DownstreamVars.Root.create(), EMPTY, this.filter);
         this.queue = null;
         this.iteration = 0;
         this.done = false;

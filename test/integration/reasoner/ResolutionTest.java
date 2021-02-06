@@ -26,7 +26,7 @@ import grakn.core.pattern.variable.Variable;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
-import grakn.core.reasoner.resolution.resolver.RootResolver;
+import grakn.core.reasoner.resolution.resolver.Root;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
@@ -356,7 +356,7 @@ public class ResolutionTest {
                 ResolverRegistry registry = transaction.reasoner().resolverRegistry();
                 LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
                 AtomicLong doneReceived = new AtomicLong(0L);
-                Actor<RootResolver> root = registry.createRoot(conjunctionPattern, responses::add,
+                Actor<Root.Conjunction> root = registry.rootConjunction(conjunctionPattern, responses::add,
                                                                iterDone -> doneReceived.incrementAndGet());
 
                 for (int i = 0; i < answerCount; i++) {
@@ -400,14 +400,14 @@ public class ResolutionTest {
         LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
                 transaction.logic().typeResolver().resolve(conjunction);
-        Actor<RootResolver> root =
-                        registry.createRoot(conjunction, responses::add, iterDone -> doneReceived.incrementAndGet());
+        Actor<Root.Conjunction> root =
+                        registry.rootConjunction(conjunction, responses::add, iterDone -> doneReceived.incrementAndGet());
         Set<Reference.Name> filter = iterate(conjunction.variables()).map(Variable::reference).filter(Reference::isName)
                 .map(Reference::asName).toSet();
         assertResponses(root, filter, responses, doneReceived, answerCount);
     }
 
-    private void assertResponses(Actor<RootResolver> root, Set<Reference.Name> filter, LinkedBlockingQueue<ResolutionAnswer> responses,
+    private void assertResponses(Actor<Root.Conjunction> root, Set<Reference.Name> filter, LinkedBlockingQueue<ResolutionAnswer> responses,
                                  AtomicLong doneReceived, long answerCount)
             throws InterruptedException {
         long startTime = System.currentTimeMillis();

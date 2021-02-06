@@ -20,7 +20,7 @@ package grakn.core.reasoner.resolution.framework;
 
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.reasoner.resolution.answer.AnswerState;
-import grakn.core.reasoner.resolution.resolver.RootResolver;
+import grakn.core.reasoner.resolution.resolver.Root;
 import graql.lang.pattern.variable.Reference;
 
 import javax.annotation.Nullable;
@@ -157,9 +157,9 @@ public class Request {
             return Objects.hash(path);
         }
 
-        public Actor<RootResolver> root() {
-            assert path.get(0).state instanceof RootResolver;
-            return (Actor<RootResolver>) path.get(0);
+        public Actor<? extends Resolver<?>> root() {
+            assert path.get(0).state instanceof Root;
+            return path.get(0);
         }
     }
 }

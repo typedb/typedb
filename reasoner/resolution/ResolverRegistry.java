@@ -33,7 +33,7 @@ import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.ConcludableResolver;
 import grakn.core.reasoner.resolution.resolver.ResolvableResolver;
 import grakn.core.reasoner.resolution.resolver.RetrievableResolver;
-import grakn.core.reasoner.resolution.resolver.RootResolver;
+import grakn.core.reasoner.resolution.resolver.Root;
 import grakn.core.reasoner.resolution.resolver.RuleResolver;
 import grakn.core.traversal.TraversalEngine;
 import graql.lang.pattern.variable.Reference;
@@ -91,10 +91,10 @@ public class ResolverRegistry {
                 explanations)));
     }
 
-    public Actor<RootResolver> createRoot(Conjunction pattern, Consumer<ResolutionAnswer> onAnswer, Consumer<Integer> onExhausted) {
-        LOG.debug("Creating RootResolver for pattern: '{}'", pattern);
+    public Actor<Root.Conjunction> rootConjunction(Conjunction pattern, Consumer<ResolutionAnswer> onAnswer, Consumer<Integer> onExhausted) {
+        LOG.debug("Creating Root.Conjunction for pattern: '{}'", pattern);
         return Actor.create(
-                elg, self -> new RootResolver(
+                elg, self -> new Root.Conjunction(
                         self, pattern, onAnswer, onExhausted, resolutionRecorder, this, traversalEngine,
                         conceptMgr, logicMgr, planner, explanations));
     }
