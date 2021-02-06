@@ -123,7 +123,7 @@ public class Reasoner {
     private Disjunction resolveTypesAndFilter(Disjunction disjunction, Set<Identifier.Variable.Name> filter) {
         disjunction.conjunctions().forEach(conj -> logicMgr.typeResolver().resolve(conj));
         for (Conjunction conjunction : disjunction.conjunctions()) {
-            if (!conjunction.isBounded() && conjunctionContainsThings(conjunction, filter)) {
+            if (!conjunction.isSatisfiable() && !conjunction.isBounded() && conjunctionContainsThings(conjunction, filter)) {
                 throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction);
             }
         }
