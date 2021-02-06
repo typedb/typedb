@@ -65,7 +65,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     final List<Resolvable> plan;
     final Map<Request, ResponseProducer> responseProducers;
     final Map<Resolvable, ResolverRegistry.AlphaEquivalentResolver> downstreamResolvers;
-    boolean isInitialised;
+    private boolean isInitialised;
 
     public ConjunctionResolver(Actor<T> self, String name, grakn.core.pattern.Conjunction conjunction,
                                Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
@@ -84,14 +84,63 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     }
 
     @Override
-    public abstract void receiveRequest(Request fromUpstream, int iteration);
-
-
-    @Override
     protected abstract void receiveAnswer(Response.Answer fromDownstream, int iteration);
 
+    protected abstract void tryAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration);
+
     @Override
-    protected abstract void receiveExhausted(Response.Fail fromDownstream, int iteration);
+    public void receiveRequest(Request fromUpstream, int iteration) {
+        LOG.trace("{}: received Request: {}", name(), fromUpstream);
+
+        if (!isInitialised) {
+            initialiseDownstreamActors();
+            isInitialised = true;
+        }
+
+        ResponseProducer responseProducer = mayUpdateAndGetResponseProducer(fromUpstream, iteration);
+        if (iteration < responseProducer.iteration()) {
+            // short circuit if the request came from a prior iteration
+            respondToUpstream(new Response.Fail(fromUpstream), iteration);
+        } else {
+            assert iteration == responseProducer.iteration();
+            tryAnswer(fromUpstream, responseProducer, iteration);
+        }
+    }
+
+    private ResponseProducer mayUpdateAndGetResponseProducer(Request fromUpstream, int iteration) {
+        if (!responseProducers.containsKey(fromUpstream)) {
+            responseProducers.put(fromUpstream, responseProducerCreate(fromUpstream, iteration));
+        } else {
+            ResponseProducer responseProducer = responseProducers.get(fromUpstream);
+            assert responseProducer.iteration() == iteration ||
+                    responseProducer.iteration() + 1 == iteration;
+
+            if (responseProducer.iteration() + 1 == iteration) {
+                // when the same request for the next iteration the first time, re-initialise required state
+                ResponseProducer responseProducerNextIter = responseProducerReiterate(fromUpstream, responseProducer, iteration);
+                responseProducers.put(fromUpstream, responseProducerNextIter);
+            }
+        }
+        return responseProducers.get(fromUpstream);
+    }
+
+
+    @Override
+    protected void receiveExhausted(Response.Fail fromDownstream, int iteration) {
+        LOG.trace("{}: Receiving Exhausted: {}", name(), fromDownstream);
+        Request toDownstream = fromDownstream.sourceRequest();
+        Request fromUpstream = fromUpstream(toDownstream);
+        ResponseProducer responseProducer = responseProducers.get(fromUpstream);
+
+        if (iteration < responseProducer.iteration()) {
+            // short circuit old iteration exhausted messages to upstream
+            respondToUpstream(new Response.Fail(fromUpstream), iteration);
+            return;
+        }
+
+        responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
+        tryAnswer(fromUpstream, responseProducer, iteration);
+    }
 
     @Override
     protected void initialiseDownstreamActors() {
@@ -161,25 +210,6 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         }
 
         @Override
-        public void receiveRequest(Request fromUpstream, int iteration) {
-            LOG.trace("{}: received Request: {}", name(), fromUpstream);
-
-            if (!isInitialised) {
-                initialiseDownstreamActors();
-                isInitialised = true;
-            }
-
-            ResponseProducer responseProducer = mayUpdateAndGetResponseProducer(fromUpstream, iteration);
-            if (iteration < responseProducer.iteration()) {
-                // short circuit if the request came from a prior iteration
-                respondToUpstream(new Response.Fail(fromUpstream), iteration);
-            } else {
-                assert iteration == responseProducer.iteration();
-                tryAnswer(fromUpstream, responseProducer, iteration);
-            }
-        }
-
-        @Override
         protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
             LOG.trace("{}: received Answer: {}", name(), fromDownstream);
 
@@ -222,40 +252,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         }
 
         @Override
-        protected void receiveExhausted(Response.Fail fromDownstream, int iteration) {
-            LOG.trace("{}: Receiving Exhausted: {}", name(), fromDownstream);
-            Request toDownstream = fromDownstream.sourceRequest();
-            Request fromUpstream = fromUpstream(toDownstream);
-            ResponseProducer responseProducer = responseProducers.get(fromUpstream);
-
-            if (iteration < responseProducer.iteration()) {
-                // short circuit old iteration exhausted messages to upstream
-                respondToUpstream(new Response.Fail(fromUpstream), iteration);
-                return;
-            }
-
-            responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
-            tryAnswer(fromUpstream, responseProducer, iteration);
-        }
-
-        private ResponseProducer mayUpdateAndGetResponseProducer(Request fromUpstream, int iteration) {
-            if (!responseProducers.containsKey(fromUpstream)) {
-                responseProducers.put(fromUpstream, responseProducerCreate(fromUpstream, iteration));
-            } else {
-                ResponseProducer responseProducer = responseProducers.get(fromUpstream);
-                assert responseProducer.iteration() == iteration ||
-                        responseProducer.iteration() + 1 == iteration;
-
-                if (responseProducer.iteration() + 1 == iteration) {
-                    // when the same request for the next iteration the first time, re-initialise required state
-                    ResponseProducer responseProducerNextIter = responseProducerReiterate(fromUpstream, responseProducer, iteration);
-                    responseProducers.put(fromUpstream, responseProducerNextIter);
-                }
-            }
-            return responseProducers.get(fromUpstream);
-        }
-
-        void tryAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
+        protected void tryAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
             if (responseProducer.hasUpstreamAnswer()) {
                 AnswerState.UpstreamVars.Derived upstreamAnswer = responseProducer.upstreamAnswers().next();
                 responseProducer.recordProduced(upstreamAnswer.withInitialFiltered());

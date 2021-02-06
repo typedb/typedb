@@ -63,7 +63,6 @@ public interface Root {
 
         private final Consumer<ResolutionAnswer> onAnswer;
         private final Consumer<Integer> onFail;
-        private ResponseProducer responseProducer;
 
         public Conjunction(Actor<Conjunction> self, grakn.core.pattern.Conjunction conjunction, Consumer<ResolutionAnswer> onAnswer,
                            Consumer<Integer> onFail, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
@@ -90,29 +89,12 @@ public interface Root {
         }
 
         @Override
-        public void receiveRequest(Request fromUpstream, int iteration) {
-            LOG.trace("{}: received Request: {}", name(), fromUpstream);
-            if (!isInitialised) {
-                initialiseDownstreamActors();
-                isInitialised = true;
-                responseProducer = responseProducerCreate(fromUpstream, iteration);
-            }
-            mayReiterateResponseProducer(fromUpstream, iteration);
-            if (iteration < responseProducer.iteration()) {
-                // short circuit if the request came from a prior iteration
-                onFail.accept(iteration);
-            } else {
-                assert iteration == responseProducer.iteration();
-                tryAnswer(fromUpstream, iteration);
-            }
-        }
-
-        @Override
         protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
             LOG.trace("{}: received answer: {}", name(), fromDownstream);
 
             Request toDownstream = fromDownstream.sourceRequest();
             Request fromUpstream = fromUpstream(toDownstream);
+            ResponseProducer responseProducer = responseProducers.get(fromUpstream);
 
             ResolutionAnswer.Derivation derivation;
             if (explanations()) {
@@ -136,7 +118,7 @@ public interface Root {
                                                                              fromDownstream.answer().isInferred());
                     submitAnswer(resolutionAnswer);
                 } else {
-                    tryAnswer(fromUpstream, iteration);
+                    tryAnswer(fromUpstream, responseProducer, iteration);
                 }
             } else {
                 int planIndex = fromDownstream.planIndex() + 1;
@@ -151,28 +133,7 @@ public interface Root {
         }
 
         @Override
-        protected void receiveExhausted(Response.Fail fromDownstream, int iteration) {
-            LOG.trace("{}: received Exhausted, with iter {}: {}", name(), iteration, fromDownstream);
-            Request toDownstream = fromDownstream.sourceRequest();
-            Request fromUpstream = fromUpstream(toDownstream);
-
-            if (iteration < responseProducer.iteration()) {
-                // short circuit old iteration exhausted messages back out of the actor model
-                submitFail(iteration);
-                return;
-            }
-
-            responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
-            tryAnswer(fromUpstream, iteration);
-        }
-
-        @Override
-        protected void exception(Throwable e) {
-            LOG.error("Actor exception", e);
-            // TODO, once integrated into the larger flow of executing queries, kill the actors and report and exception to root
-        }
-
-        protected void tryAnswer(Request fromUpstream, int iteration) {
+        protected void tryAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
             if (responseProducer.hasUpstreamAnswer()) {
                 AnswerState.UpstreamVars.Derived upstreamAnswer = responseProducer.upstreamAnswers().next();
                 responseProducer.recordProduced(upstreamAnswer.withInitialFiltered());
@@ -188,11 +149,12 @@ public interface Root {
             }
         }
 
-        private void mayReiterateResponseProducer(Request fromUpstream, int iteration) {
-            if (responseProducer.iteration() + 1 == iteration) {
-                responseProducer = responseProducerReiterate(fromUpstream, responseProducer, iteration);
-            }
+        @Override
+        protected void exception(Throwable e) {
+            LOG.error("Actor exception", e);
+            // TODO, once integrated into the larger flow of executing queries, kill the actors and report and exception to root
         }
+
     }
 
     class Disjunction extends Resolver<Disjunction> implements Root {
