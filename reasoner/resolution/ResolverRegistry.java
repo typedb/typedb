@@ -89,7 +89,7 @@ public class ResolverRegistry {
     public Actor<RuleResolver> registerRule(Rule rule) {
         LOG.debug("Register retrieval for rule actor: '{}'", rule);
         return rules.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new RuleResolver(
-                self, r, this, traversalEngine, conceptMgr, logicMgr, planner,
+                self, r, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr, planner,
                 explanations)));
     }
 

@@ -17,20 +17,17 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.LogicManager;
-import grakn.core.logic.resolvable.Concludable;
-import grakn.core.logic.resolvable.Resolvable;
-import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
-import grakn.core.reasoner.resolution.answer.Mapping;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
@@ -41,15 +38,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.Optional;
 import java.util.function.Consumer;
 
-import static grakn.common.collection.Collections.map;
-import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public interface Root {
 
@@ -89,46 +82,13 @@ public interface Root {
         }
 
         @Override
-        protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
-            LOG.trace("{}: received answer: {}", name(), fromDownstream);
-
-            Request toDownstream = fromDownstream.sourceRequest();
-            Request fromUpstream = fromUpstream(toDownstream);
-            ResponseProducer responseProducer = responseProducers.get(fromUpstream);
-
-            ResolutionAnswer.Derivation derivation;
-            if (explanations()) {
-                derivation = fromDownstream.sourceRequest().partialResolutions();
-                if (fromDownstream.answer().isInferred()) {
-                    derivation = derivation.withAnswer(fromDownstream.sourceRequest().receiver(), fromDownstream.answer());
-                }
+        protected void respondToUpstream(Response response, int iteration) {
+            if (response.isAnswer()) {
+                submitAnswer(response.asAnswer().answer());
+            } else if (response.isFail()) {
+                submitFail(iteration);
             } else {
-                derivation = null;
-            }
-
-            ConceptMap conceptMap = fromDownstream.answer().derived().withInitialFiltered();
-            if (fromDownstream.planIndex() == plan.size() - 1) {
-                assert fromUpstream.filter() != null;
-                AnswerState.UpstreamVars.Derived answer = fromUpstream.partialAnswer().asIdentity()
-                        .aggregateToUpstream(conceptMap, fromUpstream.filter());
-                ConceptMap filteredMap = answer.withInitialFiltered();
-                if (!responseProducer.hasProduced(filteredMap)) {
-                    responseProducer.recordProduced(filteredMap);
-                    ResolutionAnswer resolutionAnswer = new ResolutionAnswer(answer, conjunction.toString(), derivation, self(),
-                                                                             fromDownstream.answer().isInferred());
-                    submitAnswer(resolutionAnswer);
-                } else {
-                    tryAnswer(fromUpstream, responseProducer, iteration);
-                }
-            } else {
-                int planIndex = fromDownstream.planIndex() + 1;
-                ResolverRegistry.AlphaEquivalentResolver nextPlannedDownstream = downstreamResolvers.get(plan.get(planIndex));
-                Request downstreamRequest = Request.create(fromUpstream.path().append(nextPlannedDownstream.resolver()),
-                                                           AnswerState.UpstreamVars.Initial.of(conceptMap).toDownstreamVars(
-                                                                   Mapping.of(nextPlannedDownstream.mapping())),
-                                                           derivation, planIndex, null);
-                responseProducer.addDownstreamProducer(downstreamRequest);
-                requestFromDownstream(downstreamRequest, fromUpstream, iteration);
+                throw GraknException.of(ILLEGAL_STATE);
             }
         }
 
@@ -147,6 +107,20 @@ public interface Root {
                     submitFail(iteration);
                 }
             }
+        }
+
+        @Override
+        protected ResourceIterator<AnswerState.UpstreamVars.Derived> toUpstreamAnswers(Request fromUpstream, ResourceIterator<ConceptMap> downstreamConceptMaps) {
+            assert fromUpstream.filter().isPresent();
+            return downstreamConceptMaps.map(conceptMap -> fromUpstream.partialAnswer().asIdentity()
+                    .aggregateToUpstream(conceptMap, fromUpstream.filter().get()));
+        }
+
+        @Override
+        protected Optional<AnswerState.UpstreamVars.Derived> toUpstreamAnswer(Request fromUpstream, ConceptMap downstreamConceptMap) {
+            assert fromUpstream.filter().isPresent();
+            return Optional.of(fromUpstream.partialAnswer().asIdentity()
+                                       .aggregateToUpstream(downstreamConceptMap, fromUpstream.filter().get()));
         }
 
         @Override
@@ -197,6 +171,17 @@ public interface Root {
         }
 
         @Override
+        protected void respondToUpstream(Response response, int iteration) {
+            if (response.isAnswer()) {
+                submitAnswer(response.asAnswer().answer());
+            } else if (response.isFail()) {
+                submitFail(iteration);
+            } else {
+                throw GraknException.of(ILLEGAL_STATE);
+            }
+        }
+
+        @Override
         public void receiveRequest(Request fromUpstream, int iteration) {
             LOG.trace("{}: received Request: {}", name(), fromUpstream);
             if (!isInitialised) {
@@ -244,9 +229,9 @@ public interface Root {
             }
 
             ConceptMap conceptMap = fromDownstream.answer().derived().withInitialFiltered();
-            assert fromUpstream.filter() != null;
+            assert fromUpstream.filter().isPresent();
             AnswerState.UpstreamVars.Derived answer = fromUpstream.partialAnswer().asIdentity()
-                    .aggregateToUpstream(conceptMap, fromUpstream.filter());
+                    .aggregateToUpstream(conceptMap, fromUpstream.filter().get());
             ConceptMap filteredMap = answer.withInitialFiltered();
             if (!responseProducer.hasProduced(filteredMap)) {
                 responseProducer.recordProduced(filteredMap);

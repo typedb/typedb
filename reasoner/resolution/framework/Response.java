@@ -28,13 +28,13 @@ public interface Response {
 
     boolean isAnswer();
 
-    boolean isExhausted();
+    boolean isFail();
 
     default Answer asAnswer() {
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Answer.class));
     }
 
-    default Fail asExhausted() {
+    default Fail asFail() {
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Fail.class));
     }
 
@@ -72,7 +72,7 @@ public interface Response {
         }
 
         @Override
-        public boolean isExhausted() {
+        public boolean isFail() {
             return false;
         }
 
@@ -108,12 +108,12 @@ public interface Response {
         }
 
         @Override
-        public boolean isExhausted() {
+        public boolean isFail() {
             return true;
         }
 
         @Override
-        public Fail asExhausted() {
+        public Fail asFail() {
             return this;
         }
 

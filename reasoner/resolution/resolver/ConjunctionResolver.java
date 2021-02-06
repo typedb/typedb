@@ -48,6 +48,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.map;
@@ -57,9 +58,9 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
 
     private static final Logger LOG = LoggerFactory.getLogger(Root.Conjunction.class);
 
-    private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
     private final Planner planner;
+    final ConceptManager conceptMgr;
     final grakn.core.pattern.Conjunction conjunction;
     final Actor<ResolutionRecorder> resolutionRecorder;
     final List<Resolvable> plan;
@@ -82,9 +83,6 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         this.isInitialised = false;
         this.downstreamResolvers = new HashMap<>();
     }
-
-    @Override
-    protected abstract void receiveAnswer(Response.Answer fromDownstream, int iteration);
 
     protected abstract void tryAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration);
 
@@ -124,6 +122,47 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         return responseProducers.get(fromUpstream);
     }
 
+    @Override
+    protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
+        LOG.trace("{}: received Answer: {}", name(), fromDownstream);
+
+        Request toDownstream = fromDownstream.sourceRequest();
+        Request fromUpstream = fromUpstream(toDownstream);
+        ResponseProducer responseProducer = responseProducers.get(fromUpstream);
+
+        ResolutionAnswer.Derivation derivation;
+        if (explanations()) {
+            // TODO revisit
+            derivation = fromDownstream.sourceRequest().partialResolutions();
+            if (fromDownstream.answer().isInferred()) {
+                derivation = derivation.withAnswer(fromDownstream.sourceRequest().receiver(), fromDownstream.answer());
+            }
+        } else {
+            derivation = null;
+        }
+
+        ConceptMap conceptMap = fromDownstream.answer().derived().withInitialFiltered();
+        if (fromDownstream.planIndex() == plan.size() - 1) {
+            Optional<AnswerState.UpstreamVars.Derived> answer = toUpstreamAnswer(fromUpstream, conceptMap);
+            if (answer.isPresent() && !responseProducer.hasProduced(answer.get().withInitialFiltered())) {
+                responseProducer.recordProduced(answer.get().withInitialFiltered());
+                ResolutionAnswer resolutionAnswer = new ResolutionAnswer(answer.get(), conjunction.toString(), derivation, self(),
+                                                                         fromDownstream.answer().isInferred());
+                respondToUpstream(Response.Answer.create(fromUpstream, resolutionAnswer), iteration);
+            } else {
+                tryAnswer(fromUpstream, responseProducer, iteration);
+            }
+        } else {
+            int planIndex = fromDownstream.planIndex() + 1;
+            ResolverRegistry.AlphaEquivalentResolver nextPlannedDownstream = downstreamResolvers.get(plan.get(planIndex));
+            Request downstreamRequest = Request.create(fromUpstream.path().append(nextPlannedDownstream.resolver()),
+                                                       Initial.of(conceptMap).toDownstreamVars(
+                                                               Mapping.of(nextPlannedDownstream.mapping())),
+                                                       derivation, planIndex, null);
+            responseProducer.addDownstreamProducer(downstreamRequest);
+            requestFromDownstream(downstreamRequest, fromUpstream, iteration);
+        }
+    }
 
     @Override
     protected void receiveExhausted(Response.Fail fromDownstream, int iteration) {
@@ -164,10 +203,8 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), fromUpstream);
 
-        assert fromUpstream.partialAnswer().isIdentity();
-        ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers = traversalEngine.iterator(conjunction.traversal())
-                .map(conceptMgr::conceptMap)
-                .map(conceptMap -> fromUpstream.partialAnswer().asIdentity().aggregateToUpstream(conceptMap, fromUpstream.filter()));
+        ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers = toUpstreamAnswers(fromUpstream,
+                                                                                               compatibleBoundAnswers(conceptMgr, conjunction, fromUpstream.partialAnswer().conceptMap()));
 
         ResponseProducer responseProducer = new ResponseProducer(upstreamAnswers, iteration);
 
@@ -181,11 +218,15 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         return responseProducer;
     }
 
+    protected abstract ResourceIterator<AnswerState.UpstreamVars.Derived> toUpstreamAnswers(Request fromUpstream,
+                                                                                            ResourceIterator<ConceptMap> downstreamConceptMaps);
+
+    protected abstract Optional<AnswerState.UpstreamVars.Derived> toUpstreamAnswer(Request fromUpstream, ConceptMap downstreamConceptMap);
 
     @Override
     protected ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer responseProducerPrevious,
                                                          int newIteration) {
-        assert newIteration > responseProducerPrevious.iteration() && fromUpstream.partialAnswer().isIdentity();
+        assert newIteration > responseProducerPrevious.iteration();
         LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
 
         ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers = traversalEngine.iterator(conjunction.traversal())
@@ -210,48 +251,6 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         }
 
         @Override
-        protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
-            LOG.trace("{}: received Answer: {}", name(), fromDownstream);
-
-            Request toDownstream = fromDownstream.sourceRequest();
-            Request fromUpstream = fromUpstream(toDownstream);
-            ResponseProducer responseProducer = responseProducers.get(fromUpstream);
-
-            ResolutionAnswer.Derivation derivation;
-            if (explanations()) {
-                // TODO
-                derivation = null;
-            } else {
-                derivation = null;
-            }
-
-            ConceptMap conceptMap = fromDownstream.answer().derived().withInitialFiltered();
-            if (fromDownstream.planIndex() == plan.size() - 1) {
-                assert fromUpstream.partialAnswer().isIdentity() && fromUpstream.filter() != null;
-                AnswerState.UpstreamVars.Derived answer = fromUpstream.partialAnswer().asIdentity()
-                        .aggregateToUpstream(conceptMap, null);
-                ConceptMap filteredMap = answer.withInitialFiltered();
-                if (!responseProducer.hasProduced(filteredMap)) {
-                    responseProducer.recordProduced(filteredMap);
-                    ResolutionAnswer resolutionAnswer = new ResolutionAnswer(answer, conjunction.toString(), derivation, self(),
-                                                                             fromDownstream.answer().isInferred());
-                    respondToUpstream(Response.Answer.create(fromUpstream, resolutionAnswer), iteration);
-                } else {
-                    tryAnswer(fromUpstream, responseProducer, iteration);
-                }
-            } else {
-                int planIndex = fromDownstream.planIndex() + 1;
-                ResolverRegistry.AlphaEquivalentResolver nextPlannedDownstream = downstreamResolvers.get(plan.get(planIndex));
-                Request downstreamRequest = Request.create(fromUpstream.path().append(nextPlannedDownstream.resolver()),
-                                                           Initial.of(conceptMap).toDownstreamVars(
-                                                                   Mapping.of(nextPlannedDownstream.mapping())),
-                                                           derivation, planIndex, null);
-                responseProducer.addDownstreamProducer(downstreamRequest);
-                requestFromDownstream(downstreamRequest, fromUpstream, iteration);
-            }
-        }
-
-        @Override
         protected void tryAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
             if (responseProducer.hasUpstreamAnswer()) {
                 AnswerState.UpstreamVars.Derived upstreamAnswer = responseProducer.upstreamAnswers().next();
@@ -266,6 +265,20 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
                     respondToUpstream(new Response.Fail(fromUpstream), iteration);
                 }
             }
+        }
+
+        @Override
+        protected ResourceIterator<AnswerState.UpstreamVars.Derived> toUpstreamAnswers(Request fromUpstream,
+                                                                                       ResourceIterator<ConceptMap> downstreamConceptMaps) {
+            assert !fromUpstream.filter().isPresent();
+            return downstreamConceptMaps.map(conceptMap -> fromUpstream.partialAnswer().asIdentity()
+                    .aggregateToUpstream(conceptMap, null));
+        }
+
+        @Override
+        protected Optional<AnswerState.UpstreamVars.Derived> toUpstreamAnswer(Request fromUpstream, ConceptMap downstreamConceptMap) {
+            assert !fromUpstream.filter().isPresent();
+            return Optional.of(fromUpstream.partialAnswer().asIdentity().aggregateToUpstream(downstreamConceptMap, null));
         }
 
         @Override
