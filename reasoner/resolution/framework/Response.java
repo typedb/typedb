@@ -34,8 +34,8 @@ public interface Response {
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Answer.class));
     }
 
-    default Exhausted asExhausted() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Exhausted.class));
+    default Fail asExhausted() {
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Fail.class));
     }
 
     class Answer implements Response {
@@ -90,10 +90,10 @@ public interface Response {
         }
     }
 
-    class Exhausted implements Response {
+    class Fail implements Response {
         private final Request sourceRequest;
 
-        public Exhausted(Request sourceRequest) {
+        public Fail(Request sourceRequest) {
             this.sourceRequest = sourceRequest;
         }
 
@@ -113,7 +113,7 @@ public interface Response {
         }
 
         @Override
-        public Exhausted asExhausted() {
+        public Fail asExhausted() {
             return this;
         }
 

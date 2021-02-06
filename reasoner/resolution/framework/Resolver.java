@@ -72,7 +72,7 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
 
     protected abstract void receiveAnswer(Response.Answer fromDownstream, int iteration);
 
-    protected abstract void receiveExhausted(Response.Exhausted fromDownstream, int iteration);
+    protected abstract void receiveExhausted(Response.Fail fromDownstream, int iteration);
 
     protected abstract void initialiseDownstreamActors();
 

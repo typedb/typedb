@@ -67,10 +67,10 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
                                boolean explanations) {
         super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.conjunction() + ")",
               registry, traversalEngine, explanations);
-        this.concludable = concludable;
-        this.resolutionRecorder = resolutionRecorder;
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
+        this.resolutionRecorder = resolutionRecorder;
+        this.concludable = concludable;
         this.applicableRules = new LinkedHashMap<>();
         this.recursionStates = new HashMap<>();
         this.responseProducers = new HashMap<>();
@@ -89,7 +89,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
         ResponseProducer responseProducer = mayUpdateAndGetResponseProducer(fromUpstream, iteration);
         if (iteration < responseProducer.iteration()) {
             // short circuit if the request came from a prior iteration
-            respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
+            respondToUpstream(new Response.Fail(fromUpstream), iteration);
         } else {
             assert iteration == responseProducer.iteration();
             tryAnswer(fromUpstream, responseProducer, iteration);
@@ -136,7 +136,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
     }
 
     @Override
-    protected void receiveExhausted(Response.Exhausted fromDownstream, int iteration) {
+    protected void receiveExhausted(Response.Fail fromDownstream, int iteration) {
         LOG.trace("{}: received Exhausted: {}", name(), fromDownstream);
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
@@ -144,7 +144,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
 
         if (iteration < responseProducer.iteration()) {
             // short circuit old iteration exhausted messages to upstream
-            respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
+            respondToUpstream(new Response.Fail(fromUpstream), iteration);
             return;
         }
 
@@ -220,7 +220,7 @@ public class ConcludableResolver extends ResolvableResolver<ConcludableResolver>
             if (responseProducer.hasDownstreamProducer()) {
                 requestFromDownstream(responseProducer.nextDownstreamProducer(), fromUpstream, iteration);
             } else {
-                respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
+                respondToUpstream(new Response.Fail(fromUpstream), iteration);
             }
         }
     }

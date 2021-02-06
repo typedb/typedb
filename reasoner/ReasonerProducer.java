@@ -23,11 +23,10 @@ import grakn.core.concurrent.producer.Producer;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState;
+import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars.Initial;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
-import grakn.core.reasoner.resolution.resolver.Root;
 import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,18 +49,22 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private boolean done;
     private int iteration;
 
-    public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverMgr, Set<Reference.Name> filter) {
-        this.rootResolver = resolverMgr.rootConjunction(conjunction, this::requestAnswered, this::requestExhausted);
+    public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry, Set<Reference.Name> filter) {
+        this.rootResolver = resolverRegistry.rootConjunction(conjunction, this::requestAnswered, this::requestFailed);
         this.filter = filter;
-        this.resolveRequest = Request.create(new Request.Path(rootResolver), AnswerState.DownstreamVars.Root.create(), EMPTY, this.filter);
+        this.resolveRequest = Request.create(new Request.Path(rootResolver), Initial.of(new ConceptMap()).toDownstreamVars(), EMPTY, this.filter);
         this.queue = null;
         this.iteration = 0;
         this.done = false;
     }
 
     public ReasonerProducer(Disjunction disjunction, ResolverRegistry resolverRegistry, Set<Reference.Name> filter) {
-        this.rootResolver = null;
-        this.filter = null;
+        this.rootResolver = resolverRegistry.rootDisjunction(disjunction, this::requestAnswered, this::requestFailed);
+        this.filter = filter;
+        this.resolveRequest = Request.create(new Request.Path(rootResolver), Initial.of(new ConceptMap()).toDownstreamVars(), EMPTY, this.filter);
+        this.queue = null;
+        this.iteration = 0;
+        this.done = false;
     }
 
     @Override
@@ -81,7 +84,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         queue.put(resolutionAnswer.derived().withInitialFiltered());
     }
 
-    private void requestExhausted(int iteration) {
+    private void requestFailed(int iteration) {
         LOG.trace("Failed to find answer to request in iteration: " + iteration);
 
         if (!done && iteration == this.iteration && !mustReiterate()) {
@@ -103,7 +106,6 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private void prepareNextIteration() {
         iteration++;
         iterationInferredAnswer = false;
-        resolveRequest = Request.create(new Request.Path(rootResolver), AnswerState.DownstreamVars.Root.create(), EMPTY, filter);
     }
 
     private boolean mustReiterate() {

@@ -19,6 +19,7 @@ package grakn.core.reasoner;
 
 import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.common.parameters.Arguments;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.actor.EventLoopGroup;
 import grakn.core.pattern.Conjunction;
@@ -26,6 +27,7 @@ import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
+import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars.Initial;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.Root;
@@ -160,7 +162,8 @@ public class ReiterationTest {
 
     private void sendRootRequest(Actor<Root.Conjunction> root, int iteration, Set<Reference.Name> filter) {
         root.tell(actor -> actor.receiveRequest(
-                Request.create(new Request.Path(root), AnswerState.DownstreamVars.Root.create(), null, filter),
+                Request.create(new Request.Path(root),
+                               Initial.of(new ConceptMap()).toDownstreamVars(), null, filter),
                 iteration)
         );
     }

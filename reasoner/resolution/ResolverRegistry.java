@@ -28,9 +28,11 @@ import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Resolvable;
 import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.pattern.Conjunction;
+import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.ConcludableResolver;
+import grakn.core.reasoner.resolution.resolver.ConjunctionResolver;
 import grakn.core.reasoner.resolution.resolver.ResolvableResolver;
 import grakn.core.reasoner.resolution.resolver.RetrievableResolver;
 import grakn.core.reasoner.resolution.resolver.Root;
@@ -91,13 +93,25 @@ public class ResolverRegistry {
                 explanations)));
     }
 
-    public Actor<Root.Conjunction> rootConjunction(Conjunction pattern, Consumer<ResolutionAnswer> onAnswer, Consumer<Integer> onExhausted) {
-        LOG.debug("Creating Root.Conjunction for pattern: '{}'", pattern);
+    public Actor<Root.Conjunction> rootConjunction(Conjunction conjunction, Consumer<ResolutionAnswer> onAnswer,
+                                                   Consumer<Integer> onExhausted) {
+        LOG.debug("Creating Root.Conjunction for: '{}'", conjunction);
         return Actor.create(
                 elg, self -> new Root.Conjunction(
-                        self, pattern, onAnswer, onExhausted, resolutionRecorder, this, traversalEngine,
+                        self, conjunction, onAnswer, onExhausted, resolutionRecorder, this, traversalEngine,
                         conceptMgr, logicMgr, planner, explanations));
     }
+
+    public Actor<Root.Disjunction> rootDisjunction(Disjunction disjunction, Consumer<ResolutionAnswer> onAnswer,
+                                                        Consumer<Integer> onExhausted) {
+        LOG.debug("Creating Root.Disjunction for: '{}'", disjunction);
+        return Actor.create(
+                elg, self -> new Root.Disjunction(self, disjunction, onAnswer, onExhausted, resolutionRecorder,
+                                                  this, traversalEngine, explanations)
+        );
+    }
+
+
     // for testing
 
     public void setEventLoopGroup(EventLoopGroup eventLoopGroup) {
@@ -127,6 +141,14 @@ public class ResolverRegistry {
         return AlphaEquivalentResolver.createDirect(concludableActor, concludable);
     }
 
+    public Actor<ConjunctionResolver> conjunction(Conjunction conjunction) {
+        LOG.debug("Creating Conjunction resolver for : {}", conjunction);
+        return Actor.create(
+                elg, self -> new ConjunctionResolver(
+                        self, conjunction, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr, planner,
+                        explanations)
+                );
+    }
 
     public static class AlphaEquivalentResolver {
         private final Actor<? extends ResolvableResolver<?>> resolver;

@@ -29,7 +29,6 @@ import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.Response.Answer;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
-import grakn.core.traversal.Traversal;
 import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +59,7 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
         ResponseProducer responseProducer = mayUpdateAndGetResponseProducer(fromUpstream, iteration);
         if (iteration < responseProducer.iteration()) {
             // short circuit old iteration exhausted messages to upstream
-            respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
+            respondToUpstream(new Response.Fail(fromUpstream), iteration);
         } else {
             assert iteration == responseProducer.iteration();
             tryAnswer(fromUpstream, responseProducer, iteration);
@@ -73,7 +72,7 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
     }
 
     @Override
-    protected void receiveExhausted(Response.Exhausted fromDownstream, int iteration) {
+    protected void receiveExhausted(Response.Fail fromDownstream, int iteration) {
         throw GraknException.of(ILLEGAL_STATE);
     }
 
@@ -129,7 +128,7 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
                                                            ResolutionAnswer.Derivation.EMPTY, self(), false);
             respondToUpstream(Answer.create(fromUpstream, answer), iteration);
         } else {
-            respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
+            respondToUpstream(new Response.Fail(fromUpstream), iteration);
         }
     }
 
