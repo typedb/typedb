@@ -94,7 +94,7 @@ public class RuleResolver extends ConjunctionResolver<RuleResolver> {
             }
         } else {
             int planIndex = fromDownstream.planIndex() + 1;
-            ResolverRegistry.AlphaEquivalentResolver nextPlannedDownstream = downstreamResolvers.get(plan.get(planIndex));
+            ResolverRegistry.MappedResolver nextPlannedDownstream = downstreamResolvers.get(plan.get(planIndex));
             Request downstreamRequest = Request.create(fromUpstream.path().append(nextPlannedDownstream.resolver()),
                                                        UpstreamVars.Initial.of(whenAnswer).toDownstreamVars(
                                                                Mapping.of(nextPlannedDownstream.mapping())),

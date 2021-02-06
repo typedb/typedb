@@ -25,9 +25,11 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.resolvable.Concludable;
+import grakn.core.logic.resolvable.Negated;
 import grakn.core.logic.resolvable.Resolvable;
 import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.pattern.Conjunction;
+import grakn.core.pattern.Negation;
 import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
@@ -63,9 +65,9 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     final ConceptManager conceptMgr;
     final grakn.core.pattern.Conjunction conjunction;
     final Actor<ResolutionRecorder> resolutionRecorder;
-    final List<Resolvable> plan;
+    final List<Resolvable<?>> plan;
     final Map<Request, ResponseProducer> responseProducers;
-    final Map<Resolvable, ResolverRegistry.AlphaEquivalentResolver> downstreamResolvers;
+    final Map<Resolvable<?>, ResolverRegistry.MappedResolver> downstreamResolvers;
     private boolean isInitialised;
 
     public ConjunctionResolver(Actor<T> self, String name, grakn.core.pattern.Conjunction conjunction,
@@ -154,7 +156,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
             }
         } else {
             int planIndex = fromDownstream.planIndex() + 1;
-            ResolverRegistry.AlphaEquivalentResolver nextPlannedDownstream = downstreamResolvers.get(plan.get(planIndex));
+            ResolverRegistry.MappedResolver nextPlannedDownstream = downstreamResolvers.get(plan.get(planIndex));
             Request downstreamRequest = Request.create(fromUpstream.path().append(nextPlannedDownstream.resolver()),
                                                        Initial.of(conceptMap).toDownstreamVars(
                                                                Mapping.of(nextPlannedDownstream.mapping())),
@@ -186,7 +188,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         LOG.debug("{}: initialising downstream actors", name());
         Set<Concludable> concludables = Iterators.iterate(Concludable.create(conjunction))
                 .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext()).toSet();
-        if (concludables.size() > 0) {
+        if (concludables.size() > 0 || !conjunction.negations().isEmpty()) {
             Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction, concludables);
             Set<Resolvable<?>> resolvables = new HashSet<>();
             resolvables.addAll(concludables);
@@ -196,6 +198,13 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
             iterate(plan).forEachRemaining(resolvable -> {
                 downstreamResolvers.put(resolvable, registry.registerResolvable(resolvable));
             });
+
+            // TODO just add negations at the end, but we will want to include them in the planner
+            for (Negation negation : conjunction.negations()) {
+                Negated negated = new Negated(negation.disjunction());
+                plan.add(negated);
+                downstreamResolvers.put(negated, registry.negated(negated));
+            }
         }
     }
 

@@ -114,7 +114,7 @@ public class Planner {
                 // all of it's dependencies are already satisfied,
                 // which has the least applicable rules,
                 // and of those the least unsatisfied variables
-                concludable = fewestRules(dependenciesSatisfied(remaining.stream().filter(Resolvable<?>::isConcludable)));
+                concludable = fewestRules(dependenciesSatisfied(remaining.stream().filter(Resolvable::isConcludable)));
                 if (concludable.isPresent()) {
                     add(concludable.get());
                     continue;
@@ -125,7 +125,7 @@ public class Planner {
                 // all of it's dependencies are NOT already satisfied,
                 // which has the least applicable rules,
                 // and of those the least unsatisfied variables
-                concludable = fewestRules(remaining.stream().filter(Resolvable<?>::isConcludable));
+                concludable = fewestRules(remaining.stream().filter(Resolvable::isConcludable));
                 if (concludable.isPresent()) {
                     add(concludable.get());
                     continue;
