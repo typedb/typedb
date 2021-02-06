@@ -161,7 +161,6 @@ public class Request {
         }
 
         public Actor<? extends Resolver<?>> root() {
-            assert path.get(0).state instanceof Root;
             return path.get(0);
         }
     }

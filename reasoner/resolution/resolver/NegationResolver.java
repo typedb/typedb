@@ -32,7 +32,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
 
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private final Negated negated;
-    private final Map<Request, NegationStatus> responseProducers;
+    private final Map<Request, NegationStatus> statuses;
     private boolean isInitialised;
     private Actor<? extends Resolver<?>> downstream;
 
@@ -43,7 +43,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
               registry, traversalEngine, explanations);
         this.negated = negated;
         this.resolutionRecorder = resolutionRecorder;
-        this.responseProducers = new HashMap<>();
+        this.statuses = new HashMap<>();
         this.isInitialised = false;
     }
 
@@ -72,13 +72,15 @@ public class NegationResolver extends Resolver<NegationResolver> {
         NegationStatus negationStatus = getOrInitialise(fromUpstream, iteration);
         if (negationStatus.status.isEmpty()) {
             assert negationStatus.externalIteration == iteration;
-            tryAnswer(fromUpstream);
+            tryAnswer(fromUpstream, negationStatus);
         } else if (negationStatus.status.isRequested()) {
             assert negationStatus.externalIteration == iteration;
             negationStatus.requested++;
             // we only ever sent 1 request into the negation resolvers
         } else if (negationStatus.status.isSatisfied()) {
-            respondToUpstream(Response.Answer.create(fromUpstream, upstreamAnswer(fromUpstream)), iteration);
+            // TODO this is KEY - negations are SINGLE USE per unique request... otherwise we can end up looping infinitely right now. Discuss!
+            // see in other places we call RespondToUpstream!!
+            respondToUpstream(new Response.Fail(fromUpstream), iteration);
         } else if (negationStatus.status.isFailed()) {
             respondToUpstream(new Response.Fail(fromUpstream), iteration);
         } else {
@@ -86,20 +88,28 @@ public class NegationResolver extends Resolver<NegationResolver> {
         }
     }
 
-    private void tryAnswer(Request fromUpstream) {
+    private NegationStatus getOrInitialise(Request fromUpstream, int iteration) {
+        if (!statuses.containsKey(fromUpstream)) {
+            statuses.put(fromUpstream, new NegationStatus(iteration));
+        }
+        return statuses.get(fromUpstream);
+    }
+
+    private void tryAnswer(Request fromUpstream, NegationStatus negationStatus) {
         // TODO if we wanted to accelerate the searching of a negation counter example,
         // TODO we could send multiple requests into the sub system at once!
+
+        /*
+        NOTE:
+           Correctness: concludables that get reused in the negated portion, would conflate recursion/reiteration state from
+              the toplevel root with the negation iterations, which we cannot allow. So, we must use THIS resolver
+              as a sort of new root! TODO should NegationResolvers also implement a kind of Root interface??
+        */
         Request request = Request.create(new Request.Path(list(self(), downstream)),
                                          Initial.of(fromUpstream.partialAnswer().conceptMap()).toDownstreamVars(),
                                          ResolutionAnswer.Derivation.EMPTY);
-        downstream.tell(resolver -> resolver.receiveRequest(request, 0));
-    }
-
-    private NegationStatus getOrInitialise(Request fromUpstream, int iteration) {
-        if (!responseProducers.containsKey(fromUpstream)) {
-            responseProducers.put(fromUpstream, new NegationStatus(iteration));
-        }
-        return responseProducers.get(fromUpstream);
+        requestFromDownstream(request, fromUpstream, 0);
+        negationStatus.setRequested();
     }
 
     @Override
@@ -108,7 +118,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        NegationStatus negationStatus = responseProducers.get(fromUpstream);
+        NegationStatus negationStatus = this.statuses.get(fromUpstream);
 
         assert negationStatus.status.isRequested();
         negationStatus.setFailed();
@@ -124,12 +134,16 @@ public class NegationResolver extends Resolver<NegationResolver> {
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        NegationStatus negationStatus = responseProducers.get(fromUpstream);
+        NegationStatus negationStatus = this.statuses.get(fromUpstream);
 
-        assert negationStatus.status.isRequested();
-        negationStatus.setSatisfied();
-        for (int i = 0; i < negationStatus.requested; i++) {
+        if (negationStatus.status.isRequested()) {
+            negationStatus.setSatisfied();
             respondToUpstream(Response.Answer.create(fromUpstream, upstreamAnswer(fromUpstream)), negationStatus.externalIteration);
+            negationStatus.requested--;
+        }
+        for (int i = 0; i < negationStatus.requested; i++) {
+            // TODO this is KEY - negations are SINGLE USE per unique request... otherwise we can end up looping infinitely right now. Discuss!
+            respondToUpstream(new Response.Fail(fromUpstream), negationStatus.externalIteration);
         }
         negationStatus.requested = 0;
     }
@@ -137,7 +151,8 @@ public class NegationResolver extends Resolver<NegationResolver> {
     private ResolutionAnswer upstreamAnswer(Request fromUpstream) {
         // TODO decide if we want to use isMapped here? Can Mapped currently act as a filter?
         assert fromUpstream.partialAnswer().isMapped();
-        AnswerState.UpstreamVars.Derived derived = fromUpstream.partialAnswer().asMapped().mapToUpstream(new ConceptMap(map()));
+        // TODO this is cheating, and incorrect!! We should be unmapping an empty map, but currently require to be equal size
+        AnswerState.UpstreamVars.Derived derived = fromUpstream.partialAnswer().asMapped().mapToUpstream(fromUpstream.partialAnswer().conceptMap());
 
         ResolutionAnswer.Derivation derivation;
         if (explanations()) {
@@ -193,7 +208,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
 
             public boolean isEmpty() { return this == EMPTY; }
 
-            public boolean isRequested() { return this == EMPTY; }
+            public boolean isRequested() { return this == REQUESTED; }
 
             public boolean isFailed() { return this == FAILED; }
 

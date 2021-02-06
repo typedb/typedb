@@ -98,17 +98,18 @@ public class Reasoner {
         if (!context.options().infer() || context.transactionType().isWrite() || !logicMgr.rules().hasNext()) {
             return false;
         }
-        for (Conjunction conj : disjunction.conjunctions()) {
-            for (Variable var : conj.variables()) {
-                if (var.resolvedTypes().isEmpty()) return true;
-                for (Label type : var.resolvedTypes()) {
-                    if (logicMgr.rulesConcluding(type).hasNext() || logicMgr.rulesConcludingHas(type).hasNext()) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
+        return true;
+//        for (Conjunction conj : disjunction.conjunctions()) {
+//            for (Variable var : conj.variables()) {
+//                if (var.resolvedTypes().isEmpty()) return true;
+//                for (Label type : var.resolvedTypes()) {
+//                    if (logicMgr.rulesConcluding(type).hasNext() || logicMgr.rulesConcludingHas(type).hasNext()) {
+//                        return true;
+//                    }
+//                }
+//            }
+//        }
+//        return false;
     }
 
     private ResourceIterator<ConceptMap> resolve(Disjunction disjunction, Set<Identifier.Variable.Name> filter, Context.Query context) {
