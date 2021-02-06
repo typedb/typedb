@@ -80,7 +80,8 @@ public class Request {
         return planIndex;
     }
 
-    public Optional<Set<Reference.Name>> filter() { return Optional.ofNullable(answerFilter); }
+    // NOTE: purposely not using Optional, passing directly into other arguments
+    public Set<Reference.Name> filter() { return answerFilter; }
 
     @Nullable
     public Actor<? extends Resolver<?>> sender() {

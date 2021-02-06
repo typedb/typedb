@@ -141,10 +141,10 @@ public class ResolverRegistry {
         return AlphaEquivalentResolver.createDirect(concludableActor, concludable);
     }
 
-    public Actor<ConjunctionResolver> conjunction(Conjunction conjunction) {
+    public Actor<ConjunctionResolver.Simple> conjunction(Conjunction conjunction) {
         LOG.debug("Creating Conjunction resolver for : {}", conjunction);
         return Actor.create(
-                elg, self -> new ConjunctionResolver(
+                elg, self -> new ConjunctionResolver.Simple(
                         self, conjunction, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr, planner,
                         explanations)
                 );

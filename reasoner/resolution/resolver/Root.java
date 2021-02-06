@@ -57,36 +57,21 @@ public interface Root {
 
     void submitFail(int iteration);
 
-    class Conjunction extends Resolver<Conjunction> implements Root {
+    class Conjunction extends ConjunctionResolver<Conjunction> implements Root {
 
         private static final Logger LOG = LoggerFactory.getLogger(Conjunction.class);
 
-        private final ConceptManager conceptMgr;
-        private final LogicManager logicMgr;
-        private final grakn.core.pattern.Conjunction conjunction;
-        private final Planner planner;
-        private final Actor<ResolutionRecorder> resolutionRecorder;
         private final Consumer<ResolutionAnswer> onAnswer;
         private final Consumer<Integer> onFail;
-        private final List<Resolvable> plan;
-        private boolean isInitialised;
         private ResponseProducer responseProducer;
-        private final Map<Resolvable, ResolverRegistry.AlphaEquivalentResolver> downstreamResolvers;
 
         public Conjunction(Actor<Conjunction> self, grakn.core.pattern.Conjunction conjunction, Consumer<ResolutionAnswer> onAnswer,
                            Consumer<Integer> onFail, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                            TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr, Planner planner, boolean explanations) {
-            super(self, Conjunction.class.getSimpleName() + "(pattern:" + conjunction + ")", registry, traversalEngine, explanations);
-            this.conjunction = conjunction;
+            super(self, Conjunction.class.getSimpleName() + "(pattern:" + conjunction + ")", conjunction, resolutionRecorder,
+                  registry, traversalEngine, conceptMgr, logicMgr, planner, explanations);
             this.onAnswer = onAnswer;
             this.onFail = onFail;
-            this.resolutionRecorder = resolutionRecorder;
-            this.conceptMgr = conceptMgr;
-            this.logicMgr = logicMgr;
-            this.planner = planner;
-            this.isInitialised = false;
-            this.plan = new ArrayList<>();
-            this.downstreamResolvers = new HashMap<>();
         }
 
         @Override
@@ -141,9 +126,9 @@ public interface Root {
 
             ConceptMap conceptMap = fromDownstream.answer().derived().withInitialFiltered();
             if (fromDownstream.planIndex() == plan.size() - 1) {
-                assert fromUpstream.filter().isPresent();
+                assert fromUpstream.filter() != null;
                 AnswerState.UpstreamVars.Derived answer = fromUpstream.partialAnswer().asIdentity()
-                        .aggregateToUpstream(conceptMap, fromUpstream.filter().get());
+                        .aggregateToUpstream(conceptMap, fromUpstream.filter());
                 ConceptMap filteredMap = answer.withInitialFiltered();
                 if (!responseProducer.hasProduced(filteredMap)) {
                     responseProducer.recordProduced(filteredMap);
@@ -182,70 +167,12 @@ public interface Root {
         }
 
         @Override
-        protected void initialiseDownstreamActors() {
-            LOG.debug("{}: initialising downstream actors", name());
-            Set<Concludable> concludables = Iterators.iterate(Concludable.create(conjunction))
-                    .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext()).toSet();
-            if (concludables.size() > 0) {
-                Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction, concludables);
-                Set<Resolvable> resolvables = new HashSet<>();
-                resolvables.addAll(concludables);
-                resolvables.addAll(retrievables);
-                plan.addAll(planner.plan(resolvables));
-                iterate(plan).forEachRemaining(resolvable -> {
-                    downstreamResolvers.put(resolvable, registry.registerResolvable(resolvable));
-                });
-            }
-        }
-
-        @Override
-        protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
-            LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), fromUpstream);
-
-            assert fromUpstream.filter().isPresent() && fromUpstream.partialAnswer().isIdentity();
-            ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers = traversalEngine.iterator(conjunction.traversal())
-                    .map(conceptMgr::conceptMap)
-                    .map(conceptMap -> fromUpstream.partialAnswer().asIdentity().aggregateToUpstream(conceptMap, fromUpstream.filter().get()));
-            ResponseProducer responseProducer = new ResponseProducer(upstreamAnswers, iteration);
-            if (!plan.isEmpty()) {
-                Request toDownstream = Request.create(fromUpstream.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
-                                                      AnswerState.UpstreamVars.Initial.of(fromUpstream.partialAnswer().conceptMap())
-                                                              .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
-                                                      new ResolutionAnswer.Derivation(map()), 0, null);
-                responseProducer.addDownstreamProducer(toDownstream);
-            }
-            return responseProducer;
-        }
-
-        @Override
-        protected ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer responseProducerPrevious,
-                                                             int newIteration) {
-            assert newIteration > responseProducerPrevious.iteration();
-            LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
-
-            assert fromUpstream.filter().isPresent() && fromUpstream.partialAnswer().isIdentity();
-            ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers = traversalEngine.iterator(conjunction.traversal())
-                    .map(conceptMgr::conceptMap)
-                    .map(conceptMap -> fromUpstream.partialAnswer().asIdentity().aggregateToUpstream(conceptMap, fromUpstream.filter().get()));
-            ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(upstreamAnswers, newIteration);
-
-            if (!plan.isEmpty()) {
-                Request toDownstream = Request.create(fromUpstream.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
-                                                      AnswerState.UpstreamVars.Initial.of(fromUpstream.partialAnswer().conceptMap()).
-                                                              toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
-                                                      new ResolutionAnswer.Derivation(map()), 0, null);
-                responseProducerNewIter.addDownstreamProducer(toDownstream);
-            }
-            return responseProducerNewIter;
-        }
-
-        @Override
         protected void exception(Throwable e) {
             LOG.error("Actor exception", e);
             // TODO, once integrated into the larger flow of executing queries, kill the actors and report and exception to root
         }
 
-        private void tryAnswer(Request fromUpstream, int iteration) {
+        protected void tryAnswer(Request fromUpstream, int iteration) {
             if (responseProducer.hasUpstreamAnswer()) {
                 AnswerState.UpstreamVars.Derived upstreamAnswer = responseProducer.upstreamAnswers().next();
                 responseProducer.recordProduced(upstreamAnswer.withInitialFiltered());
@@ -278,7 +205,7 @@ public interface Root {
         private final Consumer<Integer> onFail;
         private boolean isInitialised;
         private ResponseProducer responseProducer;
-        private final List<Actor<ConjunctionResolver>> downstreamResolvers;
+        private final List<Actor<ConjunctionResolver.Simple>> downstreamResolvers;
 
         public Disjunction(Actor<Disjunction> self, grakn.core.pattern.Disjunction disjunction, Consumer<ResolutionAnswer> onAnswer,
                            Consumer<Integer> onFail, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
@@ -355,9 +282,9 @@ public interface Root {
             }
 
             ConceptMap conceptMap = fromDownstream.answer().derived().withInitialFiltered();
-            assert fromUpstream.filter().isPresent();
+            assert fromUpstream.filter() != null;
             AnswerState.UpstreamVars.Derived answer = fromUpstream.partialAnswer().asIdentity()
-                    .aggregateToUpstream(conceptMap, fromUpstream.filter().get());
+                    .aggregateToUpstream(conceptMap, fromUpstream.filter());
             ConceptMap filteredMap = answer.withInitialFiltered();
             if (!responseProducer.hasProduced(filteredMap)) {
                 responseProducer.recordProduced(filteredMap);
@@ -395,10 +322,10 @@ public interface Root {
         @Override
         protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
             LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), fromUpstream);
-            assert fromUpstream.filter().isPresent() && fromUpstream.partialAnswer().isIdentity();
+            assert fromUpstream.partialAnswer().isIdentity() && fromUpstream.filter() != null;
             ResponseProducer responseProducer = new ResponseProducer(Iterators.empty(), iteration);
             assert !downstreamResolvers.isEmpty();
-            for (Actor<ConjunctionResolver> conjunctionResolver : downstreamResolvers) {
+            for (Actor<ConjunctionResolver.Simple> conjunctionResolver : downstreamResolvers) {
                 Request request = Request.create(fromUpstream.path().append(conjunctionResolver),
                                                  AnswerState.UpstreamVars.Initial.of(fromUpstream.partialAnswer().conceptMap()).toDownstreamVars(),
                                                  ResolutionAnswer.Derivation.EMPTY, -1, null);
@@ -414,7 +341,7 @@ public interface Root {
 
             assert newIteration > responseProducerPrevious.iteration();
             ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(Iterators.empty(), newIteration);
-            for (Actor<ConjunctionResolver> conjunctionResolver : downstreamResolvers) {
+            for (Actor<ConjunctionResolver.Simple> conjunctionResolver : downstreamResolvers) {
                 Request request = Request.create(fromUpstream.path().append(conjunctionResolver),
                                                  AnswerState.UpstreamVars.Initial.of(fromUpstream.partialAnswer().conceptMap()).toDownstreamVars(),
                                                  ResolutionAnswer.Derivation.EMPTY, -1, null);
