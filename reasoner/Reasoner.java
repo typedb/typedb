@@ -38,6 +38,7 @@ import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
+import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,12 +78,17 @@ public class Reasoner {
         return resolverRegistry;
     }
 
-    private Producer<ConceptMap> resolve(Conjunction conjunction, Set<Identifier.Variable.Name> filter) {
-        return new ReasonerProducer(conjunction, resolverRegistry, filter);
-    }
-
-    private boolean isInfer(Context.Query context) {
-        return context.options().infer() && !context.transactionType().isWrite() && logicMgr.rules().hasNext();
+    private boolean isInfer(Disjunction disjunction, Context.Query context) {
+        if (!context.options().infer() || context.transactionType().isWrite() || !logicMgr.rules().hasNext()) return false;
+        disjunction.conjunctions().forEach(conjunction -> {
+            conjunction.variables().forEach(var -> {
+                if (var.resolvedTypes().isEmpty()) return true;
+                var.resolvedTypes().forEach(type -> {
+                    if (logicMgr.rulesConcluding(type).hasNext() || logicMgr.rulesConcludingHas(type).hasNext()) return true;
+                });
+            });
+        });
+        return false;
     }
 
     private boolean conjunctionContainsThings(Conjunction conjunction, Set<Identifier.Variable.Name> filter) {
@@ -92,6 +98,9 @@ public class Reasoner {
 
     public ResourceIterator<ConceptMap> execute(Disjunction disjunction, Set<Identifier.Variable.Name> filter,
                                                 Context.Query context) {
+        disjunction.conjunctions().forEach(conj -> logicMgr.typeResolver().resolve(conj));
+        if (isInfer(disjunction, context)) return resolve(disjunction, filter, context);
+
         ResourceIterator<ConceptMap> answers;
         ResourceIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
         if (!context.options().parallel()) answers = conjs.flatMap(conj -> iterator(conj, filter, context));
@@ -99,6 +108,16 @@ public class Reasoner {
         if (disjunction.conjunctions().size() > 1) answers = answers.distinct();
         return answers;
     }
+
+    private ResourceIterator<ConceptMap> resolve(Disjunction disjunction, Set<Identifier.Variable.Name> filter, Context.Query context) {
+        Set<Reference.Name> nameFilter = iterate(filter).map(Identifier.Variable.Name::reference).toSet();
+        if (disjunction.conjunctions().size() == 1) {
+            return produce(new ReasonerProducer(disjunction.conjunctions().get(0), resolverRegistry, nameFilter), context.producer(), asyncPool1());
+        } else {
+            return produce(new ReasonerProducer(disjunction, resolverRegistry, nameFilter), context.producer(), asyncPool1());
+        }
+    }
+
 
     private Producer<ConceptMap> producer(Conjunction conjunction) {
         return producer(conjunction, set(), defaultContext);
@@ -109,8 +128,7 @@ public class Reasoner {
         Producer<ConceptMap> producer;
         logicMgr.typeResolver().resolve(conjunction);
         if (conjunction.isSatisfiable()) {
-            if (isInfer(context)) producer = resolve(conjunction, filter);
-            else producer = traversalEng.producer(
+            producer = traversalEng.producer(
                     conjunction.traversal(filter), context.producer(), PARALLELISATION_FACTOR
             ).map(conceptMgr::conceptMap);
         } else if (!conjunction.isBounded() && conjunctionContainsThings(conjunction, filter)) {
@@ -138,8 +156,7 @@ public class Reasoner {
         ResourceIterator<ConceptMap> answers;
         logicMgr.typeResolver().resolve(conjunction);
         if (conjunction.isSatisfiable()) {
-            if (isInfer(context)) answers = produce(resolve(conjunction, filter), context.producer(), asyncPool1());
-            else answers = traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
+            answers = traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
         } else if (!conjunction.isBounded() && conjunctionContainsThings(conjunction, filter)) {
             throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction);
         } else {

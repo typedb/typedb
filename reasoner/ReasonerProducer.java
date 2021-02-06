@@ -21,6 +21,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.producer.Producer;
 import grakn.core.pattern.Conjunction;
+import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
@@ -50,13 +51,17 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private boolean done;
     private int iteration;
 
-    public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverMgr, Set<Identifier.Variable.Name> idFilter) {
+    public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverMgr, Set<Reference.Name> filter) {
         this.rootResolver = resolverMgr.createRoot(conjunction, this::requestAnswered, this::requestExhausted);
-        this.filter = iterate(idFilter).map(Identifier.Variable.Name::reference).toSet();
-        this.resolveRequest = Request.create(new Request.Path(rootResolver), Root.create(), EMPTY, filter);
+        this.filter = filter;
+        this.resolveRequest = Request.create(new Request.Path(rootResolver), Root.create(), EMPTY, this.filter);
         this.queue = null;
         this.iteration = 0;
         this.done = false;
+    }
+
+    public ReasonerProducer(Disjunction disjunction, ResolverRegistry resolverRegistry, Set<Reference.Name> filter) {
+        // TODO
     }
 
     @Override
