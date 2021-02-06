@@ -22,6 +22,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Context;
+import grakn.core.common.parameters.Label;
 import grakn.core.common.parameters.Options;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
@@ -29,7 +30,6 @@ import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.Type;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.producer.Producer;
-import grakn.core.concurrent.producer.Producers;
 import grakn.core.logic.LogicManager;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
@@ -42,6 +42,7 @@ import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.set;
@@ -78,35 +79,36 @@ public class Reasoner {
         return resolverRegistry;
     }
 
-    private boolean isInfer(Disjunction disjunction, Context.Query context) {
-        if (!context.options().infer() || context.transactionType().isWrite() || !logicMgr.rules().hasNext()) return false;
-        disjunction.conjunctions().forEach(conjunction -> {
-            conjunction.variables().forEach(var -> {
-                if (var.resolvedTypes().isEmpty()) return true;
-                var.resolvedTypes().forEach(type -> {
-                    if (logicMgr.rulesConcluding(type).hasNext() || logicMgr.rulesConcludingHas(type).hasNext()) return true;
-                });
-            });
-        });
-        return false;
-    }
-
-    private boolean conjunctionContainsThings(Conjunction conjunction, Set<Identifier.Variable.Name> filter) {
-        return !filter.isEmpty() && iterate(filter).anyMatch(id -> conjunction.variable(id).isThing()) ||
-                iterate(conjunction.variables()).anyMatch(Variable::isThing);
-    }
-
     public ResourceIterator<ConceptMap> execute(Disjunction disjunction, Set<Identifier.Variable.Name> filter,
                                                 Context.Query context) {
-        disjunction.conjunctions().forEach(conj -> logicMgr.typeResolver().resolve(conj));
-        if (isInfer(disjunction, context)) return resolve(disjunction, filter, context);
+
+        Disjunction satisfiableDisjunction = resolveTypesAndFilter(disjunction, filter);
+        if (satisfiableDisjunction.conjunctions().isEmpty()) return Iterators.empty();
+        if (isInfer(satisfiableDisjunction, context)) return resolve(satisfiableDisjunction, filter, context);
 
         ResourceIterator<ConceptMap> answers;
-        ResourceIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
+        ResourceIterator<Conjunction> conjs = iterate(satisfiableDisjunction.conjunctions());
         if (!context.options().parallel()) answers = conjs.flatMap(conj -> iterator(conj, filter, context));
         else answers = produce(conjs.map(c -> producer(c, filter, context)).toList(), context.producer(), asyncPool1());
-        if (disjunction.conjunctions().size() > 1) answers = answers.distinct();
+        if (satisfiableDisjunction.conjunctions().size() > 1) answers = answers.distinct();
         return answers;
+    }
+
+    private boolean isInfer(Disjunction disjunction, Context.Query context) {
+        if (!context.options().infer() || context.transactionType().isWrite() || !logicMgr.rules().hasNext()) {
+            return false;
+        }
+        for (Conjunction conj : disjunction.conjunctions()) {
+            for (Variable var : conj.variables()) {
+                if (var.resolvedTypes().isEmpty()) return true;
+                for (Label type : var.resolvedTypes()) {
+                    if (logicMgr.rulesConcluding(type).hasNext() || logicMgr.rulesConcludingHas(type).hasNext()) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     private ResourceIterator<ConceptMap> resolve(Disjunction disjunction, Set<Identifier.Variable.Name> filter, Context.Query context) {
@@ -118,24 +120,29 @@ public class Reasoner {
         }
     }
 
-
-    private Producer<ConceptMap> producer(Conjunction conjunction) {
-        return producer(conjunction, set(), defaultContext);
+    private Disjunction resolveTypesAndFilter(Disjunction disjunction, Set<Identifier.Variable.Name> filter) {
+        disjunction.conjunctions().forEach(conj -> logicMgr.typeResolver().resolve(conj));
+        for (Conjunction conjunction : disjunction.conjunctions()) {
+            if (!conjunction.isBounded() && conjunctionContainsThings(conjunction, filter)) {
+                throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction);
+            }
+        }
+        List<Conjunction> satisfiable = iterate(disjunction.conjunctions()).filter(Conjunction::isSatisfiable).toList();
+        return new Disjunction(satisfiable);
     }
+
+    private boolean conjunctionContainsThings(Conjunction conjunction, Set<Identifier.Variable.Name> filter) {
+        return !filter.isEmpty() && iterate(filter).anyMatch(id -> conjunction.variable(id).isThing()) ||
+                iterate(conjunction.variables()).anyMatch(Variable::isThing);
+    }
+
+    // ---- non-reasoning paths ----
 
     private Producer<ConceptMap> producer(Conjunction conjunction, Set<Identifier.Variable.Name> filter,
                                           Context.Query context) {
-        Producer<ConceptMap> producer;
-        logicMgr.typeResolver().resolve(conjunction);
-        if (conjunction.isSatisfiable()) {
-            producer = traversalEng.producer(
-                    conjunction.traversal(filter), context.producer(), PARALLELISATION_FACTOR
-            ).map(conceptMgr::conceptMap);
-        } else if (!conjunction.isBounded() && conjunctionContainsThings(conjunction, filter)) {
-            throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction);
-        } else {
-            return Producers.empty();
-        }
+        Producer<ConceptMap> producer = traversalEng.producer(
+                conjunction.traversal(filter), context.producer(), PARALLELISATION_FACTOR
+        ).map(conceptMgr::conceptMap);
 
         if (conjunction.negations().isEmpty()) return producer;
         else return producer.filter(answer -> !iterate(conjunction.negations())
@@ -143,8 +150,14 @@ public class Reasoner {
         );
     }
 
-    public Producer<ConceptMap> producer(Conjunction conjunction, ConceptMap bounds) {
-        return producer(bound(conjunction, bounds));
+    private ResourceIterator<ConceptMap> iterator(Disjunction disjunction, ConceptMap bounds) {
+        Disjunction satisfiableDisjunction = resolveTypesAndFilter(disjunction, set());
+        if (satisfiableDisjunction.conjunctions().isEmpty()) return Iterators.empty();
+        return iterate(satisfiableDisjunction.conjunctions()).flatMap(c -> iterator(c, bounds));
+    }
+
+    private ResourceIterator<ConceptMap> iterator(Conjunction conjunction, ConceptMap bounds) {
+        return iterator(bound(conjunction, bounds));
     }
 
     private ResourceIterator<ConceptMap> iterator(Conjunction conjunction) {
@@ -153,28 +166,12 @@ public class Reasoner {
 
     private ResourceIterator<ConceptMap> iterator(Conjunction conjunction, Set<Identifier.Variable.Name> filter,
                                                   Context.Query context) {
-        ResourceIterator<ConceptMap> answers;
-        logicMgr.typeResolver().resolve(conjunction);
-        if (conjunction.isSatisfiable()) {
-            answers = traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
-        } else if (!conjunction.isBounded() && conjunctionContainsThings(conjunction, filter)) {
-            throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction);
-        } else {
-            return Iterators.empty();
-        }
-
+        ResourceIterator<ConceptMap> answers = traversalEng.iterator(conjunction.traversal(filter))
+                .map(conceptMgr::conceptMap);
         if (conjunction.negations().isEmpty()) return answers;
         else return answers.filter(answer -> !iterate(conjunction.negations()).flatMap(
                 negation -> iterator(negation.disjunction(), answer)
         ).hasNext());
-    }
-
-    private ResourceIterator<ConceptMap> iterator(Disjunction disjunction, ConceptMap bounds) {
-        return iterate(disjunction.conjunctions()).flatMap(c -> iterator(c, bounds));
-    }
-
-    private ResourceIterator<ConceptMap> iterator(Conjunction conjunction, ConceptMap bounds) {
-        return iterator(bound(conjunction, bounds));
     }
 
     private Conjunction bound(Conjunction conjunction, ConceptMap bounds) {
