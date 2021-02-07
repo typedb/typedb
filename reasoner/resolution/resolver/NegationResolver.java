@@ -1,6 +1,7 @@
 package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.resolvable.Negated;
 import grakn.core.pattern.Conjunction;
@@ -18,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -30,7 +32,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
 
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private final Negated negated;
-    private final Map<Request, NegationStatus> statuses;
+    private final Map<ConceptMap, NegationResponse> responses;
     private boolean isInitialised;
     private Actor<? extends Resolver<?>> downstream;
 
@@ -41,7 +43,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
               registry, traversalEngine, explanations);
         this.negated = negated;
         this.resolutionRecorder = resolutionRecorder;
-        this.statuses = new HashMap<>();
+        this.responses = new HashMap<>();
         this.isInitialised = false;
     }
 
@@ -67,34 +69,26 @@ public class NegationResolver extends Resolver<NegationResolver> {
             isInitialised = true;
         }
 
-        NegationStatus negationStatus = getOrInitialise(fromUpstream, iteration);
-        if (negationStatus.status.isEmpty()) {
-            assert negationStatus.externalIteration == iteration;
-            negationStatus.requested++;
-            tryAnswer(fromUpstream, negationStatus);
-        } else if (negationStatus.status.isRequested()) {
-            assert negationStatus.externalIteration == iteration;
-            negationStatus.requested++;
-            // we only ever sent 1 request into the negation resolvers
-        } else if (negationStatus.status.isSatisfied()) {
-            // TODO this is KEY - negations are SINGLE USE per unique request... otherwise we can end up looping infinitely right now. Discuss!
-            // see in other places we call RespondToUpstream!!
-            respondToUpstream(new Response.Fail(fromUpstream), iteration);
-        } else if (negationStatus.status.isFailed()) {
+        NegationResponse negationResponse = getOrInitialise(fromUpstream.partialAnswer().conceptMap());
+        if (negationResponse.status.isEmpty()) {
+            negationResponse.addAwaiting(fromUpstream, iteration);
+            tryAnswer(fromUpstream, negationResponse);
+        } else if (negationResponse.status.isRequested()) {
+            negationResponse.addAwaiting(fromUpstream, iteration);
+        } else if (negationResponse.status.isSatisfied()) {
+            respondToUpstream(Response.Answer.create(fromUpstream, upstreamAnswer(fromUpstream)), iteration);
+        } else if (negationResponse.status.isFailed()) {
             respondToUpstream(new Response.Fail(fromUpstream), iteration);
         } else {
             throw GraknException.of(ILLEGAL_STATE);
         }
     }
 
-    private NegationStatus getOrInitialise(Request fromUpstream, int iteration) {
-        if (!statuses.containsKey(fromUpstream)) {
-            statuses.put(fromUpstream, new NegationStatus(iteration));
-        }
-        return statuses.get(fromUpstream);
+    private NegationResponse getOrInitialise(ConceptMap conceptMap) {
+        return responses.computeIfAbsent(conceptMap, (cm) -> new NegationResponse());
     }
 
-    private void tryAnswer(Request fromUpstream, NegationStatus negationStatus) {
+    private void tryAnswer(Request fromUpstream, NegationResponse negationResponse) {
         // TODO if we wanted to accelerate the searching of a negation counter example,
         // TODO we could send multiple requests into the sub system at once!
 
@@ -108,7 +102,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
                                          Initial.of(fromUpstream.partialAnswer().conceptMap()).toDownstreamVars(),
                                          ResolutionAnswer.Derivation.EMPTY);
         requestFromDownstream(request, fromUpstream, 0);
-        negationStatus.setRequested();
+        negationResponse.setRequested();
     }
 
     @Override
@@ -117,13 +111,12 @@ public class NegationResolver extends Resolver<NegationResolver> {
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        NegationStatus negationStatus = this.statuses.get(fromUpstream);
-
-        negationStatus.setFailed();
-        for (int i = 0; i < negationStatus.requested; i++) {
-            respondToUpstream(new Response.Fail(fromUpstream), negationStatus.externalIteration);
+        NegationResponse negationResponse = this.responses.get(fromUpstream.partialAnswer().conceptMap());
+        negationResponse.setFailed();
+        for (NegationResponse.Awaiting awaiting : negationResponse.awaiting) {
+            respondToUpstream(new Response.Fail(awaiting.request), awaiting.iterationRequested);
         }
-        negationStatus.requested = 0;
+        negationResponse.clearAwaiting();
     }
 
     @Override
@@ -132,18 +125,13 @@ public class NegationResolver extends Resolver<NegationResolver> {
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        NegationStatus negationStatus = this.statuses.get(fromUpstream);
+        NegationResponse negationResponse = this.responses.get(fromUpstream.partialAnswer().conceptMap());
 
-        if (negationStatus.status.isRequested()) {
-            negationStatus.setSatisfied();
-            respondToUpstream(Response.Answer.create(fromUpstream, upstreamAnswer(fromUpstream)), negationStatus.externalIteration);
-            negationStatus.requested--;
+        negationResponse.setSatisfied();
+        for (NegationResponse.Awaiting awaiting : negationResponse.awaiting) {
+            respondToUpstream(Response.Answer.create(awaiting.request, upstreamAnswer(awaiting.request)), awaiting.iterationRequested);
         }
-        for (int i = 0; i < negationStatus.requested; i++) {
-            // TODO this is KEY - negations are SINGLE USE per unique request... otherwise we can end up looping infinitely right now. Discuss!
-            respondToUpstream(new Response.Fail(fromUpstream), negationStatus.externalIteration);
-        }
-        negationStatus.requested = 0;
+        negationResponse.clearAwaiting();
     }
 
     private ResolutionAnswer upstreamAnswer(Request fromUpstream) {
@@ -180,16 +168,18 @@ public class NegationResolver extends Resolver<NegationResolver> {
         // TODO, once integrated into the larger flow of executing queries, kill the actors and report and exception to root
     }
 
-    private static class NegationStatus {
+    private static class NegationResponse {
 
-        final int externalIteration;
-        int requested;
+        List<Awaiting> awaiting;
         Status status;
 
-        public NegationStatus(int externalIteration) {
-            this.externalIteration = externalIteration;
-            this.requested = 0;
+        public NegationResponse() {
+            this.awaiting = new LinkedList<>();
             this.status = Status.EMPTY;
+        }
+
+        public void addAwaiting(Request request, int iteration) {
+            awaiting.add(new Awaiting(request, iteration));
         }
 
         public void setRequested() { this.status = Status.REQUESTED; }
@@ -197,6 +187,20 @@ public class NegationResolver extends Resolver<NegationResolver> {
         public void setFailed() { this.status = Status.FAILED; }
 
         public void setSatisfied() { this.status = Status.SATISFIED; }
+
+        public void clearAwaiting() {
+            awaiting.clear();
+        }
+
+        private static class Awaiting {
+            final Request request;
+            final int iterationRequested;
+
+            public Awaiting(Request request, int iteration) {
+                this.request = request;
+                this.iterationRequested = iteration;
+            }
+        }
 
         enum Status {
             EMPTY,

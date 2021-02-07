@@ -51,7 +51,7 @@ public class ProducerIterator<T> extends AbstractResourceIterator<T> {
         // TODO: Could we optimise IterableProducer by accepting ResourceIterator<Producer<T>> instead?
         assert !producers.isEmpty() && batchSize < Integer.MAX_VALUE / 2;
         this.producers = new ConcurrentLinkedQueue<>(producers);
-        this.queue = new Queue(batchSize, batchSize * 2);
+        this.queue = new Queue(1, 1 );//batchSize, batchSize * 2);
         this.state = State.EMPTY;
     }
 

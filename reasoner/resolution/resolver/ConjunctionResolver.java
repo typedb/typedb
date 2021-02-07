@@ -132,6 +132,14 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
             derivation = null;
         }
 
+
+        // TODO this is a hack, we want requests to a negation to be "single use", otherwise we can end up in an infinite loop, where
+        // The request to the negation never gets removed and we constantly re-request from it!
+        // TODO this could be either implemented with a different response type: FinalAnswer
+        // TODO -> we don't need to use Fail as often, and only when there's no first answer at all
+        // TODO alternatively, we could create a ReusableRequest and SingleUseRequest object
+        if (toDownstream.receiver().state instanceof NegationResolver) responseProducer.removeDownstreamProducer(toDownstream);
+
         ConceptMap conceptMap = fromDownstream.answer().derived().withInitialFiltered();
         if (fromDownstream.planIndex() == plan.size() - 1) {
             Optional<AnswerState.UpstreamVars.Derived> answer = toUpstreamAnswer(fromUpstream, conceptMap);
