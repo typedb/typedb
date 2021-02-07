@@ -20,6 +20,7 @@ package grakn.core.reasoner.resolution.framework;
 
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.reasoner.resolution.answer.AnswerState;
+import grakn.core.reasoner.resolution.resolver.NegationResolver;
 import grakn.core.reasoner.resolution.resolver.Root;
 import graql.lang.pattern.variable.Reference;
 
@@ -161,6 +162,7 @@ public class Request {
         }
 
         public Actor<? extends Resolver<?>> root() {
+            assert path.get(0).state instanceof Root || path.get(0).state instanceof NegationResolver;
             return path.get(0);
         }
     }

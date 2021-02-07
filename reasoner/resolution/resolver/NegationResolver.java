@@ -70,6 +70,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
         NegationStatus negationStatus = getOrInitialise(fromUpstream, iteration);
         if (negationStatus.status.isEmpty()) {
             assert negationStatus.externalIteration == iteration;
+            negationStatus.requested++;
             tryAnswer(fromUpstream, negationStatus);
         } else if (negationStatus.status.isRequested()) {
             assert negationStatus.externalIteration == iteration;
