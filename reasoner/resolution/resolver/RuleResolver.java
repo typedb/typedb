@@ -63,48 +63,6 @@ public class RuleResolver extends ConjunctionResolver<RuleResolver> {
     }
 
     @Override
-    protected void receiveAnswer(Answer fromDownstream, int iteration) {
-        LOG.trace("{}: received Answer: {}", name(), fromDownstream);
-
-        Request toDownstream = fromDownstream.sourceRequest();
-        Request fromUpstream = fromUpstream(toDownstream);
-        ResponseProducer responseProducer = responseProducers.get(fromUpstream);
-
-        ResolutionAnswer.Derivation derivation;
-        if (explanations()) {
-            derivation = fromDownstream.sourceRequest().partialResolutions();
-            if (fromDownstream.answer().isInferred()) {
-                derivation = derivation.withAnswer(fromDownstream.sourceRequest().receiver(), fromDownstream.answer());
-            }
-        } else {
-            derivation = null;
-        }
-
-        ConceptMap whenAnswer = fromDownstream.answer().derived().withInitialFiltered();
-        if (fromDownstream.planIndex() == plan.size() - 1) {
-            ResourceIterator<UpstreamVars.Derived> newAnswers = materialisations(fromUpstream, whenAnswer);
-            if (newAnswers.hasNext()) {
-                UpstreamVars.Derived upstreamAnswer = newAnswers.next();
-                responseProducer.recordProduced(upstreamAnswer.withInitialFiltered());
-                // TODO revisit whether using `rule.when()` is the correct pattern to associate with the unified answer? Variables won't match
-                ResolutionAnswer answer = new ResolutionAnswer(upstreamAnswer, rule.when().toString(), derivation, self(), true);
-                respondToUpstream(Answer.create(fromUpstream, answer), iteration);
-            } else {
-                tryAnswer(fromUpstream, responseProducer, iteration);
-            }
-        } else {
-            int planIndex = fromDownstream.planIndex() + 1;
-            ResolverRegistry.MappedResolver nextPlannedDownstream = downstreamResolvers.get(plan.get(planIndex));
-            Request downstreamRequest = Request.create(fromUpstream.path().append(nextPlannedDownstream.resolver()),
-                                                       UpstreamVars.Initial.of(whenAnswer).toDownstreamVars(
-                                                               Mapping.of(nextPlannedDownstream.mapping())),
-                                                       derivation, planIndex, null);
-            responseProducer.addDownstreamProducer(downstreamRequest);
-            requestFromDownstream(downstreamRequest, fromUpstream, iteration);
-        }
-    }
-
-    @Override
     protected void tryAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
         if (responseProducer.hasUpstreamAnswer()) {
             UpstreamVars.Derived upstreamAnswer = responseProducer.upstreamAnswers().next();
