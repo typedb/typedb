@@ -197,34 +197,10 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
 
         // TODO just adding negations at the end, but we will want to include them in the planner
         for (Negation negation : conjunction.negations()) {
-            Disjunction disjunction = negation.disjunction();
-            Set<Reference.Name> filter = iterate(conjunction.variables()).filter(v -> v.reference().isName())
-                    .map(v -> v.reference().asName()).toSet();
-            Disjunction satisfiableDisjunction = resolveTypesAndFilter(disjunction, filter);
-            if (satisfiableDisjunction.conjunctions().isEmpty()) return;
-
-            Negated negated = new Negated(satisfiableDisjunction);
+            Negated negated = new Negated(negation);
             plan.add(negated);
             downstreamResolvers.put(negated, registry.negated(conjunction, negated));
         }
-    }
-
-    // TODO figure out how not to duplicate these
-    private Disjunction resolveTypesAndFilter(Disjunction disjunction, Set<Reference.Name> filter) {
-        disjunction.conjunctions().forEach(conj -> logicMgr.typeResolver().resolve(conj));
-        for (Conjunction conjunction : disjunction.conjunctions()) {
-            if (!conjunction.isSatisfiable() && !conjunction.isBounded() && conjunctionContainsThings(conjunction, filter)) {
-                // TODO this should kill the actors?
-                throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction);
-            }
-        }
-        List<Conjunction> satisfiable = iterate(disjunction.conjunctions()).filter(Conjunction::isSatisfiable).toList();
-        return new Disjunction(satisfiable);
-    }
-
-    private boolean conjunctionContainsThings(Conjunction conjunction, Set<Reference.Name> filter) {
-        return !filter.isEmpty() && iterate(filter).anyMatch(id -> conjunction.variable(Identifier.Variable.of(id)).isThing()) ||
-                iterate(conjunction.variables()).anyMatch(Variable::isThing);
     }
 
     private ResponseProducer mayUpdateAndGetResponseProducer(Request fromUpstream, int iteration) {

@@ -482,16 +482,18 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
     public static class RuleWrite extends ErrorMessage {
         public static final RuleWrite INVALID_UNDEFINE_RULE_BODY =
                 new RuleWrite(1, "The rule body of '%s' ('when' or 'then') cannot be undefined. The rule must be undefined entirely by referring to its label.");
-        public static final RuleWrite TYPES_NOT_FOUND =
-                new RuleWrite(2, "The rule '%s' uses type(s) %s which are not defined in the schema.");
         public static final RuleWrite RULES_IN_NEGATED_CYCLE_NOT_STRATIFIABLE =
                 new RuleWrite(3, "The rules '%s' causes inference cycles with negations");
+        public static final RuleWrite INVALID_NEGATION =
+                new RuleWrite(4, "The rule '%s' contains a negation, which is currently unsupported"); // TODO relax this to specific shapes of negations later
+        public static final RuleWrite INVALID_NEGATION_CONTAINS_DISJUNCTION =
+                new RuleWrite(5, "the rule '%'s contains a negation containing a disjunction, which is currently unsupported");
         public static final RuleWrite RULE_CAN_IMPLY_UNINSERTABLE_RESULTS =
-                new RuleWrite(4, "The rule '%s' when can imply the type combination '%s', which cannot be inserted into the rule's then.");
+                new RuleWrite(6, "The rule '%s' when can imply the type combination '%s', which cannot be inserted into the rule's then.");
         public static final RuleWrite RULE_CANNOT_BE_SATISFIED =
-                new RuleWrite(5, "The rule '%s' can never satisfy a type for the variable '%s' that can be inserted.");
+                new RuleWrite(7, "The rule '%s' can never satisfy a type for the variable '%s' that can be inserted.");
         public static final RuleWrite MAX_RULE_REACHED =
-                new RuleWrite(6, "The maximum number of rules has been reached: '%s'");
+                new RuleWrite(8, "The maximum number of rules has been reached: '%s'");
 
         private static final String codePrefix = "RUW";
         private static final String messagePrefix = "Invalid Rule Write";

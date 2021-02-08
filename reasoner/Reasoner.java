@@ -33,6 +33,7 @@ import grakn.core.concurrent.producer.Producer;
 import grakn.core.logic.LogicManager;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
+import grakn.core.pattern.Negation;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
@@ -42,6 +43,8 @@ import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -122,14 +125,24 @@ public class Reasoner {
     }
 
     private Disjunction resolveTypesAndFilter(Disjunction disjunction, Set<Identifier.Variable.Name> filter) {
-        disjunction.conjunctions().forEach(conj -> logicMgr.typeResolver().resolve(conj));
+        List<Conjunction> satisfiableConjunctions = new ArrayList<>();
         for (Conjunction conjunction : disjunction.conjunctions()) {
+            logicMgr.typeResolver().resolve(conjunction);
             if (!conjunction.isSatisfiable() && !conjunction.isBounded() && conjunctionContainsThings(conjunction, filter)) {
                 throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction);
             }
+            if (conjunction.isSatisfiable()) {
+                Set<Negation> filteredNegations = new HashSet<>();
+                for (Negation negation : conjunction.negations()) {
+                    Set<Identifier.Variable.Name> f = set(filter, iterate(conjunction.variables())
+                            .filter(v -> v.id().isName()).map(v -> v.id().asName()).toSet());
+                    Disjunction resolvedAndFiltered = resolveTypesAndFilter(negation.disjunction(), f);
+                    if (!disjunction.conjunctions().isEmpty()) filteredNegations.add(new Negation(resolvedAndFiltered));
+                }
+                satisfiableConjunctions.add(new Conjunction(conjunction.variables(), filteredNegations));
+            }
         }
-        List<Conjunction> satisfiable = iterate(disjunction.conjunctions()).filter(Conjunction::isSatisfiable).toList();
-        return new Disjunction(satisfiable);
+        return new Disjunction(satisfiableConjunctions);
     }
 
     private boolean conjunctionContainsThings(Conjunction conjunction, Set<Identifier.Variable.Name> filter) {

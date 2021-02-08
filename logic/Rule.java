@@ -33,6 +33,8 @@ import grakn.core.concept.type.RoleType;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
 import grakn.core.pattern.Conjunction;
+import grakn.core.pattern.Disjunction;
+import grakn.core.pattern.Negation;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
@@ -61,8 +63,12 @@ import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
+import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CONJUNCTION;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.INVALID_NEGATION;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.INVALID_NEGATION_CONTAINS_DISJUNCTION;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CANNOT_BE_SATISFIED;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CAN_IMPLY_UNINSERTABLE_RESULTS;
+import static grakn.core.common.iterator.Iterators.iterate;
 import static graql.lang.common.GraqlToken.Char.COLON;
 import static graql.lang.common.GraqlToken.Char.CURLY_CLOSE;
 import static graql.lang.common.GraqlToken.Char.CURLY_OPEN;
@@ -99,8 +105,6 @@ public class Rule {
         this.structure = graphMgr.schema().rules().create(label, when, then);
         this.when = whenPattern(structure.when(), logicMgr);
         this.then = thenPattern(structure.then(), logicMgr);
-        logicMgr.typeResolver().resolve(this.when, false);
-        logicMgr.typeResolver().resolve(this.then, false);
         pruneThenResolvedTypes();
         validateSatisfiable();
         validateInsertable(logicMgr);
@@ -189,7 +193,7 @@ public class Rule {
 
     @Override
     public String toString() {
-        return "" + RULE + SPACE  + getLabel() + COLON  + NEW_LINE + WHEN + SPACE + CURLY_OPEN + NEW_LINE + when + NEW_LINE +
+        return "" + RULE + SPACE + getLabel() + COLON + NEW_LINE + WHEN + SPACE + CURLY_OPEN + NEW_LINE + when + NEW_LINE +
                 CURLY_CLOSE + SPACE + THEN + SPACE + CURLY_OPEN + NEW_LINE + then + NEW_LINE + CURLY_CLOSE + SEMICOLON;
     }
 
@@ -221,8 +225,27 @@ public class Rule {
 
     private Conjunction whenPattern(graql.lang.pattern.Conjunction<? extends Pattern> conjunction, LogicManager logicMgr) {
         Conjunction conj = Conjunction.create(conjunction.normalise().patterns().get(0));
+
+        // TODO remove this when we fully implement negation
+//        if (!conj.negations().isEmpty()) {
+//            throw GraknException.of(INVALID_NEGATION, getLabel());
+//        }
+
+        if (iterate(conj.negations()).filter(neg -> neg.disjunction().conjunctions().size() != 1).hasNext()) {
+            throw GraknException.of(INVALID_NEGATION_CONTAINS_DISJUNCTION, getLabel());
+        }
+
         logicMgr.typeResolver().resolve(conj);
-        return conj;
+        Set<Negation> filteredNegations = new HashSet<>();
+        for (Negation negation : conj.negations()) {
+            Set<Identifier.Variable.Name> f = iterate(conj.variables()).filter(v -> v.id().isName()).map(v -> v.id().asName()).toSet();
+            assert negation.disjunction().conjunctions().size() == 1;
+            for (Conjunction c : negation.disjunction().conjunctions()) {
+                logicMgr.typeResolver().resolve(c);
+                if (c.isSatisfiable()) filteredNegations.add(new Negation(new Disjunction(list(c))));
+            }
+        }
+        return new Conjunction(conj.variables(), filteredNegations);
     }
 
     private Conjunction thenPattern(ThingVariable<?> thenVariable, LogicManager logicMgr) {
@@ -251,9 +274,10 @@ public class Rule {
 
         /**
          * Perform a put operation on the `then` of the rule. This may insert a new fact, or return an iterator of existing ones
+         *
          * @param whenConcepts - the concepts that satisfy the `when` of the rule. All named `then` variables must be in this map
          * @param traversalEng - used to perform a traversal to find preexisting conclusions
-         * @param conceptMgr - used to insert the conclusion if it doesn't already exist
+         * @param conceptMgr   - used to insert the conclusion if it doesn't already exist
          * @return - all possible conclusions: there may be multiple preexisting satisfactory conclusions, we return all
          */
         public abstract ResourceIterator<Map<Identifier, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
@@ -423,7 +447,7 @@ public class Rule {
             }
 
             private ResourceIterator<grakn.core.concept.thing.Relation> matchRelation(RelationType relationType, Set<RolePlayer> players,
-                                                                              TraversalEngine traversalEng, ConceptManager conceptMgr) {
+                                                                                      TraversalEngine traversalEng, ConceptManager conceptMgr) {
                 Traversal traversal = new Traversal();
                 SystemReference relationRef = SystemReference.of(0);
                 Identifier.Variable relationId = Identifier.Variable.of(relationRef);

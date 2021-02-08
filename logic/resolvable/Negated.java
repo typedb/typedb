@@ -18,6 +18,7 @@
 package grakn.core.logic.resolvable;
 
 import grakn.core.pattern.Disjunction;
+import grakn.core.pattern.Negation;
 import grakn.core.pattern.variable.Variable;
 
 import java.util.HashSet;
@@ -31,8 +32,8 @@ public class Negated extends Resolvable<Disjunction> {
     private final Set<Variable> generating;
     private final Set<Variable> variables;
 
-    public Negated(Disjunction disjunction) {
-        super(disjunction);
+    public Negated(Negation negation) {
+        super(negation.disjunction());
         this.generating = set();
         this.variables = new HashSet<>();
         pattern().conjunctions().forEach(c -> iterate(c.variables()).filter(v -> v.reference().isName())
