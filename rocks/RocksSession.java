@@ -155,7 +155,7 @@ public abstract class RocksSession implements Grakn.Session {
 
         }
 
-        RocksTransaction.Schema transactionGraphInit() {
+        RocksTransaction.Schema initialisationTransaction() {
             if (!isOpen.get()) throw GraknException.of(SESSION_CLOSED);
             try {
                 if (!writeLock.tryLock(new Options.Transaction().schemaLockTimeoutMillis(), MILLISECONDS)) {
@@ -164,7 +164,7 @@ public abstract class RocksSession implements Grakn.Session {
             } catch (InterruptedException e) {
                 throw GraknException.of(e);
             }
-            RocksTransaction.Schema transaction = txSchemaFactory.transactionGraphInit(this);
+            RocksTransaction.Schema transaction = txSchemaFactory.initialisationTransaction(this);
             transactions.put(transaction, 0L);
             return transaction;
         }

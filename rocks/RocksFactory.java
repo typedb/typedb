@@ -87,7 +87,7 @@ public final class RocksFactory implements Factory {
                 }
 
                 @Override
-                public RocksTransaction.Schema transactionGraphInit(RocksSession.Schema session) {
+                public RocksTransaction.Schema initialisationTransaction(RocksSession.Schema session) {
                     return new RocksTransaction.Schema(session, Arguments.Transaction.Type.WRITE, new Options.Transaction(), storageFactory());
                 }
             };
