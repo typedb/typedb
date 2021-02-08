@@ -98,12 +98,12 @@ public class KeyGenerator {
                 super(PERSISTED.initialValue(), PERSISTED.isIncrement() ? 1 : -1);
             }
 
-            public void sync(Storage storage) {
+            public void sync(Storage.Schema storage) {
                 syncTypeKeys(storage);
                 syncRuleKey(storage);
             }
 
-            private void syncTypeKeys(Storage storage) {
+            private void syncTypeKeys(Storage.Schema storage) {
                 for (Encoding.Vertex.Type encoding : Encoding.Vertex.Type.values()) {
                     byte[] prefix = encoding.prefix().bytes();
                     byte[] lastIID = storage.getLastKey(prefix);
@@ -114,7 +114,7 @@ public class KeyGenerator {
                 }
             }
 
-            private void syncRuleKey(Storage storage) {
+            private void syncRuleKey(Storage.Schema storage) {
                 byte[] prefix = Encoding.Structure.RULE.prefix().bytes();
                 byte[] lastIID = storage.getLastKey(prefix);
                 if (lastIID != null) {
@@ -166,17 +166,17 @@ public class KeyGenerator {
                 super(PERSISTED.initialValue(), PERSISTED.isIncrement() ? 1 : -1);
             }
 
-            public void sync(Storage storage) {
+            public void sync(Storage.Schema schemaStorage, Storage.Data dataStorage) {
                 Encoding.Vertex.Thing[] thingsWithGeneratedIID = new Encoding.Vertex.Thing[]{ENTITY, RELATION, ROLE};
 
                 for (Encoding.Vertex.Thing thingEncoding : thingsWithGeneratedIID) {
                     byte[] typeEncoding = Encoding.Vertex.Type.of(thingEncoding).prefix().bytes();
-                    ResourceIterator<byte[]> typeIterator = storage.iterate(typeEncoding, (iid, value) -> iid)
+                    ResourceIterator<byte[]> typeIterator = schemaStorage.iterate(typeEncoding, (iid, value) -> iid)
                             .filter(iid1 -> iid1.length == VertexIID.Type.LENGTH);
                     while (typeIterator.hasNext()) {
                         byte[] typeIID = typeIterator.next();
                         byte[] prefix = join(thingEncoding.prefix().bytes(), typeIID);
-                        byte[] lastIID = storage.getLastKey(prefix);
+                        byte[] lastIID = dataStorage.getLastKey(prefix);
                         AtomicLong nextValue = lastIID != null ?
                                 new AtomicLong(sortedBytesToLong(copyOfRange(lastIID, PREFIX_W_TYPE_LENGTH, DEFAULT_LENGTH)) + delta) :
                                 new AtomicLong(initialValue);
