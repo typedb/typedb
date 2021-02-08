@@ -155,6 +155,20 @@ public abstract class RocksSession implements Grakn.Session {
 
         }
 
+        RocksTransaction.Schema initialisationTransaction() {
+            if (!isOpen.get()) throw GraknException.of(SESSION_CLOSED);
+            try {
+                if (!writeLock.tryLock(new Options.Transaction().schemaLockTimeoutMillis(), MILLISECONDS)) {
+                    throw GraknException.of(SCHEMA_ACQUIRE_LOCK_TIMEOUT);
+                }
+            } catch (InterruptedException e) {
+                throw GraknException.of(e);
+            }
+            RocksTransaction.Schema transaction = txSchemaFactory.initialisationTransaction(this);
+            transactions.put(transaction, 0L);
+            return transaction;
+        }
+
         @Override
         void remove(RocksTransaction transaction) {
             transactions.remove(transaction);

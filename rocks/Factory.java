@@ -50,6 +50,8 @@ public interface Factory {
 
         RocksTransaction.Schema transaction(RocksSession.Schema session, Arguments.Transaction.Type type,
                                             Options.Transaction options);
+
+        RocksTransaction.Schema initialisationTransaction(RocksSession.Schema session);
     }
 
     interface TransactionData {
