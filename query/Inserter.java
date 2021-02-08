@@ -115,24 +115,33 @@ public class Inserter {
     public ResourceIterator<ConceptMap> execute() {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
             if (matcher != null) {
-                List<List<ConceptMap>> lists =
-                        matcher.execute(context).toLists(PARALLELISATION_SPLIT_MIN, PARALLELISATION_FACTOR);
-                assert !lists.isEmpty();
-                List<ConceptMap> inserts;
-                if (lists.size() == 1) {
-                    inserts = iterate(lists.get(0)).map(
-                            matched -> new Operation(conceptMgr, matched, variables).execute()
-                    ).toList();
-                } else {
-                    inserts = produce(async(iterate(lists).map(list -> iterate(list).map(
-                            matched -> new Operation(conceptMgr, matched, variables).execute()
-                    )), PARALLELISATION_FACTOR), EXHAUSTIVE, asyncPool1()).toList();
-                }
-                return iterate(inserts);
+                return context.options().parallel() ? executeParallel() : executeSerial();
             } else {
                 return single(new Operation(conceptMgr, new ConceptMap(), variables).execute());
             }
         }
+    }
+
+    private ResourceIterator<ConceptMap> executeParallel() {
+        List<List<ConceptMap>> lists =
+                matcher.execute(context).toLists(PARALLELISATION_SPLIT_MIN, PARALLELISATION_FACTOR);
+        assert !lists.isEmpty();
+        List<ConceptMap> inserts;
+        if (lists.size() == 1) {
+            inserts = iterate(lists.get(0)).map(
+                    matched -> new Operation(conceptMgr, matched, variables).execute()
+            ).toList();
+        } else {
+            inserts = produce(async(iterate(lists).map(list -> iterate(list).map(
+                    matched -> new Operation(conceptMgr, matched, variables).execute()
+            )), PARALLELISATION_FACTOR), EXHAUSTIVE, asyncPool1()).toList();
+        }
+        return iterate(inserts);
+    }
+
+    private ResourceIterator<ConceptMap> executeSerial() {
+        List<ConceptMap> matches = matcher.execute(context).toList();
+        return iterate(iterate(matches).map(matched -> new Operation(conceptMgr, matched, variables).execute()).toList());
     }
 
     public static class Operation {
