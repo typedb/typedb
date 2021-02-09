@@ -78,6 +78,22 @@ host_compatible_java_test(
     ],
 )
 
+host_compatible_java_test(
+    name = "test-conjunction",
+    srcs = [
+        "ConjunctionTest.java",
+    ],
+    test_class = "grakn.core.pattern.ConjunctionTest",
+    native_libraries_deps = [
+        "//pattern:pattern",
+    ],
+    deps = [
+        # External dependencies from Grakn Labs
+        "@graknlabs_common//:common",
+        "@graknlabs_graql//java:graql",
+    ],
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*", "*/*", "*/*/*"]),

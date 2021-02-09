@@ -81,7 +81,7 @@ public class RegexConstraint extends TypeConstraint {
 
     @Override
     public String toString() {
-        return "" + LIKE + SPACE + regex.toString();
+        return owner.toString() + SPACE + LIKE + SPACE + regex.toString();
     }
 
     @Override

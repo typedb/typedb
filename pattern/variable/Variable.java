@@ -113,6 +113,11 @@ public abstract class Variable implements Pattern {
     }
 
     @Override
+    public String toString() {
+        return reference().toString();
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;

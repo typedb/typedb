@@ -88,20 +88,7 @@ public class HasConstraint extends ThingConstraint implements AlphaEquivalent<Ha
 
     @Override
     public String toString() {
-        StringBuilder syntax = new StringBuilder();
-        syntax.append(HAS).append(SPACE);
-
-        if (attribute.reference().isName()) {
-            syntax.append(attribute.reference().toString());
-        } else {
-            if (attribute.isa().isPresent() && attribute.isa().get().type().label().isPresent()) {
-                syntax.append(attribute.isa().get().type().label().get().label());
-            }
-            syntax.append(SPACE);
-            attribute.value().forEach(value -> syntax.append(value.toString()));
-        }
-
-        return syntax.toString();
+        return owner.toString() + SPACE + HAS + SPACE + attribute.toString();
     }
 
     @Override

@@ -25,6 +25,7 @@ import grakn.core.traversal.Traversal;
 import java.util.Objects;
 
 import static grakn.common.collection.Collections.set;
+import static graql.lang.common.GraqlToken.Char.SPACE;
 import static graql.lang.common.GraqlToken.Constraint.ABSTRACT;
 
 public class AbstractConstraint extends TypeConstraint {
@@ -70,7 +71,9 @@ public class AbstractConstraint extends TypeConstraint {
     }
 
     @Override
-    public String toString() { return ABSTRACT.toString(); }
+    public String toString() {
+        return owner.toString() + SPACE + ABSTRACT;
+    }
 
     @Override
     public AbstractConstraint clone(Conjunction.Cloner cloner) {

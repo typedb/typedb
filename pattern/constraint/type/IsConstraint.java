@@ -85,7 +85,7 @@ public class IsConstraint extends TypeConstraint {
 
     @Override
     public String toString() {
-        return "" + IS + SPACE + variable.referenceSyntax();
+        return owner.toString() + SPACE + IS + SPACE + variable.toString();
     }
 
     @Override
