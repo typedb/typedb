@@ -63,4 +63,11 @@ public abstract class Resolvable<T extends Pattern> {
     public Negated asNegated() {
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Negated.class));
     }
+
+    @Override
+    public String toString() {
+        return "Resolvable{" +
+                "pattern=" + pattern +
+                '}';
+    }
 }

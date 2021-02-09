@@ -273,9 +273,10 @@ public interface Root {
             ResponseProducer responseProducer = new ResponseProducer(Iterators.empty(), iteration);
             assert !downstreamResolvers.isEmpty();
             for (Actor<ConjunctionResolver.Simple> conjunctionResolver : downstreamResolvers) {
-                Request request = Request.create(fromUpstream.path().append(conjunctionResolver),
-                                                 AnswerState.UpstreamVars.Initial.of(fromUpstream.partialAnswer().conceptMap()).toDownstreamVars(),
-                                                 ResolutionAnswer.Derivation.EMPTY, -1, null);
+                AnswerState.DownstreamVars downstream = AnswerState.UpstreamVars.Initial.of(fromUpstream.partialAnswer().conceptMap())
+                        .toDownstreamVars();
+                Request request = Request.create(fromUpstream.path().append(conjunctionResolver, downstream),
+                                                 downstream, ResolutionAnswer.Derivation.EMPTY, -1, null);
                 responseProducer.addDownstreamProducer(request);
             }
             return responseProducer;
@@ -289,9 +290,10 @@ public interface Root {
             assert newIteration > responseProducerPrevious.iteration();
             ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(Iterators.empty(), newIteration);
             for (Actor<ConjunctionResolver.Simple> conjunctionResolver : downstreamResolvers) {
-                Request request = Request.create(fromUpstream.path().append(conjunctionResolver),
-                                                 AnswerState.UpstreamVars.Initial.of(fromUpstream.partialAnswer().conceptMap()).toDownstreamVars(),
-                                                 ResolutionAnswer.Derivation.EMPTY, -1, null);
+                AnswerState.DownstreamVars downstream = AnswerState.UpstreamVars.Initial.of(fromUpstream.partialAnswer().conceptMap())
+                        .toDownstreamVars();
+                Request request = Request.create(fromUpstream.path().append(conjunctionResolver, downstream),
+                                                 downstream, ResolutionAnswer.Derivation.EMPTY, -1, null);
                 responseProducer.addDownstreamProducer(request);
             }
             return responseProducerNewIter;

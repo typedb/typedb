@@ -18,10 +18,15 @@
 
 package grakn.core.reasoner.resolution.framework;
 
+import grakn.common.collection.Pair;
 import grakn.core.concurrent.actor.Actor;
+import grakn.core.logic.resolvable.Unifier;
 import grakn.core.reasoner.resolution.answer.AnswerState;
+import grakn.core.reasoner.resolution.answer.Mapping;
+import grakn.core.reasoner.resolution.resolver.ConjunctionResolver;
 import grakn.core.reasoner.resolution.resolver.NegationResolver;
 import grakn.core.reasoner.resolution.resolver.Root;
+import grakn.core.reasoner.resolution.resolver.RuleResolver;
 import graql.lang.pattern.variable.Reference;
 
 import javax.annotation.Nullable;
@@ -91,11 +96,11 @@ public class Request {
         if (path.path.size() < 2) {
             return null;
         }
-        return path.path.get(path.path.size() - 2);
+        return path.path.get(path.path.size() - 2).resolver;
     }
 
     public Actor<? extends Resolver<?>> receiver() {
-        return path.path.get(path.path.size() - 1);
+        return path.path.get(path.path.size() - 1).resolver;
     }
 
     public AnswerState.DownstreamVars partialAnswer() {
@@ -131,20 +136,20 @@ public class Request {
     }
 
     public static class Path {
-        final List<Actor<? extends Resolver<?>>> path;
 
-        public Path(Actor<? extends Resolver<?>> sender) {
-            this(list(sender));
+        private final List<VisitedResolver> path;
+
+        public Path(Actor<? extends Resolver<?>> sender, AnswerState.DownstreamVars answerState) {
+            this(list(new VisitedResolver(sender, answerState)));
         }
 
-        public Path(List<Actor<? extends Resolver<?>>> path) {
-            assert !path.isEmpty() : "Path cannot be empty";
+        public Path(List<VisitedResolver> path) {
             this.path = path;
         }
 
-        public Path append(Actor<? extends Resolver<?>> actor) {
-            List<Actor<? extends Resolver<?>>> appended = new ArrayList<>(path);
-            appended.add(actor);
+        public Path append(Actor<? extends Resolver<?>> actor, AnswerState.DownstreamVars answerState) {
+            List<VisitedResolver> appended = new ArrayList<>(path);
+            appended.add(new VisitedResolver(actor, answerState));
             return new Path(appended);
         }
 
@@ -152,8 +157,8 @@ public class Request {
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            Path path1 = (Path) o;
-            return Objects.equals(path, path1.path);
+            Path other = (Path) o;
+            return Objects.equals(path, other.path);
         }
 
         @Override
@@ -162,8 +167,36 @@ public class Request {
         }
 
         public Actor<? extends Resolver<?>> root() {
-            assert path.get(0).state instanceof Root || path.get(0).state instanceof NegationResolver;
-            return path.get(0);
+            assert path.get(0).resolver.state instanceof Root || path.get(0).resolver.state instanceof NegationResolver;
+            return path.get(0).resolver;
+        }
+
+        /**
+         * To distinguish between visiting a resolver with two different unifiers,
+         */
+        private static class VisitedResolver {
+
+            final Actor<? extends Resolver<?>> resolver;
+            AnswerState.DownstreamVars answerState;
+
+            public VisitedResolver(Actor<? extends Resolver<?>> resolver, AnswerState.DownstreamVars answerState) {
+                this.resolver = resolver;
+                this.answerState = answerState;
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+                final VisitedResolver that = (VisitedResolver) o;
+                return Objects.equals(resolver, that.resolver) &&
+                        Objects.equals(answerState, that.answerState);
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(resolver, answerState);
+            }
         }
     }
 }

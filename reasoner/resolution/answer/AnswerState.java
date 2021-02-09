@@ -225,7 +225,7 @@ public abstract class AnswerState {
             @Override
             public String toString() {
                 return "AnswerState.DownstreamVars.Mapped{" +
-                        "initial=" + conceptMap() +
+                        "initial=" + initial +
                         "mapping=" + mapping +
                         '}';
             }
@@ -263,12 +263,13 @@ public abstract class AnswerState {
                 if (!super.equals(o)) return false;
                 Unified unified = (Unified) o;
                 return Objects.equals(initial, unified.initial) &&
-                        Objects.equals(unifier, unified.unifier);
+                        Objects.equals(unifier, unified.unifier) &&
+                        Objects.equals(instanceRequirements, unified.instanceRequirements);
             }
 
             @Override
             public int hashCode() {
-                return Objects.hash(initial, unifier);
+                return Objects.hash(initial, unifier, instanceRequirements);
             }
 
             @Override
@@ -276,6 +277,7 @@ public abstract class AnswerState {
                 return "AnswerState.DownstreamVars.Unified{" +
                         "initial=" + conceptMap() +
                         "unifier=" + unifier +
+                        "instanceRequirements=" + instanceRequirements +
                         '}';
             }
         }

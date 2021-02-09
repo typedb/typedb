@@ -242,23 +242,23 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         return responseProducers.get(fromUpstream);
     }
 
-    private void mayRegisterRules(Request request, RecursionState recursionState, ResponseProducer responseProducer) {
+    private void mayRegisterRules(Request fromUpstream, RecursionState recursionState, ResponseProducer responseProducer) {
         // loop termination: when receiving a new request, we check if we have seen it before from this root query
         // if we have, we do not allow rules to be registered as possible downstreams
-        if (!recursionState.hasReceived(request.partialAnswer().conceptMap())) {
+        if (!recursionState.hasReceived(fromUpstream.partialAnswer().conceptMap())) {
             for (Map.Entry<Actor<RuleResolver>, Set<Unifier>> entry : applicableRules.entrySet()) {
                 Actor<RuleResolver> ruleActor = entry.getKey();
                 for (Unifier unifier : entry.getValue()) {
-                    UpstreamVars.Initial initial = UpstreamVars.Initial.of(request.partialAnswer().conceptMap());
+                    UpstreamVars.Initial initial = UpstreamVars.Initial.of(fromUpstream.partialAnswer().conceptMap());
                     Optional<AnswerState.DownstreamVars.Unified> unified = initial.toDownstreamVars(unifier);
                     if (unified.isPresent()) {
-                        Request toDownstream = Request.create(request.path().append(ruleActor), unified.get(),
+                        Request toDownstream = Request.create(fromUpstream.path().append(ruleActor, unified.get()), unified.get(),
                                                               ResolutionAnswer.Derivation.EMPTY);
                         responseProducer.addDownstreamProducer(toDownstream);
                     }
                 }
             }
-            recursionState.recordReceived(request.partialAnswer().conceptMap());
+            recursionState.recordReceived(fromUpstream.partialAnswer().conceptMap());
         }
     }
 

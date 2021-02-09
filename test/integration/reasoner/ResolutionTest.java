@@ -25,6 +25,7 @@ import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.reasoner.resolution.ResolverRegistry;
+import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars.Initial;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
@@ -249,15 +250,15 @@ public class ResolutionTest {
         }
         try (RocksSession session = dataSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                String insert  = "insert $y isa woman; $x isa man; (husband: $x, wife: $y) isa marriage;";
+                String insert = "insert $y isa woman; $x isa man; (husband: $x, wife: $y) isa marriage;";
                 transaction.query().insert(Graql.parseQuery(insert));
                 transaction.query().insert(Graql.parseQuery(insert));
 
-                String insert2  = "insert $y isa woman; $x isa woman; (wife: $x, wife: $y) isa marriage;";
+                String insert2 = "insert $y isa woman; $x isa woman; (wife: $x, wife: $y) isa marriage;";
                 transaction.query().insert(Graql.parseQuery(insert2));
                 transaction.query().insert(Graql.parseQuery(insert2));
 
-                String insert3  = "insert $y isa man;";
+                String insert3 = "insert $y isa man;";
                 transaction.query().insert(Graql.parseQuery(insert3));
                 transaction.query().insert(Graql.parseQuery(insert3));
                 transaction.commit();
@@ -265,7 +266,7 @@ public class ResolutionTest {
         }
         try (RocksSession session = dataSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                String rootConjunction  = "{ $a isa woman; $b isa man; $f(friend: $a, friend: $b) isa friendship; }";
+                String rootConjunction = "{ $a isa woman; $b isa man; $f(friend: $a, friend: $b) isa friendship; }";
                 Conjunction conjunctionPattern = parseConjunction(transaction, rootConjunction);
                 createRootAndAssertResponses(transaction, conjunctionPattern, 2L);
             }
@@ -390,12 +391,13 @@ public class ResolutionTest {
                 LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
                 AtomicLong doneReceived = new AtomicLong(0L);
                 Actor<Root.Conjunction> root = registry.rootConjunction(conjunctionPattern, responses::add,
-                                                               iterDone -> doneReceived.incrementAndGet());
+                                                                        iterDone -> doneReceived.incrementAndGet());
 
                 for (int i = 0; i < answerCount; i++) {
+                    AnswerState.DownstreamVars.Identity downstream = Initial.of(new ConceptMap()).toDownstreamVars();
                     root.tell(actor ->
                                       actor.receiveRequest(
-                                              Request.create(new Request.Path(root), Initial.of(new ConceptMap()).toDownstreamVars(), null),
+                                              Request.create(new Request.Path(root, downstream), downstream, null),
                                               0)
                     );
                     ResolutionAnswer answer = responses.take();
@@ -449,7 +451,7 @@ public class ResolutionTest {
         LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
         Actor<Root.Conjunction> root =
-                        registry.rootConjunction(conjunction, responses::add, iterDone -> doneReceived.incrementAndGet());
+                registry.rootConjunction(conjunction, responses::add, iterDone -> doneReceived.incrementAndGet());
         Set<Reference.Name> filter = iterate(conjunction.variables()).map(Variable::reference).filter(Reference::isName)
                 .map(Reference::asName).toSet();
         assertResponses(root, filter, responses, doneReceived, answerCount);
@@ -461,8 +463,9 @@ public class ResolutionTest {
         long startTime = System.currentTimeMillis();
         long n = answerCount + 1; //total number of traversal answers, plus one expected Exhausted (-1 answer)
         for (int i = 0; i < n; i++) {
+            AnswerState.DownstreamVars.Identity downstream = Initial.of(new ConceptMap()).toDownstreamVars();
             root.tell(actor -> actor.receiveRequest(Request.create(
-                    new Request.Path(root), Initial.of(new ConceptMap()).toDownstreamVars(), ResolutionAnswer.Derivation.EMPTY, filter
+                    new Request.Path(root, downstream), downstream, ResolutionAnswer.Derivation.EMPTY, filter
             ), 0));
         }
         int answersFound = 0;

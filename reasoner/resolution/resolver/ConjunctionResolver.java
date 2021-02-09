@@ -18,7 +18,6 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
-import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.ConceptManager;
@@ -30,9 +29,7 @@ import grakn.core.logic.resolvable.Negated;
 import grakn.core.logic.resolvable.Resolvable;
 import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.Negation;
-import grakn.core.pattern.variable.Variable;
 import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
@@ -45,8 +42,6 @@ import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import grakn.core.traversal.TraversalEngine;
-import grakn.core.traversal.common.Identifier;
-import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +54,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.map;
-import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CONJUNCTION;
 import static grakn.core.common.iterator.Iterators.iterate;
 
 public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> extends Resolver<T> {
@@ -154,10 +148,9 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         } else {
             int planIndex = fromDownstream.planIndex() + 1;
             ResolverRegistry.MappedResolver nextPlannedDownstream = downstreamResolvers.get(plan.get(planIndex));
-            Request downstreamRequest = Request.create(fromUpstream.path().append(nextPlannedDownstream.resolver()),
-                                                       Initial.of(conceptMap).toDownstreamVars(
-                                                               Mapping.of(nextPlannedDownstream.mapping())),
-                                                       derivation, planIndex, null);
+            AnswerState.DownstreamVars.Mapped downstream = Initial.of(conceptMap).toDownstreamVars(Mapping.of(nextPlannedDownstream.mapping()));
+            Request downstreamRequest = Request.create(fromUpstream.path().append(nextPlannedDownstream.resolver(), downstream),
+                                                       downstream, derivation, planIndex, null);
             responseProducer.addDownstreamProducer(downstreamRequest);
             requestFromDownstream(downstreamRequest, fromUpstream, iteration);
         }
@@ -229,10 +222,10 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
 //
         ResponseProducer responseProducer = new ResponseProducer(Iterators.empty(), iteration);
         assert !plan.isEmpty();
-        Request toDownstream = Request.create(fromUpstream.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
-                                              Initial.of(fromUpstream.partialAnswer().conceptMap())
-                                                      .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
-                                              new ResolutionAnswer.Derivation(map()), 0, null);
+        AnswerState.DownstreamVars.Mapped downstream = Initial.of(fromUpstream.partialAnswer().conceptMap())
+                .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping()));
+        Request toDownstream = Request.create(fromUpstream.path().append(downstreamResolvers.get(plan.get(0)).resolver(), downstream),
+                                              downstream, new ResolutionAnswer.Derivation(map()), 0, null);
         responseProducer.addDownstreamProducer(toDownstream);
         return responseProducer;
     }
@@ -248,10 +241,10 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
 
         ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(Iterators.empty(), newIteration);
         assert !plan.isEmpty();
-        Request toDownstream = Request.create(fromUpstream.path().append(downstreamResolvers.get(plan.get(0)).resolver()),
-                                              Initial.of(fromUpstream.partialAnswer().conceptMap())
-                                                      .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping())),
-                                              new ResolutionAnswer.Derivation(map()), 0, null);
+        AnswerState.DownstreamVars downstream = Initial.of(fromUpstream.partialAnswer().conceptMap())
+                .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping()));
+        Request toDownstream = Request.create(fromUpstream.path().append(downstreamResolvers.get(plan.get(0)).resolver(), fromUpstream.partialAnswer()),
+                                              downstream, new ResolutionAnswer.Derivation(map()), 0, null);
         responseProducerNewIter.addDownstreamProducer(toDownstream);
         return responseProducerNewIter;
     }

@@ -32,7 +32,6 @@ Feature: Debugging Space
 
       person sub entity,
         owns name,
-        owns age,
         plays friendship:friend,
         plays employment:employee;
 
@@ -57,36 +56,25 @@ Feature: Debugging Space
         relates superior;
 
       name sub attribute, value string;
-      age sub attribute, value long;
-
-            area sub place;
-      city sub place;
-      country sub place;
-      continent sub place;
-
-      rule location-hierarchy-transitivity: when {
-          (superior: $a, subordinate: $b) isa location-hierarchy;
-          (superior: $b, subordinate: $c) isa location-hierarchy;
-      } then {
-          (superior: $a, subordinate: $c) isa location-hierarchy;
-      };
       """
     Given for each session, transaction commits
     # each scenario specialises the schema further
     Given for each session, open transactions of type: write
-
-  #####################
-  # NEGATION IN MATCH #
-  #####################
-
-  # Negation is currently handled by Reasoner, even inside a match clause.
-
-
-  Scenario: negation can filter out an unwanted entity type from part of a chain of matched relations
+  # TODO: re-enable all steps once schema queries are resolvable (#75)
+  Scenario: all roleplayers and their types can be retrieved from a relation
     Given for each session, graql define
       """
       define
-      dog sub entity, plays friendship:friend;
+
+      military-person sub person;
+      colonel sub military-person;
+
+      rule armed-forces-employ-the-military: when {
+        $x isa company, has name "Armed Forces";
+        $y isa military-person;
+      } then {
+        (employee: $y, employer: $x) isa employment;
+      };
       """
     Given for each session, transaction commits
     Given connection close all sessions
@@ -97,94 +85,24 @@ Feature: Debugging Space
     Given for each session, graql insert
       """
       insert
-      $c isa person;
-      $d isa person;
-      $z isa dog;
-
-      (friend: $c, friend: $d) isa friendship;
-      (friend: $d, friend: $z) isa friendship;
+      $x isa company, has name "Armed Forces";
+      $y isa colonel;
+      $z isa colonel;
       """
+    Then materialised database is completed
     Given for each session, transaction commits
     Given for each session, open transactions with reasoning of type: read
     Then for graql query
       """
       match
-        (friend: $c, friend: $d) isa friendship;
-        not {$c isa dog;};
+        ($x, $y) isa employment;
+        $x isa $type;
       """
-    # Eliminates (cdzd, zdzd)
-    Then answer size in reasoned database is: 2
-    Then for each session, transaction closes
-    Given for each session, open transactions with reasoning of type: read
-    Then answer set is equivalent for graql query
-      """
-      match
-        (friend: $c, friend: $d) isa friendship;
-        $c isa person;
-      """
+    Then all answers are correct in reasoned database
+    # (2 colonels * 5 supertypes of colonel * 1 company)
+    # + (1 company * 3 supertypes of company * 2 colonels)
+    Then answer size in reasoned database is: 16
+    Then materialised and reasoned databases are the same size
 
 
-#  Scenario: negation can filter out an unwanted connection between two concepts from a chain of matched relations
-#    Given for each session, graql define
-#      """
-#      define
-#      dog sub entity, owns name, plays friendship:friend;
-#      """
-#    Given for each session, transaction commits
-#    Given connection close all sessions
-#    Given connection open data sessions for databases:
-#      | reasoned     |
-#      | materialised |
-#    Given for each session, open transactions of type: write
-#    Given for each session, graql insert
-#      """
-#      insert
-#      $a isa person, has name "a";
-#      $b isa person, has name "b";
-#      $c isa person, has name "c";
-#      $d isa person, has name "d";
-#      $z isa dog, has name "z";
-#
-#      (friend: $a, friend: $b) isa friendship;
-#      (friend: $b, friend: $c) isa friendship;
-#      (friend: $c, friend: $d) isa friendship;
-#      (friend: $d, friend: $z) isa friendship;
-#      """
-#    Given for each session, transaction commits
-#    Given for each session, open transactions with reasoning of type: read
-#    Then for graql query
-#    """
-#      match
-#        (friend: $a, friend: $b) isa friendship;
-#        (friend: $b, friend: $c) isa friendship;
-#      """
-#    # aba, abc
-#    # bab, bcb, bcd
-#    # cba, cbc, cdc, cdz
-#    # dcb, dcd, dzd
-#    # zdc, zdz
-#    Given answer size in reasoned database is: 14
-#    Then for each session, transaction closes
-#    Given for each session, open transactions with reasoning of type: read
-#    Then for graql query
-#      """
-#      match
-#        (friend: $a, friend: $b) isa friendship;
-#        not {(friend: $b, friend: $z) isa friendship;};
-#        (friend: $b, friend: $c) isa friendship;
-#        $z isa dog;
-#      """
-#    # (d,z) is a friendship so we eliminate results where $b is 'd': these are (cdc, cdz, zdc, zdz)
-#    Then answer size in reasoned database is: 10
-#    Then for each session, transaction closes
-#    Given for each session, open transactions with reasoning of type: read
-#    Then answer set is equivalent for graql query
-#      """
-#      match
-#        (friend: $a, friend: $b) isa friendship;
-#        (friend: $b, friend: $c) isa friendship;
-#        $z isa dog;
-#        not {$b has name "d";};
-#      """
-#
-#
+

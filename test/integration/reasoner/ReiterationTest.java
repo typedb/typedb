@@ -161,10 +161,9 @@ public class ReiterationTest {
     }
 
     private void sendRootRequest(Actor<Root.Conjunction> root, int iteration, Set<Reference.Name> filter) {
+        AnswerState.DownstreamVars.Identity downstream = Initial.of(new ConceptMap()).toDownstreamVars();
         root.tell(actor -> actor.receiveRequest(
-                Request.create(new Request.Path(root),
-                               Initial.of(new ConceptMap()).toDownstreamVars(), null, filter),
-                iteration)
+                Request.create(new Request.Path(root, downstream), downstream, null, filter), iteration)
         );
     }
 
@@ -187,5 +186,4 @@ public class ReiterationTest {
         transaction.reasoner().resolverRegistry().setEventLoopGroup(new EventLoopGroup(1, new NamedThreadFactory("grakn-elg")));
         return transaction;
     }
-
 }
