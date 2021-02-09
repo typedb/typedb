@@ -17,92 +17,10 @@
 
 Feature: Debugging Space
 
-  Background: Set up databases for resolution testing
+  Background:
     Given connection has been opened
+    Given connection delete all databases
     Given connection does not have any database
-    Given connection create database: reasoned
-    Given connection create database: materialised
-    Given connection open schema sessions for databases:
-      | reasoned     |
-      | materialised |
-    Given for each session, open transactions of type: write
-    Given for each session, graql define
-      """
-      define
 
-      person sub entity,
-        owns name,
-        plays friendship:friend,
-        plays employment:employee;
-
-      company sub entity,
-        owns name,
-        plays employment:employer;
-
-      place sub entity,
-        owns name,
-        plays location-hierarchy:subordinate,
-        plays location-hierarchy:superior;
-
-      friendship sub relation,
-        relates friend;
-
-      employment sub relation,
-        relates employee,
-        relates employer;
-
-      location-hierarchy sub relation,
-        relates subordinate,
-        relates superior;
-
-      name sub attribute, value string;
-      """
-    Given for each session, transaction commits
-    # each scenario specialises the schema further
-    Given for each session, open transactions of type: write
-  # TODO: re-enable all steps once schema queries are resolvable (#75)
-  Scenario: all roleplayers and their types can be retrieved from a relation
-    Given for each session, graql define
-      """
-      define
-
-      military-person sub person;
-      colonel sub military-person;
-
-      rule armed-forces-employ-the-military: when {
-        $x isa company, has name "Armed Forces";
-        $y isa military-person;
-      } then {
-        (employee: $y, employer: $x) isa employment;
-      };
-      """
-    Given for each session, transaction commits
-    Given connection close all sessions
-    Given connection open data sessions for databases:
-      | reasoned     |
-      | materialised |
-    Given for each session, open transactions of type: write
-    Given for each session, graql insert
-      """
-      insert
-      $x isa company, has name "Armed Forces";
-      $y isa colonel;
-      $z isa colonel;
-      """
-    Then materialised database is completed
-    Given for each session, transaction commits
-    Given for each session, open transactions with reasoning of type: read
-    Then for graql query
-      """
-      match
-        ($x, $y) isa employment;
-        $x isa $type;
-      """
-    Then all answers are correct in reasoned database
-    # (2 colonels * 5 supertypes of colonel * 1 company)
-    # + (1 company * 3 supertypes of company * 2 colonels)
-    Then answer size in reasoned database is: 16
-    Then materialised and reasoned databases are the same size
-
-
-
+  # Paste any scenarios below for debugging.
+  # Do not commit any changes to this file.
