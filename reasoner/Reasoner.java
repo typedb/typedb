@@ -111,6 +111,13 @@ public class Reasoner {
                     }
                 }
             }
+            if (!conj.negations().isEmpty()) {
+                for (Negation negation : conj.negations()) {
+                    if (isInfer(negation.disjunction(), context)){
+                        return true;
+                    }
+                }
+            }
         }
         return false;
     }
