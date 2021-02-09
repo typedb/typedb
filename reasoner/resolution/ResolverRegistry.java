@@ -146,16 +146,16 @@ public class ResolverRegistry {
         return MappedResolver.of(concludableActor, identity(concludable));
     }
 
-    public Actor<ConjunctionResolver.Simple> conjunction(Conjunction conjunction) {
+    public Actor<ConjunctionResolver.Nested> conjunction(Conjunction conjunction) {
         LOG.debug("Creating Conjunction resolver for : {}", conjunction);
         return Actor.create(
-                elg, self -> new ConjunctionResolver.Simple(
+                elg, self -> new ConjunctionResolver.Nested(
                         self, conjunction, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr, planner,
                         explanations)
         );
     }
 
-    public MappedResolver negated(Conjunction upstream, Negated negated) {
+    public MappedResolver negated(Negated negated, Conjunction upstream) {
         LOG.debug("Creating Negation resolver for : {}", negated);
         Actor<NegationResolver> negatedResolver = Actor.create(
                 elg, self -> new NegationResolver(self, negated, this, traversalEngine, resolutionRecorder, explanations)

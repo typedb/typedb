@@ -160,7 +160,7 @@ public interface Root {
         private final Actor<ResolutionRecorder> resolutionRecorder;
         private final Consumer<ResolutionAnswer> onAnswer;
         private final Consumer<Integer> onFail;
-        private final List<Actor<ConjunctionResolver.Simple>> downstreamResolvers;
+        private final List<Actor<ConjunctionResolver.Nested>> downstreamResolvers;
         private final grakn.core.pattern.Disjunction disjunction;
         private final Set<Reference.Name> filter;
         private final Long offset;
@@ -299,7 +299,7 @@ public interface Root {
             assert fromUpstream.partialAnswer().isIdentity();
             ResponseProducer responseProducer = new ResponseProducer(Iterators.empty(), iteration);
             assert !downstreamResolvers.isEmpty();
-            for (Actor<ConjunctionResolver.Simple> conjunctionResolver : downstreamResolvers) {
+            for (Actor<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers) {
                 AnswerState.DownstreamVars downstream = AnswerState.UpstreamVars.Initial.of(fromUpstream.partialAnswer().conceptMap())
                         .toDownstreamVars();
                 Request request = Request.create(fromUpstream.path().append(conjunctionResolver, downstream),
@@ -310,13 +310,14 @@ public interface Root {
         }
 
         @Override
-        protected ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer responseProducerPrevious, int newIteration) {
+        protected ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer responseProducerPrevious,
+                                                             int newIteration) {
             assert newIteration > responseProducerPrevious.iteration();
             LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
 
             assert newIteration > responseProducerPrevious.iteration();
             ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(Iterators.empty(), newIteration);
-            for (Actor<ConjunctionResolver.Simple> conjunctionResolver : downstreamResolvers) {
+            for (Actor<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers) {
                 AnswerState.DownstreamVars downstream = AnswerState.UpstreamVars.Initial.of(fromUpstream.partialAnswer().conceptMap())
                         .toDownstreamVars();
                 Request request = Request.create(fromUpstream.path().append(conjunctionResolver, downstream),

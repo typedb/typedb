@@ -23,8 +23,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import static grakn.common.collection.Collections.list;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.exception.ErrorMessage.Internal.UNIMPLEMENTED;
 
 public class NegationResolver extends Resolver<NegationResolver> {
 
@@ -55,8 +55,8 @@ public class NegationResolver extends Resolver<NegationResolver> {
         if (disjunction.size() == 1) {
             downstream = registry.conjunction(disjunction.get(0));
         } else {
-            // TODO
-//            downstream = registry.disjunction(disjunction);
+            // negations with complex disjunctions not yet working
+            throw GraknException.of(UNIMPLEMENTED);
         }
     }
 
@@ -137,7 +137,6 @@ public class NegationResolver extends Resolver<NegationResolver> {
     private ResolutionAnswer upstreamAnswer(Request fromUpstream) {
         // TODO decide if we want to use isMapped here? Can Mapped currently act as a filter?
         assert fromUpstream.partialAnswer().isMapped();
-        // TODO this is cheating, and incorrect!! We should be unmapping an empty map, but currently require to be equal size
         AnswerState.UpstreamVars.Derived derived = fromUpstream.partialAnswer().asMapped().mapToUpstream(fromUpstream.partialAnswer().conceptMap());
 
         ResolutionAnswer.Derivation derivation;
@@ -148,7 +147,6 @@ public class NegationResolver extends Resolver<NegationResolver> {
             derivation = null;
         }
 
-        // TODO double check that we just set isInferred to false
         return new ResolutionAnswer(derived, negated.pattern().toString(), derivation, self(), false);
     }
 

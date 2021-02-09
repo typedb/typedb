@@ -18,23 +18,15 @@
 
 package grakn.core.reasoner.resolution.framework;
 
-import grakn.common.collection.Pair;
 import grakn.core.concurrent.actor.Actor;
-import grakn.core.logic.resolvable.Unifier;
 import grakn.core.reasoner.resolution.answer.AnswerState;
-import grakn.core.reasoner.resolution.answer.Mapping;
-import grakn.core.reasoner.resolution.resolver.ConjunctionResolver;
 import grakn.core.reasoner.resolution.resolver.NegationResolver;
 import grakn.core.reasoner.resolution.resolver.Root;
-import grakn.core.reasoner.resolution.resolver.RuleResolver;
-import graql.lang.pattern.variable.Reference;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
 
 import static grakn.common.collection.Collections.list;
 

@@ -52,6 +52,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -278,14 +279,12 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         private final RelationConstraint relation;
         private final IsaConstraint isa;
         private final Set<LabelConstraint> labels;
-        private Set<Variable> generating;
 
         private Relation(Conjunction conjunction, RelationConstraint relation, @Nullable IsaConstraint isa, Set<LabelConstraint> labels) {
             super(conjunction);
             this.relation = relation;
             this.isa = isa;
             this.labels = labels;
-            this.generating = set(relation().owner());
         }
 
         public static Relation of(RelationConstraint relation, @Nullable IsaConstraint isa, Set<LabelConstraint> labels) {
@@ -355,8 +354,8 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        public Set<Variable> generating() {
-            return generating;
+        public Optional<Variable> generating() {
+            return Optional.of(relation.owner());
         }
 
         private ResourceIterator<Map<RolePlayer, Set<RolePlayer>>> matchRolePlayers(
@@ -409,8 +408,8 @@ public abstract class Concludable extends Resolvable<Conjunction> {
 
         @Override
         Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
-            assert generating().size() == 1;
-            Variable generatedRelation = generating().iterator().next();
+            assert generating().isPresent();
+            Variable generatedRelation = generating().get();
             Set<Label> relationTypes = generatedRelation.resolvedTypes();
             // may never be empty as its always known to be at least a relation
             assert generatedRelation.isSatisfiable();
@@ -461,14 +460,12 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         private final HasConstraint has;
         private final IsaConstraint isa;
         private final Set<ValueConstraint<?>> values;
-        private final Set<Variable> generating;
 
         private Has(Conjunction conjunction, HasConstraint has, @Nullable IsaConstraint isa, Set<ValueConstraint<?>> values) {
             super(conjunction);
             this.has = has;
             this.isa = isa;
             this.values = values;
-            this.generating = set(has.attribute());
         }
 
         public static Has of(HasConstraint has, @Nullable IsaConstraint isa, Set<ValueConstraint<?>> values, Set<LabelConstraint> labels) {
@@ -542,14 +539,14 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        public Set<Variable> generating() {
-            return generating;
+        public Optional<Variable> generating() {
+            return Optional.of(has.attribute());
         }
 
         @Override
         Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
-            assert generating().size() == 1;
-            Variable generatedAttribute = generating().iterator().next();
+            assert generating().isPresent();
+            Variable generatedAttribute = generating().get();
             Set<Label> attributeTypes = generatedAttribute.resolvedTypes();
             // may never be empty as its always known to be at least an attribute
             assert generatedAttribute.isSatisfiable();
@@ -585,13 +582,11 @@ public abstract class Concludable extends Resolvable<Conjunction> {
 
         private final IsaConstraint isa;
         private final Set<ValueConstraint<?>> values;
-        private final Set<Variable> generating;
 
         private Isa(Conjunction conjunction, IsaConstraint isa, Set<ValueConstraint<?>> values) {
             super(conjunction);
             this.isa = isa;
             this.values = values;
-            this.generating = set(isa().owner());
         }
 
         public static Isa of(IsaConstraint isa, Set<ValueConstraint<?>> values, Set<LabelConstraint> labelConstraints) {
@@ -650,14 +645,14 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        public Set<Variable> generating() {
-            return generating;
+        public Optional<Variable> generating() {
+            return Optional.of(isa().owner());
         }
 
         @Override
         Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
-            assert generating().size() == 1;
-            Variable generated = generating().iterator().next();
+            assert generating().isPresent();
+            Variable generated = generating().get();
             Set<Label> types = generated.resolvedTypes();
             assert generated.isSatisfiable();
 
@@ -700,20 +695,17 @@ public abstract class Concludable extends Resolvable<Conjunction> {
 
         private final Set<ValueConstraint<?>> values;
         private final ThingVariable attribute;
-        private final Set<Variable> generating;
 
         private Attribute(ThingVariable attribute, Set<ValueConstraint<?>> values) {
             super(new Conjunction(set(attribute), set()));
             this.attribute = attribute;
             this.values = values;
-            this.generating = set(attribute);
         }
 
         private Attribute(IsaConstraint isa) {
             super(new Conjunction(isa.variables(), set()));
             attribute = isa.owner();
             values = set();
-            this.generating = set(attribute);
         }
 
         public static Attribute of(ThingVariable attribute) {
@@ -761,14 +753,14 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        public Set<Variable> generating() {
-            return generating;
+        public Optional<Variable> generating() {
+            return Optional.of(attribute);
         }
 
         @Override
         Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
-            assert generating().size() == 1;
-            Variable generatedAttr = generating().iterator().next();
+            assert generating().isPresent();
+            Variable generatedAttr = generating().get();
             Set<Label> attributeTypes = generatedAttr.resolvedTypes();
             // may never be empty as its always known to be at least an attribute
             assert generatedAttr.isSatisfiable();

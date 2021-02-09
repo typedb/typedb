@@ -58,16 +58,16 @@ import static grakn.core.common.iterator.Iterators.iterate;
 
 public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> extends Resolver<T> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Root.Conjunction.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Conjunction.class);
 
     private final LogicManager logicMgr;
     private final Planner planner;
     final ConceptManager conceptMgr;
-    final grakn.core.pattern.Conjunction conjunction;
     final Actor<ResolutionRecorder> resolutionRecorder;
+    final grakn.core.pattern.Conjunction conjunction;
     final List<Resolvable<?>> plan;
-    final Map<Request, ResponseProducer> responseProducers;
     final Map<Resolvable<?>, ResolverRegistry.MappedResolver> downstreamResolvers;
+    final Map<Request, ResponseProducer> responseProducers;
     private boolean isInitialised;
 
     public ConjunctionResolver(Actor<T> self, String name, grakn.core.pattern.Conjunction conjunction,
@@ -93,9 +93,9 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
 
     protected abstract Optional<AnswerState.UpstreamVars.Derived> toUpstreamAnswer(Request fromUpstream, ConceptMap downstreamConceptMap);
 
-    protected void offsetOccurred() {}
-
     protected boolean mustOffset() { return false; }
+
+    protected void offsetOccurred() {}
 
     @Override
     public void receiveRequest(Request fromUpstream, int iteration) {
@@ -136,12 +136,10 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         }
 
 
-        // TODO this is a hack, we want requests to a negation to be "single use", otherwise we can end up in an infinite loop, where
-        // The request to the negation never gets removed and we constantly re-request from it!
-        // TODO this could be either implemented with a different response type: FinalAnswer
-        // TODO -> we don't need to use Fail as often, and only when there's no first answer at all
-        // TODO alternatively, we could create a ReusableRequest and SingleUseRequest object
-        if (toDownstream.receiver().state instanceof NegationResolver) responseProducer.removeDownstreamProducer(toDownstream);
+        // TODO this is a bit of a hack, we want requests to a negation to be "single use", otherwise we can end up in an infinite loop
+        // TODO where the request to the negation never gets removed and we constantly re-request from it!
+        // TODO this could be either implemented with a different response type: FinalAnswer, or splitting Request into ReusableRequest vs SingleRequest
+        if (plan.get(toDownstream.planIndex()).isNegated()) responseProducer.removeDownstreamProducer(toDownstream);
 
         ConceptMap conceptMap = fromDownstream.answer().derived().withInitialFiltered();
         if (fromDownstream.planIndex() == plan.size() - 1) {
@@ -206,7 +204,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         for (Negation negation : conjunction.negations()) {
             Negated negated = new Negated(negation);
             plan.add(negated);
-            downstreamResolvers.put(negated, registry.negated(conjunction, negated));
+            downstreamResolvers.put(negated, registry.negated(negated, conjunction));
         }
     }
 
@@ -263,10 +261,10 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         return responseProducerNewIter;
     }
 
-    public static class Simple extends ConjunctionResolver<Simple> {
+    public static class Nested extends ConjunctionResolver<Nested> {
 
-        public Simple(Actor<Simple> self, Conjunction conjunction, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr, Planner planner, boolean explanations) {
-            super(self, Simple.class.getSimpleName() + "(pattern: " + conjunction + ")", conjunction, resolutionRecorder,
+        public Nested(Actor<Nested> self, Conjunction conjunction, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr, Planner planner, boolean explanations) {
+            super(self, Nested.class.getSimpleName() + "(pattern: " + conjunction + ")", conjunction, resolutionRecorder,
                   registry, traversalEngine, conceptMgr, logicMgr, planner, explanations);
         }
 

@@ -226,10 +226,10 @@ public class Rule {
     private Conjunction whenPattern(graql.lang.pattern.Conjunction<? extends Pattern> conjunction, LogicManager logicMgr) {
         Conjunction conj = Conjunction.create(conjunction.normalise().patterns().get(0));
 
-        // TODO remove this when we fully implement negation
-//        if (!conj.negations().isEmpty()) {
-//            throw GraknException.of(INVALID_NEGATION, getLabel());
-//        }
+        // TODO remove this when we fully implement negation and don't have to ban it in rules
+        if (!conj.negations().isEmpty()) {
+            throw GraknException.of(INVALID_NEGATION, getLabel());
+        }
 
         if (iterate(conj.negations()).filter(neg -> neg.disjunction().conjunctions().size() != 1).hasNext()) {
             throw GraknException.of(INVALID_NEGATION_CONTAINS_DISJUNCTION, getLabel());

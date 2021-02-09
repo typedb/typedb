@@ -18,7 +18,6 @@
 package grakn.core.logic.resolvable;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.Iterators;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.thing.ThingConstraint;
@@ -26,6 +25,7 @@ import grakn.core.pattern.constraint.type.TypeConstraint;
 import grakn.core.pattern.variable.Variable;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.set;
@@ -34,12 +34,10 @@ import static grakn.core.common.iterator.Iterators.iterate;
 
 public class Retrievable extends Resolvable<Conjunction> {
 
-    private final Set<Variable> generating;
     private final Set<Variable> namedVariables;
 
     public Retrievable(Conjunction conjunction) {
         super(conjunction);
-        this.generating = set();
         this.namedVariables = iterate(pattern().variables()).filter(v -> v.reference().isName()).toSet();
     }
 
@@ -48,8 +46,8 @@ public class Retrievable extends Resolvable<Conjunction> {
     }
 
     @Override
-    public Set<Variable> generating() {
-        return generating;
+    public Optional<Variable> generating() {
+        return Optional.empty();
     }
 
     @Override

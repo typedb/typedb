@@ -21,6 +21,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.Pattern;
 import grakn.core.pattern.variable.Variable;
 
+import java.util.Optional;
 import java.util.Set;
 
 import static grakn.common.util.Objects.className;
@@ -36,7 +37,7 @@ public abstract class Resolvable<T extends Pattern> {
         return pattern;
     }
 
-    public abstract Set<Variable> generating();
+    public abstract Optional<Variable> generating();
 
     public abstract Set<Variable> namedVariables();
 
@@ -66,7 +67,7 @@ public abstract class Resolvable<T extends Pattern> {
 
     @Override
     public String toString() {
-        return "Resolvable{" +
+        return getClass().getSimpleName() + "{" +
                 "pattern=" + pattern +
                 '}';
     }

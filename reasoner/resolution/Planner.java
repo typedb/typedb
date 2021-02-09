@@ -158,11 +158,13 @@ public class Planner {
          */
         private Map<Resolvable<?>, Set<Variable>> dependencies(Set<Resolvable<?>> resolvables) {
             Map<Resolvable<?>, Set<Variable>> deps = new HashMap<>();
-            Set<Variable> generatedVars = iterate(resolvables).flatMap(resolvable -> iterate(resolvable.generating())).toSet();
+            Set<Variable> generatedVars = iterate(resolvables).map(Resolvable::generating).filter(Optional::isPresent)
+                    .map(Optional::get).toSet();
             for (Resolvable<?> resolvable : resolvables) {
+                Optional<Variable> generating = resolvable.generating();
                 for (Variable v : resolvable.namedVariables()) {
                     deps.putIfAbsent(resolvable, new HashSet<>());
-                    if (generatedVars.contains(v) && !(resolvable.generating().contains(v))) {
+                    if (generatedVars.contains(v) && !(generating.isPresent() && generating.get().equals(v))) {
                         // TODO Should this rule the Resolvable<?> out if generates it's own dependency?
                         deps.get(resolvable).add(v);
                     }
