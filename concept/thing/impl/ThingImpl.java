@@ -18,6 +18,7 @@
 
 package grakn.core.concept.thing.impl;
 
+import grakn.common.collection.Bytes;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.ConceptImpl;
 import grakn.core.concept.thing.Attribute;
@@ -83,7 +84,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
 
     @Override
     public String getIIDForPrinting() {
-        return vertex.iid().toString();
+        return Bytes.bytesToHexString(vertex.iid().bytes());
     }
 
     @Override
