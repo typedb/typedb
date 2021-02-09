@@ -43,6 +43,7 @@ import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -83,11 +84,11 @@ public class Reasoner {
     }
 
     public ResourceIterator<ConceptMap> execute(Disjunction disjunction, Set<Identifier.Variable.Name> filter,
-                                                Context.Query context) {
+                                                @Nullable Long offset, @Nullable Long limit, Context.Query context) {
 
         Disjunction satisfiableDisjunction = resolveTypesAndFilter(disjunction, filter);
         if (satisfiableDisjunction.conjunctions().isEmpty()) return Iterators.empty();
-        if (isInfer(satisfiableDisjunction, context)) return resolve(satisfiableDisjunction, filter, context);
+        if (isInfer(satisfiableDisjunction, context)) return resolve(satisfiableDisjunction, filter, offset, limit, context);
 
         ResourceIterator<ConceptMap> answers;
         ResourceIterator<Conjunction> conjs = iterate(satisfiableDisjunction.conjunctions());
@@ -115,12 +116,12 @@ public class Reasoner {
 //        return false;
     }
 
-    private ResourceIterator<ConceptMap> resolve(Disjunction disjunction, Set<Identifier.Variable.Name> filter, Context.Query context) {
+    private ResourceIterator<ConceptMap> resolve(Disjunction disjunction, Set<Identifier.Variable.Name> filter, Long offset, Long limit, Context.Query context) {
         Set<Reference.Name> nameFilter = iterate(filter).map(Identifier.Variable.Name::reference).toSet();
         if (disjunction.conjunctions().size() == 1) {
-            return produce(new ReasonerProducer(disjunction.conjunctions().get(0), resolverRegistry, nameFilter), context.producer(), asyncPool1());
+            return produce(new ReasonerProducer(disjunction.conjunctions().get(0), resolverRegistry, nameFilter, offset, limit), context.producer(), asyncPool1());
         } else {
-            return produce(new ReasonerProducer(disjunction, resolverRegistry, nameFilter), context.producer(), asyncPool1());
+            return produce(new ReasonerProducer(disjunction, resolverRegistry, nameFilter, offset, limit), context.producer(), asyncPool1());
         }
     }
 

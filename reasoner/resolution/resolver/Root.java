@@ -34,12 +34,15 @@ import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import grakn.core.traversal.TraversalEngine;
+import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -56,14 +59,25 @@ public interface Root {
 
         private final Consumer<ResolutionAnswer> onAnswer;
         private final Consumer<Integer> onFail;
+        private final Set<Reference.Name> filter;
+        private final Long offset;
+        private final Long limit;
+        private long skipped;
+        private long answered;
 
-        public Conjunction(Actor<Conjunction> self, grakn.core.pattern.Conjunction conjunction, Consumer<ResolutionAnswer> onAnswer,
+        public Conjunction(Actor<Conjunction> self, grakn.core.pattern.Conjunction conjunction, Set<Reference.Name> filter,
+                           @Nullable Long offset, @Nullable Long limit, Consumer<ResolutionAnswer> onAnswer,
                            Consumer<Integer> onFail, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                            TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr, Planner planner, boolean explanations) {
             super(self, Conjunction.class.getSimpleName() + "(pattern:" + conjunction + ")", conjunction, resolutionRecorder,
                   registry, traversalEngine, conceptMgr, logicMgr, planner, explanations);
+            this.filter = filter;
+            this.offset = offset;
+            this.limit = limit;
             this.onAnswer = onAnswer;
             this.onFail = onFail;
+            this.skipped = 0;
+            this.answered = 0;
         }
 
         @Override
@@ -83,9 +97,10 @@ public interface Root {
 
         @Override
         protected void respondToUpstream(Response response, int iteration) {
-            if (response.isAnswer()) {
+            if ((response.isAnswer() && limit == null) || (limit != null && answered < limit)) {
                 submitAnswer(response.asAnswer().answer());
-            } else if (response.isFail()) {
+                this.answered++;
+            } else if (response.isFail() || (limit != null && answered >= limit)) {
                 submitFail(iteration);
             } else {
                 throw GraknException.of(ILLEGAL_STATE);
@@ -93,7 +108,7 @@ public interface Root {
         }
 
         @Override
-        protected void tryAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
+        protected void nextAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
             if (responseProducer.hasUpstreamAnswer()) {
                 AnswerState.UpstreamVars.Derived upstreamAnswer = responseProducer.upstreamAnswers().next();
                 responseProducer.recordProduced(upstreamAnswer.withInitialFiltered());
@@ -111,16 +126,23 @@ public interface Root {
 
         @Override
         protected ResourceIterator<AnswerState.UpstreamVars.Derived> toUpstreamAnswers(Request fromUpstream, ResourceIterator<ConceptMap> downstreamConceptMaps) {
-            assert fromUpstream.filter().isPresent();
             return downstreamConceptMaps.map(conceptMap -> fromUpstream.partialAnswer().asIdentity()
-                    .aggregateToUpstream(conceptMap, fromUpstream.filter().get()));
+                    .aggregateToUpstream(conceptMap, this.filter));
         }
 
         @Override
         protected Optional<AnswerState.UpstreamVars.Derived> toUpstreamAnswer(Request fromUpstream, ConceptMap downstreamConceptMap) {
-            assert fromUpstream.filter().isPresent();
-            return Optional.of(fromUpstream.partialAnswer().asIdentity()
-                                       .aggregateToUpstream(downstreamConceptMap, fromUpstream.filter().get()));
+            return Optional.of(fromUpstream.partialAnswer().asIdentity().aggregateToUpstream(downstreamConceptMap, this.filter));
+        }
+
+        @Override
+        public boolean mustOffset() {
+            return offset != null && skipped < offset;
+        }
+
+        @Override
+        public void offsetOccurred() {
+            this.skipped++;
         }
 
         @Override
@@ -135,19 +157,28 @@ public interface Root {
 
         private static final Logger LOG = LoggerFactory.getLogger(Disjunction.class);
 
-        private final grakn.core.pattern.Disjunction disjunction;
         private final Actor<ResolutionRecorder> resolutionRecorder;
         private final Consumer<ResolutionAnswer> onAnswer;
         private final Consumer<Integer> onFail;
+        private final List<Actor<ConjunctionResolver.Simple>> downstreamResolvers;
+        private final grakn.core.pattern.Disjunction disjunction;
+        private final Set<Reference.Name> filter;
+        private final Long offset;
+        private final Long limit;
+        private long skipped;
+        private long answered;
         private boolean isInitialised;
         private ResponseProducer responseProducer;
-        private final List<Actor<ConjunctionResolver.Simple>> downstreamResolvers;
 
-        public Disjunction(Actor<Disjunction> self, grakn.core.pattern.Disjunction disjunction, Consumer<ResolutionAnswer> onAnswer,
+        public Disjunction(Actor<Disjunction> self, grakn.core.pattern.Disjunction disjunction, Set<Reference.Name> filter,
+                           @Nullable Long offset, @Nullable Long limit, Consumer<ResolutionAnswer> onAnswer,
                            Consumer<Integer> onFail, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                            TraversalEngine traversalEngine, boolean explanations) {
             super(self, Disjunction.class.getSimpleName() + "(pattern:" + disjunction + ")", registry, traversalEngine, explanations);
             this.disjunction = disjunction;
+            this.filter = filter;
+            this.offset = offset;
+            this.limit = limit;
             this.onAnswer = onAnswer;
             this.onFail = onFail;
             this.resolutionRecorder = resolutionRecorder;
@@ -162,23 +193,13 @@ public interface Root {
                 LOG.trace("Recording root answer: {}", answer);
                 resolutionRecorder.tell(state -> state.record(answer));
             }
+            answered++;
             onAnswer.accept(answer);
         }
 
         @Override
         public void submitFail(int iteration) {
             onFail.accept(iteration);
-        }
-
-        @Override
-        protected void respondToUpstream(Response response, int iteration) {
-            if (response.isAnswer()) {
-                submitAnswer(response.asAnswer().answer());
-            } else if (response.isFail()) {
-                submitFail(iteration);
-            } else {
-                throw GraknException.of(ILLEGAL_STATE);
-            }
         }
 
         @Override
@@ -195,11 +216,11 @@ public interface Root {
                 onFail.accept(iteration);
             } else {
                 assert iteration == responseProducer.iteration();
-                tryAnswer(fromUpstream, iteration);
+                nextAnswer(fromUpstream, iteration);
             }
         }
 
-        private void tryAnswer(Request fromUpstream, int iteration) {
+        private void nextAnswer(Request fromUpstream, int iteration) {
             if (responseProducer.hasDownstreamProducer()) {
                 requestFromDownstream(responseProducer.nextDownstreamProducer(), fromUpstream, iteration);
             } else {
@@ -229,17 +250,23 @@ public interface Root {
             }
 
             ConceptMap conceptMap = fromDownstream.answer().derived().withInitialFiltered();
-            assert fromUpstream.filter().isPresent();
             AnswerState.UpstreamVars.Derived answer = fromUpstream.partialAnswer().asIdentity()
-                    .aggregateToUpstream(conceptMap, fromUpstream.filter().get());
+                    .aggregateToUpstream(conceptMap, this.filter);
             ConceptMap filteredMap = answer.withInitialFiltered();
             if (!responseProducer.hasProduced(filteredMap)) {
                 responseProducer.recordProduced(filteredMap);
+                if (offset != null && skipped < offset) {
+                    skipped++;
+                    nextAnswer(fromUpstream, iteration);
+                    return;
+                }
                 ResolutionAnswer resolutionAnswer = new ResolutionAnswer(answer, disjunction.toString(), derivation, self(),
                                                                          fromDownstream.answer().isInferred());
-                submitAnswer(resolutionAnswer);
+
+                if (limit != null && answered >= limit) submitFail(iteration);
+                else submitAnswer(resolutionAnswer);
             } else {
-                tryAnswer(fromUpstream, iteration);
+                nextAnswer(fromUpstream, iteration);
             }
         }
 
@@ -255,7 +282,7 @@ public interface Root {
                 return;
             }
             responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
-            tryAnswer(fromUpstream, iteration);
+            nextAnswer(fromUpstream, iteration);
         }
 
         @Override
@@ -269,14 +296,14 @@ public interface Root {
         @Override
         protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
             LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), fromUpstream);
-            assert fromUpstream.partialAnswer().isIdentity() && fromUpstream.filter() != null;
+            assert fromUpstream.partialAnswer().isIdentity();
             ResponseProducer responseProducer = new ResponseProducer(Iterators.empty(), iteration);
             assert !downstreamResolvers.isEmpty();
             for (Actor<ConjunctionResolver.Simple> conjunctionResolver : downstreamResolvers) {
                 AnswerState.DownstreamVars downstream = AnswerState.UpstreamVars.Initial.of(fromUpstream.partialAnswer().conceptMap())
                         .toDownstreamVars();
                 Request request = Request.create(fromUpstream.path().append(conjunctionResolver, downstream),
-                                                 downstream, ResolutionAnswer.Derivation.EMPTY, -1, null);
+                                                 downstream, ResolutionAnswer.Derivation.EMPTY, -1);
                 responseProducer.addDownstreamProducer(request);
             }
             return responseProducer;
@@ -293,7 +320,7 @@ public interface Root {
                 AnswerState.DownstreamVars downstream = AnswerState.UpstreamVars.Initial.of(fromUpstream.partialAnswer().conceptMap())
                         .toDownstreamVars();
                 Request request = Request.create(fromUpstream.path().append(conjunctionResolver, downstream),
-                                                 downstream, ResolutionAnswer.Derivation.EMPTY, -1, null);
+                                                 downstream, ResolutionAnswer.Derivation.EMPTY, -1);
                 responseProducer.addDownstreamProducer(request);
             }
             return responseProducerNewIter;

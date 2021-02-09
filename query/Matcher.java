@@ -120,7 +120,9 @@ public class Matcher {
     }
 
     ResourceIterator<ConceptMap> execute(Context.Query context) {
-        ResourceIterator<ConceptMap> answers = reasoner.execute(disjunction, filter, context);
+        ResourceIterator<ConceptMap> answers = reasoner.execute(disjunction, filter, query.offset().orElse(null),
+                                                                query.limit().orElse(null), context);
+        // TODO we should remove these and handle them in the traversal engine or reasoner ONLY. Currently in reasoner already
         if (query.sort().isPresent()) answers = sort(answers, query.sort().get());
         if (query.offset().isPresent()) answers = answers.offset(query.offset().get());
         if (query.limit().isPresent()) answers = answers.limit(query.limit().get());

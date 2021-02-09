@@ -123,7 +123,7 @@ public class ReiterationTest {
                 int[] doneInIteration = {0};
                 boolean[] receivedInferredAnswer = {false};
 
-                Actor<Root.Conjunction> root = registry.rootConjunction(conjunction, answer -> {
+                Actor<Root.Conjunction> root = registry.rootConjunction(conjunction, filter, null, null, answer -> {
                     if (answer.isInferred()) receivedInferredAnswer[0] = true;
                     responses.add(answer);
                 }, iterDone -> {
@@ -134,16 +134,16 @@ public class ReiterationTest {
 
                 Set<ResolutionAnswer> answers = new HashSet<>();
                 // iteration 0
-                sendRootRequest(root, iteration[0], filter);
+                sendRootRequest(root, iteration[0]);
                 answers.add(responses.take());
-                sendRootRequest(root, iteration[0], filter);
+                sendRootRequest(root, iteration[0]);
                 exhausted.take(); // Block and wait for an exhausted message
                 assertTrue(receivedInferredAnswer[0]);
                 assertEquals(1, doneInIteration[0]);
 
                 // iteration 1 onwards
                 for (int j = 0; j <= 100; j++) {
-                    sendRootRequest(root, iteration[0], filter);
+                    sendRootRequest(root, iteration[0]);
                     ResolutionAnswer re = responses.poll(100, TimeUnit.MILLISECONDS);
                     if (re == null) {
                         Integer ex = exhausted.poll(100, TimeUnit.MILLISECONDS);
@@ -160,10 +160,10 @@ public class ReiterationTest {
         }
     }
 
-    private void sendRootRequest(Actor<Root.Conjunction> root, int iteration, Set<Reference.Name> filter) {
+    private void sendRootRequest(Actor<Root.Conjunction> root, int iteration) {
         AnswerState.DownstreamVars.Identity downstream = Initial.of(new ConceptMap()).toDownstreamVars();
         root.tell(actor -> actor.receiveRequest(
-                Request.create(new Request.Path(root, downstream), downstream, null, filter), iteration)
+                Request.create(new Request.Path(root, downstream), downstream, null), iteration)
         );
     }
 

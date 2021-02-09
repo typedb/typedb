@@ -43,28 +43,27 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerProducer.class);
 
     private final Actor<? extends Resolver<?>> rootResolver;
-    private final Set<Reference.Name> filter;
     private Queue<ConceptMap> queue;
     private Request resolveRequest;
     private boolean iterationInferredAnswer;
     private boolean done;
     private int iteration;
 
-    public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry, Set<Reference.Name> filter) {
-        this.rootResolver = resolverRegistry.rootConjunction(conjunction, this::requestAnswered, this::requestFailed);
-        this.filter = filter;
+    public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry, Set<Reference.Name> filter,
+                            Long offset, Long limit) {
+        this.rootResolver = resolverRegistry.rootConjunction(conjunction, filter, offset, limit, this::requestAnswered, this::requestFailed);
         AnswerState.DownstreamVars.Identity downstream = Initial.of(new ConceptMap()).toDownstreamVars();
-        this.resolveRequest = Request.create(new Request.Path(rootResolver, downstream), downstream, EMPTY, this.filter);
+        this.resolveRequest = Request.create(new Request.Path(rootResolver, downstream), downstream, EMPTY);
         this.queue = null;
         this.iteration = 0;
         this.done = false;
     }
 
-    public ReasonerProducer(Disjunction disjunction, ResolverRegistry resolverRegistry, Set<Reference.Name> filter) {
-        this.rootResolver = resolverRegistry.rootDisjunction(disjunction, this::requestAnswered, this::requestFailed);
-        this.filter = filter;
+    public ReasonerProducer(Disjunction disjunction, ResolverRegistry resolverRegistry, Set<Reference.Name> filter,
+                            Long offset, Long limit) {
+        this.rootResolver = resolverRegistry.rootDisjunction(disjunction, filter, offset, limit, this::requestAnswered, this::requestFailed);
         AnswerState.DownstreamVars.Identity downstream = Initial.of(new ConceptMap()).toDownstreamVars();
-        this.resolveRequest = Request.create(new Request.Path(rootResolver, downstream), downstream , EMPTY, this.filter);
+        this.resolveRequest = Request.create(new Request.Path(rootResolver, downstream), downstream, EMPTY);
         this.queue = null;
         this.iteration = 0;
         this.done = false;

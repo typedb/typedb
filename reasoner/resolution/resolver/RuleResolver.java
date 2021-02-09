@@ -63,7 +63,7 @@ public class RuleResolver extends ConjunctionResolver<RuleResolver> {
     }
 
     @Override
-    protected void tryAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
+    protected void nextAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
         if (responseProducer.hasUpstreamAnswer()) {
             UpstreamVars.Derived upstreamAnswer = responseProducer.upstreamAnswers().next();
             responseProducer.recordProduced(upstreamAnswer.withInitialFiltered());

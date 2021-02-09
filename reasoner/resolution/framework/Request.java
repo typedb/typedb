@@ -45,40 +45,30 @@ public class Request {
     private final Path path;
     private final AnswerState.DownstreamVars partialAnswer;
     private final ResolutionAnswer.Derivation partialDerivation;
-    private Set<Reference.Name> answerFilter;
     private final int planIndex;
 
     private Request(Path path,
                     AnswerState.DownstreamVars startingConcept,
                     ResolutionAnswer.Derivation partialDerivation,
-                    int planIndex, @Nullable Set<Reference.Name> answerFilter) {
+                    int planIndex) {
         this.path = path;
         this.partialAnswer = startingConcept;
         this.partialDerivation = partialDerivation;
-        this.answerFilter = answerFilter;
         this.planIndex = planIndex;
     }
 
     public static Request create(Path path,
                                  AnswerState.DownstreamVars startingConcept,
                                  ResolutionAnswer.Derivation partialDerivation,
-                                 int planIndex, @Nullable Set<Reference.Name> answerFilter) {
-        return new Request(path, startingConcept, partialDerivation, planIndex, answerFilter);
-    }
-
-    public static Request create(Path path,
-                                 AnswerState.DownstreamVars startingConcept,
-                                 ResolutionAnswer.Derivation partialDerivation,
-                                 @Nullable Set<Reference.Name> answerFilter) {
-        // Set the planIndex to -1 since it is unused in this case
-        return new Request(path, startingConcept, partialDerivation, -1, answerFilter);
+                                 int planIndex) {
+        return new Request(path, startingConcept, partialDerivation, planIndex);
     }
 
     public static Request create(Path path,
                                  AnswerState.DownstreamVars startingConcept,
                                  ResolutionAnswer.Derivation partialDerivation) {
         // Set the planIndex to -1 since it is unused in this case
-        return new Request(path, startingConcept, partialDerivation, -1, null);
+        return new Request(path, startingConcept, partialDerivation, -1);
     }
 
     public Path path() {
@@ -88,8 +78,6 @@ public class Request {
     public int planIndex() {
         return planIndex;
     }
-
-    public Optional<Set<Reference.Name>> filter() { return Optional.ofNullable(answerFilter); }
 
     @Nullable
     public Actor<? extends Resolver<?>> sender() {
@@ -113,13 +101,12 @@ public class Request {
         if (o == null || getClass() != o.getClass()) return false;
         Request request = (Request) o;
         return Objects.equals(path, request.path) &&
-                Objects.equals(partialAnswer, request.partialAnswer()) &&
-                Objects.equals(answerFilter, request.answerFilter);
+                Objects.equals(partialAnswer, request.partialAnswer());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(path, partialAnswer, answerFilter);
+        return Objects.hash(path, partialAnswer);
     }
 
     @Override

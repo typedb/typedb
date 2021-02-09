@@ -44,8 +44,10 @@ import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -94,20 +96,22 @@ public class ResolverRegistry {
                 explanations)));
     }
 
-    public Actor<Root.Conjunction> rootConjunction(Conjunction conjunction, Consumer<ResolutionAnswer> onAnswer,
+    public Actor<Root.Conjunction> rootConjunction(Conjunction conjunction, Set<Reference.Name> filter, @Nullable Long offset,
+                                                   @Nullable Long limit, Consumer<ResolutionAnswer> onAnswer,
                                                    Consumer<Integer> onExhausted) {
         LOG.debug("Creating Root.Conjunction for: '{}'", conjunction);
         return Actor.create(
                 elg, self -> new Root.Conjunction(
-                        self, conjunction, onAnswer, onExhausted, resolutionRecorder, this, traversalEngine,
+                        self, conjunction, filter, offset, limit, onAnswer, onExhausted, resolutionRecorder, this, traversalEngine,
                         conceptMgr, logicMgr, planner, explanations));
     }
 
-    public Actor<Root.Disjunction> rootDisjunction(Disjunction disjunction, Consumer<ResolutionAnswer> onAnswer,
+    public Actor<Root.Disjunction> rootDisjunction(Disjunction disjunction, Set<Reference.Name> filter, @Nullable Long offset,
+                                                   @Nullable Long limit, Consumer<ResolutionAnswer> onAnswer,
                                                    Consumer<Integer> onExhausted) {
         LOG.debug("Creating Root.Disjunction for: '{}'", disjunction);
         return Actor.create(
-                elg, self -> new Root.Disjunction(self, disjunction, onAnswer, onExhausted, resolutionRecorder,
+                elg, self -> new Root.Disjunction(self, disjunction, filter, offset, limit, onAnswer, onExhausted, resolutionRecorder,
                                                   this, traversalEngine, explanations)
         );
     }
