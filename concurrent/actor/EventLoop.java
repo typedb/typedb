@@ -60,10 +60,6 @@ public class EventLoop {
         return new Cancellable(deadline, job, errorHandler);
     }
 
-    public synchronized void await() throws InterruptedException {
-        thread.join();
-    }
-
     public synchronized void shutdown(long scheduledWaitTime) throws InterruptedException {
         schedule(clock.get() + scheduledWaitTime, () -> state = State.STOPPED, DEFAULT_ERROR_HANDLER);
         await();
@@ -72,6 +68,10 @@ public class EventLoop {
     public synchronized void shutdownNow() throws InterruptedException {
         schedule(() -> state = State.STOPPED, DEFAULT_ERROR_HANDLER);
         await();
+    }
+
+    private void await() throws InterruptedException {
+        thread.join();
     }
 
     public long time() {

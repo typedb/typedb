@@ -50,12 +50,6 @@ public class EventLoopGroup {
         return eventLoop;
     }
 
-    public synchronized void await() throws InterruptedException {
-        for (EventLoop eventLoop : eventLoops) {
-            eventLoop.await();
-        }
-    }
-
     public synchronized void shutdown(long scheduledWaitTime) throws InterruptedException {
         for (EventLoop eventLoop : eventLoops) {
             eventLoop.shutdown(scheduledWaitTime);
