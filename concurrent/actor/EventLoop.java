@@ -52,7 +52,6 @@ public class EventLoop {
 
     public void schedule(Runnable job, Consumer<Throwable> errorHandler) {
         assert state != State.STOPPED : "unexpected state: " + state;
-
         jobs.offer(new Job(job, errorHandler));
     }
 
@@ -65,7 +64,12 @@ public class EventLoop {
         thread.join();
     }
 
-    public synchronized void stop() throws InterruptedException {
+    public synchronized void shutdown(long scheduledWaitTime) throws InterruptedException {
+        schedule(clock.get() + scheduledWaitTime, () -> state = State.STOPPED, DEFAULT_ERROR_HANDLER);
+        await();
+    }
+
+    public synchronized void shutdownNow() throws InterruptedException {
         schedule(() -> state = State.STOPPED, DEFAULT_ERROR_HANDLER);
         await();
     }

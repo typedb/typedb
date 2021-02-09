@@ -51,14 +51,20 @@ public class EventLoopGroup {
     }
 
     public synchronized void await() throws InterruptedException {
-        for (int i = 0; i < eventLoops.length; i++) {
-            eventLoops[i].await();
+        for (EventLoop eventLoop : eventLoops) {
+            eventLoop.await();
         }
     }
 
-    public synchronized void stop() throws InterruptedException {
-        for (int i = 0; i < eventLoops.length; i++) {
-            eventLoops[i].stop();
+    public synchronized void shutdown(long scheduledWaitTime) throws InterruptedException {
+        for (EventLoop eventLoop : eventLoops) {
+            eventLoop.shutdown(scheduledWaitTime);
+        }
+    }
+
+    public synchronized void shutdownNow() throws InterruptedException {
+        for (EventLoop eventLoop : eventLoops) {
+            eventLoop.shutdownNow();
         }
     }
 }
