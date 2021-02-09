@@ -21,6 +21,7 @@ package grakn.core.reasoner.resolution;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
+import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import org.slf4j.Logger;
@@ -49,7 +50,7 @@ public class ResolutionRecorder extends Actor.State<ResolutionRecorder> {
         LOG.error("Actor exception", e);
     }
 
-    public void record(ResolutionAnswer answer) {
+    public void record(AnswerState answer) {
         throw GraknException.of(UNIMPLEMENTED);
 //        merge(answer);
     }
@@ -72,7 +73,7 @@ public class ResolutionRecorder extends Actor.State<ResolutionRecorder> {
 
         int actorIndex = actorIndices.computeIfAbsent(newAnswer.producer(), key -> actorIndices.size());
         LOG.debug("actor index for " + newAnswer.producer() + ": " + actorIndex);
-        AnswerIndex newAnswerIndex = new AnswerIndex(actorIndex, newAnswer.derived().withInitialFiltered());
+        AnswerIndex newAnswerIndex = new AnswerIndex(actorIndex, newAnswer.partial().conceptMap());
         if (answers.containsKey(newAnswerIndex)) {
             ResolutionAnswer existingAnswer = answers.get(newAnswerIndex);
             ResolutionAnswer.Derivation existingDerivation = existingAnswer.derivation();

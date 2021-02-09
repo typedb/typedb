@@ -30,11 +30,8 @@ import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
-import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import grakn.core.reasoner.resolution.framework.Request;
-import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
-import grakn.core.reasoner.resolution.framework.Response;
-import grakn.core.reasoner.resolution.framework.Response.Answer;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
@@ -63,43 +60,41 @@ public class RuleResolver extends ConjunctionResolver<RuleResolver> {
     @Override
     protected void nextAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
         if (responseProducer.hasUpstreamAnswer()) {
-            UpstreamVars.Derived upstreamAnswer = responseProducer.upstreamAnswers().next();
-            responseProducer.recordProduced(upstreamAnswer.withInitialFiltered());
-            ResolutionAnswer answer = new ResolutionAnswer(upstreamAnswer, rule.when().toString(),
-                                                           new ResolutionAnswer.Derivation(map()), self(), true);
-            respondToUpstream(Answer.create(fromUpstream, answer), iteration);
+            Partial<?> upstreamAnswer = responseProducer.upstreamAnswers().next();
+            responseProducer.recordProduced(upstreamAnswer.conceptMap());
+            answerToUpstream(upstreamAnswer, fromUpstream, iteration);
         } else {
             if (responseProducer.hasDownstreamProducer()) {
                 requestFromDownstream(responseProducer.nextDownstreamProducer(), fromUpstream, iteration);
             } else {
-                respondToUpstream(new Response.Fail(fromUpstream), iteration);
+                failToUpstream(fromUpstream, iteration);
             }
         }
     }
 
     @Override
-    protected ResourceIterator<AnswerState.UpstreamVars.Derived> toUpstreamAnswers(Request fromUpstream,
-                                                                                   ResourceIterator<ConceptMap> downstreamConceptMaps) {
-        return downstreamConceptMaps.flatMap(whenAnswer -> materialisations(fromUpstream, whenAnswer));
+    protected ResourceIterator<Partial<?>> toUpstreamAnswers(Request fromUpstream,
+                                                             ResourceIterator<ConceptMap> downstreamConceptMaps) {
+        return downstreamConceptMaps.flatMap(whenAnswer -> materialisations(fromUpstream.partialAnswer()));
     }
 
     @Override
-    protected Optional<AnswerState.UpstreamVars.Derived> toUpstreamAnswer(Request fromUpstream, ConceptMap downstreamConceptMap) {
+    protected Optional<AnswerState> toUpstreamAnswer(Partial<?> fromDownstream) {
         // TODO: we need to record the rest of the iterator in the response producer to pick up later
         // TODO: we should write a test for this case
-        ResourceIterator<UpstreamVars.Derived> materialisations = materialisations(fromUpstream, downstreamConceptMap);
+        ResourceIterator<Partial<?>> materialisations = materialisations(fromDownstream);
         if (materialisations.hasNext()) return Optional.of(materialisations.next());
         else return Optional.empty();
     }
 
-    private ResourceIterator<UpstreamVars.Derived> materialisations(Request fromUpstream, ConceptMap whenAnswer) {
+    private ResourceIterator<Partial<?>> materialisations(Partial<?> whenAnswer) {
         ResourceIterator<Map<Identifier, Concept>> materialisations = rule.conclusion()
-                .materialise(whenAnswer, traversalEngine, conceptMgr);
+                .materialise(whenAnswer.conceptMap(), traversalEngine, conceptMgr);
         if (!materialisations.hasNext()) throw GraknException.of(ILLEGAL_STATE);
 
-        assert fromUpstream.partialAnswer().isUnified();
-        ResourceIterator<UpstreamVars.Derived> upstreamAnswers = materialisations
-                .map(concepts -> fromUpstream.partialAnswer().asUnified().unifyToUpstream(concepts))
+        assert whenAnswer.isUnified();
+        ResourceIterator<Partial<?>> upstreamAnswers = materialisations
+                .map(concepts -> whenAnswer.asUnified().aggregateToUpstream(concepts, self()))
                 .filter(Optional::isPresent)
                 .map(Optional::get);
         return upstreamAnswers;

@@ -23,10 +23,9 @@ import grakn.core.concurrent.producer.Producer;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState;
-import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars.Initial;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Identity;
+import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.framework.Request;
-import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import graql.lang.pattern.variable.Reference;
 import graql.lang.pattern.variable.UnboundVariable;
@@ -52,22 +51,23 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private boolean iterationInferredAnswer;
     private boolean done;
     private int iteration;
+    private final boolean recordExplanations = false;
 
     public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers) {
-        this.rootResolver = resolverRegistry.rootConjunction(conjunction,filter(modifiers.filter()), modifiers.offset().orElse(null),
+        this.rootResolver = resolverRegistry.rootConjunction(conjunction, modifiers.offset().orElse(null),
                                                              modifiers.limit().orElse(null), this::requestAnswered, this::requestFailed);
-        AnswerState.DownstreamVars.Identity downstream = Initial.of(new ConceptMap()).toDownstreamVars();
-        this.resolveRequest = Request.create(new Request.Path(rootResolver, downstream), downstream, EMPTY);
+        Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations).toDownstream();
+        this.resolveRequest = Request.create(new Request.Path(rootResolver, downstream), downstream);
         this.queue = null;
         this.iteration = 0;
         this.done = false;
     }
 
     public ReasonerProducer(Disjunction disjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers) {
-        this.rootResolver = resolverRegistry.rootDisjunction(disjunction, filter(modifiers.filter()), modifiers.offset().orElse(null),
+        this.rootResolver = resolverRegistry.rootDisjunction(disjunction, modifiers.offset().orElse(null),
                                                              modifiers.limit().orElse(null), this::requestAnswered, this::requestFailed);
-        AnswerState.DownstreamVars.Identity downstream = Initial.of(new ConceptMap()).toDownstreamVars();
-        this.resolveRequest = Request.create(new Request.Path(rootResolver, downstream), downstream, EMPTY);
+        Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations).toDownstream();
+        this.resolveRequest = Request.create(new Request.Path(rootResolver, downstream), downstream);
         this.queue = null;
         this.iteration = 0;
         this.done = false;
@@ -90,9 +90,9 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
 
-    private void requestAnswered(ResolutionAnswer resolutionAnswer) {
-        if (resolutionAnswer.isInferred()) iterationInferredAnswer = true;
-        queue.put(resolutionAnswer.derived().withInitialFiltered());
+    private void requestAnswered(Top resolutionAnswer) {
+        if (resolutionAnswer.requiresReiteration()) iterationInferredAnswer = true;
+        queue.put(resolutionAnswer.conceptMap());
     }
 
     private void requestFailed(int iteration) {

@@ -31,7 +31,7 @@ import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
-import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
+import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.resolver.ConcludableResolver;
 import grakn.core.reasoner.resolution.resolver.ConjunctionResolver;
@@ -47,7 +47,6 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -96,22 +95,22 @@ public class ResolverRegistry {
                 explanations)));
     }
 
-    public Actor<Root.Conjunction> rootConjunction(Conjunction conjunction, Set<Reference.Name> filter, @Nullable Long offset,
-                                                   @Nullable Long limit, Consumer<ResolutionAnswer> onAnswer,
+    public Actor<Root.Conjunction> rootConjunction(Conjunction conjunction, @Nullable Long offset,
+                                                   @Nullable Long limit, Consumer<Top> onAnswer,
                                                    Consumer<Integer> onExhausted) {
         LOG.debug("Creating Root.Conjunction for: '{}'", conjunction);
         return Actor.create(
                 elg, self -> new Root.Conjunction(
-                        self, conjunction, filter, offset, limit, onAnswer, onExhausted, resolutionRecorder, this, traversalEngine,
-                        conceptMgr, logicMgr, planner, explanations));
+                        self, conjunction, offset, limit, onAnswer, onExhausted, resolutionRecorder, this,
+                        traversalEngine, conceptMgr, logicMgr, planner, explanations));
     }
 
-    public Actor<Root.Disjunction> rootDisjunction(Disjunction disjunction, Set<Reference.Name> filter, @Nullable Long offset,
-                                                   @Nullable Long limit, Consumer<ResolutionAnswer> onAnswer,
+    public Actor<Root.Disjunction> rootDisjunction(Disjunction disjunction, @Nullable Long offset,
+                                                   @Nullable Long limit, Consumer<Top> onAnswer,
                                                    Consumer<Integer> onExhausted) {
         LOG.debug("Creating Root.Disjunction for: '{}'", disjunction);
         return Actor.create(
-                elg, self -> new Root.Disjunction(self, disjunction, filter, offset, limit, onAnswer, onExhausted, resolutionRecorder,
+                elg, self -> new Root.Disjunction(self, disjunction, offset, limit, onAnswer, onExhausted, resolutionRecorder,
                                                   this, traversalEngine, explanations)
         );
     }

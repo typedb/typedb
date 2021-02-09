@@ -23,9 +23,8 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import grakn.core.reasoner.resolution.framework.Request;
-import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.Response.Answer;
@@ -60,7 +59,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         ResponseProducer responseProducer = mayUpdateAndGetResponseProducer(fromUpstream, iteration);
         if (iteration < responseProducer.iteration()) {
             // short circuit old iteration exhausted messages to upstream
-            respondToUpstream(new Response.Fail(fromUpstream), iteration);
+            failToUpstream(fromUpstream, iteration);
         } else {
             assert iteration == responseProducer.iteration();
             tryAnswer(fromUpstream, responseProducer, iteration);
@@ -86,9 +85,9 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), fromUpstream);
         assert fromUpstream.partialAnswer().isMapped();
-        ResourceIterator<UpstreamVars.Derived> upstreamAnswers =
+        ResourceIterator<Partial<?>> upstreamAnswers =
                 compatibleBoundAnswers(conceptMgr, retrievable.pattern(), fromUpstream.partialAnswer().conceptMap())
-                .map(conceptMap -> fromUpstream.partialAnswer().asMapped().mapToUpstream(conceptMap));
+                .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap, self()));
         return new ResponseProducer(upstreamAnswers, iteration);
     }
 
@@ -99,9 +98,9 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
 
         assert newIteration > responseProducerPrevious.iteration();
         assert fromUpstream.partialAnswer().isMapped();
-        ResourceIterator<UpstreamVars.Derived> upstreamAnswers =
+        ResourceIterator<Partial<?>> upstreamAnswers =
                 compatibleBoundAnswers(conceptMgr, retrievable.pattern(), fromUpstream.partialAnswer().conceptMap())
-                .map(conceptMap -> fromUpstream.partialAnswer().asMapped().mapToUpstream(conceptMap));
+                .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap, self()));
         return responseProducerPrevious.newIteration(upstreamAnswers, newIteration);
     }
 
@@ -123,13 +122,11 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
 
     private void tryAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
         if (responseProducer.hasUpstreamAnswer()) {
-            UpstreamVars.Derived upstreamAnswer = responseProducer.upstreamAnswers().next();
-            responseProducer.recordProduced(upstreamAnswer.withInitialFiltered());
-            ResolutionAnswer answer = new ResolutionAnswer(upstreamAnswer, retrievable.pattern().toString(),
-                                                           ResolutionAnswer.Derivation.EMPTY, self(), false);
-            respondToUpstream(Answer.create(fromUpstream, answer), iteration);
+            Partial<?> upstreamAnswer = responseProducer.upstreamAnswers().next();
+            responseProducer.recordProduced(upstreamAnswer.conceptMap());
+            answerToUpstream(upstreamAnswer, fromUpstream, iteration);
         } else {
-            respondToUpstream(new Response.Fail(fromUpstream), iteration);
+            failToUpstream(fromUpstream, iteration);
         }
     }
 

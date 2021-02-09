@@ -19,7 +19,7 @@
 package grakn.core.reasoner.resolution.framework;
 
 import grakn.core.concurrent.actor.Actor;
-import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars.Derived;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -27,14 +27,15 @@ import java.util.Map;
 
 import static grakn.common.collection.Collections.map;
 
+// TODO delete
 public class ResolutionAnswer {
-    private final Derived answer;
+    private final Partial<?> answer;
     private final Derivation derivation;
     private final boolean isInferred; // record if inference was invoked even when derivations are not active
     private final String patternAnswered;
     private final Actor<? extends Resolver<?>> producer;
 
-    public ResolutionAnswer(Derived answer,
+    public ResolutionAnswer(Partial<?> answer,
                             String patternAnswered,
                             @Nullable Derivation derivation,
                             Actor<? extends Resolver<?>> producer,
@@ -46,7 +47,7 @@ public class ResolutionAnswer {
         this.isInferred = isInferred;
     }
 
-    public Derived derived() {
+    public Partial<?> partial() {
         return answer;
     }
 

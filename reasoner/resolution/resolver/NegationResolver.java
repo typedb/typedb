@@ -25,10 +25,9 @@ import grakn.core.logic.resolvable.Negated;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState;
-import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars.Initial;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Filtered;
 import grakn.core.reasoner.resolution.framework.Request;
-import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
@@ -94,9 +93,9 @@ public class NegationResolver extends Resolver<NegationResolver> {
         } else if (negationResponse.status.isRequested()) {
             negationResponse.addAwaiting(fromUpstream, iteration);
         } else if (negationResponse.status.isSatisfied()) {
-            respondToUpstream(Response.Answer.create(fromUpstream, upstreamAnswer(fromUpstream)), iteration);
+            answerToUpstream(upstreamAnswer(fromUpstream), fromUpstream, iteration);
         } else if (negationResponse.status.isFailed()) {
-            respondToUpstream(new Response.Fail(fromUpstream), iteration);
+            failToUpstream(fromUpstream, iteration);
         } else {
             throw GraknException.of(ILLEGAL_STATE);
         }
@@ -116,9 +115,9 @@ public class NegationResolver extends Resolver<NegationResolver> {
               the toplevel root with the negation iterations, which we cannot allow. So, we must use THIS resolver
               as a sort of new root! TODO: should NegationResolvers also implement a kind of Root interface??
         */
-        AnswerState.DownstreamVars.Identity downstream = Initial.of(fromUpstream.partialAnswer().conceptMap()).toDownstreamVars();
+        Filtered downstream = fromUpstream.partialAnswer().filterToDownstream(negated.namedVariables());
         Request request = Request.create(new Request.Path(self(), downstream).append(this.downstream, downstream),
-                                         downstream, ResolutionAnswer.Derivation.EMPTY);
+                                         downstream);
         requestFromDownstream(request, fromUpstream, 0);
         negationResponse.setRequested();
     }
@@ -132,7 +131,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
         NegationResponse negationResponse = this.responses.get(fromUpstream.partialAnswer().conceptMap());
         negationResponse.setFailed();
         for (NegationResponse.Awaiting awaiting : negationResponse.awaiting) {
-            respondToUpstream(new Response.Fail(awaiting.request), awaiting.iterationRequested);
+            failToUpstream(awaiting.request, awaiting.iterationRequested);
         }
         negationResponse.clearAwaiting();
     }
@@ -147,25 +146,20 @@ public class NegationResolver extends Resolver<NegationResolver> {
 
         negationResponse.setSatisfied();
         for (NegationResponse.Awaiting awaiting : negationResponse.awaiting) {
-            respondToUpstream(Response.Answer.create(awaiting.request, upstreamAnswer(awaiting.request)), awaiting.iterationRequested);
+            answerToUpstream(upstreamAnswer(awaiting.request), awaiting.request, awaiting.iterationRequested);
         }
         negationResponse.clearAwaiting();
     }
 
-    private ResolutionAnswer upstreamAnswer(Request fromUpstream) {
+    private Partial<?> upstreamAnswer(Request fromUpstream) {
+
+        if (fromUpstream.partialAnswer().recordExplanations()) {
+            // TODO Check this
+            resolutionRecorder.tell(state -> state.record(fromUpstream.partialAnswer()));
+        }
         // TODO: decide if we want to use isMapped here? Can Mapped currently act as a filter?
         assert fromUpstream.partialAnswer().isMapped();
-        AnswerState.UpstreamVars.Derived derived = fromUpstream.partialAnswer().asMapped().mapToUpstream(fromUpstream.partialAnswer().conceptMap());
-
-        ResolutionAnswer.Derivation derivation;
-        if (explanations()) {
-            // TODO
-            derivation = null;
-        } else {
-            derivation = null;
-        }
-
-        return new ResolutionAnswer(derived, negated.pattern().toString(), derivation, self(), false);
+        return fromUpstream.partialAnswer().asMapped().toUpstream(self());
     }
 
     @Override
