@@ -44,9 +44,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.set;
@@ -86,15 +83,18 @@ public class Reasoner {
     public ResourceIterator<ConceptMap> execute(Disjunction disjunction, Set<Identifier.Variable.Name> filter,
                                                 @Nullable Long offset, @Nullable Long limit, Context.Query context) {
 
-        Disjunction satisfiableDisjunction = resolveTypesAndFilter(disjunction, filter);
-        if (satisfiableDisjunction.conjunctions().isEmpty()) return Iterators.empty();
-        if (isInfer(satisfiableDisjunction, context)) return resolve(satisfiableDisjunction, filter, offset, limit, context);
+        resolveTypes(disjunction);
+        disjunction.conjunctions().forEach(conj -> {
+            if (!conj.isSatisfiable() && !isSchemaQuery(conj, filter)) throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conj);
+        });
+
+        if (isInfer(disjunction, context)) return resolve(disjunction, filter, offset, limit, context);
 
         ResourceIterator<ConceptMap> answers;
-        ResourceIterator<Conjunction> conjs = iterate(satisfiableDisjunction.conjunctions());
+        ResourceIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
         if (!context.options().parallel()) answers = conjs.flatMap(conj -> iterator(conj, filter, context));
         else answers = produce(conjs.map(c -> producer(c, filter, context)).toList(), context.producer(), asyncPool1());
-        if (satisfiableDisjunction.conjunctions().size() > 1) answers = answers.distinct();
+        if (disjunction.conjunctions().size() > 1) answers = answers.distinct();
         return answers;
     }
 
@@ -102,6 +102,10 @@ public class Reasoner {
         if (!context.options().infer() || context.transactionType().isWrite() || !logicMgr.rules().hasNext()) {
             return false;
         }
+        return rulesMayApply(disjunction);
+    }
+
+    private boolean rulesMayApply(Disjunction disjunction) {
         for (Conjunction conj : disjunction.conjunctions()) {
             for (Variable var : conj.variables()) {
                 if (var.resolvedTypes().isEmpty()) return true;
@@ -113,9 +117,7 @@ public class Reasoner {
             }
             if (!conj.negations().isEmpty()) {
                 for (Negation negation : conj.negations()) {
-                    if (isInfer(negation.disjunction(), context)){
-                        return true;
-                    }
+                    if (rulesMayApply(negation.disjunction())) return true;
                 }
             }
         }
@@ -131,30 +133,22 @@ public class Reasoner {
         }
     }
 
-    private Disjunction resolveTypesAndFilter(Disjunction disjunction, Set<Identifier.Variable.Name> filter) {
-        List<Conjunction> satisfiableConjunctions = new ArrayList<>();
+    /**
+     * Recursively resolve a disjunction's types
+     * @param disjunction - the disjunction to recursively apply type resolver to
+     */
+    private void resolveTypes(Disjunction disjunction) {
         for (Conjunction conjunction : disjunction.conjunctions()) {
             logicMgr.typeResolver().resolve(conjunction);
-            if (!conjunction.isSatisfiable() && !conjunction.isBounded() && conjunctionContainsThings(conjunction, filter)) {
-                throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conjunction);
-            }
-            if (conjunction.isSatisfiable()) {
-                Set<Negation> filteredNegations = new HashSet<>();
-                for (Negation negation : conjunction.negations()) {
-                    Set<Identifier.Variable.Name> f = set(filter, iterate(conjunction.variables())
-                            .filter(v -> v.id().isName()).map(v -> v.id().asName()).toSet());
-                    Disjunction resolvedAndFiltered = resolveTypesAndFilter(negation.disjunction(), f);
-                    if (!disjunction.conjunctions().isEmpty()) filteredNegations.add(new Negation(resolvedAndFiltered));
-                }
-                satisfiableConjunctions.add(new Conjunction(conjunction.variables(), filteredNegations));
+            for (Negation negation : conjunction.negations()) {
+                resolveTypes(negation.disjunction());
             }
         }
-        return new Disjunction(satisfiableConjunctions);
     }
 
-    private boolean conjunctionContainsThings(Conjunction conjunction, Set<Identifier.Variable.Name> filter) {
-        return !filter.isEmpty() && iterate(filter).anyMatch(id -> conjunction.variable(id).isThing()) ||
-                iterate(conjunction.variables()).anyMatch(Variable::isThing);
+    private boolean isSchemaQuery(Conjunction conjunction, Set<Identifier.Variable.Name> filter) {
+        return !filter.isEmpty() && iterate(filter).noneMatch(id -> conjunction.variable(id).isThing()) ||
+                iterate(conjunction.variables()).noneMatch(Variable::isThing);
     }
 
     // ---- non-reasoning paths ----
@@ -172,9 +166,8 @@ public class Reasoner {
     }
 
     private ResourceIterator<ConceptMap> iterator(Disjunction disjunction, ConceptMap bounds) {
-        Disjunction satisfiableDisjunction = resolveTypesAndFilter(disjunction, set());
-        if (satisfiableDisjunction.conjunctions().isEmpty()) return Iterators.empty();
-        return iterate(satisfiableDisjunction.conjunctions()).flatMap(c -> iterator(c, bounds));
+        if (disjunction.conjunctions().isEmpty()) return Iterators.empty();
+        return iterate(disjunction.conjunctions()).flatMap(c -> iterator(c, bounds));
     }
 
     private ResourceIterator<ConceptMap> iterator(Conjunction conjunction, ConceptMap bounds) {
