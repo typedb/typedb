@@ -203,13 +203,15 @@ public abstract class RocksSession implements Grakn.Session {
         @Override
         public RocksTransaction.Data transaction(Arguments.Transaction.Type type, Options.Transaction options) {
             if (!isOpen.get()) throw GraknException.of(SESSION_CLOSED);
-            long lock;
-            try {
-                int timeout = options.schemaLockTimeoutMillis();
-                lock = database().schemaLock().tryReadLock(timeout, MILLISECONDS);
-                if (lock == 0) throw GraknException.of(DATA_ACQUIRE_LOCK_TIMEOUT);
-            } catch (InterruptedException e) {
-                throw GraknException.of(e);
+            long lock = 0;
+            if (type == Arguments.Transaction.Type.WRITE) {
+                try {
+                    int timeout = options.schemaLockTimeoutMillis();
+                    lock = database().schemaLock().tryReadLock(timeout, MILLISECONDS);
+                    if (lock == 0) throw GraknException.of(DATA_ACQUIRE_LOCK_TIMEOUT);
+                } catch (InterruptedException e) {
+                    throw GraknException.of(e);
+                }
             }
             RocksTransaction.Data transaction = txDataFactory.transaction(this, type, options);
             transactions.put(transaction, lock);
