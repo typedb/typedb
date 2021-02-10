@@ -33,6 +33,7 @@ import java.util.concurrent.locks.StampedLock;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
 import static grakn.core.common.exception.ErrorMessage.Session.SCHEMA_ACQUIRE_LOCK_TIMEOUT;
 import static grakn.core.common.exception.ErrorMessage.Session.SESSION_CLOSED;
 import static grakn.core.common.exception.ErrorMessage.Transaction.DATA_ACQUIRE_LOCK_TIMEOUT;
@@ -210,7 +211,7 @@ public abstract class RocksSession implements Grakn.Session {
                     lock = database().schemaLock().tryReadLock(timeout, MILLISECONDS);
                     if (lock == 0) throw GraknException.of(DATA_ACQUIRE_LOCK_TIMEOUT);
                 } catch (InterruptedException e) {
-                    throw GraknException.of(e);
+                    throw GraknException.of(UNEXPECTED_INTERRUPTION);
                 }
             }
             RocksTransaction.Data transaction = txDataFactory.transaction(this, type, options);
