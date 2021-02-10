@@ -110,6 +110,10 @@ public class TypeResolver {
 
     public void resolve(Conjunction conjunction, Set<Conjunction> scopingConjunctions, boolean insertable) {
         resolveLabels(conjunction);
+        /*
+        TODO: only includes scopes with named vars in common
+        TODO: write a test for this
+         */
         Traversal resolverTraversal = new Traversal();
         scopingConjunctions.forEach(scoping -> new TraversalBuilder(scoping, conceptMgr, resolverTraversal, insertable));
         TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, conceptMgr, resolverTraversal, insertable);
