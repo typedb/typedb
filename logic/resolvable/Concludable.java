@@ -52,6 +52,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -66,13 +67,20 @@ import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.single;
 import static graql.lang.common.GraqlToken.Predicate.Equality.EQ;
 
-public abstract class Concludable extends Resolvable {
+public abstract class Concludable extends Resolvable<Conjunction> {
 
     private Map<Rule, Set<Unifier>> applicableRules;
+    private Set<Variable> namedVariables;
 
     private Concludable(Conjunction conjunction) {
         super(conjunction);
-        applicableRules = null;
+        this.namedVariables = iterate(pattern().variables()).filter(v -> v.reference().isName()).toSet();
+        this.applicableRules = null;
+    }
+
+    @Override
+    public Set<Variable> namedVariables() {
+        return namedVariables;
     }
 
     public boolean isConcludable() {
@@ -103,8 +111,6 @@ public abstract class Concludable extends Resolvable {
     }
 
     abstract Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr);
-
-    public abstract Variable generating();
 
     abstract ResourceIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr);
 
@@ -175,7 +181,7 @@ public abstract class Concludable extends Resolvable {
         }
 
         if (!concludableThingVar.value().isEmpty() && !conclusionThingVar.value().isEmpty()) {
-            // TODO detect value contradictions between constant predicates
+            // TODO: detect value contradictions between constant predicates
             satisfiable &= true;
         }
         return satisfiable;
@@ -348,8 +354,8 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
-        public Variable generating() {
-            return relation().owner();
+        public Optional<Variable> generating() {
+            return Optional.of(relation.owner());
         }
 
         private ResourceIterator<Map<RolePlayer, Set<RolePlayer>>> matchRolePlayers(
@@ -402,7 +408,8 @@ public abstract class Concludable extends Resolvable {
 
         @Override
         Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
-            Variable generatedRelation = generating();
+            assert generating().isPresent();
+            Variable generatedRelation = generating().get();
             Set<Label> relationTypes = generatedRelation.resolvedTypes();
             // may never be empty as its always known to be at least a relation
             assert generatedRelation.isSatisfiable();
@@ -532,16 +539,17 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
-        public Variable generating() {
-            return has.attribute();
+        public Optional<Variable> generating() {
+            return Optional.of(has.attribute());
         }
 
         @Override
         Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
-            Variable attribute = generating();
-            Set<Label> attributeTypes = attribute.resolvedTypes();
+            assert generating().isPresent();
+            Variable generatedAttribute = generating().get();
+            Set<Label> attributeTypes = generatedAttribute.resolvedTypes();
             // may never be empty as its always known to be at least an attribute
-            assert attribute.isSatisfiable();
+            assert generatedAttribute.isSatisfiable();
 
             Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
             attributeTypes.forEach(type -> logicMgr.rulesConcludingHas(type)
@@ -637,15 +645,16 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
-        public Variable generating() {
-            return isa().owner();
+        public Optional<Variable> generating() {
+            return Optional.of(isa().owner());
         }
 
         @Override
         Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
-            Variable var = generating();
-            Set<Label> types = var.resolvedTypes();
-            assert var.isSatisfiable();
+            assert generating().isPresent();
+            Variable generated = generating().get();
+            Set<Label> types = generated.resolvedTypes();
+            assert generated.isSatisfiable();
 
             Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
             if (types.isEmpty()) {
@@ -744,16 +753,17 @@ public abstract class Concludable extends Resolvable {
         }
 
         @Override
-        public Variable generating() {
-            return attribute;
+        public Optional<Variable> generating() {
+            return Optional.of(attribute);
         }
 
         @Override
         Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
-            Variable attribute = generating();
-            Set<Label> attributeTypes = attribute.resolvedTypes();
+            assert generating().isPresent();
+            Variable generatedAttr = generating().get();
+            Set<Label> attributeTypes = generatedAttr.resolvedTypes();
             // may never be empty as its always known to be at least an attribute
-            assert attribute.isSatisfiable();
+            assert generatedAttr.isSatisfiable();
 
             Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
             attributeTypes.forEach(type -> logicMgr.rulesConcluding(type)

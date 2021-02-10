@@ -34,6 +34,7 @@ import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -325,24 +326,20 @@ public class BasicTest {
                     person.setPlays(friendship.getRelates("friend"));
                     person.setOwns(name);
                     logicMgr.putRule(
-                            "friendless-have-names",
-                            Graql.parsePattern("{$x isa person; not { (friend: $x) isa friendship; }; }").asConjunction(),
-                            Graql.parseVariable("$x has name \"i have no friends\"").asThing());
+                            "people-have-names",
+                            Graql.parsePattern("{$x isa person; }").asConjunction(),
+                            Graql.parseVariable("$x has name \"i have a name\"").asThing());
                     txn.commit();
                 }
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     ConceptManager conceptMgr = txn.concepts();
                     LogicManager logicMgr = txn.logic();
-                    EntityType person = conceptMgr.getEntityType("person");
-                    AttributeType.String name = conceptMgr.getAttributeType("name").asString();
-                    RelationType friendship = conceptMgr.getRelationType("friendship");
-                    RoleType friend = friendship.getRelates("friend");
 
-                    Rule rule = logicMgr.getRule("friendless-have-names");
+                    Rule rule = logicMgr.getRule("people-have-names");
                     Pattern when = rule.getWhenPreNormalised();
                     ThingVariable<?> then = rule.getThenPreNormalised();
-                    assertEquals(Graql.parsePattern("{$x isa person; not { (friend: $x) isa friendship; }; }"), when);
-                    assertEquals(Graql.parseVariable("$x has name \"i have no friends\""), then);
+                    assertEquals(Graql.parsePattern("{$x isa person;}"), when);
+                    assertEquals(Graql.parseVariable("$x has name \"i have a name\""), then);
                 }
             }
         }

@@ -20,7 +20,6 @@ package grakn.core.reasoner.resolution.framework;
 
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.type.RelationType;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 
 import java.util.HashSet;

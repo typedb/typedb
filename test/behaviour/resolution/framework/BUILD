@@ -17,7 +17,7 @@
 
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
-# TODO migrate from 1.8, see #6103
+# TODO: migrate from 1.8, see #6103
 
 checkstyle_test(
     name = "checkstyle",

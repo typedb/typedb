@@ -17,10 +17,39 @@
 
 Feature: Debugging Space
 
-  Background:
+  Background: Open connection and create a simple extensible schema
     Given connection has been opened
-    Given connection delete all databases
     Given connection does not have any database
+    Given connection create database: grakn
+    Given connection open schema session for database: grakn
+    Given session opens transaction of type: write
 
-  # Paste any scenarios below for debugging.
-  # Do not commit any changes to this file.
+    Given graql define
+      """
+      define
+      person sub entity, plays employment:employee, owns name, owns email @key;
+      employment sub relation, relates employee, relates employer;
+      name sub attribute, value string;
+      email sub attribute, value string, regex ".+@\w+\..+";
+      abstract-type sub entity, abstract;
+      """
+    Given transaction commits
+
+    Given session opens transaction of type: write
+  Scenario: undefining abstract on a type that is already non-abstract does nothing
+    When graql undefine
+      """
+      undefine person abstract;
+      """
+    Then transaction commits
+
+    When session opens transaction of type: read
+    When get answers of graql match
+      """
+      match
+        $x type person;
+        not { $x abstract; };
+      """
+    Then uniquely identify answer concepts
+      | x            |
+      | label:person |

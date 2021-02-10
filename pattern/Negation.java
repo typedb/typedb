@@ -35,7 +35,7 @@ public class Negation implements Pattern, Cloneable {
     private static final String TRACE_PREFIX = "negation.";
     private final Disjunction disjunction;
 
-    private Negation(Disjunction disjunction) {
+    public Negation(Disjunction disjunction) {
         this.disjunction = disjunction;
     }
 

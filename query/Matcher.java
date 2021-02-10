@@ -70,7 +70,6 @@ public class Matcher {
     private final Reasoner reasoner;
     private final GraqlMatch query;
     private final Disjunction disjunction;
-    private final Set<Identifier.Variable.Name> filter;
     private final Context.Query context;
 
     public Matcher(Reasoner reasoner, GraqlMatch query) {
@@ -81,11 +80,9 @@ public class Matcher {
         this.reasoner = reasoner;
         this.query = query;
         this.disjunction = Disjunction.create(query.conjunction().normalise());
-        this.filter = iterate(query.filter()).map(v -> Identifier.Variable.of(v.reference().asName())).toSet();
-        assert !this.filter.isEmpty();
         this.context = context;
         if (context != null) {
-            if (query.sort().isPresent()) this.context.producer(EXHAUSTIVE); // TODO: remove this once sort is optimised
+            if (query.modifiers().sort().isPresent()) this.context.producer(EXHAUSTIVE); // TODO: remove this once sort is optimised
             else this.context.producer(INCREMENTAL);
         }
     }
@@ -120,10 +117,11 @@ public class Matcher {
     }
 
     ResourceIterator<ConceptMap> execute(Context.Query context) {
-        ResourceIterator<ConceptMap> answers = reasoner.execute(disjunction, filter, context);
-        if (query.sort().isPresent()) answers = sort(answers, query.sort().get());
-        if (query.offset().isPresent()) answers = answers.offset(query.offset().get());
-        if (query.limit().isPresent()) answers = answers.limit(query.limit().get());
+        ResourceIterator<ConceptMap> answers = reasoner.execute(disjunction, query.modifiers(), context);
+        // TODO: we should remove these and handle them in the traversal engine or reasoner ONLY. Currently in reasoner already
+        if (query.modifiers().sort().isPresent()) answers = sort(answers, query.modifiers().sort().get());
+        if (query.modifiers().offset().isPresent()) answers = answers.offset(query.modifiers().offset().get());
+        if (query.modifiers().limit().isPresent()) answers = answers.limit(query.modifiers().limit().get());
         return answers;
     }
 
