@@ -102,10 +102,10 @@ public class Reasoner {
         if (!context.options().infer() || context.transactionType().isWrite() || !logicMgr.rules().hasNext()) {
             return false;
         }
-        return rulesMayApply(disjunction);
+        return mayTriggerRules(disjunction);
     }
 
-    private boolean rulesMayApply(Disjunction disjunction) {
+    private boolean mayTriggerRules(Disjunction disjunction) {
         for (Conjunction conj : disjunction.conjunctions()) {
             for (Variable var : conj.variables()) {
                 if (var.resolvedTypes().isEmpty()) return true;
@@ -116,9 +116,7 @@ public class Reasoner {
                 }
             }
             if (!conj.negations().isEmpty()) {
-                for (Negation negation : conj.negations()) {
-                    if (rulesMayApply(negation.disjunction())) return true;
-                }
+                for (Negation negation : conj.negations()) if (mayTriggerRules(negation.disjunction())) return true;
             }
         }
         return false;
