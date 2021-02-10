@@ -116,13 +116,6 @@ public class ResolverRegistry {
         );
     }
 
-
-    // for testing
-
-    public void setEventLoopGroup(EventLoopGroup eventLoopGroup) {
-        this.elg = eventLoopGroup;
-    }
-
     private MappedResolver registerRetrievable(Retrievable retrievable) {
         LOG.debug("Register RetrievableResolver: '{}'", retrievable.pattern());
         Actor<RetrievableResolver> retrievableActor = Actor.create(elg, self -> new RetrievableResolver(
@@ -130,7 +123,8 @@ public class ResolverRegistry {
         return MappedResolver.of(retrievableActor, identity(retrievable));
     }
 
-    private MappedResolver registerConcludable(Concludable concludable) {
+    // note: must be thread safe. We could move to a ConcurrentHashMap if we create an alpha-equivalence wrapper
+    private synchronized MappedResolver registerConcludable(Concludable concludable) {
         LOG.debug("Register ConcludableResolver: '{}'", concludable.pattern());
         for (Map.Entry<Concludable, Actor<ConcludableResolver>> c : concludableActors.entrySet()) {
             // TODO This needs to be optimised from a linear search to use an alpha hash
@@ -175,6 +169,12 @@ public class ResolverRegistry {
                 .filter(var -> var.reference().isName() && negated.namedVariables().contains(var))
                 .map(variable -> variable.reference().asName())
                 .collect(Collectors.toMap(Function.identity(), Function.identity()));
+    }
+
+    // for testing
+
+    public void setEventLoopGroup(EventLoopGroup eventLoopGroup) {
+        this.elg = eventLoopGroup;
     }
 
     public static class MappedResolver {

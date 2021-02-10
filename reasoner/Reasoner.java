@@ -187,6 +187,7 @@ public class Reasoner {
 
     private ResourceIterator<ConceptMap> iterator(Conjunction conjunction, Set<Identifier.Variable.Name> filter,
                                                   Context.Query context) {
+        if (!conjunction.isSatisfiable()) return Iterators.empty();
         ResourceIterator<ConceptMap> answers = traversalEng.iterator(conjunction.traversal(filter))
                 .map(conceptMgr::conceptMap);
         if (conjunction.negations().isEmpty()) return answers;
