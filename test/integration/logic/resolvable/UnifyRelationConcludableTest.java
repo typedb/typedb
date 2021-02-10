@@ -105,8 +105,7 @@ public class UnifyRelationConcludableTest {
                                 "student sub person,\n" +
                                 "   plays part-time-employment:part-time-employee,\n" +
                                 "   plays part-time-employment:part-time-employer,\n" +
-                                "   plays part-time-employment:part-time-employee-recommender,\n" +
-                                "   plays part-time-driving:part-time-driver-recommender;\n" +
+                                "   plays part-time-employment:part-time-employee-recommender;\n" +
                                 "\n" +
                                 "student-driver sub student,\n" +
                                 "   plays part-time-driving:night-shift-driver,\n" +
@@ -121,7 +120,6 @@ public class UnifyRelationConcludableTest {
                                 "  plays part-time-employment:part-time-employee-recommender;\n" +
                                 "driving-hire sub part-time-organisation,\n" +
                                 "  plays part-time-driving:taxi,\n" +
-                                "  plays part-time-driving:part-time-driver-recommender,\n" +
                                 "  plays part-time-driving:night-shift-driver,\n" +
                                 "  plays part-time-driving:day-shift-driver;\n" +
                                 "\n" +
@@ -140,8 +138,7 @@ public class UnifyRelationConcludableTest {
                                 "part-time-driving sub part-time-employment,\n" +
                                 "  relates night-shift-driver as part-time-employee,\n" +
                                 "  relates day-shift-driver as part-time-employee,\n" +
-                                "  relates taxi as part-time-employer,\n" +
-                                "  relates part-time-driver-recommender as part-time-employee-recommender;\n" +
+                                "  relates taxi as part-time-employer;\n" +
                                 "\n" +
                                 "friendship sub relation,\n" +
                                 "   relates friend;\n" +
@@ -161,7 +158,7 @@ public class UnifyRelationConcludableTest {
                                 "(taxi: $x, night-shift-driver: $y) isa part-time-driving; " +
                                 "(part-time-employer: $x, part-time-employee: $y, part-time-employee-recommender: $z) isa part-time-employment; " +
                                 // note duplicate RP, needed to satisfy one of the child queries
-                                "(taxi: $x, night-shift-driver: $x, part-time-driver-recommender: $z) isa part-time-driving; " +
+                                "(taxi: $x, night-shift-driver: $x, part-time-employee-recommender: $z) isa part-time-driving; " +
                                 "$x isa driving-hire;" +
                                 "$y isa driving-hire;" +
                                 "$z isa driving-hire;"
@@ -899,89 +896,72 @@ public class UnifyRelationConcludableTest {
         String conclusion = "(part-time-employer: $u, part-time-employee: $v) isa part-time-employment";
         String conclusion2 = "(taxi: $u, night-shift-driver: $v) isa part-time-driving";
 
-        verifyUnificationOutcome(parentRelation, conclusion, "{ $u isa part-time-organisation; $v isa person;}");
-        verifyUnificationOutcome(parentRelation, conclusion2, "{ $u isa driving-hire; $v isa person;}");
+        verifyUnificationOutcome(parentRelation, conclusion, "{ $u isa part-time-organisation; $v isa student;}");
+        verifyUnificationOutcome(parentRelation, conclusion2, "{ $u isa driving-hire; $v isa student-driver;}");
     }
 
     @Test
     public void binaryRelationWithRoleHierarchy_ParentWithSubRoles(){
         String parentRelation = "{ (part-time-employer: $x, part-time-employee: $y); }";
-        String conclusion = "(part-time-employer: $u, night-shift-driver: $v)";
-        String conclusion2 = "(taxi: $u, night-shift-driver: $v)";
-        String conclusion3 = "(taxi: $u, employee-recommender: $v)";
-        String conclusion4 = "(employer: $u, employee: $v)";
+        String conclusion = "(part-time-employer: $u, part-time-employee: $v) isa part-time-employment";
+        String conclusion2 = "(taxi: $u, night-shift-driver: $v) isa part-time-driving";
+        String conclusion3 = "(taxi: $u, part-time-employee-recommender: $v) isa part-time-driving";
+        String conclusion4 = "(employer: $u, employee: $v) isa employment";
 
-        verifyUnificationOutcome(parentRelation, conclusion, "{$u isa part-time-organisation; $v isa person;}");
-        verifyUnificationOutcome(parentRelation, conclusion2, "{$u isa part-time-organisation; $v isa person;}");
-        verifyUnificationOutcome(parentRelation, conclusion3, "{$u isa part-time-organisation; $v isa person;}");
+        verifyUnificationOutcome(parentRelation, conclusion, "{$u isa part-time-organisation; $v isa student;}");
+        verifyUnificationOutcome(parentRelation, conclusion2, "{$u isa driving-hire; $v isa student-driver;}");
+        nonExistentUnifier(parentRelation, conclusion3, "{$u isa driving-hire; $v isa student;}");
         nonExistentUnifier(parentRelation, conclusion4, "{$u isa part-time-organisation; $v isa person;}");
     }
 
     @Test
     public void ternaryRelationWithRoleHierarchy_ParentWithBaseRoles(){
         String parentRelation = "{ (employer: $x, employee: $y, employee-recommender: $z); }";
-        String conclusion = "(employer: $u, part-time-employee: $v, part-time-driver-recommender: $q)";
-        String conclusion2 = "(employer: $z, part-time-employee: $y, part-time-driver-recommender: $x)";
-        String conclusion3 = "(part-time-employer: $u, part-time-employee: $v, part-time-driver-recommender: $q)";
-        String conclusion4 = "(part-time-employer: $y, part-time-employee: $z, part-time-driver-recommender: $x)";
-        String conclusion5 = "(part-time-employer: $u, part-time-employer: $v, part-time-driver-recommender: $q)";
+        String conclusion = "(taxi: $u, night-shift-driver: $v, part-time-employee-recommender: $q) isa part-time-driving";
+        String conclusion2 = "(part-time-employer: $u, part-time-employee: $v, part-time-employee-recommender: $q) isa part-time-employment";
+        String conclusion3 = "(part-time-employer: $u, part-time-employer: $v, part-time-employee-recommender: $q) isa part-time-employment";
 
-        verifyUnificationOutcome(parentRelation, conclusion, "{$u isa organisation; $v isa person; $q isa person;}");
-        verifyUnificationOutcome(parentRelation, conclusion2, "{$z isa organisation; $y isa person; $x isa person;}");
-        verifyUnificationOutcome(parentRelation, conclusion3, "{$u isa organisation; $v isa person; $q isa person;}");
-        verifyUnificationOutcome(parentRelation, conclusion4, "{$z isa organisation; $y isa person; $x isa person;}");
-        nonExistentUnifier(parentRelation, conclusion5, "{$u isa organisation; $v isa organisation; $q isa person;}");
+        verifyUnificationOutcome(parentRelation, conclusion, "{$u isa driving-hire; $v isa student-driver; $q isa student;}");
+        verifyUnificationOutcome(parentRelation, conclusion2, "{$u isa part-time-organisation; $v isa student; $q isa student;}");
+        nonExistentUnifier(parentRelation, conclusion3, "{$u isa part-time-organisation; $v isa part-time-organisation; $q isa student;}");
     }
 
     @Test
     public void ternaryRelationWithRoleHierarchy_ParentWithSubRoles(){
         String parentRelation = "{(part-time-employer: $x, part-time-employee: $y, part-time-employee-recommender: $z);}";
-        String conclusion = "(employer: $u, part-time-employee: $v, part-time-driver-recommender: $q)";
-        String conclusion2 = "(part-time-employer: $u, part-time-employee: $v, part-time-driver-recommender: $q)";
-        String conclusion3 = "(part-time-employer: $y, part-time-employee: $z, part-time-driver-recommender: $x)";
-        String conclusion4 = "(taxi: $u, part-time-employee: $v, part-time-driver-recommender: $q)";
-        String conclusion5 = "(taxi: $y, part-time-employee: $z, part-time-driver-recommender: $x)";
-        String conclusion6 = "(part-time-employer: $u, part-time-employer: $v, part-time-driver-recommender: $q)";
+        String conclusion = "(employer: $u, employee: $v, employee-recommender: $q) isa employment";
+        String conclusion2 = "(part-time-employer: $u, part-time-employee: $v, part-time-employee-recommender: $q) isa part-time-employment";
+        String conclusion3 = "(taxi: $u, night-shift-driver: $v, part-time-employee-recommender: $q) isa part-time-driving";
+        String conclusion4 = "(part-time-employer: $u, part-time-employer: $v, part-time-employee-recommender: $q) isa part-time-employment";
 
         nonExistentUnifier(parentRelation, conclusion, "{$u isa organisation; $v isa person; $q isa person;}");
-        verifyUnificationOutcome(parentRelation, conclusion2, "{$u isa organisation; $v isa person; $q isa person;}");
-        verifyUnificationOutcome(parentRelation, conclusion3, "{$y isa organisation; $z isa person; $x isa person;}");
-        verifyUnificationOutcome(parentRelation, conclusion4,"{$u isa organisation; $v isa person; $q isa person;}");
-        verifyUnificationOutcome(parentRelation, conclusion5, "{$y isa organisation; $z isa person; $x isa person;}");
-        nonExistentUnifier(parentRelation, conclusion6, "{$u isa organisation; $v isa person; $q isa person;}");
+        verifyUnificationOutcome(parentRelation, conclusion2, "{$u isa part-time-organisation; $v isa student; $q isa student;}");
+        verifyUnificationOutcome(parentRelation, conclusion3,"{$u isa driving-hire; $v isa student-driver; $q isa student;}");
+        nonExistentUnifier(parentRelation, conclusion4, "{$u isa part-time-organisation; $v isa student; $q isa student;}");
     }
 
     @Test
     public void ternaryRelationWithRoleHierarchy_ParentWithBaseRoles_childrenRepeatRolePlayers(){
         String parentRelation = "{ (employer: $x, employee: $y, employee-recommender: $z);}";
-        String conclusion = "(employer: $u, part-time-employee: $u, part-time-driver-recommender: $q)";
-        String conclusion2 = "(employer: $y, part-time-employee: $y, part-time-driver-recommender: $x)";
-        String conclusion3 = "(part-time-employer: $u, part-time-employee: $u, part-time-driver-recommender: $q)";
-        String conclusion4 = "(part-time-employer: $y, part-time-employee: $y, part-time-driver-recommender: $x)";
-        String conclusion5 = "(part-time-employer: $u, part-time-employer: $u, part-time-driver-recommender: $q)";
+        String conclusion = "(employer: $u, employee: $u, employee-recommender: $q) isa employment";
+        String conclusion2 = "(part-time-employer: $u, part-time-employee: $u, part-time-employee-recommender: $q) isa part-time-employment";
+        String conclusion3 = "(part-time-employer: $u, part-time-employer: $u, part-time-employee-recommender: $q) isa part-time-employment";
 
-        verifyUnificationOutcome(parentRelation, conclusion, "{$u isa person; $u isa person; $q isa person;}");
-        verifyUnificationOutcome(parentRelation, conclusion2, "{$y isa organisation; $y isa person; $x isa person;}");
-        verifyUnificationOutcome(parentRelation, conclusion3,  "{$u isa person; $u isa person; $q isa person;}");
-        verifyUnificationOutcome(parentRelation, conclusion4, "{$y isa organisation; $y isa person; $x isa person;}");
-        nonExistentUnifier(parentRelation, conclusion5, "{$u isa person; $u isa person; $q isa person;}");
+        verifyUnificationOutcome(parentRelation, conclusion, "{$u isa student; $q isa student;}");
+        verifyUnificationOutcome(parentRelation, conclusion2,  "{$u isa student; $q isa student;}");
+        nonExistentUnifier(parentRelation, conclusion3, "{$u isa student; $q isa student;}");
     }
 
     @Test
     public void ternaryRelationWithRoleHierarchy_ParentWithBaseRoles_parentRepeatRolePlayers(){
         String parentRelation = "{ (employer: $x, employee: $x, employee-recommender: $y);}";
-        String conclusion = "(employer: $u, part-time-employee: $v, part-time-driver-recommender: $q)";
-        String conclusion2 = "(employer: $z, part-time-employee: $y, part-time-driver-recommender: $x)";
-        String conclusion3 = "(part-time-employer: $u, part-time-employee: $v, part-time-driver-recommender: $q)";
-        String conclusion4 = "(part-time-employer: $y, part-time-employee: $y, part-time-driver-recommender: $x)";
-        String conclusion5 = "(part-time-employer: $u, part-time-employer: $v, part-time-driver-recommender: $q)";
+        String conclusion = "(employer: $u, employee: $v, employee-recommender: $q) isa employment";
+        String conclusion2 = "(part-time-employer: $u, part-time-employee: $v, part-time-employee-recommender: $q) isa part-time-employment";
+        String conclusion3 = "(part-time-employer: $u, part-time-employer: $v, part-time-employee-recommender: $q) isa part-time-employment";
 
-        //too strict validation?
-        verifyUnificationOutcome(parentRelation, conclusion, "{$u isa person; $v isa person; $q isa person;}");
-        verifyUnificationOutcome(parentRelation, conclusion2, "{$z isa person; $y isa student; $x isa person;}");
-        verifyUnificationOutcome(parentRelation, conclusion3, "{$u isa person; $v isa student; $q isa person;}");
-        verifyUnificationOutcome(parentRelation, conclusion4, "{$z isa person; $y isa student; $x isa person;}");
-        nonExistentUnifier(parentRelation, conclusion5, "{$u isa person; $v isa person; $q isa person;}");
+        verifyUnificationOutcome(parentRelation, conclusion, "{$u isa student; $v isa student; $q isa student;}");
+        verifyUnificationOutcome(parentRelation, conclusion2, "{$u isa student; $v isa student; $q isa student;}");
+        nonExistentUnifier(parentRelation, conclusion3, "{$u isa student; $v isa student; $q isa student;}");
     }
 
     @Test
@@ -990,10 +970,8 @@ public class UnifyRelationConcludableTest {
         String parent2 = "{ (part-time-employee: $y) isa employment; }";
         String conclusion = "(part-time-employer: $y, part-time-employee: $x) isa part-time-employment";
 
-        //TODO is validation too strict here?? WHEN has match semantics so it is possible to find a pair of instances
-        //that can partake in the relationship
-        verifyUnificationOutcome(parent, conclusion,"{$x isa person; $y isa person;}");
-        verifyUnificationOutcome(parent2, conclusion, "{$x isa person; $y isa person;}");
+        verifyUnificationOutcome(parent, conclusion,"{$x isa student; $y isa student;}");
+        verifyUnificationOutcome(parent2, conclusion, "{$x isa student; $y isa student;}");
     }
 
     @Test
@@ -1035,7 +1013,7 @@ public class UnifyRelationConcludableTest {
         unifiable(conclusions.get(2), "{$p isa student;$q isa student-driver;}", parents, Lists.newArrayList( 3, 4, 5, 6, 7, 9, 13));
 
         unifiable(conclusions.get(3), "{$p isa driving-hire; $q isa student-driver;}", parents, Lists.newArrayList(0, 1 ,2, 3, 4, 5));
-        unifiable(conclusions.get(3), "{$p isa part-time-organisation; $q isa student;}", parents, Lists.newArrayList(0, 1 ,2, 3, 4, 5));
+        unifiable(conclusions.get(3), "{$p isa driving-hire; $q isa student-driver;}", parents, Lists.newArrayList(0, 1 ,2, 3, 4, 5));
     }
     
     @Test
@@ -1149,7 +1127,7 @@ public class UnifyRelationConcludableTest {
                 "(part-time-employer: $p, part-time-employee: $q) isa part-time-employment",
                 "(taxi: $p, day-shift-driver: $q) isa part-time-driving"
         );
-        conclusions.forEach(conclusion -> unifiable(conclusion,"{$p isa organisation; $q isa person;}", parents, new ArrayList<>()));
+        conclusions.forEach(conclusion -> unifiable(conclusion,"{$p isa driving-hire; $q isa student-driver;}", parents, new ArrayList<>()));
     }
 
     private ResourceIterator<Unifier> unifiers(String parent, String ruleConclusion, String rulePremises){
