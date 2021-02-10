@@ -79,7 +79,7 @@ public class TypeResolver {
     }
 
     public ResourceIterator<Map<Reference.Name, Label>> combinations(Conjunction conjunction, boolean insertable) {
-        TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, conceptMgr, insertable);
+        TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, conceptMgr, new Traversal(), insertable);
         return traversalEng.iterator(traversalBuilder.traversal()).map(vertexMap -> {
             Map<Reference.Name, Label> mapping = new HashMap<>();
             vertexMap.forEach((ref, vertex) -> {
@@ -91,7 +91,7 @@ public class TypeResolver {
         });
     }
 
-    public Conjunction resolveLabels(Conjunction conjunction) {
+    public void resolveLabels(Conjunction conjunction) {
         iterate(conjunction.variables()).filter(v -> v.isType() && v.asType().label().isPresent())
                 .forEachRemaining(typeVar -> {
                     Label label = typeVar.asType().label().get().properLabel();
@@ -106,12 +106,14 @@ public class TypeResolver {
                         typeVar.addResolvedType(label);
                     }
                 });
-        return conjunction;
     }
 
-    public void resolve(Conjunction conjunction, boolean insertable) {
+    public void resolve(Conjunction conjunction, Set<Conjunction> scopingConjunctions, boolean insertable) {
         resolveLabels(conjunction);
-        TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, conceptMgr, insertable);
+        Traversal resolverTraversal = new Traversal();
+        scopingConjunctions.forEach(scoping -> new TraversalBuilder(scoping, conceptMgr, resolverTraversal, insertable));
+        TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, conceptMgr, resolverTraversal, insertable);
+        resolverTraversal.filter(traversalBuilder.namedResolverIds());
         Map<Reference, Set<Label>> resolvedLabels = executeResolverTraversals(traversalBuilder);
         if (resolvedLabels.isEmpty()) {
             conjunction.setSatisfiable(false);
@@ -131,8 +133,8 @@ public class TypeResolver {
         });
     }
 
-    public void resolve(Conjunction conjunction) {
-        resolve(conjunction, false);
+    public void resolve(Conjunction conjunction, Set<Conjunction> scopingConjunctions) {
+        resolve(conjunction, scopingConjunctions, false);
     }
 
     private Map<Reference, Set<Label>> executeResolverTraversals(TraversalBuilder traversalBuilder) {
@@ -166,9 +168,9 @@ public class TypeResolver {
         private boolean hasRootAttribute;
         private int sysVarCounter;
 
-        TraversalBuilder(Conjunction conjunction, ConceptManager conceptMgr, boolean insertable) {
+        TraversalBuilder(Conjunction conjunction, ConceptManager conceptMgr, Traversal initialTraversal, boolean insertable) {
             this.conceptMgr = conceptMgr;
-            this.traversal = new Traversal();
+            this.traversal = initialTraversal;
             this.variableRegister = new HashMap<>();
             this.resolverRegister = new HashMap<>();
             this.valueTypeRegister = new HashMap<>();
@@ -176,6 +178,10 @@ public class TypeResolver {
             this.insertable = insertable;
             this.hasRootAttribute = false;
             conjunction.variables().forEach(this::register);
+        }
+
+        public Set<Identifier.Variable.Name> namedResolverIds() {
+            return iterate(resolverRegister.values()).filter(v -> v.id().isName()).map(v -> v.id().asName()).toSet();
         }
 
         Traversal traversal() {

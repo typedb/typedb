@@ -94,10 +94,7 @@ public class Rule {
         this.when = whenPattern(structure.when(), logicMgr);
         this.then = thenPattern(structure.then(), logicMgr);
         pruneThenResolvedTypes();
-        validateSatisfiable();
-        validateInsertable(logicMgr);
         this.conclusion = Conclusion.create(this.then);
-        validateCycles();
     }
 
     private Rule(GraphManager graphMgr, LogicManager logicMgr, String label,
@@ -227,21 +224,21 @@ public class Rule {
         Conjunction conj = Conjunction.create(conjunction.normalise().patterns().get(0));
 
         // TODO: remove this when we fully implement negation and don't have to ban it in rules
-        if (!conj.negations().isEmpty()) {
-            throw GraknException.of(INVALID_NEGATION, getLabel());
-        }
+//        if (!conj.negations().isEmpty()) {
+//            throw GraknException.of(INVALID_NEGATION, getLabel());
+//        }
 
         if (iterate(conj.negations()).filter(neg -> neg.disjunction().conjunctions().size() != 1).hasNext()) {
             throw GraknException.of(INVALID_NEGATION_CONTAINS_DISJUNCTION, getLabel());
         }
 
-        logicMgr.typeResolver().resolve(conj);
+        logicMgr.typeResolver().resolve(conj, set());
         Set<Negation> filteredNegations = new HashSet<>();
         for (Negation negation : conj.negations()) {
             Set<Identifier.Variable.Name> f = iterate(conj.variables()).filter(v -> v.id().isName()).map(v -> v.id().asName()).toSet();
             assert negation.disjunction().conjunctions().size() == 1;
             for (Conjunction c : negation.disjunction().conjunctions()) {
-                logicMgr.typeResolver().resolve(c);
+                logicMgr.typeResolver().resolve(c, set(conj));
                 if (c.isSatisfiable()) filteredNegations.add(new Negation(new Disjunction(list(c))));
             }
         }
@@ -251,7 +248,7 @@ public class Rule {
     private Conjunction thenPattern(ThingVariable<?> thenVariable, LogicManager logicMgr) {
         // TODO: when applying the type resolver, we should be using _insert semantics_ during the type resolution!!!
         Conjunction conj = new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
-        logicMgr.typeResolver().resolve(conj);
+        logicMgr.typeResolver().resolve(conj, set());
         return conj;
     }
 

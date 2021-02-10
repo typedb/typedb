@@ -139,12 +139,17 @@ public class VariableRegistry {
     public ThingVariable register(graql.lang.pattern.variable.ThingVariable<?> graqlVar) {
         ThingVariable graknVar;
         if (graqlVar.reference().isAnonymous()) {
-            graknVar = new ThingVariable(Identifier.Variable.of(graqlVar.reference().asAnonymous(), anonymous.size()));
+            graknVar = new ThingVariable(Identifier.Variable.of(graqlVar.reference().asAnonymous(), anonymousSize()));
             anonymous.add(graknVar);
         } else {
             graknVar = computeThingIfAbsent(graqlVar.reference(), r -> new ThingVariable(Identifier.Variable.of(r.asReferable())));
         }
         return graknVar.constrainThing(graqlVar.constraints(), this);
+    }
+
+    public int anonymousSize() {
+        if (bounds != null) return bounds.anonymousSize() + anonymous.size();
+        else return anonymous.size();
     }
 
     public boolean allowsDerived() {

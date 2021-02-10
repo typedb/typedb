@@ -82,7 +82,7 @@ public class Reasoner {
     public ResourceIterator<ConceptMap> execute(Disjunction disjunction, GraqlMatch.Modifiers modifiers,
                                                 Context.Query context) {
 
-        resolveTypes(disjunction);
+        resolveTypes(disjunction, set());
         Set<Identifier.Variable.Name> filter = iterate(modifiers.filter())
                 .map(v -> Identifier.Variable.of(v.reference().asName())).toSet();
         disjunction.conjunctions().forEach(conj -> {
@@ -136,11 +136,11 @@ public class Reasoner {
      * Recursively resolve a disjunction's types
      * @param disjunction - the disjunction to recursively apply type resolver to
      */
-    private void resolveTypes(Disjunction disjunction) {
+    private void resolveTypes(Disjunction disjunction, Set<Conjunction> scopingConjunctions) {
         for (Conjunction conjunction : disjunction.conjunctions()) {
-            logicMgr.typeResolver().resolve(conjunction);
+            logicMgr.typeResolver().resolve(conjunction, scopingConjunctions);
             for (Negation negation : conjunction.negations()) {
-                resolveTypes(negation.disjunction());
+                resolveTypes(negation.disjunction(), set(scopingConjunctions, conjunction));
             }
         }
     }
