@@ -114,28 +114,21 @@ public class Inserter {
 
     public ResourceIterator<ConceptMap> execute() {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
-            if (matcher != null) {
-                return context.options().parallel() ? executeParallel() : executeSerial();
-            } else {
-                return single(new Operation(conceptMgr, new ConceptMap(), variables).execute());
-            }
+            if (matcher != null) return context.options().parallel() ? executeParallel() : executeSerial();
+            else return single(new Operation(conceptMgr, new ConceptMap(), variables).execute());
         }
     }
 
     private ResourceIterator<ConceptMap> executeParallel() {
-        List<List<ConceptMap>> lists =
-                matcher.execute(context).toLists(PARALLELISATION_SPLIT_MIN, PARALLELISATION_FACTOR);
+        List<List<ConceptMap>> lists = matcher.execute(context).toLists(PARALLELISATION_SPLIT_MIN, PARALLELISATION_FACTOR);
         assert !lists.isEmpty();
         List<ConceptMap> inserts;
-        if (lists.size() == 1) {
-            inserts = iterate(lists.get(0)).map(
-                    matched -> new Operation(conceptMgr, matched, variables).execute()
-            ).toList();
-        } else {
-            inserts = produce(async(iterate(lists).map(list -> iterate(list).map(
-                    matched -> new Operation(conceptMgr, matched, variables).execute()
-            )), PARALLELISATION_FACTOR), EXHAUSTIVE, asyncPool1()).toList();
-        }
+        if (lists.size() == 1) inserts = iterate(lists.get(0)).map(
+                matched -> new Operation(conceptMgr, matched, variables).execute()
+        ).toList();
+        else inserts = produce(async(iterate(lists).map(list -> iterate(list).map(
+                matched -> new Operation(conceptMgr, matched, variables).execute()
+        )), PARALLELISATION_FACTOR), EXHAUSTIVE, asyncPool1()).toList();
         return iterate(inserts);
     }
 
@@ -187,8 +180,7 @@ public class Inserter {
 
                 if (matchedContains(var)) {
                     thing = matchedGet(var);
-                    if (var.isa().isPresent() &&
-                            !thing.getType().equals(getThingType(var.isa().get().type().label().get()))) {
+                    if (var.isa().isPresent() && !thing.getType().equals(getThingType(var.isa().get().type().label().get()))) {
                         throw GraknException.of(THING_ISA_REINSERTION, ref, var.isa().get().type());
                     }
                 } else if (var.isa().isPresent()) thing = insertIsa(var.isa().get(), var);
