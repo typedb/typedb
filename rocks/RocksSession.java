@@ -221,7 +221,10 @@ public abstract class RocksSession implements Grakn.Session {
         @Override
         void remove(RocksTransaction transaction) {
             long lock = transactions.remove(transaction);
-            if (transaction.type().isWrite()) database().schemaLock().unlockRead(lock);
+            if (transaction.type().isWrite()) {
+                assert lock != 0;
+                database().schemaLock().unlockRead(lock);
+            }
         }
     }
 }
