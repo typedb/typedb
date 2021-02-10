@@ -221,7 +221,7 @@ public class ResolutionTest {
 
     @Test
     public void test_simple_rule() throws InterruptedException {
-        // TODO We would like to reach into the reasoner to check that:
+        // TODO: We would like to reach into the reasoner to check that:
         //  - 3 answers come from the direct traversal at the root,
         //  - 3 answers come from the concludable via the rule and its retrievable, checking their sent/received messages
         //  are consistent with our expectation.
@@ -412,7 +412,7 @@ public class ResolutionTest {
         }
     }
 
-    @Ignore // TODO Un-ignore, ignored until explanations are ready to use
+    @Ignore // TODO: Un-ignore, ignored until explanations are ready to use
     @Test
     public void test_answer_recorder() throws InterruptedException {
         String atomic1 = "$p1 isa person, has name \"Bob\";";
@@ -464,7 +464,7 @@ public class ResolutionTest {
                     );
                     ResolutionAnswer answer = responses.take();
 
-                    // TODO write more meaningful explanation tests
+                    // TODO: write more meaningful explanation tests
                     System.out.println(answer);
                 }
             }

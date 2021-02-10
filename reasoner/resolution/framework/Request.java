@@ -32,7 +32,7 @@ import static grakn.common.collection.Collections.list;
 
 public class Request {
 
-    // TODO add compute mode: single vs all (for negation vs regular)
+    // TODO: add compute mode: single vs all (for negation vs regular)
 
     private final Path path;
     private final AnswerState.DownstreamVars partialAnswer;

@@ -202,7 +202,7 @@ public class Conjunction implements Pattern, Cloneable {
         if (this == obj) return true;
         if (obj == null || obj.getClass() != getClass()) return false;
         Conjunction that = (Conjunction) obj;
-        // TODO This doesn't work! It doesn't compare constraints
+        // TODO: This doesn't work! It doesn't compare constraints
         return (this.variableSet.equals(that.variables()) &&
                 this.negations.equals(that.negations()));
     }

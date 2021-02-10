@@ -35,6 +35,7 @@ import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import grakn.core.traversal.TraversalEngine;
 import graql.lang.pattern.variable.Reference;
+import graql.lang.pattern.variable.UnboundVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +47,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.iterator.Iterators.iterate;
 
 public interface Root {
 

@@ -87,7 +87,7 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
 
     protected void requestFromDownstream(Request request, Request fromUpstream, int iteration) {
         LOG.trace("{} : Sending a new answer Request to downstream: {}", name, request);
-        // TODO we may overwrite if multiple identical requests are sent, when to clean up?
+        // TODO: we may overwrite if multiple identical requests are sent, when to clean up?
         requestRouter.put(request, fromUpstream);
         Actor<? extends Resolver<?>> receiver = request.receiver();
         receiver.tell(actor -> actor.receiveRequest(request, iteration));

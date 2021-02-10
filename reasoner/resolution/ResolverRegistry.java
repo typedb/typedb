@@ -75,7 +75,7 @@ public class ResolverRegistry {
         this.traversalEngine = traversalEngine;
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
-        this.explanations = false; // TODO enable/disable explanations from transaction context
+        this.explanations = false; // TODO: enable/disable explanations from transaction context
         concludableActors = new HashMap<>();
         rules = new HashMap<>();
         planner = new Planner(conceptMgr, logicMgr);
@@ -127,7 +127,7 @@ public class ResolverRegistry {
     private synchronized MappedResolver registerConcludable(Concludable concludable) {
         LOG.debug("Register ConcludableResolver: '{}'", concludable.pattern());
         for (Map.Entry<Concludable, Actor<ConcludableResolver>> c : concludableActors.entrySet()) {
-            // TODO This needs to be optimised from a linear search to use an alpha hash
+            // TODO: This needs to be optimised from a linear search to use an alpha hash
             AlphaEquivalence alphaEquality = concludable.alphaEquals(c.getKey());
             if (alphaEquality.isValid()) {
                 return MappedResolver.of(c.getValue(), alphaEquality.asValid().namedVariableMapping());

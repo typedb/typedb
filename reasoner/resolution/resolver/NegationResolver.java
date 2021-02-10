@@ -107,14 +107,14 @@ public class NegationResolver extends Resolver<NegationResolver> {
     }
 
     private void tryAnswer(Request fromUpstream, NegationResponse negationResponse) {
-        // TODO if we wanted to accelerate the searching of a negation counter example,
-        // TODO we could send multiple requests into the sub system at once!
+        // TODO: if we wanted to accelerate the searching of a negation counter example,
+        // TODO: we could send multiple requests into the sub system at once!
 
         /*
         NOTE:
            Correctness: concludables that get reused in the negated portion, would conflate recursion/reiteration state from
               the toplevel root with the negation iterations, which we cannot allow. So, we must use THIS resolver
-              as a sort of new root! TODO should NegationResolvers also implement a kind of Root interface??
+              as a sort of new root! TODO: should NegationResolvers also implement a kind of Root interface??
         */
         AnswerState.DownstreamVars.Identity downstream = Initial.of(fromUpstream.partialAnswer().conceptMap()).toDownstreamVars();
         Request request = Request.create(new Request.Path(self(), downstream).append(this.downstream, downstream),
@@ -153,7 +153,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
     }
 
     private ResolutionAnswer upstreamAnswer(Request fromUpstream) {
-        // TODO decide if we want to use isMapped here? Can Mapped currently act as a filter?
+        // TODO: decide if we want to use isMapped here? Can Mapped currently act as a filter?
         assert fromUpstream.partialAnswer().isMapped();
         AnswerState.UpstreamVars.Derived derived = fromUpstream.partialAnswer().asMapped().mapToUpstream(fromUpstream.partialAnswer().conceptMap());
 

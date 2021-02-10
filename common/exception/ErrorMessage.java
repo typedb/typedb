@@ -485,7 +485,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         public static final RuleWrite RULES_IN_NEGATED_CYCLE_NOT_STRATIFIABLE =
                 new RuleWrite(2, "The rules '%s' causes inference cycles with negations");
         public static final RuleWrite INVALID_NEGATION =
-                new RuleWrite(3, "The rule '%s' contains a negation, which is currently unsupported"); // TODO relax this to specific shapes of negations later
+                new RuleWrite(3, "The rule '%s' contains a negation, which is currently unsupported"); // TODO: relax this to specific shapes of negations later
         public static final RuleWrite INVALID_NEGATION_CONTAINS_DISJUNCTION =
                 new RuleWrite(4, "The rule '%'s contains a negation containing a disjunction, which is currently unsupported");
         public static final RuleWrite RULE_CAN_IMPLY_UNINSERTABLE_RESULTS =

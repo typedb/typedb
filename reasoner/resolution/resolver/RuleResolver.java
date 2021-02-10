@@ -85,8 +85,8 @@ public class RuleResolver extends ConjunctionResolver<RuleResolver> {
 
     @Override
     protected Optional<AnswerState.UpstreamVars.Derived> toUpstreamAnswer(Request fromUpstream, ConceptMap downstreamConceptMap) {
-        // TODO we need to record the rest of the iterator in the response producer to pick up later
-        // TODO we should write a test for this case
+        // TODO: we need to record the rest of the iterator in the response producer to pick up later
+        // TODO: we should write a test for this case
         ResourceIterator<UpstreamVars.Derived> materialisations = materialisations(fromUpstream, downstreamConceptMap);
         if (materialisations.hasNext()) return Optional.of(materialisations.next());
         else return Optional.empty();

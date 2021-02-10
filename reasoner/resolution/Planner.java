@@ -143,7 +143,7 @@ public class Planner {
         }
 
         private Optional<Concludable> fewestRules(Stream<Resolvable<?>> resolvableStream) {
-            // TODO Tie-break for Concludables with the same number of applicable rules
+            // TODO: Tie-break for Concludables with the same number of applicable rules
             return resolvableStream.map(Resolvable::asConcludable)
                     .min(Comparator.comparingInt(c -> (int)c.getApplicableRules(conceptMgr, logicMgr).count()));
         }
@@ -165,7 +165,7 @@ public class Planner {
                 for (Variable v : resolvable.namedVariables()) {
                     deps.putIfAbsent(resolvable, new HashSet<>());
                     if (generatedVars.contains(v) && !(generating.isPresent() && generating.get().equals(v))) {
-                        // TODO Should this rule the Resolvable<?> out if generates it's own dependency?
+                        // TODO: Should this rule the Resolvable<?> out if generates it's own dependency?
                         deps.get(resolvable).add(v);
                     }
                 }

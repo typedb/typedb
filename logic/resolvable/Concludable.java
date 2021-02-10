@@ -181,7 +181,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         if (!concludableThingVar.value().isEmpty() && !conclusionThingVar.value().isEmpty()) {
-            // TODO detect value contradictions between constant predicates
+            // TODO: detect value contradictions between constant predicates
             satisfiable &= true;
         }
         return satisfiable;

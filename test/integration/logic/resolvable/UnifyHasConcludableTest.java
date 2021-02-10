@@ -258,7 +258,7 @@ public class UnifyHasConcludableTest {
     @Ignore
     @Test
     public void has_attribute_exact_prunes_irrelevant_rules() {
-        // TODO implement a test for unifier pruning, will require type hinting
+        // TODO: implement a test for unifier pruning, will require type hinting
     }
 
 

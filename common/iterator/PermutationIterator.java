@@ -41,7 +41,7 @@ class PermutationIterator<T> extends AbstractResourceIterator<List<T>> {
         state = State.FETCHED;
     }
 
-    private enum State {EMPTY, FETCHED, COMPLETED} // TODO all needed?
+    private enum State {EMPTY, FETCHED, COMPLETED} // TODO: all needed?
 
     @Override
     public boolean hasNext() {

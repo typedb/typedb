@@ -198,9 +198,9 @@ public class Rule {
     }
 
     void validateCycles() {
-        // TODO implement this when we have negation
-        // TODO detect negated cycles in the rule graph
-        // TODO use the new rule as a starting point
+        // TODO: implement this when we have negation
+        // TODO: detect negated cycles in the rule graph
+        // TODO: use the new rule as a starting point
         // throw GraknException.of(ErrorMessage.RuleWrite.RULES_IN_NEGATED_CYCLE_NOT_STRATIFIABLE.message(rule));
     }
 
@@ -208,7 +208,7 @@ public class Rule {
      * Remove type hints in the `then` pattern that are not valid in the `when` pattern
      */
     private void pruneThenResolvedTypes() {
-        // TODO name is inconsistent with elsewhere
+        // TODO: name is inconsistent with elsewhere
         then.variables().stream().filter(variable -> variable.id().isName())
                 .forEach(thenVar ->
                                  when.variables().stream()
@@ -226,7 +226,7 @@ public class Rule {
     private Conjunction whenPattern(graql.lang.pattern.Conjunction<? extends Pattern> conjunction, LogicManager logicMgr) {
         Conjunction conj = Conjunction.create(conjunction.normalise().patterns().get(0));
 
-        // TODO remove this when we fully implement negation and don't have to ban it in rules
+        // TODO: remove this when we fully implement negation and don't have to ban it in rules
         if (!conj.negations().isEmpty()) {
             throw GraknException.of(INVALID_NEGATION, getLabel());
         }
@@ -249,7 +249,7 @@ public class Rule {
     }
 
     private Conjunction thenPattern(ThingVariable<?> thenVariable, LogicManager logicMgr) {
-        // TODO when applying the type resolver, we should be using _insert semantics_ during the type resolution!!!
+        // TODO: when applying the type resolver, we should be using _insert semantics_ during the type resolution!!!
         Conjunction conj = new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
         logicMgr.typeResolver().resolve(conj);
         return conj;

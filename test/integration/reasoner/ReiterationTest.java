@@ -113,7 +113,7 @@ public class ReiterationTest {
         try (RocksSession session = dataSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 Conjunction conjunction = parseConjunction(transaction, "{ $y isa Y; }");
-//                Conjunction conjunction = parseConjunction(transaction, "{ $y(item:$x) isa Y; }"); // TODO This hangs
+//                Conjunction conjunction = parseConjunction(transaction, "{ $y(item:$x) isa Y; }"); // TODO: This hangs
                 Set<Reference.Name> filter = iterate(conjunction.variables()).map(Variable::reference).filter(Reference::isName)
                         .map(Reference::asName).toSet();
                 ResolverRegistry registry = transaction.reasoner().resolverRegistry();

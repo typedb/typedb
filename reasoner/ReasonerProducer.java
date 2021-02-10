@@ -29,13 +29,17 @@ import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import graql.lang.pattern.variable.Reference;
+import graql.lang.pattern.variable.UnboundVariable;
+import graql.lang.query.GraqlMatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.ThreadSafe;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
+import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.reasoner.resolution.framework.ResolutionAnswer.Derivation.EMPTY;
 
 @ThreadSafe
@@ -49,9 +53,9 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private boolean done;
     private int iteration;
 
-    public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry, Set<Reference.Name> filter,
-                            Long offset, Long limit) {
-        this.rootResolver = resolverRegistry.rootConjunction(conjunction, filter, offset, limit, this::requestAnswered, this::requestFailed);
+    public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers) {
+        this.rootResolver = resolverRegistry.rootConjunction(conjunction,filter(modifiers.filter()), modifiers.offset().orElse(null),
+                                                             modifiers.limit().orElse(null), this::requestAnswered, this::requestFailed);
         AnswerState.DownstreamVars.Identity downstream = Initial.of(new ConceptMap()).toDownstreamVars();
         this.resolveRequest = Request.create(new Request.Path(rootResolver, downstream), downstream, EMPTY);
         this.queue = null;
@@ -59,9 +63,9 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.done = false;
     }
 
-    public ReasonerProducer(Disjunction disjunction, ResolverRegistry resolverRegistry, Set<Reference.Name> filter,
-                            Long offset, Long limit) {
-        this.rootResolver = resolverRegistry.rootDisjunction(disjunction, filter, offset, limit, this::requestAnswered, this::requestFailed);
+    public ReasonerProducer(Disjunction disjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers) {
+        this.rootResolver = resolverRegistry.rootDisjunction(disjunction, filter(modifiers.filter()), modifiers.offset().orElse(null),
+                                                             modifiers.limit().orElse(null), this::requestAnswered, this::requestFailed);
         AnswerState.DownstreamVars.Identity downstream = Initial.of(new ConceptMap()).toDownstreamVars();
         this.resolveRequest = Request.create(new Request.Path(rootResolver, downstream), downstream, EMPTY);
         this.queue = null;
@@ -80,6 +84,11 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     @Override
     public void recycle() {}
+
+    private Set<Reference.Name> filter(List<UnboundVariable> filter) {
+        return iterate(filter).map(v -> v.reference().asName()).toSet();
+    }
+
 
     private void requestAnswered(ResolutionAnswer resolutionAnswer) {
         if (resolutionAnswer.isInferred()) iterationInferredAnswer = true;
@@ -112,7 +121,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private boolean mustReiterate() {
         /*
-        TODO room for optimisation:
+        TODO: room for optimisation:
         for example, reiteration should never be required if there
         are no loops in the rule graph
         NOTE: double check this logic holds in the actor execution model, eg. because of asynchrony, we may

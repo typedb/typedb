@@ -39,11 +39,10 @@ import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
-import graql.lang.pattern.variable.Reference;
+import graql.lang.query.GraqlMatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.set;
@@ -80,15 +79,17 @@ public class Reasoner {
         return resolverRegistry;
     }
 
-    public ResourceIterator<ConceptMap> execute(Disjunction disjunction, Set<Identifier.Variable.Name> filter,
-                                                @Nullable Long offset, @Nullable Long limit, Context.Query context) {
+    public ResourceIterator<ConceptMap> execute(Disjunction disjunction, GraqlMatch.Modifiers modifiers,
+                                                Context.Query context) {
 
         resolveTypes(disjunction);
+        Set<Identifier.Variable.Name> filter = iterate(modifiers.filter())
+                .map(v -> Identifier.Variable.of(v.reference().asName())).toSet();
         disjunction.conjunctions().forEach(conj -> {
             if (!conj.isSatisfiable() && !isSchemaQuery(conj, filter)) throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conj);
         });
 
-        if (isInfer(disjunction, context)) return resolve(disjunction, filter, offset, limit, context);
+        if (isInfer(disjunction, context)) return resolve(disjunction, modifiers, context);
 
         ResourceIterator<ConceptMap> answers;
         ResourceIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
@@ -122,12 +123,12 @@ public class Reasoner {
         return false;
     }
 
-    private ResourceIterator<ConceptMap> resolve(Disjunction disjunction, Set<Identifier.Variable.Name> filter, Long offset, Long limit, Context.Query context) {
-        Set<Reference.Name> nameFilter = iterate(filter).map(Identifier.Variable.Name::reference).toSet();
+    private ResourceIterator<ConceptMap> resolve(Disjunction disjunction, GraqlMatch.Modifiers modifiers,
+                                                 Context.Query context) {
         if (disjunction.conjunctions().size() == 1) {
-            return produce(new ReasonerProducer(disjunction.conjunctions().get(0), resolverRegistry, nameFilter, offset, limit), context.producer(), asyncPool1());
+            return produce(new ReasonerProducer(disjunction.conjunctions().get(0), resolverRegistry, modifiers), context.producer(), asyncPool1());
         } else {
-            return produce(new ReasonerProducer(disjunction, resolverRegistry, nameFilter, offset, limit), context.producer(), asyncPool1());
+            return produce(new ReasonerProducer(disjunction, resolverRegistry, modifiers), context.producer(), asyncPool1());
         }
     }
 
@@ -145,8 +146,8 @@ public class Reasoner {
     }
 
     private boolean isSchemaQuery(Conjunction conjunction, Set<Identifier.Variable.Name> filter) {
-        return !filter.isEmpty() && iterate(filter).noneMatch(id -> conjunction.variable(id).isThing()) ||
-                iterate(conjunction.variables()).noneMatch(Variable::isThing);
+        return !filter.isEmpty() && iterate(filter).noneMatch(id -> conjunction.variable(id).isThing())
+                || iterate(conjunction.variables()).noneMatch(Variable::isThing);
     }
 
     // ---- non-reasoning paths ----

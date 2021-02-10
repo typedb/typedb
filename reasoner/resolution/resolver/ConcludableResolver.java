@@ -110,7 +110,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             responseProducer.recordProduced(upstreamAnswer.withInitialFiltered());
 
             ResolutionAnswer.Derivation derivation;
-            if (explanations()) { // TODO this way of turning explanations on and off is both error prone and unelegant - can we centralise?
+            if (explanations()) { // TODO: this way of turning explanations on and off is both error prone and unelegant - can we centralise?
                 // update partial derivation provided from upstream to carry derivations sideways
                 derivation = new ResolutionAnswer.Derivation(map(pair(fromDownstream.sourceRequest().receiver(),
                                                                       fromDownstream.answer())));
