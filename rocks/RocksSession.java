@@ -33,6 +33,7 @@ import java.util.concurrent.locks.StampedLock;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
 import static grakn.core.common.exception.ErrorMessage.Session.SCHEMA_ACQUIRE_LOCK_TIMEOUT;
 import static grakn.core.common.exception.ErrorMessage.Session.SESSION_CLOSED;
 import static grakn.core.common.exception.ErrorMessage.Transaction.DATA_ACQUIRE_LOCK_TIMEOUT;
@@ -203,13 +204,15 @@ public abstract class RocksSession implements Grakn.Session {
         @Override
         public RocksTransaction.Data transaction(Arguments.Transaction.Type type, Options.Transaction options) {
             if (!isOpen.get()) throw GraknException.of(SESSION_CLOSED);
-            long lock;
-            try {
-                int timeout = options.schemaLockTimeoutMillis();
-                lock = database().schemaLock().tryReadLock(timeout, MILLISECONDS);
-                if (lock == 0) throw GraknException.of(DATA_ACQUIRE_LOCK_TIMEOUT);
-            } catch (InterruptedException e) {
-                throw GraknException.of(e);
+            long lock = 0;
+            if (type == Arguments.Transaction.Type.WRITE) {
+                try {
+                    int timeout = options.schemaLockTimeoutMillis();
+                    lock = database().schemaLock().tryReadLock(timeout, MILLISECONDS);
+                    if (lock == 0) throw GraknException.of(DATA_ACQUIRE_LOCK_TIMEOUT);
+                } catch (InterruptedException e) {
+                    throw GraknException.of(UNEXPECTED_INTERRUPTION);
+                }
             }
             RocksTransaction.Data transaction = txDataFactory.transaction(this, type, options);
             transactions.put(transaction, lock);
@@ -219,7 +222,10 @@ public abstract class RocksSession implements Grakn.Session {
         @Override
         void remove(RocksTransaction transaction) {
             long lock = transactions.remove(transaction);
-            if (transaction.type().isWrite()) database().schemaLock().unlockRead(lock);
+            if (transaction.type().isWrite()) {
+                assert lock != 0;
+                database().schemaLock().unlockRead(lock);
+            }
         }
     }
 }
