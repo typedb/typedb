@@ -111,25 +111,10 @@ public class TypeResolver {
 
     public void resolve(Conjunction conjunction, List<Conjunction> scopingConjunctions, boolean insertable) {
         resolveLabels(conjunction);
-        /*
-        TODO: only includes scopes with named vars in common
-        TODO: write a test for this
-         */
         Traversal resolverTraversal = new Traversal();
-        TraversalBuilder currentBuilder;
-        if (!scopingConjunctions.isEmpty()) {
-            currentBuilder = new TraversalBuilder(scopingConjunctions.get(0), conceptMgr, resolverTraversal, 0, insertable);
-            for (int i = 1; i < scopingConjunctions.size(); i++) {
-                currentBuilder = new TraversalBuilder(scopingConjunctions.get(i), conceptMgr, resolverTraversal,
-                                                        currentBuilder.sysVarCounter(), insertable);
-            }
-            currentBuilder = new TraversalBuilder(conjunction, conceptMgr, resolverTraversal,
-                                                    currentBuilder.sysVarCounter(), insertable);
-        } else {
-            currentBuilder = new TraversalBuilder(conjunction, conceptMgr, resolverTraversal, 0, insertable);
-        }
-        resolverTraversal.filter(currentBuilder.namedResolverIds());
-        Map<Reference, Set<Label>> resolvedLabels = executeResolverTraversals(currentBuilder);
+        TraversalBuilder traversalBuilder = builder(resolverTraversal, conjunction, scopingConjunctions, insertable);
+        resolverTraversal.filter(traversalBuilder.namedResolverIds());
+        Map<Reference, Set<Label>> resolvedLabels = executeResolverTraversals(traversalBuilder);
         if (resolvedLabels.isEmpty()) {
             conjunction.setSatisfiable(false);
             return;
@@ -138,7 +123,6 @@ public class TypeResolver {
         long numOfTypes = traversalEng.graph().schema().stats().thingTypeCount();
         long numOfConcreteTypes = traversalEng.graph().schema().stats().concreteThingTypeCount();
 
-        final TraversalBuilder traversalBuilder = currentBuilder;
         resolvedLabels.forEach((ref, labels) -> {
             traversalBuilder.getVariable(ref)
                     .filter(var -> (var.isType() && labels.size() < numOfTypes) || (var.isThing() && labels.size() < numOfConcreteTypes))
@@ -147,6 +131,28 @@ public class TypeResolver {
                         variable.setResolvedTypes(labels);
                     });
         });
+    }
+
+    private TraversalBuilder builder(Traversal traversal, Conjunction conjunction, List<Conjunction> scopingConjunctions,
+                                     boolean insertable) {
+        TraversalBuilder currentBuilder;
+        Set<Reference.Name> names = iterate(conjunction.variables()).filter(v -> v.reference().isName())
+                .map(v -> v.reference().asName()).toSet();
+        if (!scopingConjunctions.isEmpty()) {
+            currentBuilder = new TraversalBuilder(scopingConjunctions.get(0), conceptMgr, traversal, 0, insertable);
+            for (int i = 1; i < scopingConjunctions.size(); i++) {
+                Conjunction scoping = scopingConjunctions.get(i);
+                if (iterate(scoping.variables()).noneMatch(v -> v.reference().isName() && names.contains(v.reference().asName()))) {
+                    // skip any scoping conjunctions without a named variable in common
+                    continue;
+                }
+                currentBuilder = new TraversalBuilder(scoping, conceptMgr, traversal, currentBuilder.sysVarCounter(), insertable);
+            }
+            currentBuilder = new TraversalBuilder(conjunction, conceptMgr, traversal, currentBuilder.sysVarCounter(), insertable);
+        } else {
+            currentBuilder = new TraversalBuilder(conjunction, conceptMgr, traversal, 0, insertable);
+        }
+        return currentBuilder;
     }
 
     public void resolve(Conjunction conjunction, List<Conjunction> scopingConjunctions) {
