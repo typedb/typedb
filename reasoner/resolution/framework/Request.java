@@ -39,6 +39,8 @@ public class Request {
     private final ResolutionAnswer.Derivation partialDerivation;
     private final int planIndex;
 
+    private final int hash;
+
     private Request(Path path,
                     AnswerState.DownstreamVars startingConcept,
                     ResolutionAnswer.Derivation partialDerivation,
@@ -47,6 +49,7 @@ public class Request {
         this.partialAnswer = startingConcept;
         this.partialDerivation = partialDerivation;
         this.planIndex = planIndex;
+        this.hash = Objects.hash(path, partialAnswer);
     }
 
     public static Request create(Path path,
@@ -98,7 +101,7 @@ public class Request {
 
     @Override
     public int hashCode() {
-        return Objects.hash(path, partialAnswer);
+        return hash;
     }
 
     @Override
