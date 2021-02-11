@@ -195,11 +195,13 @@ public class Conjunction implements Pattern, Cloneable {
 
     @Override
     public String toString() {
-        return "" + CURLY_OPEN + SPACE + variableSet.stream()
+        return variableSet.stream()
                 .map(variable -> variable.constraints().stream().map(Object::toString)
                         .collect(Collectors.joining("" + SEMICOLON + SPACE))
                 ).filter(s -> !s.isEmpty())
-                .collect(Collectors.joining("; " + NEW_LINE)) + "" + SEMICOLON + SPACE + CURLY_CLOSE;
+                .collect(Collectors.joining("; " + NEW_LINE,
+                         "" + CURLY_OPEN + SPACE,
+                         "" + SEMICOLON + SPACE + CURLY_CLOSE));
     }
 
     @Override
