@@ -108,7 +108,7 @@ public class TypeResolverTest {
 
     private Conjunction resolveConjunction(TypeResolver typeResolver, String matchString) {
         Conjunction conjunction = createConjunction(matchString);
-        typeResolver.resolve(conjunction);
+        typeResolver.resolve(conjunction, set());
         return conjunction;
     }
 
@@ -924,7 +924,7 @@ public class TypeResolverTest {
         Conjunction conjunction = createConjunction(queryString);
 
         assertThrows(
-                () -> typeResolver.resolve(conjunction)
+                () -> typeResolver.resolve(conjunction, set())
         );
     }
 
@@ -996,7 +996,7 @@ public class TypeResolverTest {
 
         assertEquals(expectedLabels, getHintMap(conjunction).get("$_relation:partner"));
 
-        typeResolver.resolve(conjunction);
+        typeResolver.resolve(conjunction, set());
         Set<String> expectedResolvedTypes = set("partnership:partner");
 
         assertEquals(expectedResolvedTypes, getHintMap(conjunction).get("$_relation:partner"));

@@ -473,13 +473,13 @@ public class ResolutionTest {
 
     private Disjunction parseDisjunction(RocksTransaction transaction, String query) {
         Disjunction disjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise());
-        disjunction.conjunctions().forEach(conj -> transaction.logic().typeResolver().resolve(conj));
+        disjunction.conjunctions().forEach(conj -> transaction.logic().typeResolver().resolve(conj, set()));
         return disjunction;
     }
 
     private Conjunction parseConjunction(RocksTransaction transaction, String query) {
         Conjunction conjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
-        transaction.logic().typeResolver().resolve(conjunction);
+        transaction.logic().typeResolver().resolve(conjunction, set());
         return conjunction;
     }
 
