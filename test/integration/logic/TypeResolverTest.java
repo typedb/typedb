@@ -111,7 +111,7 @@ public class TypeResolverTest {
     }
 
     private void resolveConjunction(TypeResolver typeResolver, Conjunction conjunction) {
-        typeResolver.resolve(conjunction, list());
+        typeResolver.resolve(conjunction);
     }
 
     private void resolveRecursive(TypeResolver typeResolver, Conjunction conjunction, List<Conjunction> scopingConjunctions) {
@@ -974,7 +974,7 @@ public class TypeResolverTest {
         Conjunction conjunction = createConjunction(queryString);
 
         assertThrows(
-                () -> typeResolver.resolve(conjunction, list())
+                () -> typeResolver.resolve(conjunction)
         );
     }
 
@@ -1049,7 +1049,7 @@ public class TypeResolverTest {
 
         assertEquals(expectedLabels, getHintMap(conjunction).get("$_relation:partner"));
 
-        typeResolver.resolve(conjunction, list());
+        typeResolver.resolve(conjunction);
         Set<String> expectedResolvedTypes = set("partnership:partner");
 
         assertEquals(expectedResolvedTypes, getHintMap(conjunction).get("$_relation:partner"));

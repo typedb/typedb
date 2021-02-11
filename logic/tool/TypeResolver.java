@@ -58,6 +58,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CONJUNCTION;
@@ -109,6 +110,14 @@ public class TypeResolver {
                 });
     }
 
+    public void resolve(Conjunction conjunction) {
+        resolve(conjunction, list(), false);
+    }
+
+    public void resolve(Conjunction conjunction, List<Conjunction> scopingConjunctions) {
+        resolve(conjunction, scopingConjunctions, false);
+    }
+
     public void resolve(Conjunction conjunction, List<Conjunction> scopingConjunctions, boolean insertable) {
         resolveLabels(conjunction);
         Traversal resolverTraversal = new Traversal();
@@ -153,10 +162,6 @@ public class TypeResolver {
             currentBuilder = new TraversalBuilder(conjunction, conceptMgr, traversal, 0, insertable);
         }
         return currentBuilder;
-    }
-
-    public void resolve(Conjunction conjunction, List<Conjunction> scopingConjunctions) {
-        resolve(conjunction, scopingConjunctions, false);
     }
 
     private Map<Reference, Set<Label>> executeResolverTraversals(TraversalBuilder traversalBuilder) {

@@ -127,7 +127,7 @@ public class UnifyAttributeConcludableTest {
 
     private Conjunction resolvedConjunction(String query) {
         Conjunction conjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
-        logicMgr.typeResolver().resolve(conjunction, list());
+        logicMgr.typeResolver().resolve(conjunction);
         return conjunction;
     }
 

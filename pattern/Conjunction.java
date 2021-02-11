@@ -138,8 +138,7 @@ public class Conjunction implements Pattern, Cloneable {
                     } else {
                         var.asThing().iid(boundVar.second());
                     }
-                }
-                else throw GraknException.of(ILLEGAL_STATE);
+                } else throw GraknException.of(ILLEGAL_STATE);
             }
         });
         isBounded = true;
@@ -197,10 +196,9 @@ public class Conjunction implements Pattern, Cloneable {
     @Override
     public String toString() {
         return "" + CURLY_OPEN + SPACE + variableSet.stream()
-                .map(variable -> {
-                    return variable.constraints().stream().map(Object::toString)
-                            .collect(Collectors.joining("" + SEMICOLON + SPACE));
-                }).filter(s -> !s.isEmpty())
+                .map(variable -> variable.constraints().stream().map(Object::toString)
+                        .collect(Collectors.joining("" + SEMICOLON + SPACE))
+                ).filter(s -> !s.isEmpty())
                 .collect(Collectors.joining("; " + NEW_LINE)) + "" + SEMICOLON + SPACE + CURLY_CLOSE;
     }
 
