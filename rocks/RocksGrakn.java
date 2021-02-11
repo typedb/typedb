@@ -54,8 +54,13 @@ public class RocksGrakn implements Grakn {
         if (!Executors.isInitialised()) Executors.initialise(MAX_THREADS);
         this.directory = directory;
         this.graknDBOptions = options;
+
+        long partition = Runtime.getRuntime().totalMemory() / 5;
         this.rocksDBOptions = new org.rocksdb.Options()
                 .setCreateIfMissing(true)
+                .setWriteBufferSize(partition / 3)
+                .setMaxWriteBufferNumber(3)
+                .setDbWriteBufferSize(partition)
                 .setMaxBackgroundJobs(MAX_THREADS / 2)
                 .setMergeOperator(new UInt64AddOperator());
         this.databaseMgr = databaseMgrFactory.databaseManager(this);
