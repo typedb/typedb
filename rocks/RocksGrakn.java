@@ -27,6 +27,8 @@ import grakn.core.common.parameters.Options;
 import grakn.core.concurrent.common.Executors;
 import org.rocksdb.RocksDB;
 import org.rocksdb.UInt64AddOperator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -36,6 +38,7 @@ import static grakn.core.common.exception.ErrorMessage.Internal.GRAKN_CLOSED;
 
 public class RocksGrakn implements Grakn {
 
+    private static final Logger LOG = LoggerFactory.getLogger(RocksGrakn.class);
     private static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
 
     static {
@@ -56,6 +59,8 @@ public class RocksGrakn implements Grakn {
         this.graknDBOptions = options;
 
         long partition = Runtime.getRuntime().maxMemory() / 5;
+        LOG.info("Setting write buffer size to: {} bytes", partition);
+
         this.rocksDBOptions = new org.rocksdb.Options()
                 .setCreateIfMissing(true)
                 .setWriteBufferSize(partition)
