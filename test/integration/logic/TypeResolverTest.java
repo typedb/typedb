@@ -43,10 +43,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.test.Util.assertThrows;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -108,15 +110,15 @@ public class TypeResolverTest {
     }
 
     private void resolveConjunction(TypeResolver typeResolver, Conjunction conjunction) {
-        typeResolver.resolve(conjunction, set());
+        typeResolver.resolve(conjunction, list());
     }
 
-    private void resolveRecursive(TypeResolver typeResolver, Conjunction conjunction, Set<Conjunction> scopingConjunctions) {
+    private void resolveRecursive(TypeResolver typeResolver, Conjunction conjunction, List<Conjunction> scopingConjunctions) {
         typeResolver.resolve(conjunction, scopingConjunctions);
         for (Negation negation : conjunction.negations()) {
             Disjunction disjunction = negation.disjunction();
             for (Conjunction nested : disjunction.conjunctions()) {
-                resolveRecursive(typeResolver, nested, set(scopingConjunctions, conjunction));
+                resolveRecursive(typeResolver, nested, list(scopingConjunctions, conjunction));
             }
         }
     }
@@ -971,7 +973,7 @@ public class TypeResolverTest {
         Conjunction conjunction = createConjunction(queryString);
 
         assertThrows(
-                () -> typeResolver.resolve(conjunction, set())
+                () -> typeResolver.resolve(conjunction, list())
         );
     }
 
@@ -1046,7 +1048,7 @@ public class TypeResolverTest {
 
         assertEquals(expectedLabels, getHintMap(conjunction).get("$_relation:partner"));
 
-        typeResolver.resolve(conjunction, set());
+        typeResolver.resolve(conjunction, list());
         Set<String> expectedResolvedTypes = set("partnership:partner");
 
         assertEquals(expectedResolvedTypes, getHintMap(conjunction).get("$_relation:partner"));
@@ -1152,7 +1154,7 @@ public class TypeResolverTest {
 
         String minimallyRestricted = "match $x isa person; not { $x has name $a; };";
         Conjunction conjunction = createConjunction(minimallyRestricted);
-        resolveRecursive(transaction.logic().typeResolver(), conjunction, set());
+        resolveRecursive(transaction.logic().typeResolver(), conjunction, list());
         HashMap<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$x", set("person", "woman"));
             put("$a", set("maiden-name"));
@@ -1164,7 +1166,7 @@ public class TypeResolverTest {
 
         String restricted = "match $x isa woman; not { $x has name $a; };";
         Conjunction restrictedConjunction = createConjunction(restricted);
-        resolveRecursive(transaction.logic().typeResolver(), restrictedConjunction, set());
+        resolveRecursive(transaction.logic().typeResolver(), restrictedConjunction, list());
         expected = new HashMap<String, Set<String>>() {{
             put("$x", set("woman"));
             put("$a", set("maiden-name"));

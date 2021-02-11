@@ -54,6 +54,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.map;
 import static grakn.common.collection.Collections.pair;
 import static grakn.common.collection.Collections.set;
@@ -143,7 +144,7 @@ public class UnifyIsaConcludableTest {
 
     private Conjunction resolvedConjunction(String query) {
         Conjunction conjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
-        logicMgr.typeResolver().resolve(conjunction, set());
+        logicMgr.typeResolver().resolve(conjunction, list());
         return conjunction;
     }
 

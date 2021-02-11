@@ -43,8 +43,10 @@ import graql.lang.query.GraqlMatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Set;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CONJUNCTION;
 import static grakn.core.common.iterator.Iterators.iterate;
@@ -82,7 +84,7 @@ public class Reasoner {
     public ResourceIterator<ConceptMap> execute(Disjunction disjunction, GraqlMatch.Modifiers modifiers,
                                                 Context.Query context) {
 
-        resolveTypes(disjunction, set());
+        resolveTypes(disjunction, list());
         Set<Identifier.Variable.Name> filter = iterate(modifiers.filter())
                 .map(v -> Identifier.Variable.of(v.reference().asName())).toSet();
         disjunction.conjunctions().forEach(conj -> {
@@ -136,11 +138,11 @@ public class Reasoner {
      * Recursively resolve a disjunction's types
      * @param disjunction - the disjunction to recursively apply type resolver to
      */
-    private void resolveTypes(Disjunction disjunction, Set<Conjunction> scopingConjunctions) {
+    private void resolveTypes(Disjunction disjunction, List<Conjunction> scopingConjunctions) {
         for (Conjunction conjunction : disjunction.conjunctions()) {
             logicMgr.typeResolver().resolve(conjunction, scopingConjunctions);
             for (Negation negation : conjunction.negations()) {
-                resolveTypes(negation.disjunction(), set(scopingConjunctions, conjunction));
+                resolveTypes(negation.disjunction(), list(scopingConjunctions, conjunction));
             }
         }
     }

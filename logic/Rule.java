@@ -232,11 +232,11 @@ public class Rule {
             throw GraknException.of(INVALID_NEGATION_CONTAINS_DISJUNCTION, getLabel());
         }
 
-        logicMgr.typeResolver().resolve(conj, set());
+        logicMgr.typeResolver().resolve(conj, list());
         for (Negation negation : conj.negations()) {
             assert negation.disjunction().conjunctions().size() == 1;
             for (Conjunction c : negation.disjunction().conjunctions()) {
-                logicMgr.typeResolver().resolve(c, set(conj));
+                logicMgr.typeResolver().resolve(c, list(conj));
             }
         }
         return conj;
@@ -245,7 +245,7 @@ public class Rule {
     private Conjunction thenPattern(ThingVariable<?> thenVariable, LogicManager logicMgr) {
         // TODO: when applying the type resolver, we should be using _insert semantics_ during the type resolution!!!
         Conjunction conj = new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
-        logicMgr.typeResolver().resolve(conj, set());
+        logicMgr.typeResolver().resolve(conj, list());
         return conj;
     }
 

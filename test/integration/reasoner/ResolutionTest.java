@@ -52,6 +52,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static junit.framework.TestCase.assertEquals;
@@ -473,13 +474,13 @@ public class ResolutionTest {
 
     private Disjunction parseDisjunction(RocksTransaction transaction, String query) {
         Disjunction disjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise());
-        disjunction.conjunctions().forEach(conj -> transaction.logic().typeResolver().resolve(conj, set()));
+        disjunction.conjunctions().forEach(conj -> transaction.logic().typeResolver().resolve(conj, list()));
         return disjunction;
     }
 
     private Conjunction parseConjunction(RocksTransaction transaction, String query) {
         Conjunction conjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
-        transaction.logic().typeResolver().resolve(conjunction, set());
+        transaction.logic().typeResolver().resolve(conjunction, list());
         return conjunction;
     }
 

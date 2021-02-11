@@ -82,7 +82,7 @@ public class PlannerTest {
     private Conjunction parse(String query) {
         Conjunction conjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise())
                 .conjunctions().iterator().next();
-        logicMgr.typeResolver().resolve(conjunction, set());
+        logicMgr.typeResolver().resolve(conjunction, list());
         return conjunction;
     }
 
