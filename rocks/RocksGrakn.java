@@ -56,7 +56,7 @@ public class RocksGrakn implements Grakn {
         this.graknDBOptions = options;
         this.rocksDBOptions = new org.rocksdb.Options()
                 .setCreateIfMissing(true)
-                .setMaxBackgroundJobs(MAX_THREADS)
+                .setMaxBackgroundJobs(MAX_THREADS / 2)
                 .setMergeOperator(new UInt64AddOperator());
         this.databaseMgr = databaseMgrFactory.databaseManager(this);
         this.databaseMgr.loadAll();
