@@ -34,7 +34,6 @@ import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;

@@ -49,6 +49,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.common.collection.Collections.set;
@@ -58,6 +59,7 @@ import static grakn.core.common.exception.ErrorMessage.ThingRead.CONTRADICTORY_B
 import static grakn.core.common.iterator.Iterators.iterate;
 import static graql.lang.common.GraqlToken.Char.CURLY_CLOSE;
 import static graql.lang.common.GraqlToken.Char.CURLY_OPEN;
+import static graql.lang.common.GraqlToken.Char.NEW_LINE;
 import static graql.lang.common.GraqlToken.Char.SEMICOLON;
 import static graql.lang.common.GraqlToken.Char.SPACE;
 import static java.util.Collections.unmodifiableMap;
@@ -136,8 +138,7 @@ public class Conjunction implements Pattern, Cloneable {
                     } else {
                         var.asThing().iid(boundVar.second());
                     }
-                }
-                else throw GraknException.of(ILLEGAL_STATE);
+                } else throw GraknException.of(ILLEGAL_STATE);
             }
         });
         isBounded = true;
@@ -194,10 +195,13 @@ public class Conjunction implements Pattern, Cloneable {
 
     @Override
     public String toString() {
-        return variableSet.stream().flatMap(variable -> variable.constraints().stream()).map(Object::toString)
-                .collect(Collectors.joining("" + SEMICOLON + SPACE,
-                                            "" + CURLY_OPEN + SPACE,
-                                            "" + SEMICOLON + SPACE + CURLY_CLOSE));
+        return variableSet.stream()
+                .map(variable -> variable.constraints().stream().map(Object::toString)
+                        .collect(Collectors.joining("" + SEMICOLON + SPACE)))
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.joining("; " + NEW_LINE,
+                         "" + CURLY_OPEN + SPACE,
+                         "" + SEMICOLON + SPACE + CURLY_CLOSE));
     }
 
     @Override
