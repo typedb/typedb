@@ -59,8 +59,6 @@ public class RocksGrakn implements Grakn {
         this.rocksDBOptions = new org.rocksdb.Options()
                 .setCreateIfMissing(true)
                 .setWriteBufferSize(partition / 3)
-                .setMaxWriteBufferNumber(3)
-                .setDbWriteBufferSize(partition)
                 .setMaxBackgroundJobs(MAX_THREADS / 2)
                 .setMergeOperator(new UInt64AddOperator());
 
