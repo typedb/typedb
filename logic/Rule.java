@@ -233,16 +233,13 @@ public class Rule {
         }
 
         logicMgr.typeResolver().resolve(conj, set());
-        Set<Negation> filteredNegations = new HashSet<>();
         for (Negation negation : conj.negations()) {
-            Set<Identifier.Variable.Name> f = iterate(conj.variables()).filter(v -> v.id().isName()).map(v -> v.id().asName()).toSet();
             assert negation.disjunction().conjunctions().size() == 1;
             for (Conjunction c : negation.disjunction().conjunctions()) {
                 logicMgr.typeResolver().resolve(c, set(conj));
-                if (c.isSatisfiable()) filteredNegations.add(new Negation(new Disjunction(list(c))));
             }
         }
-        return new Conjunction(conj.variables(), filteredNegations);
+        return conj;
     }
 
     private Conjunction thenPattern(ThingVariable<?> thenVariable, LogicManager logicMgr) {
