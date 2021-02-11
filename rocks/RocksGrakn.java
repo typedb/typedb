@@ -27,6 +27,7 @@ import grakn.core.common.parameters.Options;
 import grakn.core.concurrent.common.Executors;
 import org.rocksdb.RocksDB;
 import org.rocksdb.UInt64AddOperator;
+import org.rocksdb.util.SizeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,12 +59,10 @@ public class RocksGrakn implements Grakn {
         this.directory = directory;
         this.graknDBOptions = options;
 
-        long partition = Runtime.getRuntime().maxMemory() / 5;
-        LOG.info("Setting write buffer size to: {} bytes", partition);
-
         this.rocksDBOptions = new org.rocksdb.Options()
                 .setCreateIfMissing(true)
-                .setWriteBufferSize(partition)
+                .setWriteBufferSize(512 * SizeUnit.MB)
+                .setMaxWriteBufferNumber(3)
                 .setMaxBackgroundJobs(MAX_THREADS / 2)
                 .setMergeOperator(new UInt64AddOperator());
 
