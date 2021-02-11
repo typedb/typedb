@@ -86,8 +86,8 @@ public class RocksDatabase implements Grakn.Database {
         try {
             String schemaDirPath = directory().resolve(Encoding.ROCKS_SCHEMA).toString();
             String dataDirPath = directory().resolve(Encoding.ROCKS_DATA).toString();
-            rocksSchema = OptimisticTransactionDB.open(this.grakn.rocksOptions(), schemaDirPath);
-            rocksData = OptimisticTransactionDB.open(this.grakn.rocksOptions(), dataDirPath);
+            rocksSchema = OptimisticTransactionDB.open(this.grakn.rocksDBOptions(), schemaDirPath);
+            rocksData = OptimisticTransactionDB.open(this.grakn.rocksDBOptions(), dataDirPath);
         } catch (RocksDBException e) {
             throw GraknException.of(e);
         }
