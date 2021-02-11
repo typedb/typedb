@@ -54,6 +54,7 @@ import static grakn.core.common.test.Util.assertThrows;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class TypeResolverTest {
     private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("type-resolver-test");
@@ -1145,7 +1146,7 @@ public class TypeResolverTest {
 
 
     @Test
-    public void nested_negation_uses_outer_scope_correctly() {
+    public void nested_negation_outer_scope_correctly_reduces_resolved_types() {
         define_custom_schema("define " +
                                      " person sub entity, owns name;" +
                                      " woman sub person, owns maiden-name as name;" +
@@ -1160,7 +1161,6 @@ public class TypeResolverTest {
             put("$a", set("maiden-name"));
             put("$_name", set("name"));
         }};
-
         // test the inner negation
         assertEquals(expected, getHintMap(conjunction.negations().iterator().next().disjunction().conjunctions().get(0)));
 
@@ -1172,9 +1172,43 @@ public class TypeResolverTest {
             put("$a", set("maiden-name"));
             put("$_name", set("name"));
         }};
-
         // test the inner negation
         assertEquals(expected, getHintMap(restrictedConjunction.negations().iterator().next().disjunction().conjunctions().get(0)));
     }
 
+
+    /**
+     * If the type resolver conflates anonymous or generated variables between the inner or outer nestings,
+     * we will see it here
+     */
+    @Test
+    public void nested_negation_is_satisfiable(){
+        define_custom_schema("define session sub entity,\n" +
+                                     "          plays reported-fault:parent-session,\n" +
+                                     "          plays unanswered-question:parent-session;\n" +
+                                     "      fault sub entity,\n" +
+                                     "          plays reported-fault:relevant-fault,\n" +
+                                     "          plays fault-identification:identified-fault;\n" +
+                                     "      question sub entity,\n" +
+                                     "          plays fault-identification:identifying-question,\n" +
+                                     "          plays unanswered-question:question-not-answered;\n" +
+                                     "      reported-fault sub relation,\n" +
+                                     "          relates relevant-fault,\n" +
+                                     "          relates parent-session;\n" +
+                                     "      unanswered-question sub relation,\n" +
+                                     "          relates question-not-answered,\n" +
+                                     "          relates parent-session;\n" +
+                                     "      fault-identification sub relation,\n" +
+                                     "          relates identifying-question,\n" +
+                                     "          relates identified-fault;\n"
+        );
+        String query = "match (relevant-fault: $flt, parent-session: $ts) isa reported-fault;\n" +
+                "          not {\n" +
+                "              (question-not-answered: $ques, parent-session: $ts) isa unanswered-question;\n" +
+                "              ($flt, $ques) isa fault-identification;" +
+                "          };";
+        Conjunction conjunction = createConjunction(query);
+        resolveRecursive(transaction.logic().typeResolver(), conjunction, list());
+        assertTrue(conjunction.negations().iterator().next().disjunction().conjunctions().get(0).isSatisfiable());
+    }
 }

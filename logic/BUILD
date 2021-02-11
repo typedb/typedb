@@ -48,6 +48,10 @@ native_java_libraries(
 
         # External Maven Dependencies
         "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:org_slf4j_slf4j_api"
+    ],
+    runtime_deps = [
+        "@maven//:ch_qos_logback_logback_classic",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-logic:{pom_version}"],
     visibility = ["//visibility:public"],
