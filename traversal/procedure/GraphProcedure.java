@@ -171,8 +171,10 @@ public class GraphProcedure implements Procedure {
     @Override
     public Producer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
                                         Set<Identifier.Variable.Name> filter, int parallelisation) {
-        LOG.debug(params.toString());
-        LOG.debug(this.toString());
+        if (LOG.isDebugEnabled()) {
+            LOG.debug(params.toString());
+            LOG.debug(this.toString());
+        }
         assertWithinFilterBounds(filter);
         ConcurrentSet<VertexMap> produced = new ConcurrentSet<>();
         ResourceIterator<ResourceIterator<VertexMap>> iterators = startVertex().iterator(graphMgr, params)
@@ -183,8 +185,10 @@ public class GraphProcedure implements Procedure {
     @Override
     public ResourceIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
                                                 Set<Identifier.Variable.Name> filter) {
-        LOG.debug(params.toString());
-        LOG.debug(this.toString());
+        if (LOG.isDebugEnabled()) {
+            LOG.debug(params.toString());
+            LOG.debug(this.toString());
+        }
         assertWithinFilterBounds(filter);
         return startVertex().iterator(graphMgr, params).flatMap(
                 sv -> new GraphIterator(graphMgr, sv, this, params, filter)
