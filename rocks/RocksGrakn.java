@@ -45,19 +45,22 @@ public class RocksGrakn implements Grakn {
     }
 
     private final Path directory;
-    private final Options.Database options;
-    private final org.rocksdb.Options rocksConfig;
+    private final Options.Database graknDBOptions;
+    private final org.rocksdb.Options rocksDBOptions;
     private final RocksDatabaseManager databaseMgr;
     private final AtomicBoolean isOpen;
 
     protected RocksGrakn(Path directory, Options.Database options, Factory.DatabaseManager databaseMgrFactory) {
         if (!Executors.isInitialised()) Executors.initialise(MAX_THREADS);
         this.directory = directory;
-        this.options = options;
-        this.rocksConfig = new org.rocksdb.Options().setCreateIfMissing(true).setMergeOperator(new UInt64AddOperator());
+        this.graknDBOptions = options;
         this.databaseMgr = databaseMgrFactory.databaseManager(this);
         this.databaseMgr.loadAll();
         this.isOpen = new AtomicBoolean(true);
+        this.rocksDBOptions = new org.rocksdb.Options()
+                .setCreateIfMissing(true)
+                .setMaxBackgroundJobs(MAX_THREADS)
+                .setMergeOperator(new UInt64AddOperator());
     }
 
     public static RocksGrakn open(Path directory) {
@@ -76,12 +79,12 @@ public class RocksGrakn implements Grakn {
         return directory;
     }
 
-    org.rocksdb.Options rocksOptions() {
-        return rocksConfig;
+    org.rocksdb.Options rocksDBOptions() {
+        return rocksDBOptions;
     }
 
     public Options.Database options() {
-        return options;
+        return graknDBOptions;
     }
 
     @Override
@@ -119,6 +122,6 @@ public class RocksGrakn implements Grakn {
      */
     protected void closeResources() {
         databaseMgr.all().parallelStream().forEach(RocksDatabase::close);
-        rocksConfig.close();
+        rocksDBOptions.close();
     }
 }

@@ -20,56 +20,47 @@ package grakn.core.reasoner.resolution.framework;
 
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.reasoner.resolution.answer.AnswerState;
-import grakn.core.reasoner.resolution.resolver.RootResolver;
-import graql.lang.pattern.variable.Reference;
+import grakn.core.reasoner.resolution.resolver.NegationResolver;
+import grakn.core.reasoner.resolution.resolver.Root;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
 
 import static grakn.common.collection.Collections.list;
 
 public class Request {
+
+    // TODO: add compute mode: single vs all (for negation vs regular)
+
     private final Path path;
     private final AnswerState.DownstreamVars partialAnswer;
     private final ResolutionAnswer.Derivation partialDerivation;
-    private Set<Reference.Name> answerFilter;
     private final int planIndex;
 
     private Request(Path path,
                     AnswerState.DownstreamVars startingConcept,
                     ResolutionAnswer.Derivation partialDerivation,
-                    int planIndex, @Nullable Set<Reference.Name> answerFilter) {
+                    int planIndex) {
         this.path = path;
         this.partialAnswer = startingConcept;
         this.partialDerivation = partialDerivation;
-        this.answerFilter = answerFilter;
         this.planIndex = planIndex;
     }
 
     public static Request create(Path path,
                                  AnswerState.DownstreamVars startingConcept,
                                  ResolutionAnswer.Derivation partialDerivation,
-                                 int planIndex, @Nullable Set<Reference.Name> answerFilter) {
-        return new Request(path, startingConcept, partialDerivation, planIndex, answerFilter);
-    }
-
-    public static Request create(Path path,
-                                 AnswerState.DownstreamVars startingConcept,
-                                 ResolutionAnswer.Derivation partialDerivation,
-                                 @Nullable Set<Reference.Name> answerFilter) {
-        // Set the planIndex to -1 since it is unused in this case
-        return new Request(path, startingConcept, partialDerivation, -1, answerFilter);
+                                 int planIndex) {
+        return new Request(path, startingConcept, partialDerivation, planIndex);
     }
 
     public static Request create(Path path,
                                  AnswerState.DownstreamVars startingConcept,
                                  ResolutionAnswer.Derivation partialDerivation) {
         // Set the planIndex to -1 since it is unused in this case
-        return new Request(path, startingConcept, partialDerivation, -1, null);
+        return new Request(path, startingConcept, partialDerivation, -1);
     }
 
     public Path path() {
@@ -80,18 +71,16 @@ public class Request {
         return planIndex;
     }
 
-    public Optional<Set<Reference.Name>> filter() { return Optional.ofNullable(answerFilter); }
-
     @Nullable
     public Actor<? extends Resolver<?>> sender() {
         if (path.path.size() < 2) {
             return null;
         }
-        return path.path.get(path.path.size() - 2);
+        return path.path.get(path.path.size() - 2).resolver;
     }
 
     public Actor<? extends Resolver<?>> receiver() {
-        return path.path.get(path.path.size() - 1);
+        return path.path.get(path.path.size() - 1).resolver;
     }
 
     public AnswerState.DownstreamVars partialAnswer() {
@@ -104,13 +93,12 @@ public class Request {
         if (o == null || getClass() != o.getClass()) return false;
         Request request = (Request) o;
         return Objects.equals(path, request.path) &&
-                Objects.equals(partialAnswer, request.partialAnswer()) &&
-                Objects.equals(answerFilter, request.answerFilter);
+                Objects.equals(partialAnswer, request.partialAnswer());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(path, partialAnswer, answerFilter);
+        return Objects.hash(path, partialAnswer);
     }
 
     @Override
@@ -127,20 +115,20 @@ public class Request {
     }
 
     public static class Path {
-        final List<Actor<? extends Resolver<?>>> path;
 
-        public Path(Actor<? extends Resolver<?>> sender) {
-            this(list(sender));
+        private final List<VisitedResolver> path;
+
+        public Path(Actor<? extends Resolver<?>> sender, AnswerState.DownstreamVars answerState) {
+            this(list(new VisitedResolver(sender, answerState)));
         }
 
-        private Path(List<Actor<? extends Resolver<?>>> path) {
-            assert !path.isEmpty() : "Path cannot be empty";
+        public Path(List<VisitedResolver> path) {
             this.path = path;
         }
 
-        public Path append(Actor<? extends Resolver<?>> actor) {
-            List<Actor<? extends Resolver<?>>> appended = new ArrayList<>(path);
-            appended.add(actor);
+        public Path append(Actor<? extends Resolver<?>> actor, AnswerState.DownstreamVars answerState) {
+            List<VisitedResolver> appended = new ArrayList<>(path);
+            appended.add(new VisitedResolver(actor, answerState));
             return new Path(appended);
         }
 
@@ -148,8 +136,8 @@ public class Request {
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            Path path1 = (Path) o;
-            return Objects.equals(path, path1.path);
+            Path other = (Path) o;
+            return Objects.equals(path, other.path);
         }
 
         @Override
@@ -157,9 +145,37 @@ public class Request {
             return Objects.hash(path);
         }
 
-        public Actor<RootResolver> root() {
-            assert path.get(0).state instanceof RootResolver;
-            return (Actor<RootResolver>) path.get(0);
+        public Actor<? extends Resolver<?>> root() {
+            assert path.get(0).resolver.state instanceof Root || path.get(0).resolver.state instanceof NegationResolver;
+            return path.get(0).resolver;
+        }
+
+        /**
+         * To distinguish between visiting a resolver with two different unifiers,
+         */
+        private static class VisitedResolver {
+
+            final Actor<? extends Resolver<?>> resolver;
+            AnswerState.DownstreamVars answerState;
+
+            public VisitedResolver(Actor<? extends Resolver<?>> resolver, AnswerState.DownstreamVars answerState) {
+                this.resolver = resolver;
+                this.answerState = answerState;
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+                final VisitedResolver that = (VisitedResolver) o;
+                return Objects.equals(resolver, that.resolver) &&
+                        Objects.equals(answerState, that.answerState);
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(resolver, answerState);
+            }
         }
     }
 }

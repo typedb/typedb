@@ -145,9 +145,9 @@
 @maven//:org_objenesis_objenesis
 @maven//:org_objenesis_objenesis_2_5
 @maven//:org_rocksdb_rocksdbjni
-@maven//:org_rocksdb_rocksdbjni_6_11_4
+@maven//:org_rocksdb_rocksdbjni_6_15_2
 @maven//:org_rocksdb_rocksdbjni_dev
-@maven//:org_rocksdb_rocksdbjni_dev_6_11_4
+@maven//:org_rocksdb_rocksdbjni_dev_6_15_2
 @maven//:org_slf4j_slf4j_api
 @maven//:org_slf4j_slf4j_api_1_7_28
 @maven//:org_zeroturnaround_zt_exec

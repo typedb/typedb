@@ -181,7 +181,7 @@ public class UnifyAttributeConcludableTest {
         assertEquals(2, concludables.size());
         Concludable.Attribute queryConcludable = concludables.iterator().next().asAttribute();
         // Get the name of the attribute variable from whichever concludable is chosen
-        String var = Iterators.iterate(concludables).map(Concludable::conjunction).flatMap(
+        String var = Iterators.iterate(concludables).map(Concludable::pattern).flatMap(
                 c -> Iterators.iterate(c.variables())).filter(Variable::isThing).map(v -> v.reference().syntax()).first().get();
 
         Rule rule = createRule("isa-rule", "{ $x isa person; }", "$x has first-name \"john\"");

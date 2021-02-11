@@ -72,7 +72,7 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
 
     protected abstract void receiveAnswer(Response.Answer fromDownstream, int iteration);
 
-    protected abstract void receiveExhausted(Response.Exhausted fromDownstream, int iteration);
+    protected abstract void receiveExhausted(Response.Fail fromDownstream, int iteration);
 
     protected abstract void initialiseDownstreamActors();
 
@@ -87,7 +87,7 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
 
     protected void requestFromDownstream(Request request, Request fromUpstream, int iteration) {
         LOG.trace("{} : Sending a new answer Request to downstream: {}", name, request);
-        // TODO we may overwrite if multiple identical requests are sent, when to clean up?
+        // TODO: we may overwrite if multiple identical requests are sent, when to clean up?
         requestRouter.put(request, fromUpstream);
         Actor<? extends Resolver<?>> receiver = request.receiver();
         receiver.tell(actor -> actor.receiveRequest(request, iteration));
@@ -98,9 +98,9 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
         if (response.isAnswer()) {
             LOG.trace("{} : Sending a new Response.Answer to upstream", name());
             receiver.tell(actor -> actor.receiveAnswer(response.asAnswer(), iteration));
-        } else if (response.isExhausted()) {
-            LOG.trace("{}: Sending a new Response.Exhausted to upstream", name());
-            receiver.tell(actor -> actor.receiveExhausted(response.asExhausted(), iteration));
+        } else if (response.isFail()) {
+            LOG.trace("{}: Sending a new Response.Fail to upstream", name());
+            receiver.tell(actor -> actor.receiveExhausted(response.asFail(), iteration));
         } else {
             throw new RuntimeException(("Unknown response type " + response.getClass().getSimpleName()));
         }
