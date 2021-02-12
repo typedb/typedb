@@ -101,7 +101,7 @@ public class SubConstraint extends TypeConstraint {
 
     @Override
     public String toString() {
-        return "" + (isExplicit ? SUBX : SUB) + SPACE + type.referenceSyntax();
+        return owner.toString() + SPACE + (isExplicit ? SUBX : SUB) + SPACE + type.toString();
     }
 
     @Override

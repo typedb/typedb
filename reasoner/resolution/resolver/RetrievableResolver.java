@@ -26,10 +26,10 @@ import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
+import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.Response.Answer;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
-import grakn.core.traversal.Traversal;
 import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +39,7 @@ import java.util.Map;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
-public class RetrievableResolver extends ResolvableResolver<RetrievableResolver> {
+public class RetrievableResolver extends Resolver<RetrievableResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(RetrievableResolver.class);
     private final Retrievable retrievable;
     private final Map<Request, ResponseProducer> responseProducers;
@@ -47,7 +47,7 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
 
     public RetrievableResolver(Actor<RetrievableResolver> self, Retrievable retrievable, ResolverRegistry registry,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean explanations) {
-        super(self, RetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable.conjunction() + ")",
+        super(self, RetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable.pattern() + ")",
               registry, traversalEngine, explanations);
         this.retrievable = retrievable;
         this.conceptMgr = conceptMgr;
@@ -60,7 +60,7 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
         ResponseProducer responseProducer = mayUpdateAndGetResponseProducer(fromUpstream, iteration);
         if (iteration < responseProducer.iteration()) {
             // short circuit old iteration exhausted messages to upstream
-            respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
+            respondToUpstream(new Response.Fail(fromUpstream), iteration);
         } else {
             assert iteration == responseProducer.iteration();
             tryAnswer(fromUpstream, responseProducer, iteration);
@@ -73,7 +73,7 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
     }
 
     @Override
-    protected void receiveExhausted(Response.Exhausted fromDownstream, int iteration) {
+    protected void receiveExhausted(Response.Fail fromDownstream, int iteration) {
         throw GraknException.of(ILLEGAL_STATE);
     }
 
@@ -85,10 +85,9 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
     @Override
     protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), fromUpstream);
-        Traversal traversal = boundTraversal(retrievable.conjunction().traversal(), fromUpstream.partialAnswer().conceptMap());
         assert fromUpstream.partialAnswer().isMapped();
-        ResourceIterator<UpstreamVars.Derived> upstreamAnswers = traversalEngine.iterator(traversal)
-                .map(conceptMgr::conceptMap)
+        ResourceIterator<UpstreamVars.Derived> upstreamAnswers =
+                compatibleBoundAnswers(conceptMgr, retrievable.pattern(), fromUpstream.partialAnswer().conceptMap())
                 .map(conceptMap -> fromUpstream.partialAnswer().asMapped().mapToUpstream(conceptMap));
         return new ResponseProducer(upstreamAnswers, iteration);
     }
@@ -99,9 +98,9 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
         LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
 
         assert newIteration > responseProducerPrevious.iteration();
-        Traversal traversal = boundTraversal(retrievable.conjunction().traversal(), fromUpstream.partialAnswer().conceptMap());
         assert fromUpstream.partialAnswer().isMapped();
-        ResourceIterator<UpstreamVars.Derived> upstreamAnswers = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap)
+        ResourceIterator<UpstreamVars.Derived> upstreamAnswers =
+                compatibleBoundAnswers(conceptMgr, retrievable.pattern(), fromUpstream.partialAnswer().conceptMap())
                 .map(conceptMap -> fromUpstream.partialAnswer().asMapped().mapToUpstream(conceptMap));
         return responseProducerPrevious.newIteration(upstreamAnswers, newIteration);
     }
@@ -126,11 +125,11 @@ public class RetrievableResolver extends ResolvableResolver<RetrievableResolver>
         if (responseProducer.hasUpstreamAnswer()) {
             UpstreamVars.Derived upstreamAnswer = responseProducer.upstreamAnswers().next();
             responseProducer.recordProduced(upstreamAnswer.withInitialFiltered());
-            ResolutionAnswer answer = new ResolutionAnswer(upstreamAnswer, retrievable.conjunction().toString(),
+            ResolutionAnswer answer = new ResolutionAnswer(upstreamAnswer, retrievable.pattern().toString(),
                                                            ResolutionAnswer.Derivation.EMPTY, self(), false);
             respondToUpstream(Answer.create(fromUpstream, answer), iteration);
         } else {
-            respondToUpstream(new Response.Exhausted(fromUpstream), iteration);
+            respondToUpstream(new Response.Fail(fromUpstream), iteration);
         }
     }
 

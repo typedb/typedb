@@ -48,17 +48,17 @@ public class Planner {
         this.logicMgr = logicMgr;
     }
 
-    public List<Resolvable> plan(Set<Resolvable> resolvables) {
+    public List<Resolvable<?>> plan(Set<Resolvable<?>> resolvables) {
         return new Plan(resolvables).plan;
     }
 
     class Plan {
-        private final List<Resolvable> plan;
-        private final Map<Resolvable, Set<Variable>> dependencies;
+        private final List<Resolvable<?>> plan;
+        private final Map<Resolvable<?>, Set<Variable>> dependencies;
         private final Set<Variable> varsAnswered;
-        private final Set<Resolvable> remaining;
+        private final Set<Resolvable<?>> remaining;
 
-        Plan(Set<Resolvable> resolvables) {
+        Plan(Set<Resolvable<?>> resolvables) {
             assert resolvables.size() > 0;
             this.plan = new ArrayList<>();
             this.varsAnswered = new HashSet<>();
@@ -69,16 +69,16 @@ public class Planner {
             assert set(plan).equals(resolvables);
         }
 
-        private void add(Resolvable resolvable) {
+        private void add(Resolvable<?> resolvable) {
             plan.add(resolvable);
-            varsAnswered.addAll(namedVariables(resolvable));
+            varsAnswered.addAll(resolvable.namedVariables());
             remaining.remove(resolvable);
         }
 
         private void computePlan() {
             while (remaining.size() != 0) {
                 Optional<Concludable> concludable;
-                Optional<Resolvable> retrievable;
+                Optional<Resolvable<?>> retrievable;
 
                 // Retrievable where:
                 // all of it's dependencies are already satisfied,
@@ -134,37 +134,38 @@ public class Planner {
             }
         }
 
-        private Stream<Resolvable> dependenciesSatisfied(Stream<Resolvable> resolvableStream) {
+        private Stream<Resolvable<?>> dependenciesSatisfied(Stream<Resolvable<?>> resolvableStream) {
             return resolvableStream.filter(c -> varsAnswered.containsAll(dependencies.get(c)));
         }
 
-        private Stream<Resolvable> connected(Stream<Resolvable> resolvableStream) {
-            return resolvableStream.filter(r -> !Collections.disjoint(namedVariables(r), varsAnswered));
+        private Stream<Resolvable<?>> connected(Stream<Resolvable<?>> resolvableStream) {
+            return resolvableStream.filter(r -> !Collections.disjoint(r.namedVariables(), varsAnswered));
         }
 
-        private Optional<Concludable> fewestRules(Stream<Resolvable> resolvableStream) {
-            // TODO Tie-break for Concludables with the same number of applicable rules
+        private Optional<Concludable> fewestRules(Stream<Resolvable<?>> resolvableStream) {
+            // TODO: Tie-break for Concludables with the same number of applicable rules
             return resolvableStream.map(Resolvable::asConcludable)
-                    .min(Comparator.comparingInt(c -> c.getApplicableRules(conceptMgr, logicMgr).toSet().size()));
+                    .min(Comparator.comparingInt(c -> (int)c.getApplicableRules(conceptMgr, logicMgr).count()));
         }
 
-        private Optional<Resolvable> mostUnansweredVars(Stream<Resolvable> resolvableStream) {
-            return resolvableStream.max(Comparator.comparingInt(r -> iterate(namedVariables(r))
+        private Optional<Resolvable<?>> mostUnansweredVars(Stream<Resolvable<?>> resolvableStream) {
+            return resolvableStream.max(Comparator.comparingInt(r -> iterate(r.namedVariables())
                     .filter(var -> !varsAnswered.contains(var)).toSet().size()));
         }
 
         /**
          * Determine the resolvables that are dependent upon the generation of each variable
          */
-        private Map<Resolvable, Set<Variable>> dependencies(Set<Resolvable> resolvables) {
-            Map<Resolvable, Set<Variable>> deps = new HashMap<>();
-            Set<Variable> generatedVars = iterate(resolvables).filter(Resolvable::isConcludable)
-                    .map(Resolvable::asConcludable).map(Concludable::generating).toSet();
-            for (Resolvable resolvable : resolvables) {
-                for (Variable v : namedVariables(resolvable)) {
+        private Map<Resolvable<?>, Set<Variable>> dependencies(Set<Resolvable<?>> resolvables) {
+            Map<Resolvable<?>, Set<Variable>> deps = new HashMap<>();
+            Set<Variable> generatedVars = iterate(resolvables).map(Resolvable::generating).filter(Optional::isPresent)
+                    .map(Optional::get).toSet();
+            for (Resolvable<?> resolvable : resolvables) {
+                Optional<Variable> generating = resolvable.generating();
+                for (Variable v : resolvable.namedVariables()) {
                     deps.putIfAbsent(resolvable, new HashSet<>());
-                    if (generatedVars.contains(v) && !(resolvable.isConcludable() && resolvable.asConcludable().generating().equals(v))) {
-                        // TODO Should this rule the Resolvable out if generates it's own dependency?
+                    if (generatedVars.contains(v) && !(generating.isPresent() && generating.get().equals(v))) {
+                        // TODO: Should this rule the Resolvable<?> out if generates it's own dependency?
                         deps.get(resolvable).add(v);
                     }
                 }
@@ -172,8 +173,5 @@ public class Planner {
             return deps;
         }
 
-        private Set<Variable> namedVariables(Resolvable resolvable) {
-            return iterate(resolvable.conjunction().variables()).filter(var -> var.reference().isName()).toSet();
-        }
     }
 }

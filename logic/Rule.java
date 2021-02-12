@@ -33,6 +33,7 @@ import grakn.core.concept.type.RoleType;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
 import grakn.core.pattern.Conjunction;
+import grakn.core.pattern.Negation;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
@@ -48,6 +49,8 @@ import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.Reference;
 import graql.lang.pattern.variable.ThingVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -61,8 +64,11 @@ import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.INVALID_NEGATION;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.INVALID_NEGATION_CONTAINS_DISJUNCTION;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CANNOT_BE_SATISFIED;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CAN_IMPLY_UNINSERTABLE_RESULTS;
+import static grakn.core.common.iterator.Iterators.iterate;
 import static graql.lang.common.GraqlToken.Char.COLON;
 import static graql.lang.common.GraqlToken.Char.CURLY_CLOSE;
 import static graql.lang.common.GraqlToken.Char.CURLY_OPEN;
@@ -76,8 +82,9 @@ import static graql.lang.common.GraqlToken.Schema.WHEN;
 
 public class Rule {
 
-    // note: as `Rule` is cached between transactions, we cannot hold any transaction-bound objects such as Managers
+    private static final Logger LOG = LoggerFactory.getLogger(Rule.class);
 
+    // note: as `Rule` is cached between transactions, we cannot hold any transaction-bound objects such as Managers
     private final RuleStructure structure;
     private final Conjunction when;
     private final Conjunction then;
@@ -88,10 +95,7 @@ public class Rule {
         this.when = whenPattern(structure.when(), logicMgr);
         this.then = thenPattern(structure.then(), logicMgr);
         pruneThenResolvedTypes();
-        validateSatisfiable();
-        validateInsertable(logicMgr);
         this.conclusion = Conclusion.create(this.then);
-        validateCycles();
     }
 
     private Rule(GraphManager graphMgr, LogicManager logicMgr, String label,
@@ -99,8 +103,6 @@ public class Rule {
         this.structure = graphMgr.schema().rules().create(label, when, then);
         this.when = whenPattern(structure.when(), logicMgr);
         this.then = thenPattern(structure.then(), logicMgr);
-        logicMgr.typeResolver().resolve(this.when, false);
-        logicMgr.typeResolver().resolve(this.then, false);
         pruneThenResolvedTypes();
         validateSatisfiable();
         validateInsertable(logicMgr);
@@ -189,14 +191,14 @@ public class Rule {
 
     @Override
     public String toString() {
-        return "" + RULE + SPACE  + getLabel() + COLON  + NEW_LINE + WHEN + SPACE + CURLY_OPEN + NEW_LINE + when + NEW_LINE +
+        return "" + RULE + SPACE + getLabel() + COLON + NEW_LINE + WHEN + SPACE + CURLY_OPEN + NEW_LINE + when + NEW_LINE +
                 CURLY_CLOSE + SPACE + THEN + SPACE + CURLY_OPEN + NEW_LINE + then + NEW_LINE + CURLY_CLOSE + SEMICOLON;
     }
 
     void validateCycles() {
-        // TODO implement this when we have negation
-        // TODO detect negated cycles in the rule graph
-        // TODO use the new rule as a starting point
+        // TODO: implement this when we have negation
+        // TODO: detect negated cycles in the rule graph
+        // TODO: use the new rule as a starting point
         // throw GraknException.of(ErrorMessage.RuleWrite.RULES_IN_NEGATED_CYCLE_NOT_STRATIFIABLE.message(rule));
     }
 
@@ -204,7 +206,7 @@ public class Rule {
      * Remove type hints in the `then` pattern that are not valid in the `when` pattern
      */
     private void pruneThenResolvedTypes() {
-        // TODO name is inconsistent with elsewhere
+        // TODO: name is inconsistent with elsewhere
         then.variables().stream().filter(variable -> variable.id().isName())
                 .forEach(thenVar ->
                                  when.variables().stream()
@@ -221,12 +223,31 @@ public class Rule {
 
     private Conjunction whenPattern(graql.lang.pattern.Conjunction<? extends Pattern> conjunction, LogicManager logicMgr) {
         Conjunction conj = Conjunction.create(conjunction.normalise().patterns().get(0));
+
+        // TODO: remove this when we fully implement negation and don't have to ban it in rules
+        if (!conj.negations().isEmpty()) {
+            throw GraknException.of(INVALID_NEGATION, getLabel());
+        }
+
+        if (iterate(conj.negations()).filter(neg -> neg.disjunction().conjunctions().size() != 1).hasNext()) {
+            throw GraknException.of(INVALID_NEGATION_CONTAINS_DISJUNCTION, getLabel());
+        }
+
         logicMgr.typeResolver().resolve(conj);
+        for (Negation negation : conj.negations()) {
+            assert negation.disjunction().conjunctions().size() == 1;
+            for (Conjunction c : negation.disjunction().conjunctions()) {
+                logicMgr.typeResolver().resolve(c, list(conj));
+                if (!c.isSatisfiable()) {
+                    LOG.warn("Rule {} contains unsatisfiable negated conjunction: {}", getLabel(), c);
+                }
+            }
+        }
         return conj;
     }
 
     private Conjunction thenPattern(ThingVariable<?> thenVariable, LogicManager logicMgr) {
-        // TODO when applying the type resolver, we should be using _insert semantics_ during the type resolution!!!
+        // TODO: when applying the type resolver, we should be using _insert semantics_ during the type resolution!!!
         Conjunction conj = new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
         logicMgr.typeResolver().resolve(conj);
         return conj;
@@ -251,9 +272,10 @@ public class Rule {
 
         /**
          * Perform a put operation on the `then` of the rule. This may insert a new fact, or return an iterator of existing ones
+         *
          * @param whenConcepts - the concepts that satisfy the `when` of the rule. All named `then` variables must be in this map
          * @param traversalEng - used to perform a traversal to find preexisting conclusions
-         * @param conceptMgr - used to insert the conclusion if it doesn't already exist
+         * @param conceptMgr   - used to insert the conclusion if it doesn't already exist
          * @return - all possible conclusions: there may be multiple preexisting satisfactory conclusions, we return all
          */
         public abstract ResourceIterator<Map<Identifier, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
@@ -423,7 +445,7 @@ public class Rule {
             }
 
             private ResourceIterator<grakn.core.concept.thing.Relation> matchRelation(RelationType relationType, Set<RolePlayer> players,
-                                                                              TraversalEngine traversalEng, ConceptManager conceptMgr) {
+                                                                                      TraversalEngine traversalEng, ConceptManager conceptMgr) {
                 Traversal traversal = new Traversal();
                 SystemReference relationRef = SystemReference.of(0);
                 Identifier.Variable relationId = Identifier.Variable.of(relationRef);

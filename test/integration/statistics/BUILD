@@ -16,11 +16,36 @@
 #
 
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
-# TODO: migrate from 1.8, see #6103
+host_compatible_java_test(
+    name = "test-statistics",
+    srcs = ["StatisticsTest.java"],
+    test_class = "grakn.core.rocks.StatisticsTest",
+    native_libraries_deps = [
+        "//rocks:rocks",
+        "//:grakn",
+        "//concept:concept",
+    ],
+    deps = [
+        # Internal dependencies
+        "//test/integration/util:util",
+        "//common:common",
+
+        # External dependencies from Grakn Labs
+        "@graknlabs_graql//java/query:query",
+        "@graknlabs_graql//java:graql",
+    ],
+    resources = [
+        "//common/test:logback"
+    ],
+    resource_strip_prefix = "common/test",
+)
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*"]),
+    include = glob([
+        "*",
+    ]),
     license_type = "agpl",
 )

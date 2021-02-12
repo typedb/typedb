@@ -18,7 +18,6 @@
 package grakn.core.logic.resolvable;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.Iterators;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.thing.ThingConstraint;
@@ -26,18 +25,34 @@ import grakn.core.pattern.constraint.type.TypeConstraint;
 import grakn.core.pattern.variable.Variable;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
+import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.iterator.Iterators.iterate;
 
-public class Retrievable extends Resolvable {
+public class Retrievable extends Resolvable<Conjunction> {
+
+    private final Set<Variable> namedVariables;
 
     public Retrievable(Conjunction conjunction) {
         super(conjunction);
+        this.namedVariables = iterate(pattern().variables()).filter(v -> v.reference().isName()).toSet();
     }
 
     public static Set<Retrievable> extractFrom(Conjunction conjunction, Set<Concludable> toExclude) {
         return Retrievable.Extractor.of(conjunction, toExclude).extract();
+    }
+
+    @Override
+    public Optional<Variable> generating() {
+        return Optional.empty();
+    }
+
+    @Override
+    public Set<Variable> namedVariables() {
+        return namedVariables;
     }
 
     @Override
@@ -68,7 +83,7 @@ public class Retrievable extends Resolvable {
 
         public Set<Retrievable> extract() {
             concludables.forEach(concludable -> extractedConstraints.addAll(concludable.concludableConstraints()));
-            Iterators.iterate(conjunction.variables()).filter(var -> var.id().reference().isName()).forEachRemaining(var -> {
+            iterate(conjunction.variables()).filter(var -> var.id().reference().isName()).forEachRemaining(var -> {
                 if (!extractedVariables.contains(var)) {
                     SubgraphRegistry subgraph = new SubgraphRegistry();
                     subgraph.registerVariable(var);
@@ -77,8 +92,8 @@ public class Retrievable extends Resolvable {
                     extractedConstraints.addAll(subgraph.registeredConstraints);
                 }
             });
-            return Iterators.iterate(subgraphs).filter(SubgraphRegistry::isValid).map(subgraph -> {
-                Set<TypeConstraint> labelConstraints = Iterators.iterate(subgraph.registeredConstraints)
+            return iterate(subgraphs).filter(SubgraphRegistry::isValid).map(subgraph -> {
+                Set<TypeConstraint> labelConstraints = iterate(subgraph.registeredConstraints)
                         .filter(Constraint::isType).map(Constraint::asType).filter(TypeConstraint::isLabel).toSet();
                 Set<? extends Constraint> otherConstraints = new HashSet<>(subgraph.registeredConstraints);
                 otherConstraints.removeAll(labelConstraints);
@@ -117,14 +132,14 @@ public class Retrievable extends Resolvable {
             private void registerConstraint(ThingConstraint thingConstraint) {
                 if (!extractedConstraints.contains(thingConstraint)) {
                     registeredConstraints.add(thingConstraint);
-                    Iterators.iterate(thingConstraint.variables()).forEachRemaining(this::registerVariable);
+                    iterate(thingConstraint.variables()).forEachRemaining(this::registerVariable);
                 }
             }
 
             private void registerConstraint(TypeConstraint typeConstraint) {
                 if (!extractedConstraints.contains(typeConstraint)) {
                     registeredConstraints.add(typeConstraint);
-                    Iterators.iterate(typeConstraint.variables()).forEachRemaining(this::registerVariable);
+                    iterate(typeConstraint.variables()).forEachRemaining(this::registerVariable);
                 }
             }
         }

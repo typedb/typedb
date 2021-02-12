@@ -72,6 +72,10 @@ public abstract class AnswerState {
                 return new Initial(conceptMap);
             }
 
+            public DownstreamVars.Identity toDownstreamVars() {
+                return new DownstreamVars.Identity(this);
+            }
+
             public DownstreamVars.Mapped toDownstreamVars(Mapping mapping) {
                 return new DownstreamVars.Mapped(this, mapping);
             }
@@ -104,8 +108,14 @@ public abstract class AnswerState {
 
             public ConceptMap withInitialFiltered() {
                 if (withInitialFiltered == null) {
+                    /*
+                    We MUST retain initial concepts, and add derived answers afterward. It's possible, and correct,
+                    that the derived answers overlap but are different: for example, when a subtype is found
+                    by the derived answer, but the initial already uses the supertype.
+                     */
                     HashMap<Reference.Name, Concept> withInitial = new HashMap<>(conceptMap().concepts());
                     if (initial != null) {
+                        // add the initial concept map second, to make sure we override and retain all of these
                         withInitial.putAll(initial.conceptMap().concepts());
                     }
                     ConceptMap answer = new ConceptMap(withInitial);
@@ -131,14 +141,14 @@ public abstract class AnswerState {
             super(conceptMap);
         }
 
-        public boolean isRoot() { return false; }
+        public boolean isIdentity() { return false; }
 
         public boolean isMapped() { return false; }
 
         public boolean isUnified() { return false; }
 
-        public Root asRoot() {
-            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Root.class));
+        public Identity asIdentity() {
+            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Identity.class));
         }
 
         public AnswerState.DownstreamVars.Mapped asMapped() {
@@ -149,15 +159,10 @@ public abstract class AnswerState {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(AnswerState.DownstreamVars.Unified.class));
         }
 
-        public static class Root extends DownstreamVars {
+        public static class Identity extends DownstreamVars {
 
-            Root(ConceptMap conceptMap) {
-                super(conceptMap);
-            }
-
-            public static Root create() {
-                // This is the entry-point answer state for the request received by the root resolver
-                return new Root(new ConceptMap());
+            Identity(UpstreamVars.Initial initial) {
+                super(initial.conceptMap());
             }
 
             public UpstreamVars.Derived aggregateToUpstream(ConceptMap conceptMap, Set<Reference.Name> filter) {
@@ -166,15 +171,15 @@ public abstract class AnswerState {
             }
 
             @Override
-            public boolean isRoot() { return true; }
+            public boolean isIdentity() { return true; }
 
             @Override
-            public Root asRoot() { return this; }
+            public Identity asIdentity() { return this; }
 
 
             @Override
             public String toString() {
-                return "AnswerState.DownstreamVars.Root{" +
+                return "AnswerState.DownstreamVars.Identity{" +
                         "conceptMap=" + conceptMap() +
                         '}';
             }
@@ -220,7 +225,7 @@ public abstract class AnswerState {
             @Override
             public String toString() {
                 return "AnswerState.DownstreamVars.Mapped{" +
-                        "initial=" + conceptMap() +
+                        "initial=" + initial +
                         "mapping=" + mapping +
                         '}';
             }
@@ -258,12 +263,13 @@ public abstract class AnswerState {
                 if (!super.equals(o)) return false;
                 Unified unified = (Unified) o;
                 return Objects.equals(initial, unified.initial) &&
-                        Objects.equals(unifier, unified.unifier);
+                        Objects.equals(unifier, unified.unifier) &&
+                        Objects.equals(instanceRequirements, unified.instanceRequirements);
             }
 
             @Override
             public int hashCode() {
-                return Objects.hash(initial, unifier);
+                return Objects.hash(initial, unifier, instanceRequirements);
             }
 
             @Override
@@ -271,6 +277,7 @@ public abstract class AnswerState {
                 return "AnswerState.DownstreamVars.Unified{" +
                         "initial=" + conceptMap() +
                         "unifier=" + unifier +
+                        "instanceRequirements=" + instanceRequirements +
                         '}';
             }
         }

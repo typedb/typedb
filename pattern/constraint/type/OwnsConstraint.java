@@ -115,14 +115,9 @@ public class OwnsConstraint extends TypeConstraint {
 
     @Override
     public String toString() {
-        StringBuilder syntax = new StringBuilder();
-        syntax.append(OWNS).append(SPACE).append(attributeType.referenceSyntax());
-        if (overriddenAttributeType != null) {
-            syntax.append(SPACE).append(AS).append(SPACE).append(overriddenAttributeType.referenceSyntax());
-        }
-        if (isKey) syntax.append(SPACE).append(IS_KEY);
-
-        return syntax.toString();
+        return owner.toString() + SPACE + OWNS + SPACE + attributeType.toString()
+                + (overriddenAttributeType != null ? "" + SPACE + AS + SPACE + overriddenAttributeType.toString() : "")
+                + (isKey ? "" + SPACE + IS_KEY : "");
     }
 
     @Override

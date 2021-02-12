@@ -33,7 +33,7 @@
             <pattern>%date{ISO8601} [%thread] [%-5level] %logger{36} - %msg%n</pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${filename}-%d{yyyy-MM}.%i.log.gz</fileNamePattern>
+            <fileNamePattern>${directory}/${filename}-%d{yyyy-MM}.%i.log.gz</fileNamePattern>
             <maxFileSize>50MB</maxFileSize>
             <maxHistory>120</maxHistory>
             <totalSizeCap>2GB</totalSizeCap>

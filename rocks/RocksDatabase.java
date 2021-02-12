@@ -51,7 +51,6 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
 import static grakn.core.common.exception.ErrorMessage.Session.SCHEMA_ACQUIRE_LOCK_TIMEOUT;
 import static grakn.core.common.parameters.Arguments.Session.Type.SCHEMA;
-import static grakn.core.common.parameters.Arguments.Transaction.Type.READ;
 import static grakn.core.common.parameters.Arguments.Transaction.Type.WRITE;
 import static java.util.Comparator.reverseOrder;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -71,12 +70,14 @@ public class RocksDatabase implements Grakn.Database {
     private Cache cache;
 
     private final Factory.Session sessionFactory;
+    private final Factory.TransactionSchema transactionSchemaFactory;
     protected final AtomicBoolean isOpen;
 
-    protected RocksDatabase(RocksGrakn grakn, String name, Factory.Session sessionFactory) {
+    protected RocksDatabase(RocksGrakn grakn, String name, Factory.Session sessionFactory, Factory.TransactionSchema transactionSchemaFactory) {
         this.grakn = grakn;
         this.name = name;
         this.sessionFactory = sessionFactory;
+        this.transactionSchemaFactory = transactionSchemaFactory;
         schemaKeyGenerator = new KeyGenerator.Schema.Persisted();
         dataKeyGenerator = new KeyGenerator.Data.Persisted();
         sessions = new ConcurrentHashMap<>();
@@ -85,59 +86,49 @@ public class RocksDatabase implements Grakn.Database {
         try {
             String schemaDirPath = directory().resolve(Encoding.ROCKS_SCHEMA).toString();
             String dataDirPath = directory().resolve(Encoding.ROCKS_DATA).toString();
-            rocksSchema = OptimisticTransactionDB.open(this.grakn.rocksOptions(), schemaDirPath);
-            rocksData = OptimisticTransactionDB.open(this.grakn.rocksOptions(), dataDirPath);
+            rocksSchema = OptimisticTransactionDB.open(this.grakn.rocksDBOptions(), schemaDirPath);
+            rocksData = OptimisticTransactionDB.open(this.grakn.rocksDBOptions(), dataDirPath);
         } catch (RocksDBException e) {
             throw GraknException.of(e);
         }
         isOpen = new AtomicBoolean(true);
     }
 
-    static RocksDatabase createAndOpen(RocksGrakn grakn, String name, Factory.Session sessionFactory) {
+    static RocksDatabase createAndOpen(RocksGrakn grakn, String name, Factory.Session sessionFactory, Factory.TransactionSchema transactionSchemaFactory) {
         try {
             Files.createDirectory(grakn.directory().resolve(name));
         } catch (IOException e) {
             throw GraknException.of(e);
         }
 
-        RocksDatabase database = new RocksDatabase(grakn, name, sessionFactory);
+        RocksDatabase database = new RocksDatabase(grakn, name, sessionFactory, transactionSchemaFactory);
         database.initialise();
         database.statisticsBgCounterStart();
         return database;
     }
 
-    static RocksDatabase loadAndOpen(RocksGrakn grakn, String name, Factory.Session sessionFactory) {
-        RocksDatabase database = new RocksDatabase(grakn, name, sessionFactory);
+    static RocksDatabase loadAndOpen(RocksGrakn grakn, String name, Factory.Session sessionFactory, Factory.TransactionSchema transactionSchemaFactory) {
+        RocksDatabase database = new RocksDatabase(grakn, name, sessionFactory, transactionSchemaFactory);
         database.load();
         database.statisticsBgCounterStart();
         return database;
     }
 
     protected void initialise() {
-        try (RocksSession session = createAndOpenSession(SCHEMA, new Options.Session())) {
-            try (RocksTransaction.Schema txn = session.transaction(WRITE).asSchema()) {
+        try (RocksSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
+            try (RocksTransaction.Schema txn = session.initialisationTransaction()) {
                 if (txn.graph().isInitialised()) throw GraknException.of(DIRTY_INITIALISATION);
                 txn.graph().initialise();
-                initialiseCommit(txn);
+                txn.commit();
             }
         }
     }
 
-    /**
-     * Responsible for committing the initial schema of a database.
-     * A different implementation of this class may override it.
-     *
-     * @param transaction
-     */
-    protected void initialiseCommit(RocksTransaction.Schema transaction) {
-        transaction.commit();
-    }
-
     protected void load() {
-        try (RocksSession session = createAndOpenSession(SCHEMA, new Options.Session())) {
-            try (RocksTransaction txn = session.transaction(READ)) {
-                schemaKeyGenerator.sync(txn.asSchema().schemaStorage());
-                dataKeyGenerator.sync(txn.asSchema().dataStorage());
+        try (RocksSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
+            try (RocksTransaction.Schema txn = session.initialisationTransaction()) {
+                schemaKeyGenerator.sync(txn.schemaStorage());
+                dataKeyGenerator.sync(txn.schemaStorage(), txn.dataStorage());
             }
         }
     }

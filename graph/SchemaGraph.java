@@ -481,7 +481,7 @@ public class SchemaGraph implements Graph {
         public void delete(RuleStructure vertex) {
             assert storage.isOpen();
             try { // we intentionally use READ on multiLabelLock, as delete() only concerns one label
-                // TODO do we need all these locks here? Are they applicable for this method?
+                // TODO: do we need all these locks here? Are they applicable for this method?
                 multiLabelLock.readLock().lock();
                 singleLabelLocks.computeIfAbsent(vertex.label(), x -> newReadWriteLock()).writeLock().lock();
 

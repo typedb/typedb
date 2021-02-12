@@ -21,39 +21,53 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.producer.Producer;
 import grakn.core.pattern.Conjunction;
+import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
+import grakn.core.reasoner.resolution.answer.AnswerState;
+import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars.Initial;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
-import grakn.core.reasoner.resolution.resolver.RootResolver;
-import grakn.core.traversal.common.Identifier;
+import grakn.core.reasoner.resolution.framework.Resolver;
 import graql.lang.pattern.variable.Reference;
+import graql.lang.pattern.variable.UnboundVariable;
+import graql.lang.query.GraqlMatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.ThreadSafe;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.reasoner.resolution.answer.AnswerState.DownstreamVars.Root;
 import static grakn.core.reasoner.resolution.framework.ResolutionAnswer.Derivation.EMPTY;
 
 @ThreadSafe
 public class ReasonerProducer implements Producer<ConceptMap> {
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerProducer.class);
 
-    private final Actor<RootResolver> rootResolver;
-    private final Set<Reference.Name> filter;
+    private final Actor<? extends Resolver<?>> rootResolver;
     private Queue<ConceptMap> queue;
     private Request resolveRequest;
     private boolean iterationInferredAnswer;
     private boolean done;
     private int iteration;
 
-    public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverMgr, Set<Identifier.Variable.Name> idFilter) {
-        this.rootResolver = resolverMgr.createRoot(conjunction, this::requestAnswered, this::requestExhausted);
-        this.filter = iterate(idFilter).map(Identifier.Variable.Name::reference).toSet();
-        this.resolveRequest = Request.create(new Request.Path(rootResolver), Root.create(), EMPTY, filter);
+    public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers) {
+        this.rootResolver = resolverRegistry.rootConjunction(conjunction,filter(modifiers.filter()), modifiers.offset().orElse(null),
+                                                             modifiers.limit().orElse(null), this::requestAnswered, this::requestFailed);
+        AnswerState.DownstreamVars.Identity downstream = Initial.of(new ConceptMap()).toDownstreamVars();
+        this.resolveRequest = Request.create(new Request.Path(rootResolver, downstream), downstream, EMPTY);
+        this.queue = null;
+        this.iteration = 0;
+        this.done = false;
+    }
+
+    public ReasonerProducer(Disjunction disjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers) {
+        this.rootResolver = resolverRegistry.rootDisjunction(disjunction, filter(modifiers.filter()), modifiers.offset().orElse(null),
+                                                             modifiers.limit().orElse(null), this::requestAnswered, this::requestFailed);
+        AnswerState.DownstreamVars.Identity downstream = Initial.of(new ConceptMap()).toDownstreamVars();
+        this.resolveRequest = Request.create(new Request.Path(rootResolver, downstream), downstream, EMPTY);
         this.queue = null;
         this.iteration = 0;
         this.done = false;
@@ -71,12 +85,17 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     @Override
     public void recycle() {}
 
+    private Set<Reference.Name> filter(List<UnboundVariable> filter) {
+        return iterate(filter).map(v -> v.reference().asName()).toSet();
+    }
+
+
     private void requestAnswered(ResolutionAnswer resolutionAnswer) {
         if (resolutionAnswer.isInferred()) iterationInferredAnswer = true;
         queue.put(resolutionAnswer.derived().withInitialFiltered());
     }
 
-    private void requestExhausted(int iteration) {
+    private void requestFailed(int iteration) {
         LOG.trace("Failed to find answer to request in iteration: " + iteration);
 
         if (!done && iteration == this.iteration && !mustReiterate()) {
@@ -98,16 +117,18 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private void prepareNextIteration() {
         iteration++;
         iterationInferredAnswer = false;
-        resolveRequest = Request.create(new Request.Path(rootResolver), Root.create(), EMPTY, filter);
     }
 
     private boolean mustReiterate() {
         /*
-        TODO room for optimisation:
+        TODO: room for optimisation:
         for example, reiteration should never be required if there
         are no loops in the rule graph
         NOTE: double check this logic holds in the actor execution model, eg. because of asynchrony, we may
         always have to reiterate until no more answers are found.
+
+        counter example: $x isa $type; -> unifies with then { (friend: $y) isa friendship; }
+        Without reiteration we will miss $x = instance, $type = relation/thing
          */
         return iterationInferredAnswer;
     }

@@ -23,6 +23,8 @@ import grakn.common.collection.Either;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
 import grakn.core.pattern.constraint.Constraint;
+import grakn.core.pattern.constraint.thing.IIDConstraint;
+import grakn.core.pattern.constraint.type.LabelConstraint;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
@@ -36,6 +38,7 @@ import graql.lang.pattern.variable.Reference;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -43,6 +46,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -53,8 +57,11 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.UNBOUNDED_NEGATION;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.CONTRADICTORY_BOUND_VARIABLE;
 import static grakn.core.common.iterator.Iterators.iterate;
+import static graql.lang.common.GraqlToken.Char.CURLY_CLOSE;
+import static graql.lang.common.GraqlToken.Char.CURLY_OPEN;
 import static graql.lang.common.GraqlToken.Char.NEW_LINE;
 import static graql.lang.common.GraqlToken.Char.SEMICOLON;
+import static graql.lang.common.GraqlToken.Char.SPACE;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.stream.Collectors.toSet;
@@ -114,9 +121,24 @@ public class Conjunction implements Pattern, Cloneable {
             if (var.id().isName() && bounds.containsKey(var.id().reference().asName())) {
                 Either<Label, byte[]> boundVar = bounds.get(var.id().reference().asName());
                 if (var.isType() != boundVar.isFirst()) throw GraknException.of(CONTRADICTORY_BOUND_VARIABLE, var);
-                else if (var.isType()) var.asType().label(boundVar.first());
-                else if (var.isThing()) var.asThing().iid(boundVar.second());
-                else throw GraknException.of(ILLEGAL_STATE);
+                else if (var.isType()) {
+                    Optional<LabelConstraint> existingLabel = var.asType().label();
+                    if (existingLabel.isPresent() && !existingLabel.get().properLabel().equals(boundVar.first())) {
+                        var.setSatisfiable(false);
+                        this.setSatisfiable(false);
+                    } else if (!existingLabel.isPresent()) {
+                        var.asType().label(boundVar.first());
+                        var.asType().setResolvedTypes(set(boundVar.first()));
+                    }
+                } else if (var.isThing()) {
+                    Optional<IIDConstraint> existingIID = var.asThing().iid();
+                    if (existingIID.isPresent() && !Arrays.equals(existingIID.get().iid(), (boundVar.second()))) {
+                        var.setSatisfiable(false);
+                        this.setSatisfiable(false);
+                    } else {
+                        var.asThing().iid(boundVar.second());
+                    }
+                } else throw GraknException.of(ILLEGAL_STATE);
             }
         });
         isBounded = true;
@@ -173,8 +195,13 @@ public class Conjunction implements Pattern, Cloneable {
 
     @Override
     public String toString() {
-        return Stream.concat(variableSet.stream().filter(this::printable), negations.stream()).map(Pattern::toString)
-                .collect(Collectors.joining("" + SEMICOLON + NEW_LINE, "", "" + SEMICOLON));
+        return variableSet.stream()
+                .map(variable -> variable.constraints().stream().map(Object::toString)
+                        .collect(Collectors.joining("" + SEMICOLON + SPACE)))
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.joining("; " + NEW_LINE,
+                         "" + CURLY_OPEN + SPACE,
+                         "" + SEMICOLON + SPACE + CURLY_CLOSE));
     }
 
     @Override
@@ -182,7 +209,7 @@ public class Conjunction implements Pattern, Cloneable {
         if (this == obj) return true;
         if (obj == null || obj.getClass() != getClass()) return false;
         Conjunction that = (Conjunction) obj;
-        // TODO This doesn't work! It doesn't compare constraints
+        // TODO: This doesn't work! It doesn't compare constraints
         return (this.variableSet.equals(that.variables()) &&
                 this.negations.equals(that.negations()));
     }

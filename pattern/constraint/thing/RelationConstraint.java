@@ -40,8 +40,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static grakn.core.common.iterator.Iterators.iterate;
+import static graql.lang.common.GraqlToken.Char.COLON;
+import static graql.lang.common.GraqlToken.Char.COMMA;
 import static graql.lang.common.GraqlToken.Char.PARAN_CLOSE;
 import static graql.lang.common.GraqlToken.Char.PARAN_OPEN;
+import static graql.lang.common.GraqlToken.Char.SPACE;
 
 public class RelationConstraint extends ThingConstraint implements AlphaEquivalent<RelationConstraint> {
 
@@ -211,7 +214,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
 
         @Override
         public String toString() {
-            return (roleType == null ? "" : roleType.referenceSyntax() + ":") + player.reference().toString();
+            return (roleType != null ? roleType.toString() + COLON : "") + player.toString();
         }
 
         @Override
@@ -230,7 +233,8 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
 
     @Override
     public String toString() {
-        return rolePlayers.stream().map(RolePlayer::toString)
-                .collect(Collectors.joining(", ", PARAN_OPEN.toString(), PARAN_CLOSE.toString()));
+        return owner.toString() + SPACE + PARAN_OPEN
+                + rolePlayers.stream().map(RolePlayer::toString).collect(Collectors.joining("" + COMMA + SPACE))
+                + PARAN_CLOSE;
     }
 }

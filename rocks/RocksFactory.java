@@ -48,12 +48,12 @@ public final class RocksFactory implements Factory {
             databaseFactory = new Database() {
                 @Override
                 public RocksDatabase databaseCreateAndOpen(RocksGrakn grakn, String name) {
-                    return RocksDatabase.createAndOpen(grakn, name, sessionFactory());
+                    return RocksDatabase.createAndOpen(grakn, name, sessionFactory(), transactionSchemaFactory());
                 }
 
                 @Override
                 public RocksDatabase databaseLoadAndOpen(RocksGrakn grakn, String name) {
-                    return RocksDatabase.loadAndOpen(grakn, name, sessionFactory());
+                    return RocksDatabase.loadAndOpen(grakn, name, sessionFactory(), transactionSchemaFactory());
                 }
             };
         }
@@ -80,8 +80,17 @@ public final class RocksFactory implements Factory {
 
     private synchronized Factory.TransactionSchema transactionSchemaFactory() {
         if (transactionSchemaFactory == null) {
-            transactionSchemaFactory = (session, type, options) ->
-                    new RocksTransaction.Schema(session, type, options, storageFactory());
+            transactionSchemaFactory = new Factory.TransactionSchema() {
+                @Override
+                public RocksTransaction.Schema transaction(RocksSession.Schema session, Arguments.Transaction.Type type, Options.Transaction options) {
+                    return new RocksTransaction.Schema(session, type, options, storageFactory());
+                }
+
+                @Override
+                public RocksTransaction.Schema initialisationTransaction(RocksSession.Schema session) {
+                    return new RocksTransaction.Schema(session, Arguments.Transaction.Type.WRITE, new Options.Transaction(), storageFactory());
+                }
+            };
         }
         return transactionSchemaFactory;
     }

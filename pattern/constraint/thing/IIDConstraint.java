@@ -83,10 +83,7 @@ public class IIDConstraint extends ThingConstraint {
 
     @Override
     public String toString() {
-        StringBuilder syntax = new StringBuilder();
-        syntax.append(IID).append(SPACE);
-        syntax.append(Bytes.bytesToHexString(iid));
-        return syntax.toString();
+        return owner.toString() + SPACE + IID + SPACE + Bytes.bytesToHexString(iid);
     }
 
     @Override

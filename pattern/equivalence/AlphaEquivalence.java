@@ -232,7 +232,7 @@ public abstract class AlphaEquivalence {
         }
 
         @Override
-        public AlphaEquivalence alphaEquals(EquivalenceSet<T> that) { // TODO Should be able to accept a set not an alpha set?
+        public AlphaEquivalence alphaEquals(EquivalenceSet<T> that) { // TODO: Should be able to accept a set not an alpha set?
             if (that.size() != size())
                 return AlphaEquivalence.invalid();
             try {

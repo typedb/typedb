@@ -87,17 +87,27 @@ public class Deleter {
 
     public void execute() {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
-            List<List<ConceptMap>> lists = matcher.execute(context).toLists(QueryManager.PARALLELISATION_SPLIT_MIN, PARALLELISATION_FACTOR);
-            assert !lists.isEmpty();
-            if (lists.size() == 1) {
-                iterate(lists.get(0)).forEachRemaining(matched -> new Operation(matched, variables).execute());
-            } else {
-                produce(async(iterate(lists).map(list -> iterate(list).map(matched -> {
-                    new Operation(matched, variables).execute();
-                    return (Void) null;
-                })), PARALLELISATION_FACTOR), EXHAUSTIVE, asyncPool1()).toList();
-            }
+            if (context.options().parallel()) executeParallel();
+            else executeSerial();
         }
+    }
+
+    private void executeParallel() {
+        List<List<ConceptMap>> lists = matcher.execute(context).toLists(QueryManager.PARALLELISATION_SPLIT_MIN, PARALLELISATION_FACTOR);
+        assert !lists.isEmpty();
+        if (lists.size() == 1) {
+            iterate(lists.get(0)).forEachRemaining(matched -> new Operation(matched, variables).execute());
+        } else {
+            produce(async(iterate(lists).map(list -> iterate(list).map(matched -> {
+                new Operation(matched, variables).execute();
+                return (Void) null;
+            })), PARALLELISATION_FACTOR), EXHAUSTIVE, asyncPool1()).toList();
+        }
+    }
+
+    private void executeSerial() {
+        List<ConceptMap> matches = matcher.execute(context).toList();
+        matches.forEach(matched -> new Operation(matched, variables).execute());
     }
 
     static class Operation {

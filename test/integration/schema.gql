@@ -216,7 +216,7 @@ rule repo-collaborator-org-rule:
         (repo: $r, collaborator: $u) isa repo-collaborator;
     };
 
-# TODO uncomment these after query planning the type resolution query for the `when` terminates in a reasonable time
+# TODO: uncomment these after query planning the type resolution query for the `when` terminates in a reasonable time
 #rule repo-collaborator-org-member-permission-rule:
 #    when {
 #        $o isa organisation, has permission $p;

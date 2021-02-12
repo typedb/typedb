@@ -57,15 +57,11 @@ com_github_grpc_grpc_deps()
 # Load //builder/python
 load("@graknlabs_dependencies//builder/python:deps.bzl", python_deps = "deps")
 python_deps()
-load("@rules_python//python:pip.bzl", "pip_repositories", "pip3_import")
-pip_repositories()
 
 # Load //tool/common
 load("@graknlabs_dependencies//tool/common:deps.bzl", "graknlabs_dependencies_ci_pip",
     graknlabs_dependencies_tool_maven_artifacts = "maven_artifacts")
 graknlabs_dependencies_ci_pip()
-load("@graknlabs_dependencies_ci_pip//:requirements.bzl", graknlabs_dependencies_pip_install = "pip_install")
-graknlabs_dependencies_pip_install()
 
 # Load //tool/checkstyle
 load("@graknlabs_dependencies//tool/checkstyle:deps.bzl", checkstyle_deps = "deps")

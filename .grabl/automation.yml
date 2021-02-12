@@ -69,6 +69,7 @@ build:
         bazel test //test/integration/reasoner/... --test_output=streamed
         bazel test //test/integration/migrator/... --test_output=streamed
         bazel test //test/integration/logic/... --test_output=streamed
+        bazel test //test/integration/statistics/... --test_output=streamed
       # bazel test //test/integration/traversal/... --test_output=streamed
     test-behaviour-connection:
       image: graknlabs-ubuntu-20.04
@@ -117,7 +118,7 @@ build:
       filter:
         owner: graknlabs
         branch: master
-      dependencies: [test-assembly-linux-targz]
+      # dependencies: [test-assembly-linux-targz] TODO: re-enable
       command: |
         export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
@@ -148,26 +149,6 @@ build:
       dependencies: [deploy-apt-snapshot]
       command: |
         bazel test //test/deployment:apt --action_env=GRABL_COMMIT --test_output=streamed
-    # TODO: comment out the job until the flakiness has been ironed out
-    #    deploy-rpm-snapshot:
-    #      image: graknlabs-ubuntu-20.04
-    #      filter:
-    #        owner: graknlabs
-    #        branch: master
-    #      dependencies: [test-assembly-linux-targz]
-    #      command: |
-    #        export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
-    #        export DEPLOY_RPM_PASSWORD=$REPO_GRAKN_PASSWORD
-    #        bazel run --define version=$(git rev-parse HEAD) //server:deploy-rpm -- snapshot
-    #        bazel run --define version=$(git rev-parse HEAD) //:deploy-rpm -- snapshot
-    # test-deployment-rpm:
-    #   image: graknlabs-centos-8.2
-    #   filter:
-    #     owner: graknlabs
-    #     branch: master
-    #   dependencies: [deploy-rpm-snapshot]
-    #   command: |
-    #     bazel test //test/deployment:rpm --action_env=GRABL_COMMIT --test_output=streamed
 release:
   filter:
     owner: graknlabs
@@ -183,6 +164,8 @@ release:
         owner: graknlabs
         branch: master
       command: |
+        pyenv install -s 3.6.10
+        pyenv global 3.6.10 system
         pip install certifi
         export RELEASE_NOTES_TOKEN=$REPO_GITHUB_TOKEN
         bazel run @graknlabs_dependencies//tool/release:create-notes -- grakn $(cat VERSION) ./RELEASE_TEMPLATE.md
@@ -195,6 +178,8 @@ release:
         owner: graknlabs
         branch: master
       command: |
+        pyenv install -s 3.6.10
+        pyenv global 3.6.10 system
         export DEPLOY_BREW_TOKEN=$REPO_GITHUB_TOKEN
         bazel run --define version=$(cat VERSION) //:deploy-brew -- release
     deploy-apt-release:
@@ -213,17 +198,6 @@ release:
         export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
         bazel run --define version=$(cat VERSION) //server:deploy-apt -- release
         bazel run --define version=$(cat VERSION) //:deploy-apt -- release
-    #    deploy-rpm-release:
-    #      image: graknlabs-ubuntu-20.04
-    #      filter:
-    #        owner: graknlabs
-    #        branch: master
-    #      dependencies: [deploy-github]
-    #      command: |
-    #        export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
-    #        export DEPLOY_RPM_PASSWORD=$REPO_GRAKN_PASSWORD
-    #        bazel run --define version=$(cat VERSION) //server:deploy-rpm -- release
-    #        bazel run --define version=$(cat VERSION) //:deploy-rpm -- release
     deploy-docker:
       image: graknlabs-ubuntu-20.04
       filter:

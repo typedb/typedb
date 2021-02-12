@@ -91,8 +91,8 @@ public class PlannerTest {
         Concludable concludable = Concludable.create(parse("{ $a has $b; }")).iterator().next();
         Retrievable retrievable = new Retrievable(parse("{ $c($b); }"));
 
-        Set<Resolvable> resolvables = set(concludable, retrievable);
-        List<Resolvable> plan = new Planner(conceptMgr, logicMgr).plan(resolvables);
+        Set<Resolvable<?>> resolvables = set(concludable, retrievable);
+        List<Resolvable<?>> plan = new Planner(conceptMgr, logicMgr).plan(resolvables);
         assertEquals(list(concludable, retrievable), plan);
     }
 
@@ -104,9 +104,9 @@ public class PlannerTest {
         Concludable concludable = Concludable.create(parse("{ $p has name $n; }")).iterator().next();
         Retrievable retrievable = new Retrievable(parse("{ $p isa person; }"));
 
-        Set<Resolvable> resolvables = set(concludable, retrievable);
+        Set<Resolvable<?>> resolvables = set(concludable, retrievable);
 
-        List<Resolvable> plan = new Planner(conceptMgr, logicMgr).plan(resolvables);
+        List<Resolvable<?>> plan = new Planner(conceptMgr, logicMgr).plan(resolvables);
         assertEquals(list(retrievable, concludable), plan);
     }
 
@@ -124,9 +124,9 @@ public class PlannerTest {
         Concludable concludable = Concludable.create(parse("{ ($p, $c); }")).iterator().next();
         Retrievable retrievable2 = new Retrievable(parse("{ $c isa company, has name $cn; }"));
 
-        Set<Resolvable> resolvables = set(retrievable, retrievable2, concludable);
+        Set<Resolvable<?>> resolvables = set(retrievable, retrievable2, concludable);
 
-        List<Resolvable> plan = new Planner(conceptMgr, logicMgr).plan(resolvables);
+        List<Resolvable<?>> plan = new Planner(conceptMgr, logicMgr).plan(resolvables);
         assertEquals(list(retrievable, concludable, retrievable2), plan);
     }
 
@@ -144,9 +144,9 @@ public class PlannerTest {
         Concludable concludable = Concludable.create(parse("{ ($p, $c); }")).iterator().next();
         Retrievable retrievable2 = new Retrievable(parse("{ $c isa company, has name $cn; }"));
 
-        Set<Resolvable> resolvables = set(retrievable, retrievable2, concludable);
+        Set<Resolvable<?>> resolvables = set(retrievable, retrievable2, concludable);
 
-        List<Resolvable> plan = new Planner(conceptMgr, logicMgr).plan(resolvables);
+        List<Resolvable<?>> plan = new Planner(conceptMgr, logicMgr).plan(resolvables);
         assertEquals(list(retrievable2, concludable, retrievable), plan);
     }
 
@@ -155,9 +155,9 @@ public class PlannerTest {
         Concludable concludable = Concludable.create(parse("{ $r($a, $b); }")).iterator().next();
         Concludable concludable2 = Concludable.create(parse("{ $r has $c; }")).iterator().next();
 
-        Set<Resolvable> resolvables = set(concludable, concludable2);
+        Set<Resolvable<?>> resolvables = set(concludable, concludable2);
 
-        List<Resolvable> plan = new Planner(conceptMgr, logicMgr).plan(resolvables);
+        List<Resolvable<?>> plan = new Planner(conceptMgr, logicMgr).plan(resolvables);
         assertEquals(list(concludable, concludable2), plan);
     }
 
@@ -175,8 +175,8 @@ public class PlannerTest {
         Retrievable retrievable2 = new Retrievable(parse("{ $c isa company, has name $n; }"));
         Concludable concludable2 = Concludable.create(parse("{ $e($c, $p2) isa employment; }")).iterator().next();
 
-        Set<Resolvable> resolvables = set(retrievable, retrievable2, concludable, concludable2);
-        List<Resolvable> plan = new Planner(conceptMgr, logicMgr).plan(resolvables);
+        Set<Resolvable<?>> resolvables = set(retrievable, retrievable2, concludable, concludable2);
+        List<Resolvable<?>> plan = new Planner(conceptMgr, logicMgr).plan(resolvables);
 
         assertEquals(list(retrievable, concludable, retrievable2, concludable2), plan);
     }
@@ -186,8 +186,8 @@ public class PlannerTest {
         Concludable concludable = Concludable.create(parse("{ $a has $b; }")).iterator().next();
         Concludable concludable2 = Concludable.create(parse("{ $b has $a; }")).iterator().next();
 
-        Set<Resolvable> resolvables = set(concludable, concludable2);
-        List<Resolvable> plan = new Planner(conceptMgr, logicMgr).plan(resolvables);
+        Set<Resolvable<?>> resolvables = set(concludable, concludable2);
+        List<Resolvable<?>> plan = new Planner(conceptMgr, logicMgr).plan(resolvables);
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
@@ -198,8 +198,8 @@ public class PlannerTest {
         Concludable concludable = Concludable.create(parse("{ $a($b); }")).iterator().next();
         Concludable concludable2 = Concludable.create(parse("{ $b($a); }")).iterator().next();
 
-        Set<Resolvable> resolvables = set(concludable, concludable2);
-        List<Resolvable> plan = new Planner(conceptMgr, logicMgr).plan(resolvables);
+        Set<Resolvable<?>> resolvables = set(concludable, concludable2);
+        List<Resolvable<?>> plan = new Planner(conceptMgr, logicMgr).plan(resolvables);
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
@@ -210,8 +210,8 @@ public class PlannerTest {
         Concludable concludable = Concludable.create(parse("{ $a($b); }")).iterator().next();
         Concludable concludable2 = Concludable.create(parse("{ $c($d); }")).iterator().next();
 
-        Set<Resolvable> resolvables = set(concludable, concludable2);
-        List<Resolvable> plan = new Planner(conceptMgr, logicMgr).plan(resolvables);
+        Set<Resolvable<?>> resolvables = set(concludable, concludable2);
+        List<Resolvable<?>> plan = new Planner(conceptMgr, logicMgr).plan(resolvables);
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
@@ -237,8 +237,8 @@ public class PlannerTest {
         Concludable concludable = Concludable.create(parse("{ $b has $a; }")).iterator().next();
         Concludable concludable2 = Concludable.create(parse("{ $c($b) isa friendship; }")).iterator().next();
 
-        Set<Resolvable> resolvables = set(concludable, concludable2);
-        List<Resolvable> plan = new Planner(conceptMgr, logicMgr).plan(resolvables);
+        Set<Resolvable<?>> resolvables = set(concludable, concludable2);
+        List<Resolvable<?>> plan = new Planner(conceptMgr, logicMgr).plan(resolvables);
 
         assertEquals(0, concludable.getApplicableRules(conceptMgr, logicMgr).toList().size());
         assertEquals(1, concludable2.getApplicableRules(conceptMgr, logicMgr).toList().size());

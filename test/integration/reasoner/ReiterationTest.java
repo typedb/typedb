@@ -19,20 +19,24 @@ package grakn.core.reasoner;
 
 import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.common.parameters.Arguments;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.actor.EventLoopGroup;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
+import grakn.core.pattern.variable.Variable;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
+import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars.Initial;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
-import grakn.core.reasoner.resolution.resolver.RootResolver;
+import grakn.core.reasoner.resolution.resolver.Root;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
 import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
+import graql.lang.pattern.variable.Reference;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -44,9 +48,12 @@ import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
+import static grakn.core.common.iterator.Iterators.iterate;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
+import static junit.framework.TestCase.fail;
 
 public class ReiterationTest {
 
@@ -66,7 +73,7 @@ public class ReiterationTest {
         grakn.close();
     }
 
-    @Ignore
+    @Ignore // TODO enable after inferred flag is set correctly
     @Test
     public void test_first_iteration_exhausts_and_second_iteration_recurses_infinitely() throws InterruptedException {
         try (RocksSession session = schemaSession()) {
@@ -107,8 +114,10 @@ public class ReiterationTest {
 
         try (RocksSession session = dataSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                Conjunction conjunctionPattern = parseConjunction(transaction, "{ $y isa Y; }");
-//                Conjunction conjunctionPattern = parseConjunction(transaction, "{ $y(item:$x) isa Y; }"); // TODO This hangs
+                Conjunction conjunction = parseConjunction(transaction, "{ $y isa Y; }");
+//                Conjunction conjunction = parseConjunction(transaction, "{ $y(item:$x) isa Y; }"); // TODO: This hangs
+                Set<Reference.Name> filter = iterate(conjunction.variables()).map(Variable::reference).filter(Reference::isName)
+                        .map(Reference::asName).toSet();
                 ResolverRegistry registry = transaction.reasoner().resolverRegistry();
                 LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
                 LinkedBlockingQueue<Integer> exhausted = new LinkedBlockingQueue<>();
@@ -116,7 +125,7 @@ public class ReiterationTest {
                 int[] doneInIteration = {0};
                 boolean[] receivedInferredAnswer = {false};
 
-                Actor<RootResolver> root = registry.createRoot(conjunctionPattern, answer -> {
+                Actor<Root.Conjunction> root = registry.rootConjunction(conjunction, filter, null, null, answer -> {
                     if (answer.isInferred()) receivedInferredAnswer[0] = true;
                     responses.add(answer);
                 }, iterDone -> {
@@ -134,59 +143,29 @@ public class ReiterationTest {
                 assertTrue(receivedInferredAnswer[0]);
                 assertEquals(1, doneInIteration[0]);
 
-                // iteration 1
-                // reset for next iteration
-                iteration[0]++;
-                receivedInferredAnswer[0] = false;
-                doneInIteration[0] = 0;
-
-                for (int i = 0; i <= 4; i++) {
+                // iteration 1 onwards
+                for (int j = 0; j <= 100; j++) {
                     sendRootRequest(root, iteration[0]);
-                    answers.add(responses.take());
-                    assertEquals(2 + i, answers.size());
-                }
-                sendRootRequest(root, iteration[0]);
-                exhausted.take();
-
-                // iteration 2
-                // reset for next iteration
-                iteration[0]++;
-                receivedInferredAnswer[0] = false;
-                doneInIteration[0] = 0;
-
-                for (int i = 0; i <= 3; i++) {
-                    sendRootRequest(root, iteration[0]);
-                    answers.add(responses.take());
-                }
-                sendRootRequest(root, iteration[0]);
-                exhausted.take();
-
-                // iteration 3 onwards
-                for (int j = 0; j <= 10; j++) {
-                    // iteration 3
-                    // reset for next iteration
-                    iteration[0]++;
-                    receivedInferredAnswer[0] = false;
-                    doneInIteration[0] = 0;
-
-                    for (int i = 0; i <= 3; i++) {
-                        sendRootRequest(root, iteration[0]);
-                        answers.add(responses.take());
+                    ResolutionAnswer re = responses.poll(100, TimeUnit.MILLISECONDS);
+                    if (re == null) {
+                        Integer ex = exhausted.poll(100, TimeUnit.MILLISECONDS);
+                        if (ex == null) {
+                            fail();
+                        }
+                        // Reset the iteration
+                        iteration[0]++;
+                        receivedInferredAnswer[0] = false;
+                        doneInIteration[0] = 0;
                     }
-                    sendRootRequest(root, iteration[0]);
-                    exhausted.take();
                 }
-
-                assertTrue(receivedInferredAnswer[0]);
-                assertEquals(1, doneInIteration[0]);
             }
         }
     }
 
-    private void sendRootRequest(Actor<RootResolver> root, int iteration) {
+    private void sendRootRequest(Actor<Root.Conjunction> root, int iteration) {
+        AnswerState.DownstreamVars.Identity downstream = Initial.of(new ConceptMap()).toDownstreamVars();
         root.tell(actor -> actor.receiveRequest(
-                Request.create(new Request.Path(root), AnswerState.DownstreamVars.Root.create(), null),
-                iteration)
+                Request.create(new Request.Path(root, downstream), downstream, null), iteration)
         );
     }
 
@@ -209,5 +188,4 @@ public class ReiterationTest {
         transaction.reasoner().resolverRegistry().setEventLoopGroup(new EventLoopGroup(1, new NamedThreadFactory("grakn-elg")));
         return transaction;
     }
-
 }

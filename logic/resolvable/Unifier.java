@@ -289,19 +289,28 @@ public class Unifier {
 
         public static class Instance {
 
-            Map<Reference.Name, ? extends Concept> concepts;
+            Map<Reference.Name, ? extends Concept> requireCompatible;
 
             public Instance(Map<Reference.Name, ? extends Concept> concepts) {
-                this.concepts = concepts;
+                this.requireCompatible = concepts;
             }
 
             public boolean satisfiedBy(Map<Identifier, Concept> toTest) {
                 for (Map.Entry<Identifier, ? extends Concept> entry : toTest.entrySet()) {
                     Identifier id = entry.getKey();
                     if (id.isName()) {
-                        Concept concept = entry.getValue();
-                        Concept requiredConcept = concepts.get(id.asVariable().reference().asName());
-                        if (requiredConcept != null && !requiredConcept.equals(concept)) return false;
+                        Concept compatible = requireCompatible.get(id.asVariable().reference().asName());
+                        if (compatible != null) {
+                            Concept testConcept = entry.getValue();
+                            // things must be exactly equal
+                            if ((compatible.isThing() && !compatible.equals(testConcept)) ||
+                                    // if the required concept is a type, the test concept must also be a type
+                                    (compatible.isType() && !testConcept.isType()) ||
+                                    // types must be compatible (testConcept must be a subtype of required concept)
+                                    (compatible.isType() && testConcept.asType().getSupertypes().noneMatch(t -> t.equals(compatible)))) {
+                                return false;
+                            }
+                        }
                     }
                 }
                 return true;

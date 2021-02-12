@@ -102,7 +102,7 @@ public class IsaConstraint extends ThingConstraint implements AlphaEquivalent<Is
 
     @Override
     public String toString() {
-        return "" + (isExplicit ? ISAX : ISA) + SPACE + type.referenceSyntax();
+        return owner.toString() + SPACE + (isExplicit ? ISAX : ISA) + SPACE + type.toString();
     }
 
     @Override

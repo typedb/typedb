@@ -178,7 +178,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
     @Override
     public java.lang.String toString() {
-        return predicate.toString() + SPACE + value.toString();
+        return owner.toString() + SPACE + predicate.toString() + SPACE + value.toString();
     }
 
     public AlphaEquivalence alphaEquals(ValueConstraint<?> that) {
@@ -317,7 +317,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
         @Override
         public java.lang.String toString() {
-            return predicate.toString() + SPACE + QUOTE_DOUBLE + value + QUOTE_DOUBLE;
+            return owner.toString() + SPACE + predicate.toString() + SPACE + QUOTE_DOUBLE + value + QUOTE_DOUBLE;
         }
 
         @Override
@@ -387,10 +387,14 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
         @Override
         public AlphaEquivalence alphaEquals(ValueConstraint<?> that) {
-            return AlphaEquivalence.valid()
+            AlphaEquivalence alphaEquivalence = AlphaEquivalence.valid()
                     .validIf(isVariable() && that.isVariable())
                     .validIf(this.predicate.equals(that.predicate))
-                    .validIfAlphaEqual(this.value, that.asVariable().value);
+                    .validIf(isVariable() && that.isVariable());
+            if (alphaEquivalence.isValid()) {
+                alphaEquivalence.validIfAlphaEqual(this.value, that.asVariable().value());
+            }
+            return alphaEquivalence;
         }
 
         @Override

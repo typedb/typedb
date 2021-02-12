@@ -203,7 +203,7 @@ public class UnifyIsaConcludableTest {
         assertEquals(0, unifier.constraintRequirements().predicates().size());
     }
 
-    @Ignore // TODO enable when type resolver is updated
+    @Ignore // TODO: enable when type resolver is updated
     @Test
     public void isa_variable_unifies_relation_variable_type() {
         String conjunction = "{ $a isa $t; }";
@@ -233,7 +233,7 @@ public class UnifyIsaConcludableTest {
     /*
     Test unifier pruning using type information
      */
-    @Ignore // TODO enable when type resolver is updated
+    @Ignore // TODO: enable when type resolver is updated
     @Test
     public void isa_variable_with_type_prunes_irrelevant_rules() {
         String conjunction = "{ $a isa $t; $t type company; }";
@@ -343,7 +343,7 @@ public class UnifyIsaConcludableTest {
         assertFalse(unified.isPresent());
     }
 
-    @Ignore // TODO enable when type resolver is updated
+    @Ignore // TODO: enable when type resolver is updated
     @Test
     public void isa_exact_unifies_rule_relation_variable() {
         String conjunction = "{ $a isa relation; }";
@@ -388,7 +388,7 @@ public class UnifyIsaConcludableTest {
         assertFalse(unified.isPresent());
     }
 
-    @Ignore // TODO enable when type resolver is updated
+    @Ignore // TODO: enable when type resolver is updated
     @Test
     public void isa_concrete_prunes_irrelevant_rules() {
         String conjunction = "{ $a isa age; }";
@@ -414,21 +414,21 @@ public class UnifyIsaConcludableTest {
     }
 
 
-    @Ignore // TODO enable when we have query rewriting to handle all predicates at once
+    @Ignore // TODO: enable when we have query rewriting to handle all predicates at once
     @Test
     public void isa_with_attribute_value() {
         String conjunction = "{ $a 'john' isa name; }";
-        // TODO this should be treated is `$a isa name; $a = "john"` until we have query rewriting
+        // TODO: this should be treated is `$a isa name; $a = "john"` until we have query rewriting
     }
 
-    @Ignore // TODO enable when we have query rewriting to handle all predicates at once
+    @Ignore // TODO: enable when we have query rewriting to handle all predicates at once
     @Test
     public void isa_with_attribute_literal_predicates() {
         String conjunction = "{ $a isa age; $a > 0; $a < 10; }";
         // TODO
     }
 
-    @Ignore // TODO enable when we have query rewriting to handle all predicates at once
+    @Ignore // TODO: enable when we have query rewriting to handle all predicates at once
     @Test
     public void isa_predicates_can_filter_answers() {
         String conjunction = "{ $a isa first-name; $a > 'b'; $a < 'y'; $a contains 'j'; }";

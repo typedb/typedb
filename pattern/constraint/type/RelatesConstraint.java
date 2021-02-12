@@ -110,11 +110,8 @@ public class RelatesConstraint extends TypeConstraint {
 
     @Override
     public String toString() {
-        StringBuilder syntax = new StringBuilder();
-        syntax.append(RELATES).append(SPACE).append(roleType.referenceSyntax());
-        if (overriddenRoleType != null)
-            syntax.append(SPACE).append(AS).append(SPACE).append(overriddenRoleType.referenceSyntax());
-        return syntax.toString();
+        return owner.toString() + SPACE + RELATES + SPACE + roleType.toString()
+                + (overriddenRoleType != null ? "" + SPACE + AS + SPACE + overriddenRoleType.toString() : "");
     }
 
     @Override
