@@ -70,17 +70,17 @@ import static graql.lang.common.GraqlToken.Predicate.Equality.EQ;
 public abstract class Concludable extends Resolvable<Conjunction> {
 
     private Map<Rule, Set<Unifier>> applicableRules;
-    private Set<Variable> namedVariables;
+    private Set<Reference.Name> variableNames;
 
     private Concludable(Conjunction conjunction) {
         super(conjunction);
-        this.namedVariables = iterate(pattern().variables()).filter(v -> v.reference().isName()).toSet();
+        this.variableNames = iterate(pattern().variables()).filter(v -> v.reference().isName()).map(v -> v.reference().asName()).toSet();
         this.applicableRules = null;
     }
 
     @Override
-    public Set<Variable> namedVariables() {
-        return namedVariables;
+    public Set<Reference.Name> variableNames() {
+        return variableNames;
     }
 
     public boolean isConcludable() {

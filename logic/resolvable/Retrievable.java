@@ -23,6 +23,7 @@ import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.type.TypeConstraint;
 import grakn.core.pattern.variable.Variable;
+import graql.lang.pattern.variable.Reference;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -34,11 +35,12 @@ import static grakn.core.common.iterator.Iterators.iterate;
 
 public class Retrievable extends Resolvable<Conjunction> {
 
-    private final Set<Variable> namedVariables;
+    private final Set<Reference.Name> variableNames;
 
     public Retrievable(Conjunction conjunction) {
         super(conjunction);
-        this.namedVariables = iterate(pattern().variables()).filter(v -> v.reference().isName()).toSet();
+        this.variableNames = iterate(pattern().variables()).filter(v -> v.reference().isName())
+                .map(v -> v.reference().asName()).toSet();
     }
 
     public static Set<Retrievable> extractFrom(Conjunction conjunction, Set<Concludable> toExclude) {
@@ -51,8 +53,8 @@ public class Retrievable extends Resolvable<Conjunction> {
     }
 
     @Override
-    public Set<Variable> namedVariables() {
-        return namedVariables;
+    public Set<Reference.Name> variableNames() {
+        return variableNames;
     }
 
     @Override

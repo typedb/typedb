@@ -159,14 +159,13 @@ public class ResolverRegistry {
     }
 
     private Map<Reference.Name, Reference.Name> identity(Resolvable<Conjunction> conjunctionResolvable) {
-        return conjunctionResolvable.namedVariables().stream()
-                .map(variable -> variable.reference().asName())
+        return conjunctionResolvable.variableNames().stream()
                 .collect(Collectors.toMap(Function.identity(), Function.identity()));
     }
 
     private Map<Reference.Name, Reference.Name> identityFiltered(Conjunction upstream, Negated negated) {
         return upstream.variables().stream()
-                .filter(var -> var.reference().isName() && negated.namedVariables().contains(var))
+                .filter(var -> var.reference().isName() && negated.variableNames().contains(var.reference().asName()))
                 .map(variable -> variable.reference().asName())
                 .collect(Collectors.toMap(Function.identity(), Function.identity()));
     }
