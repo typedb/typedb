@@ -311,7 +311,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         @Override
         public void rollback() {
             try {
-                graphMgr.clear();
+                graphMgr.data().clear();
                 dataStorage.rollback();
             } catch (RocksDBException e) {
                 throw GraknException.of(e);

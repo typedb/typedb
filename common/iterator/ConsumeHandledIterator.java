@@ -32,20 +32,27 @@ public class ConsumeHandledIterator<T> extends AbstractResourceIterator<T> imple
         this.isConsumed = false;
     }
 
-    @Override
-    public boolean hasNext() {
-        boolean hasNext;
-        if (!(hasNext = iterator.hasNext()) && !isConsumed) {
+    private void mayHandleConsume(boolean hasNext) {
+        if (!hasNext && !isConsumed) {
             isConsumed = true;
             function.run();
         }
+    }
+
+    @Override
+    public boolean hasNext() {
+        boolean hasNext;
+        hasNext = iterator.hasNext();
+        mayHandleConsume(hasNext);
         return hasNext;
     }
 
     @Override
     public T next() {
         if (!hasNext()) throw new NoSuchElementException();
-        return iterator.next();
+        T next = iterator.next();
+        mayHandleConsume(iterator.hasNext());
+        return next;
     }
 
     @Override
