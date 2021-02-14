@@ -265,9 +265,11 @@ public class ResponseBuilder {
         public static AnswerProto.ConceptMap conceptMap(ConceptMap answer) {
             AnswerProto.ConceptMap.Builder conceptMapProto = AnswerProto.ConceptMap.newBuilder();
             // TODO: needs testing
-            answer.concepts().forEach((ref, concept) -> {
-                ConceptProto.Concept conceptProto = ResponseBuilder.Concept.concept(concept);
-                conceptMapProto.putMap(ref.name(), conceptProto);
+            answer.concepts().forEach((id, concept) -> {
+                if (id.isName()) {
+                    ConceptProto.Concept conceptProto = ResponseBuilder.Concept.concept(concept);
+                    conceptMapProto.putMap(id.asVariable().asName().reference().name(), conceptProto);
+                }
             });
 
             // TODO

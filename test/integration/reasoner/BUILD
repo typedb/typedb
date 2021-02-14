@@ -53,6 +53,7 @@ host_compatible_java_test(
         "//pattern:pattern",
         "//reasoner:reasoner",
         "//rocks:rocks",
+        "//traversal:traversal",
         "//:grakn",
     ],
     deps = [
@@ -81,6 +82,7 @@ host_compatible_java_test(
         "//pattern:pattern",
         "//reasoner:reasoner",
         "//rocks:rocks",
+        "//traversal:traversal",
         "//:grakn",
     ],
     resource_strip_prefix = "common/test",

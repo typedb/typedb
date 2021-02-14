@@ -41,6 +41,7 @@ import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.traversal.common.Identifier;
+import grakn.core.traversal.common.Identifier.Variable.Retrieved;
 import grakn.core.traversal.predicate.Predicate;
 import graql.lang.common.GraqlToken;
 import graql.lang.pattern.variable.Reference;
@@ -70,17 +71,18 @@ import static graql.lang.common.GraqlToken.Predicate.Equality.EQ;
 public abstract class Concludable extends Resolvable<Conjunction> {
 
     private Map<Rule, Set<Unifier>> applicableRules;
-    private Set<Reference.Name> variableNames;
+    Set<Retrieved> retrievedIds;
 
     private Concludable(Conjunction conjunction) {
         super(conjunction);
-        this.variableNames = iterate(pattern().variables()).filter(v -> v.reference().isName()).map(v -> v.reference().asName()).toSet();
         this.applicableRules = null;
+        this.retrievedIds = iterate(pattern().identifiers()).filter(Identifier::isRetrieved)
+                .map(Identifier.Variable::asRetrieved).toSet();
     }
 
     @Override
-    public Set<Reference.Name> variableNames() {
-        return variableNames;
+    public Set<Retrieved> retrieves() {
+        return retrievedIds;
     }
 
     public boolean isConcludable() {
@@ -324,12 +326,9 @@ public abstract class Concludable extends Resolvable<Conjunction> {
                 return Iterators.empty();
             Unifier.Builder unifierBuilder = Unifier.builder();
 
-            if (!relation().owner().reference().isAnonymous()) {
-                assert relation().owner().reference().isName();
-                if (unificationSatisfiable(relation().owner(), relationConclusion.relation().owner())) {
-                    unifierBuilder.add(relation().owner().id(), relationConclusion.relation().owner().id());
-                } else return Iterators.empty();
-            }
+            if (unificationSatisfiable(relation().owner(), relationConclusion.relation().owner())) {
+                unifierBuilder.add(relation().owner().id(), relationConclusion.relation().owner().id());
+            } else return Iterators.empty();
 
             if (relation().owner().isa().isPresent()) {
                 TypeVariable concludableRelationType = relation().owner().isa().get().type();
@@ -354,7 +353,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        public Optional<Variable> generating() {
+        public Optional<ThingVariable> generating() {
             return Optional.of(relation.owner());
         }
 
@@ -514,13 +513,13 @@ public abstract class Concludable extends Resolvable<Conjunction> {
                     // form: $x has age 10 -> require ISA age and PREDICATE =10
                     assert attr.isa().isPresent() && attr.isa().get().type().label().isPresent();
                     Label attrLabel = attr.isa().get().type().label().get().properLabel();
-                    unifierBuilder.requirements().isaExplicit(attr.id(),
-                                                              subtypeLabels(attrLabel, conceptMgr).collect(Collectors.toSet()));
+                    unifierBuilder.requirements()
+                            .isaExplicit(attr.id(), subtypeLabels(attrLabel, conceptMgr).collect(Collectors.toSet()));
                 } else if (attr.reference().isName() && attr.isa().isPresent() && attr.isa().get().type().label().isPresent()) {
                     // form: $x has age $a (may also handle $x has $a; $a isa age)   -> require ISA age
                     Label attrLabel = attr.isa().get().type().label().get().properLabel();
-                    unifierBuilder.requirements().isaExplicit(attr.id(),
-                                                              subtypeLabels(attrLabel, conceptMgr).collect(Collectors.toSet()));
+                    unifierBuilder.requirements()
+                            .isaExplicit(attr.id(), subtypeLabels(attrLabel, conceptMgr).collect(Collectors.toSet()));
                 }
                 addConstantValueRequirements(unifierBuilder, values);
             } else return Iterators.empty();
@@ -539,7 +538,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        public Optional<Variable> generating() {
+        public Optional<ThingVariable> generating() {
             return Optional.of(has.attribute());
         }
 
@@ -645,7 +644,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        public Optional<Variable> generating() {
+        public Optional<ThingVariable> generating() {
             return Optional.of(isa().owner());
         }
 
@@ -753,7 +752,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        public Optional<Variable> generating() {
+        public Optional<ThingVariable> generating() {
             return Optional.of(attribute);
         }
 

@@ -40,7 +40,7 @@ import grakn.core.reasoner.resolution.resolver.RetrievableResolver;
 import grakn.core.reasoner.resolution.resolver.Root;
 import grakn.core.reasoner.resolution.resolver.RuleResolver;
 import grakn.core.traversal.TraversalEngine;
-import graql.lang.pattern.variable.Reference;
+import grakn.core.traversal.common.Identifier.Variable.Retrieved;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -129,7 +129,7 @@ public class ResolverRegistry {
             // TODO: This needs to be optimised from a linear search to use an alpha hash
             AlphaEquivalence alphaEquality = concludable.alphaEquals(c.getKey());
             if (alphaEquality.isValid()) {
-                return MappedResolver.of(c.getValue(), alphaEquality.asValid().namedVariableMapping());
+                return MappedResolver.of(c.getValue(), alphaEquality.asValid().idMapping());
             }
         }
         Actor<ConcludableResolver> concludableActor = Actor.create(elg, self ->
@@ -153,19 +153,19 @@ public class ResolverRegistry {
         Actor<NegationResolver> negatedResolver = Actor.create(
                 elg, self -> new NegationResolver(self, negated, this, traversalEngine, resolutionRecorder, explanations)
         );
-        Map<Reference.Name, Reference.Name> filteredMapping = identityFiltered(upstream, negated);
+        Map<Retrieved, Retrieved> filteredMapping = identityFiltered(upstream, negated);
         return MappedResolver.of(negatedResolver, filteredMapping);
     }
 
-    private Map<Reference.Name, Reference.Name> identity(Resolvable<Conjunction> conjunctionResolvable) {
-        return conjunctionResolvable.variableNames().stream()
+    private Map<Retrieved, Retrieved> identity(Resolvable<Conjunction> conjunctionResolvable) {
+        return conjunctionResolvable.retrieves().stream()
                 .collect(Collectors.toMap(Function.identity(), Function.identity()));
     }
 
-    private Map<Reference.Name, Reference.Name> identityFiltered(Conjunction upstream, Negated negated) {
+    private Map<Retrieved, Retrieved> identityFiltered(Conjunction upstream, Negated negated) {
         return upstream.variables().stream()
-                .filter(var -> var.reference().isName() && negated.variableNames().contains(var.reference().asName()))
-                .map(variable -> variable.reference().asName())
+                .filter(var -> var.id().isRetrieved() && negated.retrieves().contains(var.id().asRetrieved()))
+                .map(var -> var.id().asRetrieved())
                 .collect(Collectors.toMap(Function.identity(), Function.identity()));
     }
 
@@ -177,18 +177,18 @@ public class ResolverRegistry {
 
     public static class MappedResolver {
         private final Actor<? extends Resolver<?>> resolver;
-        private final Map<Reference.Name, Reference.Name> mapping;
+        private final Map<Retrieved, Retrieved> mapping;
 
-        private MappedResolver(Actor<? extends Resolver<?>> resolver, Map<Reference.Name, Reference.Name> mapping) {
+        private MappedResolver(Actor<? extends Resolver<?>> resolver, Map<Retrieved, Retrieved> mapping) {
             this.resolver = resolver;
             this.mapping = mapping;
         }
 
-        public static MappedResolver of(Actor<? extends Resolver<?>> resolver, Map<Reference.Name, Reference.Name> mapping) {
+        public static MappedResolver of(Actor<? extends Resolver<?>> resolver, Map<Retrieved, Retrieved> mapping) {
             return new MappedResolver(resolver, mapping);
         }
 
-        public Map<Reference.Name, Reference.Name> mapping() {
+        public Map<Retrieved, Retrieved> mapping() {
             return mapping;
         }
 

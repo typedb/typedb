@@ -19,7 +19,7 @@ package grakn.core.reasoner.resolution.answer;
 
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
-import graql.lang.pattern.variable.Reference;
+import grakn.core.traversal.common.Identifier.Variable.Retrieved;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,16 +28,41 @@ import java.util.stream.Collectors;
 
 public class Mapping {
 
-    private final Map<Reference.Name, Reference.Name> mapping;
-    private final Map<Reference.Name, Reference.Name> reverseMapping;
+    private final Map<Retrieved, Retrieved> mapping;
+    private final Map<Retrieved, Retrieved> reverseMapping;
 
-    Mapping(Map<Reference.Name, Reference.Name> mapping) {
-        this.mapping = mapping;
+    Mapping(Map<? extends Retrieved, ? extends Retrieved> mapping) {
+        this.mapping = new HashMap<>(mapping);
         this.reverseMapping = mapping.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
     }
 
-    public static Mapping of(Map<Reference.Name, Reference.Name> variableMap) {
+    public static Mapping of(Map<? extends Retrieved, ? extends Retrieved> variableMap) {
         return new Mapping(variableMap);
+    }
+
+    public ConceptMap transform(ConceptMap conceptMap) {
+        Map<Retrieved, Concept> transformed = new HashMap<>();
+        for (Map.Entry<Retrieved, ? extends Concept> entry : conceptMap.concepts().entrySet()) {
+            Retrieved id = entry.getKey();
+            Retrieved mapped = mapping.get(id);
+            if (mapped != null) {
+                Concept concept = entry.getValue();
+                transformed.put(mapped, concept);
+            }
+        }
+        return new ConceptMap(transformed);
+    }
+
+    public ConceptMap unTransform(ConceptMap conceptMap) {
+        assert reverseMapping.size() == conceptMap.concepts().size();
+        Map<Retrieved, Concept> transformed = new HashMap<>();
+        for (Map.Entry<Retrieved, ? extends Concept> entry : conceptMap.concepts().entrySet()) {
+            Retrieved id = entry.getKey();
+            assert reverseMapping.containsKey(id);
+            Concept concept = entry.getValue();
+            transformed.put(reverseMapping.get(id), concept);
+        }
+        return new ConceptMap(transformed);
     }
 
     @Override
@@ -59,30 +84,6 @@ public class Mapping {
         return "Mapping{" +
                 "mapping=" + mapping +
                 '}';
-    }
-
-    public ConceptMap transform(ConceptMap conceptMap) {
-        Map<Reference.Name, Concept> transformed = new HashMap<>();
-        for (Map.Entry<Reference.Name, ? extends Concept> entry : conceptMap.concepts().entrySet()) {
-            Reference.Name ref = entry.getKey();
-            if (mapping.containsKey(ref)) {
-                Concept concept = entry.getValue();
-                transformed.put(mapping.get(ref), concept);
-            }
-        }
-        return new ConceptMap(transformed);
-    }
-
-    public ConceptMap unTransform(ConceptMap conceptMap) {
-        assert reverseMapping.size() == conceptMap.concepts().size();
-        Map<Reference.Name, Concept> transformed = new HashMap<>();
-        for (Map.Entry<Reference.Name, ? extends Concept> entry : conceptMap.concepts().entrySet()) {
-            Reference.Name ref = entry.getKey();
-            assert reverseMapping.containsKey(ref);
-            Concept concept = entry.getValue();
-            transformed.put(reverseMapping.get(ref), concept);
-        }
-        return new ConceptMap(transformed);
     }
 
 }

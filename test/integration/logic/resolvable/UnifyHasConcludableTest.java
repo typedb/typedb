@@ -118,7 +118,7 @@ public class UnifyHasConcludableTest {
         rocksTransaction.close();
     }
 
-    private Map<String, Set<String>> getStringMapping(Map<Identifier, Set<Identifier>> map) {
+    private Map<String, Set<String>> getStringMapping(Map<Identifier.Variable, Set<Identifier.Variable>> map) {
         return map.entrySet().stream().collect(Collectors.toMap(v -> v.getKey().toString(),
                                                                 e -> e.getValue().stream().map(Identifier::toString).collect(Collectors.toSet()))
         );
@@ -180,28 +180,28 @@ public class UnifyHasConcludableTest {
         assertEquals(1, unifier.constraintRequirements().predicates().size());
 
         // test filter allows a valid answer
-        Map<Identifier, Concept> identifiedConcepts = map(
+        Map<Identifier.Variable, Concept> concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "john"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
         assertEquals(1, unified.get().concepts().size());
 
         // filter out invalid type
-        identifiedConcepts = map(
+        concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("age"))
         );
-        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.isPresent());
 
         // filter out invalid value
-        identifiedConcepts = map(
+        concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "bob"))
         );
-        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.isPresent());
     }
 
@@ -230,28 +230,28 @@ public class UnifyHasConcludableTest {
         assertEquals(1, unifier.constraintRequirements().predicates().size());
 
         // test filter allows a valid answer
-        Map<Identifier, Concept> identifiedConcepts = map(
+        Map<Identifier.Variable, Concept> concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.name("a"), instanceOf("last-name", "john"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
         assertEquals(1, unified.get().concepts().size());
 
         // filter out invalid type
-        identifiedConcepts = map(
+        concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.name("a"), instanceOf("age"))
         );
-        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.isPresent());
 
         // filter out invalid value
-        identifiedConcepts = map(
+        concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.name("a"), instanceOf("first-name", "bob"))
         );
-        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.isPresent());
     }
 
@@ -281,11 +281,11 @@ public class UnifyHasConcludableTest {
         assertEquals(expected, result);
 
         // test unifier allows a valid answer
-        Map<Identifier, Concept> identifiedConcepts = map(
+        Map<Identifier.Variable, Concept> concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "john"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
         assertEquals(2, unified.get().concepts().size());
 
@@ -314,11 +314,11 @@ public class UnifyHasConcludableTest {
         assertEquals(expected, result);
 
         // test filter allows a valid answer
-        Map<Identifier, Concept> identifiedConcepts = map(
+        Map<Identifier.Variable, Concept> concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.name("a"), instanceOf("last-name", "john"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
         assertEquals(2, unified.get().concepts().size());
 
@@ -353,20 +353,20 @@ public class UnifyHasConcludableTest {
         assertEquals(0, unifier.constraintRequirements().predicates().size());
 
         // test filter allows a valid answer
-        Map<Identifier, Concept> identifiedConcepts = map(
+        Map<Identifier.Variable, Concept> concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "john"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
         assertEquals(2, unified.get().concepts().size());
 
         // filter out invalid type
-        identifiedConcepts = map(
+        concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("age"))
         );
-        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.isPresent());
     }
 
@@ -395,20 +395,20 @@ public class UnifyHasConcludableTest {
         assertEquals(0, unifier.constraintRequirements().predicates().size());
 
         // test filter allows a valid answer
-        Map<Identifier, Concept> identifiedConcepts = map(
+        Map<Identifier.Variable, Concept> concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.name("a"), instanceOf("first-name", "john"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
         assertEquals(2, unified.get().concepts().size());
 
         // filter out invalid type
-        identifiedConcepts = map(
+        concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.name("a"), instanceOf("age"))
         );
-        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.isPresent());
     }
 
@@ -453,20 +453,20 @@ public class UnifyHasConcludableTest {
         }};
         assertEquals(expected, result);
         // test requirements of one-to-many using valid answer
-        Map<Identifier, Concept> identifiedConcepts = map(
+        Map<Identifier.Variable, Concept> concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("self-owning-attribute")),
                 pair(Identifier.Variable.anon(0), instanceOf("self-owning-attribute"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
         assertEquals(1, unified.get().concepts().size());
 
         // test requirements of one-to-many using invalid answer
-        identifiedConcepts = map(
+        concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("age"))
         );
-        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.isPresent());
     }
 

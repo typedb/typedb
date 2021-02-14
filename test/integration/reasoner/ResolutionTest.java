@@ -32,8 +32,8 @@ import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
 import grakn.core.test.integration.util.Util;
+import grakn.core.traversal.common.Identifier;
 import graql.lang.Graql;
-import graql.lang.pattern.variable.Reference;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -148,9 +148,9 @@ public class ResolutionTest {
         }
         try (RocksSession session = dataSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                Set<Reference.Name> filter = set(Reference.name("t"),
-                                                 Reference.name("p1"),
-                                                 Reference.name("p2"));
+                Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("t"),
+                                                           Identifier.Variable.name("p1"),
+                                                           Identifier.Variable.name("p2"));
                 Disjunction disjunction = parseDisjunction(transaction, "{ $t(twin1: $p1, twin2: $p2) isa twins; { $p1 has age 24; } or { $p1 has age 26; }; }");
                 createRootAndAssertResponses(transaction, disjunction, filter, null, null, 2L);
             }
@@ -180,9 +180,9 @@ public class ResolutionTest {
         }
         try (RocksSession session = dataSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                Set<Reference.Name> filter = set(Reference.name("t"),
-                                                 Reference.name("p1"),
-                                                 Reference.name("p2"));
+                Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("t"),
+                                                           Identifier.Variable.name("p1"),
+                                                           Identifier.Variable.name("p2"));
                 Disjunction disjunction = parseDisjunction(transaction, "{ $t(twin1: $p1, twin2: $p2) isa twins; " +
                         "{ $p1 has age 24; } or { $p1 has age 26; } or { $p1 has age 27;} ; }");
                 createRootAndAssertResponses(transaction, disjunction, filter, 1L, 1L, 1L);
@@ -449,11 +449,11 @@ public class ResolutionTest {
                 ResolverRegistry registry = transaction.reasoner().resolverRegistry();
                 LinkedBlockingQueue<Top> responses = new LinkedBlockingQueue<>();
                 AtomicLong doneReceived = new AtomicLong(0L);
-                Set<Reference.Name> filter = iterate(conjunctionPattern.variables()).map(Variable::reference)
-                        .filter(Reference::isName).map(Reference::asName).toSet();
+                Set<Identifier.Variable.Name> filter = iterate(conjunctionPattern.variables()).map(Variable::id)
+                        .filter(Identifier::isName).map(Identifier.Variable::asName).toSet();
                 Actor<grakn.core.reasoner.resolution.resolver.Root.Conjunction> root =
                         registry.rootConjunction(conjunctionPattern, null, null, responses::add,
-                                                                        iterDone -> doneReceived.incrementAndGet());
+                                                 iterDone -> doneReceived.incrementAndGet());
 
                 for (int i = 0; i < answerCount; i++) {
                     Identity downstream = Top.initial(filter, false, root).toDownstream();
@@ -497,7 +497,7 @@ public class ResolutionTest {
     }
 
     private void createRootAndAssertResponses(RocksTransaction transaction, Disjunction disjunction,
-                                              Set<Reference.Name> filter, @Nullable Long offset, @Nullable Long limit,
+                                              Set<Identifier.Variable.Name> filter, @Nullable Long offset, @Nullable Long limit,
                                               long answerCount) throws InterruptedException {
         ResolverRegistry registry = transaction.reasoner().resolverRegistry();
         LinkedBlockingQueue<Top> responses = new LinkedBlockingQueue<>();
@@ -512,14 +512,14 @@ public class ResolutionTest {
         ResolverRegistry registry = transaction.reasoner().resolverRegistry();
         LinkedBlockingQueue<Top> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
-        Set<Reference.Name> filter = iterate(conjunction.variables()).map(Variable::reference).filter(Reference::isName)
-                .map(Reference::asName).toSet();
+        Set<Identifier.Variable.Name> filter = iterate(conjunction.variables()).map(Variable::id)
+                .filter(Identifier::isName).map(Identifier.Variable::asName).toSet();
         Actor<grakn.core.reasoner.resolution.resolver.Root.Conjunction> root =
                 registry.rootConjunction(conjunction, offset, limit, responses::add, iterDone -> doneReceived.incrementAndGet());
         assertResponses(root, filter, responses, doneReceived, answerCount);
     }
 
-    private void assertResponses(Actor<? extends Resolver<?>> root, Set<Reference.Name> filter, LinkedBlockingQueue<Top> responses,
+    private void assertResponses(Actor<? extends Resolver<?>> root, Set<Identifier.Variable.Name> filter, LinkedBlockingQueue<Top> responses,
                                  AtomicLong doneReceived, long answerCount)
             throws InterruptedException {
         long startTime = System.currentTimeMillis();

@@ -33,11 +33,13 @@ public abstract class Identifier {
 
     public boolean isVariable() { return false; }
 
+    public boolean isRetrieved() { return false; }
+
     public boolean isName() { return false; }
 
-    public boolean isLabel() { return false; }
-
     public boolean isAnonymous() { return false; }
+
+    public boolean isLabel() { return false; }
 
     public Scoped asScoped() {
         throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Scoped.class));
@@ -118,7 +120,7 @@ public abstract class Identifier {
             this.hash = Objects.hash(Variable.class, this.reference, this.id);
         }
 
-        public static Referable of(Reference.Referable reference) {
+        public static Variable of(Reference.Referable reference) {
             if (reference.isLabel()) return of(reference.asLabel());
             else if (reference.isName()) return of(reference.asName());
             else assert false;
@@ -137,11 +139,11 @@ public abstract class Identifier {
             return new Anonymous(reference, id);
         }
 
-        public static Referable name(String name) {
-            return Variable.of(Reference.name(name));
+        public static Name name(String name) {
+            return of(Reference.name(name));
         }
 
-        public static Referable label(String label) {
+        public static Label label(String label) {
             return Variable.of(Reference.label(label));
         }
 
@@ -159,16 +161,20 @@ public abstract class Identifier {
         @Override
         public Variable asVariable() { return this; }
 
+        public Variable.Retrieved asRetrieved() {
+            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Variable.Retrieved.class));
+        }
+
         public Variable.Name asName() {
             throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Variable.Name.class));
         }
 
-        public Variable.Label asLabel() {
-            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Variable.Label.class));
-        }
-
         public Variable.Anonymous asAnonymous() {
             throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Variable.Anonymous.class));
+        }
+
+        public Variable.Label asLabel() {
+            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Variable.Label.class));
         }
 
         @Override
@@ -190,22 +196,27 @@ public abstract class Identifier {
             return hash;
         }
 
-        public static class Referable extends Variable {
+        public static class Retrieved extends Variable {
 
-            Referable(Reference reference) {
-                super(reference, null);
+            public Retrieved(Reference reference, Integer id) {
+                super(reference, id);
             }
 
             @Override
-            public Reference.Referable reference() {
-                return reference.asReferable();
+            public boolean isRetrieved() {
+                return true;
+            }
+
+            @Override
+            public Retrieved asRetrieved() {
+                return this;
             }
         }
 
-        public static class Name extends Referable {
+        public static class Name extends Retrieved {
 
             private Name(Reference.Name reference) {
-                super(reference);
+                super(reference, null);
             }
 
             @Override
@@ -220,25 +231,7 @@ public abstract class Identifier {
             public Variable.Name asName() { return this; }
         }
 
-        public static class Label extends Referable {
-
-            private Label(Reference.Label reference) {
-                super(reference);
-            }
-
-            @Override
-            public Reference.Label reference() {
-                return reference.asLabel();
-            }
-
-            @Override
-            public boolean isLabel() { return true; }
-
-            @Override
-            public Variable.Label asLabel() { return this; }
-        }
-
-        public static class Anonymous extends Variable {
+        public static class Anonymous extends Retrieved {
 
             private Anonymous(Reference.Anonymous reference, int id) {
                 super(reference, id);
@@ -254,6 +247,24 @@ public abstract class Identifier {
 
             @Override
             public Variable.Anonymous asAnonymous() { return this; }
+        }
+
+        public static class Label extends Variable {
+
+            private Label(Reference.Label reference) {
+                super(reference, null);
+            }
+
+            @Override
+            public Reference.Label reference() {
+                return reference.asLabel();
+            }
+
+            @Override
+            public boolean isLabel() { return true; }
+
+            @Override
+            public Variable.Label asLabel() { return this; }
         }
     }
 }

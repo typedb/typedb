@@ -112,7 +112,7 @@ public class UnifyAttributeConcludableTest {
     @After
     public void tearDownTransaction() { rocksTransaction.close(); }
 
-    private Map<String, Set<String>> getStringMapping(Map<Identifier, Set<Identifier>> map) {
+    private Map<String, Set<String>> getStringMapping(Map<Identifier.Variable, Set<Identifier.Variable>> map) {
         return map.entrySet().stream().collect(Collectors.toMap(v -> v.getKey().toString(),
                                                                 e -> e.getValue().stream().map(Identifier::toString).collect(Collectors.toSet()))
         );
@@ -159,17 +159,17 @@ public class UnifyAttributeConcludableTest {
         assertEquals(1, unifier.constraintRequirements().predicates().size());
 
         // test filter allows a valid answer
-        Map<Identifier, Concept> identifiedConcepts = map(
+       Map<Identifier.Variable, Concept> concepts = map(
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "john"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
         assertEquals(1, unified.get().concepts().size());
 
-        identifiedConcepts = map(
+        concepts = map(
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "abe"))
         );
-        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.isPresent());
 
     }

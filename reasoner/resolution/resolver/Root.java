@@ -29,12 +29,13 @@ import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Filtered;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top;
+import grakn.core.reasoner.resolution.answer.Mapping;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import grakn.core.traversal.TraversalEngine;
-import graql.lang.pattern.variable.Reference;
+import grakn.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,6 +102,29 @@ public interface Root {
             } else {
                 submitFail(iteration);
             }
+        }
+
+        /*
+        NOTE special behaviour: don't clear the deduplication set, in the root
+         */
+        @Override
+        protected ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer responseProducerPrevious,
+                                                             int newIteration) {
+            assert newIteration > responseProducerPrevious.iteration();
+            LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
+
+//        ResourceIterator<AnswerState.Partial> upstreamAnswers = toUpstreamAnswers(
+//                fromUpstream, compatibleBoundAnswers(conceptMgr, conjunction, fromUpstream.partialAnswer().conceptMap()));
+
+            Plans.Plan plan = plans.getOrCreate(fromUpstream.partialAnswer().conceptMap().concepts().keySet(), resolvables, negateds);
+
+            assert !plan.isEmpty();
+            ResponseProducer responseProducerNewIter = responseProducerPrevious.newIterationRetainDedup(Iterators.empty(), newIteration);
+            Partial.Mapped downstream = fromUpstream.partialAnswer()
+                    .mapToDownstream(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping()));
+            Request toDownstream = Request.create(self(),downstreamResolvers.get(plan.get(0)).resolver(), downstream, 0);
+            responseProducerNewIter.addDownstreamProducer(toDownstream);
+            return responseProducerNewIter;
         }
 
         protected void failToUpstream(Request fromUpstream, int iteration) {
@@ -231,7 +255,7 @@ public interface Root {
             Request toDownstream = fromDownstream.sourceRequest();
             Request fromUpstream = fromUpstream(toDownstream);
 
-            Top answer = fromUpstream.partialAnswer().asIdentity().toTop();
+            Top answer = fromDownstream.answer().asIdentity().toTop();
             ConceptMap filteredMap = answer.conceptMap();
             if (!responseProducer.hasProduced(filteredMap)) {
                 responseProducer.recordProduced(filteredMap);
@@ -278,16 +302,17 @@ public interface Root {
             assert !downstreamResolvers.isEmpty();
             for (Actor<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers) {
                 Filtered downstream = fromUpstream.partialAnswer().asIdentity()
-                        .filterToDownstream(conjunctionFilter(conjunctionResolver));
+                        .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver));
                 Request request = Request.create(self(), conjunctionResolver, downstream);
                 responseProducer.addDownstreamProducer(request);
             }
             return responseProducer;
         }
 
-        private Set<Reference.Name> conjunctionFilter(Actor<ConjunctionResolver.Nested> conjunctionResolver) {
-            return iterate(conjunctionResolver.state.conjunction.variables()).filter(v -> v.reference().isName())
-                    .map(v -> v.reference().asName()).toSet();
+        private Set<Identifier.Variable.Retrieved> conjunctionRetrievedIds(Actor<ConjunctionResolver.Nested> conjunctionResolver) {
+            // TODO use a map from resolvable to resolvers, then we don't have to reach into the state and use the conjunction
+            return iterate(conjunctionResolver.state.conjunction.variables()).filter(v -> v.id().isRetrieved())
+                    .map(v -> v.id().asRetrieved()).toSet();
         }
 
         @Override
@@ -297,10 +322,10 @@ public interface Root {
             LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
 
             assert newIteration > responseProducerPrevious.iteration();
-            ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(Iterators.empty(), newIteration);
+            ResponseProducer responseProducerNewIter = responseProducerPrevious.newIterationRetainDedup(Iterators.empty(), newIteration);
             for (Actor<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers) {
                 Filtered downstream = fromUpstream.partialAnswer().asIdentity()
-                        .filterToDownstream(conjunctionFilter(conjunctionResolver));
+                        .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver));
                 Request request = Request.create(self(), conjunctionResolver, downstream);
                 responseProducer.addDownstreamProducer(request);
             }

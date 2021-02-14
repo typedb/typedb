@@ -40,7 +40,7 @@ import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import grakn.core.traversal.TraversalEngine;
-import graql.lang.pattern.variable.Reference;
+import grakn.core.traversal.common.Identifier.Variable.Retrieved;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -233,12 +233,12 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         return responseProducerNewIter;
     }
 
-    private class Plans {
+    class Plans {
 
-        Map<Set<Reference.Name>, Plan> plans;
+        Map<Set<Retrieved>, Plan> plans;
         public Plans() { this.plans = new HashMap<>(); }
 
-        public Plan getOrCreate(Set<Reference.Name> boundVars, Set<Resolvable<?>> resolvable, Set<Negated> negations) {
+        public Plan getOrCreate(Set<Retrieved> boundVars, Set<Resolvable<?>> resolvable, Set<Negated> negations) {
             return plans.computeIfAbsent(boundVars, (bound) -> {
                 List<Resolvable<?>> plan = planner.plan(resolvable, bound);
                 plan.addAll(negations);
@@ -246,7 +246,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
             });
         }
 
-        public Plan get(Set<Reference.Name> boundVars) {
+        public Plan get(Set<Retrieved> boundVars) {
             assert plans.containsKey(boundVars);
             return plans.get(boundVars);
         }

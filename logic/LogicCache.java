@@ -21,6 +21,7 @@ package grakn.core.logic;
 import grakn.core.common.cache.CommonCache;
 import grakn.core.common.parameters.Label;
 import grakn.core.traversal.Traversal;
+import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.variable.Reference;
 
 import java.util.Map;
@@ -28,7 +29,7 @@ import java.util.Set;
 
 public class LogicCache {
 
-    private CommonCache<Traversal, Map<Reference, Set<Label>>> typeResolverCache;
+    private CommonCache<Traversal, Map<Identifier.Variable, Set<Label>>> typeResolverCache;
     private CommonCache<String, Rule> ruleCache;
 
     public LogicCache() {
@@ -41,7 +42,7 @@ public class LogicCache {
         this.typeResolverCache = new CommonCache<>(size, timeOutMinutes);
     }
 
-    public CommonCache<Traversal, Map<Reference, Set<Label>>> resolver() { return typeResolverCache; }
+    public CommonCache<Traversal, Map<Identifier.Variable, Set<Label>>> resolver() { return typeResolverCache; }
 
     CommonCache<String, Rule> rule() { return ruleCache; }
 }

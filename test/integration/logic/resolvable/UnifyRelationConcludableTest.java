@@ -130,7 +130,7 @@ public class UnifyRelationConcludableTest {
         rocksTransaction.close();
     }
 
-    private Map<String, Set<String>> getStringMapping(Map<Identifier, Set<Identifier>> map) {
+    private Map<String, Set<String>> getStringMapping(Map<Identifier.Variable, Set<Identifier.Variable>> map) {
         Map<String, Set<String>> mapping = new HashMap<>();
         map.forEach((id, mapped) -> {
             HashSet<String> stringified = new HashSet<>();
@@ -206,13 +206,13 @@ public class UnifyRelationConcludableTest {
         Relation employment = instanceOf("employment").asRelation();
         Thing person = instanceOf("person");
         addRolePlayer(employment, "employee", person);
-        Map<Identifier, Concept> identifiedConcepts = map(
+        Map<Identifier.Variable, Concept> concepts = map(
                 pair(Identifier.Variable.anon(0), employment),
                 pair(Identifier.Variable.name("x"), person),
                 pair(Identifier.Variable.label("employment"), employment.getType()),
                 pair(Identifier.Variable.label("employment:employee"), employment.getType().getRelates("employee"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
         assertEquals(2, unified.get().concepts().size());
         assertEquals(employment, unified.get().get("r"));
@@ -222,13 +222,13 @@ public class UnifyRelationConcludableTest {
         Relation friendship = instanceOf("friendship").asRelation();
         person = instanceOf("person");
         addRolePlayer(friendship, "friend", person);
-        identifiedConcepts = map(
+        concepts = map(
                 pair(Identifier.Variable.anon(0), friendship),
                 pair(Identifier.Variable.name("x"), person),
                 pair(Identifier.Variable.label("employment"), friendship.getType()),
                 pair(Identifier.Variable.label("employment:employee"), friendship.getType().getRelates("friend"))
         );
-        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.isPresent());
     }
 
@@ -263,13 +263,13 @@ public class UnifyRelationConcludableTest {
         Relation employment = instanceOf("employment").asRelation();
         Thing person = instanceOf("person");
         addRolePlayer(employment, "employee", person);
-        Map<Identifier, Concept> identifiedConcepts = map(
+        Map<Identifier.Variable, Concept> concepts = map(
                 pair(Identifier.Variable.anon(0), employment),
                 pair(Identifier.Variable.name("x"), person),
                 pair(Identifier.Variable.label("employment"), employment.getType()),
                 pair(Identifier.Variable.label("employment:employee"), employment.getType().getRelates("employee"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
         assertEquals(2, unified.get().concepts().size());
         assertEquals(employment.getType(), unified.get().get("rel"));
@@ -279,13 +279,13 @@ public class UnifyRelationConcludableTest {
         Relation friendship = instanceOf("friendship").asRelation();
         person = instanceOf("person");
         addRolePlayer(friendship, "friend", person);
-        identifiedConcepts = map(
+        concepts = map(
                 pair(Identifier.Variable.anon(0), friendship),
                 pair(Identifier.Variable.name("x"), person),
                 pair(Identifier.Variable.label("employment"), friendship.getType()),
                 pair(Identifier.Variable.label("employment:employee"), friendship.getType().getRelates("friend"))
         );
-        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.isPresent());
     }
 
@@ -320,13 +320,13 @@ public class UnifyRelationConcludableTest {
         Relation employment = instanceOf("employment").asRelation();
         Thing person = instanceOf("person");
         addRolePlayer(employment, "employee", person);
-        Map<Identifier, Concept> identifiedConcepts = map(
+        Map<Identifier.Variable, Concept> concepts = map(
                 pair(Identifier.Variable.anon(0), employment),
                 pair(Identifier.Variable.name("x"), person),
                 pair(Identifier.Variable.label("employment"), employment.getType()),
                 pair(Identifier.Variable.label("employment:employee"), employment.getType().getRelates("employee"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
         assertEquals(2, unified.get().concepts().size());
         assertEquals(employment.getType().getRelates("employee"), unified.get().get("role"));
@@ -336,13 +336,13 @@ public class UnifyRelationConcludableTest {
         Relation friendship = instanceOf("friendship").asRelation();
         person = instanceOf("person");
         addRolePlayer(friendship, "friend", person);
-        identifiedConcepts = map(
+        concepts = map(
                 pair(Identifier.Variable.anon(0), friendship),
                 pair(Identifier.Variable.name("x"), person),
                 pair(Identifier.Variable.label("employment"), friendship.getType()),
                 pair(Identifier.Variable.label("employment:employee"), friendship.getType().getRelates("friend"))
         );
-        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.isPresent());
     }
 
@@ -551,14 +551,14 @@ public class UnifyRelationConcludableTest {
         Thing person = instanceOf("person");
         addRolePlayer(employment, "employee", person);
         addRolePlayer(employment, "employee", person);
-        Map<Identifier, Concept> identifiedConcepts = map(
+        Map<Identifier.Variable, Concept> concepts = map(
                 pair(Identifier.Variable.anon(0), employment),
                 pair(Identifier.Variable.name("x"), person),
                 pair(Identifier.Variable.name("y"), person),
                 pair(Identifier.Variable.name("employment"), employment.getType()),
                 pair(Identifier.Variable.name("employee"), employment.getType().getRelates("employee"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
         assertEquals(1, unified.get().concepts().size());
         assertEquals(person, unified.get().get("p"));
@@ -569,14 +569,14 @@ public class UnifyRelationConcludableTest {
         Thing differentPerson = instanceOf("person");
         addRolePlayer(employment, "employee", person);
         addRolePlayer(employment, "employee", differentPerson);
-        identifiedConcepts = map(
+        concepts = map(
                 pair(Identifier.Variable.anon(0), employment),
                 pair(Identifier.Variable.name("x"), person),
                 pair(Identifier.Variable.name("y"), differentPerson),
                 pair(Identifier.Variable.name("employment"), employment.getType()),
                 pair(Identifier.Variable.name("employee"), employment.getType().getRelates("employee"))
         );
-        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.isPresent());
     }
 
@@ -759,13 +759,13 @@ public class UnifyRelationConcludableTest {
         Thing person = instanceOf("person");
         addRolePlayer(employment, "employee", person);
         addRolePlayer(employment, "employee", person);
-        Map<Identifier, Concept> identifiedConcepts = map(
+        Map<Identifier.Variable, Concept> concepts = map(
                 pair(Identifier.Variable.anon(0), employment),
                 pair(Identifier.Variable.name("x"), person),
                 pair(Identifier.Variable.name("employment"), employment.getType()),
                 pair(Identifier.Variable.name("employee"), employment.getType().getRelates("employee"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
         assertEquals(2, unified.get().concepts().size());
         assertEquals(person, unified.get().get("p"));

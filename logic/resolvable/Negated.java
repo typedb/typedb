@@ -19,8 +19,9 @@ package grakn.core.logic.resolvable;
 
 import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.Negation;
-import grakn.core.pattern.variable.Variable;
-import graql.lang.pattern.variable.Reference;
+import grakn.core.pattern.variable.ThingVariable;
+import grakn.core.traversal.common.Identifier;
+import grakn.core.traversal.common.Identifier.Variable.Retrieved;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -30,23 +31,24 @@ import static grakn.core.common.iterator.Iterators.iterate;
 
 public class Negated extends Resolvable<Disjunction> {
 
-    private final Set<Reference.Name> variableNames;
+    // note: we always guarantee unique anonymous IDs within one query
+    private final Set<Retrieved> identifiers;
 
     public Negated(Negation negation) {
         super(negation.disjunction());
-        this.variableNames = new HashSet<>();
-        pattern().conjunctions().forEach(c -> iterate(c.variables()).filter(v -> v.reference().isName())
-                .map(v -> v.reference().asName()).forEachRemaining(variableNames::add));
+        this.identifiers = new HashSet<>();
+        pattern().conjunctions().forEach(c -> iterate(c.identifiers()).filter(Identifier::isRetrieved)
+                .forEachRemaining(id -> identifiers.add(id.asRetrieved())));
     }
 
     @Override
-    public Optional<Variable> generating() {
+    public Optional<ThingVariable> generating() {
         return Optional.empty();
     }
 
     @Override
-    public Set<Reference.Name> variableNames() {
-        return variableNames;
+    public Set<Retrieved> retrieves() {
+        return this.identifiers;
     }
 
     @Override

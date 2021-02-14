@@ -180,11 +180,11 @@ public class Rule {
     }
 
     public void validateInsertable(LogicManager logicMgr) {
-        ResourceIterator<Map<Reference.Name, Label>> possibleWhenPerms = logicMgr.typeResolver().combinations(when, false);
-        Set<Map<Reference.Name, Label>> possibleThenSet = logicMgr.typeResolver().combinations(then, true).toSet();
+        ResourceIterator<Map<Identifier.Variable.Name, Label>> whenCombinations = logicMgr.typeResolver().namedCombinations(when, false);
+        Set<Map<Identifier.Variable.Name, Label>> allowedThenCombinations = logicMgr.typeResolver().namedCombinations(then, true).toSet();
 
-        possibleWhenPerms.forEachRemaining(nameLabelMap -> {
-            if (possibleThenSet.stream().noneMatch(thenMap -> nameLabelMap.entrySet().containsAll(thenMap.entrySet())))
+        whenCombinations.forEachRemaining(nameLabelMap -> {
+            if (allowedThenCombinations.stream().noneMatch(thenMap -> nameLabelMap.entrySet().containsAll(thenMap.entrySet())))
                 throw GraknException.of(RULE_CAN_IMPLY_UNINSERTABLE_RESULTS, structure.label(), nameLabelMap.toString());
         });
     }
@@ -278,8 +278,8 @@ public class Rule {
          * @param conceptMgr   - used to insert the conclusion if it doesn't already exist
          * @return - all possible conclusions: there may be multiple preexisting satisfactory conclusions, we return all
          */
-        public abstract ResourceIterator<Map<Identifier, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
-                                                                               ConceptManager conceptMgr);
+        public abstract ResourceIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
+                                                                                        ConceptManager conceptMgr);
 
         abstract void index(Rule rule);
 
@@ -362,9 +362,9 @@ public class Rule {
             }
 
             @Override
-            public ResourceIterator<Map<Identifier, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
-                                                                          ConceptManager conceptMgr) {
-                Identifier relationTypeIdentifier = isa().type().id();
+            public ResourceIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
+                                                                                   ConceptManager conceptMgr) {
+                Identifier.Variable relationTypeIdentifier = isa().type().id();
                 RelationType relationType = relationType(whenConcepts, conceptMgr);
                 Set<RolePlayer> players = new HashSet<>();
                 relation().players().forEach(rp -> players.add(new RolePlayer(rp, relationType, whenConcepts)));
@@ -374,7 +374,7 @@ public class Rule {
 
                 if (existingRelations.hasNext()) {
                     return existingRelations.map(rel -> {
-                        Map<Identifier, Concept> thenConcepts = new HashMap<>();
+                        Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
                         thenConcepts.put(relationTypeIdentifier, relationType);
                         thenConcepts.put(isa().owner().id(), rel);
                         players.forEach(rp -> {
@@ -384,7 +384,7 @@ public class Rule {
                         return thenConcepts;
                     });
                 } else {
-                    Map<Identifier, Concept> thenConcepts = new HashMap<>();
+                    Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
                     thenConcepts.put(relationTypeIdentifier, relationType);
                     grakn.core.concept.thing.Relation relation = insertRelation(relationType, players);
                     thenConcepts.put(isa().owner().id(), relation);
@@ -475,7 +475,7 @@ public class Rule {
             }
 
             private static class RolePlayer {
-                private final Identifier roleTypeIdentifier;
+                private final Identifier.Variable roleTypeIdentifier;
                 private final RoleType roleType;
                 private final Identifier.Variable playerIdentifier;
                 private final Thing player;
@@ -547,16 +547,16 @@ public class Rule {
                 }
 
                 @Override
-                public ResourceIterator<Map<Identifier, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
-                                                                              ConceptManager conceptMgr) {
-                    Identifier.Variable ownerId = has().owner().id();
-                    assert whenConcepts.contains(ownerId.reference().asName()) && whenConcepts.get(ownerId.reference().asName()).isThing();
+                public ResourceIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
+                                                                                       ConceptManager conceptMgr) {
+                    Identifier.Variable.Retrieved ownerId = has().owner().id();
+                    assert whenConcepts.contains(ownerId) && whenConcepts.get(ownerId).isThing();
+                    Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
                     Thing owner = whenConcepts.get(ownerId.reference().asName()).asThing();
-                    Map<Identifier, Concept> thenConcepts = new HashMap<>();
                     Attribute attribute = getOrCreateAttribute(conceptMgr);
                     owner.setHas(attribute, true);
                     TypeVariable declaredType = has().attribute().isa().get().type();
-                    Identifier declaredTypeIdentifier = declaredType.id();
+                    Identifier.Variable declaredTypeIdentifier = declaredType.id();
                     AttributeType attrType = conceptMgr.getAttributeType(declaredType.label().get().properLabel().name());
                     assert attrType.equals(attribute.getType());
                     thenConcepts.put(declaredTypeIdentifier, attrType);
@@ -665,16 +665,15 @@ public class Rule {
                 }
 
                 @Override
-                public ResourceIterator<Map<Identifier, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
-                                                                              ConceptManager conceptMgr) {
-                    Identifier.Variable ownerId = has().owner().id();
-                    assert whenConcepts.contains(ownerId.reference().asName())
-                            && whenConcepts.get(ownerId.reference().asName()).isThing();
-                    Thing owner = whenConcepts.get(ownerId.reference().asName()).asThing();
-                    Map<Identifier, Concept> thenConcepts = new HashMap<>();
-                    assert whenConcepts.contains(has().attribute().reference().asName())
-                            && whenConcepts.get(has().attribute().reference().asName()).isAttribute();
-                    Attribute attribute = whenConcepts.get(has().attribute().reference().asName()).asAttribute();
+                public ResourceIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
+                                                                                       ConceptManager conceptMgr) {
+                    Identifier.Variable.Retrieved ownerId = has().owner().id();
+                    assert whenConcepts.contains(ownerId) && whenConcepts.get(ownerId).isThing();
+                    Thing owner = whenConcepts.get(ownerId).asThing();
+                    Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
+                    assert whenConcepts.contains(has().attribute().id())
+                            && whenConcepts.get(has().attribute().id()).isAttribute();
+                    Attribute attribute = whenConcepts.get(has().attribute().id()).asAttribute();
                     owner.setHas(attribute, true);
                     thenConcepts.put(has().attribute().id(), attribute);
                     thenConcepts.put(has().owner().id(), owner);

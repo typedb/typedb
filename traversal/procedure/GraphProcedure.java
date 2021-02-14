@@ -164,13 +164,13 @@ public class GraphProcedure implements Procedure {
         ).asType();
     }
 
-    private void assertWithinFilterBounds(Set<Identifier.Variable.Name> filter) {
-        assert iterate(vertices.keySet()).anyMatch(id -> id.isName() && filter.contains(id.asVariable().asName()));
+    private void assertWithinFilterBounds(Set<Identifier.Variable.Retrieved> filter) {
+        assert iterate(vertices.keySet()).anyMatch(filter::contains);
     }
 
     @Override
-    public Producer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
-                                        Set<Identifier.Variable.Name> filter, int parallelisation) {
+    public Producer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params, Set<Identifier.Variable.Retrieved> filter,
+                                        int parallelisation) {
         if (LOG.isDebugEnabled()) {
             LOG.debug(params.toString());
             LOG.debug(this.toString());
@@ -184,7 +184,7 @@ public class GraphProcedure implements Procedure {
 
     @Override
     public ResourceIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
-                                                Set<Identifier.Variable.Name> filter) {
+                                                Set<Identifier.Variable.Retrieved> filter) {
         if (LOG.isDebugEnabled()) {
             LOG.debug(params.toString());
             LOG.debug(this.toString());

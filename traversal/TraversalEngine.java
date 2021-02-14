@@ -68,7 +68,7 @@ public class TraversalEngine {
     }
 
     public ResourceIterator<VertexMap> iterator(GraphProcedure procedure, Traversal.Parameters params,
-                                                Set<Identifier.Variable.Name> filter) {
+                                                Set<Identifier.Variable.Retrieved> filter) {
         return procedure.iterator(graphMgr, params, filter);
     }
 }
