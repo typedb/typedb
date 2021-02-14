@@ -622,7 +622,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
             return Iterators.empty();
         }
 
-        ResourceIterator<Unifier> unify(Rule.Conclusion.Isa isaConclusion, ConceptManager conceptMgr) {
+        ResourceIterator<Unifier> unify(Rule.Conclusion.IsaConclusion isaConclusion, ConceptManager conceptMgr) {
             Unifier.Builder unifierBuilder = Unifier.builder();
             if (unificationSatisfiable(isa().owner(), isaConclusion.isa().owner())) {
                 unifierBuilder.add(isa().owner().id(), isaConclusion.isa().owner().id());
@@ -742,7 +742,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
             return Iterators.empty();
         }
 
-        ResourceIterator<Unifier> unify(Rule.Conclusion.Value valueConclusion) {
+        ResourceIterator<Unifier> unify(Rule.Conclusion.ValueConclusion valueConclusion) {
             assert iterate(values).filter(ValueConstraint::isVariable).toSet().size() == 0;
             Unifier.Builder unifierBuilder = Unifier.builder();
             if (unificationSatisfiable(attribute, valueConclusion.value().owner())) {

@@ -204,9 +204,12 @@ public abstract class AnswerState {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Partial.Unified.class));
         }
 
-
         public Partial.Filtered filterToDownstream(Set<Identifier.Variable.Retrievable> filter) {
             return Filtered.filter(this, filter, root(), recordExplanations());
+        }
+
+        public Partial.Filtered filterToDownstream(Set<Identifier.Variable.Retrievable> filter, ConceptMap extension) {
+            return Filtered.filter(this, extension, filter, root(), recordExplanations());
         }
 
         public Partial.Mapped mapToDownstream(Mapping mapping) {
@@ -245,6 +248,7 @@ public abstract class AnswerState {
 
             private Identity(ConceptMap partialAnswer, Top parent, Actor<? extends Resolver<?>> root,
                              boolean requiresReiteration, @Nullable Derivation derivation, boolean recordExplanations) {
+                // TODO why is the resolver here and other places null?
                 super(partialAnswer, parent, null, root, requiresReiteration, derivation, recordExplanations);
                 this.hash = Objects.hash(root, conceptMap, parent);
             }
@@ -305,6 +309,16 @@ public abstract class AnswerState {
                                    boolean recordExplanations) {
                 Derivation derivation = recordExplanations ? new AnswerState.Derivation(new HashMap<>()) : null;
                 return new Filtered(parent.conceptMap().filter(filter), parent, filter, null, root, false,
+                                    derivation, recordExplanations);
+            }
+
+            // TODO this is a hack
+            static Filtered filter(Partial<?> parent, ConceptMap extension, Set<Identifier.Variable.Retrievable> filter, Actor<? extends Resolver<?>> root,
+                                   boolean recordExplanations) {
+                Derivation derivation = recordExplanations ? new AnswerState.Derivation(new HashMap<>()) : null;
+                Map<Identifier.Variable.Retrievable, Concept> extended = new HashMap<>(extension.concepts());
+                extended.putAll(parent.conceptMap.concepts());
+                return new Filtered(new ConceptMap(extended).filter(filter), parent, filter, null, root, false,
                                     derivation, recordExplanations);
             }
 

@@ -18,9 +18,7 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
-import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
-import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.LogicManager;
@@ -33,25 +31,20 @@ import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import grakn.core.traversal.TraversalEngine;
-import grakn.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
 import java.util.Optional;
 
-import static grakn.common.collection.Collections.map;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-
-public class RuleResolver extends ConjunctionResolver<RuleResolver> {
-    private static final Logger LOG = LoggerFactory.getLogger(RuleResolver.class);
+public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
+    private static final Logger LOG = LoggerFactory.getLogger(ConditionResolver.class);
 
     private final Rule rule;
 
-    public RuleResolver(Actor<RuleResolver> self, Rule rule, Actor<ResolutionRecorder> resolutionRecorder,
-                        ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                        LogicManager logicMgr, Planner planner, boolean explanations) {
-        super(self, RuleResolver.class.getSimpleName() + "(rule:" + rule + ")", rule.when(), resolutionRecorder,
+    public ConditionResolver(Actor<ConditionResolver> self, Rule rule, Actor<ResolutionRecorder> resolutionRecorder,
+                             ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
+                             LogicManager logicMgr, Planner planner, boolean explanations) {
+        super(self, ConditionResolver.class.getSimpleName() + "(rule:" + rule + ")", rule.when(), resolutionRecorder,
               registry, traversalEngine, conceptMgr, logicMgr, planner, explanations);
         this.rule = rule;
     }
@@ -73,24 +66,7 @@ public class RuleResolver extends ConjunctionResolver<RuleResolver> {
 
     @Override
     protected Optional<AnswerState> toUpstreamAnswer(Partial<?> fromDownstream) {
-        // TODO: we need to record the rest of the iterator in the response producer to pick up later
-        // TODO: we should write a test for this case
-        ResourceIterator<Partial<?>> materialisations = materialisations(fromDownstream);
-        if (materialisations.hasNext()) return Optional.of(materialisations.next());
-        else return Optional.empty();
-    }
-
-    private ResourceIterator<Partial<?>> materialisations(Partial<?> whenAnswer) {
-        ResourceIterator<Map<Identifier.Variable, Concept>> materialisations = rule.conclusion()
-                .materialise(whenAnswer.conceptMap(), traversalEngine, conceptMgr);
-        if (!materialisations.hasNext()) throw GraknException.of(ILLEGAL_STATE);
-
-        assert whenAnswer.isUnified();
-        ResourceIterator<Partial<?>> upstreamAnswers = materialisations
-                .map(concepts -> whenAnswer.asUnified().aggregateToUpstream(concepts, self()))
-                .filter(Optional::isPresent)
-                .map(Optional::get);
-        return upstreamAnswers;
+        return Optional.of(fromDownstream.asFiltered().toUpstream(self()));
     }
 
     @Override

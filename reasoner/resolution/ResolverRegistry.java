@@ -33,11 +33,12 @@ import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.resolver.ConcludableResolver;
+import grakn.core.reasoner.resolution.resolver.ConclusionResolver;
 import grakn.core.reasoner.resolution.resolver.ConjunctionResolver;
 import grakn.core.reasoner.resolution.resolver.NegationResolver;
 import grakn.core.reasoner.resolution.resolver.RetrievableResolver;
 import grakn.core.reasoner.resolution.resolver.Root;
-import grakn.core.reasoner.resolution.resolver.RuleResolver;
+import grakn.core.reasoner.resolution.resolver.ConditionResolver;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import org.slf4j.Logger;
@@ -60,7 +61,8 @@ public class ResolverRegistry {
     private final HashMap<Concludable, Actor<ConcludableResolver>> concludableActors;
     private final LogicManager logicMgr;
     private boolean explanations;
-    private final HashMap<Rule, Actor<RuleResolver>> rules;
+    private final HashMap<Rule, Actor<ConditionResolver>> ruleConditions;
+    private final HashMap<Rule, Actor<ConclusionResolver>> ruleConclusions; // by Rule not Rule.Conclusion because well define equality exists
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private final TraversalEngine traversalEngine;
     private EventLoopGroup elg;
@@ -75,7 +77,8 @@ public class ResolverRegistry {
         this.logicMgr = logicMgr;
         this.explanations = false; // TODO: enable/disable explanations from transaction context
         concludableActors = new HashMap<>();
-        rules = new HashMap<>();
+        ruleConditions = new HashMap<>();
+        ruleConclusions = new HashMap<>();
         planner = new Planner(conceptMgr, logicMgr);
     }
 
@@ -87,11 +90,17 @@ public class ResolverRegistry {
         } else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    public Actor<RuleResolver> registerRule(Rule rule) {
-        LOG.debug("Register retrieval for rule actor: '{}'", rule);
-        return rules.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new RuleResolver(
+    public Actor<ConditionResolver> registerCondition(Rule rule) {
+        LOG.debug("Register retrieval for rule condition actor: '{}'", rule);
+        return ruleConditions.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new ConditionResolver(
                 self, r, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr, planner,
                 explanations)));
+    }
+
+    public Actor<ConclusionResolver> registerConclusion(Rule.Conclusion conclusion) {
+        LOG.debug("Register retrieval for rule conclusion actor: '{}'", conclusion);
+        return ruleConclusions.computeIfAbsent(conclusion.rule(), (r) -> Actor.create(elg, self -> new ConclusionResolver(
+                self, conclusion, this, resolutionRecorder, traversalEngine, conceptMgr, explanations)));
     }
 
     public Actor<Root.Conjunction> rootConjunction(Conjunction conjunction, @Nullable Long offset,
@@ -120,8 +129,8 @@ public class ResolverRegistry {
                 self, retrievable, this, traversalEngine, conceptMgr, explanations));
         return MappedResolver.of(retrievableActor, identity(retrievable));
     }
-
     // note: must be thread safe. We could move to a ConcurrentHashMap if we create an alpha-equivalence wrapper
+
     private synchronized MappedResolver registerConcludable(Concludable concludable) {
         LOG.debug("Register ConcludableResolver: '{}'", concludable.pattern());
         for (Map.Entry<Concludable, Actor<ConcludableResolver>> c : concludableActors.entrySet()) {

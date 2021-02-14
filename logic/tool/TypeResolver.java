@@ -125,7 +125,7 @@ public class TypeResolver {
         Traversal resolverTraversal = new Traversal();
         TraversalBuilder traversalBuilder = builder(resolverTraversal, conjunction, scopingConjunctions, insertable);
         resolverTraversal.filter(traversalBuilder.retrievedResolvers());
-        Map<Identifier.Variable, Set<Label>> resolvedLabels = executeResolverTraversals(traversalBuilder);
+        Map<Identifier.Variable.Retrieved, Set<Label>> resolvedLabels = executeResolverTraversals(traversalBuilder);
         if (resolvedLabels.isEmpty()) {
             conjunction.setSatisfiable(false);
             return;
@@ -147,9 +147,9 @@ public class TypeResolver {
     private TraversalBuilder builder(Traversal traversal, Conjunction conjunction, List<Conjunction> scopingConjunctions,
                                      boolean insertable) {
         TraversalBuilder currentBuilder;
-        Set<Reference.Name> names = iterate(conjunction.variables()).filter(v -> v.reference().isName())
-                .map(v -> v.reference().asName()).toSet();
         if (!scopingConjunctions.isEmpty()) {
+            Set<Reference.Name> names = iterate(conjunction.variables()).filter(v -> v.reference().isName())
+                    .map(v -> v.reference().asName()).toSet();
             currentBuilder = new TraversalBuilder(scopingConjunctions.get(0), conceptMgr, traversal, 0, insertable);
             for (int i = 1; i < scopingConjunctions.size(); i++) {
                 Conjunction scoping = scopingConjunctions.get(i);
@@ -166,9 +166,9 @@ public class TypeResolver {
         return currentBuilder;
     }
 
-    private Map<Identifier.Variable, Set<Label>> executeResolverTraversals(TraversalBuilder traversalBuilder) {
+    private Map<Identifier.Variable.Retrieved, Set<Label>> executeResolverTraversals(TraversalBuilder traversalBuilder) {
         return logicCache.resolver().get(traversalBuilder.traversal(), traversal -> {
-            Map<Identifier.Variable, Set<Label>> mapping = new HashMap<>();
+            Map<Identifier.Variable.Retrieved, Set<Label>> mapping = new HashMap<>();
             traversalEng.iterator(traversal, true).forEachRemaining(
                     result -> result.forEach((id, vertex) -> {
                         mapping.putIfAbsent(id, new HashSet<>());

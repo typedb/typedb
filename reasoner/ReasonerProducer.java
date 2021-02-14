@@ -38,20 +38,26 @@ import javax.annotation.concurrent.ThreadSafe;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static grakn.core.common.iterator.Iterators.iterate;
 
 @ThreadSafe
 public class ReasonerProducer implements Producer<ConceptMap> {
+
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerProducer.class);
 
+    private static final int COMPUTE_SIZE = 64;
+
     private final Actor<? extends Resolver<?>> rootResolver;
+    private final AtomicInteger required;
+    private final AtomicInteger processing;
+    private final boolean recordExplanations = false; // TODO: make settable
     private Queue<ConceptMap> queue;
     private final Request resolveRequest;
     private boolean requiredReiteration;
     private boolean done;
     private int iteration;
-    private final boolean recordExplanations = false;
 
     public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers) {
         this.rootResolver = resolverRegistry.rootConjunction(conjunction, modifiers.offset().orElse(null),
@@ -61,6 +67,8 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.queue = null;
         this.iteration = 0;
         this.done = false;
+        this.required = new AtomicInteger();
+        this.processing = new AtomicInteger();
     }
 
     public ReasonerProducer(Disjunction disjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers) {
@@ -71,15 +79,22 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.queue = null;
         this.iteration = 0;
         this.done = false;
+        this.required = new AtomicInteger();
+        this.processing = new AtomicInteger();
     }
 
     @Override
-    public void produce(Queue<ConceptMap> queue, int request, ExecutorService executor) {
+    public synchronized void produce(Queue<ConceptMap> queue, int request, ExecutorService executor) {
         assert this.queue == null || this.queue == queue;
         this.queue = queue;
-        for (int i = 0; i < request; i++) {
+
+        this.required.addAndGet(request);
+        int canRequest = COMPUTE_SIZE - processing.get();
+        int toRequest = Math.min(canRequest, request);
+        for (int i = 0; i < toRequest; i++) {
             requestAnswer();
         }
+        processing.addAndGet(toRequest);
     }
 
     @Override
@@ -89,10 +104,14 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         return iterate(filter).map(v -> Identifier.Variable.of(v.reference().asName())).toSet();
     }
 
-
     private void requestAnswered(Top resolutionAnswer) {
         if (resolutionAnswer.requiresReiteration()) requiredReiteration = true;
         queue.put(resolutionAnswer.conceptMap());
+        if (required.decrementAndGet() > 0) {
+            requestAnswer();
+        } else {
+            processing.decrementAndGet();
+        }
     }
 
     private void requestFailed(int iteration) {
@@ -102,6 +121,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
             // query is completely terminated
             done = true;
             queue.done();
+            required.set(0);
             return;
         }
 
