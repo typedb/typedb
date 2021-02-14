@@ -20,6 +20,7 @@ package grakn.core.logic.resolvable;
 import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.Pattern;
 import grakn.core.pattern.variable.Variable;
+import graql.lang.pattern.variable.Reference;
 
 import java.util.Optional;
 import java.util.Set;
@@ -39,7 +40,7 @@ public abstract class Resolvable<T extends Pattern> {
 
     public abstract Optional<Variable> generating();
 
-    public abstract Set<Variable> namedVariables();
+    public abstract Set<Reference.Name> variableNames();
 
     public boolean isRetrievable() {
         return false;
