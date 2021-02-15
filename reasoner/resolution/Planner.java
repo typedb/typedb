@@ -24,7 +24,6 @@ import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Resolvable;
 import grakn.core.logic.resolvable.Retrievable;
 import graql.lang.pattern.variable.Reference;
-import graql.lang.pattern.variable.Reference;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -166,7 +165,6 @@ public class Planner {
 
         /**
          * Determine the resolvables that are dependent upon the generation of each variable
-         * @return
          */
         private Map<Resolvable<?>, Set<Reference.Name>> dependencies(Set<Resolvable<?>> resolvables) {
             Map<Resolvable<?>, Set<Reference.Name>> deps = new HashMap<>();

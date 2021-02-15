@@ -21,15 +21,9 @@ package grakn.core.reasoner.resolution.framework;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
-import grakn.core.reasoner.resolution.resolver.NegationResolver;
-import grakn.core.reasoner.resolution.resolver.Root;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
-
-import static grakn.common.collection.Collections.list;
 
 public class Request {
 

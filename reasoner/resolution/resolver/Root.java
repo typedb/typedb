@@ -128,11 +128,6 @@ public interface Root {
             return null;
         }
 
-//        @Override
-//        protected ResourceIterator<Partial> toUpstreamAnswers(Request fromUpstream, ResourceIterator<ConceptMap> downstreamConceptMaps) {
-//            return downstreamConceptMaps.map(conceptMap -> fromUpstream.partialAnswer().asIdentity().toTop());
-//        }
-
         @Override
         protected Optional<AnswerState> toUpstreamAnswer(Partial<?> fromDownstream) {
             return Optional.of(fromDownstream.asIdentity().toTop());

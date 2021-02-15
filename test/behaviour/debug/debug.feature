@@ -15,93 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-#noinspection CucumberUndefinedStep
-Feature: Relation Inference Resolution
+Feature: Debugging Space
 
-  Background: Set up databases for resolution testing
+  Background:
     Given connection has been opened
+    Given connection delete all databases
     Given connection does not have any database
-    Given connection create database: reasoned
-    Given connection create database: materialised
-    Given connection open schema sessions for databases:
-      | reasoned     |
-      | materialised |
-    Given for each session, open transactions of type: write
-    Given for each session, graql define
-      """
-      define
 
-      person sub entity,
-        owns name,
-        plays friendship:friend,
-        plays employment:employee;
-
-      company sub entity,
-        owns name,
-        plays employment:employer;
-
-      place sub entity,
-        owns name,
-        plays location-hierarchy:subordinate,
-        plays location-hierarchy:superior;
-
-      friendship sub relation,
-        relates friend;
-
-      employment sub relation,
-        relates employee,
-        relates employer;
-
-      location-hierarchy sub relation,
-        relates subordinate,
-        relates superior;
-
-      name sub attribute, value string;
-      """
-    Given for each session, transaction commits
-    # each scenario specialises the schema further
-    Given for each session, open transactions of type: write
-
-  #######################
-  # BASIC FUNCTIONALITY #
-  #######################
-
-  Scenario: a relation can be inferred on all concepts of a given type
-    Given for each session, graql define
-      """
-      define
-      dog sub entity;
-      rule people-are-employed: when {
-        $p isa person;
-      } then {
-        (employee: $p) isa employment;
-      };
-      """
-    Given for each session, transaction commits
-    Given connection close all sessions
-    Given connection open data sessions for databases:
-      | reasoned     |
-      | materialised |
-    Given for each session, open transactions of type: write
-    Given for each session, graql insert
-      """
-      insert
-      $x isa person;
-      $y isa dog;
-      $z isa person;
-      """
-    Given for each session, transaction commits
-    Given for each session, open transactions of type: write
-    Then materialised database is completed
-    Given for each session, transaction commits
-    Given for each session, open transactions with reasoning of type: read
-    Then for graql query
-      """
-      match
-        $x isa person;
-        ($x) isa employment;
-      """
-    Then all answers are correct in reasoned database
-    Then answer size in reasoned database is: 2
-    Then for each session, transaction closes
-    Given for each session, open transactions with reasoning of type: read
+  # Paste any scenarios below for debugging.
+  # Do not commit any changes to this file.
