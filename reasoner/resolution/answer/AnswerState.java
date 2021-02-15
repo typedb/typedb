@@ -45,12 +45,14 @@ public abstract class AnswerState {
     private final boolean recordExplanations;
     private final Derivation derivation;
     private final Actor<? extends Resolver<?>> resolver;
+    private final Actor<? extends Resolver<?>> root;
     final boolean requiresReiteration;
 
-    AnswerState(ConceptMap conceptMap, Actor<? extends Resolver<?>> resolver, boolean requiresReiteration,
-                @Nullable Derivation derivation, boolean recordExplanations) {
+    AnswerState(ConceptMap conceptMap, Actor<? extends Resolver<?>> resolver, Actor<? extends Resolver<?>> root,
+                boolean requiresReiteration, @Nullable Derivation derivation, boolean recordExplanations) {
         this.conceptMap = conceptMap;
         this.resolver = resolver;
+        this.root = root;
         this.requiresReiteration = requiresReiteration;
         this.derivation = derivation;
         this.recordExplanations = recordExplanations;
@@ -94,30 +96,35 @@ public abstract class AnswerState {
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Partial.Filtered.class));
     }
 
+    public Actor<? extends Resolver<?>> root() {
+        return root;
+    }
+
     public static class Top extends AnswerState {
 
         private final Set<Reference.Name> filter;
-        private final Derivation derivation;
         private final int hash;
 
-        Top(ConceptMap conceptMap, @Nullable Set<Reference.Name> filter, Actor<? extends Resolver<?>> resolver, boolean recordExplanations,
-            boolean requiresReiteration, @Nullable Derivation derivation) {
-            super(conceptMap, resolver, requiresReiteration, new Derivation(map()), recordExplanations);
+        Top(ConceptMap conceptMap, @Nullable Set<Reference.Name> filter, Actor<? extends Resolver<?>> resolver,
+            Actor<? extends Resolver<?>> root, boolean recordExplanations, boolean requiresReiteration,
+            @Nullable Derivation derivation) {
+            super(conceptMap, resolver, root, requiresReiteration, derivation, recordExplanations);
             this.filter = filter;
-            this.derivation = derivation;
             this.hash = Objects.hash(conceptMap, filter);
         }
 
-        public static Top initial(Set<Reference.Name> filter, boolean recordExplanations, Actor<? extends Resolver<?>> resolver) {
-            return new Top(new ConceptMap(), filter, resolver, recordExplanations, false, null);
+        public static Top initial(Set<Reference.Name> filter, boolean recordExplanations,
+                                  Actor<? extends Resolver<?>> resolver, Actor<? extends Resolver<?>> root) {
+            Derivation derivation = recordExplanations ? Derivation.EMPTY : null;
+            return new Top(new ConceptMap(), filter, resolver, root, recordExplanations, false, derivation);
         }
 
         public Partial.Identity toDownstream() {
-            return Partial.Identity.identity(conceptMap(), this, recordExplanations());
+            return Partial.Identity.identity(conceptMap(), this, root(), recordExplanations());
         }
 
         Top with(ConceptMap conceptMap, boolean requiresReiteration, @Nullable Derivation derivation) {
-            return new Top(conceptMap, filter, resolver(), recordExplanations(), requiresReiteration, derivation);
+            return new Top(conceptMap, filter, resolver(), root(), recordExplanations(), requiresReiteration, derivation);
         }
 
         @Override
@@ -160,8 +167,8 @@ public abstract class AnswerState {
         private final Actor<? extends Resolver<?>> resolver;
 
         public Partial(ConceptMap partialAnswer, Parent parent, Actor<? extends Resolver<?>> resolver,
-                       boolean requiresReiteration, @Nullable Derivation derivation, boolean recordExplanations) {
-            super(partialAnswer, resolver, requiresReiteration, derivation, recordExplanations);
+                       Actor<? extends Resolver<?>> root, boolean requiresReiteration, @Nullable Derivation derivation, boolean recordExplanations) {
+            super(partialAnswer, resolver, root, requiresReiteration, derivation, recordExplanations);
             this.parent = parent;
             this.resolver = resolver;
         }
@@ -202,15 +209,15 @@ public abstract class AnswerState {
         }
 
         public Partial.Filtered filterToDownstream(Set<Reference.Name> filter) {
-            return Filtered.filter(this, filter, recordExplanations());
+            return Filtered.filter(this, filter, root(), recordExplanations());
         }
 
         public Partial.Mapped mapToDownstream(Mapping mapping) {
-            return Mapped.map(this, mapping, recordExplanations());
+            return Mapped.map(this, mapping, root(), recordExplanations());
         }
 
         public Optional<Partial.Unified> unifyToDownstream(Unifier unifier) {
-            return Unified.unify(this, unifier, recordExplanations());
+            return Unified.unify(this, unifier, root(), recordExplanations());
         }
 
         protected Optional<AnswerState.Derivation> extendedParentDerivation(Actor<? extends Resolver<?>> resolver) {
@@ -239,21 +246,22 @@ public abstract class AnswerState {
 
             private final int hash;
 
-            private Identity(ConceptMap partialAnswer, Top parent, boolean requiresReiteration,
-                             @Nullable Derivation derivation, boolean recordExplanations) {
-                super(partialAnswer, parent, null, requiresReiteration, derivation, recordExplanations);
+            private Identity(ConceptMap partialAnswer, Top parent, Actor<? extends Resolver<?>> root,
+                             boolean requiresReiteration, @Nullable Derivation derivation, boolean recordExplanations) {
+                super(partialAnswer, parent, null, root, requiresReiteration, derivation, recordExplanations);
                 this.hash = Objects.hash(conceptMap, parent);
             }
 
-            static Identity identity(ConceptMap conceptMap, Top parent, boolean recordExplanations) {
+            static Identity identity(ConceptMap conceptMap, Top parent, Actor<? extends Resolver<?>> root,
+                                     boolean recordExplanations) {
                 Derivation derivation = recordExplanations ? new AnswerState.Derivation(new HashMap<>()) : null;
-                return new Identity(conceptMap, parent, false, derivation, recordExplanations);
+                return new Identity(conceptMap, parent, root, false, derivation, recordExplanations);
             }
 
             @Override
             Partial<?> with(ConceptMap conceptMap, Actor<? extends Resolver<?>> resolver, boolean requiresReiteration,
                             @Nullable Derivation derivation) {
-                return new Identity(conceptMap, parent(), requiresReiteration, derivation, recordExplanations());
+                return new Identity(conceptMap, parent(), root(), requiresReiteration, derivation, recordExplanations());
             }
 
             public Top toTop() {
@@ -287,16 +295,17 @@ public abstract class AnswerState {
             private final int hash;
 
             private Filtered(ConceptMap filteredConceptMap, Partial<?> parent, Set<Reference.Name> filter,
-                             Actor<? extends Resolver<?>> resolver, boolean requiresReiteration,
-                             @Nullable Derivation derivation, boolean recordExplanations) {
-                super(filteredConceptMap, parent, resolver, requiresReiteration, derivation, recordExplanations);
+                             Actor<? extends Resolver<?>> resolver, Actor<? extends Resolver<?>> root,
+                             boolean requiresReiteration, @Nullable Derivation derivation, boolean recordExplanations) {
+                super(filteredConceptMap, parent, resolver, root, requiresReiteration, derivation, recordExplanations);
                 this.filter = filter;
                 this.hash = Objects.hash(conceptMap, parent, filter);
             }
 
-            static Filtered filter(Partial<?> parent, Set<Reference.Name> filter, boolean recordExplanations) {
+            static Filtered filter(Partial<?> parent, Set<Reference.Name> filter, Actor<? extends Resolver<?>> root,
+                                   boolean recordExplanations) {
                 Derivation derivation = recordExplanations ? new AnswerState.Derivation(new HashMap<>()) : null;
-                return new Filtered(parent.conceptMap().filter(filter), parent, filter, null, false,
+                return new Filtered(parent.conceptMap().filter(filter), parent, filter, null, root, false,
                                     derivation, recordExplanations);
             }
 
@@ -309,7 +318,8 @@ public abstract class AnswerState {
             @Override
             Filtered with(ConceptMap conceptMap, Actor<? extends Resolver<?>> resolver, boolean requiresReiteration,
                           @Nullable Derivation derivation) {
-                return new Filtered(conceptMap, parent(), filter, resolver, requiresReiteration, derivation, recordExplanations());
+                return new Filtered(conceptMap, parent(), filter, resolver, root(), requiresReiteration, derivation,
+                                    recordExplanations());
             }
 
             @Override
@@ -348,18 +358,19 @@ public abstract class AnswerState {
             private final int hash;
 
             private Mapped(ConceptMap mappedConceptMap, Partial<?> parent, Mapping mapping,
-                           Actor<? extends Resolver<?>> resolver, boolean requiresReiteration,
-                           @Nullable Derivation derivation, boolean recordExplanations) {
-                super(mappedConceptMap, parent, resolver, requiresReiteration, derivation,
+                           Actor<? extends Resolver<?>> resolver, Actor<? extends Resolver<?>> root,
+                           boolean requiresReiteration, @Nullable Derivation derivation, boolean recordExplanations) {
+                super(mappedConceptMap, parent, resolver, root, requiresReiteration, derivation,
                       recordExplanations);
                 this.mapping = mapping;
                 this.hash = Objects.hash(conceptMap, parent, mapping);
             }
 
-            static Mapped map(Partial<?> parent, Mapping mapping, boolean recordExplanations) {
+            static Mapped map(Partial<?> parent, Mapping mapping, Actor<? extends Resolver<?>> root,
+                              boolean recordExplanations) {
                 ConceptMap mappedConceptMap = mapping.transform(parent.conceptMap());
                 Derivation derivation = recordExplanations ? new AnswerState.Derivation(new HashMap<>()) : null;
-                return new Mapped(mappedConceptMap, parent, mapping, null, false, derivation,
+                return new Mapped(mappedConceptMap, parent, mapping, null, root, false, derivation,
                                   recordExplanations);
             }
 
@@ -374,9 +385,10 @@ public abstract class AnswerState {
             }
 
             @Override
-            protected Mapped with(ConceptMap conceptMap, Actor<? extends Resolver<?>> resolver, boolean requiresReiteration,
-                                  @Nullable Derivation derivation) {
-                return new Mapped(conceptMap, parent(), mapping, resolver, requiresReiteration, derivation, recordExplanations());
+            protected Mapped with(ConceptMap conceptMap, Actor<? extends Resolver<?>> resolver,
+                                  boolean requiresReiteration, @Nullable Derivation derivation) {
+                return new Mapped(conceptMap, parent(), mapping, resolver, root(), requiresReiteration, derivation,
+                                  recordExplanations());
             }
 
             @Override
@@ -415,20 +427,22 @@ public abstract class AnswerState {
             private final Instance instanceRequirements;
             private final int hash;
 
-            private Unified(ConceptMap unifiedConceptMap, Partial<?> parent, Unifier unifier, Instance instanceRequirements,
-                            Actor<? extends Resolver<?>> resolver, boolean requiresReiteration,
+            private Unified(ConceptMap unifiedConceptMap, Partial<?> parent, Unifier unifier,
+                            Instance instanceRequirements, Actor<? extends Resolver<?>> resolver,
+                            Actor<? extends Resolver<?>> root, boolean requiresReiteration,
                             @Nullable Derivation derivation, boolean recordExplanations) {
-                super(unifiedConceptMap, parent, resolver, requiresReiteration, derivation, recordExplanations);
+                super(unifiedConceptMap, parent, resolver, root, requiresReiteration, derivation, recordExplanations);
                 this.unifier = unifier;
                 this.instanceRequirements = instanceRequirements;
                 this.hash = Objects.hash(conceptMap, parent, unifier, instanceRequirements);
             }
 
-            static Optional<Partial.Unified> unify(Partial<?> parent, Unifier unifier, boolean recordExplanations) {
+            static Optional<Partial.Unified> unify(Partial<?> parent, Unifier unifier,
+                                                   Actor<? extends Resolver<?>> root, boolean recordExplanations) {
                 Optional<Pair<ConceptMap, Instance>> unified = unifier.unify(parent.conceptMap());
                 Derivation derivation = recordExplanations ? new AnswerState.Derivation(new HashMap<>()) : null;
                 return unified.map(unification -> new Partial.Unified(
-                        unification.first(), parent, unifier, unification.second(), null, false,
+                        unification.first(), parent, unifier, unification.second(), null, root, false,
                         derivation, recordExplanations));
 
             }
@@ -450,7 +464,7 @@ public abstract class AnswerState {
             @Override
             Unified with(ConceptMap conceptMap, Actor<? extends Resolver<?>> resolver, boolean requiresReiteration,
                          @Nullable Derivation derivation) {
-                return new Unified(conceptMap, parent(), unifier, instanceRequirements, resolver, requiresReiteration,
+                return new Unified(conceptMap, parent(), unifier, instanceRequirements, resolver, root(), requiresReiteration,
                                    derivation, recordExplanations());
             }
 

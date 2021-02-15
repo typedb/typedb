@@ -116,8 +116,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
               as a sort of new root! TODO: should NegationResolvers also implement a kind of Root interface??
         */
         Filtered downstream = fromUpstream.partialAnswer().filterToDownstream(negated.variableNames());
-        Request request = Request.create(new Request.Path(self(), downstream).append(this.downstream, downstream),
-                                         downstream);
+        Request request = Request.create(self(), this.downstream, downstream);
         requestFromDownstream(request, fromUpstream, 0);
         negationResponse.setRequested();
     }

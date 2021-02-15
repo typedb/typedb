@@ -41,7 +41,7 @@ public class AnswerStateTest {
         Map<Reference.Name, Reference.Name> mapping = new HashMap<>();
         mapping.put(Reference.name("a"), Reference.name("x"));
         mapping.put(Reference.name("b"), Reference.name("y"));
-        Mapped mapped = Top.initial(mapping.keySet(), false, null).toDownstream().mapToDownstream(Mapping.of(mapping));
+        Mapped mapped = Top.initial(mapping.keySet(), false, null, null).toDownstream().mapToDownstream(Mapping.of(mapping));
         assertTrue(mapped.conceptMap().concepts().isEmpty());
 
         Map<Reference.Name, Concept> concepts = new HashMap<>();
@@ -61,7 +61,7 @@ public class AnswerStateTest {
         mapping.put(Reference.name("b"), Reference.name("y"));
         Map<Reference.Name, Concept> concepts = new HashMap<>();
         concepts.put(Reference.name("a"), new MockConcept(0));
-        Mapped mapped = Top.initial(mapping.keySet(), false, null).toDownstream()
+        Mapped mapped = Top.initial(mapping.keySet(), false, null, null).toDownstream()
                 .mapToDownstream(Mapping.of(mapping));
 
         Map<Reference.Name, Concept> expectedMapped = new HashMap<>();
@@ -87,7 +87,7 @@ public class AnswerStateTest {
         Map<Reference.Name, Concept> concepts = new HashMap<>();
         concepts.put(Reference.name("a"), new MockConcept(0));
         concepts.put(Reference.name("c"), new MockConcept(2));
-        Mapped mapped = Top.initial(mapping.keySet(), false, null).toDownstream()
+        Mapped mapped = Top.initial(mapping.keySet(), false, null, null).toDownstream()
                 .mapToDownstream(Mapping.of(mapping));
 
         Map<Reference.Name, Concept> expectedMapped = new HashMap<>();

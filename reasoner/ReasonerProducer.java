@@ -46,7 +46,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private final Actor<? extends Resolver<?>> rootResolver;
     private Queue<ConceptMap> queue;
-    private Request resolveRequest;
+    private final Request resolveRequest;
     private boolean iterationInferredAnswer;
     private boolean done;
     private int iteration;
@@ -55,8 +55,8 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers) {
         this.rootResolver = resolverRegistry.rootConjunction(conjunction, modifiers.offset().orElse(null),
                                                              modifiers.limit().orElse(null), this::requestAnswered, this::requestFailed);
-        Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver).toDownstream();
-        this.resolveRequest = Request.create(new Request.Path(rootResolver, downstream), downstream);
+        Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver, this.rootResolver).toDownstream();
+        this.resolveRequest = Request.create(rootResolver, downstream);
         this.queue = null;
         this.iteration = 0;
         this.done = false;
@@ -65,8 +65,8 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     public ReasonerProducer(Disjunction disjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers) {
         this.rootResolver = resolverRegistry.rootDisjunction(disjunction, modifiers.offset().orElse(null),
                                                              modifiers.limit().orElse(null), this::requestAnswered, this::requestFailed);
-        Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver).toDownstream();
-        this.resolveRequest = Request.create(new Request.Path(rootResolver, downstream), downstream);
+        Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver, this.rootResolver).toDownstream();
+        this.resolveRequest = Request.create(rootResolver, downstream);
         this.queue = null;
         this.iteration = 0;
         this.done = false;

@@ -290,8 +290,7 @@ public interface Root {
             for (Actor<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers) {
                 Filtered downstream = fromUpstream.partialAnswer().asIdentity()
                         .filterToDownstream(conjunctionFilter(conjunctionResolver));
-                Request request = Request.create(fromUpstream.path().append(conjunctionResolver, downstream),
-                                                 downstream, -1);
+                Request request = Request.create(self(), conjunctionResolver, downstream);
                 responseProducer.addDownstreamProducer(request);
             }
             return responseProducer;
@@ -313,8 +312,7 @@ public interface Root {
             for (Actor<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers) {
                 Filtered downstream = fromUpstream.partialAnswer().asIdentity()
                         .filterToDownstream(conjunctionFilter(conjunctionResolver));
-                Request request = Request.create(fromUpstream.path().append(conjunctionResolver, downstream),
-                                                 downstream, -1);
+                Request request = Request.create(self(), conjunctionResolver, downstream);
                 responseProducer.addDownstreamProducer(request);
             }
             return responseProducerNewIter;

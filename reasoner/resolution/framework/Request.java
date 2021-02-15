@@ -35,52 +35,49 @@ public class Request {
 
     // TODO: add compute mode: single vs all (for negation vs regular)
 
-    private final Path path;
+    private final Actor<? extends Resolver<?>> sender;
+    private final Actor<? extends Resolver<?>> receiver;
     private final Partial<?> partialAnswer;
     private final int planIndex;
 
     private final int hash;
 
-    private Request(Path path,
-                    Partial<?> startingConcept,
+    private Request(@Nullable Actor<? extends Resolver<?>> sender,
+                    Actor<? extends Resolver<?>> receiver, Partial<?> partialAnswer,
                     int planIndex) {
-        this.path = path;
-        this.partialAnswer = startingConcept;
+        this.sender = sender;
+        this.receiver = receiver;
+        this.partialAnswer = partialAnswer;
         this.planIndex = planIndex;
-        this.hash = Objects.hash(path, partialAnswer);
+        this.hash = Objects.hash(sender, this.partialAnswer);
     }
 
-    public static Request create(Path path, Partial<?> startingConcept, int planIndex) {
-        return new Request(path, startingConcept, planIndex);
+    public static Request create(Actor<? extends Resolver<?>> sender, Actor<? extends Resolver<?>> receiver, Partial<?> startingConcept, int planIndex) {
+        return new Request(sender, receiver, startingConcept, planIndex);
     }
 
-    public static Request create(Path path, Partial<?> startingConcept) {
-        // Set the planIndex to -1 since it is unused in this case
-        return new Request(path, startingConcept, -1);
+    public static Request create(Actor<? extends Resolver<?>> sender, Actor<? extends Resolver<?>> receiver, Partial<?> startingConcept) {
+        return new Request(sender, receiver, startingConcept, -1);
     }
 
-    public Path path() {
-        return path;
-    }
-
-    public int planIndex() {
-        return planIndex;
-    }
-
-    @Nullable
-    public Actor<? extends Resolver<?>> sender() {
-        if (path.path.size() < 2) {
-            return null;
-        }
-        return path.path.get(path.path.size() - 2).resolver;
+    public static Request create(Actor<? extends Resolver<?>> receiver, Partial<?> startingConcept) {
+        return new Request(null, receiver, startingConcept, -1);
     }
 
     public Actor<? extends Resolver<?>> receiver() {
-        return path.path.get(path.path.size() - 1).resolver;
+        return receiver;
+    }
+
+    public Actor<? extends Resolver<?>> sender() {
+        return sender;
     }
 
     public Partial<?> partialAnswer() {
         return partialAnswer;
+    }
+
+    public int planIndex() {
+        return planIndex;
     }
 
     @Override
@@ -88,7 +85,8 @@ public class Request {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Request request = (Request) o;
-        return Objects.equals(path, request.path) &&
+        return Objects.equals(sender, request.sender) &&
+                Objects.equals(receiver, request.receiver) &&
                 Objects.equals(partialAnswer, request.partialAnswer());
     }
 
@@ -100,7 +98,8 @@ public class Request {
     @Override
     public String toString() {
         return "Request{" +
-                "path=" + path +
+                "sender=" + sender +
+                ", receiver=" + receiver +
                 ", partial=" + partialAnswer +
                 ", partialDerivation=" + partialAnswer.derivation() +
                 '}';
@@ -110,69 +109,4 @@ public class Request {
         return partialAnswer.derivation();
     }
 
-    // TODO delete path
-    public static class Path {
-
-        private final List<VisitedResolver> path;
-
-        public Path(Actor<? extends Resolver<?>> sender, AnswerState answerState) {
-            this(list(new VisitedResolver(sender, answerState)));
-        }
-
-        public Path(List<VisitedResolver> path) {
-            this.path = path;
-        }
-
-        public Path append(Actor<? extends Resolver<?>> actor, AnswerState answerState) {
-            List<VisitedResolver> appended = new ArrayList<>(path);
-            appended.add(new VisitedResolver(actor, answerState));
-            return new Path(appended);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            Path other = (Path) o;
-            return Objects.equals(path, other.path);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(path);
-        }
-
-        public Actor<? extends Resolver<?>> root() {
-            assert path.get(0).resolver.state instanceof Root || path.get(0).resolver.state instanceof NegationResolver;
-            return path.get(0).resolver;
-        }
-
-        /**
-         * To distinguish between visiting a resolver with two different unifiers,
-         */
-        private static class VisitedResolver {
-
-            final Actor<? extends Resolver<?>> resolver;
-            AnswerState answerState;
-
-            public VisitedResolver(Actor<? extends Resolver<?>> resolver, AnswerState answerState) {
-                this.resolver = resolver;
-                this.answerState = answerState;
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-                final VisitedResolver that = (VisitedResolver) o;
-                return Objects.equals(resolver, that.resolver) &&
-                        Objects.equals(answerState, that.answerState);
-            }
-
-            @Override
-            public int hashCode() {
-                return Objects.hash(resolver, answerState);
-            }
-        }
-    }
 }

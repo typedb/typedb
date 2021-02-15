@@ -161,9 +161,9 @@ public class ReiterationTest {
     }
 
     private void sendRootRequest(Actor<Root.Conjunction> root, Set<Reference.Name> filter, int iteration) {
-        Identity downstream = Top.initial(filter, false, root).toDownstream();
+        Identity downstream = Top.initial(filter, false, root, root).toDownstream();
         root.tell(actor -> actor.receiveRequest(
-                Request.create(new Request.Path(root, downstream), downstream), iteration)
+                Request.create(root, downstream), iteration)
         );
     }
 

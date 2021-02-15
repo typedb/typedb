@@ -152,8 +152,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
             int nextResolverIndex = fromDownstream.planIndex() + 1;
             ResolverRegistry.MappedResolver nextPlannedDownstream = downstreamResolvers.get(plan.get(nextResolverIndex));
             Mapped downstream = fromDownstream.answer().mapToDownstream(Mapping.of(nextPlannedDownstream.mapping()));
-            Request downstreamRequest = Request.create(fromUpstream.path().append(nextPlannedDownstream.resolver(), downstream),
-                                                       downstream, nextResolverIndex);
+            Request downstreamRequest = Request.create(self(), nextPlannedDownstream.resolver(), downstream, nextResolverIndex);
             responseProducer.addDownstreamProducer(downstreamRequest);
             requestFromDownstream(downstreamRequest, fromUpstream, iteration);
         }
@@ -223,8 +222,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         ResponseProducer responseProducer = new ResponseProducer(Iterators.empty(), iteration);
         Mapped downstream = fromUpstream.partialAnswer()
                 .mapToDownstream(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping()));
-        Request toDownstream = Request.create(fromUpstream.path().append(downstreamResolvers.get(plan.get(0)).resolver(), downstream),
-                                              downstream, 0);
+        Request toDownstream = Request.create(self(), downstreamResolvers.get(plan.get(0)).resolver(), downstream, 0);
         responseProducer.addDownstreamProducer(toDownstream);
         return responseProducer;
     }
@@ -244,8 +242,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(Iterators.empty(), newIteration);
         Mapped downstream = fromUpstream.partialAnswer()
                 .mapToDownstream(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping()));
-        Request toDownstream = Request.create(fromUpstream.path().append(downstreamResolvers.get(plan.get(0)).resolver(), downstream),
-                                              downstream, 0);
+        Request toDownstream = Request.create(self(), downstreamResolvers.get(plan.get(0)).resolver(), downstream, 0);
         responseProducerNewIter.addDownstreamProducer(toDownstream);
         return responseProducerNewIter;
     }

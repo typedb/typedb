@@ -145,7 +145,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     @Override
     protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), fromUpstream);
-        Actor<? extends Resolver<?>> root = fromUpstream.path().root();
+        Actor<? extends Resolver<?>> root = fromUpstream.partialAnswer().root();
         recursionStates.putIfAbsent(root, new RecursionState(iteration));
         RecursionState iterationState = recursionStates.get(root);
 
@@ -165,7 +165,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         assert newIteration > responseProducerPrevious.iteration();
         LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
 
-        Actor<? extends Resolver<?>> root = fromUpstream.path().root();
+        Actor<? extends Resolver<?>> root = fromUpstream.partialAnswer().root();
         assert recursionStates.containsKey(root);
         RecursionState iterationState = recursionStates.get(root);
         if (iterationState.iteration() < newIteration) {
@@ -228,7 +228,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
                 for (Unifier unifier : entry.getValue()) {
                     Optional<Unified> unified = fromUpstream.partialAnswer().unifyToDownstream(unifier);
                     if (unified.isPresent()) {
-                        Request toDownstream = Request.create(fromUpstream.path().append(ruleActor, unified.get()), unified.get());
+                        Request toDownstream = Request.create(self(), ruleActor, unified.get());
                         responseProducer.addDownstreamProducer(toDownstream);
                     }
                 }

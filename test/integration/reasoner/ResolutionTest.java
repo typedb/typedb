@@ -454,11 +454,10 @@ public class ResolutionTest {
                                                                         iterDone -> doneReceived.incrementAndGet());
 
                 for (int i = 0; i < answerCount; i++) {
-                    Identity downstream = Top.initial(filter, false, root).toDownstream();
+                    Identity downstream = Top.initial(filter, false, root, root).toDownstream();
                     root.tell(actor ->
                                       actor.receiveRequest(
-                                              Request.create(new Request.Path(root, downstream), downstream),
-                                              0)
+                                              Request.create(root, downstream), 0)
                     );
                     Top answer = responses.take();
 
@@ -524,10 +523,8 @@ public class ResolutionTest {
         long startTime = System.currentTimeMillis();
         long n = answerCount + 1; //total number of traversal answers, plus one expected Exhausted (-1 answer)
         for (int i = 0; i < n; i++) {
-            Identity downstream = Top.initial(filter, false, root).toDownstream();
-            root.tell(actor -> actor.receiveRequest(Request.create(
-                    new Request.Path(root, downstream), downstream
-            ), 0));
+            Identity downstream = Top.initial(filter, false, root, root).toDownstream();
+            root.tell(actor -> actor.receiveRequest(Request.create(root, downstream), 0));
         }
         int answersFound = 0;
         for (int i = 0; i < n - 1; i++) {
