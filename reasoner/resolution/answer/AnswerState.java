@@ -41,7 +41,7 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
 public abstract class AnswerState {
-    protected final ConceptMap conceptMap;
+    final ConceptMap conceptMap;
     private final boolean recordExplanations;
     private final Derivation derivation;
     private final Actor<? extends Resolver<?>> resolver;
@@ -66,9 +66,7 @@ public abstract class AnswerState {
         return resolver;
     }
 
-    public ConceptMap conceptMap() {
-        return conceptMap;
-    }
+    public abstract ConceptMap conceptMap();
 
     public Derivation derivation() {
         return derivation;
@@ -138,7 +136,7 @@ public abstract class AnswerState {
 
         @Override
         public ConceptMap conceptMap() {
-            return super.conceptMap().filter(filter);
+            return conceptMap.filter(filter);
         }
 
         public boolean isTop() { return true; }
@@ -173,13 +171,12 @@ public abstract class AnswerState {
             this.parent = parent;
         }
 
-        protected Parent parent() {
-            return parent;
+        public ConceptMap conceptMap() {
+            return conceptMap;
         }
 
-        @Override
-        public boolean requiresReiteration() {
-            return requiresReiteration || parent().requiresReiteration();
+        protected Parent parent() {
+            return parent;
         }
 
         @Override
@@ -265,7 +262,8 @@ public abstract class AnswerState {
             }
 
             public Top toTop() {
-                return parent().asTop().with(conceptMap(), requiresReiteration(), derivation());
+                return parent().asTop().with(conceptMap(), requiresReiteration || parent().requiresReiteration(),
+                                             derivation());
             }
 
             public boolean isIdentity() { return true; }
@@ -312,7 +310,8 @@ public abstract class AnswerState {
 
             public Partial<?> toUpstream(Actor<? extends Resolver<?>> resolver) {
                 if (conceptMap().concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
-                return parent().with(mergedWithParent(conceptMap().filter(filter).concepts()), resolver, requiresReiteration(),
+                return parent().with(mergedWithParent(conceptMap().filter(filter).concepts()), resolver,
+                                     requiresReiteration || parent().requiresReiteration(),
                                                  extendedParentDerivation(resolver).orElse(null));
             }
 
@@ -379,12 +378,14 @@ public abstract class AnswerState {
 
             public Partial<?> aggregateToUpstream(ConceptMap additionalConcepts, Actor<? extends Resolver<?>> resolver) {
                 return parent().with(mergedWithParent(mapping.unTransform(additionalConcepts).concepts()), resolver,
-                                     requiresReiteration(), extendedParentDerivation(resolver).orElse(null));
+                                     requiresReiteration || parent().requiresReiteration(),
+                                     extendedParentDerivation(resolver).orElse(null));
             }
 
             public Partial<?> toUpstream(Actor<? extends Resolver<?>> resolver) {
                 return parent().with(mergedWithParent(mapping.unTransform(this.conceptMap()).concepts()),resolver,
-                                     requiresReiteration(), extendedParentDerivation(resolver).orElse(null));
+                                     requiresReiteration || parent().requiresReiteration(),
+                                     extendedParentDerivation(resolver).orElse(null));
             }
 
             @Override

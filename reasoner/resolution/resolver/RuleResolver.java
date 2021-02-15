@@ -22,7 +22,6 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
@@ -70,12 +69,6 @@ public class RuleResolver extends ConjunctionResolver<RuleResolver> {
                 failToUpstream(fromUpstream, iteration);
             }
         }
-    }
-
-    @Override
-    protected ResourceIterator<Partial<?>> toUpstreamAnswers(Request fromUpstream,
-                                                             ResourceIterator<ConceptMap> downstreamConceptMaps) {
-        return downstreamConceptMaps.flatMap(whenAnswer -> materialisations(fromUpstream.partialAnswer()));
     }
 
     @Override

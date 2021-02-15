@@ -19,9 +19,7 @@
 package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.common.iterator.Iterators;
-import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.ConceptManager;
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.resolvable.Concludable;
@@ -46,7 +44,6 @@ import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -91,9 +88,6 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     }
 
     protected abstract void nextAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration);
-
-    protected abstract ResourceIterator<Partial<?>> toUpstreamAnswers(Request fromUpstream,
-                                                                      ResourceIterator<ConceptMap> downstreamConceptMaps);
 
     protected abstract Optional<AnswerState> toUpstreamAnswer(Partial<?> fromDownstream);
 
@@ -297,12 +291,6 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
                     failToUpstream(fromUpstream, iteration);
                 }
             }
-        }
-
-        @Override
-        protected ResourceIterator<Partial<?>> toUpstreamAnswers(Request fromUpstream,
-                                                                 ResourceIterator<ConceptMap> downstreamConceptMaps) {
-            return downstreamConceptMaps.map(conceptMap -> fromUpstream.partialAnswer().asFiltered().toUpstream(self()));
         }
 
         @Override

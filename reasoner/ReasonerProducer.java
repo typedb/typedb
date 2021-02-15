@@ -47,7 +47,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private final Actor<? extends Resolver<?>> rootResolver;
     private Queue<ConceptMap> queue;
     private final Request resolveRequest;
-    private boolean iterationInferredAnswer;
+    private boolean requiredReiteration;
     private boolean done;
     private int iteration;
     private final boolean recordExplanations = false;
@@ -90,7 +90,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
 
     private void requestAnswered(Top resolutionAnswer) {
-        if (resolutionAnswer.requiresReiteration()) iterationInferredAnswer = true;
+        if (resolutionAnswer.requiresReiteration()) requiredReiteration = true;
         queue.put(resolutionAnswer.conceptMap());
     }
 
@@ -115,7 +115,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private void prepareNextIteration() {
         iteration++;
-        iterationInferredAnswer = false;
+        requiredReiteration = false;
     }
 
     private boolean mustReiterate() {
@@ -129,7 +129,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         counter example: $x isa $type; -> unifies with then { (friend: $y) isa friendship; }
         Without reiteration we will miss $x = instance, $type = relation/thing
          */
-        return iterationInferredAnswer;
+        return requiredReiteration;
     }
 
     private void retryInNewIteration() {

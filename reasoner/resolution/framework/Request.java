@@ -43,19 +43,19 @@ public class Request {
         this.receiver = receiver;
         this.partialAnswer = partialAnswer;
         this.planIndex = planIndex;
-        this.hash = Objects.hash(sender, this.partialAnswer);
+        this.hash = Objects.hash(this.sender, this.receiver, this.partialAnswer);
     }
 
-    public static Request create(Actor<? extends Resolver<?>> sender, Actor<? extends Resolver<?>> receiver, Partial<?> startingConcept, int planIndex) {
-        return new Request(sender, receiver, startingConcept, planIndex);
+    public static Request create(Actor<? extends Resolver<?>> sender, Actor<? extends Resolver<?>> receiver, Partial<?> partialAnswer, int planIndex) {
+        return new Request(sender, receiver, partialAnswer, planIndex);
     }
 
-    public static Request create(Actor<? extends Resolver<?>> sender, Actor<? extends Resolver<?>> receiver, Partial<?> startingConcept) {
-        return new Request(sender, receiver, startingConcept, -1);
+    public static Request create(Actor<? extends Resolver<?>> sender, Actor<? extends Resolver<?>> receiver, Partial<?> partialAnswer) {
+        return new Request(sender, receiver, partialAnswer, -1);
     }
 
-    public static Request create(Actor<? extends Resolver<?>> receiver, Partial<?> startingConcept) {
-        return new Request(null, receiver, startingConcept, -1);
+    public static Request create(Actor<? extends Resolver<?>> receiver, Partial<?> partialAnswer) {
+        return new Request(null, receiver, partialAnswer, -1);
     }
 
     public Actor<? extends Resolver<?>> receiver() {
@@ -99,7 +99,7 @@ public class Request {
                 '}';
     }
 
-    public AnswerState.Derivation partialResolutions() {
+    public AnswerState.Derivation partialDerivation() {
         return partialAnswer.derivation();
     }
 

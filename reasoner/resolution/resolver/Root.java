@@ -18,7 +18,6 @@
 package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.common.iterator.Iterators;
-import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
@@ -121,11 +120,6 @@ public interface Root {
                     submitFail(iteration);
                 }
             }
-        }
-
-        @Override
-        protected ResourceIterator<Partial<?>> toUpstreamAnswers(Request fromUpstream, ResourceIterator<ConceptMap> downstreamConceptMaps) {
-            return null;
         }
 
         @Override
