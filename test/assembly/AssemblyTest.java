@@ -18,7 +18,7 @@
 
 package grakn.core.test.assembly;
 
-import grakn.common.test.server.GraknCoreRunner;
+import grakn.common.test.assembly.GraknCoreRunner;
 import org.junit.Test;
 
 import java.io.IOException;

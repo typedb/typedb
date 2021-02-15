@@ -16,16 +16,16 @@
 #
 
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_common//test/server:rules.bzl", "grakn_java_test")
+load("@graknlabs_common//test/assembly:rules.bzl", "server_java_test")
 
 
-grakn_java_test(
+server_java_test(
     name = "assembly",
     test_class = "grakn.core.test.assembly.AssemblyTest",
     srcs = ["AssemblyTest.java"],
-    mac_artifact = "//server:assemble-mac-zip",
-    linux_artifact = "//server:assemble-linux-targz",
-    windows_artifact = "//server:assemble-windows-zip",
+    server_mac_artifact = "//server:assemble-mac-zip",
+    server_linux_artifact = "//server:assemble-linux-targz",
+    server_windows_artifact = "//server:assemble-windows-zip",
 )
 
 java_test(

@@ -25,11 +25,15 @@ def graknlabs_dependencies():
     )
 
 def graknlabs_common():
-    git_repository(
+    native.local_repository(
         name = "graknlabs_common",
-        remote = "https://github.com/graknlabs/common",
-        tag = "2.0.0-alpha-7", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_common
+        path = "/Users/lriuui0x0/GraknLabs/common",
     )
+#    git_repository(
+#        name = "graknlabs_common",
+#        remote = "https://github.com/graknlabs/common",
+#        tag = "2.0.0-alpha-7", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_common
+#    )
 
 def graknlabs_graql():
     git_repository(
