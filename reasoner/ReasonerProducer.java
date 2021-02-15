@@ -55,7 +55,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers) {
         this.rootResolver = resolverRegistry.rootConjunction(conjunction, modifiers.offset().orElse(null),
                                                              modifiers.limit().orElse(null), this::requestAnswered, this::requestFailed);
-        Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver, this.rootResolver).toDownstream();
+        Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver).toDownstream();
         this.resolveRequest = Request.create(rootResolver, downstream);
         this.queue = null;
         this.iteration = 0;
@@ -65,7 +65,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     public ReasonerProducer(Disjunction disjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers) {
         this.rootResolver = resolverRegistry.rootDisjunction(disjunction, modifiers.offset().orElse(null),
                                                              modifiers.limit().orElse(null), this::requestAnswered, this::requestFailed);
-        Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver, this.rootResolver).toDownstream();
+        Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver).toDownstream();
         this.resolveRequest = Request.create(rootResolver, downstream);
         this.queue = null;
         this.iteration = 0;

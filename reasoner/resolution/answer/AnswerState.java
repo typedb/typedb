@@ -105,18 +105,18 @@ public abstract class AnswerState {
         private final Set<Reference.Name> filter;
         private final int hash;
 
-        Top(ConceptMap conceptMap, @Nullable Set<Reference.Name> filter, Actor<? extends Resolver<?>> resolver,
+        Top(ConceptMap conceptMap, @Nullable Set<Reference.Name> filter,
             Actor<? extends Resolver<?>> root, boolean recordExplanations, boolean requiresReiteration,
             @Nullable Derivation derivation) {
-            super(conceptMap, resolver, root, requiresReiteration, derivation, recordExplanations);
+            super(conceptMap, root, root, requiresReiteration, derivation, recordExplanations);
             this.filter = filter;
-            this.hash = Objects.hash(conceptMap, filter);
+            this.hash = Objects.hash(root, conceptMap, filter);
         }
 
         public static Top initial(Set<Reference.Name> filter, boolean recordExplanations,
-                                  Actor<? extends Resolver<?>> resolver, Actor<? extends Resolver<?>> root) {
+                                  Actor<? extends Resolver<?>> root) {
             Derivation derivation = recordExplanations ? Derivation.EMPTY : null;
-            return new Top(new ConceptMap(), filter, resolver, root, recordExplanations, false, derivation);
+            return new Top(new ConceptMap(), filter, root, recordExplanations, false, derivation);
         }
 
         public Partial.Identity toDownstream() {
@@ -124,14 +124,15 @@ public abstract class AnswerState {
         }
 
         Top with(ConceptMap conceptMap, boolean requiresReiteration, @Nullable Derivation derivation) {
-            return new Top(conceptMap, filter, resolver(), root(), recordExplanations(), requiresReiteration, derivation);
+            return new Top(conceptMap, filter, root(), recordExplanations(), requiresReiteration, derivation);
         }
 
         @Override
         public String toString() {
             return "AnswerState.Top{" +
-                    "conceptMap=" + conceptMap() +
-                    "filter=" + filter +
+                    "root=" + root() +
+                    ", conceptMap=" + conceptMap() +
+                    ", filter=" + filter +
                     '}';
         }
 
@@ -151,7 +152,8 @@ public abstract class AnswerState {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             Top top = (Top) o;
-            return Objects.equals(conceptMap, top.conceptMap) &&
+            return Objects.equals(root(), top.root()) &&
+                    Objects.equals(conceptMap, top.conceptMap) &&
                     Objects.equals(filter, top.filter);
         }
 
@@ -164,13 +166,11 @@ public abstract class AnswerState {
     public static abstract class Partial<Parent extends AnswerState> extends AnswerState {
 
         protected final Parent parent;
-        private final Actor<? extends Resolver<?>> resolver;
 
         public Partial(ConceptMap partialAnswer, Parent parent, Actor<? extends Resolver<?>> resolver,
                        Actor<? extends Resolver<?>> root, boolean requiresReiteration, @Nullable Derivation derivation, boolean recordExplanations) {
             super(partialAnswer, resolver, root, requiresReiteration, derivation, recordExplanations);
             this.parent = parent;
-            this.resolver = resolver;
         }
 
         protected Parent parent() {
@@ -249,7 +249,7 @@ public abstract class AnswerState {
             private Identity(ConceptMap partialAnswer, Top parent, Actor<? extends Resolver<?>> root,
                              boolean requiresReiteration, @Nullable Derivation derivation, boolean recordExplanations) {
                 super(partialAnswer, parent, null, root, requiresReiteration, derivation, recordExplanations);
-                this.hash = Objects.hash(conceptMap, parent);
+                this.hash = Objects.hash(root, conceptMap, parent);
             }
 
             static Identity identity(ConceptMap conceptMap, Top parent, Actor<? extends Resolver<?>> root,
@@ -279,7 +279,8 @@ public abstract class AnswerState {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
                 Identity identity = (Identity) o;
-                return Objects.equals(conceptMap, identity.conceptMap) &&
+                return Objects.equals(root(), identity.root()) &&
+                        Objects.equals(conceptMap, identity.conceptMap) &&
                         Objects.equals(parent, identity.parent);
             }
 
@@ -299,7 +300,7 @@ public abstract class AnswerState {
                              boolean requiresReiteration, @Nullable Derivation derivation, boolean recordExplanations) {
                 super(filteredConceptMap, parent, resolver, root, requiresReiteration, derivation, recordExplanations);
                 this.filter = filter;
-                this.hash = Objects.hash(conceptMap, parent, filter);
+                this.hash = Objects.hash(resolver, conceptMap, filter, parent);
             }
 
             static Filtered filter(Partial<?> parent, Set<Reference.Name> filter, Actor<? extends Resolver<?>> root,
@@ -331,8 +332,9 @@ public abstract class AnswerState {
             @Override
             public String toString() {
                 return "AnswerState.Partial.Filtered{" +
-                        "conceptMap=" + conceptMap() +
-                        "filter=" + filter +
+                        "root=" + root() +
+                        ", conceptMap=" + conceptMap() +
+                        ", filter=" + filter +
                         '}';
             }
 
@@ -341,7 +343,8 @@ public abstract class AnswerState {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
                 Filtered filtered = (Filtered) o;
-                return Objects.equals(conceptMap, filtered.conceptMap) &&
+                return Objects.equals(root(), filtered.root()) &&
+                        Objects.equals(conceptMap, filtered.conceptMap) &&
                         Objects.equals(parent, filtered.parent) &&
                         Objects.equals(filter, filtered.filter);
             }
@@ -363,7 +366,7 @@ public abstract class AnswerState {
                 super(mappedConceptMap, parent, resolver, root, requiresReiteration, derivation,
                       recordExplanations);
                 this.mapping = mapping;
-                this.hash = Objects.hash(conceptMap, parent, mapping);
+                this.hash = Objects.hash(resolver, conceptMap, mapping, parent);
             }
 
             static Mapped map(Partial<?> parent, Mapping mapping, Actor<? extends Resolver<?>> root,
@@ -400,8 +403,9 @@ public abstract class AnswerState {
             @Override
             public String toString() {
                 return "AnswerState.Partial.Mapped{" +
-                        "conceptMap=" + conceptMap() +
-                        "mapping=" + mapping +
+                        "root=" + root() +
+                        ", conceptMap=" + conceptMap() +
+                        ", mapping=" + mapping +
                         '}';
             }
 
@@ -410,7 +414,8 @@ public abstract class AnswerState {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
                 Mapped mapped = (Mapped) o;
-                return Objects.equals(conceptMap, mapped.conceptMap) &&
+                return Objects.equals(root(), mapped.root()) &&
+                        Objects.equals(conceptMap, mapped.conceptMap) &&
                         Objects.equals(parent, mapped.parent) &&
                         Objects.equals(mapping, mapped.mapping);
             }
@@ -434,7 +439,7 @@ public abstract class AnswerState {
                 super(unifiedConceptMap, parent, resolver, root, requiresReiteration, derivation, recordExplanations);
                 this.unifier = unifier;
                 this.instanceRequirements = instanceRequirements;
-                this.hash = Objects.hash(conceptMap, parent, unifier, instanceRequirements);
+                this.hash = Objects.hash(resolver, conceptMap, unifier, instanceRequirements, parent);
             }
 
             static Optional<Partial.Unified> unify(Partial<?> parent, Unifier unifier,
@@ -471,9 +476,10 @@ public abstract class AnswerState {
             @Override
             public String toString() {
                 return "AnswerState.Partial.Unified{" +
-                        "conceptMap=" + conceptMap() +
-                        "unifier=" + unifier +
-                        "instanceRequirements=" + instanceRequirements +
+                        "root=" + root() +
+                        ", conceptMap=" + conceptMap() +
+                        ", unifier=" + unifier +
+                        ", instanceRequirements=" + instanceRequirements +
                         '}';
             }
 
@@ -482,7 +488,8 @@ public abstract class AnswerState {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
                 Unified unified = (Unified) o;
-                return Objects.equals(conceptMap, unified.conceptMap) &&
+                return Objects.equals(root(), unified.root()) &&
+                        Objects.equals(conceptMap, unified.conceptMap) &&
                         Objects.equals(parent, unified.parent) &&
                         Objects.equals(unifier, unified.unifier) &&
                         Objects.equals(instanceRequirements, unified.instanceRequirements);
