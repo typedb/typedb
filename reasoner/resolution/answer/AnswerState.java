@@ -44,11 +44,13 @@ public abstract class AnswerState {
     protected final ConceptMap conceptMap;
     private final boolean recordExplanations;
     private final Derivation derivation;
+    private final Actor<? extends Resolver<?>> resolver;
     final boolean requiresReiteration;
 
-    AnswerState(ConceptMap conceptMap, boolean requiresReiteration,
+    AnswerState(ConceptMap conceptMap, Actor<? extends Resolver<?>> resolver, boolean requiresReiteration,
                 @Nullable Derivation derivation, boolean recordExplanations) {
         this.conceptMap = conceptMap;
+        this.resolver = resolver;
         this.requiresReiteration = requiresReiteration;
         this.derivation = derivation;
         this.recordExplanations = recordExplanations;
@@ -56,6 +58,10 @@ public abstract class AnswerState {
 
     public boolean recordExplanations() {
         return recordExplanations;
+    }
+
+    public Actor<? extends Resolver<?>> resolver() {
+        return resolver;
     }
 
     public ConceptMap conceptMap() {
@@ -94,16 +100,16 @@ public abstract class AnswerState {
         private final Derivation derivation;
         private final int hash;
 
-        Top(ConceptMap conceptMap, @Nullable Set<Reference.Name> filter, boolean recordExplanations,
+        Top(ConceptMap conceptMap, @Nullable Set<Reference.Name> filter, Actor<? extends Resolver<?>> resolver, boolean recordExplanations,
             boolean requiresReiteration, @Nullable Derivation derivation) {
-            super(conceptMap, requiresReiteration, new Derivation(map()), recordExplanations);
+            super(conceptMap, resolver, requiresReiteration, new Derivation(map()), recordExplanations);
             this.filter = filter;
             this.derivation = derivation;
             this.hash = Objects.hash(conceptMap, filter);
         }
 
-        public static Top initial(Set<Reference.Name> filter, boolean recordExplanations) {
-            return new Top(new ConceptMap(), filter, recordExplanations, false, null);
+        public static Top initial(Set<Reference.Name> filter, boolean recordExplanations, Actor<? extends Resolver<?>> resolver) {
+            return new Top(new ConceptMap(), filter, resolver, recordExplanations, false, null);
         }
 
         public Partial.Identity toDownstream() {
@@ -111,7 +117,7 @@ public abstract class AnswerState {
         }
 
         Top with(ConceptMap conceptMap, boolean requiresReiteration, @Nullable Derivation derivation) {
-            return new Top(conceptMap, filter, recordExplanations(), requiresReiteration, derivation);
+            return new Top(conceptMap, filter, resolver(), recordExplanations(), requiresReiteration, derivation);
         }
 
         @Override
@@ -125,10 +131,6 @@ public abstract class AnswerState {
         @Override
         public ConceptMap conceptMap() {
             return super.conceptMap().filter(filter);
-        }
-
-        public Derivation getDerivation() {
-            return derivation;
         }
 
         public boolean isTop() { return true; }
@@ -159,7 +161,7 @@ public abstract class AnswerState {
 
         public Partial(ConceptMap partialAnswer, Parent parent, Actor<? extends Resolver<?>> resolver,
                        boolean requiresReiteration, @Nullable Derivation derivation, boolean recordExplanations) {
-            super(partialAnswer, requiresReiteration, derivation, recordExplanations);
+            super(partialAnswer, resolver, requiresReiteration, derivation, recordExplanations);
             this.parent = parent;
             this.resolver = resolver;
         }
@@ -231,10 +233,6 @@ public abstract class AnswerState {
                 withInitial.putAll(parent().conceptMap().concepts());
             }
             return new ConceptMap(withInitial);
-        }
-
-        protected Actor<? extends Resolver<?>> resolver() {
-            return resolver;
         }
 
         public static class Identity extends Partial<Top> {
@@ -486,31 +484,31 @@ public abstract class AnswerState {
     public static class Derivation {
         public static final Derivation EMPTY = new Derivation(map());
 
-        private Map<Actor<? extends Resolver<?>>, Partial<?>> answers;
+        private Map<Actor<? extends Resolver<?>>, AnswerState> answers;
 
-        public Derivation(Map<Actor<? extends Resolver<?>>, Partial<?>> answers) {
+        public Derivation(Map<Actor<? extends Resolver<?>>, AnswerState> answers) {
             this.answers = map(answers);
         }
 
-        public Derivation withAnswer(Actor<? extends Resolver<?>> resolver, Partial<?> answer) {
-            Map<Actor<? extends Resolver<?>>, Partial<?>> copiedResolution = new HashMap<>(answers);
+        public Derivation withAnswer(Actor<? extends Resolver<?>> resolver, AnswerState answer) {
+            Map<Actor<? extends Resolver<?>>, AnswerState> copiedResolution = new HashMap<>(answers);
             copiedResolution.put(resolver, answer);
             return new Derivation(copiedResolution);
         }
 
-        public void update(Map<Actor<? extends Resolver<?>>, Partial<?>> newResolutions) {
+        public void update(Map<Actor<? extends Resolver<?>>, AnswerState> newResolutions) {
             assert answers.keySet().stream().noneMatch(key -> answers.containsKey(key)) :
                     "Cannot overwrite any derivations during an update";
-            Map<Actor<? extends Resolver<?>>, Partial<?>> copiedResolutions = new HashMap<>(answers);
+            Map<Actor<? extends Resolver<?>>, AnswerState> copiedResolutions = new HashMap<>(answers);
             copiedResolutions.putAll(newResolutions);
             this.answers = copiedResolutions;
         }
 
-        public void replace(Map<Actor<? extends Resolver<?>>, Partial<?>> newResolutions) {
+        public void replace(Map<Actor<? extends Resolver<?>>, AnswerState> newResolutions) {
             this.answers = map(newResolutions);
         }
 
-        public Map<Actor<? extends Resolver<?>>, Partial<?>> answers() {
+        public Map<Actor<? extends Resolver<?>>, AnswerState> answers() {
             return this.answers;
         }
 

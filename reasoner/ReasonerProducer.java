@@ -39,7 +39,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.reasoner.resolution.framework.ResolutionAnswer.Derivation.EMPTY;
 
 @ThreadSafe
 public class ReasonerProducer implements Producer<ConceptMap> {
@@ -56,7 +55,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers) {
         this.rootResolver = resolverRegistry.rootConjunction(conjunction, modifiers.offset().orElse(null),
                                                              modifiers.limit().orElse(null), this::requestAnswered, this::requestFailed);
-        Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations).toDownstream();
+        Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver).toDownstream();
         this.resolveRequest = Request.create(new Request.Path(rootResolver, downstream), downstream);
         this.queue = null;
         this.iteration = 0;
@@ -66,7 +65,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     public ReasonerProducer(Disjunction disjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers) {
         this.rootResolver = resolverRegistry.rootDisjunction(disjunction, modifiers.offset().orElse(null),
                                                              modifiers.limit().orElse(null), this::requestAnswered, this::requestFailed);
-        Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations).toDownstream();
+        Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver).toDownstream();
         this.resolveRequest = Request.create(new Request.Path(rootResolver, downstream), downstream);
         this.queue = null;
         this.iteration = 0;
