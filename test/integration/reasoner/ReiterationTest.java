@@ -37,7 +37,6 @@ import graql.lang.Graql;
 import graql.lang.pattern.variable.Reference;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -71,7 +70,6 @@ public class ReiterationTest {
         grakn.close();
     }
 
-    @Ignore // TODO enable after inferred flag is set correctly
     @Test
     public void test_first_iteration_exhausts_and_second_iteration_recurses_infinitely() throws InterruptedException {
         try (RocksSession session = schemaSession()) {
@@ -113,7 +111,6 @@ public class ReiterationTest {
         try (RocksSession session = dataSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 Conjunction conjunction = parseConjunction(transaction, "{ $y isa Y; }");
-//                Conjunction conjunction = parseConjunction(transaction, "{ $y(item:$x) isa Y; }"); // TODO: This hangs
                 Set<Reference.Name> filter = iterate(conjunction.variables()).map(Variable::reference).filter(Reference::isName)
                         .map(Reference::asName).toSet();
                 ResolverRegistry registry = transaction.reasoner().resolverRegistry();

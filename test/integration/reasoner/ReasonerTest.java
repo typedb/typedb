@@ -68,7 +68,6 @@ public class ReasonerTest {
         grakn.close();
     }
 
-    @Ignore
     @Test
     public void test_no_rules() {
         try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
