@@ -277,7 +277,7 @@ public class GraphPlanner implements Planner {
                 setInitialValues();
             }
         }
-        LOG.trace(solver.exportModelAsLpFormat());
+        if (LOG.isTraceEnabled()) LOG.trace(solver.exportModelAsLpFormat());
     }
 
     void updateCostNext(double costPrevious, double costNext) {

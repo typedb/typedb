@@ -42,6 +42,7 @@ import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import grakn.core.traversal.TraversalEngine;
+import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +66,9 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     final ConceptManager conceptMgr;
     final Actor<ResolutionRecorder> resolutionRecorder;
     final grakn.core.pattern.Conjunction conjunction;
-    final List<Resolvable<?>> plan;
+    final Set<Resolvable<?>> resolvables;
+    final Set<Negated> negateds;
+    final Plans plans;
     final Map<Resolvable<?>, ResolverRegistry.MappedResolver> downstreamResolvers;
     final Map<Request, ResponseProducer> responseProducers;
     private boolean isInitialised;
@@ -80,7 +83,9 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         this.resolutionRecorder = resolutionRecorder;
         this.planner = planner;
         this.conjunction = conjunction;
-        this.plan = new ArrayList<>();
+        this.resolvables = new HashSet<>();
+        this.negateds = new HashSet<>();
+        this.plans = new Plans();
         this.responseProducers = new HashMap<>();
         this.isInitialised = false;
         this.downstreamResolvers = new HashMap<>();
@@ -135,6 +140,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
             derivation = null;
         }
 
+        Plans.Plan plan = plans.get(fromUpstream.partialAnswer().conceptMap().concepts().keySet());
 
         // TODO: this is a bit of a hack, we want requests to a negation to be "single use", otherwise we can end up in an infinite loop
         // TODO: where the request to the negation never gets removed and we constantly re-request from it!
@@ -142,7 +148,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         if (plan.get(toDownstream.planIndex()).isNegated()) responseProducer.removeDownstreamProducer(toDownstream);
 
         ConceptMap conceptMap = fromDownstream.answer().derived().withInitialFiltered();
-        if (fromDownstream.planIndex() == plan.size() - 1) {
+        if (plan.isLast(fromDownstream.planIndex())) {
             Optional<AnswerState.UpstreamVars.Derived> answer = toUpstreamAnswer(fromUpstream, conceptMap);
             if (answer.isPresent() && !responseProducer.hasProduced(answer.get().withInitialFiltered())) {
                 responseProducer.recordProduced(answer.get().withInitialFiltered());
@@ -158,11 +164,11 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
                 nextAnswer(fromUpstream, responseProducer, iteration);
             }
         } else {
-            int planIndex = fromDownstream.planIndex() + 1;
-            ResolverRegistry.MappedResolver nextPlannedDownstream = downstreamResolvers.get(plan.get(planIndex));
+            int nextResolverIndex = fromDownstream.planIndex() + 1;
+            ResolverRegistry.MappedResolver nextPlannedDownstream = downstreamResolvers.get(plan.get(nextResolverIndex));
             AnswerState.DownstreamVars.Mapped downstream = Initial.of(conceptMap).toDownstreamVars(Mapping.of(nextPlannedDownstream.mapping()));
             Request downstreamRequest = Request.create(fromUpstream.path().append(nextPlannedDownstream.resolver(), downstream),
-                                                       downstream, derivation, planIndex);
+                                                       downstream, derivation, nextResolverIndex);
             responseProducer.addDownstreamProducer(downstreamRequest);
             requestFromDownstream(downstreamRequest, fromUpstream, iteration);
         }
@@ -191,20 +197,14 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         Set<Concludable> concludables = Iterators.iterate(Concludable.create(conjunction))
                 .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext()).toSet();
         Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction, concludables);
-        Set<Resolvable<?>> resolvables = new HashSet<>();
         resolvables.addAll(concludables);
         resolvables.addAll(retrievables);
-
-        plan.addAll(planner.plan(resolvables));
-        iterate(plan).forEachRemaining(resolvable -> {
-            downstreamResolvers.put(resolvable, registry.registerResolvable(resolvable));
-        });
-
-        // TODO: just adding negations at the end, but we will want to include them in the planner
+        iterate(resolvables).forEachRemaining(resolvable -> downstreamResolvers.put(resolvable,
+                                                                                    registry.registerResolvable(resolvable)));
         for (Negation negation : conjunction.negations()) {
             Negated negated = new Negated(negation);
-            plan.add(negated);
             downstreamResolvers.put(negated, registry.negated(negated, conjunction));
+            negateds.add(negated);
         }
     }
 
@@ -232,8 +232,10 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
 //        ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers = toUpstreamAnswers(
 //                fromUpstream, compatibleBoundAnswers(conceptMgr, conjunction, fromUpstream.partialAnswer().conceptMap()));
 //
-        ResponseProducer responseProducer = new ResponseProducer(Iterators.empty(), iteration);
+        Plans.Plan plan = plans.getOrCreate(fromUpstream.partialAnswer().conceptMap().concepts().keySet(), resolvables, negateds);
         assert !plan.isEmpty();
+
+        ResponseProducer responseProducer = new ResponseProducer(Iterators.empty(), iteration);
         AnswerState.DownstreamVars.Mapped downstream = Initial.of(fromUpstream.partialAnswer().conceptMap())
                 .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping()));
         Request toDownstream = Request.create(fromUpstream.path().append(downstreamResolvers.get(plan.get(0)).resolver(), downstream),
@@ -251,14 +253,54 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
 //        ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers = toUpstreamAnswers(
 //                fromUpstream, compatibleBoundAnswers(conceptMgr, conjunction, fromUpstream.partialAnswer().conceptMap()));
 
-        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(Iterators.empty(), newIteration);
+        Plans.Plan plan = plans.getOrCreate(fromUpstream.partialAnswer().conceptMap().concepts().keySet(), resolvables, negateds);
+
         assert !plan.isEmpty();
+        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(Iterators.empty(), newIteration);
         AnswerState.DownstreamVars downstream = Initial.of(fromUpstream.partialAnswer().conceptMap())
                 .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping()));
         Request toDownstream = Request.create(fromUpstream.path().append(downstreamResolvers.get(plan.get(0)).resolver(), fromUpstream.partialAnswer()),
                                               downstream, new ResolutionAnswer.Derivation(map()), 0);
         responseProducerNewIter.addDownstreamProducer(toDownstream);
         return responseProducerNewIter;
+    }
+
+    private class Plans {
+
+        Map<Set<Reference.Name>, Plan> plans;
+        public Plans() { this.plans = new HashMap<>(); }
+
+        public Plan getOrCreate(Set<Reference.Name> boundVars, Set<Resolvable<?>> resolvable, Set<Negated> negations) {
+            return plans.computeIfAbsent(boundVars, (bound) -> {
+                List<Resolvable<?>> plan = planner.plan(resolvable, bound);
+                plan.addAll(negations);
+                return new Plan(plan);
+            });
+        }
+
+        public Plan get(Set<Reference.Name> boundVars) {
+            assert plans.containsKey(boundVars);
+            return plans.get(boundVars);
+        }
+
+        public class Plan {
+            List<Resolvable<?>> plan;
+            private Plan(List<Resolvable<?>> plan) { this.plan = plan; }
+
+            public Resolvable<?> get(int index) {
+                return plan.get(index);
+            }
+
+            public Resolvable<?> next(int index) {
+                return plan.get(index + 1);
+            }
+
+            public boolean isLast(int index) {
+                return index == plan.size() - 1;
+            }
+
+            public boolean isEmpty() { return plan.isEmpty(); }
+        }
     }
 
     public static class Nested extends ConjunctionResolver<Nested> {

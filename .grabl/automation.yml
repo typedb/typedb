@@ -118,7 +118,7 @@ build:
       filter:
         owner: graknlabs
         branch: master
-      dependencies: [test-assembly-linux-targz]
+      # dependencies: [test-assembly-linux-targz] TODO: re-enable
       command: |
         export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD

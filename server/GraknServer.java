@@ -101,6 +101,19 @@ public class GraknServer implements AutoCloseable {
         );
     }
 
+    private Server rpcServer() {
+        assert Executors.isInitialised();
+        return NettyServerBuilder.forPort(command.port())
+                .executor(Executors.mainPool())
+                .workerEventLoopGroup(Executors.networkPool())
+                .bossEventLoopGroup(Executors.networkPool())
+                .maxConnectionIdle(1, TimeUnit.HOURS) // TODO: why 1 hour?
+                .channelType(NioServerSocketChannel.class)
+                .addService(graknRPCService)
+                .addService(migratorRPCService)
+                .build();
+    }
+
     private int port() {
         return command.port();
     }
@@ -267,19 +280,6 @@ public class GraknServer implements AutoCloseable {
         LOG.info("You can press CTRL+C to shutdown this server.");
         LOG.info("...");
         server.serve();
-    }
-
-    private Server rpcServer() {
-        assert Executors.isInitialised();
-        return NettyServerBuilder.forPort(command.port())
-                .executor(Executors.mainPool())
-                .workerEventLoopGroup(Executors.networkPool())
-                .bossEventLoopGroup(Executors.networkPool())
-                .maxConnectionIdle(1, TimeUnit.HOURS) // TODO: why 1 hour?
-                .channelType(NioServerSocketChannel.class)
-                .addService(graknRPCService)
-                .addService(migratorRPCService)
-                .build();
     }
 
     @Override

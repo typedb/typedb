@@ -27,6 +27,8 @@ import grakn.core.common.parameters.Options;
 import grakn.core.concurrent.common.Executors;
 import org.rocksdb.RocksDB;
 import org.rocksdb.UInt64AddOperator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -36,6 +38,7 @@ import static grakn.core.common.exception.ErrorMessage.Internal.GRAKN_CLOSED;
 
 public class RocksGrakn implements Grakn {
 
+    private static final Logger LOG = LoggerFactory.getLogger(RocksGrakn.class);
     private static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
 
     static {
@@ -56,7 +59,7 @@ public class RocksGrakn implements Grakn {
         this.graknDBOptions = options;
         this.rocksDBOptions = new org.rocksdb.Options()
                 .setCreateIfMissing(true)
-                .setMaxBackgroundJobs(MAX_THREADS)
+                .setMaxBackgroundJobs(MAX_THREADS / 2)
                 .setMergeOperator(new UInt64AddOperator());
         this.databaseMgr = databaseMgrFactory.databaseManager(this);
         this.databaseMgr.loadAll();

@@ -33,7 +33,6 @@ import grakn.core.concept.type.RoleType;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
 import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.Negation;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
@@ -50,6 +49,8 @@ import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.Reference;
 import graql.lang.pattern.variable.ThingVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -63,7 +64,6 @@ import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
-import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CONJUNCTION;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.INVALID_NEGATION;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.INVALID_NEGATION_CONTAINS_DISJUNCTION;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CANNOT_BE_SATISFIED;
@@ -82,8 +82,9 @@ import static graql.lang.common.GraqlToken.Schema.WHEN;
 
 public class Rule {
 
-    // note: as `Rule` is cached between transactions, we cannot hold any transaction-bound objects such as Managers
+    private static final Logger LOG = LoggerFactory.getLogger(Rule.class);
 
+    // note: as `Rule` is cached between transactions, we cannot hold any transaction-bound objects such as Managers
     private final RuleStructure structure;
     private final Conjunction when;
     private final Conjunction then;
@@ -94,10 +95,7 @@ public class Rule {
         this.when = whenPattern(structure.when(), logicMgr);
         this.then = thenPattern(structure.then(), logicMgr);
         pruneThenResolvedTypes();
-        validateSatisfiable();
-        validateInsertable(logicMgr);
         this.conclusion = Conclusion.create(this.then);
-        validateCycles();
     }
 
     private Rule(GraphManager graphMgr, LogicManager logicMgr, String label,
@@ -236,16 +234,16 @@ public class Rule {
         }
 
         logicMgr.typeResolver().resolve(conj);
-        Set<Negation> filteredNegations = new HashSet<>();
         for (Negation negation : conj.negations()) {
-            Set<Identifier.Variable.Name> f = iterate(conj.variables()).filter(v -> v.id().isName()).map(v -> v.id().asName()).toSet();
             assert negation.disjunction().conjunctions().size() == 1;
             for (Conjunction c : negation.disjunction().conjunctions()) {
-                logicMgr.typeResolver().resolve(c);
-                if (c.isSatisfiable()) filteredNegations.add(new Negation(new Disjunction(list(c))));
+                logicMgr.typeResolver().resolve(c, list(conj));
+                if (!c.isSatisfiable()) {
+                    LOG.warn("Rule {} contains unsatisfiable negated conjunction: {}", getLabel(), c);
+                }
             }
         }
-        return new Conjunction(conj.variables(), filteredNegations);
+        return conj;
     }
 
     private Conjunction thenPattern(ThingVariable<?> thenVariable, LogicManager logicMgr) {

@@ -22,6 +22,7 @@ import graql.lang.Graql;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -39,7 +40,18 @@ public class ConjunctionTest {
     private Set<String> conjunctionStringToStatementStrings(String conjunctionString) {
         assertTrue(conjunctionString.startsWith("{ "));
         assertTrue(conjunctionString.endsWith(" }"));
-        return set(Arrays.asList(conjunctionString.substring(2, conjunctionString.length() - 1).split("; ")));
+        String withoutNewlines = conjunctionString.replace("\n", "");
+        return set(Arrays.asList(withoutNewlines.substring(2, withoutNewlines.length() - 1).split("; ")));
+    }
+
+    private int expectedNewlines(Set<String> expectedConstraintStrings) {
+        Set<String> uniqueConstraintOwners = new HashSet<>();
+        expectedConstraintStrings.forEach(s -> uniqueConstraintOwners.add(s.substring(0, s.indexOf(" "))));
+        return uniqueConstraintOwners.size() - 1;
+    }
+
+    private int newlinesIn(String string) {
+        return string.length() - string.replace("\n", "").length();
     }
 
     @Test
@@ -54,10 +66,12 @@ public class ConjunctionTest {
 
         Set<String> expectedConstraintStrings = set("$p isa $_person", "$_person type person", "$p has $n",
                                                     "$n isa $_name", "$_name type name", "$n = \"Alice\"",
-                                                    "$e($_employment:employee:$p)", "$e isa $_employment",
+                                                    "$e ($_employment:employee:$p)", "$e isa $_employment",
                                                     "$_employment type employment",
                                                     "$_employment:employee type employment:employee");
-        assertEquals(expectedConstraintStrings, conjunctionStringToStatementStrings(conjunction.toString()));
+        String conjunctionString = conjunction.toString();
+        assertEquals(expectedNewlines(expectedConstraintStrings), newlinesIn(conjunctionString));
+        assertEquals(expectedConstraintStrings, conjunctionStringToStatementStrings(conjunctionString));
     }
 
     @Test
@@ -70,7 +84,9 @@ public class ConjunctionTest {
 
         Set<String> expectedConstraintStrings = set("$p isa $_person", "$_person type person", "$p has $n",
                                                     "$n isa $_name", "$_name type name");
-        assertEquals(expectedConstraintStrings, conjunctionStringToStatementStrings(conjunction.toString()));
+        String conjunctionString = conjunction.toString();
+        assertEquals(expectedNewlines(expectedConstraintStrings), newlinesIn(conjunctionString));
+        assertEquals(expectedConstraintStrings, conjunctionStringToStatementStrings(conjunctionString));
     }
 
     @Test
@@ -84,7 +100,9 @@ public class ConjunctionTest {
         Set<String> expectedConstraintStrings = set(
                 "$p sub $_person", "$_person type person", "$p plays $r", "$e sub $_employment",
                 "$_employment type employment", "$e relates $r");
-        assertEquals(expectedConstraintStrings, conjunctionStringToStatementStrings(conjunction.toString()));
+        String conjunctionString = conjunction.toString();
+        assertEquals(expectedNewlines(expectedConstraintStrings), newlinesIn(conjunctionString));
+        assertEquals(expectedConstraintStrings, conjunctionStringToStatementStrings(conjunctionString));
     }
 
     @Test
@@ -96,6 +114,8 @@ public class ConjunctionTest {
         assertEquals(expectedVariableStrings, variableStrings);
 
         Set<String> expectedConstraintStrings = set("$x iid 0x12345678", "$y iid 0x87654321");
-        assertEquals(expectedConstraintStrings, conjunctionStringToStatementStrings(conjunction.toString()));
+        String conjunctionString = conjunction.toString();
+        assertEquals(expectedNewlines(expectedConstraintStrings), newlinesIn(conjunctionString));
+        assertEquals(expectedConstraintStrings, conjunctionStringToStatementStrings(conjunctionString));
     }
 }
