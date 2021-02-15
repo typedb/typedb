@@ -19,6 +19,7 @@
 package grakn.core.reasoner.resolution.framework;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
@@ -40,16 +41,14 @@ public interface Response {
 
     class Answer implements Response {
         private final Request sourceRequest;
-        private final ResolutionAnswer answer;
+        private final Partial<?> answer;
 
-        private Answer(Request sourceRequest,
-                       ResolutionAnswer answer) {
+        private Answer(Request sourceRequest, Partial<?> answer) {
             this.sourceRequest = sourceRequest;
             this.answer = answer;
         }
 
-        public static Answer create(Request sourceRequest,
-                                    ResolutionAnswer answer) {
+        public static Answer create(Request sourceRequest, Partial<?> answer) {
             return new Answer(sourceRequest, answer);
         }
 
@@ -58,7 +57,7 @@ public interface Response {
             return sourceRequest;
         }
 
-        public ResolutionAnswer answer() {
+        public Partial<?> answer() {
             return answer;
         }
 

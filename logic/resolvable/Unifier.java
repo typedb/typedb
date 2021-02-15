@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -289,9 +290,11 @@ public class Unifier {
         public static class Instance {
 
             Map<Reference.Name, ? extends Concept> requireCompatible;
+            private final int hash;
 
             public Instance(Map<Reference.Name, ? extends Concept> concepts) {
                 this.requireCompatible = concepts;
+                this.hash = Objects.hash(requireCompatible);
             }
 
             public boolean satisfiedBy(Map<Identifier, Concept> toTest) {
@@ -313,6 +316,19 @@ public class Unifier {
                     }
                 }
                 return true;
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+                Instance instance = (Instance) o;
+                return requireCompatible.equals(instance.requireCompatible);
+            }
+
+            @Override
+            public int hashCode() {
+                return hash;
             }
         }
     }

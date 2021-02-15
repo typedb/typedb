@@ -28,6 +28,8 @@ import grakn.core.concurrent.actor.Actor;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.reasoner.resolution.ResolverRegistry;
+import grakn.core.reasoner.resolution.answer.AnswerState;
+import grakn.core.reasoner.resolution.framework.Response.Answer;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
@@ -70,7 +72,7 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
 
     public abstract void receiveRequest(Request fromUpstream, int iteration);
 
-    protected abstract void receiveAnswer(Response.Answer fromDownstream, int iteration);
+    protected abstract void receiveAnswer(Answer fromDownstream, int iteration);
 
     protected abstract void receiveExhausted(Response.Fail fromDownstream, int iteration);
 
@@ -93,17 +95,17 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
         receiver.tell(actor -> actor.receiveRequest(request, iteration));
     }
 
-    protected void respondToUpstream(Response response, int iteration) {
-        Actor<? extends Resolver<?>> receiver = response.sourceRequest().sender();
-        if (response.isAnswer()) {
-            LOG.trace("{} : Sending a new Response.Answer to upstream", name());
-            receiver.tell(actor -> actor.receiveAnswer(response.asAnswer(), iteration));
-        } else if (response.isFail()) {
-            LOG.trace("{}: Sending a new Response.Fail to upstream", name());
-            receiver.tell(actor -> actor.receiveExhausted(response.asFail(), iteration));
-        } else {
-            throw new RuntimeException(("Unknown response type " + response.getClass().getSimpleName()));
-        }
+    protected void answerToUpstream(AnswerState answer, Request fromUpstream, int iteration) {
+        assert answer.isPartial();
+        Answer response = Answer.create(fromUpstream, answer.asPartial());
+        LOG.trace("{} : Sending a new Response.Answer to upstream", name());
+        fromUpstream.sender().tell(actor -> actor.receiveAnswer(response, iteration));
+    }
+
+    protected void failToUpstream(Request fromUpstream, int iteration) {
+        Response.Fail response = new Response.Fail(fromUpstream);
+        LOG.trace("{} : Sending a new Response.Answer to upstream", name());
+        fromUpstream.sender().tell(actor -> actor.receiveExhausted(response, iteration));
     }
 
     protected ResourceIterator<ConceptMap> compatibleBoundAnswers(ConceptManager conceptMgr, Conjunction conjunction, ConceptMap bounds) {

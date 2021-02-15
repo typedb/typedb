@@ -19,17 +19,15 @@ package grakn.core.reasoner;
 
 import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.common.parameters.Arguments;
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.actor.EventLoopGroup;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState;
-import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars.Initial;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Identity;
+import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.framework.Request;
-import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.resolver.Root;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
@@ -39,7 +37,6 @@ import graql.lang.Graql;
 import graql.lang.pattern.variable.Reference;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -73,7 +70,6 @@ public class ReiterationTest {
         grakn.close();
     }
 
-    @Ignore // TODO enable after inferred flag is set correctly
     @Test
     public void test_first_iteration_exhausts_and_second_iteration_recurses_infinitely() throws InterruptedException {
         try (RocksSession session = schemaSession()) {
@@ -115,18 +111,17 @@ public class ReiterationTest {
         try (RocksSession session = dataSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 Conjunction conjunction = parseConjunction(transaction, "{ $y isa Y; }");
-//                Conjunction conjunction = parseConjunction(transaction, "{ $y(item:$x) isa Y; }"); // TODO: This hangs
                 Set<Reference.Name> filter = iterate(conjunction.variables()).map(Variable::reference).filter(Reference::isName)
                         .map(Reference::asName).toSet();
                 ResolverRegistry registry = transaction.reasoner().resolverRegistry();
-                LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
+                LinkedBlockingQueue<Top> responses = new LinkedBlockingQueue<>();
                 LinkedBlockingQueue<Integer> exhausted = new LinkedBlockingQueue<>();
                 int[] iteration = {0};
                 int[] doneInIteration = {0};
                 boolean[] receivedInferredAnswer = {false};
 
-                Actor<Root.Conjunction> root = registry.rootConjunction(conjunction, filter, null, null, answer -> {
-                    if (answer.isInferred()) receivedInferredAnswer[0] = true;
+                Actor<grakn.core.reasoner.resolution.resolver.Root.Conjunction> root = registry.rootConjunction(conjunction, null, null, answer -> {
+                    if (answer.requiresReiteration()) receivedInferredAnswer[0] = true;
                     responses.add(answer);
                 }, iterDone -> {
                     assert iteration[0] == iterDone;
@@ -134,19 +129,19 @@ public class ReiterationTest {
                     exhausted.add(iterDone);
                 });
 
-                Set<ResolutionAnswer> answers = new HashSet<>();
+                Set<Top> answers = new HashSet<>();
                 // iteration 0
-                sendRootRequest(root, iteration[0]);
+                sendRootRequest(root, filter, iteration[0]);
                 answers.add(responses.take());
-                sendRootRequest(root, iteration[0]);
+                sendRootRequest(root, filter, iteration[0]);
                 exhausted.take(); // Block and wait for an exhausted message
                 assertTrue(receivedInferredAnswer[0]);
                 assertEquals(1, doneInIteration[0]);
 
                 // iteration 1 onwards
                 for (int j = 0; j <= 100; j++) {
-                    sendRootRequest(root, iteration[0]);
-                    ResolutionAnswer re = responses.poll(100, TimeUnit.MILLISECONDS);
+                    sendRootRequest(root, filter, iteration[0]);
+                    Top re = responses.poll(100, TimeUnit.MILLISECONDS);
                     if (re == null) {
                         Integer ex = exhausted.poll(100, TimeUnit.MILLISECONDS);
                         if (ex == null) {
@@ -162,10 +157,10 @@ public class ReiterationTest {
         }
     }
 
-    private void sendRootRequest(Actor<Root.Conjunction> root, int iteration) {
-        AnswerState.DownstreamVars.Identity downstream = Initial.of(new ConceptMap()).toDownstreamVars();
+    private void sendRootRequest(Actor<Root.Conjunction> root, Set<Reference.Name> filter, int iteration) {
+        Identity downstream = Top.initial(filter, false, root).toDownstream();
         root.tell(actor -> actor.receiveRequest(
-                Request.create(new Request.Path(root, downstream), downstream, null), iteration)
+                Request.create(root, downstream), iteration)
         );
     }
 

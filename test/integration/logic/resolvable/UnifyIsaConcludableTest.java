@@ -203,7 +203,6 @@ public class UnifyIsaConcludableTest {
         assertEquals(0, unifier.constraintRequirements().predicates().size());
     }
 
-    @Ignore // TODO: enable when type resolver is updated
     @Test
     public void isa_variable_unifies_relation_variable_type() {
         String conjunction = "{ $a isa $t; }";
@@ -233,7 +232,6 @@ public class UnifyIsaConcludableTest {
     /*
     Test unifier pruning using type information
      */
-    @Ignore // TODO: enable when type resolver is updated
     @Test
     public void isa_variable_with_type_prunes_irrelevant_rules() {
         String conjunction = "{ $a isa $t; $t type company; }";
@@ -343,7 +341,6 @@ public class UnifyIsaConcludableTest {
         assertFalse(unified.isPresent());
     }
 
-    @Ignore // TODO: enable when type resolver is updated
     @Test
     public void isa_exact_unifies_rule_relation_variable() {
         String conjunction = "{ $a isa relation; }";
@@ -388,7 +385,6 @@ public class UnifyIsaConcludableTest {
         assertFalse(unified.isPresent());
     }
 
-    @Ignore // TODO: enable when type resolver is updated
     @Test
     public void isa_concrete_prunes_irrelevant_rules() {
         String conjunction = "{ $a isa age; }";

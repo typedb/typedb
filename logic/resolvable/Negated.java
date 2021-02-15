@@ -26,7 +26,6 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.set;
 import static grakn.core.common.iterator.Iterators.iterate;
 
 public class Negated extends Resolvable<Disjunction> {

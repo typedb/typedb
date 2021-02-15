@@ -20,7 +20,7 @@ package grakn.core.reasoner.resolution.framework;
 
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.reasoner.resolution.answer.AnswerState;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -29,17 +29,17 @@ import java.util.Set;
 
 public class ResponseProducer {
     private final Set<ConceptMap> produced;
-    private final ResourceIterator<AnswerState.UpstreamVars.Derived> newUpstreamAnswers;
+    private final ResourceIterator<Partial<?>> newUpstreamAnswers;
     private final LinkedHashSet<Request> downstreamProducer;
     private final int iteration;
     private Iterator<Request> downstreamProducerSelector;
 
-    public ResponseProducer(ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers, int iteration) {
+    public ResponseProducer(ResourceIterator<Partial<?>> upstreamAnswers, int iteration) {
         this(upstreamAnswers, iteration, new HashSet<>());
     }
 
-    private ResponseProducer(ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers, int iteration, Set<ConceptMap> produced) {
-        this.newUpstreamAnswers = upstreamAnswers.filter(derived -> !hasProduced(derived.withInitialFiltered()));
+    private ResponseProducer(ResourceIterator<Partial<?>> upstreamAnswers, int iteration, Set<ConceptMap> produced) {
+        this.newUpstreamAnswers = upstreamAnswers.filter(partial -> !hasProduced(partial.conceptMap()));
         this.iteration = iteration;
         this.produced = produced;
         downstreamProducer = new LinkedHashSet<>();
@@ -58,7 +58,7 @@ public class ResponseProducer {
         return newUpstreamAnswers.hasNext();
     }
 
-    public Iterator<AnswerState.UpstreamVars.Derived> upstreamAnswers() {
+    public ResourceIterator<Partial<?>> upstreamAnswers() {
         return newUpstreamAnswers;
     }
 
@@ -93,7 +93,7 @@ public class ResponseProducer {
      * Prepare a response producer for the another iteration from this one
      * Notably maintains the set of produced answers for deduplication
      */
-    public ResponseProducer newIteration(ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers, int iteration) {
-        return new ResponseProducer(upstreamAnswers, iteration, this.produced);
+    public ResponseProducer newIteration(ResourceIterator<Partial<?>> upstreamAnswers, int iteration) {
+        return new ResponseProducer(upstreamAnswers, iteration, new HashSet<>());
     }
 }

@@ -23,10 +23,9 @@ import grakn.core.concurrent.producer.Producer;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState;
-import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars.Initial;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Identity;
+import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.framework.Request;
-import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import graql.lang.pattern.variable.Reference;
 import graql.lang.pattern.variable.UnboundVariable;
@@ -40,7 +39,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.reasoner.resolution.framework.ResolutionAnswer.Derivation.EMPTY;
 
 @ThreadSafe
 public class ReasonerProducer implements Producer<ConceptMap> {
@@ -48,26 +46,27 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private final Actor<? extends Resolver<?>> rootResolver;
     private Queue<ConceptMap> queue;
-    private Request resolveRequest;
-    private boolean iterationInferredAnswer;
+    private final Request resolveRequest;
+    private boolean requiredReiteration;
     private boolean done;
     private int iteration;
+    private final boolean recordExplanations = false;
 
     public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers) {
-        this.rootResolver = resolverRegistry.rootConjunction(conjunction,filter(modifiers.filter()), modifiers.offset().orElse(null),
+        this.rootResolver = resolverRegistry.rootConjunction(conjunction, modifiers.offset().orElse(null),
                                                              modifiers.limit().orElse(null), this::requestAnswered, this::requestFailed);
-        AnswerState.DownstreamVars.Identity downstream = Initial.of(new ConceptMap()).toDownstreamVars();
-        this.resolveRequest = Request.create(new Request.Path(rootResolver, downstream), downstream, EMPTY);
+        Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver).toDownstream();
+        this.resolveRequest = Request.create(rootResolver, downstream);
         this.queue = null;
         this.iteration = 0;
         this.done = false;
     }
 
     public ReasonerProducer(Disjunction disjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers) {
-        this.rootResolver = resolverRegistry.rootDisjunction(disjunction, filter(modifiers.filter()), modifiers.offset().orElse(null),
+        this.rootResolver = resolverRegistry.rootDisjunction(disjunction, modifiers.offset().orElse(null),
                                                              modifiers.limit().orElse(null), this::requestAnswered, this::requestFailed);
-        AnswerState.DownstreamVars.Identity downstream = Initial.of(new ConceptMap()).toDownstreamVars();
-        this.resolveRequest = Request.create(new Request.Path(rootResolver, downstream), downstream, EMPTY);
+        Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver).toDownstream();
+        this.resolveRequest = Request.create(rootResolver, downstream);
         this.queue = null;
         this.iteration = 0;
         this.done = false;
@@ -90,9 +89,9 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
 
-    private void requestAnswered(ResolutionAnswer resolutionAnswer) {
-        if (resolutionAnswer.isInferred()) iterationInferredAnswer = true;
-        queue.put(resolutionAnswer.derived().withInitialFiltered());
+    private void requestAnswered(Top resolutionAnswer) {
+        if (resolutionAnswer.requiresReiteration()) requiredReiteration = true;
+        queue.put(resolutionAnswer.conceptMap());
     }
 
     private void requestFailed(int iteration) {
@@ -116,7 +115,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private void prepareNextIteration() {
         iteration++;
-        iterationInferredAnswer = false;
+        requiredReiteration = false;
     }
 
     private boolean mustReiterate() {
@@ -130,7 +129,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         counter example: $x isa $type; -> unifies with then { (friend: $y) isa friendship; }
         Without reiteration we will miss $x = instance, $type = relation/thing
          */
-        return iterationInferredAnswer;
+        return requiredReiteration;
     }
 
     private void retryInNewIteration() {
