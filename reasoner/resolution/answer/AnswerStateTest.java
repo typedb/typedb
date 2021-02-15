@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import static grakn.core.reasoner.resolution.answer.AnswerState.Partial.Identity.identity;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 
@@ -61,7 +62,8 @@ public class AnswerStateTest {
         mapping.put(Reference.name("b"), Reference.name("y"));
         Map<Reference.Name, Concept> concepts = new HashMap<>();
         concepts.put(Reference.name("a"), new MockConcept(0));
-        Mapped mapped = Top.initial(mapping.keySet(), false, null, null).toDownstream()
+        Top top = Top.initial(concepts.keySet(), false, null, null);
+        Mapped mapped = identity(new ConceptMap(concepts), top,  null, false)
                 .mapToDownstream(Mapping.of(mapping));
 
         Map<Reference.Name, Concept> expectedMapped = new HashMap<>();
@@ -87,7 +89,8 @@ public class AnswerStateTest {
         Map<Reference.Name, Concept> concepts = new HashMap<>();
         concepts.put(Reference.name("a"), new MockConcept(0));
         concepts.put(Reference.name("c"), new MockConcept(2));
-        Mapped mapped = Top.initial(mapping.keySet(), false, null, null).toDownstream()
+        Top top = Top.initial(concepts.keySet(), false, null, null);
+        Mapped mapped = identity(new ConceptMap(concepts), top,  null, false)
                 .mapToDownstream(Mapping.of(mapping));
 
         Map<Reference.Name, Concept> expectedMapped = new HashMap<>();
