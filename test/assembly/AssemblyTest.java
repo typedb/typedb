@@ -18,19 +18,36 @@
 
 package grakn.core.test.assembly;
 
+import grakn.common.test.assembly.GraknConsoleRunner;
 import grakn.common.test.assembly.GraknCoreRunner;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.concurrent.TimeoutException;
 
 public class AssemblyTest {
-    private static GraknCoreRunner grakn;
 
     @Test
     public void bootup() throws InterruptedException, TimeoutException, IOException {
-        grakn = new GraknCoreRunner();
-        grakn.start();
-        grakn.stop();
+        GraknCoreRunner server = new GraknCoreRunner();
+        try {
+            server.start();
+        } finally {
+            server.stop();
+        }
+    }
+
+    @Test
+    public void console() throws InterruptedException, TimeoutException, IOException {
+        GraknCoreRunner server = new GraknCoreRunner();
+        try {
+            server.start();
+            GraknConsoleRunner console = new GraknConsoleRunner();
+            int exitCode = console.run(server.address(), false, Paths.get("test/assembly/console-script"));
+            assert exitCode == 0;
+        } finally {
+            server.stop();
+        }
     }
 }

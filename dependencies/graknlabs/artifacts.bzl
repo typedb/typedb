@@ -15,15 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_bazel_distribution//artifact:rules.bzl", "artifact_file")
+load("@graknlabs_dependencies//distribution/artifact:rules.bzl", "native_artifact_files")
 load("@graknlabs_dependencies//distribution:deployment.bzl", "deployment")
 
 def graknlabs_console_artifact():
-    artifact_file(
+    native_artifact_files(
         name = "graknlabs_console_artifact",
         group_name = "graknlabs_console",
-        artifact_name = "console-artifact.tgz",
+        artifact_name = "grakn-console-{platform}-{version}.{ext}",
         tag_source = deployment["artifact.release"],
         commit_source = deployment["artifact.snapshot"],
-        tag = "2.0.0-alpha-6",
+        commit = "372f2b7229ab530b069d0f31350039e10e095eda",
     )

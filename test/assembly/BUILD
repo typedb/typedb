@@ -16,16 +16,20 @@
 #
 
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_common//test/assembly:rules.bzl", "server_java_test")
+load("@graknlabs_common//test/assembly:rules.bzl", "console_java_test")
 
 
-server_java_test(
+console_java_test(
     name = "assembly",
     test_class = "grakn.core.test.assembly.AssemblyTest",
     srcs = ["AssemblyTest.java"],
     server_mac_artifact = "//server:assemble-mac-zip",
     server_linux_artifact = "//server:assemble-linux-targz",
     server_windows_artifact = "//server:assemble-windows-zip",
+    console_mac_artifact = "@graknlabs_console_artifact_mac//file",
+    console_linux_artifact = "@graknlabs_console_artifact_linux//file",
+    console_windows_artifact = "@graknlabs_console_artifact_windows//file",
+    data = [":console-script"],
 )
 
 java_test(
@@ -47,5 +51,6 @@ java_test(
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),
+    exclude = ["console-script"],
     license_type = "agpl",
 )
