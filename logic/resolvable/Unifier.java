@@ -43,13 +43,37 @@ import static grakn.core.common.exception.ErrorMessage.Reasoner.REVERSE_UNIFICAT
 public class Unifier {
 
     private final Map<Variable.Retrieved, Set<Variable>> unifier;
-    private final Map<Variable, Set<Variable.Retrieved>> unUnifier;
+    private final Map<Variable, Set<Variable.Retrieved>> reverseUnifier;
+    private final Requirements.Constraint unifiedRequirements;
     private final Requirements.Constraint requirements;
 
     private Unifier(Map<Variable.Retrieved, Set<Variable>> unifier, Requirements.Constraint requirements) {
         this.unifier = Collections.unmodifiableMap(unifier);
         this.requirements = requirements;
-        this.unUnifier = reverse(this.unifier);
+        this.reverseUnifier = reverse(this.unifier);
+        this.unifiedRequirements = asUnifiedRequirements(requirements);
+    }
+
+    private Requirements.Constraint asUnifiedRequirements(Requirements.Constraint requirements) {
+        Requirements.Constraint unifiedRequirements = new Requirements.Constraint();
+        for (Map.Entry<Variable.Retrieved, Set<Variable>> entry : unifier.entrySet()) {
+            Variable.Retrieved id = entry.getKey();
+            Set<Variable> unifieds = entry.getValue();
+            unifieds.forEach(unifiedId -> {
+                if (requirements.roleTypes().containsKey(id)) {
+                    unifiedRequirements.roleTypes(unifiedId, requirements.roleTypes().get(id));
+                }
+                if (unifiedId.isRetrieved()) {
+                    if (requirements.isaExplicit().containsKey(id)) {
+                        unifiedRequirements.isaExplicit(unifiedId.asRetrieved(), requirements.isaExplicit().get(id));
+                    }
+                    if (requirements.predicates.containsKey(id)) {
+                        unifiedRequirements.predicates(unifiedId.asRetrieved(), unifiedRequirements.predicates().get(id));
+                    }
+                }
+            });
+        }
+        return unifiedRequirements;
     }
 
     public static Unifier.Builder builder() {
@@ -68,7 +92,9 @@ public class Unifier {
     public Optional<Pair<ConceptMap, Requirements.Instance>> unify(ConceptMap conceptMap) {
         Map<Retrieved, Concept> unifiedMap = new HashMap<>();
 
-        // TODO we should also make sure the requirements are satisfied here!
+        if (unifiedRequirements.contradicts(conceptMap)) {
+            return Optional.empty();
+        }
 
         for (Map.Entry<Variable.Retrieved, Set<Variable>> entry : unifier.entrySet()) {
             Variable.Retrieved toUnify = entry.getKey();
@@ -93,10 +119,10 @@ public class Unifier {
      */
     public Optional<ConceptMap> unUnify(Map<Variable, Concept> concepts, Requirements.Instance instanceRequirements) {
 
-        if (!constraintRequirements().satisfiedBy(concepts)) return Optional.empty();
+        if (!constraintRequirements().exactlySatisfiedBy(concepts)) return Optional.empty();
 
         Map<Variable.Retrieved, Concept> reversedConcepts = new HashMap<>();
-        for (Map.Entry<Variable, Set<Variable.Retrieved>> entry : unUnifier.entrySet()) {
+        for (Map.Entry<Variable, Set<Variable.Retrieved>> entry : reverseUnifier.entrySet()) {
             Variable toReverse = entry.getKey();
             Set<Variable.Retrieved> reversed = entry.getValue();
             if (!concepts.containsKey(toReverse)) {
@@ -135,7 +161,7 @@ public class Unifier {
     public String toString() {
         return "Unifier{" +
                 "unifier=" + unifierString(unifier) +
-                ", unUnifier=" + unifierString(unUnifier) +
+                ", reverseUnifier=" + unifierString(reverseUnifier) +
                 ", requirements=" + requirements +
                 '}';
     }
@@ -210,7 +236,12 @@ public class Unifier {
                 this.predicates = predicates;
             }
 
-            public boolean satisfiedBy(Map<Variable, Concept> concepts) {
+            public boolean exactlySatisfiedBy(Map<Variable, Concept> concepts) {
+                if (!(concepts.keySet().containsAll(roleTypes.keySet()) && concepts.keySet().containsAll(isaExplicit.keySet())
+                        && concepts.keySet().containsAll(predicates.keySet()))) {
+                    return false;
+                }
+
                 for (Map.Entry<Variable, Concept> identifiedConcept : concepts.entrySet()) {
                     Variable id = identifiedConcept.getKey();
                     Concept concept = identifiedConcept.getValue();
@@ -219,6 +250,19 @@ public class Unifier {
                     }
                 }
                 return true;
+            }
+
+            public boolean contradicts(ConceptMap conceptMap) {
+                boolean satisfies = true;
+                for (Map.Entry<Variable.Retrieved, ? extends Concept> identifiedConcept : conceptMap.concepts().entrySet()) {
+                    Variable.Retrieved id = identifiedConcept.getKey();
+                    Concept concept = identifiedConcept.getValue();
+                    if (!(typesSatisfied(id, concept) && isaExplicitSatisfied(id, concept) && predicatesSatisfied(id, concept))) {
+                        satisfies = false;
+                        break;
+                    }
+                }
+                return !satisfies;
             }
 
             private boolean typesSatisfied(Variable id, Concept concept) {
