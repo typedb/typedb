@@ -21,10 +21,13 @@ package grakn.core.reasoner.resolution.framework;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.parameters.Arguments;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
+import grakn.core.concurrent.producer.Producer;
+import grakn.core.concurrent.producer.Producers;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.reasoner.resolution.ResolverRegistry;
@@ -117,6 +120,13 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
     protected ResourceIterator<ConceptMap> boundAnswers(Conjunction conjunction, ConceptMap bounds) {
         Traversal traversal = boundTraversal(conjunction.traversal(), bounds);
         return traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
+    }
+
+    protected Producer<ConceptMap> producerTraversal(Conjunction conjunction, ConceptMap bounds, int parallelisation) {
+        return compatibleBounds(conjunction, bounds).map(b -> {
+            Traversal traversal = boundTraversal(conjunction.traversal(), b);
+            return traversalEngine.producer(traversal, Arguments.Query.Producer.INCREMENTAL, parallelisation);
+        }).orElse(Producers.empty()).map(conceptMgr::conceptMap);
     }
 
     private Optional<ConceptMap> compatibleBounds(Conjunction conjunction, ConceptMap bounds) {

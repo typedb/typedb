@@ -18,9 +18,10 @@
 package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.ConceptManager;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
+import grakn.core.concurrent.producer.Producer;
 import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
@@ -34,33 +35,39 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.concurrent.common.Executors.asyncPool2;
 
 public class RetrievableResolver extends Resolver<RetrievableResolver> {
+
+    private static final int PREFETCH_SIZE = 32;
+
     private static final Logger LOG = LoggerFactory.getLogger(RetrievableResolver.class);
     private final Retrievable retrievable;
-    private final Map<Request, ResponseProducer> responseProducers;
+    private final Map<Request, Responses> responses;
 
     public RetrievableResolver(Actor<RetrievableResolver> self, Retrievable retrievable, ResolverRegistry registry,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean explanations) {
         super(self, RetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable.pattern() + ")",
               registry, traversalEngine, conceptMgr, explanations);
         this.retrievable = retrievable;
-        this.responseProducers = new HashMap<>();
+        this.responses = new HashMap<>();
     }
 
     @Override
     public void receiveRequest(Request fromUpstream, int iteration) {
         LOG.trace("{}: received Request: {}", name(), fromUpstream);
-        ResponseProducer responseProducer = mayUpdateAndGetResponseProducer(fromUpstream, iteration);
-        if (iteration < responseProducer.iteration()) {
-            // short circuit old iteration failed messages to upstream
+        Responses responses = mayUpdateAndGetResponses(fromUpstream, iteration);
+        if (iteration < responses.iteration()) {
+            // short circuit old iteration exhausted messages to upstream
             failToUpstream(fromUpstream, iteration);
         } else {
-            assert iteration == responseProducer.iteration();
-            tryAnswer(fromUpstream, responseProducer, iteration);
+            assert iteration == responses.iteration();
+            tryAnswer(fromUpstream, responses);
         }
     }
 
@@ -79,58 +86,185 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         throw GraknException.of(ILLEGAL_STATE);
     }
 
+    Responses createReponses(Request fromUpstream, int iteration) {
+        LOG.debug("{}: Creating a new Responses for request: {}", name(), fromUpstream);
+        assert fromUpstream.partialAnswer().isMapped();
+
+        Producer<ConceptMap> traversalAsync = producerTraversal(retrievable.pattern(), fromUpstream.partialAnswer().conceptMap(), 2);
+        Producer<Partial<?>> upstreamAnswersAsync = traversalAsync
+                .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap, self()));
+
+        return new Responses(upstreamAnswersAsync, iteration);
+    }
+
+    Responses reiterateResponses(Request fromUpstream, Responses responsesPrevious, int newIteration) {
+        assert newIteration > responsesPrevious.iteration();
+        LOG.debug("{}: Updating Responses for iteration '{}'", name(), newIteration);
+
+        assert newIteration > responsesPrevious.iteration();
+
+        assert fromUpstream.partialAnswer().isMapped();
+        Producer<ConceptMap> traversalAsync = producerTraversal(retrievable.pattern(), fromUpstream.partialAnswer().conceptMap(), 2);
+        Producer<Partial<?>> upstreamAnswersAsync = traversalAsync
+                .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap, self()));
+
+        return new Responses(upstreamAnswersAsync, newIteration);
+    }
+
     @Override
     protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
-        LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), fromUpstream);
-        assert fromUpstream.partialAnswer().isMapped();
-        ResourceIterator<Partial<?>> upstreamAnswers =
-                compatibleBoundAnswers(retrievable.pattern(), fromUpstream.partialAnswer().conceptMap())
-                        .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap, self()));
-        return new ResponseProducer(upstreamAnswers, iteration);
+        throw GraknException.of(ILLEGAL_STATE);
     }
 
     @Override
-    protected ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer responseProducerPrevious, int newIteration) {
-        assert newIteration > responseProducerPrevious.iteration();
-        LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
-
-        assert newIteration > responseProducerPrevious.iteration();
-        assert fromUpstream.partialAnswer().isMapped();
-        ResourceIterator<Partial<?>> upstreamAnswers =
-                compatibleBoundAnswers(retrievable.pattern(), fromUpstream.partialAnswer().conceptMap())
-                        .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap, self()));
-        return responseProducerPrevious.newIteration(upstreamAnswers, newIteration);
+    protected ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer responseProducer, int newIteration) {
+        throw GraknException.of(ILLEGAL_STATE);
     }
 
-    private ResponseProducer mayUpdateAndGetResponseProducer(Request fromUpstream, int iteration) {
-        if (!responseProducers.containsKey(fromUpstream)) {
-            responseProducers.put(fromUpstream, responseProducerCreate(fromUpstream, iteration));
+    private Responses mayUpdateAndGetResponses(Request fromUpstream, int iteration) {
+        if (!responses.containsKey(fromUpstream)) {
+            responses.put(fromUpstream, createReponses(fromUpstream, iteration));
         } else {
-            ResponseProducer responseProducer = responseProducers.get(fromUpstream);
-            assert iteration <= responseProducer.iteration() + 1;
+            Responses responses = this.responses.get(fromUpstream);
+            assert iteration <= responses.iteration() + 1;
 
-            if (responseProducer.iteration() + 1 == iteration) {
+            if (responses.iteration() + 1 == iteration) {
                 // when the same request for the next iteration the first time, re-initialise required state
-                ResponseProducer responseProducerNextIter = responseProducerReiterate(fromUpstream, responseProducer, iteration);
-                responseProducers.put(fromUpstream, responseProducerNextIter);
+                Responses responseProducerNextIter = reiterateResponses(fromUpstream, responses, iteration);
+                this.responses.put(fromUpstream, responseProducerNextIter);
             }
         }
-        return responseProducers.get(fromUpstream);
+        return responses.get(fromUpstream);
     }
 
-    private void tryAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
-        if (responseProducer.hasUpstreamAnswer()) {
-            Partial<?> upstreamAnswer = responseProducer.upstreamAnswers().next();
-            responseProducer.recordProduced(upstreamAnswer.conceptMap());
-            answerToUpstream(upstreamAnswer, fromUpstream, iteration);
+    private void tryAnswer(Request fromUpstream, Responses responses) {
+        responses.nextAnswer(fromUpstream);
+    }
+
+    public void receiveTraversalAnswer(Partial<?> upstreamAnswer, Request fromUpstreamSource) {
+        Responses responses = this.responses.get(fromUpstreamSource);
+        if (responses.hasAwaitingRequest()) {
+            dispatchAnswer(upstreamAnswer, responses.popAwaitingRequest());
         } else {
-            failToUpstream(fromUpstream, iteration);
+            responses.addFetched(upstreamAnswer);
         }
+    }
+
+    public void receiveTraversalDone(Request fromUpstreamSource) {
+        Responses responses = this.responses.get(fromUpstreamSource);
+        responses.traversalDone();
+        if (!responses.hasFetched()) {
+            while (responses.hasAwaitingRequest()) {
+                dispatchFail(responses.popAwaitingRequest());
+            }
+        }
+    }
+
+    private void dispatchAnswer(Partial<?> upstreamAnswer, Request fromUpstreamSource) {
+        answerToUpstream(upstreamAnswer, fromUpstreamSource, responses.get(fromUpstreamSource).iteration());
+    }
+
+    private void dispatchFail(Request fromUpstreamSource) {
+        // for each awaiting in the responses, answer FAIL
+        Responses responses = this.responses.get(fromUpstreamSource);
+        failToUpstream(fromUpstreamSource, responses.iteration);
     }
 
     @Override
     protected void exception(Throwable e) {
         LOG.error("Actor exception", e);
+    }
+
+    private class Responses {
+
+        private final int iteration;
+        private final Producer<Partial<?>> upstreamAnswers;
+        private final List<Partial<?>> fetched;
+        private final List<Request> awaitingAnswers;
+        private int processing;
+        private boolean traversalDone;
+
+        public Responses(Producer<Partial<?>> upstreamAnswers, int iteration) {
+            this.upstreamAnswers = upstreamAnswers;
+            this.iteration = iteration;
+            this.fetched = new LinkedList<>();
+            this.awaitingAnswers = new LinkedList<>();
+            this.processing = 0;
+            this.traversalDone = false;
+        }
+
+        public int iteration() {
+            return iteration;
+        }
+
+        public boolean isTraversalDone() {
+            return traversalDone;
+        }
+
+        public void traversalDone() {
+            this.traversalDone = true;
+        }
+
+        public boolean hasFetched() {
+            return !fetched.isEmpty();
+        }
+
+        public boolean hasAwaitingRequest() {
+            return !awaitingAnswers.isEmpty();
+        }
+
+        public Request popAwaitingRequest() {
+            return awaitingAnswers.remove(0);
+        }
+
+        public void addFetched(Partial<?> upstreamAnswer) {
+            fetched.add(upstreamAnswer);
+        }
+
+        public void nextAnswer(Request fromUpstream) {
+            // dispatch message immediately if we can and continue
+            if (!fetched.isEmpty()) {
+                dispatchAnswer(fetched.remove(0), fromUpstream);
+            } else {
+                if (traversalDone) {
+                    dispatchFail(fromUpstream);
+                    return;
+                } else {
+                    awaitingAnswers.add(fromUpstream);
+                }
+            }
+
+            // when buffered answers is half empty, trigger more processing
+            if (fetched.size() + processing < PREFETCH_SIZE / 2) {
+                assert !traversalDone;
+                this.upstreamAnswers.produce(new Queue(fromUpstream), PREFETCH_SIZE - fetched.size() - processing, asyncPool2());
+            }
+        }
+
+        class Queue implements Producer.Queue<Partial<?>> {
+
+            private final Request sourceRequest;
+
+            Queue(Request sourceRequest) {
+                this.sourceRequest = sourceRequest;
+            }
+
+            @Override
+            public void put(Partial<?> upstreamAnswer) {
+                self().tell(resolver -> resolver.receiveTraversalAnswer(upstreamAnswer, sourceRequest));
+            }
+
+            @Override
+            public void done() {
+                self().tell(resolver -> resolver.receiveTraversalDone(sourceRequest));
+            }
+
+            @Override
+            public void done(Throwable e) {
+                self().tell(resolver -> exception(e));
+            }
+        }
+
     }
 
 }
