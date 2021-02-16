@@ -69,7 +69,8 @@ import static grakn.core.server.util.ServerDefaults.PROPERTIES_FILE;
 public class GraknServer implements AutoCloseable {
 
     static {
-        java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
+        // TODO: set the level to SEVERE once we upgrade grpc-java version that resolves noisy warnings
+        java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.OFF);
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(GraknServer.class);
