@@ -23,6 +23,8 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,6 +42,8 @@ import static grakn.core.common.exception.ErrorMessage.Transaction.DATA_ACQUIRE_
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public abstract class RocksSession implements Grakn.Session {
+
+    private static final Logger LOG = LoggerFactory.getLogger(RocksSession.class);
 
     private final RocksDatabase database;
     private final UUID uuid;
