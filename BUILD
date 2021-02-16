@@ -67,9 +67,45 @@ assemble_deps_common = [
 #    "//server:server-deps-prod",
 ]
 
+genrule(
+    name = "_console_artifact_mac_repacked",
+    outs = ["console_artifact_mac.tar.gz"],
+    srcs = ["@graknlabs_console_artifact_mac//file"],
+    cmd = '''
+    dest=`mktemp -d` && out_file=`pwd`/$@ &&
+    unzip -d "$$dest" "$<" && f=("$$dest"/*) &&
+    mv "$$dest"/*/* "$$dest" && rmdir "$${f[@]}" &&
+    cd $$dest && tar -czvf $$out_file .  && rm -rf $$dest
+    ''',
+)
+
+genrule(
+    name = "_console_artifact_linux_repacked",
+    outs = ["console_artifact_linux.tar.gz"],
+    srcs = ["@graknlabs_console_artifact_linux//file"],
+    cmd = '''
+    dest=`mktemp -d` && out_file=`pwd`/$@ &&
+    tar --strip-components=2 -xvzf $< -C $$dest && cd $$dest &&
+    tar -czvf $$out_file .  && rm -rf $$dest
+    '''
+)
+
+genrule(
+    name = "_console_artifact_windows_repacked",
+    outs = ["console_artifact_windows.tar.gz"],
+    srcs = ["@graknlabs_console_artifact_windows//file"],
+    cmd = '''
+    dest=`mktemp -d` && out_file=`pwd`/$@ &&
+    unzip -d "$$dest" "$<" && f=("$$dest"/*) &&
+    mv "$$dest"/*/* "$$dest" && rmdir "$${f[@]}" &&
+    cd $$dest && tar -czvf $$out_file .  && rm -rf $$dest
+    ''',
+)
+
+
 assemble_targz(
     name = "assemble-linux-targz",
-    targets = assemble_deps_common + ["//server:server-deps-linux", "@graknlabs_console_artifact_linux//file", "@graknlabs_common//binary:assemble-bash-targz"],
+    targets = assemble_deps_common + ["//server:server-deps-linux", ":_console_artifact_linux_repacked", "@graknlabs_common//binary:assemble-bash-targz"],
     additional_files = assemble_files,
     permissions = permissions,
     output_filename = "grakn-core-all-linux",
@@ -77,7 +113,7 @@ assemble_targz(
 
 assemble_zip(
     name = "assemble-mac-zip",
-    targets = assemble_deps_common + ["//server:server-deps-mac", "@graknlabs_console_artifact_mac//file", "@graknlabs_common//binary:assemble-bash-targz"],
+    targets = assemble_deps_common + ["//server:server-deps-mac", ":_console_artifact_mac_repacked", "@graknlabs_common//binary:assemble-bash-targz"],
     additional_files = assemble_files,
     permissions = permissions,
     output_filename = "grakn-core-all-mac",
@@ -85,7 +121,7 @@ assemble_zip(
 
 assemble_zip(
     name = "assemble-windows-zip",
-    targets = assemble_deps_common + ["//server:server-deps-windows", "@graknlabs_console_artifact_windows//file", "@graknlabs_common//binary:assemble-bat-targz"],
+    targets = assemble_deps_common + ["//server:server-deps-windows", ":_console_artifact_windows_repacked", "@graknlabs_common//binary:assemble-bat-targz"],
     additional_files = assemble_files,
     permissions = permissions,
     output_filename = "grakn-core-all-windows",
