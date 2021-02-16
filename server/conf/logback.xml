@@ -41,8 +41,7 @@
     </appender>
 
     <root level="WARN"/>
-
-    <!--    <logger name="grakn.core.server.rpc" level="DEBUG" />-->
+    <logger name="io.grpc" level="ERROR" />
 
     <!--
     TRACE: (Extremely verbose reporting events that gives complete traceability of a server operation)
