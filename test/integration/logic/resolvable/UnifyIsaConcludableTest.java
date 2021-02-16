@@ -173,7 +173,7 @@ public class UnifyIsaConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.constraintRequirements().types().size());
+        assertEquals(0, unifier.constraintRequirements().roleTypes().size());
         assertEquals(0, unifier.constraintRequirements().isaExplicit().size());
         assertEquals(0, unifier.constraintRequirements().predicates().size());
     }
@@ -198,7 +198,7 @@ public class UnifyIsaConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.constraintRequirements().types().size());
+        assertEquals(0, unifier.constraintRequirements().roleTypes().size());
         assertEquals(0, unifier.constraintRequirements().isaExplicit().size());
         assertEquals(0, unifier.constraintRequirements().predicates().size());
     }
@@ -224,7 +224,7 @@ public class UnifyIsaConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.constraintRequirements().types().size());
+        assertEquals(0, unifier.constraintRequirements().roleTypes().size());
         assertEquals(0, unifier.constraintRequirements().isaExplicit().size());
         assertEquals(0, unifier.constraintRequirements().predicates().size());
     }
@@ -275,9 +275,9 @@ public class UnifyIsaConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(1, unifier.constraintRequirements().types().size());
+        assertEquals(1, unifier.constraintRequirements().roleTypes().size());
         assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")),
-                     unifier.constraintRequirements().types().values().iterator().next());
+                     unifier.constraintRequirements().roleTypes().values().iterator().next());
         assertEquals(0, unifier.constraintRequirements().isaExplicit().size());
         assertEquals(0, unifier.constraintRequirements().predicates().size());
 
@@ -318,8 +318,8 @@ public class UnifyIsaConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(1, unifier.constraintRequirements().types().size());
-        assertEquals(set(Label.of("relation"), Label.of("employment")), unifier.constraintRequirements().types().values().iterator().next());
+        assertEquals(1, unifier.constraintRequirements().roleTypes().size());
+        assertEquals(set(Label.of("relation"), Label.of("employment")), unifier.constraintRequirements().roleTypes().values().iterator().next());
         assertEquals(0, unifier.constraintRequirements().isaExplicit().size());
         assertEquals(0, unifier.constraintRequirements().predicates().size());
 
@@ -362,8 +362,8 @@ public class UnifyIsaConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(1, unifier.constraintRequirements().types().size());
-        assertEquals(set(Label.of("relation"), Label.of("employment")), unifier.constraintRequirements().types().values().iterator().next());
+        assertEquals(1, unifier.constraintRequirements().roleTypes().size());
+        assertEquals(set(Label.of("relation"), Label.of("employment")), unifier.constraintRequirements().roleTypes().values().iterator().next());
         assertEquals(0, unifier.constraintRequirements().isaExplicit().size());
         assertEquals(0, unifier.constraintRequirements().predicates().size());
 
@@ -438,12 +438,12 @@ public class UnifyIsaConcludableTest {
         Unifier unifier = unifiers.get(0);
 
         // test requirements
-        assertEquals(0, unifier.constraintRequirements().types().size());
+        assertEquals(0, unifier.constraintRequirements().roleTypes().size());
         assertEquals(0, unifier.constraintRequirements().isaExplicit().size());
         assertEquals(3, unifier.constraintRequirements().predicates().size());
 
         // test filter allows a valid answer
-        Map<Identifier.Variable, Set<Label>> typesRequirements = unifier.constraintRequirements().types();
+        Map<Identifier.Variable, Set<Label>> typesRequirements = unifier.constraintRequirements().roleTypes();
         assertEquals(1, typesRequirements.size());
         assertEquals(set(Label.of("first-name")), typesRequirements.values().iterator().next());
         Map<Identifier.Variable, Concept> concepts = map(

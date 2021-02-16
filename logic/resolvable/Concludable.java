@@ -67,6 +67,7 @@ import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.single;
 import static graql.lang.common.GraqlToken.Predicate.Equality.EQ;
+import static java.util.stream.Collectors.toSet;
 
 public abstract class Concludable extends Resolvable<Conjunction> {
 
@@ -158,7 +159,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
     boolean unificationSatisfiable(TypeVariable concludableTypeVar, TypeVariable conclusionTypeVar, ConceptManager conceptMgr) {
 
         if (!concludableTypeVar.resolvedTypes().isEmpty() && !conclusionTypeVar.resolvedTypes().isEmpty()) {
-            return !Collections.disjoint(subtypeLabels(concludableTypeVar.resolvedTypes(), conceptMgr).collect(Collectors.toSet()),
+            return !Collections.disjoint(subtypeLabels(concludableTypeVar.resolvedTypes(), conceptMgr).collect(toSet()),
                                          conclusionTypeVar.resolvedTypes());
         } else {
             // if either variable is allowed to be any type (ie empty set), its possible to do unification
@@ -259,9 +260,9 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         return predicateFn;
     }
 
-    protected void addConstantValueRequirements(Unifier.Builder unifierBuilder, Set<ValueConstraint<?>> values) {
+    protected void addConstantValueRequirements(Unifier.Builder unifierBuilder, Set<ValueConstraint<?>> values, Identifier.Variable.Retrieved unificationTarget) {
         for (ValueConstraint<?> value : equalsConstantConstraints(values)) {
-            unifierBuilder.requirements().predicates(value.owner().id(), valueEqualsFunction(value));
+            unifierBuilder.requirements().predicates(unificationTarget, valueEqualsFunction(value));
         }
     }
 
@@ -334,13 +335,14 @@ public abstract class Concludable extends Resolvable<Conjunction> {
                 TypeVariable concludableRelationType = relation().owner().isa().get().type();
                 TypeVariable conclusionRelationType = relationConclusion.relation().owner().isa().get().type();
                 if (unificationSatisfiable(concludableRelationType, conclusionRelationType, conceptMgr)) {
-                    unifierBuilder.add(concludableRelationType.id(), conclusionRelationType.id());
 
                     if (concludableRelationType.reference().isLabel()) {
                         // require the unification target type variable satisfies a set of labels
                         Set<Label> allowedTypes = concludableRelationType.resolvedTypes().stream()
-                                .flatMap(label -> subtypeLabels(label, conceptMgr)).collect(Collectors.toSet());
-                        unifierBuilder.requirements().types(concludableRelationType.id(), allowedTypes);
+                                .flatMap(label -> subtypeLabels(label, conceptMgr)).collect(toSet());
+                        unifierBuilder.requirements().isaExplicit(relationConclusion.relation().owner().id(), allowedTypes);
+                    } else {
+                        unifierBuilder.add(concludableRelationType.id().asRetrieved(), conclusionRelationType.id());
                     }
                 } else return Iterators.empty();
             }
@@ -349,7 +351,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
             Set<RolePlayer> thenRolePlayers = relationConclusion.relation().players();
 
             return matchRolePlayers(conjRolePlayers, thenRolePlayers, new HashMap<>(), conceptMgr)
-                    .map(mapping -> convertRPMappingToUnifier(mapping, unifierBuilder.duplicate(), conceptMgr));
+                    .map(mapping -> convertRPMappingToUnifier(mapping, unifierBuilder.clone(), conceptMgr));
         }
 
         @Override
@@ -382,12 +384,13 @@ public abstract class Concludable extends Resolvable<Conjunction> {
                     assert thenRP.roleType().isPresent();
                     TypeVariable conjRoleType = conjRP.roleType().get();
                     TypeVariable thenRoleType = thenRP.roleType().get();
-                    unifierBuilder.add(conjRoleType.id(), thenRoleType.id());
                     if (conjRoleType.reference().isLabel()) {
                         Set<Label> allowedTypes = conjRoleType.resolvedTypes().stream()
                                 .flatMap(roleLabel -> subtypeLabels(roleLabel, conceptMgr))
-                                .collect(Collectors.toSet());
-                        unifierBuilder.requirements().types(conjRoleType.id(), allowedTypes);
+                                .collect(toSet());
+                        unifierBuilder.requirements().roleTypes(thenRoleType.id(), allowedTypes);
+                    } else {
+                        unifierBuilder.add(conjRoleType.id().asRetrieved(), thenRoleType.id());
                     }
                 }
             }));
@@ -508,20 +511,19 @@ public abstract class Concludable extends Resolvable<Conjunction> {
 
             ThingVariable attr = has().attribute();
             if (unificationSatisfiable(attr, hasConclusion.has().attribute())) {
-                unifierBuilder.add(attr.id(), hasConclusion.has().attribute().id());
+                Identifier.Variable.Retrieved unifiedAttr = hasConclusion.has().attribute().id();
+                unifierBuilder.add(attr.id(), unifiedAttr);
                 if (attr.reference().isAnonymous()) {
                     // form: $x has age 10 -> require ISA age and PREDICATE =10
                     assert attr.isa().isPresent() && attr.isa().get().type().label().isPresent();
                     Label attrLabel = attr.isa().get().type().label().get().properLabel();
-                    unifierBuilder.requirements()
-                            .isaExplicit(attr.id(), subtypeLabels(attrLabel, conceptMgr).collect(Collectors.toSet()));
+                    unifierBuilder.requirements().isaExplicit(unifiedAttr, subtypeLabels(attrLabel, conceptMgr).collect(toSet()));
                 } else if (attr.reference().isName() && attr.isa().isPresent() && attr.isa().get().type().label().isPresent()) {
                     // form: $x has age $a (may also handle $x has $a; $a isa age)   -> require ISA age
                     Label attrLabel = attr.isa().get().type().label().get().properLabel();
-                    unifierBuilder.requirements()
-                            .isaExplicit(attr.id(), subtypeLabels(attrLabel, conceptMgr).collect(Collectors.toSet()));
+                    unifierBuilder.requirements().isaExplicit(unifiedAttr, subtypeLabels(attrLabel, conceptMgr).collect(toSet()));
                 }
-                addConstantValueRequirements(unifierBuilder, values);
+                addConstantValueRequirements(unifierBuilder, values, unifiedAttr);
             } else return Iterators.empty();
 
             return single(unifierBuilder.build());
@@ -614,20 +616,21 @@ public abstract class Concludable extends Resolvable<Conjunction> {
 
         ResourceIterator<Unifier> unify(Rule.Conclusion.Isa isaConclusion, ConceptManager conceptMgr) {
             Unifier.Builder unifierBuilder = Unifier.builder();
-            if (unificationSatisfiable(isa().owner(), isaConclusion.isa().owner())) {
-                unifierBuilder.add(isa().owner().id(), isaConclusion.isa().owner().id());
+            ThingVariable conclusionOwner = isaConclusion.isa().owner();
+            if (unificationSatisfiable(isa().owner(), conclusionOwner)) {
+                unifierBuilder.add(isa().owner().id(), conclusionOwner.id());
             } else return Iterators.empty();
 
             TypeVariable type = isa().type();
             if (unificationSatisfiable(type, isaConclusion.isa().type(), conceptMgr)) {
-                unifierBuilder.add(type.id(), isaConclusion.isa().type().id());
-
                 if (type.reference().isLabel()) {
                     // form: $r isa friendship -> require type subs(friendship) for anonymous type variable
-                    unifierBuilder.requirements().types(type.id(),
-                                                        subtypeLabels(type.resolvedTypes(), conceptMgr).collect(Collectors.toSet()));
+                    unifierBuilder.requirements().isaExplicit(conclusionOwner.id(), subtypeLabels(type.resolvedTypes(), conceptMgr)
+                            .collect(toSet()));
+                } else {
+                    unifierBuilder.add(type.id().asRetrieved(), isaConclusion.isa().type().id());
                 }
-                addConstantValueRequirements(unifierBuilder, values);
+                addConstantValueRequirements(unifierBuilder, values, conclusionOwner.id());
             } else return Iterators.empty();
 
             return single(unifierBuilder.build());
@@ -737,7 +740,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
             if (unificationSatisfiable(attribute, valueConclusion.value().owner())) {
                 unifierBuilder.add(attribute.id(), valueConclusion.value().owner().id());
             } else return Iterators.empty();
-            addConstantValueRequirements(unifierBuilder, values);
+            addConstantValueRequirements(unifierBuilder, values, valueConclusion.value().owner().id());
             return single(unifierBuilder.build());
         }
 
@@ -790,7 +793,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
 
         Extractor(Conjunction conjunction) {
             Set<Constraint> constraints = conjunction.variables().stream().flatMap(variable -> variable.constraints().stream())
-                    .collect(Collectors.toSet());
+                    .collect(toSet());
             constraints.stream().filter(Constraint::isThing).map(Constraint::asThing).filter(ThingConstraint::isRelation)
                     .map(ThingConstraint::asRelation).forEach(this::fromConstraint);
             constraints.stream().filter(Constraint::isThing).map(Constraint::asThing).filter(ThingConstraint::isHas)

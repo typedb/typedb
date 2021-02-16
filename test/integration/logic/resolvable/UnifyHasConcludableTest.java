@@ -174,7 +174,7 @@ public class UnifyHasConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.constraintRequirements().types().size());
+        assertEquals(0, unifier.constraintRequirements().roleTypes().size());
         assertEquals(1, unifier.constraintRequirements().isaExplicit().size());
         assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.constraintRequirements().isaExplicit().values().iterator().next());
         assertEquals(1, unifier.constraintRequirements().predicates().size());
@@ -224,7 +224,7 @@ public class UnifyHasConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.constraintRequirements().types().size());
+        assertEquals(0, unifier.constraintRequirements().roleTypes().size());
         assertEquals(1, unifier.constraintRequirements().isaExplicit().size());
         assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.constraintRequirements().isaExplicit().values().iterator().next());
         assertEquals(1, unifier.constraintRequirements().predicates().size());
@@ -290,7 +290,7 @@ public class UnifyHasConcludableTest {
         assertEquals(2, unified.get().concepts().size());
 
         // test requirements
-        assertEquals(0, unifier.constraintRequirements().types().size());
+        assertEquals(0, unifier.constraintRequirements().roleTypes().size());
         assertEquals(0, unifier.constraintRequirements().isaExplicit().size());
         assertEquals(0, unifier.constraintRequirements().predicates().size());
     }
@@ -323,7 +323,7 @@ public class UnifyHasConcludableTest {
         assertEquals(2, unified.get().concepts().size());
 
         // test requirements
-        assertEquals(0, unifier.constraintRequirements().types().size());
+        assertEquals(0, unifier.constraintRequirements().roleTypes().size());
         assertEquals(0, unifier.constraintRequirements().isaExplicit().size());
         assertEquals(0, unifier.constraintRequirements().predicates().size());
     }
@@ -347,7 +347,7 @@ public class UnifyHasConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.constraintRequirements().types().size());
+        assertEquals(0, unifier.constraintRequirements().roleTypes().size());
         assertEquals(1, unifier.constraintRequirements().isaExplicit().size());
         assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.constraintRequirements().isaExplicit().values().iterator().next());
         assertEquals(0, unifier.constraintRequirements().predicates().size());
@@ -389,7 +389,7 @@ public class UnifyHasConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.constraintRequirements().types().size());
+        assertEquals(0, unifier.constraintRequirements().roleTypes().size());
         assertEquals(1, unifier.constraintRequirements().isaExplicit().size());
         assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.constraintRequirements().isaExplicit().values().iterator().next());
         assertEquals(0, unifier.constraintRequirements().predicates().size());
@@ -431,7 +431,7 @@ public class UnifyHasConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.constraintRequirements().types().size());
+        assertEquals(0, unifier.constraintRequirements().roleTypes().size());
         assertEquals(1, unifier.constraintRequirements().isaExplicit().size());
         assertEquals(0, unifier.constraintRequirements().predicates().size());
     }
@@ -488,7 +488,7 @@ public class UnifyHasConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.constraintRequirements().types().size());
+        assertEquals(0, unifier.constraintRequirements().roleTypes().size());
         assertEquals(1, unifier.constraintRequirements().isaExplicit().size());
         assertEquals(set(Label.of("self-owning-attribute")), unifier.constraintRequirements().isaExplicit().values().iterator().next());
         assertEquals(0, unifier.constraintRequirements().predicates().size());

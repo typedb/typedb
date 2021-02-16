@@ -194,11 +194,11 @@ public class UnifyRelationConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(2, unifier.constraintRequirements().types().size());
+        assertEquals(2, unifier.constraintRequirements().roleTypes().size());
         assertEquals(set(Label.of("employment"), Label.of("part-time-employment")),
-                     unifier.constraintRequirements().types().get(Identifier.Variable.label("employment")));
+                     unifier.constraintRequirements().roleTypes().get(Identifier.Variable.label("employment")));
         assertEquals(set(Label.of("employee", "employment"), Label.of("part-time-employee", "part-time-employment")),
-                     unifier.constraintRequirements().types().get(Identifier.Variable.label("employment:employee")));
+                     unifier.constraintRequirements().roleTypes().get(Identifier.Variable.label("employment:employee")));
         assertEquals(0, unifier.constraintRequirements().isaExplicit().size());
         assertEquals(0, unifier.constraintRequirements().predicates().size());
 
@@ -253,9 +253,9 @@ public class UnifyRelationConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(1, unifier.constraintRequirements().types().size());
+        assertEquals(1, unifier.constraintRequirements().roleTypes().size());
         assertEquals(set(Label.of("employee", "employment"), Label.of("part-time-employee", "part-time-employment")),
-                     unifier.constraintRequirements().types().get(Identifier.Variable.label("relation:employee")));
+                     unifier.constraintRequirements().roleTypes().get(Identifier.Variable.label("relation:employee")));
         assertEquals(0, unifier.constraintRequirements().isaExplicit().size());
         assertEquals(0, unifier.constraintRequirements().predicates().size());
 
@@ -310,9 +310,9 @@ public class UnifyRelationConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(1, unifier.constraintRequirements().types().size());
+        assertEquals(1, unifier.constraintRequirements().roleTypes().size());
         assertEquals(set(Label.of("employment"), Label.of("part-time-employment")),
-                     unifier.constraintRequirements().types().get(Identifier.Variable.label("employment")));
+                     unifier.constraintRequirements().roleTypes().get(Identifier.Variable.label("employment")));
         assertEquals(0, unifier.constraintRequirements().isaExplicit().size());
         assertEquals(0, unifier.constraintRequirements().predicates().size());
 
@@ -366,9 +366,9 @@ public class UnifyRelationConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(1, unifier.constraintRequirements().types().size());
+        assertEquals(1, unifier.constraintRequirements().roleTypes().size());
         assertEquals(set(Label.of("employee", "employment"), Label.of("part-time-employee", "part-time-employment")),
-                     unifier.constraintRequirements().types().get(Identifier.Variable.label("relation:employee")));
+                     unifier.constraintRequirements().roleTypes().get(Identifier.Variable.label("relation:employee")));
         assertEquals(0, unifier.constraintRequirements().isaExplicit().size());
         assertEquals(0, unifier.constraintRequirements().predicates().size());
     }
@@ -538,11 +538,11 @@ public class UnifyRelationConcludableTest {
         Unifier unifier = unifiers.get(0);
 
         // test requirements
-        assertEquals(2, unifier.constraintRequirements().types().size());
+        assertEquals(2, unifier.constraintRequirements().roleTypes().size());
         assertEquals(set(Label.of("employment"), Label.of("part-time-employment")),
-                     unifier.constraintRequirements().types().get(Identifier.Variable.label("employment")));
+                     unifier.constraintRequirements().roleTypes().get(Identifier.Variable.label("employment")));
         assertEquals(set(Label.of("employee", "employment"), Label.of("part-time-employee", "part-time-employment")),
-                     unifier.constraintRequirements().types().get(Identifier.Variable.label("employment:employee")));
+                     unifier.constraintRequirements().roleTypes().get(Identifier.Variable.label("employment:employee")));
         assertEquals(0, unifier.constraintRequirements().isaExplicit().size());
         assertEquals(0, unifier.constraintRequirements().predicates().size());
 
@@ -746,11 +746,11 @@ public class UnifyRelationConcludableTest {
 
         Unifier unifier = unifiers.get(0);
         // test requirements
-        assertEquals(2, unifier.constraintRequirements().types().size());
+        assertEquals(2, unifier.constraintRequirements().roleTypes().size());
         assertEquals(set(Label.of("employment"), Label.of("part-time-employment")),
-                     unifier.constraintRequirements().types().get(Identifier.Variable.label("employment")));
+                     unifier.constraintRequirements().roleTypes().get(Identifier.Variable.label("employment")));
         assertEquals(set(Label.of("employee", "employment"), Label.of("part-time-employee", "part-time-employment")),
-                     unifier.constraintRequirements().types().get(Identifier.Variable.label("employment:employee")));
+                     unifier.constraintRequirements().roleTypes().get(Identifier.Variable.label("employment:employee")));
         assertEquals(0, unifier.constraintRequirements().isaExplicit().size());
         assertEquals(0, unifier.constraintRequirements().predicates().size());
 

@@ -154,7 +154,7 @@ public class UnifyAttributeConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.constraintRequirements().types().size());
+        assertEquals(0, unifier.constraintRequirements().roleTypes().size());
         assertEquals(0, unifier.constraintRequirements().isaExplicit().size());
         assertEquals(1, unifier.constraintRequirements().predicates().size());
 
@@ -196,7 +196,7 @@ public class UnifyAttributeConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.constraintRequirements().types().size());
+        assertEquals(0, unifier.constraintRequirements().roleTypes().size());
         assertEquals(0, unifier.constraintRequirements().isaExplicit().size());
         assertEquals(0, unifier.constraintRequirements().predicates().size());
 
