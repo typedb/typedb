@@ -16,10 +16,10 @@
 #
 
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_common//test/assembly:rules.bzl", "console_java_test")
+load("@graknlabs_common//test:rules.bzl", "grakn_java_test")
 
 
-console_java_test(
+grakn_java_test(
     name = "assembly",
     test_class = "grakn.core.test.assembly.AssemblyTest",
     srcs = ["AssemblyTest.java"],

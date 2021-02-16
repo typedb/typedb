@@ -18,8 +18,8 @@
 
 package grakn.core.test.assembly;
 
-import grakn.common.test.assembly.GraknConsoleRunner;
-import grakn.common.test.assembly.GraknCoreRunner;
+import grakn.common.test.console.ConsoleRunner;
+import grakn.common.test.server.GraknCoreRunner;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -43,7 +43,7 @@ public class AssemblyTest {
         GraknCoreRunner server = new GraknCoreRunner();
         try {
             server.start();
-            GraknConsoleRunner console = new GraknConsoleRunner();
+            ConsoleRunner console = new ConsoleRunner();
             int exitCode = console.run(server.address(), false, Paths.get("test/assembly/console-script"));
             assert exitCode == 0;
         } finally {
