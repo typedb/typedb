@@ -113,8 +113,7 @@ public class GraknServer implements AutoCloseable {
     }
 
     private void initLoggerConfig() {
-        // TODO: set the level to SEVERE once we upgrade grpc-java version that resolves noisy warnings
-        java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.OFF);
+        java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
     }
 
     private int port() {
