@@ -41,7 +41,6 @@
     </appender>
 
     <root level="DEBUG"/>
-    <logger name="io.grpc" level="ERROR" />
 
     <!--
     TRACE: (Extremely verbose reporting events that gives complete traceability of a server operation)

@@ -68,11 +68,6 @@ import static grakn.core.server.util.ServerDefaults.PROPERTIES_FILE;
 
 public class GraknServer implements AutoCloseable {
 
-    static {
-        // TODO: set the level to SEVERE once we upgrade grpc-java version that resolves noisy warnings
-        java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.OFF);
-    }
-
     private static final Logger LOG = LoggerFactory.getLogger(GraknServer.class);
     private static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
 
@@ -100,6 +95,8 @@ public class GraknServer implements AutoCloseable {
         Runtime.getRuntime().addShutdownHook(
                 NamedThreadFactory.create(GraknServer.class, "shutdown").newThread(this::close)
         );
+
+        initLoggerConfig();
     }
 
     private Server rpcServer() {
@@ -113,6 +110,11 @@ public class GraknServer implements AutoCloseable {
                 .addService(graknRPCService)
                 .addService(migratorRPCService)
                 .build();
+    }
+
+    private void initLoggerConfig() {
+        // TODO: set the level to SEVERE once we upgrade grpc-java version that resolves noisy warnings
+        java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.OFF);
     }
 
     private int port() {
