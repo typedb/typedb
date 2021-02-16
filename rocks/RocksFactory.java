@@ -48,12 +48,12 @@ public final class RocksFactory implements Factory {
             databaseFactory = new Database() {
                 @Override
                 public RocksDatabase databaseCreateAndOpen(RocksGrakn grakn, String name) {
-                    return RocksDatabase.createAndOpen(grakn, name, sessionFactory(), transactionSchemaFactory());
+                    return RocksDatabase.createAndOpen(grakn, name, sessionFactory());
                 }
 
                 @Override
                 public RocksDatabase databaseLoadAndOpen(RocksGrakn grakn, String name) {
-                    return RocksDatabase.loadAndOpen(grakn, name, sessionFactory(), transactionSchemaFactory());
+                    return RocksDatabase.loadAndOpen(grakn, name, sessionFactory());
                 }
             };
         }
