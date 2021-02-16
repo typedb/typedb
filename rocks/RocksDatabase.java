@@ -70,14 +70,12 @@ public class RocksDatabase implements Grakn.Database {
     private Cache cache;
 
     private final Factory.Session sessionFactory;
-    private final Factory.TransactionSchema transactionSchemaFactory;
     protected final AtomicBoolean isOpen;
 
-    protected RocksDatabase(RocksGrakn grakn, String name, Factory.Session sessionFactory, Factory.TransactionSchema transactionSchemaFactory) {
+    protected RocksDatabase(RocksGrakn grakn, String name, Factory.Session sessionFactory) {
         this.grakn = grakn;
         this.name = name;
         this.sessionFactory = sessionFactory;
-        this.transactionSchemaFactory = transactionSchemaFactory;
         schemaKeyGenerator = new KeyGenerator.Schema.Persisted();
         dataKeyGenerator = new KeyGenerator.Data.Persisted();
         sessions = new ConcurrentHashMap<>();
@@ -94,21 +92,21 @@ public class RocksDatabase implements Grakn.Database {
         isOpen = new AtomicBoolean(true);
     }
 
-    static RocksDatabase createAndOpen(RocksGrakn grakn, String name, Factory.Session sessionFactory, Factory.TransactionSchema transactionSchemaFactory) {
+    static RocksDatabase createAndOpen(RocksGrakn grakn, String name, Factory.Session sessionFactory) {
         try {
             Files.createDirectory(grakn.directory().resolve(name));
         } catch (IOException e) {
             throw GraknException.of(e);
         }
 
-        RocksDatabase database = new RocksDatabase(grakn, name, sessionFactory, transactionSchemaFactory);
+        RocksDatabase database = new RocksDatabase(grakn, name, sessionFactory);
         database.initialise();
         database.statisticsBgCounterStart();
         return database;
     }
 
-    static RocksDatabase loadAndOpen(RocksGrakn grakn, String name, Factory.Session sessionFactory, Factory.TransactionSchema transactionSchemaFactory) {
-        RocksDatabase database = new RocksDatabase(grakn, name, sessionFactory, transactionSchemaFactory);
+    static RocksDatabase loadAndOpen(RocksGrakn grakn, String name, Factory.Session sessionFactory) {
+        RocksDatabase database = new RocksDatabase(grakn, name, sessionFactory);
         database.load();
         database.statisticsBgCounterStart();
         return database;
