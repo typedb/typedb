@@ -187,15 +187,18 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     private void ownsKey(AttributeTypeImpl attributeType) {
         validateIsNotDeleted();
-        if (!attributeType.isKeyable()) {
-            throw exception(GraknException.of(OWNS_KEY_VALUE_TYPE, attributeType.getLabel(), attributeType.getValueType().name()));
-        } else if (concat(getSupertype().getOwns(attributeType.getValueType(), true), getSupertype().overriddenOwns(false, true)).anyMatch(a -> a.equals(attributeType))) {
-            throw exception(GraknException.of(OWNS_KEY_NOT_AVAILABLE, attributeType.getLabel()));
-        }
 
         TypeVertex attVertex = attributeType.vertex;
-        TypeEdge ownsEdge;
-        TypeEdge ownsKeyEdge;
+        TypeEdge ownsEdge, ownsKeyEdge;
+
+        if (vertex.outs().edge(OWNS_KEY, attVertex) != null) return;
+
+        if (!attributeType.isKeyable()) {
+            throw exception(GraknException.of(OWNS_KEY_VALUE_TYPE, attributeType.getLabel(), attributeType.getValueType().name()));
+        } else if (concat(getSupertype().getOwns(attributeType.getValueType(), true),
+                          getSupertype().overriddenOwns(false, true)).anyMatch(a -> a.equals(attributeType))) {
+            throw exception(GraknException.of(OWNS_KEY_NOT_AVAILABLE, attributeType.getLabel()));
+        }
 
         if ((ownsEdge = vertex.outs().edge(OWNS, attVertex)) != null) {
             // TODO: These ownership and uniqueness checks should be parallelised to scale better
