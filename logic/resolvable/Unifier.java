@@ -24,6 +24,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.type.ThingType;
+import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.common.Identifier.Variable;
 import grakn.core.traversal.common.Identifier.Variable.Retrieved;
 
@@ -47,33 +48,12 @@ public class Unifier {
     private final Requirements.Constraint unifiedRequirements;
     private final Requirements.Constraint requirements;
 
-    private Unifier(Map<Variable.Retrieved, Set<Variable>> unifier, Requirements.Constraint requirements) {
+    private Unifier(Map<Variable.Retrieved, Set<Variable>> unifier, Requirements.Constraint requirements,
+                    Requirements.Constraint unifiedRequirements) {
         this.unifier = Collections.unmodifiableMap(unifier);
-        this.requirements = requirements;
         this.reverseUnifier = reverse(this.unifier);
-        this.unifiedRequirements = asUnifiedRequirements(requirements);
-    }
-
-    private Requirements.Constraint asUnifiedRequirements(Requirements.Constraint requirements) {
-        Requirements.Constraint unifiedRequirements = new Requirements.Constraint();
-        for (Map.Entry<Variable.Retrieved, Set<Variable>> entry : unifier.entrySet()) {
-            Variable.Retrieved id = entry.getKey();
-            Set<Variable> unifieds = entry.getValue();
-            unifieds.forEach(unifiedId -> {
-                if (requirements.roleTypes().containsKey(id)) {
-                    unifiedRequirements.roleTypes(unifiedId, requirements.roleTypes().get(id));
-                }
-                if (unifiedId.isRetrieved()) {
-                    if (requirements.isaExplicit().containsKey(id)) {
-                        unifiedRequirements.isaExplicit(unifiedId.asRetrieved(), requirements.isaExplicit().get(id));
-                    }
-                    if (requirements.predicates.containsKey(id)) {
-                        unifiedRequirements.predicates(unifiedId.asRetrieved(), requirements.predicates().get(id));
-                    }
-                }
-            });
-        }
-        return unifiedRequirements;
+        this.requirements = requirements;
+        this.unifiedRequirements = unifiedRequirements;
     }
 
     public static Unifier.Builder builder() {
@@ -143,6 +123,10 @@ public class Unifier {
         return unifier;
     }
 
+    public Requirements.Constraint unifiedRequirements() {
+        return unifiedRequirements;
+    }
+
     public Requirements.Constraint requirements() {
         return requirements;
     }
@@ -173,16 +157,18 @@ public class Unifier {
 
     public static class Builder {
 
-        Map<Variable.Retrieved, Set<Variable>> unifier;
-        Requirements.Constraint requirements;
+        private Map<Variable.Retrieved, Set<Variable>> unifier;
+        private Requirements.Constraint requirements;
+        private Requirements.Constraint unifiedRequirements;
 
         public Builder() {
-            this(new HashMap<>(), new Requirements.Constraint());
+            this(new HashMap<>(), new Requirements.Constraint(), new Requirements.Constraint());
         }
 
-        private Builder(Map<Variable.Retrieved, Set<Variable>> unifier, Requirements.Constraint requirements) {
+        private Builder(Map<Retrieved, Set<Variable>> unifier, Requirements.Constraint requirements, Requirements.Constraint unifiedRequirements) {
             this.unifier = unifier;
             this.requirements = requirements;
+            this.unifiedRequirements = unifiedRequirements;
         }
 
         public void add(Variable.Retrieved source, Variable target) {
@@ -193,15 +179,20 @@ public class Unifier {
             return requirements;
         }
 
+        public Requirements.Constraint unifiedRequirements() {
+            return unifiedRequirements;
+        }
+
         public Unifier build() {
-            return new Unifier(unifier, requirements);
+            return new Unifier(unifier, requirements, unifiedRequirements);
         }
 
         public Builder clone() {
             Map<Variable.Retrieved, Set<Variable>> unifierCopy = new HashMap<>();
             unifier.forEach(((identifier, unifieds) -> unifierCopy.put(identifier, set(unifieds))));
             Requirements.Constraint requirementsCopy = requirements.duplicate();
-            return new Builder(unifierCopy, requirementsCopy);
+            Requirements.Constraint unifiedRequirementsCopy = unifiedRequirements.duplicate();
+            return new Builder(unifierCopy, requirementsCopy, unifiedRequirementsCopy);
         }
     }
 
@@ -294,19 +285,19 @@ public class Unifier {
                 }
             }
 
-            public void roleTypes(Variable identifier, Set<Label> labels) {
-                assert !roleTypes.containsKey(identifier) || roleTypes.get(identifier).equals(labels);
-                roleTypes.put(identifier, set(labels));
+            public void roleTypes(Variable unifiedId, Set<Label> labels) {
+                assert !roleTypes.containsKey(unifiedId) || roleTypes.get(unifiedId).equals(labels);
+                roleTypes.put(unifiedId, set(labels));
             }
 
-            public void isaExplicit(Retrieved identifier, Set<Label> labels) {
-                assert (!isaExplicit.containsKey(identifier) || isaExplicit.get(identifier).equals(labels));
-                isaExplicit.put(identifier, set(labels));
+            public void isaExplicit(Retrieved unifiedId, Set<Label> labels) {
+                assert (!isaExplicit.containsKey(unifiedId) || isaExplicit.get(unifiedId).equals(labels));
+                isaExplicit.put(unifiedId, set(labels));
             }
 
-            public void predicates(Retrieved identifier, Function<Attribute, Boolean> predicateFn) {
-                assert !predicates.containsKey(identifier);
-                predicates.put(identifier, predicateFn);
+            public void predicates(Identifier.Variable.Retrieved unifiedId, Function<Attribute, Boolean> predicateFn) {
+                assert !predicates.containsKey(unifiedId);
+                predicates.put(unifiedId, predicateFn);
             }
 
             public Map<Variable, Set<Label>> roleTypes() { return roleTypes; }

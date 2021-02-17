@@ -180,6 +180,11 @@ public class UnifyRelationConcludableTest {
                      unifier.requirements().isaExplicit().get(Identifier.Variable.name("r")));
         assertEquals(0, unifier.requirements().predicates().size());
 
+        // test forward unification can reject an invalid partial answer
+        ConceptMap unUnified = new ConceptMap(map(pair(Identifier.Variable.name("r"), instanceOf("friendship")),
+                                                  pair(Identifier.Variable.name("y"), instanceOf("person"))));
+        assertFalse(unifier.unify(unUnified).isPresent());
+
         // test filter allows a valid answer
         Relation employment = instanceOf("employment").asRelation();
         Thing person = instanceOf("person");
@@ -307,9 +312,10 @@ public class UnifyRelationConcludableTest {
         );
         Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
-        assertEquals(2, unified.get().concepts().size());
+        assertEquals(3, unified.get().concepts().size());
         assertEquals(employment.getType().getRelates("employee"), unified.get().get("role"));
         assertEquals(person, unified.get().get("y"));
+        assertEquals(employment, unified.get().get(Identifier.Variable.anon(0)));
 
         // filter out invalid types
         Relation friendship = instanceOf("friendship").asRelation();
@@ -531,8 +537,9 @@ public class UnifyRelationConcludableTest {
         );
         Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
-        assertEquals(1, unified.get().concepts().size());
+        assertEquals(2, unified.get().concepts().size());
         assertEquals(person, unified.get().get("p"));
+        assertEquals(employment, unified.get().get(Identifier.Variable.anon(0)));
 
         // filter out answers with differing role players that must be the same
         employment = instanceOf("employment").asRelation();
