@@ -73,13 +73,14 @@ host_compatible_java_test(
         "//concept:concept",
         "//pattern:pattern",
         "//reasoner:reasoner",
+        "//traversal:traversal",
     ],
     deps = [
         # Internal dependencies
         "//common",
 
         # External dependencies from Grakn Labs
-        "@graknlabs_graql//java/pattern",
+        "@graknlabs_common//:common",
     ],
 )
 

@@ -44,7 +44,6 @@ host_compatible_java_test(
         # External dependencies from Grakn Labs
         "@graknlabs_common//:common",
         "@graknlabs_graql//java:graql",
-        "@graknlabs_graql//java/pattern",
     ],
 )
 
@@ -79,7 +78,7 @@ host_compatible_java_test(
 
 host_compatible_java_test(
     name = "test-unification-relation-concludable",
-    srcs = ["resolvable/UnifyRelationConcludableTest.java"],
+    srcs = ["resolvable/UnifyRelationConcludableTest.java", "resolvable/Util.java"],
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",
@@ -102,7 +101,7 @@ host_compatible_java_test(
 
 host_compatible_java_test(
     name = "test-unification-has-concludable",
-    srcs = ["resolvable/UnifyHasConcludableTest.java"],
+    srcs = ["resolvable/UnifyHasConcludableTest.java", "resolvable/Util.java"],
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",
@@ -125,7 +124,7 @@ host_compatible_java_test(
 
 host_compatible_java_test(
     name = "test-unification-isa-concludable",
-    srcs = ["resolvable/UnifyIsaConcludableTest.java"],
+    srcs = ["resolvable/UnifyIsaConcludableTest.java", "resolvable/Util.java"],
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",
@@ -152,7 +151,7 @@ host_compatible_java_test(
 
 host_compatible_java_test(
     name = "test-unification-attribute-concludable",
-    srcs = ["resolvable/UnifyAttributeConcludableTest.java"],
+    srcs = ["resolvable/UnifyAttributeConcludableTest.java", "resolvable/Util.java"],
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",

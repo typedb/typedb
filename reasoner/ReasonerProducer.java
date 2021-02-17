@@ -27,6 +27,7 @@ import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Identity;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
+import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.variable.Reference;
 import graql.lang.pattern.variable.UnboundVariable;
 import graql.lang.query.GraqlMatch;
@@ -84,8 +85,8 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     @Override
     public void recycle() {}
 
-    private Set<Reference.Name> filter(List<UnboundVariable> filter) {
-        return iterate(filter).map(v -> v.reference().asName()).toSet();
+    private Set<Identifier.Variable.Name> filter(List<UnboundVariable> filter) {
+        return iterate(filter).map(v -> Identifier.Variable.of(v.reference().asName())).toSet();
     }
 
 

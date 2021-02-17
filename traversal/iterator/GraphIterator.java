@@ -26,6 +26,7 @@ import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.Identifier;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import grakn.core.traversal.common.VertexMap;
 import grakn.core.traversal.procedure.GraphProcedure;
 import grakn.core.traversal.procedure.ProcedureEdge;
@@ -50,7 +51,7 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
     private final GraphManager graphMgr;
     private final GraphProcedure procedure;
     private final Traversal.Parameters params;
-    private final Set<Identifier.Variable.Name> filter;
+    private final Set<Retrievable> filter;
     private final Map<Identifier, ResourceIterator<? extends Vertex<?, ?>>> iterators;
     private final Map<Identifier, Vertex<?, ?>> answer;
     private final Scopes scopes;
@@ -62,7 +63,7 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
     enum State {INIT, EMPTY, FETCHED, COMPLETED}
 
     public GraphIterator(GraphManager graphMgr, Vertex<?, ?> start, GraphProcedure procedure,
-                         Traversal.Parameters params, Set<Identifier.Variable.Name> filter) {
+                         Traversal.Parameters params, Set<Retrievable> filter) {
         assert procedure.edgesCount() > 0;
         this.graphMgr = graphMgr;
         this.procedure = procedure;
@@ -318,14 +319,14 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
     public VertexMap next() {
         if (!hasNext()) throw new NoSuchElementException();
         state = State.EMPTY;
-        return toReferenceMap(answer);
+        return toVertexMap(answer);
     }
 
-    private VertexMap toReferenceMap(Map<Identifier, Vertex<?, ?>> answer) {
+    private VertexMap toVertexMap(Map<Identifier, Vertex<?, ?>> answer) {
         return VertexMap.of(
                 answer.entrySet().stream()
-                        .filter(e -> e.getKey().isName() && filter.contains(e.getKey().asVariable().asName()))
-                        .collect(toMap(k -> k.getKey().asVariable().reference(), Map.Entry::getValue))
+                        .filter(e -> e.getKey().isRetrievable() && filter.contains(e.getKey().asVariable().asRetrievable()))
+                        .collect(toMap(e -> e.getKey().asVariable().asRetrievable(), Map.Entry::getValue))
         );
     }
 

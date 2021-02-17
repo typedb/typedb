@@ -40,7 +40,6 @@ import grakn.core.rocks.RocksTransaction;
 import grakn.core.test.integration.util.Util;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.Graql;
-import graql.lang.pattern.variable.Reference;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -107,10 +106,10 @@ public class RuleTest {
                     assertEquals(2, people.size());
 
                     Rule rule = txn.logic().getRule("marriage-is-friendship");
-                    ConceptMap whenAnswer = new ConceptMap(map(pair(Reference.name("x"), people.get(0)),
-                                                               pair(Reference.name("y"), people.get(1))));
+                    ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.name("x"), people.get(0)),
+                                                               pair(Identifier.Variable.name("y"), people.get(1))));
 
-                    List<Map<Identifier, Concept>> materialisations = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr).toList();
+                    List<Map<Identifier.Variable, Concept>> materialisations = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr).toList();
                     assertEquals(1, materialisations.size());
                     assertEquals(5, materialisations.get(0).size());
 
@@ -163,10 +162,10 @@ public class RuleTest {
                     assertEquals(2, people.size());
 
                     Rule rule = txn.logic().getRule("marriage-is-friendship");
-                    ConceptMap whenAnswer = new ConceptMap(map(pair(Reference.name("x"), people.get(0)),
-                                                               pair(Reference.name("y"), people.get(1))));
+                    ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.name("x"), people.get(0)),
+                                                               pair(Identifier.Variable.name("y"), people.get(1))));
 
-                    List<Map<Identifier, Concept>> materialisations = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr).toList();
+                    List<Map<Identifier.Variable, Concept>> materialisations = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr).toList();
                     assertEquals(1, materialisations.size());
                     assertEquals(5, materialisations.get(0).size());
                     friendshipInstances = friendship.getInstances().collect(Collectors.toList());
@@ -211,9 +210,9 @@ public class RuleTest {
                     Attribute.Long ageInDays10 = ageInDays.asLong().put(10L);
 
                     Rule rule = txn.logic().getRule("old-milk-is-not-good");
-                    ConceptMap whenAnswer = new ConceptMap(map(pair(Reference.name("x"), milkInst),
-                                                               pair(Reference.name("a"), ageInDays10)));
-                    List<Map<Identifier, Concept>> materialisations = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr).toList();
+                    ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.name("x"), milkInst),
+                                                               pair(Identifier.Variable.name("a"), ageInDays10)));
+                    List<Map<Identifier.Variable, Concept>> materialisations = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr).toList();
                     assertEquals(1, materialisations.size());
                     assertEquals(2, materialisations.get(0).size());
 
@@ -258,8 +257,8 @@ public class RuleTest {
                     milkInst.setHas(ageInDays.asLong().put(20L));
 
                     Rule rule = txn.logic().getRule("old-milk-is-not-good");
-                    ConceptMap whenAnswer = new ConceptMap(map(pair(Reference.name("x"), milkInst)));
-                    List<Map<Identifier, Concept>> materialisations = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr).toList();
+                    ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.name("x"), milkInst)));
+                    List<Map<Identifier.Variable, Concept>> materialisations = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr).toList();
                     assertEquals(1, materialisations.size());
                     assertEquals(3, materialisations.get(0).size());
 

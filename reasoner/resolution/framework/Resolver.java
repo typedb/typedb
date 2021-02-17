@@ -32,8 +32,7 @@ import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.framework.Response.Answer;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.TraversalEngine;
-import grakn.core.traversal.common.Identifier;
-import graql.lang.pattern.variable.Reference;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +71,7 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
 
     public abstract void receiveRequest(Request fromUpstream, int iteration);
 
-    protected abstract void receiveAnswer(Answer fromDownstream, int iteration);
+    protected abstract void receiveAnswer(Response.Answer fromDownstream, int iteration);
 
     protected abstract void receiveExhausted(Response.Fail fromDownstream, int iteration);
 
@@ -116,23 +115,21 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
     }
 
     private Optional<ConceptMap> compatibleBounds(Conjunction conjunction, ConceptMap bounds) {
-        Map<Reference.Name, Concept> newBounds = new HashMap<>();
-        for (Map.Entry<Reference.Name, ? extends Concept> entry : bounds.concepts().entrySet()) {
-            Reference.Name ref = entry.getKey();
+        Map<Retrievable, Concept> newBounds = new HashMap<>();
+        for (Map.Entry<Retrievable, ? extends Concept> entry : bounds.concepts().entrySet()) {
+            Retrievable id = entry.getKey();
             Concept bound = entry.getValue();
-            Variable conjVariable = Iterators.iterate(conjunction.variables()).filter(var -> var.reference().equals(ref)).firstOrNull();
+            Variable conjVariable = conjunction.variable(id);
             assert conjVariable != null;
             if (conjVariable.isThing()) {
-                if (!conjVariable.asThing().iid().isPresent()) newBounds.put(ref, bound);
-                else {
-                    if (!Arrays.equals(conjVariable.asThing().iid().get().iid(), bound.asThing().getIID()))
-                        return Optional.empty();
+                if (!conjVariable.asThing().iid().isPresent()) newBounds.put(id, bound);
+                else if (!Arrays.equals(conjVariable.asThing().iid().get().iid(), bound.asThing().getIID())) {
+                    return Optional.empty();
                 }
             } else if (conjVariable.isType()) {
-                if (!conjVariable.asType().label().isPresent()) newBounds.put(ref, bound);
-                else {
-                    if (!conjVariable.asType().label().get().properLabel().equals(bound.asType().getLabel()))
-                        return Optional.empty();
+                if (!conjVariable.asType().label().isPresent()) newBounds.put(id, bound);
+                else if (!conjVariable.asType().label().get().properLabel().equals(bound.asType().getLabel())) {
+                    return Optional.empty();
                 }
             } else {
                 throw GraknException.of(ILLEGAL_STATE);
@@ -142,12 +139,12 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
     }
 
     protected Traversal boundTraversal(Traversal traversal, ConceptMap bounds) {
-        bounds.concepts().forEach((ref, concept) -> {
-            Identifier.Variable.Name id = Identifier.Variable.of(ref);
-            if (concept.isThing()) traversal.iid(id, concept.asThing().getIID());
+        bounds.concepts().forEach((id, concept) -> {
+            assert id.isVariable();
+            if (concept.isThing()) traversal.iid(id.asVariable(), concept.asThing().getIID());
             else {
-                traversal.clearLabels(id);
-                traversal.labels(id, concept.asType().getLabel());
+                traversal.clearLabels(id.asVariable());
+                traversal.labels(id.asVariable(), concept.asType().getLabel());
             }
         });
         return traversal;

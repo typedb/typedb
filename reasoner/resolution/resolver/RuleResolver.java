@@ -81,7 +81,7 @@ public class RuleResolver extends ConjunctionResolver<RuleResolver> {
     }
 
     private ResourceIterator<Partial<?>> materialisations(Partial<?> whenAnswer) {
-        ResourceIterator<Map<Identifier, Concept>> materialisations = rule.conclusion()
+        ResourceIterator<Map<Identifier.Variable, Concept>> materialisations = rule.conclusion()
                 .materialise(whenAnswer.conceptMap(), traversalEngine, conceptMgr);
         if (!materialisations.hasNext()) throw GraknException.of(ILLEGAL_STATE);
 

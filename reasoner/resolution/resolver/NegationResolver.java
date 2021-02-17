@@ -115,8 +115,8 @@ public class NegationResolver extends Resolver<NegationResolver> {
               the toplevel root with the negation iterations, which we cannot allow. So, we must use THIS resolver
               as a sort of new root! TODO: should NegationResolvers also implement a kind of Root interface??
         */
-        Filtered downstream = fromUpstream.partialAnswer().filterToDownstream(negated.variableNames());
-        Request request = Request.create(self(), this.downstream, downstream);
+        Filtered downstreamPartial = fromUpstream.partialAnswer().filterToDownstream(negated.retrieves());
+        Request request = Request.create(self(), this.downstream, downstreamPartial);
         requestFromDownstream(request, fromUpstream, 0);
         negationResponse.setRequested();
     }
