@@ -73,6 +73,11 @@ public interface ServerCommand {
                 description = "Directory in which database server data will be stored")
         private String data;
 
+        @Option(descriptionKey = "server.logs",
+                names = {"--logs"},
+                description = "Directory in which database server logs will be stored")
+        private String logs;
+
         @Option(descriptionKey = "server.port",
                 names = {"--port"},
                 defaultValue = ServerDefaults.DEFAULT_DATABASE_PORT + "",
@@ -111,6 +116,13 @@ public interface ServerCommand {
             return Paths.get(data).isAbsolute()
                     ? Paths.get(data)
                     : ServerDefaults.GRAKN_DIR.resolve(data);
+        }
+
+        public Path logsDir() {
+            if (logs == null) return ServerDefaults.LOGS_DIR;
+            return Paths.get(logs).isAbsolute()
+                    ? Paths.get(logs)
+                    : ServerDefaults.GRAKN_DIR.resolve(logs);
         }
 
         public int port() {

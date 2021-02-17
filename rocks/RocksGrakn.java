@@ -49,15 +49,13 @@ public class RocksGrakn implements Grakn {
         ErrorMessage.loadConstants();
     }
 
-    private final Path directory;
     private final Options.Database graknDBOptions;
     private final org.rocksdb.Options rocksDBOptions;
     private final RocksDatabaseManager databaseMgr;
     private final AtomicBoolean isOpen;
 
-    protected RocksGrakn(Path directory, Options.Database options, Factory.DatabaseManager databaseMgrFactory) {
+    protected RocksGrakn(Options.Database options, Factory.DatabaseManager databaseMgrFactory) {
         if (!Executors.isInitialised()) Executors.initialise(MAX_THREADS);
-        this.directory = directory;
         this.graknDBOptions = options;
         this.rocksDBOptions = initRocksDBOptions();
         this.databaseMgr = databaseMgrFactory.databaseManager(this);
@@ -83,19 +81,23 @@ public class RocksGrakn implements Grakn {
     }
 
     public static RocksGrakn open(Path directory) {
-        return open(directory, new Options.Database(), new RocksFactory());
+        return open(new Options.Database().dataDir(directory), new RocksFactory());
     }
 
     public static RocksGrakn open(Path directory, Factory graknFactory) {
-        return open(directory, new Options.Database(), graknFactory);
+        return open(new Options.Database().dataDir(directory), graknFactory);
     }
 
-    public static RocksGrakn open(Path directory, Options.Database options, Factory graknFactory) {
-        return graknFactory.grakn(directory, options);
+    public static RocksGrakn open(Options.Database options) {
+        return open(options, new RocksFactory());
+    }
+
+    public static RocksGrakn open(Options.Database options, Factory graknFactory) {
+        return graknFactory.grakn(options);
     }
 
     public Path directory() {
-        return directory;
+        return graknDBOptions.dataDir();
     }
 
     org.rocksdb.Options rocksDBOptions() {
