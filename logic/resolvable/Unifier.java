@@ -68,7 +68,7 @@ public class Unifier {
                         unifiedRequirements.isaExplicit(unifiedId.asRetrieved(), requirements.isaExplicit().get(id));
                     }
                     if (requirements.predicates.containsKey(id)) {
-                        unifiedRequirements.predicates(unifiedId.asRetrieved(), unifiedRequirements.predicates().get(id));
+                        unifiedRequirements.predicates(unifiedId.asRetrieved(), requirements.predicates().get(id));
                     }
                 }
             });
@@ -92,7 +92,7 @@ public class Unifier {
     public Optional<Pair<ConceptMap, Requirements.Instance>> unify(ConceptMap conceptMap) {
         Map<Retrieved, Concept> unifiedMap = new HashMap<>();
 
-        if (unifiedRequirements.contradicts(conceptMap)) {
+        if (requirements.contradicts(conceptMap)) {
             return Optional.empty();
         }
 
@@ -119,7 +119,7 @@ public class Unifier {
      */
     public Optional<ConceptMap> unUnify(Map<Variable, Concept> concepts, Requirements.Instance instanceRequirements) {
 
-        if (!constraintRequirements().exactlySatisfiedBy(concepts)) return Optional.empty();
+        if (!unifiedRequirements.exactlySatisfiedBy(concepts)) return Optional.empty();
 
         Map<Variable.Retrieved, Concept> reversedConcepts = new HashMap<>();
         for (Map.Entry<Variable, Set<Variable.Retrieved>> entry : reverseUnifier.entrySet()) {
@@ -143,7 +143,7 @@ public class Unifier {
         return unifier;
     }
 
-    Requirements.Constraint constraintRequirements() {
+    public Requirements.Constraint requirements() {
         return requirements;
     }
 
@@ -163,6 +163,7 @@ public class Unifier {
                 "unifier=" + unifierString(unifier) +
                 ", reverseUnifier=" + unifierString(reverseUnifier) +
                 ", requirements=" + requirements +
+                ", unifiedRequirements=" + unifiedRequirements +
                 '}';
     }
 
