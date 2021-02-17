@@ -45,7 +45,7 @@ public class RuleResolvers {
         public Condition(Actor<Condition> self, Rule rule, Actor<ResolutionRecorder> resolutionRecorder,
                          ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
                          LogicManager logicMgr, Planner planner, boolean explanations) {
-            super(self, Condition.class.getCanonicalName() + "(rule:" + rule + ")", rule.when(), resolutionRecorder,
+            super(self, Condition.class.getCanonicalName() + "(rule:" + rule.getLabel() + ")", rule.when(), resolutionRecorder,
                   registry, traversalEngine, conceptMgr, logicMgr, planner, explanations);
             this.rule = rule;
         }
@@ -71,6 +71,11 @@ public class RuleResolvers {
         }
 
         @Override
+        public String toString() {
+            return name() + ": " + rule.when();
+        }
+
+        @Override
         protected void exception(Throwable e) {
             LOG.error("Actor exception", e);
             // TODO, once integrated into the larger flow of executing queries, kill the resolvers and report and exception to root
@@ -90,7 +95,7 @@ public class RuleResolvers {
         public Conclusion(Actor<Conclusion> self, Rule.Conclusion conclusion, ResolverRegistry registry,
                                   Actor<ResolutionRecorder> resolutionRecorder, TraversalEngine traversalEngine,
                                   ConceptManager conceptMgr, boolean explanations) {
-            super(self, Conclusion.class.getSimpleName() + "(rule.conclusion: " + conclusion + ")",
+            super(self, Conclusion.class.getSimpleName() + "(" + conclusion.rule().getLabel() + ")",
                   registry, traversalEngine, conceptMgr, explanations);
             this.conclusion = conclusion;
             this.resolutionRecorder = resolutionRecorder;
@@ -228,6 +233,11 @@ public class RuleResolvers {
         @Override
         protected ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer conclusionResponses, int newIteration) {
             throw GraknException.of(ILLEGAL_STATE);
+        }
+
+        @Override
+        public String toString() {
+            return name() + ": then " + conclusion.rule().then();
         }
 
         @Override
