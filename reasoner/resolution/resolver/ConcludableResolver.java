@@ -77,10 +77,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     public void receiveRequest(Request fromUpstream, int iteration) {
         LOG.trace("{}: received Request: {}", name(), fromUpstream);
 
-        if (!isInitialised) {
-            initialiseDownstreamActors();
-            isInitialised = true;
-        }
+        if (!isInitialised) initialiseDownstreamActors();
 
         ResponseProducer responseProducer = mayUpdateAndGetResponseProducer(fromUpstream, iteration);
         if (iteration < responseProducer.iteration()) {
@@ -140,6 +137,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
                     applicableRules.putIfAbsent(conclusionResolver, new HashSet<>());
                     applicableRules.get(conclusionResolver).add(unifier);
                 }));
+        isInitialised = true;
     }
 
     @Override

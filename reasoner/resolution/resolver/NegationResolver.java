@@ -75,16 +75,14 @@ public class NegationResolver extends Resolver<NegationResolver> {
             // negations with complex disjunctions not yet working
             throw GraknException.of(UNIMPLEMENTED);
         }
+        isInitialised = true;
     }
 
     @Override
     public void receiveRequest(Request fromUpstream, int iteration) {
         LOG.trace("{}: received Request: {}", name(), fromUpstream);
 
-        if (!isInitialised) {
-            initialiseDownstreamActors();
-            isInitialised = true;
-        }
+        if (!isInitialised) initialiseDownstreamActors();
 
         NegationResponse negationResponse = getOrInitialise(fromUpstream.partialAnswer().conceptMap());
         if (negationResponse.status.isEmpty()) {

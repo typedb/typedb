@@ -218,7 +218,6 @@ public interface Root {
             LOG.trace("{}: received Request: {}", name(), fromUpstream);
             if (!isInitialised) {
                 initialiseDownstreamActors();
-                isInitialised = true;
                 responseProducer = responseProducerCreate(fromUpstream, iteration);
             }
             mayReiterateResponseProducer(fromUpstream, iteration);
@@ -289,6 +288,7 @@ public interface Root {
             for (grakn.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
                 downstreamResolvers.add(registry.conjunction(conjunction));
             }
+            isInitialised = true;
         }
 
         @Override

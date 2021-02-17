@@ -77,10 +77,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
     public void receiveRequest(Request fromUpstream, int iteration) {
         LOG.trace("{}: received Request: {}", name(), fromUpstream);
 
-        if (!isInitialised) {
-            initialiseDownstreamActors();
-            isInitialised = true;
-        }
+        if (!isInitialised) initialiseDownstreamActors();
 
         ConclusionResponses conclusionResponses = getOrUpdateResponses(fromUpstream, iteration);
 
@@ -148,7 +145,8 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
     @Override
     protected void initialiseDownstreamActors() {
         LOG.debug("{}: initialising downstream actors", name());
-        this.ruleResolver = registry.registerCondition(conclusion.rule());
+        ruleResolver = registry.registerCondition(conclusion.rule());
+        isInitialised = true;
     }
 
     private ConclusionResponses getOrUpdateResponses(Request fromUpstream, int iteration) {
@@ -194,7 +192,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
     private ResourceIterator<AnswerState.Partial.Filtered> candidateAnswers(Request fromUpstream, ConceptMap answer) {
         ResourceIterator<ConceptMap> lookup = conclusion.candidateAnswers(answer, conceptMgr, traversalEngine);
         Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
-        return lookup.map(ans -> fromUpstream.partialAnswer().asUnified().filterToDownstream(named, ans));
+        return lookup.map(ans -> fromUpstream.partialAnswer().asUnified().extend(ans).filterToDownstream(named));
     }
 
     @Override

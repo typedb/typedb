@@ -75,7 +75,6 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
 
     protected abstract void receiveFail(Response.Fail fromDownstream, int iteration);
 
-    // TODO these should be setting the boolean to `true` in this method, not outside
     protected abstract void initialiseDownstreamActors();
 
     protected abstract ResponseProducer responseProducerCreate(Request fromUpstream, int iteration);

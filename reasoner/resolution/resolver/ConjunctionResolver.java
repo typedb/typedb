@@ -98,10 +98,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     public void receiveRequest(Request fromUpstream, int iteration) {
         LOG.trace("{}: received Request: {}", name(), fromUpstream);
 
-        if (!isInitialised) {
-            initialiseDownstreamActors();
-            isInitialised = true;
-        }
+        if (!isInitialised) initialiseDownstreamActors();
 
         ResponseProducer responseProducer = mayUpdateAndGetResponseProducer(fromUpstream, iteration);
         if (iteration < responseProducer.iteration()) {
@@ -183,6 +180,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
             downstreamResolvers.put(negated, registry.negated(negated, conjunction));
             negateds.add(negated);
         }
+        isInitialised = true;
     }
 
     private ResponseProducer mayUpdateAndGetResponseProducer(Request fromUpstream, int iteration) {

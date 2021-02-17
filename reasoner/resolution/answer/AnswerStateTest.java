@@ -38,7 +38,6 @@ import static grakn.core.reasoner.resolution.answer.AnswerState.Partial.Identity
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 
-@Ignore // TODO un-ignore
 public class AnswerStateTest {
 
     @Test
@@ -62,7 +61,7 @@ public class AnswerStateTest {
 
     @Test
     public void test_initial_partially_mapped_to_downstream_and_back() {
-        Map<Identifier.Variable.Retrieved, Identifier.Variable.Retrieved>  mapping = new HashMap<>();
+        Map<Identifier.Variable.Retrievable, Identifier.Variable.Retrievable>  mapping = new HashMap<>();
         mapping.put(Identifier.Variable.name("a"), Identifier.Variable.name("x"));
         mapping.put(Identifier.Variable.name("b"), Identifier.Variable.name("y"));
         Map<Identifier.Variable.Retrievable, Concept> concepts = new HashMap<>();
@@ -89,7 +88,7 @@ public class AnswerStateTest {
 
     @Test
     public void test_initial_with_unmapped_elements() {
-        Map<Identifier.Variable.Retrieved, Identifier.Variable.Retrieved>  mapping = new HashMap<>();
+        Map<Identifier.Variable.Retrievable, Identifier.Variable.Retrievable>  mapping = new HashMap<>();
         mapping.put(Identifier.Variable.name("a"), Identifier.Variable.name("x"));
         mapping.put(Identifier.Variable.name("b"), Identifier.Variable.name("y"));
         Map<Identifier.Variable.Retrievable, Concept> concepts = new HashMap<>();
