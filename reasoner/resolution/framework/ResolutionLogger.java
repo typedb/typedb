@@ -17,6 +17,7 @@
 
 package grakn.core.reasoner.resolution.framework;
 
+import grakn.core.common.exception.GraknException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +28,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+
 public final class ResolutionLogger {
 
     private static final Logger LOG = LoggerFactory.getLogger(ResolutionLogger.class);
@@ -35,14 +38,25 @@ public final class ResolutionLogger {
     private static PrintWriter writer;
     private static int rootRequestNumber = 0;
     private static int messageNumber = 0;
-    private static AtomicReference<Path> path = new AtomicReference<>(null);
+    private static Path logDir = null;
+    private static final AtomicReference<Path> path = new AtomicReference<>(null);
 
-    private ResolutionLogger() {}
+    private ResolutionLogger(Path logDir) {
+        ResolutionLogger.logDir = logDir;
+    }
+
+    public static ResolutionLogger setOrGet(Path logDir) {
+        if (ResolutionLogger.logDir != null && !ResolutionLogger.logDir.equals(logDir)) {
+            throw GraknException.of(ILLEGAL_STATE);
+        }
+        if (INSTANCE == null) {
+            INSTANCE = new ResolutionLogger(logDir);
+        }
+        return INSTANCE;
+    }
 
     public static ResolutionLogger get() {
-        if(INSTANCE == null) {
-            INSTANCE = new ResolutionLogger();
-        }
+        if (INSTANCE == null) throw GraknException.of(ILLEGAL_STATE);
         return INSTANCE;
     }
 
@@ -86,7 +100,8 @@ public final class ResolutionLogger {
 
     public synchronized void initialise() {
         messageNumber = 0;
-        path.set(Paths.get("./" + name() + ".dot"));
+        path.set(logDir.resolve(filename()));
+        path.set(Paths.get("./" + filename() + ".dot"));
         try {
             writer = new PrintWriter(path.get().toFile(), "UTF-8");
             startFile();
@@ -101,11 +116,11 @@ public final class ResolutionLogger {
                 "digraph %s {\n" +
                         "node [fontsize=12 fontname=arial width=0.5 shape=box style=filled]\n" +
                         "edge [fontsize=10 fontname=arial width=0.5]",
-                name()));
+                filename()));
     }
 
-    private String name() {
-        return String.format("resolution_log_request_%d", rootRequestNumber);
+    private String filename() {
+        return String.format("resolution_log_request_%d.dot", rootRequestNumber);
     }
 
     private void endFile() {

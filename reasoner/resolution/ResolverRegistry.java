@@ -105,7 +105,8 @@ public class ResolverRegistry {
     public MappedResolver negated(Negated negated, Conjunction upstream) {
         LOG.debug("Creating Negation resolver for : {}", negated);
         Actor<NegationResolver> negatedResolver = Actor.create(
-                elg, self -> new NegationResolver(self, negated, this, traversalEngine, conceptMgr, resolutionRecorder, explanations)
+                elg, self -> new NegationResolver(self, negated, this, traversalEngine, conceptMgr,
+                                                  resolutionRecorder, resolutionLogging)
         );
         Map<Retrievable, Retrievable> filteredMapping = identityFiltered(upstream, negated);
         return MappedResolver.of(negatedResolver, filteredMapping);
