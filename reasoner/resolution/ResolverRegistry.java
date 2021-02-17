@@ -36,7 +36,7 @@ import grakn.core.reasoner.resolution.resolver.ConcludableResolver;
 import grakn.core.reasoner.resolution.resolver.ConjunctionResolver;
 import grakn.core.reasoner.resolution.resolver.NegationResolver;
 import grakn.core.reasoner.resolution.resolver.RetrievableResolver;
-import grakn.core.reasoner.resolution.resolver.Root;
+import grakn.core.reasoner.resolution.resolver.RootResolvers;
 import grakn.core.reasoner.resolution.resolver.RuleResolvers;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier.Variable.Retrievable;
@@ -102,23 +102,23 @@ public class ResolverRegistry {
                 self, conclusion, this, resolutionRecorder, traversalEngine, conceptMgr, explanations)));
     }
 
-    public Actor<Root.Conjunction> rootConjunction(Conjunction conjunction, @Nullable Long offset,
-                                                   @Nullable Long limit, Consumer<Top> onAnswer,
-                                                   Consumer<Integer> onFail) {
+    public Actor<RootResolvers.Conjunction> rootConjunction(Conjunction conjunction, @Nullable Long offset,
+                                                            @Nullable Long limit, Consumer<Top> onAnswer,
+                                                            Consumer<Integer> onFail) {
         LOG.debug("Creating Root.Conjunction for: '{}'", conjunction);
         return Actor.create(
-                elg, self -> new Root.Conjunction(
+                elg, self -> new RootResolvers.Conjunction(
                         self, conjunction, offset, limit, onAnswer, onFail, resolutionRecorder, this,
                         traversalEngine, conceptMgr, logicMgr, planner, explanations));
     }
 
-    public Actor<Root.Disjunction> rootDisjunction(Disjunction disjunction, @Nullable Long offset,
-                                                   @Nullable Long limit, Consumer<Top> onAnswer,
-                                                   Consumer<Integer> onExhausted) {
+    public Actor<RootResolvers.Disjunction> rootDisjunction(Disjunction disjunction, @Nullable Long offset,
+                                                            @Nullable Long limit, Consumer<Top> onAnswer,
+                                                            Consumer<Integer> onExhausted) {
         LOG.debug("Creating Root.Disjunction for: '{}'", disjunction);
         return Actor.create(
-                elg, self -> new Root.Disjunction(self, disjunction, offset, limit, onAnswer, onExhausted, resolutionRecorder,
-                                                  this, traversalEngine, conceptMgr, explanations)
+                elg, self -> new RootResolvers.Disjunction(self, disjunction, offset, limit, onAnswer, onExhausted, resolutionRecorder,
+                                                           this, traversalEngine, conceptMgr, explanations)
         );
     }
 
