@@ -48,9 +48,8 @@ import java.util.Set;
 public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
 
-    private final LinkedHashMap<Actor<RuleResolver>, Set<Unifier>> applicableRules;
+    private final LinkedHashMap<Actor<ConclusionResolver>, Set<Unifier>> applicableRules;
     private final Concludable concludable;
-    private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
     private final Map<Actor<? extends Resolver<?>>, RecursionState> recursionStates;
     private final Actor<ResolutionRecorder> resolutionRecorder;
@@ -62,8 +61,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
                                boolean explanations) {
         super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.pattern() + ")",
-              registry, traversalEngine, explanations);
-        this.conceptMgr = conceptMgr;
+              registry, traversalEngine, conceptMgr, explanations);
         this.logicMgr = logicMgr;
         this.resolutionRecorder = resolutionRecorder;
         this.concludable = concludable;
@@ -77,10 +75,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     public void receiveRequest(Request fromUpstream, int iteration) {
         LOG.trace("{}: received Request: {}", name(), fromUpstream);
 
-        if (!isInitialised) {
-            initialiseDownstreamActors();
-            isInitialised = true;
-        }
+        if (!isInitialised) initialiseDownstreamResolvers();
 
         ResponseProducer responseProducer = mayUpdateAndGetResponseProducer(fromUpstream, iteration);
         if (iteration < responseProducer.iteration()) {
@@ -115,14 +110,14 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     }
 
     @Override
-    protected void receiveExhausted(Response.Fail fromDownstream, int iteration) {
-        LOG.trace("{}: received Exhausted: {}", name(), fromDownstream);
+    protected void receiveFail(Response.Fail fromDownstream, int iteration) {
+        LOG.trace("{}: received Fail: {}", name(), fromDownstream);
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
         ResponseProducer responseProducer = responseProducers.get(fromUpstream);
 
         if (iteration < responseProducer.iteration()) {
-            // short circuit old iteration exhausted messages to upstream
+            // short circuit old iteration failed messages to upstream
             failToUpstream(fromUpstream, iteration);
             return;
         }
@@ -132,14 +127,15 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     }
 
     @Override
-    protected void initialiseDownstreamActors() {
-        LOG.debug("{}: initialising downstream actors", name());
+    protected void initialiseDownstreamResolvers() {
+        LOG.debug("{}: initialising downstream resolvers", name());
         concludable.getApplicableRules(conceptMgr, logicMgr).forEachRemaining(rule -> concludable.getUnifiers(rule)
                 .forEachRemaining(unifier -> {
-                    Actor<RuleResolver> ruleActor = registry.registerRule(rule);
-                    applicableRules.putIfAbsent(ruleActor, new HashSet<>());
-                    applicableRules.get(ruleActor).add(unifier);
+                    Actor<ConclusionResolver> conclusionResolver = registry.registerConclusion(rule.conclusion());
+                    applicableRules.putIfAbsent(conclusionResolver, new HashSet<>());
+                    applicableRules.get(conclusionResolver).add(unifier);
                 }));
+        isInitialised = true;
     }
 
     @Override
@@ -151,7 +147,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
         assert fromUpstream.partialAnswer().isMapped();
         ResourceIterator<Partial<?>> upstreamAnswers =
-                compatibleBoundAnswers(conceptMgr, concludable.pattern(), fromUpstream.partialAnswer().conceptMap())
+                compatibleBoundAnswers(concludable.pattern(), fromUpstream.partialAnswer().conceptMap())
                         .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap, self()));
 
         ResponseProducer responseProducer = new ResponseProducer(upstreamAnswers, iteration);
@@ -174,8 +170,8 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
         assert fromUpstream.partialAnswer().isMapped();
         ResourceIterator<Partial<?>> upstreamAnswers =
-                compatibleBoundAnswers(conceptMgr, concludable.pattern(), fromUpstream.partialAnswer().conceptMap())
-                .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap, self()));
+                compatibleBoundAnswers(concludable.pattern(), fromUpstream.partialAnswer().conceptMap())
+                        .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap, self()));
 
         ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(upstreamAnswers, newIteration);
         mayRegisterRules(fromUpstream, iterationState, responseProducerNewIter);
@@ -185,7 +181,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     @Override
     protected void exception(Throwable e) {
         LOG.error("Actor exception", e);
-        // TODO, once integrated into the larger flow of executing queries, kill the actors and report and exception to root
+        // TODO, once integrated into the larger flow of executing queries, kill the resolvers and report and exception to root
     }
 
     private void tryAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
@@ -223,8 +219,8 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         // loop termination: when receiving a new request, we check if we have seen it before from this root query
         // if we have, we do not allow rules to be registered as possible downstreams
         if (!recursionState.hasReceived(fromUpstream.partialAnswer().conceptMap())) {
-            for (Map.Entry<Actor<RuleResolver>, Set<Unifier>> entry : applicableRules.entrySet()) {
-                Actor<RuleResolver> ruleActor = entry.getKey();
+            for (Map.Entry<Actor<ConclusionResolver>, Set<Unifier>> entry : applicableRules.entrySet()) {
+                Actor<ConclusionResolver> ruleActor = entry.getKey();
                 for (Unifier unifier : entry.getValue()) {
                     Optional<Unified> unified = fromUpstream.partialAnswer().unifyToDownstream(unifier);
                     if (unified.isPresent()) {
@@ -239,7 +235,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     /**
      * Maintain iteration state per root query
-     * This allows us to share actors across different queries
+     * This allows us to share resolvers across different queries
      * while maintaining the ability to do loop termination within a single query
      */
     private static class RecursionState {

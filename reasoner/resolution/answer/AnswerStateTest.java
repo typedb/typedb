@@ -25,6 +25,7 @@ import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Mapped;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.traversal.common.Identifier;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -60,7 +61,7 @@ public class AnswerStateTest {
 
     @Test
     public void test_initial_partially_mapped_to_downstream_and_back() {
-        Map<Identifier.Variable.Name, Identifier.Variable.Name>  mapping = new HashMap<>();
+        Map<Identifier.Variable.Retrievable, Identifier.Variable.Retrievable>  mapping = new HashMap<>();
         mapping.put(Identifier.Variable.name("a"), Identifier.Variable.name("x"));
         mapping.put(Identifier.Variable.name("b"), Identifier.Variable.name("y"));
         Map<Identifier.Variable.Retrievable, Concept> concepts = new HashMap<>();
@@ -87,7 +88,7 @@ public class AnswerStateTest {
 
     @Test
     public void test_initial_with_unmapped_elements() {
-        Map<Identifier.Variable.Name, Identifier.Variable.Name>  mapping = new HashMap<>();
+        Map<Identifier.Variable.Retrievable, Identifier.Variable.Retrievable>  mapping = new HashMap<>();
         mapping.put(Identifier.Variable.name("a"), Identifier.Variable.name("x"));
         mapping.put(Identifier.Variable.name("b"), Identifier.Variable.name("y"));
         Map<Identifier.Variable.Retrievable, Concept> concepts = new HashMap<>();

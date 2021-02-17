@@ -42,14 +42,12 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(RetrievableResolver.class);
     private final Retrievable retrievable;
     private final Map<Request, ResponseProducer> responseProducers;
-    private final ConceptManager conceptMgr;
 
     public RetrievableResolver(Actor<RetrievableResolver> self, Retrievable retrievable, ResolverRegistry registry,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean explanations) {
         super(self, RetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable.pattern() + ")",
-              registry, traversalEngine, explanations);
+              registry, traversalEngine, conceptMgr, explanations);
         this.retrievable = retrievable;
-        this.conceptMgr = conceptMgr;
         this.responseProducers = new HashMap<>();
     }
 
@@ -58,7 +56,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         LOG.trace("{}: received Request: {}", name(), fromUpstream);
         ResponseProducer responseProducer = mayUpdateAndGetResponseProducer(fromUpstream, iteration);
         if (iteration < responseProducer.iteration()) {
-            // short circuit old iteration exhausted messages to upstream
+            // short circuit old iteration failed messages to upstream
             failToUpstream(fromUpstream, iteration);
         } else {
             assert iteration == responseProducer.iteration();
@@ -72,12 +70,12 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     }
 
     @Override
-    protected void receiveExhausted(Response.Fail fromDownstream, int iteration) {
+    protected void receiveFail(Response.Fail fromDownstream, int iteration) {
         throw GraknException.of(ILLEGAL_STATE);
     }
 
     @Override
-    protected void initialiseDownstreamActors() {
+    protected void initialiseDownstreamResolvers() {
         throw GraknException.of(ILLEGAL_STATE);
     }
 
@@ -86,8 +84,8 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), fromUpstream);
         assert fromUpstream.partialAnswer().isMapped();
         ResourceIterator<Partial<?>> upstreamAnswers =
-                compatibleBoundAnswers(conceptMgr, retrievable.pattern(), fromUpstream.partialAnswer().conceptMap())
-                .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap, self()));
+                compatibleBoundAnswers(retrievable.pattern(), fromUpstream.partialAnswer().conceptMap())
+                        .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap, self()));
         return new ResponseProducer(upstreamAnswers, iteration);
     }
 
@@ -99,8 +97,8 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         assert newIteration > responseProducerPrevious.iteration();
         assert fromUpstream.partialAnswer().isMapped();
         ResourceIterator<Partial<?>> upstreamAnswers =
-                compatibleBoundAnswers(conceptMgr, retrievable.pattern(), fromUpstream.partialAnswer().conceptMap())
-                .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap, self()));
+                compatibleBoundAnswers(retrievable.pattern(), fromUpstream.partialAnswer().conceptMap())
+                        .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap, self()));
         return responseProducerPrevious.newIteration(upstreamAnswers, newIteration);
     }
 

@@ -50,13 +50,16 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
     private final Map<Request, Request> requestRouter;
     protected final ResolverRegistry registry;
     protected final TraversalEngine traversalEngine;
+    protected final ConceptManager conceptMgr;
     private final boolean explanations;
 
-    protected Resolver(Actor<T> self, String name, ResolverRegistry registry, TraversalEngine traversalEngine, boolean explanations) {
+    protected Resolver(Actor<T> self, String name, ResolverRegistry registry, TraversalEngine traversalEngine,
+                       ConceptManager conceptMgr, boolean explanations) {
         super(self);
         this.name = name;
         this.registry = registry;
         this.traversalEngine = traversalEngine;
+        this.conceptMgr = conceptMgr;
         this.explanations = explanations;
         this.requestRouter = new HashMap<>();
         // Note: initialising downstream actors in constructor will create all actors ahead of time, so it is non-lazy
@@ -73,9 +76,9 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
 
     protected abstract void receiveAnswer(Response.Answer fromDownstream, int iteration);
 
-    protected abstract void receiveExhausted(Response.Fail fromDownstream, int iteration);
+    protected abstract void receiveFail(Response.Fail fromDownstream, int iteration);
 
-    protected abstract void initialiseDownstreamActors();
+    protected abstract void initialiseDownstreamResolvers();
 
     protected abstract ResponseProducer responseProducerCreate(Request fromUpstream, int iteration);
 
@@ -104,14 +107,16 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
     protected void failToUpstream(Request fromUpstream, int iteration) {
         Response.Fail response = new Response.Fail(fromUpstream);
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
-        fromUpstream.sender().tell(actor -> actor.receiveExhausted(response, iteration));
+        fromUpstream.sender().tell(actor -> actor.receiveFail(response, iteration));
     }
 
-    protected ResourceIterator<ConceptMap> compatibleBoundAnswers(ConceptManager conceptMgr, Conjunction conjunction, ConceptMap bounds) {
-        return compatibleBounds(conjunction, bounds).map(b -> {
-            Traversal traversal = boundTraversal(conjunction.traversal(), b);
-            return traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
-        }).orElse(Iterators.empty());
+    protected ResourceIterator<ConceptMap> compatibleBoundAnswers(Conjunction conjunction, ConceptMap bounds) {
+        return compatibleBounds(conjunction, bounds).map(c -> boundAnswers(conjunction, c)).orElse(Iterators.empty());
+    }
+
+    protected ResourceIterator<ConceptMap> boundAnswers(Conjunction conjunction, ConceptMap bounds) {
+        Traversal traversal = boundTraversal(conjunction.traversal(), bounds);
+        return traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
     }
 
     private Optional<ConceptMap> compatibleBounds(Conjunction conjunction, ConceptMap bounds) {
@@ -140,7 +145,6 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
 
     protected Traversal boundTraversal(Traversal traversal, ConceptMap bounds) {
         bounds.concepts().forEach((id, concept) -> {
-            assert id.isVariable();
             if (concept.isThing()) traversal.iid(id.asVariable(), concept.asThing().getIID());
             else {
                 traversal.clearLabels(id.asVariable());

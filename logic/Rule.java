@@ -39,7 +39,7 @@ import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
-import grakn.core.pattern.variable.SystemReference;
+import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
@@ -48,7 +48,6 @@ import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.Reference;
-import graql.lang.pattern.variable.ThingVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,20 +94,20 @@ public class Rule {
         this.when = whenPattern(structure.when(), logicMgr);
         this.then = thenPattern(structure.then(), logicMgr);
         pruneThenResolvedTypes();
-        this.conclusion = Conclusion.create(this.then);
+        this.conclusion = Conclusion.create(this.then, this);
     }
 
     private Rule(GraphManager graphMgr, LogicManager logicMgr, String label,
-                 graql.lang.pattern.Conjunction<? extends Pattern> when, ThingVariable<?> then) {
+                 graql.lang.pattern.Conjunction<? extends Pattern> when, graql.lang.pattern.variable.ThingVariable<?> then) {
         this.structure = graphMgr.schema().rules().create(label, when, then);
         this.when = whenPattern(structure.when(), logicMgr);
         this.then = thenPattern(structure.then(), logicMgr);
         pruneThenResolvedTypes();
         validateSatisfiable();
         validateInsertable(logicMgr);
-        this.conclusion = Conclusion.create(this.then);
+        this.conclusion = Conclusion.create(this.then, this);
         validateCycles();
-        this.conclusion.index(this);
+        this.conclusion.index();
     }
 
     public static Rule of(LogicManager logicMgr, RuleStructure structure) {
@@ -116,14 +115,13 @@ public class Rule {
     }
 
     public static Rule of(GraphManager graphMgr, LogicManager logicMgr, String label,
-                          graql.lang.pattern.Conjunction<? extends Pattern> when, ThingVariable<?> then) {
+                          graql.lang.pattern.Conjunction<? extends Pattern> when, graql.lang.pattern.variable.ThingVariable<?> then) {
         return new Rule(graphMgr, logicMgr, label, when, then);
     }
 
     public Conclusion conclusion() {
         return conclusion;
     }
-
 
     public Conjunction when() {
         return when;
@@ -146,11 +144,11 @@ public class Rule {
     }
 
     public void delete() {
-        conclusion().unindex(this);
+        conclusion().unindex();
         structure.delete();
     }
 
-    public ThingVariable<?> getThenPreNormalised() {
+    public graql.lang.pattern.variable.ThingVariable<?> getThenPreNormalised() {
         return structure.then();
     }
 
@@ -246,7 +244,7 @@ public class Rule {
         return conj;
     }
 
-    private Conjunction thenPattern(ThingVariable<?> thenVariable, LogicManager logicMgr) {
+    private Conjunction thenPattern(graql.lang.pattern.variable.ThingVariable<?> thenVariable, LogicManager logicMgr) {
         // TODO: when applying the type resolver, we should be using _insert semantics_ during the type resolution!!!
         Conjunction conj = new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
         logicMgr.typeResolver().resolve(conj);
@@ -254,20 +252,32 @@ public class Rule {
     }
 
     public void reindex() {
-        conclusion().unindex(this);
-        conclusion().index(this);
+        conclusion().unindex();
+        conclusion().index();
     }
 
     public static abstract class Conclusion {
 
-        public static Conclusion create(Conjunction then) {
-            Optional<Relation> r = Relation.of(then);
+        private final Rule rule;
+        private final Set<Identifier.Variable.Retrievable> retrievableIds;
+
+        Conclusion(Rule rule, Set<Identifier.Variable.Retrievable> retrievableIds) {
+            this.rule = rule;
+            this.retrievableIds = retrievableIds;
+        }
+
+        public static Conclusion create(Conjunction then, Rule rule) {
+            Optional<Relation> r = Relation.of(then, rule);
             if ((r).isPresent()) return r.get();
-            Optional<Has.Explicit> e = Has.Explicit.of(then);
+            Optional<Has.Explicit> e = Has.Explicit.of(then, rule);
             if (e.isPresent()) return e.get();
-            Optional<Has.Variable> v = Has.Variable.of(then);
+            Optional<Has.Variable> v = Has.Variable.of(then, rule);
             if (v.isPresent()) return v.get();
             throw GraknException.of(ILLEGAL_STATE);
+        }
+
+        public Conjunction conjunction() {
+            return rule().then();
         }
 
         /**
@@ -281,9 +291,17 @@ public class Rule {
         public abstract ResourceIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
                                                                                         ConceptManager conceptMgr);
 
-        abstract void index(Rule rule);
+        public Rule rule() { return rule; }
 
-        abstract void unindex(Rule rule);
+        public abstract Optional<ThingVariable> generating();
+
+        public Set<Identifier.Variable.Retrievable> retrievableIds() {
+            return retrievableIds;
+        }
+
+        abstract void index();
+
+        abstract void unindex();
 
         public boolean isRelation() {
             return false;
@@ -346,19 +364,34 @@ public class Rule {
             private final RelationConstraint relation;
             private final IsaConstraint isa;
 
-            public static Optional<Relation> of(Conjunction conjunction) {
+            public Relation(RelationConstraint relation, IsaConstraint isa, Rule rule) {
+                super(rule, retrievableIds(relation, isa));
+                this.relation = relation;
+                this.isa = isa;
+            }
+
+            public static Optional<Relation> of(Conjunction conjunction, Rule rule) {
                 return Iterators.iterate(conjunction.variables()).filter(Variable::isThing).map(Variable::asThing)
                         .flatMap(variable -> Iterators.iterate(variable.constraints())
                                 .filter(ThingConstraint::isRelation)
                                 .map(constraint -> {
                                     assert constraint.owner().isa().isPresent();
-                                    return new Relation(constraint.asRelation(), variable.isa().get());
+                                    return new Relation(constraint.asRelation(), variable.isa().get(), rule);
                                 })).first();
             }
 
-            public Relation(RelationConstraint relation, IsaConstraint isa) {
-                this.relation = relation;
-                this.isa = isa;
+            private static Set<Identifier.Variable.Retrievable> retrievableIds(RelationConstraint relation, IsaConstraint isa) {
+                Set<Identifier.Variable.Retrievable> ids = new HashSet<>();
+                assert isa.owner().equals(relation.owner());
+                ids.add(relation.owner().id());
+                relation.players().forEach(rp -> {
+                    ids.add(rp.player().id());
+                    if (rp.roleType().isPresent() && rp.roleType().get().id().isRetrievable()) {
+                        ids.add(rp.roleType().get().id().asRetrievable());
+                    }
+                });
+                if (isa.type().id().isRetrievable()) ids.add(isa.type().id().asRetrievable());
+                return ids;
             }
 
             @Override
@@ -397,17 +430,22 @@ public class Rule {
             }
 
             @Override
-            void index(Rule rule) {
-                Variable relation = relation().owner();
-                Set<Label> possibleRelationTypes = relation.resolvedTypes();
-                possibleRelationTypes.forEach(rule.structure::indexConcludesVertex);
+            public Optional<ThingVariable> generating() {
+                return Optional.of(relation.owner());
             }
 
             @Override
-            void unindex(Rule rule) {
+            void index() {
                 Variable relation = relation().owner();
                 Set<Label> possibleRelationTypes = relation.resolvedTypes();
-                possibleRelationTypes.forEach(rule.structure::unindexConcludesVertex);
+                possibleRelationTypes.forEach(rule().structure::indexConcludesVertex);
+            }
+
+            @Override
+            void unindex() {
+                Variable relation = relation().owner();
+                Set<Label> possibleRelationTypes = relation.resolvedTypes();
+                possibleRelationTypes.forEach(rule().structure::unindexConcludesVertex);
             }
 
             public RelationConstraint relation() {
@@ -447,8 +485,7 @@ public class Rule {
             private ResourceIterator<grakn.core.concept.thing.Relation> matchRelation(RelationType relationType, Set<RolePlayer> players,
                                                                                       TraversalEngine traversalEng, ConceptManager conceptMgr) {
                 Traversal traversal = new Traversal();
-                SystemReference relationRef = SystemReference.of(0);
-                Identifier.Variable relationId = Identifier.Variable.of(relationRef);
+                Identifier.Variable.Retrievable relationId = relation().owner().id();
                 traversal.isa(relationId, Identifier.Variable.label(relationType.getLabel().name()), false);
                 Set<Identifier.Variable> playersWithIds = new HashSet<>();
                 players.forEach(rp -> {
@@ -460,7 +497,7 @@ public class Rule {
                     }
                 });
                 return traversalEng.iterator(traversal).map(conceptMgr::conceptMap)
-                        .map(conceptMap -> conceptMap.get(relationRef).asRelation());
+                        .map(conceptMap -> conceptMap.get(relationId).asRelation());
             }
 
             private RelationType relationType(ConceptMap whenConcepts, ConceptManager conceptMgr) {
@@ -503,7 +540,8 @@ public class Rule {
 
             private final HasConstraint has;
 
-            Has(HasConstraint has) {
+            Has(HasConstraint has, Rule rule) {
+                super(rule, set(has.owner().id(), has.attribute().id()));
                 this.has = has;
             }
 
@@ -526,13 +564,13 @@ public class Rule {
                 private final IsaConstraint isa;
                 private final ValueConstraint<?> value;
 
-                private Explicit(HasConstraint has, IsaConstraint isa, ValueConstraint<?> value) {
-                    super(has);
+                private Explicit(HasConstraint has, IsaConstraint isa, ValueConstraint<?> value, Rule rule) {
+                    super(has, rule);
                     this.isa = isa;
                     this.value = value;
                 }
 
-                public static Optional<Explicit> of(Conjunction conjunction) {
+                public static Optional<Explicit> of(Conjunction conjunction, Rule rule) {
                     return Iterators.iterate(conjunction.variables()).filter(grakn.core.pattern.variable.Variable::isThing)
                             .map(grakn.core.pattern.variable.Variable::asThing)
                             .flatMap(variable -> Iterators.iterate(variable.constraints()).filter(ThingConstraint::isHas)
@@ -542,7 +580,8 @@ public class Rule {
                                         assert constraint.asHas().attribute().isa().get().type().label().isPresent();
                                         assert constraint.asHas().attribute().value().size() == 1;
                                         return new Has.Explicit(constraint.asHas(), constraint.asHas().attribute().isa().get(),
-                                                                constraint.asHas().attribute().value().iterator().next());
+                                                                constraint.asHas().attribute().value().iterator().next(),
+                                                                rule);
                                     })).first();
                 }
 
@@ -566,22 +605,27 @@ public class Rule {
                 }
 
                 @Override
-                void index(Rule rule) {
+                public Optional<ThingVariable> generating() {
+                    return Optional.of(has().attribute());
+                }
+
+                @Override
+                void index() {
                     grakn.core.pattern.variable.Variable attribute = has().attribute();
                     Set<Label> possibleAttributeHas = attribute.resolvedTypes();
                     possibleAttributeHas.forEach(label -> {
-                        rule.structure.indexConcludesVertex(label);
-                        rule.structure.indexConcludesEdgeTo(label);
+                        rule().structure.indexConcludesVertex(label);
+                        rule().structure.indexConcludesEdgeTo(label);
                     });
                 }
 
                 @Override
-                void unindex(Rule rule) {
+                void unindex() {
                     grakn.core.pattern.variable.Variable attribute = has().attribute();
                     Set<Label> possibleAttributeHas = attribute.resolvedTypes();
                     possibleAttributeHas.forEach(label -> {
-                        rule.structure.unindexConcludesVertex(label);
-                        rule.structure.unindexConcludesEdgeTo(label);
+                        rule().structure.unindexConcludesVertex(label);
+                        rule().structure.unindexConcludesEdgeTo(label);
                     });
                 }
 
@@ -648,11 +692,11 @@ public class Rule {
 
             public static class Variable extends Has {
 
-                private Variable(HasConstraint hasConstraint) {
-                    super(hasConstraint);
+                private Variable(HasConstraint hasConstraint, Rule rule) {
+                    super(hasConstraint, rule);
                 }
 
-                public static Optional<Variable> of(Conjunction conjunction) {
+                public static Optional<Variable> of(Conjunction conjunction, Rule rule) {
                     return Iterators.iterate(conjunction.variables()).filter(grakn.core.pattern.variable.Variable::isThing)
                             .map(grakn.core.pattern.variable.Variable::asThing)
                             .flatMap(variable -> Iterators.iterate(variable.constraints()).filter(ThingConstraint::isHas)
@@ -660,7 +704,7 @@ public class Rule {
                                     .map(constraint -> {
                                         assert !constraint.asHas().attribute().isa().isPresent();
                                         assert constraint.asHas().attribute().value().size() == 0;
-                                        return new Has.Variable(constraint.asHas());
+                                        return new Has.Variable(constraint.asHas(), rule);
                                     })).first();
                 }
 
@@ -681,17 +725,22 @@ public class Rule {
                 }
 
                 @Override
-                void index(Rule rule) {
-                    grakn.core.pattern.variable.Variable attribute = has().attribute();
-                    Set<Label> possibleAttributeHas = attribute.resolvedTypes();
-                    possibleAttributeHas.forEach(rule.structure::indexConcludesEdgeTo);
+                public Optional<ThingVariable> generating() {
+                    return Optional.empty();
                 }
 
                 @Override
-                void unindex(Rule rule) {
+                void index() {
                     grakn.core.pattern.variable.Variable attribute = has().attribute();
                     Set<Label> possibleAttributeHas = attribute.resolvedTypes();
-                    possibleAttributeHas.forEach(rule.structure::unindexConcludesEdgeTo);
+                    possibleAttributeHas.forEach(rule().structure::indexConcludesEdgeTo);
+                }
+
+                @Override
+                void unindex() {
+                    grakn.core.pattern.variable.Variable attribute = has().attribute();
+                    Set<Label> possibleAttributeHas = attribute.resolvedTypes();
+                    possibleAttributeHas.forEach(rule().structure::unindexConcludesEdgeTo);
                 }
 
                 @Override

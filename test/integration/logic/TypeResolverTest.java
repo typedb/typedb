@@ -98,7 +98,7 @@ public class TypeResolverTest {
         transaction.query().define(query);
     }
 
-    private Map<String, Set<String>> getHintMap(Conjunction conjunction) {
+    private Map<String, Set<String>> resolvedTypeMap(Conjunction conjunction) {
         return conjunction.variables().stream().collect(Collectors.toMap(
                 variable -> variable.id().toString(),
                 variable -> variable.resolvedTypes().stream().map(Label::scopedName).collect(Collectors.toSet())
@@ -138,7 +138,7 @@ public class TypeResolverTest {
             put("$_person", set("person"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -155,7 +155,7 @@ public class TypeResolverTest {
             put("$_person", set("person"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -178,7 +178,7 @@ public class TypeResolverTest {
             put("$_mammal", set("mammal"));
         }};
 
-        assertEquals(expectedExhaustive, getHintMap(conjunction));
+        assertEquals(expectedExhaustive, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -197,7 +197,7 @@ public class TypeResolverTest {
             put("$_0", set("name"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
 
@@ -228,7 +228,7 @@ public class TypeResolverTest {
             put("$b", set("nickname", "name"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -262,7 +262,7 @@ public class TypeResolverTest {
             put("$d", set("name", "surname", "nickname", "middlename"));
         }};
 
-        assertEquals(expectedExhaustive, getHintMap(conjunction));
+        assertEquals(expectedExhaustive, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -281,7 +281,7 @@ public class TypeResolverTest {
             put("$_name", set("name"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -302,7 +302,7 @@ public class TypeResolverTest {
             put("$_shape", set("shape"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -327,7 +327,7 @@ public class TypeResolverTest {
             put("$a", set("name"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -349,7 +349,7 @@ public class TypeResolverTest {
             put("$y", set("house-number", "length"));
             put("$z", set("name"));
         }};
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -369,7 +369,7 @@ public class TypeResolverTest {
             put("$_marriage", set("marriage"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -389,7 +389,7 @@ public class TypeResolverTest {
             put("$_marriage", set("marriage"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -409,7 +409,7 @@ public class TypeResolverTest {
             put("$_relation:wife", set("marriage:wife"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -450,7 +450,7 @@ public class TypeResolverTest {
             put("$_man", set("man"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -469,7 +469,7 @@ public class TypeResolverTest {
             put("$_relation:wife", set("marriage:wife"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -488,7 +488,7 @@ public class TypeResolverTest {
             put("$_marriage", set("marriage"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -511,7 +511,7 @@ public class TypeResolverTest {
             put("$_marriage", set("marriage"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -532,7 +532,7 @@ public class TypeResolverTest {
             put("$_person", set("person"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -551,7 +551,7 @@ public class TypeResolverTest {
             put("$_person", set("person"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -578,7 +578,7 @@ public class TypeResolverTest {
             put("$_man", set("man"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -595,7 +595,7 @@ public class TypeResolverTest {
             put("$t", set("shape"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -614,7 +614,7 @@ public class TypeResolverTest {
             put("$_marriage", set("marriage"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -647,7 +647,7 @@ public class TypeResolverTest {
             put("$_leg-weight", set("leg-weight"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -665,7 +665,7 @@ public class TypeResolverTest {
             put("$a", set("unit"));
         }};
 
-        assertEquals(expectedExhaustive, getHintMap(conjunction));
+        assertEquals(expectedExhaustive, resolvedTypeMap(conjunction));
     }
 
 
@@ -684,7 +684,7 @@ public class TypeResolverTest {
             put("$_thing", set("thing"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -715,7 +715,7 @@ public class TypeResolverTest {
             put("$_woman-name", set("woman-name"));
         }};
 
-        assertEquals(expectedExhaustive, getHintMap(conjunction));
+        assertEquals(expectedExhaustive, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -746,7 +746,7 @@ public class TypeResolverTest {
             put("$_person", set("person"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     // When a hint label exists, it can "skip" a generation, meaning a hint and the hint's descendent is possible, yet
@@ -794,7 +794,7 @@ public class TypeResolverTest {
             put("$rel", set("ownership", "marriage"));
             put("$c", set("ownership-attr", "marriage-attr"));
         }};
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -813,7 +813,7 @@ public class TypeResolverTest {
             put("$_1", set("label"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -852,7 +852,7 @@ public class TypeResolverTest {
             put("$_marriage:spouse", set("marriage:spouse"));
             put("$_marriage", set("marriage"));
         }};
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -867,7 +867,7 @@ public class TypeResolverTest {
             put("$x", set("friendship", "employment"));
             put("$_relation", set("relation"));
         }};
-        assertEquals(relationExpected, getHintMap(relationConjunction));
+        assertEquals(relationExpected, resolvedTypeMap(relationConjunction));
 
         String attributeString = "match $x isa attribute;";
         Conjunction attributeConjunction = createConjunction(attributeString);
@@ -877,7 +877,7 @@ public class TypeResolverTest {
             put("$_attribute", set("attribute"));
         }};
 
-        assertEquals(attributeExpected, getHintMap(attributeConjunction));
+        assertEquals(attributeExpected, resolvedTypeMap(attributeConjunction));
 
         String entityString = "match $x isa entity;";
         Conjunction entityConjunction = createConjunction(entityString);
@@ -886,7 +886,7 @@ public class TypeResolverTest {
             put("$x", set("person", "company"));
             put("$_entity", set("entity"));
         }};
-        assertEquals(entityExpected, getHintMap(entityConjunction));
+        assertEquals(entityExpected, resolvedTypeMap(entityConjunction));
 
         String roleString = "match ($role: $x) isa relation;";
         Conjunction roleConjunction = createConjunction(roleString);
@@ -897,7 +897,7 @@ public class TypeResolverTest {
             put("$_0", set("friendship", "employment"));
             put("$_relation", set("relation"));
         }};
-        assertEquals(roleExpected, getHintMap(roleConjunction));
+        assertEquals(roleExpected, resolvedTypeMap(roleConjunction));
 
         String thingString = "match $x isa thing;";
         Conjunction thingConjunction = createConjunction(thingString);
@@ -906,7 +906,7 @@ public class TypeResolverTest {
             put("$x", set());
             put("$_thing", set("thing"));
         }};
-        assertEquals(thingExpected, getHintMap(thingConjunction));
+        assertEquals(thingExpected, resolvedTypeMap(thingConjunction));
     }
 
     @Test
@@ -930,7 +930,7 @@ public class TypeResolverTest {
             put("$w", set("perimeter", "area", "hypotenuse-length"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -963,7 +963,7 @@ public class TypeResolverTest {
             put("$y", set("nickname", "name"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -991,7 +991,7 @@ public class TypeResolverTest {
             put("$y", set("name", "age", "ref"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -1007,7 +1007,7 @@ public class TypeResolverTest {
             put("$y", set("name", "age", "ref"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -1029,7 +1029,7 @@ public class TypeResolverTest {
             put("$_name", set("name"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
     @Test
@@ -1047,12 +1047,12 @@ public class TypeResolverTest {
 
         Set<String> expectedLabels = set("partnership:partner", "business:partner");
 
-        assertEquals(expectedLabels, getHintMap(conjunction).get("$_relation:partner"));
+        assertEquals(expectedLabels, resolvedTypeMap(conjunction).get("$_relation:partner"));
 
         typeResolver.resolve(conjunction);
         Set<String> expectedResolvedTypes = set("partnership:partner");
 
-        assertEquals(expectedResolvedTypes, getHintMap(conjunction).get("$_relation:partner"));
+        assertEquals(expectedResolvedTypes, resolvedTypeMap(conjunction).get("$_relation:partner"));
     }
 
     @Test
@@ -1069,7 +1069,7 @@ public class TypeResolverTest {
             put("$_0", set("marriage"));
         }};
 
-        assertEquals(expected, getHintMap(conjunction));
+        assertEquals(expected, resolvedTypeMap(conjunction));
     }
 
 //    TEST RULE INSERT
@@ -1162,7 +1162,7 @@ public class TypeResolverTest {
             put("$_name", set("name"));
         }};
         // test the inner negation
-        assertEquals(expected, getHintMap(conjunction.negations().iterator().next().disjunction().conjunctions().get(0)));
+        assertEquals(expected, resolvedTypeMap(conjunction.negations().iterator().next().disjunction().conjunctions().get(0)));
 
         String restricted = "match $x isa woman; not { $x has name $a; };";
         Conjunction restrictedConjunction = createConjunction(restricted);
@@ -1173,7 +1173,7 @@ public class TypeResolverTest {
             put("$_name", set("name"));
         }};
         // test the inner negation
-        assertEquals(expected, getHintMap(restrictedConjunction.negations().iterator().next().disjunction().conjunctions().get(0)));
+        assertEquals(expected, resolvedTypeMap(restrictedConjunction.negations().iterator().next().disjunction().conjunctions().get(0)));
     }
 
 

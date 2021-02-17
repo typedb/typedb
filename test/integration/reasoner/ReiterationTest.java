@@ -115,18 +115,18 @@ public class ReiterationTest {
                         .map(Identifier.Variable::asName).toSet();
                 ResolverRegistry registry = transaction.reasoner().resolverRegistry();
                 LinkedBlockingQueue<Top> responses = new LinkedBlockingQueue<>();
-                LinkedBlockingQueue<Integer> exhausted = new LinkedBlockingQueue<>();
+                LinkedBlockingQueue<Integer> failed = new LinkedBlockingQueue<>();
                 int[] iteration = {0};
                 int[] doneInIteration = {0};
                 boolean[] receivedInferredAnswer = {false};
 
-                Actor<grakn.core.reasoner.resolution.resolver.Root.Conjunction> root = registry.rootConjunction(conjunction, null, null, answer -> {
+                Actor<Root.Conjunction> root = registry.rootConjunction(conjunction, null, null, answer -> {
                     if (answer.requiresReiteration()) receivedInferredAnswer[0] = true;
                     responses.add(answer);
                 }, iterDone -> {
                     assert iteration[0] == iterDone;
                     doneInIteration[0]++;
-                    exhausted.add(iterDone);
+                    failed.add(iterDone);
                 });
 
                 Set<Top> answers = new HashSet<>();
@@ -134,7 +134,7 @@ public class ReiterationTest {
                 sendRootRequest(root, filter, iteration[0]);
                 answers.add(responses.take());
                 sendRootRequest(root, filter, iteration[0]);
-                exhausted.take(); // Block and wait for an exhausted message
+                failed.take(); // Block and wait for an failed message
                 assertTrue(receivedInferredAnswer[0]);
                 assertEquals(1, doneInIteration[0]);
 
@@ -143,7 +143,7 @@ public class ReiterationTest {
                     sendRootRequest(root, filter, iteration[0]);
                     Top re = responses.poll(100, TimeUnit.MILLISECONDS);
                     if (re == null) {
-                        Integer ex = exhausted.poll(100, TimeUnit.MILLISECONDS);
+                        Integer ex = failed.poll(100, TimeUnit.MILLISECONDS);
                         if (ex == null) {
                             fail();
                         }

@@ -22,6 +22,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
+import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.logic.resolvable.Unifier;
 import grakn.core.logic.resolvable.Unifier.Requirements.Instance;
 import grakn.core.reasoner.resolution.framework.Resolver;
@@ -204,7 +205,6 @@ public abstract class AnswerState {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Partial.Unified.class));
         }
 
-
         public Partial.Filtered filterToDownstream(Set<Identifier.Variable.Retrievable> filter) {
             return Filtered.filter(this, filter, root(), recordExplanations());
         }
@@ -245,6 +245,7 @@ public abstract class AnswerState {
 
             private Identity(ConceptMap partialAnswer, Top parent, Actor<? extends Resolver<?>> root,
                              boolean requiresReiteration, @Nullable Derivation derivation, boolean recordExplanations) {
+                // TODO why is the resolver here and other places null?
                 super(partialAnswer, parent, null, root, requiresReiteration, derivation, recordExplanations);
                 this.hash = Objects.hash(root, conceptMap, parent);
             }
@@ -312,7 +313,7 @@ public abstract class AnswerState {
                 if (conceptMap().concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
                 return parent().with(mergedWithParent(conceptMap().filter(filter)), resolver,
                                      requiresReiteration || parent().requiresReiteration(),
-                                                 extendedParentDerivation(resolver).orElse(null));
+                                     extendedParentDerivation(resolver).orElse(null));
             }
 
             @Override
@@ -383,7 +384,7 @@ public abstract class AnswerState {
             }
 
             public Partial<?> toUpstream(Actor<? extends Resolver<?>> resolver) {
-                return parent().with(mergedWithParent(mapping.unTransform(this.conceptMap())),resolver,
+                return parent().with(mergedWithParent(mapping.unTransform(this.conceptMap())), resolver,
                                      requiresReiteration || parent().requiresReiteration(),
                                      extendedParentDerivation(resolver).orElse(null));
             }
@@ -471,6 +472,14 @@ public abstract class AnswerState {
                          @Nullable Derivation derivation) {
                 return new Unified(conceptMap, parent(), unifier, instanceRequirements, resolver, root(), requiresReiteration,
                                    derivation, recordExplanations());
+            }
+
+            public Unified extend(ConceptMap ans) {
+                Map<Identifier.Variable.Retrievable, Concept> extended = new HashMap<>();
+                extended.putAll(ans.concepts());
+                extended.putAll(conceptMap.concepts());
+                return new Unified(new ConceptMap(extended), parent(), unifier, instanceRequirements, resolver(), root(),
+                                   requiresReiteration, derivation(), recordExplanations());
             }
 
             @Override

@@ -37,7 +37,8 @@ import grakn.core.reasoner.resolution.resolver.ConjunctionResolver;
 import grakn.core.reasoner.resolution.resolver.NegationResolver;
 import grakn.core.reasoner.resolution.resolver.RetrievableResolver;
 import grakn.core.reasoner.resolution.resolver.Root;
-import grakn.core.reasoner.resolution.resolver.RuleResolver;
+import grakn.core.reasoner.resolution.resolver.ConclusionResolver;
+import grakn.core.reasoner.resolution.resolver.ConditionResolver;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import org.slf4j.Logger;
@@ -60,7 +61,8 @@ public class ResolverRegistry {
     private final HashMap<Concludable, Actor<ConcludableResolver>> concludableActors;
     private final LogicManager logicMgr;
     private boolean explanations;
-    private final HashMap<Rule, Actor<RuleResolver>> rules;
+    private final HashMap<Rule, Actor<ConditionResolver>> ruleConditions;
+    private final HashMap<Rule, Actor<ConclusionResolver>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private final TraversalEngine traversalEngine;
     private EventLoopGroup elg;
@@ -75,32 +77,18 @@ public class ResolverRegistry {
         this.logicMgr = logicMgr;
         this.explanations = false; // TODO: enable/disable explanations from transaction context
         concludableActors = new HashMap<>();
-        rules = new HashMap<>();
+        ruleConditions = new HashMap<>();
+        ruleConclusions = new HashMap<>();
         planner = new Planner(conceptMgr, logicMgr);
-    }
-
-    public MappedResolver registerResolvable(Resolvable resolvable) {
-        if (resolvable.isRetrievable()) {
-            return registerRetrievable(resolvable.asRetrievable());
-        } else if (resolvable.isConcludable()) {
-            return registerConcludable(resolvable.asConcludable());
-        } else throw GraknException.of(ILLEGAL_STATE);
-    }
-
-    public Actor<RuleResolver> registerRule(Rule rule) {
-        LOG.debug("Register retrieval for rule actor: '{}'", rule);
-        return rules.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new RuleResolver(
-                self, r, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr, planner,
-                explanations)));
     }
 
     public Actor<Root.Conjunction> rootConjunction(Conjunction conjunction, @Nullable Long offset,
                                                    @Nullable Long limit, Consumer<Top> onAnswer,
-                                                   Consumer<Integer> onExhausted) {
+                                                   Consumer<Integer> onFail) {
         LOG.debug("Creating Root.Conjunction for: '{}'", conjunction);
         return Actor.create(
                 elg, self -> new Root.Conjunction(
-                        self, conjunction, offset, limit, onAnswer, onExhausted, resolutionRecorder, this,
+                        self, conjunction, offset, limit, onAnswer, onFail, resolutionRecorder, this,
                         traversalEngine, conceptMgr, logicMgr, planner, explanations));
     }
 
@@ -110,8 +98,38 @@ public class ResolverRegistry {
         LOG.debug("Creating Root.Disjunction for: '{}'", disjunction);
         return Actor.create(
                 elg, self -> new Root.Disjunction(self, disjunction, offset, limit, onAnswer, onExhausted, resolutionRecorder,
-                                                  this, traversalEngine, explanations)
+                                                  this, traversalEngine, conceptMgr, explanations)
         );
+    }
+
+    public MappedResolver negated(Negated negated, Conjunction upstream) {
+        LOG.debug("Creating Negation resolver for : {}", negated);
+        Actor<NegationResolver> negatedResolver = Actor.create(
+                elg, self -> new NegationResolver(self, negated, this, traversalEngine, conceptMgr, resolutionRecorder, explanations)
+        );
+        Map<Retrievable, Retrievable> filteredMapping = identityFiltered(upstream, negated);
+        return MappedResolver.of(negatedResolver, filteredMapping);
+    }
+
+    public Actor<ConditionResolver> registerCondition(Rule rule) {
+        LOG.debug("Register retrieval for rule condition actor: '{}'", rule);
+        return ruleConditions.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new ConditionResolver(
+                self, r, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr, planner,
+                explanations)));
+    }
+
+    public Actor<ConclusionResolver> registerConclusion(Rule.Conclusion conclusion) {
+        LOG.debug("Register retrieval for rule conclusion actor: '{}'", conclusion);
+        return ruleConclusions.computeIfAbsent(conclusion.rule(), (r) -> Actor.create(elg, self -> new ConclusionResolver(
+                self, conclusion, this, resolutionRecorder, traversalEngine, conceptMgr, explanations)));
+    }
+
+    public MappedResolver registerResolvable(Resolvable<?> resolvable) {
+        if (resolvable.isRetrievable()) {
+            return registerRetrievable(resolvable.asRetrievable());
+        } else if (resolvable.isConcludable()) {
+            return registerConcludable(resolvable.asConcludable());
+        } else throw GraknException.of(ILLEGAL_STATE);
     }
 
     private MappedResolver registerRetrievable(grakn.core.logic.resolvable.Retrievable retrievable) {
@@ -120,8 +138,8 @@ public class ResolverRegistry {
                 self, retrievable, this, traversalEngine, conceptMgr, explanations));
         return MappedResolver.of(retrievableActor, identity(retrievable));
     }
-
     // note: must be thread safe. We could move to a ConcurrentHashMap if we create an alpha-equivalence wrapper
+
     private synchronized MappedResolver registerConcludable(Concludable concludable) {
         LOG.debug("Register ConcludableResolver: '{}'", concludable.pattern());
         for (Map.Entry<Concludable, Actor<ConcludableResolver>> c : concludableActors.entrySet()) {
@@ -138,22 +156,13 @@ public class ResolverRegistry {
         return MappedResolver.of(concludableActor, identity(concludable));
     }
 
-    public Actor<ConjunctionResolver.Nested> conjunction(Conjunction conjunction) {
+    public Actor<ConjunctionResolver.Nested> nested(Conjunction conjunction) {
         LOG.debug("Creating Conjunction resolver for : {}", conjunction);
         return Actor.create(
                 elg, self -> new ConjunctionResolver.Nested(
                         self, conjunction, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr, planner,
                         explanations)
         );
-    }
-
-    public MappedResolver negated(Negated negated, Conjunction upstream) {
-        LOG.debug("Creating Negation resolver for : {}", negated);
-        Actor<NegationResolver> negatedResolver = Actor.create(
-                elg, self -> new NegationResolver(self, negated, this, traversalEngine, resolutionRecorder, explanations)
-        );
-        Map<Retrievable, Retrievable> filteredMapping = identityFiltered(upstream, negated);
-        return MappedResolver.of(negatedResolver, filteredMapping);
     }
 
     private Map<Retrievable, Retrievable> identity(Resolvable<Conjunction> conjunctionResolvable) {

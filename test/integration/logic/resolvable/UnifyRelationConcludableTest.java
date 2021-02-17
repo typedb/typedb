@@ -742,6 +742,7 @@ public class UnifyRelationConcludableTest {
         assertEquals(3, unified.get().concepts().size());
         assertEquals(person, unified.get().get("p"));
         assertEquals(person, unified.get().get("q"));
+        assertEquals(employment, unified.get().get(Identifier.Variable.anon(0)));
     }
 
     @Test
