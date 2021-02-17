@@ -58,7 +58,6 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
 
     private final LogicManager logicMgr;
     private final Planner planner;
-    final ConceptManager conceptMgr;
     final Actor<ResolutionRecorder> resolutionRecorder;
     final grakn.core.pattern.Conjunction conjunction;
     final Set<Resolvable<?>> resolvables;
@@ -72,8 +71,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
                                Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
                                Planner planner, boolean explanations) {
-        super(self, name, registry, traversalEngine, explanations);
-        this.conceptMgr = conceptMgr;
+        super(self, name, registry, traversalEngine, conceptMgr, explanations);
         this.logicMgr = logicMgr;
         this.resolutionRecorder = resolutionRecorder;
         this.planner = planner;
@@ -98,7 +96,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     public void receiveRequest(Request fromUpstream, int iteration) {
         LOG.trace("{}: received Request: {}", name(), fromUpstream);
 
-        if (!isInitialised) initialiseDownstreamActors();
+        if (!isInitialised) initialiseDownstreamResolvers();
 
         ResponseProducer responseProducer = mayUpdateAndGetResponseProducer(fromUpstream, iteration);
         if (iteration < responseProducer.iteration()) {
@@ -166,8 +164,8 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     }
 
     @Override
-    protected void initialiseDownstreamActors() {
-        LOG.debug("{}: initialising downstream actors", name());
+    protected void initialiseDownstreamResolvers() {
+        LOG.debug("{}: initialising downstream resolvers", name());
         Set<Concludable> concludables = Iterators.iterate(Concludable.create(conjunction))
                 .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext()).toSet();
         Set<grakn.core.logic.resolvable.Retrievable> retrievables = grakn.core.logic.resolvable.Retrievable.extractFrom(conjunction, concludables);
@@ -298,7 +296,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         @Override
         protected void exception(Throwable e) {
             LOG.error("Actor exception", e);
-            // TODO, once integrated into the larger flow of executing queries, kill the actors and report and exception to root
+            // TODO, once integrated into the larger flow of executing queries, kill the resolvers and report and exception to root
         }
     }
 }

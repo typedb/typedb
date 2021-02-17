@@ -161,7 +161,7 @@ public interface Root {
         @Override
         protected void exception(Throwable e) {
             LOG.error("Actor exception", e);
-            // TODO, once integrated into the larger flow of executing queries, kill the actors and report and exception to root
+            // TODO, once integrated into the larger flow of executing queries, kill the resolvers and report and exception to root
         }
 
     }
@@ -185,8 +185,8 @@ public interface Root {
         public Disjunction(Actor<Disjunction> self, grakn.core.pattern.Disjunction disjunction,
                            @Nullable Long offset, @Nullable Long limit, Consumer<Top> onAnswer,
                            Consumer<Integer> onFail, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
-                           TraversalEngine traversalEngine, boolean explanations) {
-            super(self, Disjunction.class.getSimpleName() + "(pattern:" + disjunction + ")", registry, traversalEngine, explanations);
+                           TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean explanations) {
+            super(self, Disjunction.class.getSimpleName() + "(pattern:" + disjunction + ")", registry, traversalEngine, conceptMgr, explanations);
             this.disjunction = disjunction;
             this.offset = offset;
             this.limit = limit;
@@ -217,7 +217,7 @@ public interface Root {
         public void receiveRequest(Request fromUpstream, int iteration) {
             LOG.trace("{}: received Request: {}", name(), fromUpstream);
             if (!isInitialised) {
-                initialiseDownstreamActors();
+                initialiseDownstreamResolvers();
                 responseProducer = responseProducerCreate(fromUpstream, iteration);
             }
             mayReiterateResponseProducer(fromUpstream, iteration);
@@ -283,8 +283,8 @@ public interface Root {
         }
 
         @Override
-        protected void initialiseDownstreamActors() {
-            LOG.debug("{}: initialising downstream actors", name());
+        protected void initialiseDownstreamResolvers() {
+            LOG.debug("{}: initialising downstream resolvers", name());
             for (grakn.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
                 downstreamResolvers.add(registry.conjunction(conjunction));
             }
@@ -332,7 +332,7 @@ public interface Root {
         @Override
         protected void exception(Throwable e) {
             LOG.error("Actor exception", e);
-            // TODO, once integrated into the larger flow of executing queries, kill the actors and report and exception to root
+            // TODO, once integrated into the larger flow of executing queries, kill the resolvers and report and exception to root
         }
 
     }

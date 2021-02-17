@@ -19,6 +19,7 @@
 package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.resolvable.Negated;
@@ -54,10 +55,10 @@ public class NegationResolver extends Resolver<NegationResolver> {
     private Actor<? extends Resolver<?>> downstream;
 
     public NegationResolver(Actor<NegationResolver> self, Negated negated, ResolverRegistry registry,
-                            TraversalEngine traversalEngine, Actor<ResolutionRecorder> resolutionRecorder,
+                            TraversalEngine traversalEngine, ConceptManager conceptMgr, Actor<ResolutionRecorder> resolutionRecorder,
                             boolean explanations) {
         super(self, NegationResolver.class.getSimpleName() + "(pattern: " + negated.pattern() + ")",
-              registry, traversalEngine, explanations);
+              registry, traversalEngine, conceptMgr, explanations);
         this.negated = negated;
         this.resolutionRecorder = resolutionRecorder;
         this.responses = new HashMap<>();
@@ -65,8 +66,8 @@ public class NegationResolver extends Resolver<NegationResolver> {
     }
 
     @Override
-    protected void initialiseDownstreamActors() {
-        LOG.debug("{}: initialising downstream actors", name());
+    protected void initialiseDownstreamResolvers() {
+        LOG.debug("{}: initialising downstream resolvers", name());
 
         List<Conjunction> disjunction = negated.pattern().conjunctions();
         if (disjunction.size() == 1) {
@@ -82,7 +83,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
     public void receiveRequest(Request fromUpstream, int iteration) {
         LOG.trace("{}: received Request: {}", name(), fromUpstream);
 
-        if (!isInitialised) initialiseDownstreamActors();
+        if (!isInitialised) initialiseDownstreamResolvers();
 
         NegationResponse negationResponse = getOrInitialise(fromUpstream.partialAnswer().conceptMap());
         if (negationResponse.status.isEmpty()) {
@@ -172,7 +173,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
     @Override
     protected void exception(Throwable e) {
         LOG.error("Actor exception", e);
-        // TODO, once integrated into the larger flow of executing queries, kill the actors and report and exception to root
+        // TODO, once integrated into the larger flow of executing queries, kill the resolvers and report and exception to root
     }
 
     private static class NegationResponse {

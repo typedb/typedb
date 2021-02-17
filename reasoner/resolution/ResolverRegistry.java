@@ -33,12 +33,11 @@ import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.resolver.ConcludableResolver;
-import grakn.core.reasoner.resolution.resolver.ConclusionResolver;
-import grakn.core.reasoner.resolution.resolver.ConditionResolver;
 import grakn.core.reasoner.resolution.resolver.ConjunctionResolver;
 import grakn.core.reasoner.resolution.resolver.NegationResolver;
 import grakn.core.reasoner.resolution.resolver.RetrievableResolver;
 import grakn.core.reasoner.resolution.resolver.Root;
+import grakn.core.reasoner.resolution.resolver.RuleResolvers;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import org.slf4j.Logger;
@@ -61,8 +60,8 @@ public class ResolverRegistry {
     private final HashMap<Concludable, Actor<ConcludableResolver>> concludableActors;
     private final LogicManager logicMgr;
     private boolean explanations;
-    private final HashMap<Rule, Actor<ConditionResolver>> ruleConditions;
-    private final HashMap<Rule, Actor<ConclusionResolver>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
+    private final HashMap<Rule, Actor<RuleResolvers.Condition>> ruleConditions;
+    private final HashMap<Rule, Actor<RuleResolvers.Conclusion>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private final TraversalEngine traversalEngine;
     private EventLoopGroup elg;
@@ -90,16 +89,16 @@ public class ResolverRegistry {
         } else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    public Actor<ConditionResolver> registerCondition(Rule rule) {
+    public Actor<RuleResolvers.Condition> registerCondition(Rule rule) {
         LOG.debug("Register retrieval for rule condition actor: '{}'", rule);
-        return ruleConditions.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new ConditionResolver(
+        return ruleConditions.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new RuleResolvers.Condition(
                 self, r, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr, planner,
                 explanations)));
     }
 
-    public Actor<ConclusionResolver> registerConclusion(Rule.Conclusion conclusion) {
+    public Actor<RuleResolvers.Conclusion> registerConclusion(Rule.Conclusion conclusion) {
         LOG.debug("Register retrieval for rule conclusion actor: '{}'", conclusion);
-        return ruleConclusions.computeIfAbsent(conclusion.rule(), (r) -> Actor.create(elg, self -> new ConclusionResolver(
+        return ruleConclusions.computeIfAbsent(conclusion.rule(), (r) -> Actor.create(elg, self -> new RuleResolvers.Conclusion(
                 self, conclusion, this, resolutionRecorder, traversalEngine, conceptMgr, explanations)));
     }
 
@@ -119,7 +118,7 @@ public class ResolverRegistry {
         LOG.debug("Creating Root.Disjunction for: '{}'", disjunction);
         return Actor.create(
                 elg, self -> new Root.Disjunction(self, disjunction, offset, limit, onAnswer, onExhausted, resolutionRecorder,
-                                                  this, traversalEngine, explanations)
+                                                  this, traversalEngine, conceptMgr, explanations)
         );
     }
 
@@ -159,7 +158,7 @@ public class ResolverRegistry {
     public MappedResolver negated(Negated negated, Conjunction upstream) {
         LOG.debug("Creating Negation resolver for : {}", negated);
         Actor<NegationResolver> negatedResolver = Actor.create(
-                elg, self -> new NegationResolver(self, negated, this, traversalEngine, resolutionRecorder, explanations)
+                elg, self -> new NegationResolver(self, negated, this, traversalEngine, conceptMgr, resolutionRecorder, explanations)
         );
         Map<Retrievable, Retrievable> filteredMapping = identityFiltered(upstream, negated);
         return MappedResolver.of(negatedResolver, filteredMapping);
