@@ -34,7 +34,7 @@ import java.util.Set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.iterate;
 
-public class RuleResolvers {
+public class RuleResolver {
 
     public static class Condition extends ConjunctionResolver<Condition> {
 

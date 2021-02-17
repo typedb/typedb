@@ -48,7 +48,7 @@ import java.util.Set;
 public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
 
-    private final LinkedHashMap<Actor<RuleResolvers.Conclusion>, Set<Unifier>> applicableRules;
+    private final LinkedHashMap<Actor<RuleResolver.Conclusion>, Set<Unifier>> applicableRules;
     private final Concludable concludable;
     private final LogicManager logicMgr;
     private final Map<Actor<? extends Resolver<?>>, RecursionState> recursionStates;
@@ -131,7 +131,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         LOG.debug("{}: initialising downstream resolvers", name());
         concludable.getApplicableRules(conceptMgr, logicMgr).forEachRemaining(rule -> concludable.getUnifiers(rule)
                 .forEachRemaining(unifier -> {
-                    Actor<RuleResolvers.Conclusion> conclusionResolver = registry.registerConclusion(rule.conclusion());
+                    Actor<RuleResolver.Conclusion> conclusionResolver = registry.registerConclusion(rule.conclusion());
                     applicableRules.putIfAbsent(conclusionResolver, new HashSet<>());
                     applicableRules.get(conclusionResolver).add(unifier);
                 }));
@@ -219,8 +219,8 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         // loop termination: when receiving a new request, we check if we have seen it before from this root query
         // if we have, we do not allow rules to be registered as possible downstreams
         if (!recursionState.hasReceived(fromUpstream.partialAnswer().conceptMap())) {
-            for (Map.Entry<Actor<RuleResolvers.Conclusion>, Set<Unifier>> entry : applicableRules.entrySet()) {
-                Actor<RuleResolvers.Conclusion> ruleActor = entry.getKey();
+            for (Map.Entry<Actor<RuleResolver.Conclusion>, Set<Unifier>> entry : applicableRules.entrySet()) {
+                Actor<RuleResolver.Conclusion> ruleActor = entry.getKey();
                 for (Unifier unifier : entry.getValue()) {
                     Optional<Unified> unified = fromUpstream.partialAnswer().unifyToDownstream(unifier);
                     if (unified.isPresent()) {

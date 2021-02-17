@@ -48,13 +48,13 @@ import java.util.function.Consumer;
 
 import static grakn.core.common.iterator.Iterators.iterate;
 
-public interface RootResolvers {
+public interface RootResolver {
 
     void submitAnswer(Top answer);
 
     void submitFail(int iteration);
 
-    class Conjunction extends ConjunctionResolver<Conjunction> implements RootResolvers {
+    class Conjunction extends ConjunctionResolver<Conjunction> implements RootResolver {
 
         private static final Logger LOG = LoggerFactory.getLogger(Conjunction.class);
 
@@ -166,7 +166,7 @@ public interface RootResolvers {
 
     }
 
-    class Disjunction extends Resolver<Disjunction> implements RootResolvers {
+    class Disjunction extends Resolver<Disjunction> implements RootResolver {
 
         private static final Logger LOG = LoggerFactory.getLogger(Disjunction.class);
 

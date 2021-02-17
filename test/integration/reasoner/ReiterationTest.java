@@ -28,7 +28,7 @@ import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Identity;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.framework.Request;
-import grakn.core.reasoner.resolution.resolver.RootResolvers;
+import grakn.core.reasoner.resolution.resolver.RootResolver;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
@@ -120,7 +120,7 @@ public class ReiterationTest {
                 int[] doneInIteration = {0};
                 boolean[] receivedInferredAnswer = {false};
 
-                Actor<RootResolvers.Conjunction> root = registry.rootConjunction(conjunction, null, null, answer -> {
+                Actor<RootResolver.Conjunction> root = registry.rootConjunction(conjunction, null, null, answer -> {
                     if (answer.requiresReiteration()) receivedInferredAnswer[0] = true;
                     responses.add(answer);
                 }, iterDone -> {
@@ -157,7 +157,7 @@ public class ReiterationTest {
         }
     }
 
-    private void sendRootRequest(Actor<RootResolvers.Conjunction> root, Set<Identifier.Variable.Name> filter, int iteration) {
+    private void sendRootRequest(Actor<RootResolver.Conjunction> root, Set<Identifier.Variable.Name> filter, int iteration) {
         Identity downstream = Top.initial(filter, false, root).toDownstream();
         root.tell(actor -> actor.receiveRequest(
                 Request.create(root, downstream), iteration)
