@@ -71,7 +71,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
 
         List<Conjunction> disjunction = negated.pattern().conjunctions();
         if (disjunction.size() == 1) {
-            downstream = registry.conjunction(disjunction.get(0));
+            downstream = registry.nested(disjunction.get(0));
         } else {
             // negations with complex disjunctions not yet working
             throw GraknException.of(UNIMPLEMENTED);

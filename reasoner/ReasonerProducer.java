@@ -19,6 +19,7 @@ package grakn.core.reasoner;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
+import grakn.core.concurrent.common.Executors;
 import grakn.core.concurrent.producer.Producer;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
@@ -46,7 +47,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerProducer.class);
 
-    private static final int COMPUTE_SIZE = 64;
+    private static final int COMPUTE_SIZE = Executors.PARALLELISATION_FACTOR * 2;
 
     private final Actor<? extends Resolver<?>> rootResolver;
     private final AtomicInteger required;
@@ -59,6 +60,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private int iteration;
 
     public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers) {
+        assert COMPUTE_SIZE > 0;
         this.rootResolver = resolverRegistry.rootConjunction(conjunction, modifiers.offset().orElse(null),
                                                              modifiers.limit().orElse(null), this::requestAnswered, this::requestFailed);
         Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver).toDownstream();

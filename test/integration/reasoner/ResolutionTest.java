@@ -28,7 +28,7 @@ import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Identity;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
-import grakn.core.reasoner.resolution.resolver.RootResolver;
+import grakn.core.reasoner.resolution.resolver.Root;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
@@ -450,7 +450,7 @@ public class ResolutionTest {
                 AtomicLong doneReceived = new AtomicLong(0L);
                 Set<Identifier.Variable.Name> filter = iterate(conjunctionPattern.variables()).map(Variable::id)
                         .filter(Identifier::isName).map(Identifier.Variable::asName).toSet();
-                Actor<RootResolver.Conjunction> root =
+                Actor<Root.Conjunction> root =
                         registry.rootConjunction(conjunctionPattern, null, null, responses::add,
                                                  iterDone -> doneReceived.incrementAndGet());
 
@@ -501,7 +501,7 @@ public class ResolutionTest {
         ResolverRegistry registry = transaction.reasoner().resolverRegistry();
         LinkedBlockingQueue<Top> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
-        Actor<RootResolver.Disjunction> root =
+        Actor<Root.Disjunction> root =
                 registry.rootDisjunction(disjunction, offset, limit, responses::add, iterDone -> doneReceived.incrementAndGet());
         assertResponses(root, filter, responses, doneReceived, answerCount);
     }
@@ -513,7 +513,7 @@ public class ResolutionTest {
         AtomicLong doneReceived = new AtomicLong(0L);
         Set<Identifier.Variable.Name> filter = iterate(conjunction.variables()).map(Variable::id)
                 .filter(Identifier::isName).map(Identifier.Variable::asName).toSet();
-        Actor<RootResolver.Conjunction> root =
+        Actor<Root.Conjunction> root =
                 registry.rootConjunction(conjunction, offset, limit, responses::add, iterDone -> doneReceived.incrementAndGet());
         assertResponses(root, filter, responses, doneReceived, answerCount);
     }

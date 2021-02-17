@@ -36,8 +36,9 @@ import grakn.core.reasoner.resolution.resolver.ConcludableResolver;
 import grakn.core.reasoner.resolution.resolver.ConjunctionResolver;
 import grakn.core.reasoner.resolution.resolver.NegationResolver;
 import grakn.core.reasoner.resolution.resolver.RetrievableResolver;
-import grakn.core.reasoner.resolution.resolver.RootResolver;
-import grakn.core.reasoner.resolution.resolver.RuleResolver;
+import grakn.core.reasoner.resolution.resolver.Root;
+import grakn.core.reasoner.resolution.resolver.RuleConclusion;
+import grakn.core.reasoner.resolution.resolver.RuleCondition;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import org.slf4j.Logger;
@@ -60,8 +61,8 @@ public class ResolverRegistry {
     private final HashMap<Concludable, Actor<ConcludableResolver>> concludableActors;
     private final LogicManager logicMgr;
     private boolean explanations;
-    private final HashMap<Rule, Actor<RuleResolver.Condition>> ruleConditions;
-    private final HashMap<Rule, Actor<RuleResolver.Conclusion>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
+    private final HashMap<Rule, Actor<RuleCondition>> ruleConditions;
+    private final HashMap<Rule, Actor<RuleConclusion>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private final TraversalEngine traversalEngine;
     private EventLoopGroup elg;
@@ -81,45 +82,54 @@ public class ResolverRegistry {
         planner = new Planner(conceptMgr, logicMgr);
     }
 
-    public MappedResolver registerResolvable(Resolvable resolvable) {
+    public Actor<Root.Conjunction> rootConjunction(Conjunction conjunction, @Nullable Long offset,
+                                                   @Nullable Long limit, Consumer<Top> onAnswer,
+                                                   Consumer<Integer> onFail) {
+        LOG.debug("Creating Root.Conjunction for: '{}'", conjunction);
+        return Actor.create(
+                elg, self -> new Root.Conjunction(
+                        self, conjunction, offset, limit, onAnswer, onFail, resolutionRecorder, this,
+                        traversalEngine, conceptMgr, logicMgr, planner, explanations));
+    }
+
+    public Actor<Root.Disjunction> rootDisjunction(Disjunction disjunction, @Nullable Long offset,
+                                                   @Nullable Long limit, Consumer<Top> onAnswer,
+                                                   Consumer<Integer> onExhausted) {
+        LOG.debug("Creating Root.Disjunction for: '{}'", disjunction);
+        return Actor.create(
+                elg, self -> new Root.Disjunction(self, disjunction, offset, limit, onAnswer, onExhausted, resolutionRecorder,
+                                                  this, traversalEngine, conceptMgr, explanations)
+        );
+    }
+
+    public MappedResolver negated(Negated negated, Conjunction upstream) {
+        LOG.debug("Creating Negation resolver for : {}", negated);
+        Actor<NegationResolver> negatedResolver = Actor.create(
+                elg, self -> new NegationResolver(self, negated, this, traversalEngine, conceptMgr, resolutionRecorder, explanations)
+        );
+        Map<Retrievable, Retrievable> filteredMapping = identityFiltered(upstream, negated);
+        return MappedResolver.of(negatedResolver, filteredMapping);
+    }
+
+    public Actor<RuleCondition> registerCondition(Rule rule) {
+        LOG.debug("Register retrieval for rule condition actor: '{}'", rule);
+        return ruleConditions.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new RuleCondition(
+                self, r, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr, planner,
+                explanations)));
+    }
+
+    public Actor<RuleConclusion> registerConclusion(Rule.Conclusion conclusion) {
+        LOG.debug("Register retrieval for rule conclusion actor: '{}'", conclusion);
+        return ruleConclusions.computeIfAbsent(conclusion.rule(), (r) -> Actor.create(elg, self -> new RuleConclusion(
+                self, conclusion, this, resolutionRecorder, traversalEngine, conceptMgr, explanations)));
+    }
+
+    public MappedResolver registerResolvable(Resolvable<?> resolvable) {
         if (resolvable.isRetrievable()) {
             return registerRetrievable(resolvable.asRetrievable());
         } else if (resolvable.isConcludable()) {
             return registerConcludable(resolvable.asConcludable());
         } else throw GraknException.of(ILLEGAL_STATE);
-    }
-
-    public Actor<RuleResolver.Condition> registerCondition(Rule rule) {
-        LOG.debug("Register retrieval for rule condition actor: '{}'", rule);
-        return ruleConditions.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new RuleResolver.Condition(
-                self, r, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr, planner,
-                explanations)));
-    }
-
-    public Actor<RuleResolver.Conclusion> registerConclusion(Rule.Conclusion conclusion) {
-        LOG.debug("Register retrieval for rule conclusion actor: '{}'", conclusion);
-        return ruleConclusions.computeIfAbsent(conclusion.rule(), (r) -> Actor.create(elg, self -> new RuleResolver.Conclusion(
-                self, conclusion, this, resolutionRecorder, traversalEngine, conceptMgr, explanations)));
-    }
-
-    public Actor<RootResolver.Conjunction> rootConjunction(Conjunction conjunction, @Nullable Long offset,
-                                                           @Nullable Long limit, Consumer<Top> onAnswer,
-                                                           Consumer<Integer> onFail) {
-        LOG.debug("Creating Root.Conjunction for: '{}'", conjunction);
-        return Actor.create(
-                elg, self -> new RootResolver.Conjunction(
-                        self, conjunction, offset, limit, onAnswer, onFail, resolutionRecorder, this,
-                        traversalEngine, conceptMgr, logicMgr, planner, explanations));
-    }
-
-    public Actor<RootResolver.Disjunction> rootDisjunction(Disjunction disjunction, @Nullable Long offset,
-                                                           @Nullable Long limit, Consumer<Top> onAnswer,
-                                                           Consumer<Integer> onExhausted) {
-        LOG.debug("Creating Root.Disjunction for: '{}'", disjunction);
-        return Actor.create(
-                elg, self -> new RootResolver.Disjunction(self, disjunction, offset, limit, onAnswer, onExhausted, resolutionRecorder,
-                                                          this, traversalEngine, conceptMgr, explanations)
-        );
     }
 
     private MappedResolver registerRetrievable(grakn.core.logic.resolvable.Retrievable retrievable) {
@@ -146,22 +156,13 @@ public class ResolverRegistry {
         return MappedResolver.of(concludableActor, identity(concludable));
     }
 
-    public Actor<ConjunctionResolver.Nested> conjunction(Conjunction conjunction) {
+    public Actor<ConjunctionResolver.Nested> nested(Conjunction conjunction) {
         LOG.debug("Creating Conjunction resolver for : {}", conjunction);
         return Actor.create(
                 elg, self -> new ConjunctionResolver.Nested(
                         self, conjunction, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr, planner,
                         explanations)
         );
-    }
-
-    public MappedResolver negated(Negated negated, Conjunction upstream) {
-        LOG.debug("Creating Negation resolver for : {}", negated);
-        Actor<NegationResolver> negatedResolver = Actor.create(
-                elg, self -> new NegationResolver(self, negated, this, traversalEngine, conceptMgr, resolutionRecorder, explanations)
-        );
-        Map<Retrievable, Retrievable> filteredMapping = identityFiltered(upstream, negated);
-        return MappedResolver.of(negatedResolver, filteredMapping);
     }
 
     private Map<Retrievable, Retrievable> identity(Resolvable<Conjunction> conjunctionResolvable) {
