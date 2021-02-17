@@ -124,9 +124,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         }
 
         if (!done) {
-            if (iteration == this.iteration) {
-                prepareNextIteration();
-            }
+            if (iteration == this.iteration) prepareNextIteration();
             assert iteration < this.iteration;
             retryInNewIteration();
         }

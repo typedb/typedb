@@ -33,16 +33,16 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
-public class RuleCondition extends ConjunctionResolver<RuleCondition> {
+public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RuleCondition.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ConditionResolver.class);
 
     private final Rule rule;
 
-    public RuleCondition(Actor<RuleCondition> self, Rule rule, Actor<ResolutionRecorder> resolutionRecorder,
-                         ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                         LogicManager logicMgr, Planner planner, boolean explanations) {
-        super(self, RuleCondition.class.getCanonicalName() + "(rule:" + rule.getLabel() + ")", rule.when(), resolutionRecorder,
+    public ConditionResolver(Actor<ConditionResolver> self, Rule rule, Actor<ResolutionRecorder> resolutionRecorder,
+                             ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
+                             LogicManager logicMgr, Planner planner, boolean explanations) {
+        super(self, ConditionResolver.class.getCanonicalName() + "(rule:" + rule.getLabel() + ")", rule.when(), resolutionRecorder,
               registry, traversalEngine, conceptMgr, logicMgr, planner, explanations);
         this.rule = rule;
     }

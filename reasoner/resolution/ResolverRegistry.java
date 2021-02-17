@@ -37,8 +37,8 @@ import grakn.core.reasoner.resolution.resolver.ConjunctionResolver;
 import grakn.core.reasoner.resolution.resolver.NegationResolver;
 import grakn.core.reasoner.resolution.resolver.RetrievableResolver;
 import grakn.core.reasoner.resolution.resolver.Root;
-import grakn.core.reasoner.resolution.resolver.RuleConclusion;
-import grakn.core.reasoner.resolution.resolver.RuleCondition;
+import grakn.core.reasoner.resolution.resolver.ConclusionResolver;
+import grakn.core.reasoner.resolution.resolver.ConditionResolver;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import org.slf4j.Logger;
@@ -61,8 +61,8 @@ public class ResolverRegistry {
     private final HashMap<Concludable, Actor<ConcludableResolver>> concludableActors;
     private final LogicManager logicMgr;
     private boolean explanations;
-    private final HashMap<Rule, Actor<RuleCondition>> ruleConditions;
-    private final HashMap<Rule, Actor<RuleConclusion>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
+    private final HashMap<Rule, Actor<ConditionResolver>> ruleConditions;
+    private final HashMap<Rule, Actor<ConclusionResolver>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private final TraversalEngine traversalEngine;
     private EventLoopGroup elg;
@@ -111,16 +111,16 @@ public class ResolverRegistry {
         return MappedResolver.of(negatedResolver, filteredMapping);
     }
 
-    public Actor<RuleCondition> registerCondition(Rule rule) {
+    public Actor<ConditionResolver> registerCondition(Rule rule) {
         LOG.debug("Register retrieval for rule condition actor: '{}'", rule);
-        return ruleConditions.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new RuleCondition(
+        return ruleConditions.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new ConditionResolver(
                 self, r, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr, planner,
                 explanations)));
     }
 
-    public Actor<RuleConclusion> registerConclusion(Rule.Conclusion conclusion) {
+    public Actor<ConclusionResolver> registerConclusion(Rule.Conclusion conclusion) {
         LOG.debug("Register retrieval for rule conclusion actor: '{}'", conclusion);
-        return ruleConclusions.computeIfAbsent(conclusion.rule(), (r) -> Actor.create(elg, self -> new RuleConclusion(
+        return ruleConclusions.computeIfAbsent(conclusion.rule(), (r) -> Actor.create(elg, self -> new ConclusionResolver(
                 self, conclusion, this, resolutionRecorder, traversalEngine, conceptMgr, explanations)));
     }
 

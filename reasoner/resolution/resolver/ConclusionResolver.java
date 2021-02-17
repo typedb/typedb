@@ -49,20 +49,20 @@ import java.util.Set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.iterate;
 
-public class RuleConclusion extends Resolver<RuleConclusion> {
+public class ConclusionResolver extends Resolver<ConclusionResolver> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RuleConclusion.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ConclusionResolver.class);
 
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private final Rule.Conclusion conclusion;
     private final Map<Request, ConclusionResponses> conclusionResponsess;
     private boolean isInitialised;
-    private Actor<RuleCondition> ruleResolver;
+    private Actor<ConditionResolver> ruleResolver;
 
-    public RuleConclusion(Actor<RuleConclusion> self, Rule.Conclusion conclusion, ResolverRegistry registry,
-                          Actor<ResolutionRecorder> resolutionRecorder, TraversalEngine traversalEngine,
-                          ConceptManager conceptMgr, boolean explanations) {
-        super(self, RuleConclusion.class.getSimpleName() + "(" + conclusion.rule().getLabel() + ")",
+    public ConclusionResolver(Actor<ConclusionResolver> self, Rule.Conclusion conclusion, ResolverRegistry registry,
+                              Actor<ResolutionRecorder> resolutionRecorder, TraversalEngine traversalEngine,
+                              ConceptManager conceptMgr, boolean explanations) {
+        super(self, ConclusionResolver.class.getSimpleName() + "(" + conclusion.rule().getLabel() + ")",
               registry, traversalEngine, conceptMgr, explanations);
         this.conclusion = conclusion;
         this.resolutionRecorder = resolutionRecorder;
