@@ -45,6 +45,7 @@ import static grakn.core.concurrent.common.Executors.asyncPool2;
 public class RetrievableResolver extends Resolver<RetrievableResolver> {
 
     private static final int PREFETCH_SIZE = 32;
+    private static final int REFETCH_WHEN_REMAINING = PREFETCH_SIZE/4;
 
     private static final Logger LOG = LoggerFactory.getLogger(RetrievableResolver.class);
     private final Retrievable retrievable;
@@ -90,7 +91,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         LOG.debug("{}: Creating a new Responses for request: {}", name(), fromUpstream);
         assert fromUpstream.partialAnswer().isMapped();
 
-        Producer<ConceptMap> traversalAsync = producerTraversal(retrievable.pattern(), fromUpstream.partialAnswer().conceptMap(), 2);
+        Producer<ConceptMap> traversalAsync = traversalProducer(retrievable.pattern(), fromUpstream.partialAnswer().conceptMap(), 2);
         Producer<Partial<?>> upstreamAnswersAsync = traversalAsync
                 .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap, self()));
 
@@ -104,13 +105,16 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         assert newIteration > responsesPrevious.iteration();
 
         assert fromUpstream.partialAnswer().isMapped();
-        Producer<ConceptMap> traversalAsync = producerTraversal(retrievable.pattern(), fromUpstream.partialAnswer().conceptMap(), 2);
+        Producer<ConceptMap> traversalAsync = traversalProducer(retrievable.pattern(), fromUpstream.partialAnswer().conceptMap(), 2);
         Producer<Partial<?>> upstreamAnswersAsync = traversalAsync
                 .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap, self()));
 
         return new Responses(upstreamAnswersAsync, newIteration);
     }
 
+    /*
+    TODO clean up the following two when we remove the requirement for every resolver to have ResponseProducers
+     */
     @Override
     protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
         throw GraknException.of(ILLEGAL_STATE);
@@ -152,7 +156,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
 
     public void receiveTraversalDone(Request fromUpstreamSource) {
         Responses responses = this.responses.get(fromUpstreamSource);
-        responses.traversalDone();
+        responses.setTraversalDone();
         if (!responses.hasFetched()) {
             while (responses.hasAwaitingRequest()) {
                 dispatchFail(responses.popAwaitingRequest());
@@ -165,7 +169,6 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     }
 
     private void dispatchFail(Request fromUpstreamSource) {
-        // for each awaiting in the responses, answer FAIL
         Responses responses = this.responses.get(fromUpstreamSource);
         failToUpstream(fromUpstreamSource, responses.iteration);
     }
@@ -197,11 +200,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
             return iteration;
         }
 
-        public boolean isTraversalDone() {
-            return traversalDone;
-        }
-
-        public void traversalDone() {
+        public void setTraversalDone() {
             this.traversalDone = true;
         }
 
@@ -234,8 +233,8 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
                 }
             }
 
-            // when buffered answers is half empty, trigger more processing
-            if (fetched.size() + processing < PREFETCH_SIZE / 2) {
+            // when buffered answers is mostly empty, trigger more processing
+            if (fetched.size() + processing < REFETCH_WHEN_REMAINING) {
                 assert !traversalDone;
                 this.upstreamAnswers.produce(new Queue(fromUpstream), PREFETCH_SIZE - fetched.size() - processing, asyncPool2());
             }

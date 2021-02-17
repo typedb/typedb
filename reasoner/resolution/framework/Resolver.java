@@ -113,20 +113,18 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
         fromUpstream.sender().tell(actor -> actor.receiveFail(response, iteration));
     }
 
-    protected ResourceIterator<ConceptMap> compatibleBoundAnswers(Conjunction conjunction, ConceptMap bounds) {
-        return compatibleBounds(conjunction, bounds).map(c -> boundAnswers(conjunction, c)).orElse(Iterators.empty());
+    protected ResourceIterator<ConceptMap> traversalIterator(Conjunction conjunction, ConceptMap bounds) {
+        return compatibleBounds(conjunction, bounds).map(c -> {
+            Traversal traversal = boundTraversal(conjunction.traversal(), c);
+            return traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
+        }).orElse(Iterators.empty());
     }
 
-    protected ResourceIterator<ConceptMap> boundAnswers(Conjunction conjunction, ConceptMap bounds) {
-        Traversal traversal = boundTraversal(conjunction.traversal(), bounds);
-        return traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
-    }
-
-    protected Producer<ConceptMap> producerTraversal(Conjunction conjunction, ConceptMap bounds, int parallelisation) {
+    protected Producer<ConceptMap> traversalProducer(Conjunction conjunction, ConceptMap bounds, int parallelisation) {
         return compatibleBounds(conjunction, bounds).map(b -> {
             Traversal traversal = boundTraversal(conjunction.traversal(), b);
-            return traversalEngine.producer(traversal, Arguments.Query.Producer.INCREMENTAL, parallelisation);
-        }).orElse(Producers.empty()).map(conceptMgr::conceptMap);
+            return traversalEngine.producer(traversal, Arguments.Query.Producer.INCREMENTAL, parallelisation).map(conceptMgr::conceptMap);
+        }).orElse(Producers.empty());
     }
 
     private Optional<ConceptMap> compatibleBounds(Conjunction conjunction, ConceptMap bounds) {
