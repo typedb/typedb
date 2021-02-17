@@ -205,7 +205,7 @@ public abstract class AnswerState {
         }
 
 
-        public Partial.Filtered filterToDownstream(Set<Identifier.Variable.Retrieved> filter) {
+        public Partial.Filtered filterToDownstream(Set<Identifier.Variable.Retrievable> filter) {
             return Filtered.filter(this, filter, root(), recordExplanations());
         }
 
@@ -231,7 +231,7 @@ public abstract class AnswerState {
             that the derived answers overlap but are different: for example, when a subtype is found
             by the derived answer, but the initial already uses the supertype.
              */
-            Map<Identifier.Variable.Retrieved, Concept> withInitial = new HashMap<>(unmerged.concepts());
+            Map<Identifier.Variable.Retrievable, Concept> withInitial = new HashMap<>(unmerged.concepts());
             if (parent() != null) {
                 // add the initial concept map second, to make sure we override and retain all of these
                 withInitial.putAll(parent().conceptMap().concepts());
@@ -290,10 +290,10 @@ public abstract class AnswerState {
 
         public static class Filtered extends Partial<Partial<?>> {
 
-            private final Set<Identifier.Variable.Retrieved> filter;
+            private final Set<Identifier.Variable.Retrievable> filter;
             private final int hash;
 
-            private Filtered(ConceptMap filteredConceptMap, Partial<?> parent, Set<Identifier.Variable.Retrieved> filter,
+            private Filtered(ConceptMap filteredConceptMap, Partial<?> parent, Set<Identifier.Variable.Retrievable> filter,
                              Actor<? extends Resolver<?>> resolver, Actor<? extends Resolver<?>> root,
                              boolean requiresReiteration, @Nullable Derivation derivation, boolean recordExplanations) {
                 super(filteredConceptMap, parent, resolver, root, requiresReiteration, derivation, recordExplanations);
@@ -301,7 +301,7 @@ public abstract class AnswerState {
                 this.hash = Objects.hash(resolver, conceptMap, filter, parent);
             }
 
-            static Filtered filter(Partial<?> parent, Set<Identifier.Variable.Retrieved> filter, Actor<? extends Resolver<?>> root,
+            static Filtered filter(Partial<?> parent, Set<Identifier.Variable.Retrievable> filter, Actor<? extends Resolver<?>> root,
                                    boolean recordExplanations) {
                 Derivation derivation = recordExplanations ? new AnswerState.Derivation(new HashMap<>()) : null;
                 return new Filtered(parent.conceptMap().filter(filter), parent, filter, null, root, false,

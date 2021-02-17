@@ -25,7 +25,6 @@ import grakn.core.pattern.constraint.type.TypeConstraint;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.Identifier.Variable.Retrieved;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -36,16 +35,16 @@ import static grakn.core.common.iterator.Iterators.iterate;
 
 public class Retrievable extends Resolvable<Conjunction> {
 
-    private final Set<Retrieved> retrievedIds;
+    private final Set<Identifier.Variable.Retrievable> retrievableIds;
 
     public Retrievable(Conjunction conjunction) {
         super(conjunction);
-        this.retrievedIds = iterate(pattern().identifiers()).filter(Identifier::isRetrieved)
-                .map(Identifier.Variable::asRetrieved).toSet();
+        this.retrievableIds = iterate(pattern().identifiers()).filter(Identifier::isRetrievable)
+                .map(Identifier.Variable::asRetrievable).toSet();
     }
 
     public static Set<Retrievable> extractFrom(Conjunction conjunction, Set<Concludable> toExclude) {
-        return Retrievable.Extractor.of(conjunction, toExclude).extract();
+        return grakn.core.logic.resolvable.Retrievable.Extractor.of(conjunction, toExclude).extract();
     }
 
     @Override
@@ -54,8 +53,8 @@ public class Retrievable extends Resolvable<Conjunction> {
     }
 
     @Override
-    public Set<Retrieved> retrieves() {
-        return retrievedIds;
+    public Set<Identifier.Variable.Retrievable> retrieves() {
+        return retrievableIds;
     }
 
     @Override
@@ -86,7 +85,7 @@ public class Retrievable extends Resolvable<Conjunction> {
 
         public Set<Retrievable> extract() {
             concludables.forEach(concludable -> extractedConstraints.addAll(concludable.concludableConstraints()));
-            iterate(conjunction.variables()).filter(var -> var.id().isRetrieved()).forEachRemaining(var -> {
+            iterate(conjunction.variables()).filter(var -> var.id().isRetrievable()).forEachRemaining(var -> {
                 if (!extractedVariables.contains(var)) {
                     SubgraphRegistry subgraph = new SubgraphRegistry();
                     subgraph.registerVariable(var);

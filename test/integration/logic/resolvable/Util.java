@@ -46,7 +46,7 @@ public class Util {
         return rule;
     }
 
-    public static Map<String, Set<String>> getStringMapping(Map<Identifier.Variable.Retrieved, Set<Identifier.Variable>> map) {
+    public static Map<String, Set<String>> getStringMapping(Map<Identifier.Variable.Retrievable, Set<Identifier.Variable>> map) {
         return map.entrySet().stream().collect(Collectors.toMap(v -> v.getKey().toString(),
                                                                 e -> e.getValue().stream().map(Identifier::toString).collect(Collectors.toSet()))
         );

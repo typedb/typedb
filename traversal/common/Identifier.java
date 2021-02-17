@@ -33,7 +33,7 @@ public abstract class Identifier {
 
     public boolean isVariable() { return false; }
 
-    public boolean isRetrieved() { return false; }
+    public boolean isRetrievable() { return false; }
 
     public boolean isName() { return false; }
 
@@ -161,8 +161,8 @@ public abstract class Identifier {
         @Override
         public Variable asVariable() { return this; }
 
-        public Variable.Retrieved asRetrieved() {
-            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Variable.Retrieved.class));
+        public Retrievable asRetrievable() {
+            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Retrievable.class));
         }
 
         public Variable.Name asName() {
@@ -196,24 +196,24 @@ public abstract class Identifier {
             return hash;
         }
 
-        public static class Retrieved extends Variable {
+        public static class Retrievable extends Variable {
 
-            public Retrieved(Reference reference, Integer id) {
+            public Retrievable(Reference reference, Integer id) {
                 super(reference, id);
             }
 
             @Override
-            public boolean isRetrieved() {
+            public boolean isRetrievable() {
                 return true;
             }
 
             @Override
-            public Retrieved asRetrieved() {
+            public Retrievable asRetrievable() {
                 return this;
             }
         }
 
-        public static class Name extends Retrieved {
+        public static class Name extends Retrievable {
 
             private Name(Reference.Name reference) {
                 super(reference, null);
@@ -231,7 +231,7 @@ public abstract class Identifier {
             public Variable.Name asName() { return this; }
         }
 
-        public static class Anonymous extends Retrieved {
+        public static class Anonymous extends Retrievable {
 
             private Anonymous(Reference.Anonymous reference, int id) {
                 super(reference, id);

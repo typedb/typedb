@@ -25,7 +25,6 @@ import grakn.core.logic.LogicManager;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Negated;
 import grakn.core.logic.resolvable.Resolvable;
-import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Negation;
 import grakn.core.reasoner.resolution.Planner;
@@ -40,7 +39,7 @@ import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import grakn.core.traversal.TraversalEngine;
-import grakn.core.traversal.common.Identifier.Variable.Retrieved;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -174,7 +173,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         LOG.debug("{}: initialising downstream actors", name());
         Set<Concludable> concludables = Iterators.iterate(Concludable.create(conjunction))
                 .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext()).toSet();
-        Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction, concludables);
+        Set<grakn.core.logic.resolvable.Retrievable> retrievables = grakn.core.logic.resolvable.Retrievable.extractFrom(conjunction, concludables);
         resolvables.addAll(concludables);
         resolvables.addAll(retrievables);
         iterate(resolvables).forEachRemaining(resolvable -> downstreamResolvers.put(resolvable,
@@ -235,10 +234,10 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
 
     class Plans {
 
-        Map<Set<Retrieved>, Plan> plans;
+        Map<Set<Retrievable>, Plan> plans;
         public Plans() { this.plans = new HashMap<>(); }
 
-        public Plan getOrCreate(Set<Retrieved> boundVars, Set<Resolvable<?>> resolvable, Set<Negated> negations) {
+        public Plan getOrCreate(Set<Retrievable> boundVars, Set<Resolvable<?>> resolvable, Set<Negated> negations) {
             return plans.computeIfAbsent(boundVars, (bound) -> {
                 List<Resolvable<?>> plan = planner.plan(resolvable, bound);
                 plan.addAll(negations);
@@ -246,7 +245,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
             });
         }
 
-        public Plan get(Set<Retrieved> boundVars) {
+        public Plan get(Set<Retrievable> boundVars) {
             assert plans.containsKey(boundVars);
             return plans.get(boundVars);
         }

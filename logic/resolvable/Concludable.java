@@ -41,7 +41,7 @@ import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.Identifier.Variable.Retrieved;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import grakn.core.traversal.predicate.Predicate;
 import graql.lang.common.GraqlToken;
 import graql.lang.pattern.variable.Reference;
@@ -72,18 +72,18 @@ import static java.util.stream.Collectors.toSet;
 public abstract class Concludable extends Resolvable<Conjunction> {
 
     private Map<Rule, Set<Unifier>> applicableRules;
-    Set<Retrieved> retrievedIds;
+    Set<Retrievable> retrievableIds;
 
     private Concludable(Conjunction conjunction) {
         super(conjunction);
         this.applicableRules = null;
-        this.retrievedIds = iterate(pattern().identifiers()).filter(Identifier::isRetrieved)
-                .map(Identifier.Variable::asRetrieved).toSet();
+        this.retrievableIds = iterate(pattern().identifiers()).filter(Identifier::isRetrievable)
+                .map(Identifier.Variable::asRetrievable).toSet();
     }
 
     @Override
-    public Set<Retrieved> retrieves() {
-        return retrievedIds;
+    public Set<Retrievable> retrieves() {
+        return retrievableIds;
     }
 
     public boolean isConcludable() {
@@ -261,7 +261,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
     }
 
     protected void addConstantValueRequirements(Unifier.Builder unifierBuilder, Set<ValueConstraint<?>> values,
-                                                Identifier.Variable.Retrieved id, Identifier.Variable.Retrieved unifiedId) {
+                                                Retrievable id, Retrievable unifiedId) {
         for (ValueConstraint<?> value : equalsConstantConstraints(values)) {
             unifierBuilder.requirements().predicates(id, valueEqualsFunction(value));
             unifierBuilder.unifiedRequirements().predicates(unifiedId, valueEqualsFunction(value));
@@ -345,7 +345,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
                         unifierBuilder.unifiedRequirements().isaExplicit(relationConclusion.relation().owner().id(), allowedTypes);
                         unifierBuilder.requirements().isaExplicit(relation().owner().id(), allowedTypes);
                     } else {
-                        unifierBuilder.add(concludableRelationType.id().asRetrieved(), conclusionRelationType.id());
+                        unifierBuilder.add(concludableRelationType.id().asRetrievable(), conclusionRelationType.id());
                     }
                 } else return Iterators.empty();
             }
@@ -394,7 +394,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
                         unifierBuilder.unifiedRequirements().roleTypes(thenRoleType.id(), allowedTypes);
                         unifierBuilder.requirements().roleTypes(conjRoleType.id(), allowedTypes);
                     } else {
-                        unifierBuilder.add(conjRoleType.id().asRetrieved(), thenRoleType.id());
+                        unifierBuilder.add(conjRoleType.id().asRetrievable(), thenRoleType.id());
                     }
                 }
             }));
@@ -635,7 +635,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
                     unifierBuilder.unifiedRequirements().isaExplicit(isaConclusion.isa().owner().id(), subtypeLabels(type.resolvedTypes(), conceptMgr)
                             .collect(toSet()));
                 } else {
-                    unifierBuilder.add(type.id().asRetrieved(), isaConclusion.isa().type().id());
+                    unifierBuilder.add(type.id().asRetrievable(), isaConclusion.isa().type().id());
                 }
                 addConstantValueRequirements(unifierBuilder, values, isa().owner().id(), isaConclusion.isa().owner().id());
             } else return Iterators.empty();

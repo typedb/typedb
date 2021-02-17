@@ -32,7 +32,7 @@ import grakn.core.pattern.variable.VariableCloner;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.Identifier.Variable.Retrieved;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import graql.lang.pattern.Conjunctable;
 import graql.lang.pattern.variable.BoundVariable;
 
@@ -115,10 +115,10 @@ public class Conjunction implements Pattern, Cloneable {
         }
     }
 
-    public void bound(Map<Retrieved, Either<Label, byte[]>> bounds) {
+    public void bound(Map<Retrievable, Either<Label, byte[]>> bounds) {
         variableSet.forEach(var -> {
-            if (var.id().isRetrieved() && bounds.containsKey(var.id().asRetrieved())) {
-                Either<Label, byte[]> boundVar = bounds.get(var.id().asRetrieved());
+            if (var.id().isRetrievable() && bounds.containsKey(var.id().asRetrievable())) {
+                Either<Label, byte[]> boundVar = bounds.get(var.id().asRetrievable());
                 if (var.isType() != boundVar.isFirst()) throw GraknException.of(CONTRADICTORY_BOUND_VARIABLE, var);
                 else if (var.isType()) {
                     Optional<LabelConstraint> existingLabel = var.asType().label();
@@ -159,7 +159,7 @@ public class Conjunction implements Pattern, Cloneable {
         return negations;
     }
 
-    public Traversal traversal(Set<? extends Retrieved> filter) {
+    public Traversal traversal(Set<? extends Retrievable> filter) {
         Traversal traversal = new Traversal();
         variableSet.forEach(variable -> variable.addTo(traversal));
         assert iterate(filter).allMatch(variableMap::containsKey);

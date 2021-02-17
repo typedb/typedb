@@ -19,7 +19,7 @@ package grakn.core.reasoner.resolution.answer;
 
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.traversal.common.Identifier.Variable.Retrieved;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,23 +28,23 @@ import java.util.stream.Collectors;
 
 public class Mapping {
 
-    private final Map<Retrieved, Retrieved> mapping;
-    private final Map<Retrieved, Retrieved> reverseMapping;
+    private final Map<Retrievable, Retrievable> mapping;
+    private final Map<Retrievable, Retrievable> reverseMapping;
 
-    Mapping(Map<? extends Retrieved, ? extends Retrieved> mapping) {
+    Mapping(Map<? extends Retrievable, ? extends Retrievable> mapping) {
         this.mapping = new HashMap<>(mapping);
         this.reverseMapping = mapping.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
     }
 
-    public static Mapping of(Map<? extends Retrieved, ? extends Retrieved> variableMap) {
+    public static Mapping of(Map<? extends Retrievable, ? extends Retrievable> variableMap) {
         return new Mapping(variableMap);
     }
 
     public ConceptMap transform(ConceptMap conceptMap) {
-        Map<Retrieved, Concept> transformed = new HashMap<>();
-        for (Map.Entry<Retrieved, ? extends Concept> entry : conceptMap.concepts().entrySet()) {
-            Retrieved id = entry.getKey();
-            Retrieved mapped = mapping.get(id);
+        Map<Retrievable, Concept> transformed = new HashMap<>();
+        for (Map.Entry<Retrievable, ? extends Concept> entry : conceptMap.concepts().entrySet()) {
+            Retrievable id = entry.getKey();
+            Retrievable mapped = mapping.get(id);
             if (mapped != null) {
                 Concept concept = entry.getValue();
                 transformed.put(mapped, concept);
@@ -55,9 +55,9 @@ public class Mapping {
 
     public ConceptMap unTransform(ConceptMap conceptMap) {
         assert reverseMapping.size() == conceptMap.concepts().size();
-        Map<Retrieved, Concept> transformed = new HashMap<>();
-        for (Map.Entry<Retrieved, ? extends Concept> entry : conceptMap.concepts().entrySet()) {
-            Retrieved id = entry.getKey();
+        Map<Retrievable, Concept> transformed = new HashMap<>();
+        for (Map.Entry<Retrievable, ? extends Concept> entry : conceptMap.concepts().entrySet()) {
+            Retrievable id = entry.getKey();
             assert reverseMapping.containsKey(id);
             Concept concept = entry.getValue();
             transformed.put(reverseMapping.get(id), concept);

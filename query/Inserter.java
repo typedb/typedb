@@ -41,7 +41,7 @@ import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.reasoner.Reasoner;
 import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.Identifier.Variable.Retrieved;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import graql.lang.pattern.variable.UnboundVariable;
 import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlMatch;
@@ -145,7 +145,7 @@ public class Inserter {
         private final ConceptManager conceptMgr;
         private final ConceptMap matched;
         private final Set<ThingVariable> variables;
-        private final Map<Retrieved, Thing> inserted;
+        private final Map<Retrievable, Thing> inserted;
 
         Operation(ConceptManager conceptMgr, ConceptMap matched, Set<ThingVariable> variables) {
             this.conceptMgr = conceptMgr;
@@ -172,9 +172,9 @@ public class Inserter {
 
         private Thing insert(ThingVariable var) {
             try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
-                assert var.id().isRetrieved(); // thing variables are always retrieved
+                assert var.id().isRetrievable(); // thing variables are always retrieved
                 Thing thing;
-                Retrieved id = var.id();
+                Retrievable id = var.id();
 
                 if (id.isName() && (thing = inserted.get(id)) != null) return thing;
                 else if (matchedContains(var) && var.constraints().isEmpty()) return matchedGet(var);

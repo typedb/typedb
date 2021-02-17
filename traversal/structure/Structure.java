@@ -119,7 +119,7 @@ public class Structure {
             while (!verticesToVisit.isEmpty()) {
                 Structure newStructure = new Structure();
                 splitGraph(verticesToVisit.iterator().next(), newStructure, verticesToVisit, edgesToVisit);
-                if (newStructure.vertices().size() > 1 || newStructure.vertices().iterator().next().id().isRetrieved()) {
+                if (newStructure.vertices().size() > 1 || newStructure.vertices().iterator().next().id().isRetrievable()) {
                     structures.add(newStructure);
                 }
             }

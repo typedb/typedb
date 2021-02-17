@@ -96,9 +96,9 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     }
 
     @Override
-    public Identifier.Variable.Retrieved id() {
+    public Identifier.Variable.Retrievable id() {
         // TODO this is ugly
-        return super.id().asRetrieved();
+        return super.id().asRetrievable();
     }
 
     @Override

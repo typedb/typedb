@@ -306,10 +306,10 @@ public interface Root {
             return responseProducer;
         }
 
-        private Set<Identifier.Variable.Retrieved> conjunctionRetrievedIds(Actor<ConjunctionResolver.Nested> conjunctionResolver) {
+        private Set<Identifier.Variable.Retrievable> conjunctionRetrievedIds(Actor<ConjunctionResolver.Nested> conjunctionResolver) {
             // TODO use a map from resolvable to resolvers, then we don't have to reach into the state and use the conjunction
-            return iterate(conjunctionResolver.state.conjunction.variables()).filter(v -> v.id().isRetrieved())
-                    .map(v -> v.id().asRetrieved()).toSet();
+            return iterate(conjunctionResolver.state.conjunction.variables()).filter(v -> v.id().isRetrievable())
+                    .map(v -> v.id().asRetrievable()).toSet();
         }
 
         @Override

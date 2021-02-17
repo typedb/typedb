@@ -210,8 +210,8 @@ public class TypeResolver {
             conjunction.variables().forEach(this::register);
         }
 
-        public Set<Identifier.Variable.Retrieved> retrievedResolvers() {
-            return iterate(resolvers.keySet()).filter(Identifier::isRetrieved).map(Identifier.Variable::asRetrieved).toSet();
+        public Set<Identifier.Variable.Retrievable> retrievedResolvers() {
+            return iterate(resolvers.keySet()).filter(Identifier::isRetrievable).map(Identifier.Variable::asRetrievable).toSet();
         }
 
         public int sysVarCounter() {

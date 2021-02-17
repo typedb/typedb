@@ -26,7 +26,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.Type;
 import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.Identifier.Variable.Retrieved;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import graql.lang.pattern.variable.Reference;
 import graql.lang.pattern.variable.UnboundVariable;
 
@@ -44,19 +44,19 @@ import static grakn.core.common.iterator.Iterators.iterate;
 
 public class ConceptMap implements Answer {
 
-    private final Map<Retrieved, ? extends Concept> concepts;
+    private final Map<Retrievable, ? extends Concept> concepts;
     private final int hash;
 
     public ConceptMap() {
         this(new HashMap<>());
     }
 
-    public ConceptMap(Map<Retrieved, ? extends Concept> concepts) {
+    public ConceptMap(Map<Retrievable, ? extends Concept> concepts) {
         this.concepts = concepts;
         this.hash = Objects.hash(this.concepts);
     }
 
-    public ResourceIterator<Pair<Retrieved, Concept>> iterator() {
+    public ResourceIterator<Pair<Retrievable, Concept>> iterator() {
         return iterate(concepts.entrySet()).map(e -> pair(e.getKey(), e.getValue()));
     }
 
@@ -68,7 +68,7 @@ public class ConceptMap implements Answer {
         return concepts.containsKey(Identifier.Variable.of(variable));
     }
 
-    public boolean contains(Retrieved id) {
+    public boolean contains(Retrievable id) {
         return concepts.containsKey(id);
     }
 
@@ -85,24 +85,24 @@ public class ConceptMap implements Answer {
         return concepts.get(Identifier.Variable.of(variable));
     }
 
-    public Concept get(Retrieved id) {
+    public Concept get(Retrievable id) {
         return concepts.get(id);
     }
 
-    public Map<Retrieved, ? extends Concept> concepts() { return concepts; }
+    public Map<Retrievable, ? extends Concept> concepts() { return concepts; }
 
-    public ConceptMap filter(Set<? extends Retrieved> vars) {
-        Map<Retrieved, ? extends Concept> filtered = concepts.entrySet().stream()
+    public ConceptMap filter(Set<? extends Retrievable> vars) {
+        Map<Retrievable, ? extends Concept> filtered = concepts.entrySet().stream()
                 .filter(e -> vars.contains(e.getKey()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         return new ConceptMap(filtered);
     }
 
-    public void forEach(BiConsumer<Retrieved, Concept> consumer) {
+    public void forEach(BiConsumer<Retrievable, Concept> consumer) {
         concepts.forEach(consumer);
     }
 
-    public <T, U> Map<Retrieved, Either<T, U>> toMap(Function<Type, T> typeFn, Function<Thing, U> thingFn) {
+    public <T, U> Map<Retrievable, Either<T, U>> toMap(Function<Type, T> typeFn, Function<Thing, U> thingFn) {
         return toMap(concept -> {
             if (concept.isType()) return Either.first(typeFn.apply(concept.asType()));
             else if (concept.isThing()) return Either.second(thingFn.apply(concept.asThing()));
@@ -110,8 +110,8 @@ public class ConceptMap implements Answer {
         });
     }
 
-    public <T> Map<Retrieved, T> toMap(Function<Concept, T> conceptFn) {
-        Map<Retrieved, T> map = new HashMap<>();
+    public <T> Map<Retrievable, T> toMap(Function<Concept, T> conceptFn) {
+        Map<Retrievable, T> map = new HashMap<>();
         iterate(concepts.entrySet()).forEachRemaining(e -> map.put(e.getKey(), conceptFn.apply(e.getValue())));
         return map;
     }

@@ -549,7 +549,7 @@ public class Rule {
                 @Override
                 public ResourceIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
                                                                                        ConceptManager conceptMgr) {
-                    Identifier.Variable.Retrieved ownerId = has().owner().id();
+                    Identifier.Variable.Retrievable ownerId = has().owner().id();
                     assert whenConcepts.contains(ownerId) && whenConcepts.get(ownerId).isThing();
                     Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
                     Thing owner = whenConcepts.get(ownerId.reference().asName()).asThing();
@@ -667,7 +667,7 @@ public class Rule {
                 @Override
                 public ResourceIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
                                                                                        ConceptManager conceptMgr) {
-                    Identifier.Variable.Retrieved ownerId = has().owner().id();
+                    Identifier.Variable.Retrievable ownerId = has().owner().id();
                     assert whenConcepts.contains(ownerId) && whenConcepts.get(ownerId).isThing();
                     Thing owner = whenConcepts.get(ownerId).asThing();
                     Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();

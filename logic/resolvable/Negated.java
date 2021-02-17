@@ -21,7 +21,7 @@ import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.Negation;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.Identifier.Variable.Retrieved;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -32,13 +32,13 @@ import static grakn.core.common.iterator.Iterators.iterate;
 public class Negated extends Resolvable<Disjunction> {
 
     // note: we always guarantee unique anonymous IDs within one query
-    private final Set<Retrieved> identifiers;
+    private final Set<Retrievable> identifiers;
 
     public Negated(Negation negation) {
         super(negation.disjunction());
         this.identifiers = new HashSet<>();
-        pattern().conjunctions().forEach(c -> iterate(c.identifiers()).filter(Identifier::isRetrieved)
-                .forEachRemaining(id -> identifiers.add(id.asRetrieved())));
+        pattern().conjunctions().forEach(c -> iterate(c.identifiers()).filter(Identifier::isRetrievable)
+                .forEachRemaining(id -> identifiers.add(id.asRetrievable())));
     }
 
     @Override
@@ -47,7 +47,7 @@ public class Negated extends Resolvable<Disjunction> {
     }
 
     @Override
-    public Set<Retrieved> retrieves() {
+    public Set<Retrievable> retrieves() {
         return this.identifiers;
     }
 

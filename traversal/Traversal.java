@@ -29,7 +29,7 @@ import grakn.core.graph.common.Encoding;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.Identifier.Variable.Retrieved;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import grakn.core.traversal.common.VertexMap;
 import grakn.core.traversal.planner.Planner;
 import grakn.core.traversal.predicate.Predicate;
@@ -75,7 +75,7 @@ public class Traversal {
 
     private final Parameters parameters;
     private final Structure structure;
-    private final Set<Retrieved> filter;
+    private final Set<Retrievable> filter;
     private List<Planner> planners;
     private boolean modifiable;
 
@@ -89,10 +89,10 @@ public class Traversal {
     // TODO: We should not dynamically calculate properties like this, and then guard against 'modifiable'.
     //       We should introduce a "builder pattern" to Traversal, such that users of this library will build
     //       traversals with Traversal.Builder, and call .build() in the end to produce a final Object.
-    private Set<Retrieved> filter() {
+    private Set<Retrievable> filter() {
         if (filter.isEmpty()) {
             modifiable = false;
-            iterate(structure.vertices()).filter(v -> v.id().isRetrieved()).map(v -> v.id().asVariable().asRetrieved())
+            iterate(structure.vertices()).filter(v -> v.id().isRetrievable()).map(v -> v.id().asVariable().asRetrievable())
                     .toSet(filter);
         }
         return filter;
@@ -100,7 +100,7 @@ public class Traversal {
 
     void initialise(TraversalCache cache) {
         planners = iterate(structure.asGraphs()).filter(p -> iterate(p.vertices()).anyMatch(
-                v -> v.id().isRetrieved() && filter().contains(v.id().asVariable().asRetrieved())
+                v -> v.id().isRetrievable() && filter().contains(v.id().asVariable().asRetrievable())
         )).map(s -> cache.get(s, Planner::create)).toList();
     }
 
@@ -114,7 +114,7 @@ public class Traversal {
                 planner.tryOptimise(graphMgr, extraPlanningTime);
                 return planner.procedure().iterator(graphMgr, parameters, filter());
             }).collect(toList())).map(partialAnswers -> {
-                Map<Retrieved, Vertex<?, ?>> combinedAnswers = new HashMap<>();
+                Map<Retrievable, Vertex<?, ?>> combinedAnswers = new HashMap<>();
                 partialAnswers.forEach(p -> combinedAnswers.putAll(p.map()));
                 return VertexMap.of(combinedAnswers);
             });
@@ -132,7 +132,7 @@ public class Traversal {
                 planner.tryOptimise(graphMgr, extraPlanningTime);
                 return planner.procedure().producer(graphMgr, parameters, filter(), parallelisation);
             }).map(producer -> produce(producer, mode, asyncPool2())).collect(toList())).map(partialAnswers -> {
-                Map<Retrieved, Vertex<?, ?>> combinedAnswers = new HashMap<>();
+                Map<Retrievable, Vertex<?, ?>> combinedAnswers = new HashMap<>();
                 partialAnswers.forEach(p -> combinedAnswers.putAll(p.map()));
                 return VertexMap.of(combinedAnswers);
             }));
@@ -294,7 +294,7 @@ public class Traversal {
         structure.predicateEdge(structure.thingVertex(att1), structure.thingVertex(att2), predicate);
     }
 
-    public void filter(Set<? extends Retrieved> filter) {
+    public void filter(Set<? extends Retrievable> filter) {
         assert modifiable && iterate(filter).noneMatch(Identifier::isLabel);
         this.filter.addAll(filter);
     }

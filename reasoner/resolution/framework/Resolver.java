@@ -32,7 +32,7 @@ import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.framework.Response.Answer;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.TraversalEngine;
-import grakn.core.traversal.common.Identifier.Variable.Retrieved;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,9 +115,9 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
     }
 
     private Optional<ConceptMap> compatibleBounds(Conjunction conjunction, ConceptMap bounds) {
-        Map<Retrieved, Concept> newBounds = new HashMap<>();
-        for (Map.Entry<Retrieved, ? extends Concept> entry : bounds.concepts().entrySet()) {
-            Retrieved id = entry.getKey();
+        Map<Retrievable, Concept> newBounds = new HashMap<>();
+        for (Map.Entry<Retrievable, ? extends Concept> entry : bounds.concepts().entrySet()) {
+            Retrievable id = entry.getKey();
             Concept bound = entry.getValue();
             Variable conjVariable = conjunction.variable(id);
             assert conjVariable != null;

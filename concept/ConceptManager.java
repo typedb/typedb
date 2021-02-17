@@ -39,7 +39,7 @@ import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.graph.vertex.Vertex;
-import grakn.core.traversal.common.Identifier.Variable.Retrieved;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import grakn.core.traversal.common.VertexMap;
 
 import java.util.ArrayList;
@@ -73,7 +73,7 @@ public final class ConceptManager {
     }
 
     public ConceptMap conceptMap(VertexMap vertexMap) {
-        Map<Retrieved, Concept> map = new HashMap<>();
+        Map<Retrievable, Concept> map = new HashMap<>();
         vertexMap.forEach((id, vertex) -> {
             if (vertex.isThing()) map.put(id, ThingImpl.of(vertex.asThing()));
             else if (vertex.isType()) map.put(id, TypeImpl.of(graphMgr, vertex.asType()));

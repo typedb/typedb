@@ -24,9 +24,8 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.type.ThingType;
-import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.common.Identifier.Variable;
-import grakn.core.traversal.common.Identifier.Variable.Retrieved;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -43,12 +42,12 @@ import static grakn.core.common.exception.ErrorMessage.Reasoner.REVERSE_UNIFICAT
 
 public class Unifier {
 
-    private final Map<Variable.Retrieved, Set<Variable>> unifier;
-    private final Map<Variable, Set<Variable.Retrieved>> reverseUnifier;
+    private final Map<Retrievable, Set<Variable>> unifier;
+    private final Map<Variable, Set<Retrievable>> reverseUnifier;
     private final Requirements.Constraint requirements;
     private final Requirements.Constraint unifiedRequirements;
 
-    private Unifier(Map<Variable.Retrieved, Set<Variable>> unifier, Requirements.Constraint requirements,
+    private Unifier(Map<Retrievable, Set<Variable>> unifier, Requirements.Constraint requirements,
                     Requirements.Constraint unifiedRequirements) {
         this.unifier = Collections.unmodifiableMap(unifier);
         this.reverseUnifier = reverse(this.unifier);
@@ -70,19 +69,19 @@ public class Unifier {
     the latter will never be valid as it is a contradiction, the former empty map is the result of the unifier's filtering
      */
     public Optional<Pair<ConceptMap, Requirements.Instance>> unify(ConceptMap conceptMap) {
-        Map<Retrieved, Concept> unifiedMap = new HashMap<>();
+        Map<Retrievable, Concept> unifiedMap = new HashMap<>();
         if (requirements.contradicts(conceptMap)) return Optional.empty();
 
-        for (Map.Entry<Variable.Retrieved, Set<Variable>> entry : unifier.entrySet()) {
-            Variable.Retrieved toUnify = entry.getKey();
-            Concept concept = conceptMap.get(toUnify.asRetrieved());
+        for (Map.Entry<Retrievable, Set<Variable>> entry : unifier.entrySet()) {
+            Retrievable toUnify = entry.getKey();
+            Concept concept = conceptMap.get(toUnify.asRetrievable());
             if (concept == null) continue;
             for (Variable unified : entry.getValue()) {
-                if (unified.isRetrieved()) {
-                    if (!unifiedMap.containsKey(unified.asRetrieved())) {
-                        unifiedMap.put(unified.asRetrieved(), concept);
+                if (unified.isRetrievable()) {
+                    if (!unifiedMap.containsKey(unified.asRetrievable())) {
+                        unifiedMap.put(unified.asRetrievable(), concept);
                     }
-                    if (!unifiedMap.get(unified.asRetrieved()).equals(concept)) return Optional.empty();
+                    if (!unifiedMap.get(unified.asRetrievable()).equals(concept)) return Optional.empty();
                 }
             }
         }
@@ -97,15 +96,15 @@ public class Unifier {
 
         if (!unifiedRequirements.exactlySatisfiedBy(concepts)) return Optional.empty();
 
-        Map<Variable.Retrieved, Concept> reversedConcepts = new HashMap<>();
-        for (Map.Entry<Variable, Set<Variable.Retrieved>> entry : reverseUnifier.entrySet()) {
+        Map<Retrievable, Concept> reversedConcepts = new HashMap<>();
+        for (Map.Entry<Variable, Set<Retrievable>> entry : reverseUnifier.entrySet()) {
             Variable toReverse = entry.getKey();
-            Set<Variable.Retrieved> reversed = entry.getValue();
+            Set<Retrievable> reversed = entry.getValue();
             if (!concepts.containsKey(toReverse)) {
                 throw GraknException.of(REVERSE_UNIFICATION_MISSING_CONCEPT, toReverse, concepts);
             }
             Concept concept = concepts.get(toReverse);
-            for (Variable.Retrieved r : reversed) {
+            for (Retrievable r : reversed) {
                 if (!reversedConcepts.containsKey(r)) reversedConcepts.put(r, concept);
                 if (!reversedConcepts.get(r).equals(concept)) return Optional.empty();
             }
@@ -115,7 +114,7 @@ public class Unifier {
         else return Optional.empty();
     }
 
-    public Map<Variable.Retrieved, Set<Variable>> mapping() {
+    public Map<Retrievable, Set<Variable>> mapping() {
         return unifier;
     }
 
@@ -123,8 +122,8 @@ public class Unifier {
         return requirements;
     }
 
-    private Map<Variable, Set<Variable.Retrieved>> reverse(Map<Variable.Retrieved, Set<Variable>> unifier) {
-        Map<Variable, Set<Variable.Retrieved>> reverse = new HashMap<>();
+    private Map<Variable, Set<Retrievable>> reverse(Map<Retrievable, Set<Variable>> unifier) {
+        Map<Variable, Set<Retrievable>> reverse = new HashMap<>();
         unifier.forEach((unify, unifieds) -> {
             for (Variable unified : unifieds) {
                 reverse.computeIfAbsent(unified, (u) -> new HashSet<>()).add(unify);
@@ -149,7 +148,7 @@ public class Unifier {
 
     public static class Builder {
 
-        private Map<Variable.Retrieved, Set<Variable>> unifier;
+        private Map<Retrievable, Set<Variable>> unifier;
         private Requirements.Constraint requirements;
         private Requirements.Constraint unifiedRequirements;
 
@@ -157,13 +156,13 @@ public class Unifier {
             this(new HashMap<>(), new Requirements.Constraint(), new Requirements.Constraint());
         }
 
-        private Builder(Map<Retrieved, Set<Variable>> unifier, Requirements.Constraint requirements, Requirements.Constraint unifiedRequirements) {
+        private Builder(Map<Retrievable, Set<Variable>> unifier, Requirements.Constraint requirements, Requirements.Constraint unifiedRequirements) {
             this.unifier = unifier;
             this.requirements = requirements;
             this.unifiedRequirements = unifiedRequirements;
         }
 
-        public void add(Variable.Retrieved source, Variable target) {
+        public void add(Retrievable source, Variable target) {
             unifier.computeIfAbsent(source, (s) -> new HashSet<>()).add(target);
         }
 
@@ -180,7 +179,7 @@ public class Unifier {
         }
 
         public Builder clone() {
-            Map<Variable.Retrieved, Set<Variable>> unifierCopy = new HashMap<>();
+            Map<Retrievable, Set<Variable>> unifierCopy = new HashMap<>();
             unifier.forEach(((identifier, unifieds) -> unifierCopy.put(identifier, set(unifieds))));
             Requirements.Constraint requirementsCopy = requirements.duplicate();
             Requirements.Constraint unifiedRequirementsCopy = unifiedRequirements.duplicate();
@@ -205,15 +204,15 @@ public class Unifier {
         public static class Constraint {
 
             private final Map<Variable, Set<Label>> roleTypes;
-            private final Map<Retrieved, Set<Label>> isaExplicit;
-            private final Map<Retrieved, Function<Attribute, Boolean>> predicates;
+            private final Map<Retrievable, Set<Label>> isaExplicit;
+            private final Map<Retrievable, Function<Attribute, Boolean>> predicates;
 
             public Constraint() {
                 this(new HashMap<>(), new HashMap<>(), new HashMap<>());
             }
 
-            public Constraint(Map<Variable, Set<Label>> roleTypes, Map<Retrieved, Set<Label>> isaExplicit,
-                              Map<Retrieved, Function<Attribute, Boolean>> predicates) {
+            public Constraint(Map<Variable, Set<Label>> roleTypes, Map<Retrievable, Set<Label>> isaExplicit,
+                              Map<Retrievable, Function<Attribute, Boolean>> predicates) {
                 this.roleTypes = roleTypes;
                 this.isaExplicit = isaExplicit;
                 this.predicates = predicates;
@@ -237,8 +236,8 @@ public class Unifier {
 
             public boolean contradicts(ConceptMap conceptMap) {
                 boolean satisfies = true;
-                for (Map.Entry<Variable.Retrieved, ? extends Concept> identifiedConcept : conceptMap.concepts().entrySet()) {
-                    Variable.Retrieved id = identifiedConcept.getKey();
+                for (Map.Entry<Retrievable, ? extends Concept> identifiedConcept : conceptMap.concepts().entrySet()) {
+                    Retrievable id = identifiedConcept.getKey();
                     Concept concept = identifiedConcept.getValue();
                     if (!(typesSatisfied(id, concept) && isaExplicitSatisfied(id, concept) && predicatesSatisfied(id, concept))) {
                         satisfies = false;
@@ -258,19 +257,19 @@ public class Unifier {
             }
 
             private boolean isaExplicitSatisfied(Variable id, Concept concept) {
-                if (id.isRetrieved() && isaExplicit.containsKey(id.asRetrieved())) {
+                if (id.isRetrievable() && isaExplicit.containsKey(id.asRetrievable())) {
                     assert concept.isThing();
                     ThingType type = concept.asThing().getType();
-                    return isaExplicit.get(id.asRetrieved()).contains(type.getLabel());
+                    return isaExplicit.get(id.asRetrievable()).contains(type.getLabel());
                 } else {
                     return true;
                 }
             }
 
             private boolean predicatesSatisfied(Variable id, Concept concept) {
-                if (id.isRetrieved() && predicates.containsKey(id.asRetrieved())) {
+                if (id.isRetrievable() && predicates.containsKey(id.asRetrievable())) {
                     assert concept.isThing() && (concept.asThing() instanceof Attribute);
-                    return predicates.get(id.asRetrieved()).apply(concept.asAttribute());
+                    return predicates.get(id.asRetrievable()).apply(concept.asAttribute());
                 } else {
                     return true;
                 }
@@ -281,26 +280,26 @@ public class Unifier {
                 roleTypes.put(unifiedId, set(labels));
             }
 
-            public void isaExplicit(Retrieved unifiedId, Set<Label> labels) {
+            public void isaExplicit(Retrievable unifiedId, Set<Label> labels) {
                 assert (!isaExplicit.containsKey(unifiedId) || isaExplicit.get(unifiedId).equals(labels));
                 isaExplicit.put(unifiedId, set(labels));
             }
 
-            public void predicates(Identifier.Variable.Retrieved unifiedId, Function<Attribute, Boolean> predicateFn) {
+            public void predicates(Retrievable unifiedId, Function<Attribute, Boolean> predicateFn) {
                 assert !predicates.containsKey(unifiedId);
                 predicates.put(unifiedId, predicateFn);
             }
 
             public Map<Variable, Set<Label>> roleTypes() { return roleTypes; }
 
-            public Map<Retrieved, Set<Label>> isaExplicit() { return isaExplicit; }
+            public Map<Retrievable, Set<Label>> isaExplicit() { return isaExplicit; }
 
-            public Map<Retrieved, Function<Attribute, Boolean>> predicates() { return predicates; }
+            public Map<Retrievable, Function<Attribute, Boolean>> predicates() { return predicates; }
 
             private Constraint duplicate() {
                 Map<Variable, Set<Label>> typesCopy = new HashMap<>();
-                Map<Retrieved, Set<Label>> isaExplicitCopy = new HashMap<>();
-                Map<Retrieved, Function<Attribute, Boolean>> predicatesCopy = new HashMap<>();
+                Map<Retrievable, Set<Label>> isaExplicitCopy = new HashMap<>();
+                Map<Retrievable, Function<Attribute, Boolean>> predicatesCopy = new HashMap<>();
                 roleTypes.forEach(((identifier, labels) -> typesCopy.put(identifier, set(labels))));
                 isaExplicit.forEach(((identifier, labels) -> isaExplicitCopy.put(identifier, set(labels))));
                 predicates.forEach((predicatesCopy::put));
@@ -310,17 +309,17 @@ public class Unifier {
 
         public static class Instance {
 
-            Map<Retrieved, ? extends Concept> requireCompatible;
+            Map<Retrievable, ? extends Concept> requireCompatible;
             private final int hash;
 
-            public Instance(Map<Retrieved, ? extends Concept> concepts) {
+            public Instance(Map<Retrievable, ? extends Concept> concepts) {
                 this.requireCompatible = concepts;
                 this.hash = Objects.hash(requireCompatible);
             }
 
-            public boolean satisfiedBy(Map<Variable.Retrieved, Concept> toTest) {
-                for (Map.Entry<Variable.Retrieved, ? extends Concept> entry : toTest.entrySet()) {
-                    Retrieved id = entry.getKey().asRetrieved();
+            public boolean satisfiedBy(Map<Retrievable, Concept> toTest) {
+                for (Map.Entry<Retrievable, ? extends Concept> entry : toTest.entrySet()) {
+                    Retrievable id = entry.getKey().asRetrievable();
                     Concept compatible = requireCompatible.get(id);
                     if (compatible != null) {
                         Concept testConcept = entry.getValue();

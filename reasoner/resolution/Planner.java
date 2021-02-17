@@ -22,9 +22,8 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Resolvable;
-import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.pattern.variable.ThingVariable;
-import grakn.core.traversal.common.Identifier.Variable.Retrieved;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,17 +49,17 @@ public class Planner {
         this.logicMgr = logicMgr;
     }
 
-    public List<Resolvable<?>> plan(Set<Resolvable<?>> resolvables, Set<Retrieved> bound) {
+    public List<Resolvable<?>> plan(Set<Resolvable<?>> resolvables, Set<Retrievable> bound) {
         return new Plan(resolvables, bound).plan;
     }
 
     class Plan {
         private final List<Resolvable<?>> plan;
-        private final Map<Resolvable<?>, Set<Retrieved>> dependencies;
-        private final Set<Retrieved> answered;
+        private final Map<Resolvable<?>, Set<Retrievable>> dependencies;
+        private final Set<Retrievable> answered;
         private final Set<Resolvable<?>> remaining;
 
-        Plan(Set<Resolvable<?>> resolvables, Set<Retrieved> boundVars) {
+        Plan(Set<Resolvable<?>> resolvables, Set<Retrievable> boundVars) {
             assert resolvables.size() > 0;
             this.plan = new ArrayList<>();
             this.answered = new HashSet<>(boundVars);
@@ -80,7 +79,7 @@ public class Planner {
         private void computePlan() {
             while (remaining.size() != 0) {
                 Optional<Concludable> concludable;
-                Optional<Retrievable> retrievable;
+                Optional<grakn.core.logic.resolvable.Retrievable> retrievable;
 
                 // Retrievable where:
                 // all of it's dependencies are already satisfied,
@@ -167,14 +166,14 @@ public class Planner {
         /**
          * Determine the resolvables that are dependent upon the generation of each variable
          */
-        private Map<Resolvable<?>, Set<Retrieved>> dependencies(Set<Resolvable<?>> resolvables) {
-            Map<Resolvable<?>, Set<Retrieved>> deps = new HashMap<>();
-            Set<Retrieved> generated = iterate(resolvables).map(Resolvable::generating).filter(Optional::isPresent)
+        private Map<Resolvable<?>, Set<Retrievable>> dependencies(Set<Resolvable<?>> resolvables) {
+            Map<Resolvable<?>, Set<Retrievable>> deps = new HashMap<>();
+            Set<Retrievable> generated = iterate(resolvables).map(Resolvable::generating).filter(Optional::isPresent)
                     .map(Optional::get).map(ThingVariable::id).toSet();
             for (Resolvable<?> resolvable : resolvables) {
                 Optional<ThingVariable> generating = resolvable.generating();
                 deps.putIfAbsent(resolvable, new HashSet<>());
-                for (Retrieved v : resolvable.retrieves()) {
+                for (Retrievable v : resolvable.retrieves()) {
                     if (generated.contains(v) && !(generating.isPresent() && generating.get().id().equals(v))) {
                         // TODO: Should this rule the Resolvable<?> out if generates it's own dependency?
                         deps.get(resolvable).add(v);

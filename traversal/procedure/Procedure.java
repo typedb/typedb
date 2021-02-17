@@ -30,8 +30,8 @@ import java.util.Set;
 public interface Procedure {
 
     Producer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
-                                 Set<Identifier.Variable.Retrieved> filter, int parallelisation);
+                                 Set<Identifier.Variable.Retrievable> filter, int parallelisation);
 
     ResourceIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
-                                         Set<Identifier.Variable.Retrieved> filter);
+                                         Set<Identifier.Variable.Retrievable> filter);
 }

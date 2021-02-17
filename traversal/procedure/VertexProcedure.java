@@ -31,9 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.map;
@@ -91,7 +89,7 @@ public class VertexProcedure implements Procedure {
 
     @Override
     public Producer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
-                                        Set<Identifier.Variable.Retrieved> filter, int parallelisation) {
+                                        Set<Identifier.Variable.Retrievable> filter, int parallelisation) {
         LOG.debug(params.toString());
         LOG.debug(this.toString());
         return async(iterator(graphMgr, params, filter));
@@ -99,16 +97,16 @@ public class VertexProcedure implements Procedure {
 
     @Override
     public ResourceIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
-                                                Set<Identifier.Variable.Retrieved> filter) {
+                                                Set<Identifier.Variable.Retrievable> filter) {
         LOG.debug(params.toString());
         LOG.debug(this.toString());
-        assert vertex.id().isRetrieved() && filter.contains(vertex.id().asVariable().asRetrieved());
+        assert vertex.id().isRetrievable() && filter.contains(vertex.id().asVariable().asRetrievable());
         ResourceIterator<? extends Vertex<?, ?>> iterator = vertex.iterator(graphMgr, params);
         for (ProcedureEdge<?, ?> e : vertex.outs()) {
             iterator = iterator.filter(v -> e.isClosure(graphMgr, v, v, params));
         }
 
-        return iterator.map(v -> VertexMap.of(map(pair(vertex.id().asVariable().asRetrieved(), v)))).distinct();
+        return iterator.map(v -> VertexMap.of(map(pair(vertex.id().asVariable().asRetrievable(), v)))).distinct();
     }
 
 }

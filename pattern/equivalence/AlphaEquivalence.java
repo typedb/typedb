@@ -18,9 +18,7 @@
 package grakn.core.pattern.equivalence;
 
 import grakn.core.pattern.variable.Variable;
-import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.Identifier.Variable.Retrieved;
-import graql.lang.pattern.variable.Reference;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 
 import javax.annotation.Nullable;
 import java.util.AbstractMap;
@@ -154,18 +152,18 @@ public abstract class AlphaEquivalence {
             return this;
         }
 
-        public Map<Retrieved, Retrieved> idMapping() {
+        public Map<Retrievable, Retrievable> idMapping() {
             return variableMapping().entrySet().stream()
                     .map(e -> new AbstractMap.SimpleEntry<>(
                             e.getKey().id(),
                             e.getValue().id()))
                     .filter(e -> {
-                        assert e.getKey().isRetrieved() == e.getValue().isRetrieved();
-                        return e.getKey().isRetrieved();
+                        assert e.getKey().isRetrievable() == e.getValue().isRetrievable();
+                        return e.getKey().isRetrievable();
                     })
                     .collect(Collectors.toMap(
-                            e -> e.getKey().asRetrieved(),
-                            e -> e.getValue().asRetrieved()
+                            e -> e.getKey().asRetrievable(),
+                            e -> e.getValue().asRetrievable()
                     ));
         }
 

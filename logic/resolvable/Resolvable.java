@@ -20,8 +20,7 @@ package grakn.core.logic.resolvable;
 import grakn.core.common.exception.GraknException;
 import grakn.core.pattern.Pattern;
 import grakn.core.pattern.variable.ThingVariable;
-import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.Identifier.Variable.Retrieved;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 
 import java.util.Optional;
 import java.util.Set;
@@ -41,7 +40,7 @@ public abstract class Resolvable<T extends Pattern> {
 
     public abstract Optional<ThingVariable> generating();
 
-    public abstract Set<Retrieved> retrieves();
+    public abstract Set<Retrievable> retrieves();
 
     public boolean isRetrievable() {
         return false;
@@ -55,8 +54,8 @@ public abstract class Resolvable<T extends Pattern> {
         return false;
     }
 
-    public Retrievable asRetrievable() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Retrievable.class));
+    public grakn.core.logic.resolvable.Retrievable asRetrievable() {
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(grakn.core.logic.resolvable.Retrievable.class));
     }
 
     public Concludable asConcludable() {
