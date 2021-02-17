@@ -21,10 +21,13 @@ package grakn.core.reasoner.resolution.framework;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.parameters.Arguments;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
+import grakn.core.concurrent.producer.Producer;
+import grakn.core.concurrent.producer.Producers;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.reasoner.resolution.ResolverRegistry;
@@ -110,13 +113,18 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
         fromUpstream.sender().tell(actor -> actor.receiveFail(response, iteration));
     }
 
-    protected ResourceIterator<ConceptMap> compatibleBoundAnswers(Conjunction conjunction, ConceptMap bounds) {
-        return compatibleBounds(conjunction, bounds).map(c -> boundAnswers(conjunction, c)).orElse(Iterators.empty());
+    protected ResourceIterator<ConceptMap> traversalIterator(Conjunction conjunction, ConceptMap bounds) {
+        return compatibleBounds(conjunction, bounds).map(c -> {
+            Traversal traversal = boundTraversal(conjunction.traversal(), c);
+            return traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
+        }).orElse(Iterators.empty());
     }
 
-    protected ResourceIterator<ConceptMap> boundAnswers(Conjunction conjunction, ConceptMap bounds) {
-        Traversal traversal = boundTraversal(conjunction.traversal(), bounds);
-        return traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
+    protected Producer<ConceptMap> traversalProducer(Conjunction conjunction, ConceptMap bounds, int parallelisation) {
+        return compatibleBounds(conjunction, bounds).map(b -> {
+            Traversal traversal = boundTraversal(conjunction.traversal(), b);
+            return traversalEngine.producer(traversal, Arguments.Query.Producer.INCREMENTAL, parallelisation).map(conceptMgr::conceptMap);
+        }).orElse(Producers.empty());
     }
 
     private Optional<ConceptMap> compatibleBounds(Conjunction conjunction, ConceptMap bounds) {

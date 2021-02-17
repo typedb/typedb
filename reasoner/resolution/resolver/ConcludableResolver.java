@@ -147,7 +147,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
         assert fromUpstream.partialAnswer().isMapped();
         ResourceIterator<Partial<?>> upstreamAnswers =
-                compatibleBoundAnswers(concludable.pattern(), fromUpstream.partialAnswer().conceptMap())
+                traversalIterator(concludable.pattern(), fromUpstream.partialAnswer().conceptMap())
                         .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap, self()));
 
         ResponseProducer responseProducer = new ResponseProducer(upstreamAnswers, iteration);
@@ -170,7 +170,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
         assert fromUpstream.partialAnswer().isMapped();
         ResourceIterator<Partial<?>> upstreamAnswers =
-                compatibleBoundAnswers(concludable.pattern(), fromUpstream.partialAnswer().conceptMap())
+                traversalIterator(concludable.pattern(), fromUpstream.partialAnswer().conceptMap())
                         .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap, self()));
 
         ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(upstreamAnswers, newIteration);

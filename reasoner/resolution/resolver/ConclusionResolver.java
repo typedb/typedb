@@ -31,6 +31,7 @@ import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
+import grakn.core.traversal.Traversal;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
 import org.slf4j.Logger;
@@ -187,7 +188,8 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
     }
 
     private ResourceIterator<AnswerState.Partial.Filtered> candidateAnswers(Request fromUpstream, ConceptMap answer) {
-        ResourceIterator<ConceptMap> traversal = boundAnswers(conclusion.conjunction(), answer);
+        Traversal traversal1 = boundTraversal(conclusion.conjunction().traversal(), answer);
+        ResourceIterator<ConceptMap> traversal = traversalEngine.iterator(traversal1).map(conceptMgr::conceptMap);
         Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
         return traversal.map(ans -> fromUpstream.partialAnswer().asUnified().extend(ans).filterToDownstream(named));
     }
