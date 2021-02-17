@@ -108,11 +108,8 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private void requestAnswered(Top resolutionAnswer) {
         if (resolutionAnswer.requiresReiteration()) requiredReiteration = true;
         queue.put(resolutionAnswer.conceptMap());
-        if (required.decrementAndGet() > 0) {
-            requestAnswer();
-        } else {
-            processing.decrementAndGet();
-        }
+        if (required.decrementAndGet() > 0) requestAnswer();
+        else processing.decrementAndGet();
     }
 
     private void requestFailed(int iteration) {
