@@ -113,9 +113,6 @@ public interface Root {
             assert newIteration > responseProducerPrevious.iteration();
             LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
 
-//        ResourceIterator<AnswerState.Partial> upstreamAnswers = toUpstreamAnswers(
-//                fromUpstream, compatibleBoundAnswers(conceptMgr, conjunction, fromUpstream.partialAnswer().conceptMap()));
-
             Plans.Plan plan = plans.getOrCreate(fromUpstream.partialAnswer().conceptMap().concepts().keySet(), resolvables, negateds);
 
             assert !plan.isEmpty();

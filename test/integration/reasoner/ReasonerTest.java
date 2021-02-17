@@ -98,7 +98,6 @@ public class ReasonerTest {
         }
     }
 
-    @Ignore
     @Test
     public void test_has_explicit_rule() {
         try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
@@ -139,7 +138,6 @@ public class ReasonerTest {
         }
     }
 
-    @Ignore
     @Test
     public void test_relation_rule() {
         try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {

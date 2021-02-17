@@ -126,7 +126,6 @@ public class ResolutionTest {
         }
     }
 
-    @Ignore
     @Test
     public void test_disjunction_no_rules() throws InterruptedException {
         try (RocksSession session = schemaSession()) {
@@ -157,7 +156,6 @@ public class ResolutionTest {
         }
     }
 
-    @Ignore
     @Test
     public void test_disjunction_no_rules_limit_offset() throws InterruptedException {
         try (RocksSession session = schemaSession()) {

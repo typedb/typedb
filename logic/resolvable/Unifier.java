@@ -45,8 +45,8 @@ public class Unifier {
 
     private final Map<Variable.Retrieved, Set<Variable>> unifier;
     private final Map<Variable, Set<Variable.Retrieved>> reverseUnifier;
-    private final Requirements.Constraint unifiedRequirements;
     private final Requirements.Constraint requirements;
+    private final Requirements.Constraint unifiedRequirements;
 
     private Unifier(Map<Variable.Retrieved, Set<Variable>> unifier, Requirements.Constraint requirements,
                     Requirements.Constraint unifiedRequirements) {
@@ -71,22 +71,18 @@ public class Unifier {
      */
     public Optional<Pair<ConceptMap, Requirements.Instance>> unify(ConceptMap conceptMap) {
         Map<Retrieved, Concept> unifiedMap = new HashMap<>();
-
-        if (requirements.contradicts(conceptMap)) {
-            return Optional.empty();
-        }
+        if (requirements.contradicts(conceptMap)) return Optional.empty();
 
         for (Map.Entry<Variable.Retrieved, Set<Variable>> entry : unifier.entrySet()) {
             Variable.Retrieved toUnify = entry.getKey();
             Concept concept = conceptMap.get(toUnify.asRetrieved());
-            if (concept != null) {
-                for (Variable unified : entry.getValue()) {
-                    if (unified.isRetrieved()) {
-                        if (!unifiedMap.containsKey(unified.asRetrieved())) {
-                            unifiedMap.put(unified.asRetrieved(), concept);
-                        }
-                        if (!unifiedMap.get(unified.asRetrieved()).equals(concept)) return Optional.empty();
+            if (concept == null) continue;
+            for (Variable unified : entry.getValue()) {
+                if (unified.isRetrieved()) {
+                    if (!unifiedMap.containsKey(unified.asRetrieved())) {
+                        unifiedMap.put(unified.asRetrieved(), concept);
                     }
+                    if (!unifiedMap.get(unified.asRetrieved()).equals(concept)) return Optional.empty();
                 }
             }
         }
@@ -121,10 +117,6 @@ public class Unifier {
 
     public Map<Variable.Retrieved, Set<Variable>> mapping() {
         return unifier;
-    }
-
-    public Requirements.Constraint unifiedRequirements() {
-        return unifiedRequirements;
     }
 
     public Requirements.Constraint requirements() {
@@ -195,7 +187,6 @@ public class Unifier {
             return new Builder(unifierCopy, requirementsCopy, unifiedRequirementsCopy);
         }
     }
-
 
     public static abstract class Requirements {
 
