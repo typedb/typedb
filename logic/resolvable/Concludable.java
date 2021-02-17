@@ -263,8 +263,8 @@ public abstract class Concludable extends Resolvable<Conjunction> {
     protected void addConstantValueRequirements(Unifier.Builder unifierBuilder, Set<ValueConstraint<?>> values,
                                                 Retrievable id, Retrievable unifiedId) {
         for (ValueConstraint<?> value : equalsConstantConstraints(values)) {
-            unifierBuilder.requirements().predicates(id, valueEqualsFunction(value));
             unifierBuilder.unifiedRequirements().predicates(unifiedId, valueEqualsFunction(value));
+            unifierBuilder.requirements().predicates(id, valueEqualsFunction(value));
         }
     }
 
@@ -632,8 +632,9 @@ public abstract class Concludable extends Resolvable<Conjunction> {
             if (unificationSatisfiable(type, isaConclusion.isa().type(), conceptMgr)) {
                 if (type.reference().isLabel()) {
                     // form: $r isa friendship -> require type subs(friendship) for anonymous type variable
-                    unifierBuilder.unifiedRequirements().isaExplicit(isaConclusion.isa().owner().id(), subtypeLabels(type.resolvedTypes(), conceptMgr)
-                            .collect(toSet()));
+                    Set<Label> subtypes = subtypeLabels(type.resolvedTypes(), conceptMgr).collect(toSet());
+                    unifierBuilder.unifiedRequirements().isaExplicit(isaConclusion.isa().owner().id(), subtypes);
+                    unifierBuilder.requirements().isaExplicit(isa().owner().id(), subtypes);
                 } else {
                     unifierBuilder.add(type.id().asRetrievable(), isaConclusion.isa().type().id());
                 }

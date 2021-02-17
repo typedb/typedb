@@ -236,7 +236,7 @@ public class TypeResolver {
             if (originalToResolver.containsKey(var.id())) return originalToResolver.get(var.id());
             TypeVariable resolver;
             if (var.label().isPresent() && var.label().get().scope().isPresent()) {
-                resolver = new TypeVariable(var.id());
+                resolver = new TypeVariable(newSystemId());
                 traversal.labels(resolver.id(), var.resolvedTypes());
             } else {
                 resolver = var;
