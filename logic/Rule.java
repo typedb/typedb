@@ -276,6 +276,10 @@ public class Rule {
             throw GraknException.of(ILLEGAL_STATE);
         }
 
+        public Conjunction conjunction() {
+            return rule().then();
+        }
+
         /**
          * Perform a put operation on the `then` of the rule. This may insert a new fact, or return an iterator of existing ones
          *
@@ -286,19 +290,6 @@ public class Rule {
          */
         public abstract ResourceIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
                                                                                         ConceptManager conceptMgr);
-
-        public abstract ResourceIterator<ConceptMap> candidateAnswers(ConceptMap partial, ConceptManager conceptMgr,
-                                                                      TraversalEngine traversalEng);
-
-        void bind(Traversal traversal, ConceptMap conceptMap) {
-            conceptMap.concepts().forEach((id, concept) -> {
-                if (concept.isThing()) traversal.iid(id.asVariable(), concept.asThing().getIID());
-                else {
-                    traversal.clearLabels(id.asVariable());
-                    traversal.labels(id.asVariable(), concept.asType().getLabel());
-                }
-            });
-        }
 
         public Rule rule() { return rule; }
 
@@ -509,18 +500,6 @@ public class Rule {
                         .map(conceptMap -> conceptMap.get(relationId).asRelation());
             }
 
-            @Override
-            public ResourceIterator<ConceptMap> candidateAnswers(ConceptMap partial, ConceptManager conceptMgr,
-                                                                 TraversalEngine traversalEng) {
-                // build raw traversal
-                Traversal traversal = new Traversal();
-                relation().addTo(traversal);
-                isa().addTo(traversal);
-                bind(traversal, partial);
-                traversal.filter(retrievableIds());
-                return traversalEng.iterator(traversal).map(conceptMgr::conceptMap);
-            }
-
             private RelationType relationType(ConceptMap whenConcepts, ConceptManager conceptMgr) {
                 if (isa().type().reference().isName()) {
                     Reference.Name typeReference = isa().type().reference().asName();
@@ -623,17 +602,6 @@ public class Rule {
                     thenConcepts.put(has().attribute().id(), attribute);
                     thenConcepts.put(has().owner().id(), owner);
                     return Iterators.single(thenConcepts);
-                }
-
-                @Override
-                public ResourceIterator<ConceptMap> candidateAnswers(ConceptMap partial, ConceptManager conceptMgr, TraversalEngine traversalEng) {
-                    Traversal traversal = new Traversal();
-                    has().addTo(traversal);
-                    isa().addTo(traversal);
-                    value().addTo(traversal);
-                    bind(traversal, partial);
-                    traversal.filter(retrievableIds());
-                    return traversalEng.iterator(traversal).map(conceptMgr::conceptMap);
                 }
 
                 @Override
@@ -754,15 +722,6 @@ public class Rule {
                     thenConcepts.put(has().attribute().id(), attribute);
                     thenConcepts.put(has().owner().id(), owner);
                     return Iterators.single(thenConcepts);
-                }
-
-                @Override
-                public ResourceIterator<ConceptMap> candidateAnswers(ConceptMap partial, ConceptManager conceptMgr, TraversalEngine traversalEng) {
-                    Traversal traversal = new Traversal();
-                    has().addTo(traversal);
-                    bind(traversal, partial);
-                    traversal.filter(retrievableIds());
-                    return traversalEng.iterator(traversal).map(conceptMgr::conceptMap);
                 }
 
                 @Override
