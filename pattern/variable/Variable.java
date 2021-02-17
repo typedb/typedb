@@ -35,10 +35,10 @@ import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
 public abstract class Variable implements Pattern {
 
-    private final Identifier.Variable identifier;
     private final Set<Label> resolvedTypes;
     private final int hash;
     private boolean isSatisfiable;
+    final Identifier.Variable identifier;
 
     Variable(Identifier.Variable identifier) {
         this.identifier = identifier;
@@ -53,9 +53,7 @@ public abstract class Variable implements Pattern {
 
     public abstract void constraining(Constraint constraint);
 
-    public Identifier.Variable id() {
-        return identifier;
-    }
+    public abstract Identifier.Variable id();
 
     public Reference reference() {
         return identifier.reference();

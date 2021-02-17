@@ -80,6 +80,11 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         return new TypeVariable(identifier);
     }
 
+    @Override
+    public Identifier.Variable id() {
+        return identifier;
+    }
+
     Variable constrainConcept(List<ConceptConstraint> constraints, VariableRegistry registry) {
         constraints.forEach(constraint -> this.constrain(TypeConstraint.of(this, constraint, registry)));
         return this;
