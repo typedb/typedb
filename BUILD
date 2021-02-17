@@ -71,7 +71,7 @@ artifact_repackage(
 )
 
 assemble_deps_common = [
-    "//server:server-deps-dev",
+    "//server:server-deps-prod",
 #    "//server:server-deps-prod",
     ":console-artifact-jars",
 ]
