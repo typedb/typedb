@@ -73,7 +73,7 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
 
     protected abstract void receiveAnswer(Response.Answer fromDownstream, int iteration);
 
-    protected abstract void receiveExhausted(Response.Fail fromDownstream, int iteration);
+    protected abstract void receiveFail(Response.Fail fromDownstream, int iteration);
 
     // TODO these should be setting the boolean to `true` in this method, not outside
     protected abstract void initialiseDownstreamActors();
@@ -105,7 +105,7 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
     protected void failToUpstream(Request fromUpstream, int iteration) {
         Response.Fail response = new Response.Fail(fromUpstream);
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
-        fromUpstream.sender().tell(actor -> actor.receiveExhausted(response, iteration));
+        fromUpstream.sender().tell(actor -> actor.receiveFail(response, iteration));
     }
 
     protected ResourceIterator<ConceptMap> compatibleBoundAnswers(ConceptManager conceptMgr, Conjunction conjunction, ConceptMap bounds) {

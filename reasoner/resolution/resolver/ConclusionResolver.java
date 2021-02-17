@@ -129,14 +129,14 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
     }
 
     @Override
-    protected void receiveExhausted(Response.Fail fromDownstream, int iteration) {
-        LOG.trace("{}: received Exhausted: {}", name(), fromDownstream);
+    protected void receiveFail(Response.Fail fromDownstream, int iteration) {
+        LOG.trace("{}: received Fail: {}", name(), fromDownstream);
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
         ConclusionResponses conclusionResponses = conclusionResponsess.get(fromUpstream);
 
         if (iteration < conclusionResponses.iteration()) {
-            // short circuit old iteration exhausted messages to upstream
+            // short circuit old iteration fail messages to upstream
             failToUpstream(fromUpstream, iteration);
             return;
         }
@@ -176,15 +176,14 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         ConceptMap partialAnswer = fromUpstream.partialAnswer().conceptMap();
         // we do a extra traversal to expand the partial answer if we already have the concept that is meant to be generated
         // and if there's extra variables to be populated
-        assert conclusion.retrievedIds().containsAll(partialAnswer.concepts().keySet());
-        if (conclusion.generating().isPresent() && conclusion.retrievedIds().size() > partialAnswer.concepts().size() &&
+        assert conclusion.retrievableIds().containsAll(partialAnswer.concepts().keySet());
+        if (conclusion.generating().isPresent() && conclusion.retrievableIds().size() > partialAnswer.concepts().size() &&
                 partialAnswer.concepts().containsKey(conclusion.generating().get().id())) {
-            ResourceIterator<AnswerState.Partial.Filtered> expandedDownstreamAnswers = candidateDownstreamAnswers(fromUpstream, partialAnswer);
-            expandedDownstreamAnswers.forEachRemaining(downstreamAnswer -> conclusionResponses.addDownstream(
-                    Request.create(self(), ruleResolver, downstreamAnswer)
-            ));
+            ResourceIterator<AnswerState.Partial.Filtered> completedAnswers = candidateAnswers(fromUpstream, partialAnswer);
+            completedAnswers.forEachRemaining(answer -> conclusionResponses.addDownstream(Request.create(self(), ruleResolver,
+                                                                                                         answer)));
         } else {
-            Set<Identifier.Variable.Retrieved> named = iterate(conclusion.retrievedIds()).filter(Identifier::isName).toSet();
+            Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
             AnswerState.Partial.Filtered downstreamAnswer = fromUpstream.partialAnswer().filterToDownstream(named);
             conclusionResponses.addDownstream(Request.create(self(), ruleResolver, downstreamAnswer));
         }
@@ -192,9 +191,9 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         return conclusionResponses;
     }
 
-    private ResourceIterator<AnswerState.Partial.Filtered> candidateDownstreamAnswers(Request fromUpstream, ConceptMap answer) {
-        ResourceIterator<ConceptMap> lookup = conclusion.traverseWithPartial(answer, conceptMgr, traversalEngine);
-        Set<Identifier.Variable.Retrieved> named = iterate(conclusion.retrievedIds()).filter(Identifier::isName).toSet();
+    private ResourceIterator<AnswerState.Partial.Filtered> candidateAnswers(Request fromUpstream, ConceptMap answer) {
+        ResourceIterator<ConceptMap> lookup = conclusion.candidateAnswers(answer, conceptMgr, traversalEngine);
+        Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
         return lookup.map(ans -> fromUpstream.partialAnswer().asUnified().filterToDownstream(named, ans));
     }
 

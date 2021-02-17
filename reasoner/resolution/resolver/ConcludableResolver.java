@@ -115,14 +115,14 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     }
 
     @Override
-    protected void receiveExhausted(Response.Fail fromDownstream, int iteration) {
-        LOG.trace("{}: received Exhausted: {}", name(), fromDownstream);
+    protected void receiveFail(Response.Fail fromDownstream, int iteration) {
+        LOG.trace("{}: received Fail: {}", name(), fromDownstream);
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
         ResponseProducer responseProducer = responseProducers.get(fromUpstream);
 
         if (iteration < responseProducer.iteration()) {
-            // short circuit old iteration exhausted messages to upstream
+            // short circuit old iteration failed messages to upstream
             failToUpstream(fromUpstream, iteration);
             return;
         }

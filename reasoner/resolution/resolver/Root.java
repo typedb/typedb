@@ -269,13 +269,13 @@ public interface Root {
         }
 
         @Override
-        protected void receiveExhausted(Response.Fail fromDownstream, int iteration) {
+        protected void receiveFail(Response.Fail fromDownstream, int iteration) {
             LOG.trace("{}: received Exhausted, with iter {}: {}", name(), iteration, fromDownstream);
             Request toDownstream = fromDownstream.sourceRequest();
             Request fromUpstream = fromUpstream(toDownstream);
 
             if (iteration < responseProducer.iteration()) {
-                // short circuit old iteration exhausted messages back out of the actor model
+                // short circuit old iteration failed messages back out of the actor model
                 submitFail(iteration);
                 return;
             }

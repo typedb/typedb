@@ -259,11 +259,11 @@ public class Rule {
     public static abstract class Conclusion {
 
         private final Rule rule;
-        private final Set<Identifier.Variable.Retrieved> retrievedIds;
+        private final Set<Identifier.Variable.Retrievable> retrievableIds;
 
-        Conclusion(Rule rule, Set<Identifier.Variable.Retrieved> retrievedIds) {
+        Conclusion(Rule rule, Set<Identifier.Variable.Retrievable> retrievableIds) {
             this.rule = rule;
-            this.retrievedIds = retrievedIds;
+            this.retrievableIds = retrievableIds;
         }
 
         public static Conclusion create(Conjunction then, Rule rule) {
@@ -287,11 +287,10 @@ public class Rule {
         public abstract ResourceIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
                                                                                         ConceptManager conceptMgr);
 
-        public abstract ResourceIterator<ConceptMap> traverseWithPartial(ConceptMap partial, ConceptManager conceptMgr,
-                                                                         TraversalEngine traversalEng);
+        public abstract ResourceIterator<ConceptMap> candidateAnswers(ConceptMap partial, ConceptManager conceptMgr,
+                                                                      TraversalEngine traversalEng);
 
         void bind(Traversal traversal, ConceptMap conceptMap) {
-            // bind traversal
             conceptMap.concepts().forEach((id, concept) -> {
                 if (concept.isThing()) traversal.iid(id.asVariable(), concept.asThing().getIID());
                 else {
@@ -305,8 +304,8 @@ public class Rule {
 
         public abstract Optional<ThingVariable> generating();
 
-        public Set<Identifier.Variable.Retrieved> retrievedIds() {
-            return retrievedIds;
+        public Set<Identifier.Variable.Retrievable> retrievableIds() {
+            return retrievableIds;
         }
 
         abstract void index();
@@ -345,12 +344,12 @@ public class Rule {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Has.class));
         }
 
-        public IsaConclusion asIsa() {
-            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(IsaConclusion.class));
+        public Isa asIsa() {
+            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Isa.class));
         }
 
-        public ValueConclusion asValue() {
-            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(ValueConclusion.class));
+        public Value asValue() {
+            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Value.class));
         }
 
         public Has.Variable asVariableHas() {
@@ -361,18 +360,24 @@ public class Rule {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Has.Explicit.class));
         }
 
-        public interface IsaConclusion {
+        public interface Isa {
             IsaConstraint isa();
         }
 
-        public interface ValueConclusion {
+        public interface Value {
             ValueConstraint<?> value();
         }
 
-        public static class Relation extends Conclusion implements IsaConclusion {
+        public static class Relation extends Conclusion implements Isa {
 
             private final RelationConstraint relation;
             private final IsaConstraint isa;
+
+            public Relation(RelationConstraint relation, IsaConstraint isa, Rule rule) {
+                super(rule, retrievableIds(relation, isa));
+                this.relation = relation;
+                this.isa = isa;
+            }
 
             public static Optional<Relation> of(Conjunction conjunction, Rule rule) {
                 return Iterators.iterate(conjunction.variables()).filter(Variable::isThing).map(Variable::asThing)
@@ -384,23 +389,18 @@ public class Rule {
                                 })).first();
             }
 
-            public Relation(RelationConstraint relation, IsaConstraint isa, Rule rule) {
-                super(rule, retrievedIds(relation, isa));
-                this.relation = relation;
-                this.isa = isa;
-            }
-
-            private static Set<Identifier.Variable.Retrieved> retrievedIds(RelationConstraint relation, IsaConstraint isa) {
-                Set<Identifier.Variable.Retrieved> retrieved = new HashSet<>();
-                retrieved.add(relation.owner().id());
-                relation.players().forEach(rp -> {
-                    retrieved.add(rp.player().id());
-                    if (rp.roleType().isPresent() && rp.roleType().get().id().isRetrieved())
-                        retrieved.add(rp.roleType().get().id().asRetrieved());
-                });
+            private static Set<Identifier.Variable.Retrievable> retrievableIds(RelationConstraint relation, IsaConstraint isa) {
+                Set<Identifier.Variable.Retrievable> ids = new HashSet<>();
                 assert isa.owner().equals(relation.owner());
-                if (isa.type().id().isRetrieved()) retrieved.add(isa.type().id().asRetrieved());
-                return retrieved;
+                ids.add(relation.owner().id());
+                relation.players().forEach(rp -> {
+                    ids.add(rp.player().id());
+                    if (rp.roleType().isPresent() && rp.roleType().get().id().isRetrievable()) {
+                        ids.add(rp.roleType().get().id().asRetrievable());
+                    }
+                });
+                if (isa.type().id().isRetrievable()) ids.add(isa.type().id().asRetrievable());
+                return ids;
             }
 
             @Override
@@ -476,7 +476,7 @@ public class Rule {
                 return true;
             }
 
-            public IsaConclusion asIsa() {
+            public Isa asIsa() {
                 return this;
             }
 
@@ -494,7 +494,7 @@ public class Rule {
             private ResourceIterator<grakn.core.concept.thing.Relation> matchRelation(RelationType relationType, Set<RolePlayer> players,
                                                                                       TraversalEngine traversalEng, ConceptManager conceptMgr) {
                 Traversal traversal = new Traversal();
-                Identifier.Variable.Retrieved relationId = relation().owner().id();
+                Identifier.Variable.Retrievable relationId = relation().owner().id();
                 traversal.isa(relationId, Identifier.Variable.label(relationType.getLabel().name()), false);
                 Set<Identifier.Variable> playersWithIds = new HashSet<>();
                 players.forEach(rp -> {
@@ -510,14 +510,14 @@ public class Rule {
             }
 
             @Override
-            public ResourceIterator<ConceptMap> traverseWithPartial(ConceptMap partial, ConceptManager conceptMgr,
-                                                                    TraversalEngine traversalEng) {
+            public ResourceIterator<ConceptMap> candidateAnswers(ConceptMap partial, ConceptManager conceptMgr,
+                                                                 TraversalEngine traversalEng) {
                 // build raw traversal
                 Traversal traversal = new Traversal();
                 relation().addTo(traversal);
                 isa().addTo(traversal);
                 bind(traversal, partial);
-                traversal.filter(retrievedIds());
+                traversal.filter(retrievableIds());
                 return traversalEng.iterator(traversal).map(conceptMgr::conceptMap);
             }
 
@@ -580,7 +580,7 @@ public class Rule {
                 return true;
             }
 
-            public static class Explicit extends Has implements IsaConclusion, ValueConclusion {
+            public static class Explicit extends Has implements Isa, Value {
 
                 private final IsaConstraint isa;
                 private final ValueConstraint<?> value;
@@ -626,13 +626,13 @@ public class Rule {
                 }
 
                 @Override
-                public ResourceIterator<ConceptMap> traverseWithPartial(ConceptMap partial, ConceptManager conceptMgr, TraversalEngine traversalEng) {
+                public ResourceIterator<ConceptMap> candidateAnswers(ConceptMap partial, ConceptManager conceptMgr, TraversalEngine traversalEng) {
                     Traversal traversal = new Traversal();
                     has().addTo(traversal);
                     isa().addTo(traversal);
                     value().addTo(traversal);
                     bind(traversal, partial);
-                    traversal.filter(retrievedIds());
+                    traversal.filter(retrievableIds());
                     return traversalEng.iterator(traversal).map(conceptMgr::conceptMap);
                 }
 
@@ -687,12 +687,12 @@ public class Rule {
                 }
 
                 @Override
-                public IsaConclusion asIsa() {
+                public Isa asIsa() {
                     return this;
                 }
 
                 @Override
-                public ValueConclusion asValue() {
+                public Value asValue() {
                     return this;
                 }
 
@@ -757,11 +757,11 @@ public class Rule {
                 }
 
                 @Override
-                public ResourceIterator<ConceptMap> traverseWithPartial(ConceptMap partial, ConceptManager conceptMgr, TraversalEngine traversalEng) {
+                public ResourceIterator<ConceptMap> candidateAnswers(ConceptMap partial, ConceptManager conceptMgr, TraversalEngine traversalEng) {
                     Traversal traversal = new Traversal();
                     has().addTo(traversal);
                     bind(traversal, partial);
-                    traversal.filter(retrievedIds());
+                    traversal.filter(retrievableIds());
                     return traversalEng.iterator(traversal).map(conceptMgr::conceptMap);
                 }
 

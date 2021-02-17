@@ -152,14 +152,14 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     }
 
     @Override
-    protected void receiveExhausted(Response.Fail fromDownstream, int iteration) {
+    protected void receiveFail(Response.Fail fromDownstream, int iteration) {
         LOG.trace("{}: Receiving Exhausted: {}", name(), fromDownstream);
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
         ResponseProducer responseProducer = responseProducers.get(fromUpstream);
 
         if (iteration < responseProducer.iteration()) {
-            // short circuit old iteration exhausted messages to upstream
+            // short circuit old iteration failed messages to upstream
             failToUpstream(fromUpstream, iteration);
             return;
         }

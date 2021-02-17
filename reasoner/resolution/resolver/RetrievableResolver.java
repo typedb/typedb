@@ -58,7 +58,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         LOG.trace("{}: received Request: {}", name(), fromUpstream);
         ResponseProducer responseProducer = mayUpdateAndGetResponseProducer(fromUpstream, iteration);
         if (iteration < responseProducer.iteration()) {
-            // short circuit old iteration exhausted messages to upstream
+            // short circuit old iteration failed messages to upstream
             failToUpstream(fromUpstream, iteration);
         } else {
             assert iteration == responseProducer.iteration();
@@ -72,7 +72,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     }
 
     @Override
-    protected void receiveExhausted(Response.Fail fromDownstream, int iteration) {
+    protected void receiveFail(Response.Fail fromDownstream, int iteration) {
         throw GraknException.of(ILLEGAL_STATE);
     }
 

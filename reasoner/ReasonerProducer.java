@@ -28,7 +28,6 @@ import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.traversal.common.Identifier;
-import graql.lang.pattern.variable.Reference;
 import graql.lang.pattern.variable.UnboundVariable;
 import graql.lang.query.GraqlMatch;
 import org.slf4j.Logger;

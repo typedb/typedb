@@ -136,8 +136,8 @@ public class NegationResolver extends Resolver<NegationResolver> {
     }
 
     @Override
-    protected void receiveExhausted(Response.Fail fromDownstream, int iteration) {
-        LOG.trace("{}: Receiving Exhausted: {}, therefore is SATISFIED", name(), fromDownstream);
+    protected void receiveFail(Response.Fail fromDownstream, int iteration) {
+        LOG.trace("{}: Receiving EFailed: {}, therefore is SATISFIED", name(), fromDownstream);
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);

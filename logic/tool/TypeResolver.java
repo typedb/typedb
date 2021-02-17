@@ -125,7 +125,7 @@ public class TypeResolver {
         Traversal resolverTraversal = new Traversal();
         TraversalBuilder traversalBuilder = builder(resolverTraversal, conjunction, scopingConjunctions, insertable);
         resolverTraversal.filter(traversalBuilder.retrievedResolvers());
-        Map<Identifier.Variable.Retrieved, Set<Label>> resolvedLabels = executeResolverTraversals(traversalBuilder);
+        Map<Identifier.Variable.Retrievable, Set<Label>> resolvedLabels = executeResolverTraversals(traversalBuilder);
         if (resolvedLabels.isEmpty()) {
             conjunction.setSatisfiable(false);
             return;
@@ -166,9 +166,9 @@ public class TypeResolver {
         return currentBuilder;
     }
 
-    private Map<Identifier.Variable.Retrieved, Set<Label>> executeResolverTraversals(TraversalBuilder traversalBuilder) {
+    private Map<Identifier.Variable.Retrievable, Set<Label>> executeResolverTraversals(TraversalBuilder traversalBuilder) {
         return logicCache.resolver().get(traversalBuilder.traversal(), traversal -> {
-            Map<Identifier.Variable.Retrieved, Set<Label>> mapping = new HashMap<>();
+            Map<Identifier.Variable.Retrievable, Set<Label>> mapping = new HashMap<>();
             traversalEng.iterator(traversal, true).forEachRemaining(
                     result -> result.forEach((id, vertex) -> {
                         mapping.putIfAbsent(id, new HashSet<>());

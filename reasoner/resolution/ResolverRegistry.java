@@ -34,11 +34,11 @@ import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.resolver.ConcludableResolver;
 import grakn.core.reasoner.resolution.resolver.ConclusionResolver;
+import grakn.core.reasoner.resolution.resolver.ConditionResolver;
 import grakn.core.reasoner.resolution.resolver.ConjunctionResolver;
 import grakn.core.reasoner.resolution.resolver.NegationResolver;
 import grakn.core.reasoner.resolution.resolver.RetrievableResolver;
 import grakn.core.reasoner.resolution.resolver.Root;
-import grakn.core.reasoner.resolution.resolver.ConditionResolver;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import org.slf4j.Logger;
@@ -62,7 +62,7 @@ public class ResolverRegistry {
     private final LogicManager logicMgr;
     private boolean explanations;
     private final HashMap<Rule, Actor<ConditionResolver>> ruleConditions;
-    private final HashMap<Rule, Actor<ConclusionResolver>> ruleConclusions; // by Rule not Rule.Conclusion because well define equality exists
+    private final HashMap<Rule, Actor<ConclusionResolver>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private final TraversalEngine traversalEngine;
     private EventLoopGroup elg;
@@ -105,11 +105,11 @@ public class ResolverRegistry {
 
     public Actor<Root.Conjunction> rootConjunction(Conjunction conjunction, @Nullable Long offset,
                                                    @Nullable Long limit, Consumer<Top> onAnswer,
-                                                   Consumer<Integer> onExhausted) {
+                                                   Consumer<Integer> onFail) {
         LOG.debug("Creating Root.Conjunction for: '{}'", conjunction);
         return Actor.create(
                 elg, self -> new Root.Conjunction(
-                        self, conjunction, offset, limit, onAnswer, onExhausted, resolutionRecorder, this,
+                        self, conjunction, offset, limit, onAnswer, onFail, resolutionRecorder, this,
                         traversalEngine, conceptMgr, logicMgr, planner, explanations));
     }
 
