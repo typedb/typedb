@@ -22,6 +22,7 @@ load("@graknlabs_bazel_distribution//github:rules.bzl", "deploy_github")
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
 load("@graknlabs_dependencies//distribution:deployment.bzl", "deployment")
+load("@graknlabs_dependencies//distribution/artifact:rules.bzl", "artifact_repackage")
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@graknlabs_dependencies//tool/release:rules.bzl", "release_validate_deps")
 load("@io_bazel_rules_docker//container:bundle.bzl", "container_bundle")
@@ -67,45 +68,15 @@ assemble_deps_common = [
 #    "//server:server-deps-prod",
 ]
 
-genrule(
-    name = "_console_artifact_mac_repacked",
-    outs = ["console_artifact_mac.tar.gz"],
+artifact_repackage(
+    name = "console-artifact-jars",
     srcs = ["@graknlabs_console_artifact_mac//file"],
-    cmd = '''
-    dest=`mktemp -d` && out_file=`pwd`/$@ &&
-    unzip -d "$$dest" "$<" && f=("$$dest"/*) &&
-    mv "$$dest"/*/* "$$dest" && rmdir "$${f[@]}" &&
-    cd $$dest && tar -czvf $$out_file .  && rm -rf $$dest
-    ''',
+    files_to_keep = ["console"],
 )
-
-genrule(
-    name = "_console_artifact_linux_repacked",
-    outs = ["console_artifact_linux.tar.gz"],
-    srcs = ["@graknlabs_console_artifact_linux//file"],
-    cmd = '''
-    dest=`mktemp -d` && out_file=`pwd`/$@ &&
-    tar --strip-components=2 -xvzf $< -C $$dest && cd $$dest &&
-    tar -czvf $$out_file .  && rm -rf $$dest
-    '''
-)
-
-genrule(
-    name = "_console_artifact_windows_repacked",
-    outs = ["console_artifact_windows.tar.gz"],
-    srcs = ["@graknlabs_console_artifact_windows//file"],
-    cmd = '''
-    dest=`mktemp -d` && out_file=`pwd`/$@ &&
-    unzip -d "$$dest" "$<" && f=("$$dest"/*) &&
-    mv "$$dest"/*/* "$$dest" && rmdir "$${f[@]}" &&
-    cd $$dest && tar -czvf $$out_file .  && rm -rf $$dest
-    ''',
-)
-
 
 assemble_targz(
     name = "assemble-linux-targz",
-    targets = assemble_deps_common + ["//server:server-deps-linux", ":_console_artifact_linux_repacked", "@graknlabs_common//binary:assemble-bash-targz"],
+    targets = assemble_deps_common + ["//server:server-deps-linux", ":console-artifact-jars", "@graknlabs_common//binary:assemble-bash-targz"],
     additional_files = assemble_files,
     permissions = permissions,
     output_filename = "grakn-core-all-linux",
@@ -113,7 +84,7 @@ assemble_targz(
 
 assemble_zip(
     name = "assemble-mac-zip",
-    targets = assemble_deps_common + ["//server:server-deps-mac", ":_console_artifact_mac_repacked", "@graknlabs_common//binary:assemble-bash-targz"],
+    targets = assemble_deps_common + ["//server:server-deps-mac", ":console-artifact-jars", "@graknlabs_common//binary:assemble-bash-targz"],
     additional_files = assemble_files,
     permissions = permissions,
     output_filename = "grakn-core-all-mac",
@@ -121,7 +92,7 @@ assemble_zip(
 
 assemble_zip(
     name = "assemble-windows-zip",
-    targets = assemble_deps_common + ["//server:server-deps-windows", ":_console_artifact_windows_repacked", "@graknlabs_common//binary:assemble-bat-targz"],
+    targets = assemble_deps_common + ["//server:server-deps-windows", ":console-artifact-jars", "@graknlabs_common//binary:assemble-bat-targz"],
     additional_files = assemble_files,
     permissions = permissions,
     output_filename = "grakn-core-all-windows",
@@ -177,7 +148,7 @@ assemble_apt(
     depends = [
         "openjdk-11-jre",
         "grakn-core-server (=%{version})",
-        "grakn-console (=%{@graknlabs_console_artifact})",
+        "grakn-console (=%{:console-artifact-jars})",
     ],
     workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
 )
