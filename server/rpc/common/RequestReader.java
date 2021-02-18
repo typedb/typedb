@@ -45,6 +45,9 @@ public class RequestReader {
         if (request.getSchemaLockAcquireTimeoutOptCase().equals(SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS)) {
             options.schemaLockTimeoutMillis(request.getSchemaLockAcquireTimeoutMillis());
         }
+        if (request.getReadAnyReplicaOptCase().equals(OptionsProto.Options.ReadAnyReplicaOptCase.READ_ANY_REPLICA)) {
+            options.readAnyReplica(request.getReadAnyReplica());
+        }
         return options;
     }
 

@@ -41,6 +41,7 @@ class SessionRPC {
     private final GraknRPCService graknRPCService;
     private final ConcurrentHashMap<Integer, TransactionRPC> transactionRPCs;
     private final AtomicBoolean isOpen;
+    private final Options.Session options;
     private final long idleTimeoutMillis;
     private ScheduledFuture<?> idleTimeoutTask;
 
@@ -49,6 +50,7 @@ class SessionRPC {
         this.session = session;
         transactionRPCs = new ConcurrentHashMap<>();
         isOpen = new AtomicBoolean(true);
+        this.options = options;
         idleTimeoutMillis = options.sessionIdleTimeoutMillis();
         setIdleTimeout();
     }
@@ -61,6 +63,10 @@ class SessionRPC {
 
     Grakn.Session session() {
         return session;
+    }
+
+    Options.Session options() {
+        return options;
     }
 
     ByteString uuidAsByteString() {
