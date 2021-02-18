@@ -178,10 +178,24 @@ public class Encoding {
         }
 
         public static Prefix of(byte key) {
-            for (Prefix i : Prefix.values()) {
-                if (i.key == key) return i;
-            }
-            throw GraknException.of(UNRECOGNISED_VALUE);
+            if (key == INDEX_TYPE.key) return INDEX_TYPE;
+            else if (key == INDEX_RULE.key) return INDEX_RULE;
+            else if (key == INDEX_ATTRIBUTE.key) return INDEX_ATTRIBUTE;
+            else if (key == STATISTICS_THINGS.key) return STATISTICS_THINGS;
+            else if (key == STATISTICS_COUNT_JOB.key) return STATISTICS_COUNT_JOB;
+            else if (key == STATISTICS_COUNTED.key) return STATISTICS_COUNTED;
+            else if (key == STATISTICS_SNAPSHOT.key) return STATISTICS_SNAPSHOT;
+            else if (key == VERTEX_THING_TYPE.key) return VERTEX_THING_TYPE;
+            else if (key == VERTEX_ENTITY_TYPE.key) return VERTEX_ENTITY_TYPE;
+            else if (key == VERTEX_ATTRIBUTE_TYPE.key) return VERTEX_ATTRIBUTE_TYPE;
+            else if (key == VERTEX_RELATION_TYPE.key) return VERTEX_RELATION_TYPE;
+            else if (key == VERTEX_ROLE_TYPE.key) return VERTEX_ROLE_TYPE;
+            else if (key == VERTEX_ENTITY.key) return VERTEX_ENTITY;
+            else if (key == VERTEX_ATTRIBUTE.key) return VERTEX_ATTRIBUTE;
+            else if (key == VERTEX_RELATION.key) return VERTEX_RELATION;
+            else if (key == VERTEX_ROLE.key) return VERTEX_ROLE;
+            else if (key == STRUCTURE_RULE.key) return STRUCTURE_RULE;
+            else throw GraknException.of(UNRECOGNISED_VALUE);
         }
 
         public byte key() {
@@ -266,10 +280,35 @@ public class Encoding {
         }
 
         public static Infix of(byte key) {
-            for (Infix i : Infix.values()) {
-                if (i.key == key) return i;
-            }
-            throw GraknException.of(UNRECOGNISED_VALUE);
+            if (key == PROPERTY_LABEL.key) return PROPERTY_LABEL;
+            else if (key == PROPERTY_SCOPE.key) return PROPERTY_SCOPE;
+            else if (key == PROPERTY_ABSTRACT.key) return PROPERTY_ABSTRACT;
+            else if (key == PROPERTY_VALUE_TYPE.key) return PROPERTY_VALUE_TYPE;
+            else if (key == PROPERTY_REGEX.key) return PROPERTY_REGEX;
+            else if (key == PROPERTY_WHEN.key) return PROPERTY_WHEN;
+            else if (key == PROPERTY_THEN.key) return PROPERTY_THEN;
+            else if (key == PROPERTY_VALUE.key) return PROPERTY_VALUE;
+            else if (key == PROPERTY_VALUE_REF.key) return PROPERTY_VALUE_REF;
+            else if (key == EDGE_ISA_IN.key) return EDGE_ISA_IN; // EDGE_ISA_OUT does not exist by design
+            else if (key == EDGE_SUB_OUT.key) return EDGE_SUB_OUT;
+            else if (key == EDGE_SUB_IN.key) return EDGE_SUB_IN;
+            else if (key == EDGE_OWNS_OUT.key) return EDGE_OWNS_OUT;
+            else if (key == EDGE_OWNS_IN.key) return EDGE_OWNS_IN;
+            else if (key == EDGE_OWNS_KEY_OUT.key) return EDGE_OWNS_KEY_OUT;
+            else if (key == EDGE_OWNS_KEY_IN.key) return EDGE_OWNS_KEY_IN;
+            else if (key == EDGE_PLAYS_OUT.key) return EDGE_PLAYS_OUT;
+            else if (key == EDGE_PLAYS_IN.key) return EDGE_PLAYS_IN;
+            else if (key == EDGE_RELATES_OUT.key) return EDGE_RELATES_OUT;
+            else if (key == EDGE_RELATES_IN.key) return EDGE_RELATES_IN;
+            else if (key == EDGE_HAS_OUT.key) return EDGE_HAS_OUT;
+            else if (key == EDGE_HAS_IN.key) return EDGE_HAS_IN;
+            else if (key == EDGE_PLAYING_OUT.key) return EDGE_PLAYING_OUT;
+            else if (key == EDGE_PLAYING_IN.key) return EDGE_PLAYING_IN;
+            else if (key == EDGE_RELATING_OUT.key) return EDGE_RELATING_OUT;
+            else if (key == EDGE_RELATING_IN.key) return EDGE_RELATING_IN;
+            else if (key == EDGE_ROLEPLAYER_OUT.key) return EDGE_ROLEPLAYER_OUT;
+            else if (key == EDGE_ROLEPLAYER_IN.key) return EDGE_ROLEPLAYER_IN;
+            else throw GraknException.of(UNRECOGNISED_VALUE);
         }
 
         public byte key() {
@@ -361,24 +400,33 @@ public class Encoding {
         }
 
         public static ValueType of(byte value) {
-            for (ValueType vt : ValueType.values()) {
-                if (vt.key == value) return vt;
-            }
-            throw GraknException.of(UNRECOGNISED_VALUE);
+            if (value == OBJECT.key) return OBJECT;
+            else if (value == BOOLEAN.key) return BOOLEAN;
+            else if (value == LONG.key) return LONG;
+            else if (value == DOUBLE.key) return DOUBLE;
+            else if (value == STRING.key) return STRING;
+            else if (value == DATETIME.key) return DATETIME;
+            else throw GraknException.of(UNRECOGNISED_VALUE);
         }
 
         public static ValueType of(Class<?> valueClass) {
-            for (ValueType vt : ValueType.values()) {
-                if (vt.valueClass == valueClass) return vt;
-            }
-            throw GraknException.of(UNRECOGNISED_VALUE);
+            if (valueClass == OBJECT.valueClass) return OBJECT;
+            else if (valueClass == BOOLEAN.valueClass) return BOOLEAN;
+            else if (valueClass == LONG.valueClass) return LONG;
+            else if (valueClass == DOUBLE.valueClass) return DOUBLE;
+            else if (valueClass == STRING.valueClass) return STRING;
+            else if (valueClass == DATETIME.valueClass) return DATETIME;
+            else throw GraknException.of(UNRECOGNISED_VALUE);
         }
 
         public static ValueType of(GraqlArg.ValueType graqlValueType) {
-            for (ValueType vt : ValueType.values()) {
-                if (vt.graqlValueType == graqlValueType) return vt;
-            }
-            throw GraknException.of(UNRECOGNISED_VALUE);
+            if (graqlValueType == OBJECT.graqlValueType) return OBJECT;
+            else if (graqlValueType == BOOLEAN.graqlValueType) return BOOLEAN;
+            else if (graqlValueType == LONG.graqlValueType) return LONG;
+            else if (graqlValueType == DOUBLE.graqlValueType) return DOUBLE;
+            else if (graqlValueType == STRING.graqlValueType) return STRING;
+            else if (graqlValueType == DATETIME.graqlValueType) return DATETIME;
+            else throw GraknException.of(UNRECOGNISED_VALUE);
         }
 
         public byte[] bytes() {
@@ -459,17 +507,21 @@ public class Encoding {
             }
 
             public static Type of(byte prefix) {
-                for (Type t : Type.values()) {
-                    if (t.prefix.key == prefix) return t;
-                }
-                throw GraknException.of(UNRECOGNISED_VALUE);
+                if (prefix == THING_TYPE.prefix.key) return THING_TYPE;
+                else if (prefix == ENTITY_TYPE.prefix.key) return ENTITY_TYPE;
+                else if (prefix == ATTRIBUTE_TYPE.prefix.key) return ATTRIBUTE_TYPE;
+                else if (prefix == RELATION_TYPE.prefix.key) return RELATION_TYPE;
+                else if (prefix == ROLE_TYPE.prefix.key) return ROLE_TYPE;
+                else throw GraknException.of(UNRECOGNISED_VALUE);
             }
 
             public static Type of(Thing thing) {
-                for (Type t : Type.values()) {
-                    if (Objects.equals(t.instance, thing)) return t;
-                }
-                throw GraknException.of(UNRECOGNISED_VALUE);
+                if (Objects.equals(thing, THING_TYPE.instance)) return THING_TYPE;
+                else if (Objects.equals(thing, ENTITY_TYPE.instance)) return ENTITY_TYPE;
+                else if (Objects.equals(thing, ATTRIBUTE_TYPE.instance)) return ATTRIBUTE_TYPE;
+                else if (Objects.equals(thing, RELATION_TYPE.instance)) return RELATION_TYPE;
+                else if (Objects.equals(thing, ROLE_TYPE.instance)) return ROLE_TYPE;
+                else throw GraknException.of(UNRECOGNISED_VALUE);
             }
 
             /**
@@ -543,9 +595,10 @@ public class Encoding {
             }
 
             public static Thing of(byte prefix) {
-                for (Thing t : Thing.values()) {
-                    if (t.prefix.key == prefix) return t;
-                }
+                if (prefix == ENTITY.prefix.key) return ENTITY;
+                else if (prefix == ATTRIBUTE.prefix.key) return ATTRIBUTE;
+                else if (prefix == RELATION.prefix.key) return RELATION;
+                else if (prefix == ROLE.prefix.key) return ROLE;
                 throw GraknException.of(UNRECOGNISED_VALUE);
             }
 
@@ -628,12 +681,12 @@ public class Encoding {
             }
 
             public static Type of(byte infix) {
-                for (Type t : Type.values()) {
-                    if (t.out.key == infix || t.in.key == infix) {
-                        return t;
-                    }
-                }
-                throw GraknException.of(UNRECOGNISED_VALUE);
+                if (infix == SUB.in.key || infix == SUB.out.key) return SUB;
+                else if (infix == OWNS.in.key || infix == OWNS.out.key) return OWNS;
+                else if (infix == OWNS_KEY.in.key || infix == OWNS_KEY.out.key) return OWNS_KEY;
+                else if (infix == PLAYS.in.key || infix == PLAYS.out.key) return PLAYS;
+                else if (infix == RELATES.in.key || infix == RELATES.out.key) return RELATES;
+                else throw GraknException.of(UNRECOGNISED_VALUE);
             }
 
             @Override
@@ -686,12 +739,11 @@ public class Encoding {
             }
 
             public static Thing of(byte infix) {
-                for (Thing t : Thing.values()) {
-                    if ((t.out != null && t.out.key == infix) || (t.in != null && t.in.key == infix)) {
-                        return t;
-                    }
-                }
-                throw GraknException.of(UNRECOGNISED_VALUE);
+                if ((HAS.out != null && HAS.out.key == infix) || (HAS.in != null && HAS.in.key == infix)) return HAS;
+                else if ((PLAYING.out != null && PLAYING.out.key == infix) || (PLAYING.in != null && PLAYING.in.key == infix)) return PLAYING;
+                else if ((RELATING.out != null && RELATING.out.key == infix) || (RELATING.in != null && RELATING.in.key == infix)) return RELATING;
+                else if ((ROLEPLAYER.out != null && ROLEPLAYER.out.key == infix) || (ROLEPLAYER.in != null && ROLEPLAYER.in.key == infix)) return ROLEPLAYER;
+                else throw GraknException.of(UNRECOGNISED_VALUE);
             }
 
             @Override
@@ -767,12 +819,10 @@ public class Encoding {
             }
 
             public static Infix of(byte[] key) {
-                if (key.length == 1) {
-                    for (Infix i : Infix.values()) {
-                        if (i.key == key[0]) return i;
-                    }
-                }
-                throw GraknException.of(UNRECOGNISED_VALUE);
+                if (key[0] == CONTAINED_TYPE.key) return CONTAINED_TYPE;
+                else if (key[0] == CONCLUDED_VERTEX.key) return CONCLUDED_VERTEX;
+                else if (key[0] == CONCLUDED_EDGE_TO.key) return CONCLUDED_EDGE_TO;
+                else throw GraknException.of(UNRECOGNISED_VALUE);
             }
 
             public byte[] bytes() { return bytes; }
@@ -798,9 +848,9 @@ public class Encoding {
 
             public static JobType of(byte[] key) {
                 if (key.length == 1) {
-                    for (JobType i : JobType.values()) {
-                        if (i.key == key[0]) return i;
-                    }
+                    if (key[0] == ATTRIBUTE_VERTEX.key) return ATTRIBUTE_VERTEX;
+                    else if (key[0] == HAS_EDGE.key) return HAS_EDGE;
+                    else throw GraknException.of(UNRECOGNISED_VALUE);
                 }
                 throw GraknException.of(UNRECOGNISED_VALUE);
             }
@@ -831,9 +881,9 @@ public class Encoding {
 
             public static JobOperation of(byte[] key) {
                 if (key.length == 1) {
-                    for (JobOperation i : JobOperation.values()) {
-                        if (i.key == key[0]) return i;
-                    }
+                    if (key[0] == CREATED.key) return CREATED;
+                    else if (key[0] == DELETED.key) return DELETED;
+                    else throw GraknException.of(UNRECOGNISED_VALUE);
                 }
                 throw GraknException.of(UNRECOGNISED_VALUE);
             }
