@@ -42,6 +42,7 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
 import static java.util.stream.Collectors.toMap;
 
 public class GraphIterator extends AbstractResourceIterator<VertexMap> {
@@ -101,9 +102,14 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
                 throw GraknException.of(ILLEGAL_STATE);
             }
             return state == State.FETCHED;
+        } catch (GraknException e) { // note: catching runtime exception
+            if (e.code().isPresent() && e.code().get().equals(TRANSACTION_CLOSED.code())) {
+                LOG.debug("Transaction was closed during graph iteration");
+            }
+            throw e;
         } catch (Throwable e) {
-//            LOG.error("Parameters: " + params.toString());
-//            LOG.error("GraphProcedure: " + procedure.toString());
+            LOG.error("Parameters: " + params.toString());
+            LOG.error("GraphProcedure: " + procedure.toString());
             throw e;
         }
     }

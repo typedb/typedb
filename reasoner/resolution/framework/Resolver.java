@@ -45,6 +45,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
 
 public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
     private static final Logger LOG = LoggerFactory.getLogger(Resolver.class);
@@ -71,8 +72,16 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
 
     @Override
     protected void exception(Throwable e) {
+        if (e instanceof GraknException) {
+            GraknException exception = (GraknException) e;
+            if (exception.code().isPresent() && exception.code().get().equals(TRANSACTION_CLOSED.code())) {
+                LOG.debug("Resolver interrupted by transaction close: {}", exception.getMessage());
+                return;
+            }
+        }
         LOG.error("Actor exception: {}", e.getMessage());
         // TODO, once integrated into the larger flow of executing queries, kill the resolvers and report and exception to root
+        // TODO we should really be cooperatively killing resolvers, rather than forcibly from lower down
     }
 
     public String name() {
