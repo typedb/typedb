@@ -65,7 +65,8 @@ permissions = {
 
 artifact_repackage(
     name = "console-artifact-jars",
-    srcs = ["@graknlabs_console_artifact_mac//file"],
+    # Jars produced for all platforms are the same
+    srcs = ["@graknlabs_console_artifact_linux//file"],
     files_to_keep = ["console"],
 )
 
