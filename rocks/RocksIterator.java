@@ -47,7 +47,6 @@ public final class RocksIterator<T> extends AbstractResourceIterator<T> implemen
         if (state != State.COMPLETED) {
             this.internalRocksIterator = storage.getInternalRocksIterator();
             this.internalRocksIterator.seek(prefix);
-            if (!internalRocksIterator.isValid()) System.out.println("INVALID ITERATOR");
             state = State.EMPTY;
             byte[] key;
             if (!internalRocksIterator.isValid() || !bytesHavePrefix(key = internalRocksIterator.key(), prefix)) {
@@ -62,7 +61,7 @@ public final class RocksIterator<T> extends AbstractResourceIterator<T> implemen
         }
     }
 
-    public synchronized final T peek() {
+    public final T peek() {
         if (!hasNext()) throw new NoSuchElementException();
         return next;
     }
@@ -75,7 +74,7 @@ public final class RocksIterator<T> extends AbstractResourceIterator<T> implemen
     }
 
     @Override
-    public synchronized final boolean hasNext() {
+    public final boolean hasNext() {
         switch (state) {
             case COMPLETED:
                 return false;
