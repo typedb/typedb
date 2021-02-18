@@ -41,8 +41,8 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     public static final boolean DEFAULT_READ_ANY_REPLICA = false;
 
     private PARENT parent;
-    private Boolean inference = null;
-    private Boolean inferenceLogging = null;
+    private Boolean infer = null;
+    private Boolean inferLog = null;
     private Boolean explain = null;
     private Integer batchSize = null;
     private Integer sessionIdlTimeoutMillis = null;
@@ -61,25 +61,25 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         return getThis();
     }
 
-    public boolean inference() {
-        if (inference != null) return inference;
-        else if (parent != null) return parent.inference();
+    public boolean infer() {
+        if (infer != null) return infer;
+        else if (parent != null) return parent.infer();
         else return DEFAULT_INFERENCE;
     }
 
-    public SELF inference(boolean inference) {
-        this.inference = inference;
+    public SELF infer(boolean infer) {
+        this.infer = infer;
         return getThis();
     }
 
-    public boolean inferenceLogging() {
-        if (inferenceLogging != null) return inferenceLogging;
-        else if (parent != null) return parent.inferenceLogging();
+    public boolean inferLog() {
+        if (inferLog != null) return inferLog;
+        else if (parent != null) return parent.inferLog();
         else return DEFAULT_INFERENCE_LOGGING;
     }
 
-    public SELF inferenceLogging(boolean inferenceLogging) {
-        this.inferenceLogging = inferenceLogging;
+    public SELF inferLog(boolean inferLog) {
+        this.inferLog = inferLog;
         return getThis();
     }
 
@@ -225,12 +225,12 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         }
 
         @Override
-        public Query inference(boolean inference) {
+        public Query infer(boolean infer) {
             throw GraknException.of(REASONING_CANNOT_BE_TOGGLED_PER_QUERY);
         }
 
         @Override
-        public Query inferenceLogging(boolean inference) {
+        public Query inferLog(boolean inferLog) {
             throw GraknException.of(REASONER_LOGGING_CANNOT_BE_TOGGLED_PER_QUERY);
         }
 

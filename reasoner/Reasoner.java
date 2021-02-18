@@ -75,7 +75,7 @@ public class Reasoner {
         this.defaultContext.producer(EXHAUSTIVE);
         this.resolutionRecorder = Actor.create(eventLoopGroup(), ResolutionRecorder::new);
         this.resolverRegistry = new ResolverRegistry(eventLoopGroup(), resolutionRecorder, traversalEng, conceptMgr,
-                                                     logicMgr, this.defaultContext.options().inferenceLogging());
+                                                     logicMgr, this.defaultContext.options().inferLog());
     }
 
     ResolverRegistry resolverRegistry() {
@@ -103,7 +103,7 @@ public class Reasoner {
     }
 
     private boolean isInfer(Disjunction disjunction, Context.Query context) {
-        if (!context.options().inference() || context.transactionType().isWrite() || !logicMgr.rules().hasNext()) {
+        if (!context.options().infer() || context.transactionType().isWrite() || !logicMgr.rules().hasNext()) {
             return false;
         }
         return mayTriggerRules(disjunction);
