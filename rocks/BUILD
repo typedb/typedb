@@ -58,7 +58,7 @@ native_java_libraries(
     linux_deps = [
         "@maven//:com_google_ortools_ortools_linux_x86_64",
         "@maven//:com_google_ortools_ortools_linux_x86_64_java",
-        "@maven//:org_rocksdb_rocksdbjni_dev_linux",
+        "@maven//:org_rocksdb_rocksdbjni",
     ],
     windows_deps = [
         "@maven//:com_google_ortools_ortools_win32_x86_64",
