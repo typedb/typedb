@@ -150,7 +150,7 @@ assemble_apt(
     depends = [
         "openjdk-11-jre",
         "grakn-core-server (=%{version})",
-        "grakn-console (=%{:console-artifact-jars})",
+        "grakn-console (=%{@graknlabs_console_artifact_linux})",
     ],
     workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
 )
