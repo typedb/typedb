@@ -40,12 +40,13 @@ import java.util.List;
 import java.util.Map;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.exception.ErrorMessage.Internal.UNIMPLEMENTED;
 import static grakn.core.concurrent.common.Executors.asyncPool2;
 
 public class RetrievableResolver extends Resolver<RetrievableResolver> {
 
     private static final int PREFETCH_SIZE = 32;
-    private static final int REFETCH_WHEN_REMAINING = PREFETCH_SIZE/4;
+    private static final int REFETCH_WHEN_REMAINING = PREFETCH_SIZE / 4;
 
     private static final Logger LOG = LoggerFactory.getLogger(RetrievableResolver.class);
     private final Retrievable retrievable;
@@ -68,7 +69,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
             failToUpstream(fromUpstream, iteration);
         } else {
             assert iteration == responses.iteration();
-            tryAnswer(fromUpstream, responses);
+            responses.nextAnswer(fromUpstream);
         }
     }
 
@@ -117,12 +118,12 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
      */
     @Override
     protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
-        throw GraknException.of(ILLEGAL_STATE);
+        throw GraknException.of(UNIMPLEMENTED);
     }
 
     @Override
     protected ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer responseProducer, int newIteration) {
-        throw GraknException.of(ILLEGAL_STATE);
+        throw GraknException.of(UNIMPLEMENTED);
     }
 
     private Responses mayUpdateAndGetResponses(Request fromUpstream, int iteration) {
@@ -141,16 +142,12 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         return responses.get(fromUpstream);
     }
 
-    private void tryAnswer(Request fromUpstream, Responses responses) {
-        responses.nextAnswer(fromUpstream);
-    }
-
     public void receiveTraversalAnswer(Partial<?> upstreamAnswer, Request fromUpstreamSource) {
         Responses responses = this.responses.get(fromUpstreamSource);
+        responses.addFetched(upstreamAnswer);
         if (responses.hasAwaitingRequest()) {
-            dispatchAnswer(upstreamAnswer, responses.popAwaitingRequest());
-        } else {
-            responses.addFetched(upstreamAnswer);
+            dispatchAnswer(responses.popFetched(), fromUpstreamSource);
+            responses.mayFetch(fromUpstreamSource);
         }
     }
 
@@ -158,9 +155,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         Responses responses = this.responses.get(fromUpstreamSource);
         responses.setTraversalDone();
         if (!responses.hasFetched()) {
-            while (responses.hasAwaitingRequest()) {
-                dispatchFail(responses.popAwaitingRequest());
-            }
+            responses.finished();
         }
     }
 
@@ -176,14 +171,14 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     private class Responses {
 
         private final int iteration;
-        private final Producer<Partial<?>> upstreamAnswers;
+        private final Producer<Partial<?>> traversalUpstreamAnswers;
         private final List<Partial<?>> fetched;
         private final List<Request> awaitingAnswers;
         private int processing;
         private boolean traversalDone;
 
-        public Responses(Producer<Partial<?>> upstreamAnswers, int iteration) {
-            this.upstreamAnswers = upstreamAnswers;
+        public Responses(Producer<Partial<?>> traversalUpstreamAnswers, int iteration) {
+            this.traversalUpstreamAnswers = traversalUpstreamAnswers;
             this.iteration = iteration;
             this.fetched = new LinkedList<>();
             this.awaitingAnswers = new LinkedList<>();
@@ -215,25 +210,37 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
             fetched.add(upstreamAnswer);
         }
 
+        public Partial<?> popFetched() {
+            return fetched.remove(0);
+        }
+
         public void nextAnswer(Request fromUpstream) {
-            // dispatch message immediately if we can and continue
-            if (!fetched.isEmpty()) {
-                dispatchAnswer(fetched.remove(0), fromUpstream);
+            if (traversalDone && fetched.isEmpty()) {
+                dispatchFail(fromUpstream);
             } else {
-                if (traversalDone) {
-                    dispatchFail(fromUpstream);
-                    return;
+                if (!fetched.isEmpty()) {
+                    dispatchAnswer(fetched.remove(0), fromUpstream);
+                    mayFetch(fromUpstream);
                 } else {
                     awaitingAnswers.add(fromUpstream);
+                    mayFetch(fromUpstream);
                 }
             }
+        }
 
-            // when buffered answers is mostly empty, trigger more processing
-            if (fetched.size() + processing < REFETCH_WHEN_REMAINING) {
-                assert !traversalDone;
-                this.upstreamAnswers.produce(new Queue(fromUpstream), PREFETCH_SIZE - fetched.size() - processing, asyncPool2());
+        public void finished() {
+            while (hasAwaitingRequest()) {
+                dispatchFail(popAwaitingRequest());
             }
         }
+
+        private void mayFetch(Request fromUpstream) {
+            // when buffered answers is mostly empty, trigger more processing
+            if (!traversalDone && fetched.size() + processing < REFETCH_WHEN_REMAINING) {
+                this.traversalUpstreamAnswers.produce(new Queue(fromUpstream), PREFETCH_SIZE - fetched.size() - processing, asyncPool2());
+            }
+        }
+
 
         class Queue implements Producer.Queue<Partial<?>> {
 
