@@ -42,8 +42,6 @@
 
     <root level="WARN"/>
 
-    <!--    <logger name="grakn.core.server.rpc" level="DEBUG" />-->
-
     <!--
     TRACE: (Extremely verbose reporting events that gives complete traceability of a server operation)
     DEBUG: (Verbose reporting events that gives a deeper understanding of server operations)

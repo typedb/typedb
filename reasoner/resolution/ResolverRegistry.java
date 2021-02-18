@@ -27,7 +27,6 @@ import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Negated;
 import grakn.core.logic.resolvable.Resolvable;
-import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
@@ -38,9 +37,10 @@ import grakn.core.reasoner.resolution.resolver.ConjunctionResolver;
 import grakn.core.reasoner.resolution.resolver.NegationResolver;
 import grakn.core.reasoner.resolution.resolver.RetrievableResolver;
 import grakn.core.reasoner.resolution.resolver.Root;
-import grakn.core.reasoner.resolution.resolver.RuleResolver;
+import grakn.core.reasoner.resolution.resolver.ConclusionResolver;
+import grakn.core.reasoner.resolution.resolver.ConditionResolver;
 import grakn.core.traversal.TraversalEngine;
-import graql.lang.pattern.variable.Reference;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +61,8 @@ public class ResolverRegistry {
     private final HashMap<Concludable, Actor<ConcludableResolver>> concludableActors;
     private final LogicManager logicMgr;
     private boolean explanations;
-    private final HashMap<Rule, Actor<RuleResolver>> rules;
+    private final HashMap<Rule, Actor<ConditionResolver>> ruleConditions;
+    private final HashMap<Rule, Actor<ConclusionResolver>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private final TraversalEngine traversalEngine;
     private EventLoopGroup elg;
@@ -76,32 +77,18 @@ public class ResolverRegistry {
         this.logicMgr = logicMgr;
         this.explanations = false; // TODO: enable/disable explanations from transaction context
         concludableActors = new HashMap<>();
-        rules = new HashMap<>();
+        ruleConditions = new HashMap<>();
+        ruleConclusions = new HashMap<>();
         planner = new Planner(conceptMgr, logicMgr);
-    }
-
-    public MappedResolver registerResolvable(Resolvable resolvable) {
-        if (resolvable.isRetrievable()) {
-            return registerRetrievable(resolvable.asRetrievable());
-        } else if (resolvable.isConcludable()) {
-            return registerConcludable(resolvable.asConcludable());
-        } else throw GraknException.of(ILLEGAL_STATE);
-    }
-
-    public Actor<RuleResolver> registerRule(Rule rule) {
-        LOG.debug("Register retrieval for rule actor: '{}'", rule);
-        return rules.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new RuleResolver(
-                self, r, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr, planner,
-                explanations)));
     }
 
     public Actor<Root.Conjunction> rootConjunction(Conjunction conjunction, @Nullable Long offset,
                                                    @Nullable Long limit, Consumer<Top> onAnswer,
-                                                   Consumer<Integer> onExhausted) {
+                                                   Consumer<Integer> onFail) {
         LOG.debug("Creating Root.Conjunction for: '{}'", conjunction);
         return Actor.create(
                 elg, self -> new Root.Conjunction(
-                        self, conjunction, offset, limit, onAnswer, onExhausted, resolutionRecorder, this,
+                        self, conjunction, offset, limit, onAnswer, onFail, resolutionRecorder, this,
                         traversalEngine, conceptMgr, logicMgr, planner, explanations));
     }
 
@@ -111,25 +98,55 @@ public class ResolverRegistry {
         LOG.debug("Creating Root.Disjunction for: '{}'", disjunction);
         return Actor.create(
                 elg, self -> new Root.Disjunction(self, disjunction, offset, limit, onAnswer, onExhausted, resolutionRecorder,
-                                                  this, traversalEngine, explanations)
+                                                  this, traversalEngine, conceptMgr, explanations)
         );
     }
 
-    private MappedResolver registerRetrievable(Retrievable retrievable) {
+    public MappedResolver negated(Negated negated, Conjunction upstream) {
+        LOG.debug("Creating Negation resolver for : {}", negated);
+        Actor<NegationResolver> negatedResolver = Actor.create(
+                elg, self -> new NegationResolver(self, negated, this, traversalEngine, conceptMgr, resolutionRecorder, explanations)
+        );
+        Map<Retrievable, Retrievable> filteredMapping = identityFiltered(upstream, negated);
+        return MappedResolver.of(negatedResolver, filteredMapping);
+    }
+
+    public Actor<ConditionResolver> registerCondition(Rule rule) {
+        LOG.debug("Register retrieval for rule condition actor: '{}'", rule);
+        return ruleConditions.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new ConditionResolver(
+                self, r, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr, planner,
+                explanations)));
+    }
+
+    public Actor<ConclusionResolver> registerConclusion(Rule.Conclusion conclusion) {
+        LOG.debug("Register retrieval for rule conclusion actor: '{}'", conclusion);
+        return ruleConclusions.computeIfAbsent(conclusion.rule(), (r) -> Actor.create(elg, self -> new ConclusionResolver(
+                self, conclusion, this, resolutionRecorder, traversalEngine, conceptMgr, explanations)));
+    }
+
+    public MappedResolver registerResolvable(Resolvable<?> resolvable) {
+        if (resolvable.isRetrievable()) {
+            return registerRetrievable(resolvable.asRetrievable());
+        } else if (resolvable.isConcludable()) {
+            return registerConcludable(resolvable.asConcludable());
+        } else throw GraknException.of(ILLEGAL_STATE);
+    }
+
+    private MappedResolver registerRetrievable(grakn.core.logic.resolvable.Retrievable retrievable) {
         LOG.debug("Register RetrievableResolver: '{}'", retrievable.pattern());
         Actor<RetrievableResolver> retrievableActor = Actor.create(elg, self -> new RetrievableResolver(
                 self, retrievable, this, traversalEngine, conceptMgr, explanations));
         return MappedResolver.of(retrievableActor, identity(retrievable));
     }
-
     // note: must be thread safe. We could move to a ConcurrentHashMap if we create an alpha-equivalence wrapper
+
     private synchronized MappedResolver registerConcludable(Concludable concludable) {
         LOG.debug("Register ConcludableResolver: '{}'", concludable.pattern());
         for (Map.Entry<Concludable, Actor<ConcludableResolver>> c : concludableActors.entrySet()) {
             // TODO: This needs to be optimised from a linear search to use an alpha hash
             AlphaEquivalence alphaEquality = concludable.alphaEquals(c.getKey());
             if (alphaEquality.isValid()) {
-                return MappedResolver.of(c.getValue(), alphaEquality.asValid().namedVariableMapping());
+                return MappedResolver.of(c.getValue(), alphaEquality.asValid().idMapping());
             }
         }
         Actor<ConcludableResolver> concludableActor = Actor.create(elg, self ->
@@ -139,7 +156,7 @@ public class ResolverRegistry {
         return MappedResolver.of(concludableActor, identity(concludable));
     }
 
-    public Actor<ConjunctionResolver.Nested> conjunction(Conjunction conjunction) {
+    public Actor<ConjunctionResolver.Nested> nested(Conjunction conjunction) {
         LOG.debug("Creating Conjunction resolver for : {}", conjunction);
         return Actor.create(
                 elg, self -> new ConjunctionResolver.Nested(
@@ -148,24 +165,15 @@ public class ResolverRegistry {
         );
     }
 
-    public MappedResolver negated(Negated negated, Conjunction upstream) {
-        LOG.debug("Creating Negation resolver for : {}", negated);
-        Actor<NegationResolver> negatedResolver = Actor.create(
-                elg, self -> new NegationResolver(self, negated, this, traversalEngine, resolutionRecorder, explanations)
-        );
-        Map<Reference.Name, Reference.Name> filteredMapping = identityFiltered(upstream, negated);
-        return MappedResolver.of(negatedResolver, filteredMapping);
-    }
-
-    private Map<Reference.Name, Reference.Name> identity(Resolvable<Conjunction> conjunctionResolvable) {
-        return conjunctionResolvable.variableNames().stream()
+    private Map<Retrievable, Retrievable> identity(Resolvable<Conjunction> conjunctionResolvable) {
+        return conjunctionResolvable.retrieves().stream()
                 .collect(Collectors.toMap(Function.identity(), Function.identity()));
     }
 
-    private Map<Reference.Name, Reference.Name> identityFiltered(Conjunction upstream, Negated negated) {
+    private Map<Retrievable, Retrievable> identityFiltered(Conjunction upstream, Negated negated) {
         return upstream.variables().stream()
-                .filter(var -> var.reference().isName() && negated.variableNames().contains(var.reference().asName()))
-                .map(variable -> variable.reference().asName())
+                .filter(var -> var.id().isRetrievable() && negated.retrieves().contains(var.id().asRetrievable()))
+                .map(var -> var.id().asRetrievable())
                 .collect(Collectors.toMap(Function.identity(), Function.identity()));
     }
 
@@ -177,18 +185,18 @@ public class ResolverRegistry {
 
     public static class MappedResolver {
         private final Actor<? extends Resolver<?>> resolver;
-        private final Map<Reference.Name, Reference.Name> mapping;
+        private final Map<Retrievable, Retrievable> mapping;
 
-        private MappedResolver(Actor<? extends Resolver<?>> resolver, Map<Reference.Name, Reference.Name> mapping) {
+        private MappedResolver(Actor<? extends Resolver<?>> resolver, Map<Retrievable, Retrievable> mapping) {
             this.resolver = resolver;
             this.mapping = mapping;
         }
 
-        public static MappedResolver of(Actor<? extends Resolver<?>> resolver, Map<Reference.Name, Reference.Name> mapping) {
+        public static MappedResolver of(Actor<? extends Resolver<?>> resolver, Map<Retrievable, Retrievable> mapping) {
             return new MappedResolver(resolver, mapping);
         }
 
-        public Map<Reference.Name, Reference.Name> mapping() {
+        public Map<Retrievable, Retrievable> mapping() {
             return mapping;
         }
 

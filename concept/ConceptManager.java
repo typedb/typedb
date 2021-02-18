@@ -39,8 +39,8 @@ import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.graph.vertex.Vertex;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import grakn.core.traversal.common.VertexMap;
-import graql.lang.pattern.variable.Reference;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -73,11 +73,10 @@ public final class ConceptManager {
     }
 
     public ConceptMap conceptMap(VertexMap vertexMap) {
-        Map<Reference.Name, Concept> map = new HashMap<>();
-        vertexMap.forEach((reference, vertex) -> {
-            if (!reference.isName()) throw exception(GraknException.of(ILLEGAL_STATE));
-            if (vertex.isThing()) map.put(reference.asName(), ThingImpl.of(vertex.asThing()));
-            else if (vertex.isType()) map.put(reference.asName(), TypeImpl.of(graphMgr, vertex.asType()));
+        Map<Retrievable, Concept> map = new HashMap<>();
+        vertexMap.forEach((id, vertex) -> {
+            if (vertex.isThing()) map.put(id, ThingImpl.of(vertex.asThing()));
+            else if (vertex.isType()) map.put(id, TypeImpl.of(graphMgr, vertex.asType()));
             else throw exception(GraknException.of(ILLEGAL_STATE));
         });
         return new ConceptMap(map);

@@ -25,6 +25,8 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
 import grakn.core.concurrent.common.Executors;
+import org.rocksdb.BlockBasedTableConfig;
+import org.rocksdb.ClockCache;
 import org.rocksdb.RocksDB;
 import org.rocksdb.UInt64AddOperator;
 import org.slf4j.Logger;
@@ -47,39 +49,55 @@ public class RocksGrakn implements Grakn {
         ErrorMessage.loadConstants();
     }
 
-    private final Path directory;
     private final Options.Database graknDBOptions;
     private final org.rocksdb.Options rocksDBOptions;
     private final RocksDatabaseManager databaseMgr;
     private final AtomicBoolean isOpen;
 
-    protected RocksGrakn(Path directory, Options.Database options, Factory.DatabaseManager databaseMgrFactory) {
+    protected RocksGrakn(Options.Database options, Factory.DatabaseManager databaseMgrFactory) {
         if (!Executors.isInitialised()) Executors.initialise(MAX_THREADS);
-        this.directory = directory;
         this.graknDBOptions = options;
-        this.rocksDBOptions = new org.rocksdb.Options()
-                .setCreateIfMissing(true)
-                .setMaxBackgroundJobs(MAX_THREADS / 2)
-                .setMergeOperator(new UInt64AddOperator());
+        this.rocksDBOptions = initRocksDBOptions();
         this.databaseMgr = databaseMgrFactory.databaseManager(this);
         this.databaseMgr.loadAll();
         this.isOpen = new AtomicBoolean(true);
     }
 
+    private org.rocksdb.Options initRocksDBOptions() {
+        return new org.rocksdb.Options()
+                .setCreateIfMissing(true)
+                .setMaxBackgroundJobs(MAX_THREADS / 2)
+                .setTableFormatConfig(initRocksDBTableOptions())
+                .setMergeOperator(new UInt64AddOperator());
+    }
+
+    private BlockBasedTableConfig initRocksDBTableOptions() {
+        BlockBasedTableConfig rocksDBTableOptions = new BlockBasedTableConfig();
+        long blockSize = Math.round(Runtime.getRuntime().totalMemory() * 0.4); // TODO: generalise through grakn.properties
+        ClockCache uncompressedCache = new ClockCache(blockSize);
+        ClockCache compressedCache = new ClockCache(blockSize);
+        rocksDBTableOptions.setBlockCache(uncompressedCache).setBlockCacheCompressed(compressedCache);
+        return rocksDBTableOptions;
+    }
+
     public static RocksGrakn open(Path directory) {
-        return open(directory, new Options.Database(), new RocksFactory());
+        return open(new Options.Database().dataDir(directory), new RocksFactory());
     }
 
     public static RocksGrakn open(Path directory, Factory graknFactory) {
-        return open(directory, new Options.Database(), graknFactory);
+        return open(new Options.Database().dataDir(directory), graknFactory);
     }
 
-    public static RocksGrakn open(Path directory, Options.Database options, Factory graknFactory) {
-        return graknFactory.grakn(directory, options);
+    public static RocksGrakn open(Options.Database options) {
+        return open(options, new RocksFactory());
+    }
+
+    public static RocksGrakn open(Options.Database options, Factory graknFactory) {
+        return graknFactory.grakn(options);
     }
 
     public Path directory() {
-        return directory;
+        return graknDBOptions.dataDir();
     }
 
     org.rocksdb.Options rocksDBOptions() {

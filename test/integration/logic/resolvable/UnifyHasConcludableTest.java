@@ -58,6 +58,9 @@ import static grakn.common.collection.Collections.map;
 import static grakn.common.collection.Collections.pair;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.logic.resolvable.Util.createRule;
+import static grakn.core.logic.resolvable.Util.getStringMapping;
+import static grakn.core.logic.resolvable.Util.resolvedConjunction;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -118,12 +121,6 @@ public class UnifyHasConcludableTest {
         rocksTransaction.close();
     }
 
-    private Map<String, Set<String>> getStringMapping(Map<Identifier, Set<Identifier>> map) {
-        return map.entrySet().stream().collect(Collectors.toMap(v -> v.getKey().toString(),
-                                                                e -> e.getValue().stream().map(Identifier::toString).collect(Collectors.toSet()))
-        );
-    }
-
     private Thing instanceOf(String label) {
         ThingType type = conceptMgr.getThingType(label);
         assert type != null;
@@ -142,26 +139,15 @@ public class UnifyHasConcludableTest {
         return type.asString().put(stringValue);
     }
 
-    private Conjunction resolvedConjunction(String query) {
-        Conjunction conjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
-        logicMgr.typeResolver().resolve(conjunction);
-        return conjunction;
-    }
-
-    private Rule createRule(String label, String whenConjunctionPattern, String thenThingPattern) {
-        return logicMgr.putRule(label, Graql.parsePattern(whenConjunctionPattern).asConjunction(),
-                                Graql.parseVariable(thenThingPattern).asThing());
-    }
-
     //TODO: create more tests when type inference is working to test unifier pruning
 
     @Test
     public void has_attribute_exact_unifies_rule_has_exact() {
         String conjunction = "{ $y has name 'john'; }";
-        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction, logicMgr));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
-        Rule rule = createRule("has-rule", "{ $x isa person; }", "$x has first-name 'john'");
+        Rule rule = createRule("has-rule", "{ $x isa person; }", "$x has first-name 'john'", logicMgr);
 
         List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
@@ -174,44 +160,48 @@ public class UnifyHasConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.constraintRequirements().types().size());
-        assertEquals(1, unifier.constraintRequirements().isaExplicit().size());
-        assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.constraintRequirements().isaExplicit().values().iterator().next());
-        assertEquals(1, unifier.constraintRequirements().predicates().size());
+        assertEquals(0, unifier.requirements().roleTypes().size());
+        assertEquals(1, unifier.requirements().isaExplicit().size());
+        assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().get(Identifier.Variable.anon(0)));
+        assertEquals(1, unifier.requirements().predicates().size());
+
+        // test forward unification can reject an invalid partial answer
+        ConceptMap partialAnswer = new ConceptMap(map(pair(Identifier.Variable.anon(0), instanceOf("age"))));
+        assertFalse(unifier.unify(partialAnswer).isPresent());
 
         // test filter allows a valid answer
-        Map<Identifier, Concept> identifiedConcepts = map(
+        Map<Identifier.Variable, Concept> concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "john"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
-        assertEquals(1, unified.get().concepts().size());
+        assertEquals(2, unified.get().concepts().size());
 
         // filter out invalid type
-        identifiedConcepts = map(
+        concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("age"))
         );
-        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.isPresent());
 
         // filter out invalid value
-        identifiedConcepts = map(
+        concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "bob"))
         );
-        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.isPresent());
     }
 
     @Test
     public void has_attribute_exact_unifies_rule_has_variable() {
         String conjunction = "{ $y has name 'john'; }";
-        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction, logicMgr));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
-        Rule rule = createRule("has-rule", "{ $x isa person; $a isa first-name; }", "$x has $a");
+        Rule rule = createRule("has-rule", "{ $x isa person; $a isa first-name; }", "$x has $a", logicMgr);
 
         List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
@@ -224,34 +214,34 @@ public class UnifyHasConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.constraintRequirements().types().size());
-        assertEquals(1, unifier.constraintRequirements().isaExplicit().size());
-        assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.constraintRequirements().isaExplicit().values().iterator().next());
-        assertEquals(1, unifier.constraintRequirements().predicates().size());
+        assertEquals(0, unifier.requirements().roleTypes().size());
+        assertEquals(1, unifier.requirements().isaExplicit().size());
+        assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().get(Identifier.Variable.anon(0)));
+        assertEquals(1, unifier.requirements().predicates().size());
 
         // test filter allows a valid answer
-        Map<Identifier, Concept> identifiedConcepts = map(
+        Map<Identifier.Variable, Concept> concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.name("a"), instanceOf("last-name", "john"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
-        assertEquals(1, unified.get().concepts().size());
+        assertEquals(2, unified.get().concepts().size());
 
         // filter out invalid type
-        identifiedConcepts = map(
+        concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.name("a"), instanceOf("age"))
         );
-        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.isPresent());
 
         // filter out invalid value
-        identifiedConcepts = map(
+        concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.name("a"), instanceOf("first-name", "bob"))
         );
-        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.isPresent());
     }
 
@@ -265,10 +255,10 @@ public class UnifyHasConcludableTest {
     @Test
     public void has_attribute_variable_unifies_rule_has_exact() {
         String conjunction = "{ $y has $a; }";
-        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction, logicMgr));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
-        Rule rule = createRule("has-rule", "{ $x isa person; }", "$x has first-name \"john\"");
+        Rule rule = createRule("has-rule", "{ $x isa person; }", "$x has first-name \"john\"", logicMgr);
 
         List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
@@ -281,27 +271,27 @@ public class UnifyHasConcludableTest {
         assertEquals(expected, result);
 
         // test unifier allows a valid answer
-        Map<Identifier, Concept> identifiedConcepts = map(
+        Map<Identifier.Variable, Concept> concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "john"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
         assertEquals(2, unified.get().concepts().size());
 
         // test requirements
-        assertEquals(0, unifier.constraintRequirements().types().size());
-        assertEquals(0, unifier.constraintRequirements().isaExplicit().size());
-        assertEquals(0, unifier.constraintRequirements().predicates().size());
+        assertEquals(0, unifier.requirements().roleTypes().size());
+        assertEquals(0, unifier.requirements().isaExplicit().size());
+        assertEquals(0, unifier.requirements().predicates().size());
     }
 
     @Test
     public void has_attribute_variable_unifies_rule_has_variable() {
         String conjunction = "{ $y has $b; }";
-        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction, logicMgr));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
-        Rule rule = createRule("has-rule", "{ $x isa person; $a isa first-name; }", "$x has $a");
+        Rule rule = createRule("has-rule", "{ $x isa person; $a isa first-name; }", "$x has $a", logicMgr);
 
         List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
@@ -314,27 +304,27 @@ public class UnifyHasConcludableTest {
         assertEquals(expected, result);
 
         // test filter allows a valid answer
-        Map<Identifier, Concept> identifiedConcepts = map(
+        Map<Identifier.Variable, Concept> concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.name("a"), instanceOf("last-name", "john"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
         assertEquals(2, unified.get().concepts().size());
 
         // test requirements
-        assertEquals(0, unifier.constraintRequirements().types().size());
-        assertEquals(0, unifier.constraintRequirements().isaExplicit().size());
-        assertEquals(0, unifier.constraintRequirements().predicates().size());
+        assertEquals(0, unifier.requirements().roleTypes().size());
+        assertEquals(0, unifier.requirements().isaExplicit().size());
+        assertEquals(0, unifier.requirements().predicates().size());
     }
 
     @Test
     public void has_attribute_typed_variable_unifies_rule_has_exact() {
         String conjunction = "{ $y has name $b; }";
-        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction, logicMgr));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
-        Rule rule = createRule("has-rule", "{ $x isa person; }", "$x has first-name \"john\"");
+        Rule rule = createRule("has-rule", "{ $x isa person; }", "$x has first-name \"john\"", logicMgr);
 
         List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
@@ -347,36 +337,40 @@ public class UnifyHasConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.constraintRequirements().types().size());
-        assertEquals(1, unifier.constraintRequirements().isaExplicit().size());
-        assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.constraintRequirements().isaExplicit().values().iterator().next());
-        assertEquals(0, unifier.constraintRequirements().predicates().size());
+        assertEquals(0, unifier.requirements().roleTypes().size());
+        assertEquals(1, unifier.requirements().isaExplicit().size());
+        assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().get(Identifier.Variable.name("b")));
+        assertEquals(0, unifier.requirements().predicates().size());
+
+        // test forward unification can reject an invalid partial answer
+        ConceptMap partialAnswer = new ConceptMap(map(pair(Identifier.Variable.name("b"), instanceOf("age"))));
+        assertFalse(unifier.unify(partialAnswer).isPresent());
 
         // test filter allows a valid answer
-        Map<Identifier, Concept> identifiedConcepts = map(
+        Map<Identifier.Variable, Concept> concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "john"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
         assertEquals(2, unified.get().concepts().size());
 
         // filter out invalid type
-        identifiedConcepts = map(
+        concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("age"))
         );
-        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.isPresent());
     }
 
     @Test
     public void has_attribute_typed_variable_unifies_rule_has_variable() {
         String conjunction = "{ $y has name $b; }";
-        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction, logicMgr));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
-        Rule rule = createRule("has-rule", "{ $x isa person; $a isa first-name; }", "$x has $a");
+        Rule rule = createRule("has-rule", "{ $x isa person; $a isa first-name; }", "$x has $a", logicMgr);
 
         List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
@@ -389,36 +383,36 @@ public class UnifyHasConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.constraintRequirements().types().size());
-        assertEquals(1, unifier.constraintRequirements().isaExplicit().size());
-        assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.constraintRequirements().isaExplicit().values().iterator().next());
-        assertEquals(0, unifier.constraintRequirements().predicates().size());
+        assertEquals(0, unifier.requirements().roleTypes().size());
+        assertEquals(1, unifier.requirements().isaExplicit().size());
+        assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().get(Identifier.Variable.name("b")));
+        assertEquals(0, unifier.requirements().predicates().size());
 
         // test filter allows a valid answer
-        Map<Identifier, Concept> identifiedConcepts = map(
+        Map<Identifier.Variable, Concept> concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.name("a"), instanceOf("first-name", "john"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
         assertEquals(2, unified.get().concepts().size());
 
         // filter out invalid type
-        identifiedConcepts = map(
+        concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.name("a"), instanceOf("age"))
         );
-        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.isPresent());
     }
 
     @Test
     public void has_many_to_one_unifier() {
         String conjunction = "{ $x has attribute $y; }";
-        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction, logicMgr));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
-        Rule rule = createRule("has-rule", "{ $a isa self-owning-attribute; }", "$a has $a");
+        Rule rule = createRule("has-rule", "{ $a isa self-owning-attribute; }", "$a has $a", logicMgr);
 
         List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
@@ -431,18 +425,18 @@ public class UnifyHasConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.constraintRequirements().types().size());
-        assertEquals(1, unifier.constraintRequirements().isaExplicit().size());
-        assertEquals(0, unifier.constraintRequirements().predicates().size());
+        assertEquals(0, unifier.requirements().roleTypes().size());
+        assertEquals(1, unifier.requirements().isaExplicit().size());
+        assertEquals(0, unifier.requirements().predicates().size());
     }
 
     @Test
     public void has_one_to_many_unifier() {
         String conjunction = "{ $b has attribute $b; }";
-        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction, logicMgr));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
-        Rule rule = createRule("has-rule", "{ $x isa self-owning-attribute; }", "$x has self-owning-attribute 5");
+        Rule rule = createRule("has-rule", "{ $x isa self-owning-attribute; }", "$x has self-owning-attribute 5", logicMgr);
 
         List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
@@ -453,30 +447,30 @@ public class UnifyHasConcludableTest {
         }};
         assertEquals(expected, result);
         // test requirements of one-to-many using valid answer
-        Map<Identifier, Concept> identifiedConcepts = map(
+        Map<Identifier.Variable, Concept> concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("self-owning-attribute")),
                 pair(Identifier.Variable.anon(0), instanceOf("self-owning-attribute"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
         assertEquals(1, unified.get().concepts().size());
 
         // test requirements of one-to-many using invalid answer
-        identifiedConcepts = map(
+        concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("age"))
         );
-        unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.isPresent());
     }
 
     @Test
     public void has_all_equivalent_vars_unifier() {
         String conjunction = "{ $b has self-owning-attribute $b; }";
-        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction));
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction, logicMgr));
         Concludable.Has queryConcludable = concludables.iterator().next().asHas();
 
-        Rule rule = createRule("has-rule", "{ $a isa self-owning-attribute; }", "$a has $a");
+        Rule rule = createRule("has-rule", "{ $a isa self-owning-attribute; }", "$a has $a", logicMgr);
 
         List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
@@ -488,9 +482,9 @@ public class UnifyHasConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.constraintRequirements().types().size());
-        assertEquals(1, unifier.constraintRequirements().isaExplicit().size());
-        assertEquals(set(Label.of("self-owning-attribute")), unifier.constraintRequirements().isaExplicit().values().iterator().next());
-        assertEquals(0, unifier.constraintRequirements().predicates().size());
+        assertEquals(0, unifier.requirements().roleTypes().size());
+        assertEquals(1, unifier.requirements().isaExplicit().size());
+        assertEquals(set(Label.of("self-owning-attribute")), unifier.requirements().isaExplicit().get(Identifier.Variable.name("b")));
+        assertEquals(0, unifier.requirements().predicates().size());
     }
 }

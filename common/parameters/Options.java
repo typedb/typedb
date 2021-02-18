@@ -20,7 +20,10 @@ package grakn.core.common.parameters;
 import grakn.core.common.exception.GraknException;
 import graql.lang.query.GraqlQuery;
 
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
+import java.nio.file.Path;
+
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Reasoner.REASONING_CANNOT_BE_TOGGLED_PER_QUERY;
 
 public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options<?, ?>> {
@@ -43,6 +46,9 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     private Integer schemaLockAcquireTimeoutMillis = null;
     private Boolean readAnyReplica = null;
 
+    protected Path graknDir = null;
+    protected Path dataDir = null;
+    protected Path logsDir = null;
     protected Boolean prefetch = null;
 
     abstract SELF getThis();
@@ -118,6 +124,24 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         return getThis();
     }
 
+    public Path graknDir() {
+        if (graknDir != null) return graknDir;
+        else if (parent != null) return parent.graknDir();
+        else throw GraknException.of(ILLEGAL_STATE);
+    }
+
+    public Path dataDir() {
+        if (dataDir != null) return dataDir;
+        else if (parent != null) return parent.dataDir();
+        else throw GraknException.of(ILLEGAL_STATE);
+    }
+
+    public Path logsDir() {
+        if (logsDir != null) return logsDir;
+        else if (parent != null) return parent.logsDir();
+        else throw GraknException.of(ILLEGAL_STATE);
+    }
+
     public static class Database extends Options<Options<?, ?>, Database> {
 
         @Override
@@ -126,7 +150,22 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         }
 
         public Database parent(Options<?, ?> parent) {
-            throw GraknException.of(ILLEGAL_ARGUMENT);
+            throw GraknException.of(ILLEGAL_OPERATION);
+        }
+
+        public Database graknDir(Path graknDir) {
+            this.graknDir = graknDir;
+            return this;
+        }
+
+        public Database dataDir(Path dataDir) {
+            this.dataDir = dataDir;
+            return this;
+        }
+
+        public Database logsDir(Path logsDir) {
+            this.logsDir = logsDir;
+            return this;
         }
     }
 

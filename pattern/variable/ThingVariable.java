@@ -96,6 +96,11 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     }
 
     @Override
+    public Identifier.Variable.Retrievable id() {
+        return identifier.asRetrievable();
+    }
+
+    @Override
     public void addTo(Traversal traversal) {
         // TODO: create vertex properties first, then the vertex itself, then edges
         //       that way, we can make properties to be 'final' objects that are

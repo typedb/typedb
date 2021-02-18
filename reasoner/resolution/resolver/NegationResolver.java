@@ -19,6 +19,7 @@
 package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.resolvable.Negated;
@@ -54,10 +55,10 @@ public class NegationResolver extends Resolver<NegationResolver> {
     private Actor<? extends Resolver<?>> downstream;
 
     public NegationResolver(Actor<NegationResolver> self, Negated negated, ResolverRegistry registry,
-                            TraversalEngine traversalEngine, Actor<ResolutionRecorder> resolutionRecorder,
+                            TraversalEngine traversalEngine, ConceptManager conceptMgr, Actor<ResolutionRecorder> resolutionRecorder,
                             boolean explanations) {
         super(self, NegationResolver.class.getSimpleName() + "(pattern: " + negated.pattern() + ")",
-              registry, traversalEngine, explanations);
+              registry, traversalEngine, conceptMgr, explanations);
         this.negated = negated;
         this.resolutionRecorder = resolutionRecorder;
         this.responses = new HashMap<>();
@@ -65,26 +66,24 @@ public class NegationResolver extends Resolver<NegationResolver> {
     }
 
     @Override
-    protected void initialiseDownstreamActors() {
-        LOG.debug("{}: initialising downstream actors", name());
+    protected void initialiseDownstreamResolvers() {
+        LOG.debug("{}: initialising downstream resolvers", name());
 
         List<Conjunction> disjunction = negated.pattern().conjunctions();
         if (disjunction.size() == 1) {
-            downstream = registry.conjunction(disjunction.get(0));
+            downstream = registry.nested(disjunction.get(0));
         } else {
             // negations with complex disjunctions not yet working
             throw GraknException.of(UNIMPLEMENTED);
         }
+        isInitialised = true;
     }
 
     @Override
     public void receiveRequest(Request fromUpstream, int iteration) {
         LOG.trace("{}: received Request: {}", name(), fromUpstream);
 
-        if (!isInitialised) {
-            initialiseDownstreamActors();
-            isInitialised = true;
-        }
+        if (!isInitialised) initialiseDownstreamResolvers();
 
         NegationResponse negationResponse = getOrInitialise(fromUpstream.partialAnswer().conceptMap());
         if (negationResponse.status.isEmpty()) {
@@ -115,8 +114,8 @@ public class NegationResolver extends Resolver<NegationResolver> {
               the toplevel root with the negation iterations, which we cannot allow. So, we must use THIS resolver
               as a sort of new root! TODO: should NegationResolvers also implement a kind of Root interface??
         */
-        Filtered downstream = fromUpstream.partialAnswer().filterToDownstream(negated.variableNames());
-        Request request = Request.create(self(), this.downstream, downstream);
+        Filtered downstreamPartial = fromUpstream.partialAnswer().filterToDownstream(negated.retrieves());
+        Request request = Request.create(self(), this.downstream, downstreamPartial);
         requestFromDownstream(request, fromUpstream, 0);
         negationResponse.setRequested();
     }
@@ -136,8 +135,8 @@ public class NegationResolver extends Resolver<NegationResolver> {
     }
 
     @Override
-    protected void receiveExhausted(Response.Fail fromDownstream, int iteration) {
-        LOG.trace("{}: Receiving Exhausted: {}, therefore is SATISFIED", name(), fromDownstream);
+    protected void receiveFail(Response.Fail fromDownstream, int iteration) {
+        LOG.trace("{}: Receiving EFailed: {}, therefore is SATISFIED", name(), fromDownstream);
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
@@ -174,7 +173,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
     @Override
     protected void exception(Throwable e) {
         LOG.error("Actor exception", e);
-        // TODO, once integrated into the larger flow of executing queries, kill the actors and report and exception to root
+        // TODO, once integrated into the larger flow of executing queries, kill the resolvers and report and exception to root
     }
 
     private static class NegationResponse {

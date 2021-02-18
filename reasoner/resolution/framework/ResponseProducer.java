@@ -91,9 +91,16 @@ public class ResponseProducer {
 
     /**
      * Prepare a response producer for the another iteration from this one
-     * Notably maintains the set of produced answers for deduplication
      */
     public ResponseProducer newIteration(ResourceIterator<Partial<?>> upstreamAnswers, int iteration) {
         return new ResponseProducer(upstreamAnswers, iteration, new HashSet<>());
+    }
+
+    /**
+     * Prepare a response producer for the another iteration from this one
+     * Notably maintains the set of produced answers for deduplication
+     */
+    public ResponseProducer newIterationRetainDedup(ResourceIterator<Partial<?>> upstreamAnswers, int iteration) {
+        return new ResponseProducer(upstreamAnswers, iteration, this.produced);
     }
 }

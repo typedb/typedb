@@ -23,6 +23,7 @@ import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.parameters.Options;
 import grakn.core.concurrent.common.Executors;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.server.migrator.MigratorClient;
@@ -68,10 +69,6 @@ import static grakn.core.server.util.ServerDefaults.PROPERTIES_FILE;
 
 public class GraknServer implements AutoCloseable {
 
-    static {
-        java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
-    }
-
     private static final Logger LOG = LoggerFactory.getLogger(GraknServer.class);
     private static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
 
@@ -88,7 +85,11 @@ public class GraknServer implements AutoCloseable {
 
         if (command.debug()) LOG.info("Running Grakn Core Server in debug mode.");
 
-        grakn = RocksGrakn.open(command.dataDir());
+        Options.Database options = new Options.Database()
+                .graknDir(ServerDefaults.GRAKN_DIR)
+                .dataDir(command.dataDir())
+                .logsDir(command.logsDir());
+        grakn = RocksGrakn.open(options);
         graknRPCService = new GraknRPCService(grakn);
         migratorRPCService = new MigratorRPCService(grakn);
 
@@ -99,6 +100,8 @@ public class GraknServer implements AutoCloseable {
         Runtime.getRuntime().addShutdownHook(
                 NamedThreadFactory.create(GraknServer.class, "shutdown").newThread(this::close)
         );
+
+        initLoggerConfig();
     }
 
     private Server rpcServer() {
@@ -112,6 +115,10 @@ public class GraknServer implements AutoCloseable {
                 .addService(graknRPCService)
                 .addService(migratorRPCService)
                 .build();
+    }
+
+    private void initLoggerConfig() {
+        java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
     }
 
     private int port() {

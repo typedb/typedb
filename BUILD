@@ -22,6 +22,7 @@ load("@graknlabs_bazel_distribution//github:rules.bzl", "deploy_github")
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
 load("@graknlabs_dependencies//distribution:deployment.bzl", "deployment")
+load("@graknlabs_dependencies//distribution/artifact:rules.bzl", "artifact_repackage")
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@graknlabs_dependencies//tool/release:rules.bzl", "release_validate_deps")
 load("@io_bazel_rules_docker//container:bundle.bzl", "container_bundle")
@@ -62,10 +63,17 @@ permissions = {
     "server/conf/logback-debug.xml": "0755",
 }
 
+artifact_repackage(
+    name = "console-artifact-jars",
+    # Jars produced for all platforms are the same
+    srcs = ["@graknlabs_console_artifact_linux//file"],
+    files_to_keep = ["console"],
+)
+
 assemble_deps_common = [
     "//server:server-deps-dev",
 #    "//server:server-deps-prod",
-    "@graknlabs_console_artifact//file"
+    ":console-artifact-jars",
 ]
 
 assemble_targz(
@@ -142,7 +150,7 @@ assemble_apt(
     depends = [
         "openjdk-11-jre",
         "grakn-core-server (=%{version})",
-        "grakn-console (=%{@graknlabs_console_artifact})",
+        "grakn-console (=%{:console-artifact-jars})",
     ],
     workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
 )

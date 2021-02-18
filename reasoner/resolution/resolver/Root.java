@@ -29,12 +29,13 @@ import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Filtered;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top;
+import grakn.core.reasoner.resolution.answer.Mapping;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import grakn.core.traversal.TraversalEngine;
-import graql.lang.pattern.variable.Reference;
+import grakn.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,6 +104,26 @@ public interface Root {
             }
         }
 
+        /*
+        NOTE special behaviour: don't clear the deduplication set, in the root
+         */
+        @Override
+        protected ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer responseProducerPrevious,
+                                                             int newIteration) {
+            assert newIteration > responseProducerPrevious.iteration();
+            LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
+
+            Plans.Plan plan = plans.getOrCreate(fromUpstream.partialAnswer().conceptMap().concepts().keySet(), resolvables, negateds);
+
+            assert !plan.isEmpty();
+            ResponseProducer responseProducerNewIter = responseProducerPrevious.newIterationRetainDedup(Iterators.empty(), newIteration);
+            Partial.Mapped downstream = fromUpstream.partialAnswer()
+                    .mapToDownstream(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping()));
+            Request toDownstream = Request.create(self(),downstreamResolvers.get(plan.get(0)).resolver(), downstream, 0);
+            responseProducerNewIter.addDownstreamProducer(toDownstream);
+            return responseProducerNewIter;
+        }
+
         protected void failToUpstream(Request fromUpstream, int iteration) {
             submitFail(iteration);
         }
@@ -140,7 +161,7 @@ public interface Root {
         @Override
         protected void exception(Throwable e) {
             LOG.error("Actor exception", e);
-            // TODO, once integrated into the larger flow of executing queries, kill the actors and report and exception to root
+            // TODO, once integrated into the larger flow of executing queries, kill the resolvers and report and exception to root
         }
 
     }
@@ -164,8 +185,8 @@ public interface Root {
         public Disjunction(Actor<Disjunction> self, grakn.core.pattern.Disjunction disjunction,
                            @Nullable Long offset, @Nullable Long limit, Consumer<Top> onAnswer,
                            Consumer<Integer> onFail, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
-                           TraversalEngine traversalEngine, boolean explanations) {
-            super(self, Disjunction.class.getSimpleName() + "(pattern:" + disjunction + ")", registry, traversalEngine, explanations);
+                           TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean explanations) {
+            super(self, Disjunction.class.getSimpleName() + "(pattern:" + disjunction + ")", registry, traversalEngine, conceptMgr, explanations);
             this.disjunction = disjunction;
             this.offset = offset;
             this.limit = limit;
@@ -196,8 +217,7 @@ public interface Root {
         public void receiveRequest(Request fromUpstream, int iteration) {
             LOG.trace("{}: received Request: {}", name(), fromUpstream);
             if (!isInitialised) {
-                initialiseDownstreamActors();
-                isInitialised = true;
+                initialiseDownstreamResolvers();
                 responseProducer = responseProducerCreate(fromUpstream, iteration);
             }
             mayReiterateResponseProducer(fromUpstream, iteration);
@@ -231,7 +251,7 @@ public interface Root {
             Request toDownstream = fromDownstream.sourceRequest();
             Request fromUpstream = fromUpstream(toDownstream);
 
-            Top answer = fromUpstream.partialAnswer().asIdentity().toTop();
+            Top answer = fromDownstream.answer().asIdentity().toTop();
             ConceptMap filteredMap = answer.conceptMap();
             if (!responseProducer.hasProduced(filteredMap)) {
                 responseProducer.recordProduced(filteredMap);
@@ -248,13 +268,13 @@ public interface Root {
         }
 
         @Override
-        protected void receiveExhausted(Response.Fail fromDownstream, int iteration) {
+        protected void receiveFail(Response.Fail fromDownstream, int iteration) {
             LOG.trace("{}: received Exhausted, with iter {}: {}", name(), iteration, fromDownstream);
             Request toDownstream = fromDownstream.sourceRequest();
             Request fromUpstream = fromUpstream(toDownstream);
 
             if (iteration < responseProducer.iteration()) {
-                // short circuit old iteration exhausted messages back out of the actor model
+                // short circuit old iteration failed messages back out of the actor model
                 submitFail(iteration);
                 return;
             }
@@ -263,11 +283,12 @@ public interface Root {
         }
 
         @Override
-        protected void initialiseDownstreamActors() {
-            LOG.debug("{}: initialising downstream actors", name());
+        protected void initialiseDownstreamResolvers() {
+            LOG.debug("{}: initialising downstream resolvers", name());
             for (grakn.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
-                downstreamResolvers.add(registry.conjunction(conjunction));
+                downstreamResolvers.add(registry.nested(conjunction));
             }
+            isInitialised = true;
         }
 
         @Override
@@ -278,16 +299,17 @@ public interface Root {
             assert !downstreamResolvers.isEmpty();
             for (Actor<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers) {
                 Filtered downstream = fromUpstream.partialAnswer().asIdentity()
-                        .filterToDownstream(conjunctionFilter(conjunctionResolver));
+                        .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver));
                 Request request = Request.create(self(), conjunctionResolver, downstream);
                 responseProducer.addDownstreamProducer(request);
             }
             return responseProducer;
         }
 
-        private Set<Reference.Name> conjunctionFilter(Actor<ConjunctionResolver.Nested> conjunctionResolver) {
-            return iterate(conjunctionResolver.state.conjunction.variables()).filter(v -> v.reference().isName())
-                    .map(v -> v.reference().asName()).toSet();
+        private Set<Identifier.Variable.Retrievable> conjunctionRetrievedIds(Actor<ConjunctionResolver.Nested> conjunctionResolver) {
+            // TODO use a map from resolvable to resolvers, then we don't have to reach into the state and use the conjunction
+            return iterate(conjunctionResolver.state.conjunction.variables()).filter(v -> v.id().isRetrievable())
+                    .map(v -> v.id().asRetrievable()).toSet();
         }
 
         @Override
@@ -297,10 +319,10 @@ public interface Root {
             LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
 
             assert newIteration > responseProducerPrevious.iteration();
-            ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(Iterators.empty(), newIteration);
+            ResponseProducer responseProducerNewIter = responseProducerPrevious.newIterationRetainDedup(Iterators.empty(), newIteration);
             for (Actor<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers) {
                 Filtered downstream = fromUpstream.partialAnswer().asIdentity()
-                        .filterToDownstream(conjunctionFilter(conjunctionResolver));
+                        .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver));
                 Request request = Request.create(self(), conjunctionResolver, downstream);
                 responseProducer.addDownstreamProducer(request);
             }
@@ -310,7 +332,7 @@ public interface Root {
         @Override
         protected void exception(Throwable e) {
             LOG.error("Actor exception", e);
-            // TODO, once integrated into the larger flow of executing queries, kill the actors and report and exception to root
+            // TODO, once integrated into the larger flow of executing queries, kill the resolvers and report and exception to root
         }
 
     }
