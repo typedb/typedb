@@ -102,14 +102,15 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
                 throw GraknException.of(ILLEGAL_STATE);
             }
             return state == State.FETCHED;
-        } catch (GraknException e) { // note: catching runtime exception
-            if (e.code().isPresent() && e.code().get().equals(TRANSACTION_CLOSED.code())) {
-                LOG.debug("Transaction was closed during graph iteration");
-            }
-            throw e;
         } catch (Throwable e) {
-            LOG.error("Parameters: " + params.toString());
-            LOG.error("GraphProcedure: " + procedure.toString());
+            // note: catching runtime exception until we can gracefully interrupt running queries on tx close
+            if (e instanceof GraknException && ((GraknException) e).code().isPresent()
+                    && ((GraknException) e).code().get().equals(TRANSACTION_CLOSED.code())) {
+                LOG.debug("Transaction was closed during graph iteration");
+            } else {
+                LOG.error("Parameters: " + params.toString());
+                LOG.error("GraphProcedure: " + procedure.toString());
+            }
             throw e;
         }
     }
