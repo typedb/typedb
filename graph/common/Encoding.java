@@ -18,6 +18,7 @@
 
 package grakn.core.graph.common;
 
+import grakn.common.collection.Pair;
 import grakn.core.common.collection.Bytes;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Label;
@@ -166,6 +167,26 @@ public class Encoding {
         VERTEX_ROLE(180, PrefixType.THING),
         STRUCTURE_RULE(190, PrefixType.RULE);
 
+        private static Prefix[] keyIndex = indexedBytes(
+                pair(INDEX_TYPE.key, INDEX_TYPE),
+                pair(INDEX_RULE.key, INDEX_RULE),
+                pair(INDEX_ATTRIBUTE.key, INDEX_ATTRIBUTE),
+                pair(STATISTICS_THINGS.key, STATISTICS_THINGS),
+                pair(STATISTICS_COUNT_JOB.key, STATISTICS_COUNT_JOB),
+                pair(STATISTICS_COUNTED.key, STATISTICS_COUNTED),
+                pair(STATISTICS_SNAPSHOT.key, STATISTICS_SNAPSHOT),
+                pair(VERTEX_THING_TYPE.key, VERTEX_THING_TYPE),
+                pair(VERTEX_ENTITY_TYPE.key, VERTEX_ENTITY_TYPE),
+                pair(VERTEX_ATTRIBUTE_TYPE.key, VERTEX_ATTRIBUTE_TYPE),
+                pair(VERTEX_RELATION_TYPE.key, VERTEX_RELATION_TYPE),
+                pair(VERTEX_ROLE_TYPE.key, VERTEX_ROLE_TYPE),
+                pair(VERTEX_ENTITY.key, VERTEX_ENTITY),
+                pair(VERTEX_ATTRIBUTE.key, VERTEX_ATTRIBUTE),
+                pair(VERTEX_RELATION.key, VERTEX_RELATION),
+                pair(VERTEX_ROLE.key, VERTEX_ROLE),
+                pair(STRUCTURE_RULE.key, STRUCTURE_RULE)
+        );
+
 
         private final byte key;
         private final PrefixType type;
@@ -178,24 +199,9 @@ public class Encoding {
         }
 
         public static Prefix of(byte key) {
-            if (key == INDEX_TYPE.key) return INDEX_TYPE;
-            else if (key == INDEX_RULE.key) return INDEX_RULE;
-            else if (key == INDEX_ATTRIBUTE.key) return INDEX_ATTRIBUTE;
-            else if (key == STATISTICS_THINGS.key) return STATISTICS_THINGS;
-            else if (key == STATISTICS_COUNT_JOB.key) return STATISTICS_COUNT_JOB;
-            else if (key == STATISTICS_COUNTED.key) return STATISTICS_COUNTED;
-            else if (key == STATISTICS_SNAPSHOT.key) return STATISTICS_SNAPSHOT;
-            else if (key == VERTEX_THING_TYPE.key) return VERTEX_THING_TYPE;
-            else if (key == VERTEX_ENTITY_TYPE.key) return VERTEX_ENTITY_TYPE;
-            else if (key == VERTEX_ATTRIBUTE_TYPE.key) return VERTEX_ATTRIBUTE_TYPE;
-            else if (key == VERTEX_RELATION_TYPE.key) return VERTEX_RELATION_TYPE;
-            else if (key == VERTEX_ROLE_TYPE.key) return VERTEX_ROLE_TYPE;
-            else if (key == VERTEX_ENTITY.key) return VERTEX_ENTITY;
-            else if (key == VERTEX_ATTRIBUTE.key) return VERTEX_ATTRIBUTE;
-            else if (key == VERTEX_RELATION.key) return VERTEX_RELATION;
-            else if (key == VERTEX_ROLE.key) return VERTEX_ROLE;
-            else if (key == STRUCTURE_RULE.key) return STRUCTURE_RULE;
-            else throw GraknException.of(UNRECOGNISED_VALUE);
+            Prefix prefix = keyIndex[key];
+            if (prefix == null) throw GraknException.of(UNRECOGNISED_VALUE);
+            else return prefix;
         }
 
         public byte key() {
@@ -265,6 +271,38 @@ public class Encoding {
         EDGE_RELATING_IN(-72),
         EDGE_ROLEPLAYER_OUT(73, true),
         EDGE_ROLEPLAYER_IN(-73, true);
+
+        private static Infix[] keyIndex = indexedBytes(
+                pair(PROPERTY_LABEL.key, PROPERTY_LABEL),
+                pair(PROPERTY_SCOPE.key, PROPERTY_SCOPE),
+                pair(PROPERTY_ABSTRACT.key, PROPERTY_ABSTRACT),
+                pair(PROPERTY_VALUE_TYPE.key, PROPERTY_VALUE_TYPE),
+                pair(PROPERTY_REGEX.key, PROPERTY_REGEX),
+                pair(PROPERTY_WHEN.key, PROPERTY_WHEN),
+                pair(PROPERTY_THEN.key, PROPERTY_THEN),
+                pair(PROPERTY_VALUE.key, PROPERTY_VALUE),
+                pair(PROPERTY_VALUE_REF.key, PROPERTY_VALUE_REF),
+                pair(EDGE_ISA_IN.key, EDGE_ISA_IN),
+                pair(EDGE_SUB_OUT.key, EDGE_SUB_OUT),
+                pair(EDGE_SUB_IN.key, EDGE_SUB_IN),
+                pair(EDGE_OWNS_OUT.key, EDGE_OWNS_OUT),
+                pair(EDGE_OWNS_IN.key, EDGE_OWNS_IN),
+                pair(EDGE_OWNS_KEY_OUT.key, EDGE_OWNS_KEY_OUT),
+                pair(EDGE_OWNS_KEY_IN.key, EDGE_OWNS_KEY_IN),
+                pair(EDGE_PLAYS_OUT.key, EDGE_PLAYS_OUT),
+                pair(EDGE_PLAYS_IN.key, EDGE_PLAYS_IN),
+                pair(EDGE_RELATES_OUT.key, EDGE_RELATES_OUT),
+                pair(EDGE_RELATES_IN.key, EDGE_RELATES_IN),
+                pair(EDGE_HAS_OUT.key, EDGE_HAS_OUT),
+                pair(EDGE_HAS_IN.key, EDGE_HAS_IN),
+                pair(EDGE_PLAYING_OUT.key, EDGE_PLAYING_OUT),
+                pair(EDGE_PLAYING_IN.key, EDGE_PLAYING_IN),
+                pair(EDGE_RELATING_OUT.key, EDGE_RELATING_OUT),
+                pair(EDGE_RELATING_IN.key, EDGE_RELATING_IN),
+                pair(EDGE_ROLEPLAYER_OUT.key, EDGE_ROLEPLAYER_OUT),
+                pair(EDGE_ROLEPLAYER_IN.key, EDGE_ROLEPLAYER_IN)
+        );
+
         private final byte key;
         private final boolean isOptimisation;
         private final byte[] bytes;
@@ -280,35 +318,9 @@ public class Encoding {
         }
 
         public static Infix of(byte key) {
-            if (key == PROPERTY_LABEL.key) return PROPERTY_LABEL;
-            else if (key == PROPERTY_SCOPE.key) return PROPERTY_SCOPE;
-            else if (key == PROPERTY_ABSTRACT.key) return PROPERTY_ABSTRACT;
-            else if (key == PROPERTY_VALUE_TYPE.key) return PROPERTY_VALUE_TYPE;
-            else if (key == PROPERTY_REGEX.key) return PROPERTY_REGEX;
-            else if (key == PROPERTY_WHEN.key) return PROPERTY_WHEN;
-            else if (key == PROPERTY_THEN.key) return PROPERTY_THEN;
-            else if (key == PROPERTY_VALUE.key) return PROPERTY_VALUE;
-            else if (key == PROPERTY_VALUE_REF.key) return PROPERTY_VALUE_REF;
-            else if (key == EDGE_ISA_IN.key) return EDGE_ISA_IN; // EDGE_ISA_OUT does not exist by design
-            else if (key == EDGE_SUB_OUT.key) return EDGE_SUB_OUT;
-            else if (key == EDGE_SUB_IN.key) return EDGE_SUB_IN;
-            else if (key == EDGE_OWNS_OUT.key) return EDGE_OWNS_OUT;
-            else if (key == EDGE_OWNS_IN.key) return EDGE_OWNS_IN;
-            else if (key == EDGE_OWNS_KEY_OUT.key) return EDGE_OWNS_KEY_OUT;
-            else if (key == EDGE_OWNS_KEY_IN.key) return EDGE_OWNS_KEY_IN;
-            else if (key == EDGE_PLAYS_OUT.key) return EDGE_PLAYS_OUT;
-            else if (key == EDGE_PLAYS_IN.key) return EDGE_PLAYS_IN;
-            else if (key == EDGE_RELATES_OUT.key) return EDGE_RELATES_OUT;
-            else if (key == EDGE_RELATES_IN.key) return EDGE_RELATES_IN;
-            else if (key == EDGE_HAS_OUT.key) return EDGE_HAS_OUT;
-            else if (key == EDGE_HAS_IN.key) return EDGE_HAS_IN;
-            else if (key == EDGE_PLAYING_OUT.key) return EDGE_PLAYING_OUT;
-            else if (key == EDGE_PLAYING_IN.key) return EDGE_PLAYING_IN;
-            else if (key == EDGE_RELATING_OUT.key) return EDGE_RELATING_OUT;
-            else if (key == EDGE_RELATING_IN.key) return EDGE_RELATING_IN;
-            else if (key == EDGE_ROLEPLAYER_OUT.key) return EDGE_ROLEPLAYER_OUT;
-            else if (key == EDGE_ROLEPLAYER_IN.key) return EDGE_ROLEPLAYER_IN;
-            else throw GraknException.of(UNRECOGNISED_VALUE);
+            Infix infix = keyIndex[key];
+            if (infix == null) throw GraknException.of(UNRECOGNISED_VALUE);
+            else return infix;
         }
 
         public byte key() {
@@ -364,6 +376,15 @@ public class Encoding {
         public static final int STRING_MAX_SIZE = Bytes.SHORT_UNSIGNED_MAX_VALUE;
         public static final double DOUBLE_PRECISION = 0.0000000000000001;
 
+        private static ValueType[] keyIndex = indexedBytes(
+                pair(OBJECT.key, OBJECT),
+                pair(BOOLEAN.key, BOOLEAN),
+                pair(LONG.key, LONG),
+                pair(DOUBLE.key, DOUBLE),
+                pair(STRING.key, STRING),
+                pair(DATETIME.key, DATETIME)
+        );
+
         private static final Map<ValueType, Set<ValueType>> ASSIGNABLES = map(
                 pair(OBJECT, set(OBJECT)),
                 pair(BOOLEAN, set(BOOLEAN)),
@@ -400,13 +421,9 @@ public class Encoding {
         }
 
         public static ValueType of(byte value) {
-            if (value == OBJECT.key) return OBJECT;
-            else if (value == BOOLEAN.key) return BOOLEAN;
-            else if (value == LONG.key) return LONG;
-            else if (value == DOUBLE.key) return DOUBLE;
-            else if (value == STRING.key) return STRING;
-            else if (value == DATETIME.key) return DATETIME;
-            else throw GraknException.of(UNRECOGNISED_VALUE);
+            ValueType valueType = keyIndex[value];
+            if (valueType == null) throw GraknException.of(UNRECOGNISED_VALUE);
+            else return valueType;
         }
 
         public static ValueType of(Class<?> valueClass) {
@@ -496,6 +513,14 @@ public class Encoding {
             RELATION_TYPE(Prefix.VERTEX_RELATION_TYPE, Root.RELATION, Thing.RELATION),
             ROLE_TYPE(Prefix.VERTEX_ROLE_TYPE, Root.ROLE, Thing.ROLE);
 
+            private static Type[] prefixIndex = indexedBytes(
+                    pair(THING_TYPE.prefix.key, THING_TYPE),
+                    pair(ENTITY_TYPE.prefix.key, ENTITY_TYPE),
+                    pair(ATTRIBUTE_TYPE.prefix.key, ATTRIBUTE_TYPE),
+                    pair(RELATION_TYPE.prefix.key, RELATION_TYPE),
+                    pair(ROLE_TYPE.prefix.key, ROLE_TYPE)
+            );
+
             private final Prefix prefix;
             private final Root root;
             private final Thing instance;
@@ -507,12 +532,9 @@ public class Encoding {
             }
 
             public static Type of(byte prefix) {
-                if (prefix == THING_TYPE.prefix.key) return THING_TYPE;
-                else if (prefix == ENTITY_TYPE.prefix.key) return ENTITY_TYPE;
-                else if (prefix == ATTRIBUTE_TYPE.prefix.key) return ATTRIBUTE_TYPE;
-                else if (prefix == RELATION_TYPE.prefix.key) return RELATION_TYPE;
-                else if (prefix == ROLE_TYPE.prefix.key) return ROLE_TYPE;
-                else throw GraknException.of(UNRECOGNISED_VALUE);
+                Type type = prefixIndex[prefix];
+                if (type == null) throw GraknException.of(UNRECOGNISED_VALUE);
+                else return type;
             }
 
             public static Type of(Thing thing) {
@@ -588,6 +610,13 @@ public class Encoding {
             RELATION(Prefix.VERTEX_RELATION),
             ROLE(Prefix.VERTEX_ROLE);
 
+            private static Thing[] prefixIndex = indexedBytes(
+                    pair(ENTITY.prefix.key, ENTITY),
+                    pair(ATTRIBUTE.prefix.key, ATTRIBUTE),
+                    pair(RELATION.prefix.key, RELATION),
+                    pair(ROLE.prefix.key, ROLE)
+            );
+
             private final Prefix prefix;
 
             Thing(Prefix prefix) {
@@ -595,11 +624,9 @@ public class Encoding {
             }
 
             public static Thing of(byte prefix) {
-                if (prefix == ENTITY.prefix.key) return ENTITY;
-                else if (prefix == ATTRIBUTE.prefix.key) return ATTRIBUTE;
-                else if (prefix == RELATION.prefix.key) return RELATION;
-                else if (prefix == ROLE.prefix.key) return ROLE;
-                throw GraknException.of(UNRECOGNISED_VALUE);
+                Thing thing = prefixIndex[prefix];
+                if (thing == null) throw GraknException.of(UNRECOGNISED_VALUE);
+                else return thing;
             }
 
             @Override
@@ -739,11 +766,17 @@ public class Encoding {
             }
 
             public static Thing of(byte infix) {
-                if ((HAS.out != null && HAS.out.key == infix) || (HAS.in != null && HAS.in.key == infix)) return HAS;
-                else if ((PLAYING.out != null && PLAYING.out.key == infix) || (PLAYING.in != null && PLAYING.in.key == infix)) return PLAYING;
-                else if ((RELATING.out != null && RELATING.out.key == infix) || (RELATING.in != null && RELATING.in.key == infix)) return RELATING;
-                else if ((ROLEPLAYER.out != null && ROLEPLAYER.out.key == infix) || (ROLEPLAYER.in != null && ROLEPLAYER.in.key == infix)) return ROLEPLAYER;
-                else throw GraknException.of(UNRECOGNISED_VALUE);
+                if ((HAS.out != null && HAS.out.key == infix) || (HAS.in != null && HAS.in.key == infix)) {
+                    return HAS;
+                } else if ((PLAYING.out != null && PLAYING.out.key == infix) || (PLAYING.in != null && PLAYING.in.key == infix)) {
+                    return PLAYING;
+                } else if ((RELATING.out != null && RELATING.out.key == infix) || (RELATING.in != null && RELATING.in.key == infix)) {
+                    return RELATING;
+                } else if ((ROLEPLAYER.out != null && ROLEPLAYER.out.key == infix) || (ROLEPLAYER.in != null && ROLEPLAYER.in.key == infix)) {
+                    return ROLEPLAYER;
+                } else {
+                    throw GraknException.of(UNRECOGNISED_VALUE);
+                }
             }
 
             @Override
@@ -922,5 +955,13 @@ public class Encoding {
                 return bytes;
             }
         }
+    }
+
+    private static <T> T[] indexedBytes(Pair<Byte, T>... byteIndices) {
+        Object[] array = new Object[255];
+        for (Pair<Byte, T> index : byteIndices) {
+            array[index.first()] = index.second();
+        }
+        return (T[]) array;
     }
 }
