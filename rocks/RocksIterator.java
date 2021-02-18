@@ -61,9 +61,15 @@ public final class RocksIterator<T> extends AbstractResourceIterator<T> implemen
         }
 
         next = constructor.apply(key, internalRocksIterator.value());
-        internalRocksIterator.next();
-        state = State.FETCHED;
-        return true;
+        synchronized (this) {
+            if (state != State.COMPLETED) {
+                internalRocksIterator.next();
+                state = State.FETCHED;
+                return true;
+            } else{
+                return false;
+            }
+        }
     }
 
     public final T peek() {
@@ -103,9 +109,11 @@ public final class RocksIterator<T> extends AbstractResourceIterator<T> implemen
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
-            if (state != State.INIT) storage.recycle(internalRocksIterator);
-            state = State.COMPLETED;
-            storage.remove(this);
+            synchronized (this) {
+                if (state != State.INIT) storage.recycle(internalRocksIterator);
+                state = State.COMPLETED;
+                storage.remove(this);
+            }
         }
     }
 }

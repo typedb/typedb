@@ -69,6 +69,12 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
         // additionally, it can cause deadlock within ResolverRegistry as different threads initialise actors
     }
 
+    @Override
+    protected void exception(Throwable e) {
+        LOG.error("Actor exception: {}", e.getMessage());
+        // TODO, once integrated into the larger flow of executing queries, kill the resolvers and report and exception to root
+    }
+
     public String name() {
         return name;
     }

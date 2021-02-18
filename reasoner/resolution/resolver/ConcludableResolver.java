@@ -178,12 +178,6 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         return responseProducerNewIter;
     }
 
-    @Override
-    protected void exception(Throwable e) {
-        LOG.error("Actor exception", e);
-        // TODO, once integrated into the larger flow of executing queries, kill the resolvers and report and exception to root
-    }
-
     private void tryAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
         if (responseProducer.hasUpstreamAnswer()) {
             Partial<?> upstreamAnswer = responseProducer.upstreamAnswers().next();

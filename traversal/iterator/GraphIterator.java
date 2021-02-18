@@ -102,8 +102,8 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
             }
             return state == State.FETCHED;
         } catch (Throwable e) {
-            LOG.error("Parameters: " + params.toString());
-            LOG.error("GraphProcedure: " + procedure.toString());
+//            LOG.error("Parameters: " + params.toString());
+//            LOG.error("GraphProcedure: " + procedure.toString());
             throw e;
         }
     }

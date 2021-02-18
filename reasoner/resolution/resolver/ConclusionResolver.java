@@ -209,12 +209,6 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         return name() + ": then " + conclusion.rule().then();
     }
 
-    @Override
-    protected void exception(Throwable e) {
-        LOG.error("Actor exception", e);
-        // TODO, once integrated into the larger flow of executing queries, kill the resolvers and report and exception to root
-    }
-
     private static class ConclusionResponses {
 
         private final List<ResourceIterator<AnswerState.Partial<?>>> materialisedAnswers;
