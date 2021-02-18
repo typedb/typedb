@@ -133,11 +133,8 @@ java_deps(
     name = "server-deps-mac",
     target = ":server-bin-mac",
     java_deps_root = "server/lib/common/",
-#    java_deps_root_overrides = {
-#        "rocksdbjni-dev-*": "server/lib/dev/",
-#    },
     java_deps_root_overrides = {
-        "rocksdbjni-*": "server/lib/prod/",
+        "rocksdbjni-dev-*": "server/lib/dev/",
     },
     visibility = ["//:__pkg__"],
     maven_name = True,
@@ -147,11 +144,8 @@ java_deps(
     name = "server-deps-linux",
     target = ":server-bin-linux",
     java_deps_root = "server/lib/common/",
-#    java_deps_root_overrides = {
-#        "rocksdbjni-dev-*": "server/lib/dev/",
-#    },
     java_deps_root_overrides = {
-        "rocksdbjni-*": "server/lib/prod/",
+        "rocksdbjni-dev-*": "server/lib/dev/",
     },
     visibility = ["//:__pkg__"],
     maven_name = True,
@@ -161,37 +155,23 @@ java_deps(
     name = "server-deps-windows",
     target = ":server-bin-windows",
     java_deps_root = "server/lib/common/",
-#    java_deps_root_overrides = {
-#        "rocksdbjni-dev-*": "server/lib/dev/",
-#    },
     java_deps_root_overrides = {
-        "rocksdbjni-*": "server/lib/prod/",
+        "rocksdbjni-dev-*": "server/lib/dev/",
     },
     visibility = ["//:__pkg__"],
     maven_name = True,
 )
 
 java_deps(
-    name = "server-deps-dev",
-    target = "@maven//:org_rocksdb_rocksdbjni_dev",
-    java_deps_root = "server/lib/dev/",
+    name = "server-deps-prod",
+    target = "@maven//:org_rocksdb_rocksdbjni",
+    java_deps_root = "server/lib/prod/",
     visibility = ["//:__pkg__"],
     maven_name = True,
 )
 
-# TODO: Once we have a cross-platform rocksdbjni-dev build, make rocksdbjni-dev the default version that we use
-#       (by uncommenting server-deps-prod and deleting server-deps-dev)
-#java_deps(
-#    name = "server-deps-prod",
-#    target = "@maven//:org_rocksdb_rocksdbjni",
-#    java_deps_root = "server/lib/prod/",
-#    visibility = ["//:__pkg__"],
-#    maven_name = True,
-#)
-
 assemble_deps_common = [
-    ":server-deps-dev",
-#    ":server-deps-prod",
+    ":server-deps-prod",
 ]
 
 assemble_files = {
@@ -272,7 +252,7 @@ assemble_apt(
       "grakn-bin (=%{@graknlabs_common})"
     ],
     workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
-    archives = [":server-deps-dev", ":server-deps-linux"],
+    archives = [":server-deps-prod", ":server-deps-linux"],
     installation_dir = "/opt/grakn/core/",
     files = assemble_files,
     empty_dirs = [
