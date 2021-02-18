@@ -95,12 +95,27 @@ build:
       command: |
         bazel test //test/behaviour/graql/language/define/... --test_output=streamed
         bazel test //test/behaviour/graql/language/undefine/... --test_output=streamed
+    test-behaviour-reasoner:
+      image: graknlabs-ubuntu-20.04
+      command: |
+        bazel test //test/behaviour/resolution/tests/attribute_attachment:test --test_output=streamed
+        bazel test //test/behaviour/resolution/tests/compound_queries:test --test_output=streamed
+        bazel test //test/behaviour/resolution/tests/relation_inference:test --test_output=streamed
+        bazel test //test/behaviour/resolution/tests/rule_interaction:test --test_output=streamed
+        bazel test //test/behaviour/resolution/tests/type_hierarchy:test --test_output=streamed
+        bazel test //test/behaviour/resolution/tests/value_predicate:test --test_output=streamed
+        bazel test //test/behaviour/resolution/tests/variable_roles:test --test_output=streamed
+      # bazel test //test/behaviour/resolution/tests/concept_inequality:test --test_output=streamed
+      # bazel test //test/behaviour/resolution/tests/negation:test --test_output=streamed
+      # bazel test //test/behaviour/resolution/tests/recursion:test --test_output=streamed
+      # bazel test //test/behaviour/resolution/tests/resolution_test_framework:test --test_output=streamed
+      # bazel test //test/behaviour/resolution/tests/schema_queries:test --test_output=streamed
     test-assembly-linux-targz:
       image: graknlabs-ubuntu-20.04
       filter:
         owner: graknlabs
         branch: master
-      dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour-connection, test-behaviour-concept, test-behaviour-match, test-behaviour-writable, test-behaviour-definable]
+      dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour-connection, test-behaviour-concept, test-behaviour-match, test-behaviour-writable, test-behaviour-definable, test-behaviour-reasoner]
       command: |
         export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
         export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
@@ -110,7 +125,7 @@ build:
       filter:
         owner: graknlabs
         branch: master
-      dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour-connection, test-behaviour-concept, test-behaviour-match, test-behaviour-writable, test-behaviour-definable]
+      dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour-connection, test-behaviour-concept, test-behaviour-match, test-behaviour-writable, test-behaviour-definable, test-behaviour-reasoner]
       command: |
         bazel test //test/assembly:docker --test_output=streamed
     deploy-artifact-snapshot:
