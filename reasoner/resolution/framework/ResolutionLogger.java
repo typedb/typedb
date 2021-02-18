@@ -21,6 +21,7 @@ import grakn.core.common.exception.GraknException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
@@ -101,9 +102,10 @@ public final class ResolutionLogger {
     public synchronized void initialise() {
         messageNumber = 0;
         path.set(logDir.resolve(filename()));
-        path.set(Paths.get("./" + filename() + ".dot"));
         try {
-            writer = new PrintWriter(path.get().toFile(), "UTF-8");
+            File file = path.get().toFile();
+            boolean ignore = file.getParentFile().mkdirs();
+            writer = new PrintWriter(file, "UTF-8");
             startFile();
         } catch (FileNotFoundException | UnsupportedEncodingException e) {
             e.printStackTrace();
@@ -128,6 +130,7 @@ public final class ResolutionLogger {
     }
 
     private void write(String toWrite) {
+        assert writer != null;
         writer.println(toWrite);
     }
 
