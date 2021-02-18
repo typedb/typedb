@@ -52,29 +52,15 @@ public class TransactionSteps {
 
     @When("(for each )session(,) open(s) transaction(s) of type: {transaction_type}")
     public void session_opens_transaction_of_type(Arguments.Transaction.Type type) {
-        for_each_session_open_transactions_of_type(list(type), false);
+        for_each_session_open_transactions_of_type(list(type));
     }
-
-    @When("(for each )session(,) open(s) transaction(s) with reasoning of type: {transaction_type}")
-    public void session_opens_transaction_with_reasoning_of_type(Arguments.Transaction.Type type) {
-        for_each_session_open_transactions_of_type(list(type), true);
-    }
-
 
     @When("(for each )session(,) open transaction(s) of type:")
     public void for_each_session_open_transactions_of_type(List<Arguments.Transaction.Type> types) {
-        for_each_session_open_transactions_of_type(types, false);
-    }
-    @When("(for each )session(,) open transaction(s) with reasoning of type:")
-    public void for_each_session_open_transactions_with_reasoning_of_type(List<Arguments.Transaction.Type> types) {
-        for_each_session_open_transactions_of_type(types, true);
-    }
-
-    private void for_each_session_open_transactions_of_type(List<Arguments.Transaction.Type> types, boolean reasoning) {
         for (Grakn.Session session : sessions) {
             List<Grakn.Transaction> transactions = new ArrayList<>();
             for (Arguments.Transaction.Type type : types) {
-                Grakn.Transaction transaction = session.transaction(type, (new Options.Transaction()).infer(reasoning));
+                Grakn.Transaction transaction = session.transaction(type, (new Options.Transaction()));
                 transactions.add(transaction);
             }
             sessionsToTransactions.put(session, transactions);
