@@ -23,6 +23,7 @@ import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
+import grakn.core.common.parameters.Options;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
@@ -33,8 +34,6 @@ import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.Disjunction;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
@@ -52,7 +51,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -72,8 +70,10 @@ import static org.junit.Assert.assertTrue;
 
 public class UnifyRelationConcludableTest {
 
-    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("unify-relation-test");
-    private static String database = "unify-relation-test";
+    private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("unify-relation-test");
+    private static final Path logDir = dataDir.resolve("logs");
+    private static final Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logDir);
+    private static final String database = "unify-relation-test";
     private static RocksGrakn grakn;
     private static RocksSession session;
     private static RocksTransaction rocksTransaction;
@@ -82,8 +82,8 @@ public class UnifyRelationConcludableTest {
 
     @BeforeClass
     public static void setUp() throws IOException {
-        Util.resetDirectory(directory);
-        grakn = RocksGrakn.open(directory);
+        Util.resetDirectory(dataDir);
+        grakn = RocksGrakn.open(options);
         grakn.databases().create(database);
         session = grakn.session(database, Arguments.Session.Type.SCHEMA);
         try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {

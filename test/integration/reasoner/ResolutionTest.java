@@ -18,6 +18,7 @@
 package grakn.core.reasoner;
 
 import grakn.core.common.parameters.Arguments;
+import grakn.core.common.parameters.Options.Database;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.actor.EventLoopGroup;
 import grakn.core.pattern.Conjunction;
@@ -57,14 +58,16 @@ import static junit.framework.TestCase.assertTrue;
 
 public class ResolutionTest {
 
-    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("resolution-test");
-    private static String database = "resolution-test";
+    private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("resolution-test");
+    private static final Path logDir = dataDir.resolve("logs");
+    private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
+    private static final String database = "resolution-test";
     private static RocksGrakn grakn;
 
     @Before
     public void setUp() throws IOException {
-        Util.resetDirectory(directory);
-        grakn = RocksGrakn.open(directory);
+        Util.resetDirectory(dataDir);
+        grakn = RocksGrakn.open(options);
         grakn.databases().create(database);
     }
 

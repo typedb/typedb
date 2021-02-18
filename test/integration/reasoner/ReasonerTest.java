@@ -19,6 +19,7 @@ package grakn.core.reasoner;
 
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
+import grakn.core.common.parameters.Options.Database;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.AttributeType;
@@ -33,7 +34,6 @@ import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -45,8 +45,9 @@ import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;
 
 public class ReasonerTest {
-
-    private static final Path directory = Paths.get(System.getProperty("user.dir")).resolve("query-test");
+    private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("query-test");
+    private static final Path logDir = dataDir.resolve("logs");
+    private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
     private static final String database = "reasoner-test";
     private static RocksGrakn grakn;
 
@@ -58,8 +59,8 @@ public class ReasonerTest {
 
     @Before
     public void setUp() throws IOException {
-        Util.resetDirectory(directory);
-        grakn = RocksGrakn.open(directory);
+        Util.resetDirectory(dataDir);
+        grakn = RocksGrakn.open(options);
         grakn.databases().create(database);
     }
 

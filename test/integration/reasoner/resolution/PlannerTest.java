@@ -18,6 +18,7 @@
 package grakn.core.reasoner.resolution;
 
 import grakn.core.common.parameters.Arguments;
+import grakn.core.common.parameters.Options.Database;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
@@ -49,8 +50,10 @@ import static junit.framework.TestCase.assertEquals;
 
 public class PlannerTest {
 
-    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("resolver-manager-test");
-    private static String database = "resolver-manager-test";
+    private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("resolver-manager-test");
+    private static final Path logDir = dataDir.resolve("logs");
+    private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
+    private static final String database = "resolver-manager-test";
     private static RocksGrakn grakn;
     private static RocksSession session;
     private static RocksTransaction rocksTransaction;
@@ -59,8 +62,8 @@ public class PlannerTest {
 
     @Before
     public void setUp() throws IOException {
-        Util.resetDirectory(directory);
-        grakn = RocksGrakn.open(directory);
+        Util.resetDirectory(dataDir);
+        grakn = RocksGrakn.open(options);
         grakn.databases().create(database);
         newTransaction(Arguments.Session.Type.SCHEMA, Arguments.Transaction.Type.WRITE);
     }

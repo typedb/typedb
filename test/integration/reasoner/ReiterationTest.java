@@ -49,20 +49,23 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.common.parameters.Options.Database;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static junit.framework.TestCase.fail;
 
 public class ReiterationTest {
 
-    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("resolution-test");
-    private static String database = "resolution-test";
+    private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("resolution-test");
+    private static final Path logDir = dataDir.resolve("logs");
+    private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
+    private static final String database = "resolution-test";
     private static RocksGrakn grakn;
 
     @Before
     public void setUp() throws IOException {
-        Util.resetDirectory(directory);
-        grakn = RocksGrakn.open(directory);
+        Util.resetDirectory(dataDir);
+        grakn = RocksGrakn.open(options);
         grakn.databases().create(database);
     }
 

@@ -20,6 +20,7 @@ package grakn.core.logic;
 
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
+import grakn.core.common.parameters.Options.Database;
 import grakn.core.logic.tool.TypeResolver;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
@@ -57,16 +58,18 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class TypeResolverTest {
-    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("type-resolver-test");
-    private static String database = "type-resolver-test";
+    private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("type-resolver-test");
+    private static final Path logDir = dataDir.resolve("logs");
+    private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
     private static RocksGrakn grakn;
     private static RocksSession session;
     private static RocksTransaction transaction;
 
     @BeforeClass
     public static void open_session() throws IOException {
-        Util.resetDirectory(directory);
-        grakn = RocksGrakn.open(directory);
+        Util.resetDirectory(dataDir);
+        grakn = RocksGrakn.open(options);
+        String database = "type-resolver-test";
         grakn.databases().create(database);
         session = grakn.session(database, Arguments.Session.Type.SCHEMA);
     }
