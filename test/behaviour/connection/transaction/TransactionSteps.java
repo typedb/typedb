@@ -74,7 +74,7 @@ public class TransactionSteps {
         for (Grakn.Session session : sessions) {
             List<Grakn.Transaction> transactions = new ArrayList<>();
             for (Arguments.Transaction.Type type : types) {
-                Grakn.Transaction transaction = session.transaction(type, (new Options.Transaction()).inference(reasoning));
+                Grakn.Transaction transaction = session.transaction(type, (new Options.Transaction()).infer(reasoning));
                 transactions.add(transaction);
             }
             sessionsToTransactions.put(session, transactions);

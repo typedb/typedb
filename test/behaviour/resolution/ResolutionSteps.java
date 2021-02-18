@@ -89,7 +89,7 @@ public class ResolutionSteps {
         oldAnswers = tx.query().match(queryToTest).toSet();
         for (int i = 0; i < executionCount - 1; i++) {
             try (Grakn.Transaction transaction = reasonedSession().transaction(Arguments.Transaction.Type.READ,
-                                                                               new Options.Transaction().inference(true))) {
+                                                                               new Options.Transaction().infer(true))) {
                 Set<ConceptMap> answers = transaction.query().match(queryToTest).toSet();
                 assertEquals(oldAnswers, answers);
             }
