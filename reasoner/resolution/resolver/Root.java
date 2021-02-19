@@ -27,26 +27,18 @@ import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Filtered;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.answer.Mapping;
 import grakn.core.reasoner.resolution.framework.Request;
-import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import grakn.core.traversal.TraversalEngine;
-import grakn.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
-
-import static grakn.core.common.iterator.Iterators.iterate;
 
 public interface Root {
 
@@ -161,36 +153,42 @@ public interface Root {
 
     }
 
-    class Disjunction extends Resolver<Disjunction> implements Root {
+    class Disjunction extends DisjunctionResolver<Disjunction> implements Root {
 
         private static final Logger LOG = LoggerFactory.getLogger(Disjunction.class);
-
-        private final Actor<ResolutionRecorder> resolutionRecorder;
-        private final Consumer<Top> onAnswer;
-        private final Consumer<Integer> onFail;
-        private final List<Actor<ConjunctionResolver.Nested>> downstreamResolvers;
-        private final grakn.core.pattern.Disjunction disjunction;
         private final Long offset;
         private final Long limit;
-        private long skipped;
-        private long answered;
-        private boolean isInitialised;
-        private ResponseProducer responseProducer;
+        private final Consumer<Top> onAnswer;
+        private final Consumer<Integer> onFail;
 
         public Disjunction(Actor<Disjunction> self, grakn.core.pattern.Disjunction disjunction,
                            @Nullable Long offset, @Nullable Long limit, Consumer<Top> onAnswer,
                            Consumer<Integer> onFail, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                            TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
-            super(self, Disjunction.class.getSimpleName() + "(pattern:" + disjunction + ")", registry, traversalEngine,
-                  conceptMgr, resolutionTracing);
-            this.disjunction = disjunction;
+            super(self, Disjunction.class.getSimpleName() + "(pattern:" + disjunction + ")", disjunction,
+                  resolutionRecorder, registry, traversalEngine, conceptMgr, resolutionTracing);
             this.offset = offset;
             this.limit = limit;
             this.onAnswer = onAnswer;
             this.onFail = onFail;
-            this.resolutionRecorder = resolutionRecorder;
-            this.isInitialised = false;
-            this.downstreamResolvers = new ArrayList<>();
+        }
+
+        protected void nextAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
+            if (responseProducer.hasDownstreamProducer()) {
+                requestFromDownstream(responseProducer.nextDownstreamProducer(), fromUpstream, iteration);
+            } else {
+                submitFail(iteration);
+            }
+        }
+
+        @Override
+        protected void answerToUpstream(AnswerState answer, Request fromUpstream, int iteration) {
+            if ((limit == null) || (answered < limit)) {
+                submitAnswer(answer.asIdentity().toTop());
+                this.answered++;
+            } else {
+                submitFail(iteration);
+            }
         }
 
         @Override
@@ -210,119 +208,18 @@ public interface Root {
         }
 
         @Override
-        public void receiveRequest(Request fromUpstream, int iteration) {
-            LOG.trace("{}: received Request: {}", name(), fromUpstream);
-            if (!isInitialised) {
-                initialiseDownstreamResolvers();
-                responseProducer = responseProducerCreate(fromUpstream, iteration);
-            }
-            mayReiterateResponseProducer(fromUpstream, iteration);
-            if (iteration < responseProducer.iteration()) {
-                // short circuit if the request came from a prior iteration
-                onFail.accept(iteration);
-            } else {
-                assert iteration == responseProducer.iteration();
-                nextAnswer(fromUpstream, iteration);
-            }
-        }
-
-        private void nextAnswer(Request fromUpstream, int iteration) {
-            if (responseProducer.hasDownstreamProducer()) {
-                requestFromDownstream(responseProducer.nextDownstreamProducer(), fromUpstream, iteration);
-            } else {
-                submitFail(iteration);
-            }
-        }
-
-        private void mayReiterateResponseProducer(Request fromUpstream, int iteration) {
-            if (responseProducer.iteration() + 1 == iteration) {
-                responseProducer = responseProducerReiterate(fromUpstream, responseProducer, iteration);
-            }
+        public boolean mustOffset() {
+            return offset != null && skipped < offset;
         }
 
         @Override
-        protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
-            LOG.trace("{}: received answer: {}", name(), fromDownstream);
-
-            Request toDownstream = fromDownstream.sourceRequest();
-            Request fromUpstream = fromUpstream(toDownstream);
-
-            Top answer = fromDownstream.answer().asIdentity().toTop();
-            ConceptMap filteredMap = answer.conceptMap();
-            if (!responseProducer.hasProduced(filteredMap)) {
-                responseProducer.recordProduced(filteredMap);
-                if (offset != null && skipped < offset) {
-                    skipped++;
-                    nextAnswer(fromUpstream, iteration);
-                    return;
-                }
-                if (limit != null && answered >= limit) submitFail(iteration);
-                else submitAnswer(answer);
-            } else {
-                nextAnswer(fromUpstream, iteration);
-            }
+        public void offsetOccurred() {
+            this.skipped++;
         }
 
         @Override
-        protected void receiveFail(Response.Fail fromDownstream, int iteration) {
-            LOG.trace("{}: received Exhausted, with iter {}: {}", name(), iteration, fromDownstream);
-            Request toDownstream = fromDownstream.sourceRequest();
-            Request fromUpstream = fromUpstream(toDownstream);
-
-            if (iteration < responseProducer.iteration()) {
-                // short circuit old iteration failed messages back out of the actor model
-                submitFail(iteration);
-                return;
-            }
-            responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
-            nextAnswer(fromUpstream, iteration);
-        }
-
-        @Override
-        protected void initialiseDownstreamResolvers() {
-            LOG.debug("{}: initialising downstream resolvers", name());
-            for (grakn.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
-                downstreamResolvers.add(registry.nested(conjunction));
-            }
-            isInitialised = true;
-        }
-
-        @Override
-        protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
-            LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), fromUpstream);
-            assert fromUpstream.partialAnswer().isIdentity();
-            ResponseProducer responseProducer = new ResponseProducer(Iterators.empty(), iteration);
-            assert !downstreamResolvers.isEmpty();
-            for (Actor<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers) {
-                Filtered downstream = fromUpstream.partialAnswer().asIdentity()
-                        .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver));
-                Request request = Request.create(self(), conjunctionResolver, downstream);
-                responseProducer.addDownstreamProducer(request);
-            }
-            return responseProducer;
-        }
-
-        private Set<Identifier.Variable.Retrievable> conjunctionRetrievedIds(Actor<ConjunctionResolver.Nested> conjunctionResolver) {
-            // TODO use a map from resolvable to resolvers, then we don't have to reach into the state and use the conjunction
-            return iterate(conjunctionResolver.state.conjunction.variables()).filter(v -> v.id().isRetrievable())
-                    .map(v -> v.id().asRetrievable()).toSet();
-        }
-
-        @Override
-        protected ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer responseProducerPrevious,
-                                                             int newIteration) {
-            assert newIteration > responseProducerPrevious.iteration();
-            LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
-
-            assert newIteration > responseProducerPrevious.iteration();
-            ResponseProducer responseProducerNewIter = responseProducerPrevious.newIterationRetainDedup(Iterators.empty(), newIteration);
-            for (Actor<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers) {
-                Filtered downstream = fromUpstream.partialAnswer().asIdentity()
-                        .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver));
-                Request request = Request.create(self(), conjunctionResolver, downstream);
-                responseProducer.addDownstreamProducer(request);
-            }
-            return responseProducerNewIter;
+        protected ResponseProducer responseProducerNewIteration(ResponseProducer responseProducerPrevious, int newIteration) {
+            return responseProducerPrevious.newIterationRetainDedup(Iterators.empty(), newIteration);
         }
 
     }

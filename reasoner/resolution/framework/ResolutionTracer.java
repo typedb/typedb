@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_CALL_TO_FINISH_BEFORE_START;
+import static grakn.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_CALL_TO_WRITE_BEFORE_START;
 import static grakn.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_HAS_NOT_BEEN_INITIALISED;
 
 public final class ResolutionTracer {
@@ -115,10 +116,10 @@ public final class ResolutionTracer {
 
     private void startFile() {
         write(String.format(
-                "digraph %s {\n" +
+                "digraph request_%d {\n" +
                         "node [fontsize=12 fontname=arial width=0.5 shape=box style=filled]\n" +
                         "edge [fontsize=10 fontname=arial width=0.5]",
-                filename()));
+                rootRequestNumber));
     }
 
     private String filename() {
@@ -130,7 +131,7 @@ public final class ResolutionTracer {
     }
 
     private void write(String toWrite) {
-        assert writer != null;
+        if (writer == null) throw GraknException.of(REASONER_TRACING_CALL_TO_WRITE_BEFORE_START);
         writer.println(toWrite);
     }
 

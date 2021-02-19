@@ -514,6 +514,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Reasoner(4, "Attempted to get the resolution tracer before it has been initialised.");
         public static final Reasoner REASONER_TRACING_CALL_TO_FINISH_BEFORE_START =
                 new Reasoner(5, "Reasoner tracing has been instructed to finish without being started. Start the tracer before any resolution takes place.");
+        public static final Reasoner REASONER_TRACING_CALL_TO_WRITE_BEFORE_START =
+                new Reasoner(6, "Reasoner tracing has been instructed to write without being started. Start the tracer before any resolution takes place.");
 
         private static final String codePrefix = "RSN";
         private static final String messagePrefix = "Reasoner Error";
