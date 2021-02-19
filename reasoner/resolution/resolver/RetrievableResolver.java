@@ -218,13 +218,9 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
             if (traversalDone && fetched.isEmpty()) {
                 dispatchFail(fromUpstream);
             } else {
-                if (!fetched.isEmpty()) {
-                    dispatchAnswer(fetched.remove(0), fromUpstream);
-                    mayFetch(fromUpstream);
-                } else {
-                    awaitingAnswers.add(fromUpstream);
-                    mayFetch(fromUpstream);
-                }
+                if (!fetched.isEmpty()) dispatchAnswer(fetched.remove(0), fromUpstream);
+                else awaitingAnswers.add(fromUpstream);
+                mayFetch(fromUpstream);
             }
         }
 
