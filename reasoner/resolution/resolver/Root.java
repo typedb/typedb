@@ -17,6 +17,7 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
+import grakn.core.common.exception.GraknCheckedException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
@@ -214,6 +215,8 @@ public interface Root {
                 initialiseDownstreamResolvers();
                 responseProducer = responseProducerCreate(fromUpstream, iteration);
             }
+            if (isTerminated()) return;
+
             mayReiterateResponseProducer(fromUpstream, iteration);
             if (iteration < responseProducer.iteration()) {
                 // short circuit if the request came from a prior iteration
@@ -241,6 +244,7 @@ public interface Root {
         @Override
         protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
             LOG.trace("{}: received answer: {}", name(), fromDownstream);
+            if (isTerminated()) return;
 
             Request toDownstream = fromDownstream.sourceRequest();
             Request fromUpstream = fromUpstream(toDownstream);
@@ -264,6 +268,8 @@ public interface Root {
         @Override
         protected void receiveFail(Response.Fail fromDownstream, int iteration) {
             LOG.trace("{}: received Exhausted, with iter {}: {}", name(), iteration, fromDownstream);
+            if (isTerminated()) return;
+
             Request toDownstream = fromDownstream.sourceRequest();
             Request fromUpstream = fromUpstream(toDownstream);
 
@@ -277,10 +283,20 @@ public interface Root {
         }
 
         @Override
+        public void terminate(Throwable cause) {
+            super.terminate(cause);
+        }
+
+        @Override
         protected void initialiseDownstreamResolvers() {
             LOG.debug("{}: initialising downstream resolvers", name());
             for (grakn.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
-                downstreamResolvers.add(registry.nested(conjunction));
+                try {
+                    downstreamResolvers.add(registry.nested(conjunction));
+                } catch (GraknCheckedException e) {
+                    terminate(e);
+                    return;
+                }
             }
             isInitialised = true;
         }

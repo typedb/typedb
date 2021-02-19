@@ -18,6 +18,7 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
+import grakn.core.common.exception.GraknCheckedException;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
@@ -66,26 +67,13 @@ public class NegationResolver extends Resolver<NegationResolver> {
     }
 
     @Override
-    protected void initialiseDownstreamResolvers() {
-        LOG.debug("{}: initialising downstream resolvers", name());
-
-        List<Conjunction> disjunction = negated.pattern().conjunctions();
-        if (disjunction.size() == 1) {
-            downstream = registry.nested(disjunction.get(0));
-        } else {
-            // negations with complex disjunctions not yet working
-            throw GraknException.of(UNIMPLEMENTED);
-        }
-        isInitialised = true;
-    }
-
-    @Override
     public void receiveRequest(Request fromUpstream, int iteration) {
         LOG.trace("{}: received Request: {}", name(), fromUpstream);
-
         if (!isInitialised) initialiseDownstreamResolvers();
+        if (isTerminated()) return;
 
-        NegationResponse negationResponse = getOrInitialise(fromUpstream.partialAnswer().conceptMap());
+        NegationResponse negationResponse = responses.computeIfAbsent(fromUpstream.partialAnswer().conceptMap(),
+                                                                      (cm) -> new NegationResponse());
         if (negationResponse.status.isEmpty()) {
             negationResponse.addAwaiting(fromUpstream, iteration);
             tryAnswer(fromUpstream, negationResponse);
@@ -100,8 +88,22 @@ public class NegationResolver extends Resolver<NegationResolver> {
         }
     }
 
-    private NegationResponse getOrInitialise(ConceptMap conceptMap) {
-        return responses.computeIfAbsent(conceptMap, (cm) -> new NegationResponse());
+    @Override
+    protected void initialiseDownstreamResolvers() {
+        LOG.debug("{}: initialising downstream resolvers", name());
+
+        List<Conjunction> disjunction = negated.pattern().conjunctions();
+        if (disjunction.size() == 1) {
+            try {
+                downstream = registry.nested(disjunction.get(0));
+            } catch (GraknCheckedException e) {
+                terminate(e);
+            }
+        } else {
+            // negations with complex disjunctions not yet working
+            throw GraknException.of(UNIMPLEMENTED);
+        }
+        isInitialised = true;
     }
 
     private void tryAnswer(Request fromUpstream, NegationResponse negationResponse) {
@@ -123,6 +125,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
         LOG.trace("{}: received Answer: {}, therefore is FAILED", name(), fromDownstream);
+        if (isTerminated()) return;
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
@@ -136,7 +139,8 @@ public class NegationResolver extends Resolver<NegationResolver> {
 
     @Override
     protected void receiveFail(Response.Fail fromDownstream, int iteration) {
-        LOG.trace("{}: Receiving EFailed: {}, therefore is SATISFIED", name(), fromDownstream);
+        LOG.trace("{}: Receiving Failed: {}, therefore is SATISFIED", name(), fromDownstream);
+        if (isTerminated()) return;
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);

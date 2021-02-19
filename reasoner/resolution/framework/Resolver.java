@@ -56,6 +56,7 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
     protected final TraversalEngine traversalEngine;
     protected final ConceptManager conceptMgr;
     private final boolean explanations;
+    private boolean terminated;
 
     protected Resolver(Actor<T> self, String name, ResolverRegistry registry, TraversalEngine traversalEngine,
                        ConceptManager conceptMgr, boolean explanations) {
@@ -65,6 +66,7 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
         this.traversalEngine = traversalEngine;
         this.conceptMgr = conceptMgr;
         this.explanations = explanations;
+        this.terminated = false;
         this.requestRouter = new HashMap<>();
         // Note: initialising downstream actors in constructor will create all actors ahead of time, so it is non-lazy
         // additionally, it can cause deadlock within ResolverRegistry as different threads initialise actors
@@ -80,8 +82,7 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
             }
         }
         LOG.error("Actor exception: {}", e.getMessage());
-        // TODO, once integrated into the larger flow of executing queries, kill the resolvers and report and exception to root
-        // TODO we should really be cooperatively killing resolvers, rather than forcibly from lower down
+        registry.terminateResolvers(e);
     }
 
     public String name() {
@@ -95,6 +96,12 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
     protected abstract void receiveAnswer(Response.Answer fromDownstream, int iteration);
 
     protected abstract void receiveFail(Response.Fail fromDownstream, int iteration);
+
+    public void terminate(Throwable cause) {
+        this.terminated = true;
+    }
+
+    public boolean isTerminated() { return terminated; }
 
     protected abstract void initialiseDownstreamResolvers();
 

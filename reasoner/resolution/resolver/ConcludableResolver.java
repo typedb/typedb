@@ -18,6 +18,7 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
+import grakn.core.common.exception.GraknCheckedException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
@@ -44,6 +45,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+
+import static grakn.core.common.exception.ErrorMessage.Reasoner.RESOLUTION_TERMINATED;
 
 public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
@@ -74,8 +77,8 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     @Override
     public void receiveRequest(Request fromUpstream, int iteration) {
         LOG.trace("{}: received Request: {}", name(), fromUpstream);
-
         if (!isInitialised) initialiseDownstreamResolvers();
+        if (isTerminated()) return;
 
         ResponseProducer responseProducer = mayUpdateAndGetResponseProducer(fromUpstream, iteration);
         if (iteration < responseProducer.iteration()) {
@@ -90,6 +93,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     @Override
     protected void receiveAnswer(Answer fromDownstream, int iteration) {
         LOG.trace("{}: received Answer: {}", name(), fromDownstream);
+        if (isTerminated()) return;
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
@@ -112,6 +116,8 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     @Override
     protected void receiveFail(Response.Fail fromDownstream, int iteration) {
         LOG.trace("{}: received Fail: {}", name(), fromDownstream);
+        if (isTerminated()) return;
+
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
         ResponseProducer responseProducer = responseProducers.get(fromUpstream);
@@ -127,15 +133,28 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     }
 
     @Override
+    public void terminate(Throwable cause) {
+        super.terminate(cause);
+        responseProducers.clear();
+        recursionStates.clear();
+    }
+
+    @Override
     protected void initialiseDownstreamResolvers() {
         LOG.debug("{}: initialising downstream resolvers", name());
         concludable.getApplicableRules(conceptMgr, logicMgr).forEachRemaining(rule -> concludable.getUnifiers(rule)
                 .forEachRemaining(unifier -> {
-                    Actor<ConclusionResolver> conclusionResolver = registry.registerConclusion(rule.conclusion());
-                    applicableRules.putIfAbsent(conclusionResolver, new HashSet<>());
-                    applicableRules.get(conclusionResolver).add(unifier);
+                    if (isTerminated()) return;
+                    Actor<ConclusionResolver> conclusionResolver = null;
+                    try {
+                        conclusionResolver = registry.registerConclusion(rule.conclusion());
+                        applicableRules.putIfAbsent(conclusionResolver, new HashSet<>());
+                        applicableRules.get(conclusionResolver).add(unifier);
+                    } catch (GraknCheckedException e) {
+                        terminate(e);
+                    }
                 }));
-        isInitialised = true;
+        if (!isTerminated()) isInitialised = true;
     }
 
     @Override

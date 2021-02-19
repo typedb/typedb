@@ -18,6 +18,7 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
+import grakn.core.common.exception.GraknCheckedException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concurrent.actor.Actor;
@@ -95,8 +96,8 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     @Override
     public void receiveRequest(Request fromUpstream, int iteration) {
         LOG.trace("{}: received Request: {}", name(), fromUpstream);
-
         if (!isInitialised) initialiseDownstreamResolvers();
+        if (isTerminated()) return;
 
         ResponseProducer responseProducer = mayUpdateAndGetResponseProducer(fromUpstream, iteration);
         if (iteration < responseProducer.iteration()) {
@@ -111,6 +112,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
         LOG.trace("{}: received Answer: {}", name(), fromDownstream);
+        if (isTerminated()) return;
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
@@ -149,6 +151,8 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     @Override
     protected void receiveFail(Response.Fail fromDownstream, int iteration) {
         LOG.trace("{}: Receiving Exhausted: {}", name(), fromDownstream);
+        if (isTerminated()) return;
+
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
         ResponseProducer responseProducer = responseProducers.get(fromUpstream);
@@ -171,14 +175,23 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         Set<grakn.core.logic.resolvable.Retrievable> retrievables = grakn.core.logic.resolvable.Retrievable.extractFrom(conjunction, concludables);
         resolvables.addAll(concludables);
         resolvables.addAll(retrievables);
-        iterate(resolvables).forEachRemaining(resolvable -> downstreamResolvers.put(resolvable,
-                                                                                    registry.registerResolvable(resolvable)));
+        iterate(resolvables).forEachRemaining(resolvable -> {
+            try {
+                downstreamResolvers.put(resolvable, registry.registerResolvable(resolvable));
+            } catch (GraknCheckedException e) {
+                terminate(e);
+            }
+        });
         for (Negation negation : conjunction.negations()) {
             Negated negated = new Negated(negation);
-            downstreamResolvers.put(negated, registry.negated(negated, conjunction));
-            negateds.add(negated);
+            try {
+                downstreamResolvers.put(negated, registry.negated(negated, conjunction));
+                negateds.add(negated);
+            } catch (GraknCheckedException e) {
+                terminate(e);
+            }
         }
-        isInitialised = true;
+        if (!isTerminated()) isInitialised = true;
     }
 
     private ResponseProducer mayUpdateAndGetResponseProducer(Request fromUpstream, int iteration) {
