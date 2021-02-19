@@ -46,7 +46,7 @@ import static grakn.core.concurrent.common.Executors.asyncPool2;
 public class RetrievableResolver extends Resolver<RetrievableResolver> {
 
     private static final int PREFETCH_SIZE = 32;
-    private static final int REFETCH_WHEN_REMAINING = PREFETCH_SIZE / 4;
+    private static final int REFETCH_THRESHOLD = PREFETCH_SIZE / 4;
 
     private static final Logger LOG = LoggerFactory.getLogger(RetrievableResolver.class);
     private final Retrievable retrievable;
@@ -227,7 +227,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
 
         private void mayFetch() {
             // when buffered answers is mostly empty, trigger more processing
-            if (!traversalDone && fetched.size() + processing < REFETCH_WHEN_REMAINING) {
+            if (!traversalDone && fetched.size() + processing < REFETCH_THRESHOLD) {
                 int toFetch = PREFETCH_SIZE - fetched.size() - processing;
                 this.traversalUpstreamAnswers.produce(new Queue(request), toFetch, asyncPool2());
                 processing += toFetch;
