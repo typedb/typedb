@@ -65,18 +65,18 @@ public final class RocksIterator<T> extends AbstractResourceIterator<T> implemen
             case EMPTY:
                 return fetchAndCheck();
             case INIT:
-                return initialiseAndFetch();
+                return initialiseAndCheck();
             default: // This should never be reached
                 return false;
         }
     }
 
-    private synchronized boolean initialiseAndFetch() {
+    private synchronized boolean initialiseAndCheck() {
         if (state != State.COMPLETED) {
             this.internalRocksIterator = storage.getInternalRocksIterator();
             this.internalRocksIterator.seek(prefix);
             state = State.EMPTY;
-            return mayConstructNext();
+            return hasValidNext();
         } else {
             return false;
         }
@@ -85,13 +85,13 @@ public final class RocksIterator<T> extends AbstractResourceIterator<T> implemen
     private synchronized boolean fetchAndCheck() {
         if (state != State.COMPLETED) {
             internalRocksIterator.next();
-            return mayConstructNext();
+            return hasValidNext();
         } else {
             return false;
         }
     }
 
-    private synchronized boolean mayConstructNext() {
+    private synchronized boolean hasValidNext() {
         byte[] key;
         if (!internalRocksIterator.isValid() || !bytesHavePrefix(key = internalRocksIterator.key(), prefix)) {
             recycle();
