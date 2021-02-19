@@ -170,12 +170,6 @@ public class NegationResolver extends Resolver<NegationResolver> {
         throw GraknException.of(ILLEGAL_STATE);
     }
 
-    @Override
-    protected void exception(Throwable e) {
-        LOG.error("Actor exception", e);
-        // TODO, once integrated into the larger flow of executing queries, kill the resolvers and report and exception to root
-    }
-
     private static class NegationResponse {
 
         List<Awaiting> awaiting;

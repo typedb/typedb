@@ -249,6 +249,7 @@ public abstract class RocksStorage implements Storage {
             if (!isOpen()) throw GraknException.of(TRANSACTION_CLOSED);
             RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
             iterators.add(iterator);
+            if (!isOpen()) throw GraknException.of(TRANSACTION_CLOSED); //guard against close() race conditions
             return iterator;
         }
 

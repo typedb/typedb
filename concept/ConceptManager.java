@@ -60,7 +60,7 @@ import static grakn.core.graph.common.Encoding.Vertex.Thing.ROLE;
 
 public final class ConceptManager {
 
-    private static final int PARALLELISATION_SPLIT_MINIMUM = 16;
+    private static final int PARALLELISATION_SPLIT_MINIMUM = 128;
 
     private final GraphManager graphMgr;
 

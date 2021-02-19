@@ -242,7 +242,9 @@ public class SchemaGraph implements Graph {
     }
 
     public TypeVertex convert(VertexIID.Type iid) {
-        return typesByIID.computeIfAbsent(iid, i -> {
+        TypeVertex typeVertex = typesByIID.get(iid);
+        if (typeVertex != null) return typeVertex;
+        else return typesByIID.computeIfAbsent(iid, i -> {
             TypeVertex vertex = new TypeVertexImpl.Persisted(this, i);
             typesByLabel.putIfAbsent(vertex.scopedLabel(), vertex);
             return vertex;
@@ -417,7 +419,9 @@ public class SchemaGraph implements Graph {
         }
 
         public RuleStructure convert(StructureIID.Rule iid) {
-            return rulesByIID.computeIfAbsent(iid, i -> {
+            RuleStructure ruleStructure = rulesByIID.get(iid);
+            if (ruleStructure != null) return ruleStructure;
+            else return rulesByIID.computeIfAbsent(iid, i -> {
                 RuleStructure structure = new RuleStructureImpl.Persisted(SchemaGraph.this, i);
                 rulesByLabel.putIfAbsent(structure.label(), structure);
                 return structure;

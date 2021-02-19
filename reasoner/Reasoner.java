@@ -82,14 +82,15 @@ public class Reasoner {
         return resolverRegistry;
     }
 
-    public ResourceIterator<ConceptMap> execute(Disjunction disjunction, GraqlMatch.Modifiers modifiers,
-                                                Context.Query context) {
-
+    public ResourceIterator<ConceptMap> execute(Disjunction disjunction, GraqlMatch.Modifiers modifiers, Context.Query context) {
         resolveTypes(disjunction, list());
-        Set<Identifier.Variable.Name> filter = iterate(modifiers.filter())
-                .map(v -> Identifier.Variable.of(v.reference().asName())).toSet();
+        Set<Identifier.Variable.Name> filter = iterate(modifiers.filter()).map(
+                v -> Identifier.Variable.of(v.reference().asName())
+        ).toSet();
         disjunction.conjunctions().forEach(conj -> {
-            if (!conj.isSatisfiable() && !isSchemaQuery(conj, filter)) throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conj);
+            if (!conj.isSatisfiable() && !isSchemaQuery(conj, filter)) {
+                throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conj);
+            }
         });
 
         if (isInfer(disjunction, context)) return resolve(disjunction, modifiers, context);

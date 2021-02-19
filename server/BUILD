@@ -133,11 +133,8 @@ java_deps(
     name = "server-deps-mac",
     target = ":server-bin-mac",
     java_deps_root = "server/lib/common/",
-#    java_deps_root_overrides = {
-#        "rocksdbjni-dev-*": "server/lib/dev/",
-#    },
     java_deps_root_overrides = {
-        "rocksdbjni-*": "server/lib/prod/",
+        "rocksdbjni-dev-*": "server/lib/dev/",
     },
     visibility = ["//:__pkg__"],
     maven_name = True,
@@ -150,9 +147,6 @@ java_deps(
 #    java_deps_root_overrides = {
 #        "rocksdbjni-dev-*": "server/lib/dev/",
 #    },
-    java_deps_root_overrides = {
-        "rocksdbjni-*": "server/lib/prod/",
-    },
     visibility = ["//:__pkg__"],
     maven_name = True,
 )
@@ -164,34 +158,20 @@ java_deps(
 #    java_deps_root_overrides = {
 #        "rocksdbjni-dev-*": "server/lib/dev/",
 #    },
-    java_deps_root_overrides = {
-        "rocksdbjni-*": "server/lib/prod/",
-    },
     visibility = ["//:__pkg__"],
     maven_name = True,
 )
 
 java_deps(
-    name = "server-deps-dev",
-    target = "@maven//:org_rocksdb_rocksdbjni_dev",
-    java_deps_root = "server/lib/dev/",
+    name = "server-deps-prod",
+    target = "@maven//:org_rocksdb_rocksdbjni",
+    java_deps_root = "server/lib/prod/",
     visibility = ["//:__pkg__"],
     maven_name = True,
 )
 
-# TODO: Once we have a cross-platform rocksdbjni-dev build, make rocksdbjni-dev the default version that we use
-#       (by uncommenting server-deps-prod and deleting server-deps-dev)
-#java_deps(
-#    name = "server-deps-prod",
-#    target = "@maven//:org_rocksdb_rocksdbjni",
-#    java_deps_root = "server/lib/prod/",
-#    visibility = ["//:__pkg__"],
-#    maven_name = True,
-#)
-
 assemble_deps_common = [
-    ":server-deps-dev",
-#    ":server-deps-prod",
+    ":server-deps-prod",
 ]
 
 assemble_files = {
@@ -210,7 +190,7 @@ permissions = {
 
 assemble_targz(
     name = "assemble-linux-targz",
-    targets = assemble_deps_common + ["server-deps-linux", "@graknlabs_common//binary:assemble-bash-targz"],
+    targets = ["server-deps-linux", "@graknlabs_common//binary:assemble-bash-targz"],
     additional_files = assemble_files,
     permissions = permissions,
     output_filename = "grakn-core-server-linux",
@@ -228,7 +208,7 @@ assemble_zip(
 
 assemble_zip(
     name = "assemble-windows-zip",
-    targets = assemble_deps_common + ["server-deps-windows", "@graknlabs_common//binary:assemble-bat-targz"],
+    targets = ["server-deps-windows", "@graknlabs_common//binary:assemble-bat-targz"],
     additional_files = assemble_files,
     permissions = permissions,
     output_filename = "grakn-core-server-windows",
@@ -272,7 +252,7 @@ assemble_apt(
       "grakn-bin (=%{@graknlabs_common})"
     ],
     workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
-    archives = [":server-deps-dev", ":server-deps-linux"],
+    archives = [":server-deps-linux"],
     installation_dir = "/opt/grakn/core/",
     files = assemble_files,
     empty_dirs = [

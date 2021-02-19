@@ -295,10 +295,5 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
             return Optional.of(fromDownstream.asFiltered().toUpstream(self()));
         }
 
-        @Override
-        protected void exception(Throwable e) {
-            LOG.error("Actor exception", e);
-            // TODO, once integrated into the larger flow of executing queries, kill the resolvers and report and exception to root
-        }
     }
 }

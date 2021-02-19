@@ -29,6 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
+import static java.util.concurrent.Executors.newFixedThreadPool;
 
 public class Executors {
 
@@ -53,14 +54,13 @@ public class Executors {
     private final ScheduledThreadPoolExecutor scheduledThreadPool;
 
     private Executors(int parallelisation) {
-        mainPool = java.util.concurrent.Executors.newFixedThreadPool(parallelisation, new NamedThreadFactory(GRAKN_CORE_MAIN_POOL_NAME));
-        asyncPool1 = java.util.concurrent.Executors.newFixedThreadPool(parallelisation, new NamedThreadFactory(GRAKN_CORE_ASYNC_POOL_1_NAME));
-        asyncPool2 = java.util.concurrent.Executors.newFixedThreadPool(parallelisation, new NamedThreadFactory(GRAKN_CORE_ASYNC_POOL_2_NAME));
-        eventLoopPool = new EventLoopGroup(parallelisation, new NamedThreadFactory(GRAKN_CORE_EVENTLOOP_POOL_NAME));
+        mainPool = newFixedThreadPool(parallelisation, NamedThreadFactory.create(GRAKN_CORE_MAIN_POOL_NAME));
+        asyncPool1 = newFixedThreadPool(parallelisation, NamedThreadFactory.create(GRAKN_CORE_ASYNC_POOL_1_NAME));
+        asyncPool2 = newFixedThreadPool(parallelisation, NamedThreadFactory.create(GRAKN_CORE_ASYNC_POOL_2_NAME));
+        eventLoopPool = new EventLoopGroup(parallelisation, NamedThreadFactory.create(GRAKN_CORE_EVENTLOOP_POOL_NAME));
         networkPool = new NioEventLoopGroup(parallelisation, NamedThreadFactory.create(GRAKN_CORE_NETWORK_POOL_NAME));
-        scheduledThreadPool = new ScheduledThreadPoolExecutor(
-                GRAKN_CORE_SCHEDULED_POOL_SIZE, new NamedThreadFactory(GRAKN_CORE_SCHEDULED_POOL_NAME)
-        );
+        scheduledThreadPool = new ScheduledThreadPoolExecutor(GRAKN_CORE_SCHEDULED_POOL_SIZE,
+                                                              NamedThreadFactory.create(GRAKN_CORE_SCHEDULED_POOL_NAME));
         scheduledThreadPool.setRemoveOnCancelPolicy(true);
     }
 

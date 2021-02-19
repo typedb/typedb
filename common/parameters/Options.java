@@ -32,8 +32,8 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     public static final int DEFAULT_RESPONSE_BATCH_SIZE = 50;
     public static final int DEFAULT_SESSION_IDLE_TIMEOUT_MILLIS = 10_000;
     public static final int DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS = 10_000;
-    public static final boolean DEFAULT_INFERENCE = false;
-    public static final boolean DEFAULT_TRACE_INFERENCE = false;
+    public static final boolean DEFAULT_INFER = false;
+    public static final boolean DEFAULT_TRACE_INFERENCE = true;
     public static final boolean DEFAULT_EXPLAIN = false;
     public static final boolean DEFAULT_PARALLEL = true;
     public static final boolean DEFAULT_QUERY_READ_PREFETCH = true;
@@ -64,7 +64,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     public boolean infer() {
         if (infer != null) return infer;
         else if (parent != null) return parent.infer();
-        else return DEFAULT_INFERENCE;
+        else return DEFAULT_INFER;
     }
 
     public SELF infer(boolean infer) {
