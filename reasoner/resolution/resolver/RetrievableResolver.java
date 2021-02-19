@@ -69,7 +69,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
             failToUpstream(fromUpstream, iteration);
         } else {
             assert iteration == responses.iteration();
-            responses.nextAnswer(fromUpstream);
+            responses.nextAnswer();
         }
     }
 
@@ -88,7 +88,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         throw GraknException.of(ILLEGAL_STATE);
     }
 
-    Responses createReponses(Request fromUpstream, int iteration) {
+    Responses createResponses(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new Responses for request: {}", name(), fromUpstream);
         assert fromUpstream.partialAnswer().isMapped();
 
@@ -96,7 +96,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         Producer<Partial<?>> upstreamAnswersAsync = traversalAsync
                 .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap, self()));
 
-        return new Responses(upstreamAnswersAsync, iteration);
+        return new Responses(fromUpstream, upstreamAnswersAsync, iteration);
     }
 
     Responses reiterateResponses(Request fromUpstream, Responses responsesPrevious, int newIteration) {
@@ -110,7 +110,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         Producer<Partial<?>> upstreamAnswersAsync = traversalAsync
                 .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap, self()));
 
-        return new Responses(upstreamAnswersAsync, newIteration);
+        return new Responses(fromUpstream, upstreamAnswersAsync, newIteration);
     }
 
     /*
@@ -128,7 +128,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
 
     private Responses mayUpdateAndGetResponses(Request fromUpstream, int iteration) {
         if (!responses.containsKey(fromUpstream)) {
-            responses.put(fromUpstream, createReponses(fromUpstream, iteration));
+            responses.put(fromUpstream, createResponses(fromUpstream, iteration));
         } else {
             Responses responses = this.responses.get(fromUpstream);
             assert iteration <= responses.iteration() + 1;
@@ -144,10 +144,12 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
 
     public void receiveTraversalAnswer(Partial<?> upstreamAnswer, Request fromUpstreamSource) {
         Responses responses = this.responses.get(fromUpstreamSource);
-        responses.addFetched(upstreamAnswer);
+        responses.decrementProcessing();
         if (responses.hasAwaitingRequest()) {
-            dispatchAnswer(responses.popFetched(), fromUpstreamSource);
-            responses.mayFetch(fromUpstreamSource);
+            dispatchAnswer(upstreamAnswer, responses.popAwaitingRequest());
+            responses.mayFetch();
+        } else {
+            responses.addFetched(upstreamAnswer);
         }
     }
 
@@ -170,6 +172,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
 
     private class Responses {
 
+        private final Request request;
         private final int iteration;
         private final Producer<Partial<?>> traversalUpstreamAnswers;
         private final List<Partial<?>> fetched;
@@ -177,7 +180,8 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         private int processing;
         private boolean traversalDone;
 
-        public Responses(Producer<Partial<?>> traversalUpstreamAnswers, int iteration) {
+        public Responses(Request request, Producer<Partial<?>> traversalUpstreamAnswers, int iteration) {
+            this.request = request;
             this.traversalUpstreamAnswers = traversalUpstreamAnswers;
             this.iteration = iteration;
             this.fetched = new LinkedList<>();
@@ -192,10 +196,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
 
         public void setTraversalDone() {
             this.traversalDone = true;
-        }
-
-        public boolean hasFetched() {
-            return !fetched.isEmpty();
+            this.processing = 0;
         }
 
         public boolean hasAwaitingRequest() {
@@ -206,37 +207,43 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
             return awaitingAnswers.remove(0);
         }
 
+        public boolean hasFetched() {
+            return !fetched.isEmpty();
+        }
+
         public void addFetched(Partial<?> upstreamAnswer) {
             fetched.add(upstreamAnswer);
         }
 
-        public Partial<?> popFetched() {
-            return fetched.remove(0);
+        public void nextAnswer() {
+            if (traversalDone && fetched.isEmpty()) {
+                dispatchFail(request);
+            } else {
+                if (!fetched.isEmpty()) dispatchAnswer(fetched.remove(0), request);
+                else awaitingAnswers.add(request);
+                mayFetch();
+            }
         }
 
-        public void nextAnswer(Request fromUpstream) {
-            if (traversalDone && fetched.isEmpty()) {
-                dispatchFail(fromUpstream);
-            } else {
-                if (!fetched.isEmpty()) dispatchAnswer(fetched.remove(0), fromUpstream);
-                else awaitingAnswers.add(fromUpstream);
-                mayFetch(fromUpstream);
+        private void mayFetch() {
+            // when buffered answers is mostly empty, trigger more processing
+            if (!traversalDone && fetched.size() + processing < REFETCH_WHEN_REMAINING) {
+                int toFetch = PREFETCH_SIZE - fetched.size() - processing;
+                this.traversalUpstreamAnswers.produce(new Queue(request), toFetch, asyncPool2());
+                processing += toFetch;
             }
+        }
+
+        public void decrementProcessing() {
+            processing--;
         }
 
         public void finished() {
             while (hasAwaitingRequest()) {
                 dispatchFail(popAwaitingRequest());
             }
+            assert traversalDone && awaitingAnswers.isEmpty() && fetched.isEmpty();
         }
-
-        private void mayFetch(Request fromUpstream) {
-            // when buffered answers is mostly empty, trigger more processing
-            if (!traversalDone && fetched.size() + processing < REFETCH_WHEN_REMAINING) {
-                this.traversalUpstreamAnswers.produce(new Queue(fromUpstream), PREFETCH_SIZE - fetched.size() - processing, asyncPool2());
-            }
-        }
-
 
         class Queue implements Producer.Queue<Partial<?>> {
 
