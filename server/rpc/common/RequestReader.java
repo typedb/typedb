@@ -26,12 +26,16 @@ import static grakn.protocol.OptionsProto.Options.InferOptCase.INFER;
 import static grakn.protocol.OptionsProto.Options.PrefetchOptCase.PREFETCH;
 import static grakn.protocol.OptionsProto.Options.SchemaLockAcquireTimeoutOptCase.SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS;
 import static grakn.protocol.OptionsProto.Options.SessionIdleTimeoutOptCase.SESSION_IDLE_TIMEOUT_MILLIS;
+import static grakn.protocol.OptionsProto.Options.TraceInferenceOptCase.TRACE_INFERENCE;
 
 public class RequestReader {
 
     public static <T extends Options<?, ?>> T setDefaultOptions(T options, OptionsProto.Options request) {
         if (request.getInferOptCase().equals(INFER)) {
             options.infer(request.getInfer());
+        }
+        if (request.getTraceInferenceOptCase().equals(TRACE_INFERENCE)) {
+            options.traceInference(request.getTraceInference());
         }
         if (request.getExplainOptCase().equals(EXPLAIN)) {
             options.explain(request.getExplain());

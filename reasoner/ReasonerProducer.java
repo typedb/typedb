@@ -17,6 +17,7 @@
 
 package grakn.core.reasoner;
 
+import grakn.core.common.parameters.Options;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.common.Executors;
@@ -27,6 +28,7 @@ import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Identity;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.framework.Request;
+import grakn.core.reasoner.resolution.framework.ResolutionTracer;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.variable.UnboundVariable;
@@ -47,8 +49,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerProducer.class);
 
-    private static final int COMPUTE_SIZE = Executors.PARALLELISATION_FACTOR * 2;
-
+    private final int computeSize;
     private final Actor<? extends Resolver<?>> rootResolver;
     private final AtomicInteger required;
     private final AtomicInteger processing;
@@ -58,12 +59,17 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private boolean requiredReiteration;
     private boolean done;
     private int iteration;
+    private final Options.Query options;
 
-    public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers) {
-        assert COMPUTE_SIZE > 0;
+    public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers,
+                            Options.Query options) {
+        if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
         this.rootResolver = resolverRegistry.rootConjunction(conjunction, modifiers.offset().orElse(null),
                                                              modifiers.limit().orElse(null), this::requestAnswered, this::requestFailed);
         Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver).toDownstream();
+        this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
+        assert computeSize > 0;
+        this.options = options;
         this.resolveRequest = Request.create(rootResolver, downstream);
         this.queue = null;
         this.iteration = 0;
@@ -72,10 +78,15 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.processing = new AtomicInteger();
     }
 
-    public ReasonerProducer(Disjunction disjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers) {
+    public ReasonerProducer(Disjunction disjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers,
+                            Options.Query options) {
+        if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
+        this.options = options;
         this.rootResolver = resolverRegistry.rootDisjunction(disjunction, modifiers.offset().orElse(null),
                                                              modifiers.limit().orElse(null), this::requestAnswered, this::requestFailed);
         Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver).toDownstream();
+        this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
+        assert computeSize > 0;
         this.resolveRequest = Request.create(rootResolver, downstream);
         this.queue = null;
         this.iteration = 0;
@@ -90,7 +101,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.queue = queue;
 
         this.required.addAndGet(request);
-        int canRequest = COMPUTE_SIZE - processing.get();
+        int canRequest = computeSize - processing.get();
         int toRequest = Math.min(canRequest, request);
         for (int i = 0; i < toRequest; i++) {
             requestAnswer();
@@ -106,6 +117,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     private void requestAnswered(Top resolutionAnswer) {
+        if (options.traceInference()) ResolutionTracer.get().finish();
         if (resolutionAnswer.requiresReiteration()) requiredReiteration = true;
         queue.put(resolutionAnswer.conceptMap());
         if (required.decrementAndGet() > 0) requestAnswer();
@@ -114,7 +126,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private void requestFailed(int iteration) {
         LOG.trace("Failed to find answer to request in iteration: " + iteration);
-
+        if (options.traceInference()) ResolutionTracer.get().finish();
         if (!done && iteration == this.iteration && !mustReiterate()) {
             // query is completely terminated
             done = true;
@@ -154,6 +166,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     private void requestAnswer() {
+        if (options.traceInference()) ResolutionTracer.get().start();
         rootResolver.tell(actor -> actor.receiveRequest(resolveRequest, iteration));
     }
 }

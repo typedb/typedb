@@ -19,6 +19,7 @@
 package grakn.core.test.behaviour.connection;
 
 import grakn.core.Grakn;
+import grakn.core.common.parameters.Options;
 import grakn.core.rocks.RocksDatabase;
 import grakn.core.rocks.RocksGrakn;
 import io.cucumber.java.After;
@@ -50,7 +51,9 @@ public class ConnectionSteps {
     public static ExecutorService threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 
     public static RocksGrakn grakn;
-    public static Path directory = Paths.get(System.getProperty("user.dir")).resolve("grakn");
+    public static Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("grakn");
+    public static Path logsDir = dataDir.resolve("logs");
+    public static Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logsDir);
     public static List<Grakn.Session> sessions = new ArrayList<>();
     public static List<CompletableFuture<Grakn.Session>> sessionsParallel = new ArrayList<>();
     public static Map<Grakn.Session, List<Grakn.Transaction>> sessionsToTransactions = new HashMap<>();
@@ -79,7 +82,7 @@ public class ConnectionSteps {
         assertNull(grakn);
         resetDirectory();
         System.out.println("Connecting to Grakn ...");
-        grakn = RocksGrakn.open(directory);
+        grakn = RocksGrakn.open(options);
     }
 
     @After
@@ -106,13 +109,13 @@ public class ConnectionSteps {
     }
 
     private static void resetDirectory() throws IOException {
-        if (Files.exists(directory)) {
+        if (Files.exists(dataDir)) {
             System.out.println("Database directory exists!");
-            Files.walk(directory).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+            Files.walk(dataDir).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
             System.out.println("Database directory deleted!");
         }
 
-        Files.createDirectory(directory);
-        System.out.println("Database Directory created: " + directory.toString());
+        Files.createDirectory(dataDir);
+        System.out.println("Database Directory created: " + dataDir.toString());
     }
 }

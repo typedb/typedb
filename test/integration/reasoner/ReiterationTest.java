@@ -28,6 +28,7 @@ import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Identity;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.framework.Request;
+import grakn.core.reasoner.resolution.framework.ResolutionTracer;
 import grakn.core.reasoner.resolution.resolver.Root;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
@@ -45,24 +46,28 @@ import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.common.parameters.Options.Database;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static junit.framework.TestCase.fail;
 
 public class ReiterationTest {
 
-    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("resolution-test");
-    private static String database = "resolution-test";
+    private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("resolution-test");
+    private static final Path logDir = dataDir.resolve("logs");
+    private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
+    private static final String database = "resolution-test";
     private static RocksGrakn grakn;
 
     @Before
     public void setUp() throws IOException {
-        Util.resetDirectory(directory);
-        grakn = RocksGrakn.open(directory);
+        Util.resetDirectory(dataDir);
+        grakn = RocksGrakn.open(options);
         grakn.databases().create(database);
+        ResolutionTracer.initialise(logDir);
     }
 
     @After
@@ -120,6 +125,7 @@ public class ReiterationTest {
                 int[] doneInIteration = {0};
                 boolean[] receivedInferredAnswer = {false};
 
+                ResolutionTracer.get().start();
                 Actor<Root.Conjunction> root = registry.rootConjunction(conjunction, null, null, answer -> {
                     if (answer.requiresReiteration()) receivedInferredAnswer[0] = true;
                     responses.add(answer);
@@ -133,18 +139,24 @@ public class ReiterationTest {
                 // iteration 0
                 sendRootRequest(root, filter, iteration[0]);
                 answers.add(responses.take());
+                ResolutionTracer.get().finish();
+
+                ResolutionTracer.get().start();
                 sendRootRequest(root, filter, iteration[0]);
                 failed.take(); // Block and wait for an failed message
+                ResolutionTracer.get().finish();
                 assertTrue(receivedInferredAnswer[0]);
                 assertEquals(1, doneInIteration[0]);
 
                 // iteration 1 onwards
                 for (int j = 0; j <= 100; j++) {
+                    ResolutionTracer.get().start();
                     sendRootRequest(root, filter, iteration[0]);
-                    Top re = responses.poll(100, TimeUnit.MILLISECONDS);
+                    Top re = responses.poll(100, MILLISECONDS);
                     if (re == null) {
-                        Integer ex = failed.poll(100, TimeUnit.MILLISECONDS);
+                        Integer ex = failed.poll(100, MILLISECONDS);
                         if (ex == null) {
+                            ResolutionTracer.get().finish();
                             fail();
                         }
                         // Reset the iteration
@@ -152,6 +164,7 @@ public class ReiterationTest {
                         receivedInferredAnswer[0] = false;
                         doneInIteration[0] = 0;
                     }
+                    ResolutionTracer.get().finish();
                 }
             }
         }

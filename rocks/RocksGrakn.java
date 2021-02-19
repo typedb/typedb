@@ -80,10 +80,6 @@ public class RocksGrakn implements Grakn {
         return rocksDBTableOptions;
     }
 
-    public static RocksGrakn open(Path directory) {
-        return open(new Options.Database().dataDir(directory), new RocksFactory());
-    }
-
     public static RocksGrakn open(Path directory, Factory graknFactory) {
         return open(new Options.Database().dataDir(directory), graknFactory);
     }

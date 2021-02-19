@@ -21,6 +21,7 @@ package grakn.core.server.migrator;
 import com.google.protobuf.Parser;
 import grakn.core.Grakn;
 import grakn.core.common.parameters.Arguments;
+import grakn.core.common.parameters.Options.Database;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.server.migrator.proto.DataProto;
 import grakn.core.test.integration.util.Util;
@@ -42,7 +43,9 @@ import static org.junit.Assert.fail;
 
 public class MigratorTest {
 
-    private static final Path directory = Paths.get(System.getProperty("user.dir")).resolve("migrator-test");
+    private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("migrator-test");
+    private static final Path logDir = dataDir.resolve("logs");
+    private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
     private static final String database = "grabl";
     private static final Path schemaPath = Paths.get("test/integration/migrator/schema.gql");
     private final Path dataPath = Paths.get("test/integration/migrator/data.grakn");
@@ -50,8 +53,8 @@ public class MigratorTest {
 
     @Test
     public void test_import_export_schema() throws IOException {
-        Util.resetDirectory(directory);
-        try (Grakn grakn = RocksGrakn.open(directory)) {
+        Util.resetDirectory(dataDir);
+        try (Grakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             String savedSchema = new String(Files.readAllBytes(schemaPath), UTF_8);
             runSchema(grakn, savedSchema);
@@ -62,8 +65,8 @@ public class MigratorTest {
 
     @Test
     public void test_import_export_data() throws IOException {
-        Util.resetDirectory(directory);
-        try (Grakn grakn = RocksGrakn.open(directory)) {
+        Util.resetDirectory(dataDir);
+        try (Grakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             String schema = new String(Files.readAllBytes(schemaPath), UTF_8);
             runSchema(grakn, schema);

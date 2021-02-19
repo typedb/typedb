@@ -21,6 +21,7 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
+import grakn.core.common.parameters.Options.Database;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
@@ -64,7 +65,9 @@ import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertFalse;
 
 public class RuleTest {
-    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("rule-test");
+    private static Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("rule-test");
+    private static final Path logDir = dataDir.resolve("logs");
+    private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
     private static String database = "rule-test";
 
     private Variable getVariable(Set<Variable> vars, Identifier identifier) {
@@ -73,9 +76,9 @@ public class RuleTest {
 
     @Test
     public void rule_relation_materialises_when_missing() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+        try (RocksGrakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -124,9 +127,9 @@ public class RuleTest {
 
     @Test
     public void rule_relation_does_not_materialise_when_present() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+        try (RocksGrakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -179,9 +182,9 @@ public class RuleTest {
 
     @Test
     public void rule_has_variable_materialises_when_missing() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+        try (RocksGrakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -226,9 +229,9 @@ public class RuleTest {
 
     @Test
     public void rule_has_explicit_materialises_when_missing() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+        try (RocksGrakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -275,9 +278,9 @@ public class RuleTest {
 
     @Test
     public void rule_indexes_created_and_readable() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+        try (RocksGrakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -356,9 +359,9 @@ public class RuleTest {
 
     @Test
     public void rule_indexes_update_on_rule_delete() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+        try (RocksGrakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -434,9 +437,9 @@ public class RuleTest {
 
     @Test
     public void new_type_updates_rule_conclusion_index() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+        try (RocksGrakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -492,9 +495,9 @@ public class RuleTest {
 
     @Test
     public void rule_contains_indexes_prevent_undefining_contained_types() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+        try (RocksGrakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -539,9 +542,9 @@ public class RuleTest {
 
     @Test
     public void rule_contains_indexes_allow_deleting_type_after_deleting_rule() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+        try (RocksGrakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -641,9 +644,9 @@ public class RuleTest {
 
     @Test
     public void rule_that_cannot_be_satisfied_throws_an_error() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+        try (RocksGrakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -666,9 +669,9 @@ public class RuleTest {
 
     @Test
     public void rule_that_cannot_be_inserted_throws_an_error() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+        try (RocksGrakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {

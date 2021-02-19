@@ -24,6 +24,7 @@ import java.nio.file.Path;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_CANNOT_BE_TOGGLED_PER_QUERY;
 import static grakn.core.common.exception.ErrorMessage.Reasoner.REASONING_CANNOT_BE_TOGGLED_PER_QUERY;
 
 public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options<?, ?>> {
@@ -31,7 +32,8 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     public static final int DEFAULT_RESPONSE_BATCH_SIZE = 50;
     public static final int DEFAULT_SESSION_IDLE_TIMEOUT_MILLIS = 10_000;
     public static final int DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS = 10_000;
-    public static final boolean DEFAULT_INFER = true;
+    public static final boolean DEFAULT_INFER = false;
+    public static final boolean DEFAULT_TRACE_INFERENCE = false;
     public static final boolean DEFAULT_EXPLAIN = false;
     public static final boolean DEFAULT_PARALLEL = true;
     public static final boolean DEFAULT_QUERY_READ_PREFETCH = true;
@@ -40,6 +42,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
 
     private PARENT parent;
     private Boolean infer = null;
+    private Boolean traceInference = null;
     private Boolean explain = null;
     private Integer batchSize = null;
     private Integer sessionIdlTimeoutMillis = null;
@@ -66,6 +69,17 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
 
     public SELF infer(boolean infer) {
         this.infer = infer;
+        return getThis();
+    }
+
+    public boolean traceInference() {
+        if (traceInference != null) return traceInference;
+        else if (parent != null) return parent.traceInference();
+        else return DEFAULT_TRACE_INFERENCE;
+    }
+
+    public SELF traceInference(boolean traceInference) {
+        this.traceInference = traceInference;
         return getThis();
     }
 
@@ -213,6 +227,11 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         @Override
         public Query infer(boolean infer) {
             throw GraknException.of(REASONING_CANNOT_BE_TOGGLED_PER_QUERY);
+        }
+
+        @Override
+        public Query traceInference(boolean traceInference) {
+            throw GraknException.of(REASONER_TRACING_CANNOT_BE_TOGGLED_PER_QUERY);
         }
 
         public Query prefetch(boolean prefetch) {

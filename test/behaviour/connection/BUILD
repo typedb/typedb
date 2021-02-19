@@ -25,6 +25,9 @@ host_compatible_java_library(
         "ConnectionSteps.java",
     ],
     deps = [
+        # Internal dependencies
+        "//common",
+
         # External Maven Dependencies
         "@maven//:junit_junit",
         "@maven//:io_cucumber_cucumber_java",

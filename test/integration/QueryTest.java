@@ -20,6 +20,7 @@ package grakn.core.test.integration;
 
 import grakn.core.Grakn;
 import grakn.core.common.parameters.Arguments;
+import grakn.core.common.parameters.Options.Database;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.type.AttributeType;
@@ -48,15 +49,16 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class QueryTest {
-
-    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("query-test");
-    private static String database = "query-test";
+    private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("query-test");
+    private static final Path logDir = dataDir.resolve("logs");
+    private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
+    private static final String database = "query-test";
 
     @Test
     public void test_query_define() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (Grakn grakn = RocksGrakn.open(directory)) {
+        try (Grakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
 
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
@@ -119,9 +121,9 @@ public class QueryTest {
 
     @Test
     public void test_query_undefine() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (Grakn grakn = RocksGrakn.open(directory)) {
+        try (Grakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
 
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
@@ -202,9 +204,9 @@ public class QueryTest {
 
     @Test
     public void test_query_insert() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (Grakn grakn = RocksGrakn.open(directory)) {
+        try (Grakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
 
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {

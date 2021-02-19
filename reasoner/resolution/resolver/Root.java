@@ -68,9 +68,10 @@ public interface Root {
         public Conjunction(Actor<Conjunction> self, grakn.core.pattern.Conjunction conjunction,
                            @Nullable Long offset, @Nullable Long limit, Consumer<Top> onAnswer,
                            Consumer<Integer> onFail, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
-                           TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr, Planner planner, boolean explanations) {
+                           TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr, Planner planner,
+                           boolean resolutionTracing) {
             super(self, Conjunction.class.getSimpleName() + "(pattern:" + conjunction + ")", conjunction, resolutionRecorder,
-                  registry, traversalEngine, conceptMgr, logicMgr, planner, explanations);
+                  registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
             this.offset = offset;
             this.limit = limit;
             this.onAnswer = onAnswer;
@@ -82,7 +83,7 @@ public interface Root {
         @Override
         public void submitAnswer(Top answer) {
             LOG.debug("Submitting answer: {}", answer);
-            if (explanations()) {
+            if (answer.recordExplanations()) {
                 LOG.trace("Recording root answer: {}", answer);
                 resolutionRecorder.tell(state -> state.record(answer));
             }
@@ -179,8 +180,9 @@ public interface Root {
         public Disjunction(Actor<Disjunction> self, grakn.core.pattern.Disjunction disjunction,
                            @Nullable Long offset, @Nullable Long limit, Consumer<Top> onAnswer,
                            Consumer<Integer> onFail, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
-                           TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean explanations) {
-            super(self, Disjunction.class.getSimpleName() + "(pattern:" + disjunction + ")", registry, traversalEngine, conceptMgr, explanations);
+                           TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
+            super(self, Disjunction.class.getSimpleName() + "(pattern:" + disjunction + ")", registry, traversalEngine,
+                  conceptMgr, resolutionTracing);
             this.disjunction = disjunction;
             this.offset = offset;
             this.limit = limit;
@@ -194,7 +196,7 @@ public interface Root {
         @Override
         public void submitAnswer(Top answer) {
             LOG.debug("Submitting answer: {}", answer);
-            if (explanations()) {
+            if (answer.recordExplanations()) {
                 LOG.trace("Recording root answer: {}", answer);
                 resolutionRecorder.tell(state -> state.record(answer));
             }
