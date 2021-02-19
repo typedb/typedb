@@ -53,7 +53,7 @@ native_java_libraries(
     mac_deps = [
         "@maven//:com_google_ortools_ortools_darwin",
         "@maven//:com_google_ortools_ortools_darwin_java",
-        "@maven//:org_rocksdb_rocksdbjni_dev_mac",
+        "@maven//:org_rocksdb_rocksdbjni_dev",
     ],
     linux_deps = [
         "@maven//:com_google_ortools_ortools_linux_x86_64",
