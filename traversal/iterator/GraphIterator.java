@@ -106,8 +106,8 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
         } catch (Throwable e) {
             // note: catching runtime exception until we can gracefully interrupt running queries on tx close
             if (e instanceof GraknException && ((GraknException) e).code().isPresent()) {
-                String code = ((GraknException) e).code().get();
-                if (code.equals(TRANSACTION_CLOSED.code()) || code.equals(RESOURCE_CLOSED.code())) {
+                String code = ((GraknException)e).code().get();
+                if (code.equals(TRANSACTION_CLOSED.code()) || code.equals(RESOURCE_CLOSED.code())){
                     LOG.debug("Transaction was closed during graph iteration");
                 }
             } else {

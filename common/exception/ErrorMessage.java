@@ -510,12 +510,14 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Reasoner(1, "Reasoning cannot be enabled/disabled per query. Try using Transaction options instead.");
         public static final Reasoner REVERSE_UNIFICATION_MISSING_CONCEPT =
                 new Reasoner(2, "Reverse unification failed because a concept for identifier '%s' was not found in the provided map '%s'.");
+        public static final Reasoner RESOLUTION_TERMINATED =
+                new Reasoner(3, "Resolution is terminated.");
         public static final Reasoner REASONER_TRACING_CANNOT_BE_TOGGLED_PER_QUERY =
-                new Reasoner(3, "Reasoner tracing cannot be enabled/disabled per query. Try using Transaction options instead.");
+                new Reasoner(4, "Reasoner tracing cannot be enabled/disabled per query. Try using Transaction options instead.");
         public static final Reasoner REASONER_TRACING_HAS_NOT_BEEN_INITIALISED =
-                new Reasoner(4, "Attempted to get the resolution tracer before it has been initialised.");
+                new Reasoner(5, "Attempted to get the resolution tracer before it has been initialised.");
         public static final Reasoner REASONER_TRACING_CALL_TO_FINISH_BEFORE_START =
-                new Reasoner(5, "Reasoner tracing has been instructed to finish without being started. Start the tracer before any resolution takes place.");
+                new Reasoner(6, "Reasoner tracing has been instructed to finish without being started. Start the tracer before any resolution takes place.");
 
         private static final String codePrefix = "RSN";
         private static final String messagePrefix = "Reasoner Error";

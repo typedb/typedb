@@ -63,6 +63,8 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     @Override
     public void receiveRequest(Request fromUpstream, int iteration) {
         LOG.trace("{}: received Request: {}", name(), fromUpstream);
+        if (isTerminated()) return;
+
         Responses responses = mayUpdateAndGetResponses(fromUpstream, iteration);
         if (iteration < responses.iteration()) {
             // short circuit old iteration exhausted messages to upstream
@@ -143,6 +145,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     }
 
     public void receiveTraversalAnswer(Partial<?> upstreamAnswer, Request fromUpstreamSource) {
+        if (isTerminated()) return;
         Responses responses = this.responses.get(fromUpstreamSource);
         responses.decrementProcessing();
         if (responses.hasAwaitingRequest()) {
@@ -154,6 +157,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     }
 
     public void receiveTraversalDone(Request fromUpstreamSource) {
+        if (isTerminated()) return;
         Responses responses = this.responses.get(fromUpstreamSource);
         responses.setTraversalDone();
         if (!responses.hasFetched()) {

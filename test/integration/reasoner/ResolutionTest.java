@@ -17,6 +17,8 @@
 
 package grakn.core.reasoner;
 
+import grakn.core.common.exception.GraknCheckedException;
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options.Database;
 import grakn.core.concurrent.actor.Actor;
@@ -45,6 +47,8 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -55,6 +59,8 @@ import static grakn.common.collection.Collections.set;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 public class ResolutionTest {
 
@@ -99,6 +105,47 @@ public class ResolutionTest {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 Conjunction conjunctionPattern = parseConjunction(transaction, "{ $t(twin1: $p1, twin2: $p2) isa twins; $p1 has age $a; }");
                 createRootAndAssertResponses(transaction, conjunctionPattern, null, null, 3L);
+            }
+        }
+    }
+
+    @Test
+    public void test_exceptions_are_propagated() throws InterruptedException {
+        try (RocksSession session = schemaSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+                transaction.query().define(Graql.parseQuery(
+                        "define person sub entity, owns age, plays twins:twin1, plays twins:twin2;" +
+                                "age sub attribute, value long;" +
+                                "twins sub relation, relates twin1, relates twin2;"));
+                transaction.commit();
+            }
+        }
+        try (RocksSession session = dataSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+                transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 24; $t(twin1: $p1, twin2: $p2) isa twins; $p2 isa person;"));
+                transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 24; $t(twin1: $p1, twin2: $p2) isa twins; $p2 isa person;"));
+                transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 24; $t(twin1: $p1, twin2: $p2) isa twins; $p2 isa person;"));
+                transaction.commit();
+            }
+        }
+        try (RocksSession session = dataSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+                Conjunction conjunctionPattern = parseConjunction(transaction, "{ $t(twin1: $p1, twin2: $p2) isa twins; $p1 has age $a; }");
+                ResolverRegistry registry = transaction.reasoner().resolverRegistry();
+                LinkedBlockingQueue<Top> responses = new LinkedBlockingQueue<>();
+                AtomicLong doneReceived = new AtomicLong(0L);
+                LinkedBlockingQueue<Throwable> exceptions = new LinkedBlockingQueue<>();
+                Actor<Root.Conjunction> root;
+                try {
+                    root = registry.root(conjunctionPattern, null, null, responses::add, iterDone -> doneReceived.incrementAndGet(), exceptions::add);
+                } catch (GraknCheckedException e) {
+                    fail();
+                }
+
+                Exception e = new RuntimeException();
+                registry.terminateResolvers(e);
+                Throwable receivedException = exceptions.poll(100, TimeUnit.MILLISECONDS);
+                assertEquals(e, receivedException);
             }
         }
     }
@@ -453,9 +500,14 @@ public class ResolutionTest {
                 AtomicLong doneReceived = new AtomicLong(0L);
                 Set<Identifier.Variable.Name> filter = iterate(conjunctionPattern.variables()).map(Variable::id)
                         .filter(Identifier::isName).map(Identifier.Variable::asName).toSet();
-                Actor<Root.Conjunction> root =
-                        registry.rootConjunction(conjunctionPattern, null, null, responses::add,
-                                                 iterDone -> doneReceived.incrementAndGet());
+                Actor<Root.Conjunction> root;
+                try {
+                    root = registry.root(conjunctionPattern, null, null, responses::add,
+                                         iterDone -> doneReceived.incrementAndGet(), (throwable) -> fail());
+                } catch (GraknCheckedException e) {
+                    fail();
+                    return;
+                }
 
                 for (int i = 0; i < answerCount; i++) {
                     Identity downstream = Top.initial(filter, false, root).toDownstream();
@@ -504,8 +556,13 @@ public class ResolutionTest {
         ResolverRegistry registry = transaction.reasoner().resolverRegistry();
         LinkedBlockingQueue<Top> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
-        Actor<Root.Disjunction> root =
-                registry.rootDisjunction(disjunction, offset, limit, responses::add, iterDone -> doneReceived.incrementAndGet());
+        Actor<Root.Disjunction> root;
+        try {
+            root = registry.root(disjunction, offset, limit, responses::add, iterDone -> doneReceived.incrementAndGet(), (throwable) -> fail());
+        } catch (GraknCheckedException e) {
+            fail();
+            return;
+        }
         assertResponses(root, filter, responses, doneReceived, answerCount);
     }
 
@@ -516,8 +573,13 @@ public class ResolutionTest {
         AtomicLong doneReceived = new AtomicLong(0L);
         Set<Identifier.Variable.Name> filter = iterate(conjunction.variables()).map(Variable::id)
                 .filter(Identifier::isName).map(Identifier.Variable::asName).toSet();
-        Actor<Root.Conjunction> root =
-                registry.rootConjunction(conjunction, offset, limit, responses::add, iterDone -> doneReceived.incrementAndGet());
+        Actor<Root.Conjunction> root;
+        try {
+            root = registry.root(conjunction, offset, limit, responses::add, iterDone -> doneReceived.incrementAndGet(), (throwable) -> fail());
+        } catch (GraknCheckedException e) {
+            fail();
+            return;
+        }
         assertResponses(root, filter, responses, doneReceived, answerCount);
     }
 
