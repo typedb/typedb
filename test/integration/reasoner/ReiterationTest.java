@@ -50,6 +50,7 @@ import java.util.concurrent.TimeUnit;
 
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.parameters.Options.Database;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static junit.framework.TestCase.fail;
@@ -124,6 +125,7 @@ public class ReiterationTest {
                 int[] doneInIteration = {0};
                 boolean[] receivedInferredAnswer = {false};
 
+                ResolutionLogger.initialiseOrGet(logDir).start();
                 Actor<Root.Conjunction> root = registry.rootConjunction(conjunction, null, null, answer -> {
                     if (answer.requiresReiteration()) receivedInferredAnswer[0] = true;
                     responses.add(answer);
@@ -133,13 +135,13 @@ public class ReiterationTest {
                     failed.add(iterDone);
                 });
 
-                ResolutionLogger.get().initialise();
                 Set<Top> answers = new HashSet<>();
                 // iteration 0
                 sendRootRequest(root, filter, iteration[0]);
                 answers.add(responses.take());
                 ResolutionLogger.get().finish();
 
+                ResolutionLogger.get().start();
                 sendRootRequest(root, filter, iteration[0]);
                 failed.take(); // Block and wait for an failed message
                 ResolutionLogger.get().finish();
@@ -148,10 +150,11 @@ public class ReiterationTest {
 
                 // iteration 1 onwards
                 for (int j = 0; j <= 100; j++) {
+                    ResolutionLogger.get().start();
                     sendRootRequest(root, filter, iteration[0]);
-                    Top re = responses.poll(100, TimeUnit.MILLISECONDS);
+                    Top re = responses.poll(100, MILLISECONDS);
                     if (re == null) {
-                        Integer ex = failed.poll(100, TimeUnit.MILLISECONDS);
+                        Integer ex = failed.poll(100, MILLISECONDS);
                         if (ex == null) {
                             ResolutionLogger.get().finish();
                             fail();

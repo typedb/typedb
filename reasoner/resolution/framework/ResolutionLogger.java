@@ -26,10 +26,11 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.exception.ErrorMessage.Reasoner.REASONER_LOGGING_CALL_TO_FINISH_BEFORE_START;
+import static grakn.core.common.exception.ErrorMessage.Reasoner.REASONER_LOGGING_HAS_NOT_BEEN_INITIALISED;
 
 public final class ResolutionLogger {
 
@@ -46,7 +47,7 @@ public final class ResolutionLogger {
         ResolutionLogger.logDir = logDir;
     }
 
-    public static ResolutionLogger setOrGet(Path logDir) {
+    public static ResolutionLogger initialiseOrGet(Path logDir) {
         if (ResolutionLogger.logDir != null && !ResolutionLogger.logDir.equals(logDir)) {
             throw GraknException.of(ILLEGAL_STATE);
         }
@@ -57,7 +58,7 @@ public final class ResolutionLogger {
     }
 
     public static ResolutionLogger get() {
-        if (INSTANCE == null) throw GraknException.of(ILLEGAL_STATE);
+        if (INSTANCE == null) throw GraknException.of(REASONER_LOGGING_HAS_NOT_BEEN_INITIALISED);
         return INSTANCE;
     }
 
@@ -99,7 +100,7 @@ public final class ResolutionLogger {
         return "\"" + toFormat + "\"";
     }
 
-    public synchronized void initialise() {
+    public synchronized void start() {
         messageNumber = 0;
         path.set(logDir.resolve(filename()));
         try {
@@ -135,6 +136,7 @@ public final class ResolutionLogger {
     }
 
     public synchronized void finish() {
+        if (path.get() == null) throw GraknException.of(REASONER_LOGGING_CALL_TO_FINISH_BEFORE_START);
         endFile();
         try {
             LOG.trace("Resolution log written to {}", path.get().toAbsolutePath());

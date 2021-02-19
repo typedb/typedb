@@ -63,7 +63,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers,
                             Options.Query options) {
-        if (options.inferLog()) ResolutionLogger.setOrGet(options.logsDir());
+        if (options.inferLog()) ResolutionLogger.initialiseOrGet(options.logsDir());
         this.rootResolver = resolverRegistry.rootConjunction(conjunction, modifiers.offset().orElse(null),
                                                              modifiers.limit().orElse(null), this::requestAnswered, this::requestFailed);
         Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver).toDownstream();
@@ -80,7 +80,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     public ReasonerProducer(Disjunction disjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers,
                             Options.Query options) {
-        if (options.inferLog()) ResolutionLogger.setOrGet(options.logsDir());
+        if (options.inferLog()) ResolutionLogger.initialiseOrGet(options.logsDir());
         this.options = options;
         this.rootResolver = resolverRegistry.rootDisjunction(disjunction, modifiers.offset().orElse(null),
                                                              modifiers.limit().orElse(null), this::requestAnswered, this::requestFailed);
@@ -166,7 +166,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     private void requestAnswer() {
-        if (options.inferLog()) ResolutionLogger.get().initialise();
+        if (options.inferLog()) ResolutionLogger.get().start();
         rootResolver.tell(actor -> actor.receiveRequest(resolveRequest, iteration));
     }
 }

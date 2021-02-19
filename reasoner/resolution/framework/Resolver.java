@@ -45,7 +45,6 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
     private static final Logger LOG = LoggerFactory.getLogger(Resolver.class);
-    static final ResolutionLogger RES_LOG = ResolutionLogger.get();
 
     private final String name;
     private final Map<Request, Request> requestRouter;
@@ -90,7 +89,8 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
 
     protected void requestFromDownstream(Request request, Request fromUpstream, int iteration) {
         LOG.trace("{} : Sending a new answer Request to downstream: {}", name, request);
-        if (resolutionLogging) RES_LOG.request(this, request.receiver().state, iteration, request.partialAnswer().conceptMap().concepts().keySet().toString());
+        if (resolutionLogging) ResolutionLogger.get().request(this, request.receiver().state, iteration,
+                                                              request.partialAnswer().conceptMap().concepts().keySet().toString());
         // TODO: we may overwrite if multiple identical requests are sent, when to clean up?
         requestRouter.put(request, fromUpstream);
         Actor<? extends Resolver<?>> receiver = request.receiver();
@@ -101,14 +101,15 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
         assert answer.isPartial();
         Answer response = Answer.create(fromUpstream, answer.asPartial());
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
-        if (resolutionLogging) RES_LOG.responseAnswer(this, fromUpstream.sender().state, iteration, response.asAnswer().answer().conceptMap().concepts().keySet().toString());
+        if (resolutionLogging) ResolutionLogger.get().responseAnswer(this, fromUpstream.sender().state, iteration,
+                                                                     response.asAnswer().answer().conceptMap().concepts().keySet().toString());
         fromUpstream.sender().tell(actor -> actor.receiveAnswer(response, iteration));
     }
 
     protected void failToUpstream(Request fromUpstream, int iteration) {
         Response.Fail response = new Response.Fail(fromUpstream);
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
-        if (resolutionLogging) RES_LOG.responseExhausted(this, fromUpstream.sender().state, iteration);
+        if (resolutionLogging) ResolutionLogger.get().responseExhausted(this, fromUpstream.sender().state, iteration);
         fromUpstream.sender().tell(actor -> actor.receiveFail(response, iteration));
     }
 
