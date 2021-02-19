@@ -41,9 +41,9 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
 
     public ConditionResolver(Actor<ConditionResolver> self, Rule rule, Actor<ResolutionRecorder> resolutionRecorder,
                              ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                             LogicManager logicMgr, Planner planner, boolean resolutionLogging) {
+                             LogicManager logicMgr, Planner planner, boolean resolutionTracing) {
         super(self, ConditionResolver.class.getCanonicalName() + "(rule:" + rule.getLabel() + ")", rule.when(), resolutionRecorder,
-              registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionLogging);
+              registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
         this.rule = rule;
     }
 

@@ -29,36 +29,36 @@ import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Reasoner.REASONER_LOGGING_CALL_TO_FINISH_BEFORE_START;
-import static grakn.core.common.exception.ErrorMessage.Reasoner.REASONER_LOGGING_HAS_NOT_BEEN_INITIALISED;
+import static grakn.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_CALL_TO_FINISH_BEFORE_START;
+import static grakn.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_HAS_NOT_BEEN_INITIALISED;
 
-public final class ResolutionLogger {
+public final class ResolutionTracer {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ResolutionLogger.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ResolutionTracer.class);
 
-    private static ResolutionLogger INSTANCE;
+    private static ResolutionTracer INSTANCE;
     private static PrintWriter writer;
     private static int rootRequestNumber = 0;
     private static int messageNumber = 0;
     private static Path logDir = null;
     private static final AtomicReference<Path> path = new AtomicReference<>(null);
 
-    private ResolutionLogger(Path logDir) {
-        ResolutionLogger.logDir = logDir;
+    private ResolutionTracer(Path logDir) {
+        ResolutionTracer.logDir = logDir;
     }
 
-    public static ResolutionLogger initialiseOrGet(Path logDir) {
-        if (ResolutionLogger.logDir != null && !ResolutionLogger.logDir.equals(logDir)) {
+    public static ResolutionTracer initialiseOrGet(Path logDir) {
+        if (ResolutionTracer.logDir != null && !ResolutionTracer.logDir.equals(logDir)) {
             throw GraknException.of(ILLEGAL_STATE);
         }
         if (INSTANCE == null) {
-            INSTANCE = new ResolutionLogger(logDir);
+            INSTANCE = new ResolutionTracer(logDir);
         }
         return INSTANCE;
     }
 
-    public static ResolutionLogger get() {
-        if (INSTANCE == null) throw GraknException.of(REASONER_LOGGING_HAS_NOT_BEEN_INITIALISED);
+    public static ResolutionTracer get() {
+        if (INSTANCE == null) throw GraknException.of(REASONER_TRACING_HAS_NOT_BEEN_INITIALISED);
         return INSTANCE;
     }
 
@@ -110,7 +110,7 @@ public final class ResolutionLogger {
             startFile();
         } catch (FileNotFoundException | UnsupportedEncodingException e) {
             e.printStackTrace();
-            LOG.trace("Resolution logging failed to start writing");
+            LOG.trace("Resolution tracing failed to start writing");
         }
     }
 
@@ -123,7 +123,7 @@ public final class ResolutionLogger {
     }
 
     private String filename() {
-        return String.format("resolution_log_request_%d.dot", rootRequestNumber);
+        return String.format("resolution_trace_request_%d.dot", rootRequestNumber);
     }
 
     private void endFile() {
@@ -136,14 +136,14 @@ public final class ResolutionLogger {
     }
 
     public synchronized void finish() {
-        if (path.get() == null) throw GraknException.of(REASONER_LOGGING_CALL_TO_FINISH_BEFORE_START);
+        if (path.get() == null) throw GraknException.of(REASONER_TRACING_CALL_TO_FINISH_BEFORE_START);
         endFile();
         try {
-            LOG.trace("Resolution log written to {}", path.get().toAbsolutePath());
+            LOG.trace("Resolution traces written to {}", path.get().toAbsolutePath());
             writer.close();
         } catch (Exception e) {
             e.printStackTrace();
-            LOG.trace("Resolution logging failed to write to file");
+            LOG.trace("Resolution tracing failed to write to file");
         }
         rootRequestNumber += 1;
         path.set(null);

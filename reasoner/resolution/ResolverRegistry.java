@@ -60,7 +60,7 @@ public class ResolverRegistry {
     private final ConceptManager conceptMgr;
     private final HashMap<Concludable, Actor<ConcludableResolver>> concludableActors;
     private final LogicManager logicMgr;
-    private final boolean resolutionLogging;
+    private final boolean resolutionTracing;
     private final HashMap<Rule, Actor<ConditionResolver>> ruleConditions;
     private final HashMap<Rule, Actor<ConclusionResolver>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
     private final Actor<ResolutionRecorder> resolutionRecorder;
@@ -69,13 +69,13 @@ public class ResolverRegistry {
     private final Planner planner;
 
     public ResolverRegistry(EventLoopGroup elg, Actor<ResolutionRecorder> resolutionRecorder, TraversalEngine traversalEngine,
-                            ConceptManager conceptMgr, LogicManager logicMgr, boolean resolutionLogging) {
+                            ConceptManager conceptMgr, LogicManager logicMgr, boolean resolutionTracing) {
         this.elg = elg;
         this.resolutionRecorder = resolutionRecorder;
         this.traversalEngine = traversalEngine;
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
-        this.resolutionLogging = resolutionLogging;
+        this.resolutionTracing = resolutionTracing;
         concludableActors = new HashMap<>();
         ruleConditions = new HashMap<>();
         ruleConclusions = new HashMap<>();
@@ -89,7 +89,7 @@ public class ResolverRegistry {
         return Actor.create(
                 elg, self -> new Root.Conjunction(
                         self, conjunction, offset, limit, onAnswer, onFail, resolutionRecorder, this,
-                        traversalEngine, conceptMgr, logicMgr, planner, resolutionLogging));
+                        traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing));
     }
 
     public Actor<Root.Disjunction> rootDisjunction(Disjunction disjunction, @Nullable Long offset,
@@ -98,7 +98,7 @@ public class ResolverRegistry {
         LOG.debug("Creating Root.Disjunction for: '{}'", disjunction);
         return Actor.create(
                 elg, self -> new Root.Disjunction(self, disjunction, offset, limit, onAnswer, onExhausted, resolutionRecorder,
-                                                  this, traversalEngine, conceptMgr, resolutionLogging)
+                                                  this, traversalEngine, conceptMgr, resolutionTracing)
         );
     }
 
@@ -106,7 +106,7 @@ public class ResolverRegistry {
         LOG.debug("Creating Negation resolver for : {}", negated);
         Actor<NegationResolver> negatedResolver = Actor.create(
                 elg, self -> new NegationResolver(self, negated, this, traversalEngine, conceptMgr,
-                                                  resolutionRecorder, resolutionLogging)
+                                                  resolutionRecorder, resolutionTracing)
         );
         Map<Retrievable, Retrievable> filteredMapping = identityFiltered(upstream, negated);
         return MappedResolver.of(negatedResolver, filteredMapping);
@@ -116,13 +116,13 @@ public class ResolverRegistry {
         LOG.debug("Register retrieval for rule condition actor: '{}'", rule);
         return ruleConditions.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new ConditionResolver(
                 self, r, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr, planner,
-                resolutionLogging)));
+                resolutionTracing)));
     }
 
     public Actor<ConclusionResolver> registerConclusion(Rule.Conclusion conclusion) {
         LOG.debug("Register retrieval for rule conclusion actor: '{}'", conclusion);
         return ruleConclusions.computeIfAbsent(conclusion.rule(), (r) -> Actor.create(elg, self -> new ConclusionResolver(
-                self, conclusion, this, resolutionRecorder, traversalEngine, conceptMgr, resolutionLogging)));
+                self, conclusion, this, resolutionRecorder, traversalEngine, conceptMgr, resolutionTracing)));
     }
 
     public MappedResolver registerResolvable(Resolvable<?> resolvable) {
@@ -136,7 +136,7 @@ public class ResolverRegistry {
     private MappedResolver registerRetrievable(grakn.core.logic.resolvable.Retrievable retrievable) {
         LOG.debug("Register RetrievableResolver: '{}'", retrievable.pattern());
         Actor<RetrievableResolver> retrievableActor = Actor.create(elg, self -> new RetrievableResolver(
-                self, retrievable, this, traversalEngine, conceptMgr, resolutionLogging));
+                self, retrievable, this, traversalEngine, conceptMgr, resolutionTracing));
         return MappedResolver.of(retrievableActor, identity(retrievable));
     }
     // note: must be thread safe. We could move to a ConcurrentHashMap if we create an alpha-equivalence wrapper
@@ -152,7 +152,7 @@ public class ResolverRegistry {
         }
         Actor<ConcludableResolver> concludableActor = Actor.create(elg, self ->
                 new ConcludableResolver(self, concludable, resolutionRecorder, this, traversalEngine, conceptMgr,
-                                        logicMgr, resolutionLogging));
+                                        logicMgr, resolutionTracing));
         concludableActors.put(concludable, concludableActor);
         return MappedResolver.of(concludableActor, identity(concludable));
     }
@@ -162,7 +162,7 @@ public class ResolverRegistry {
         return Actor.create(
                 elg, self -> new ConjunctionResolver.Nested(
                         self, conjunction, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr, planner,
-                        resolutionLogging)
+                        resolutionTracing)
         );
     }
 

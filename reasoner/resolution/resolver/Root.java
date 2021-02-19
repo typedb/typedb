@@ -69,9 +69,9 @@ public interface Root {
                            @Nullable Long offset, @Nullable Long limit, Consumer<Top> onAnswer,
                            Consumer<Integer> onFail, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                            TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr, Planner planner,
-                           boolean resolutionLogging) {
+                           boolean resolutionTracing) {
             super(self, Conjunction.class.getSimpleName() + "(pattern:" + conjunction + ")", conjunction, resolutionRecorder,
-                  registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionLogging);
+                  registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
             this.offset = offset;
             this.limit = limit;
             this.onAnswer = onAnswer;
@@ -186,9 +186,9 @@ public interface Root {
         public Disjunction(Actor<Disjunction> self, grakn.core.pattern.Disjunction disjunction,
                            @Nullable Long offset, @Nullable Long limit, Consumer<Top> onAnswer,
                            Consumer<Integer> onFail, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
-                           TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionLogging) {
+                           TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
             super(self, Disjunction.class.getSimpleName() + "(pattern:" + disjunction + ")", registry, traversalEngine,
-                  conceptMgr, resolutionLogging);
+                  conceptMgr, resolutionTracing);
             this.disjunction = disjunction;
             this.offset = offset;
             this.limit = limit;

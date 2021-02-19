@@ -42,7 +42,7 @@ def graknlabs_protocol():
     git_repository(
         name = "graknlabs_protocol",
         remote = "https://github.com/jmsfltchr/protocol",
-        commit = "d46172adcf1fcb40d82d7cfeab42d3e2a95485b8", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_protocol
+        commit = "9d52b652619058d539c3edefca3714ec8f46ed25", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_protocol
     )
 
 def graknlabs_grabl_tracing():

@@ -22,11 +22,11 @@ import grakn.protocol.OptionsProto;
 
 import static grakn.protocol.OptionsProto.Options.BatchSizeOptCase.BATCH_SIZE;
 import static grakn.protocol.OptionsProto.Options.ExplainOptCase.EXPLAIN;
-import static grakn.protocol.OptionsProto.Options.InferLogOptCase.INFER_LOG;
 import static grakn.protocol.OptionsProto.Options.InferOptCase.INFER;
 import static grakn.protocol.OptionsProto.Options.PrefetchOptCase.PREFETCH;
 import static grakn.protocol.OptionsProto.Options.SchemaLockAcquireTimeoutOptCase.SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS;
 import static grakn.protocol.OptionsProto.Options.SessionIdleTimeoutOptCase.SESSION_IDLE_TIMEOUT_MILLIS;
+import static grakn.protocol.OptionsProto.Options.TraceInferenceOptCase.TRACE_INFERENCE;
 
 public class RequestReader {
 
@@ -34,8 +34,8 @@ public class RequestReader {
         if (request.getInferOptCase().equals(INFER)) {
             options.infer(request.getInfer());
         }
-        if (request.getInferLogOptCase().equals(INFER_LOG)) {
-            options.inferLog(request.getInferLog());
+        if (request.getTraceInferenceOptCase().equals(TRACE_INFERENCE)) {
+            options.traceInference(request.getTraceInference());
         }
         if (request.getExplainOptCase().equals(EXPLAIN)) {
             options.explain(request.getExplain());

@@ -56,9 +56,9 @@ public class NegationResolver extends Resolver<NegationResolver> {
 
     public NegationResolver(Actor<NegationResolver> self, Negated negated, ResolverRegistry registry,
                             TraversalEngine traversalEngine, ConceptManager conceptMgr, Actor<ResolutionRecorder> resolutionRecorder,
-                            boolean resolutionLogging) {
+                            boolean resolutionTracing) {
         super(self, NegationResolver.class.getSimpleName() + "(pattern: " + negated.pattern() + ")",
-              registry, traversalEngine, conceptMgr, resolutionLogging);
+              registry, traversalEngine, conceptMgr, resolutionTracing);
         this.negated = negated;
         this.resolutionRecorder = resolutionRecorder;
         this.responses = new HashMap<>();

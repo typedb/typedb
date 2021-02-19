@@ -24,7 +24,7 @@ import java.nio.file.Path;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Reasoner.REASONER_LOGGING_CANNOT_BE_TOGGLED_PER_QUERY;
+import static grakn.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_CANNOT_BE_TOGGLED_PER_QUERY;
 import static grakn.core.common.exception.ErrorMessage.Reasoner.REASONING_CANNOT_BE_TOGGLED_PER_QUERY;
 
 public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options<?, ?>> {
@@ -42,7 +42,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
 
     private PARENT parent;
     private Boolean infer = null;
-    private Boolean inferLog = null;
+    private Boolean traceInference = null;
     private Boolean explain = null;
     private Integer batchSize = null;
     private Integer sessionIdlTimeoutMillis = null;
@@ -72,14 +72,14 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         return getThis();
     }
 
-    public boolean inferLog() {
-        if (inferLog != null) return inferLog;
-        else if (parent != null) return parent.inferLog();
+    public boolean traceInference() {
+        if (traceInference != null) return traceInference;
+        else if (parent != null) return parent.traceInference();
         else return DEFAULT_INFERENCE_LOGGING;
     }
 
-    public SELF inferLog(boolean inferLog) {
-        this.inferLog = inferLog;
+    public SELF traceInference(boolean traceInference) {
+        this.traceInference = traceInference;
         return getThis();
     }
 
@@ -230,8 +230,8 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         }
 
         @Override
-        public Query inferLog(boolean inferLog) {
-            throw GraknException.of(REASONER_LOGGING_CANNOT_BE_TOGGLED_PER_QUERY);
+        public Query traceInference(boolean traceInference) {
+            throw GraknException.of(REASONER_TRACING_CANNOT_BE_TOGGLED_PER_QUERY);
         }
 
         public Query prefetch(boolean prefetch) {

@@ -59,9 +59,9 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     public ConcludableResolver(Actor<ConcludableResolver> self, Concludable concludable,
                                Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
-                               boolean resolutionLogging) {
+                               boolean resolutionTracing) {
         super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.pattern() + ")",
-              registry, traversalEngine, conceptMgr, resolutionLogging);
+              registry, traversalEngine, conceptMgr, resolutionTracing);
         this.logicMgr = logicMgr;
         this.resolutionRecorder = resolutionRecorder;
         this.concludable = concludable;

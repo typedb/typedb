@@ -28,7 +28,7 @@ import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Identity;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.framework.Request;
-import grakn.core.reasoner.resolution.framework.ResolutionLogger;
+import grakn.core.reasoner.resolution.framework.ResolutionTracer;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.variable.UnboundVariable;
@@ -63,7 +63,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers,
                             Options.Query options) {
-        if (options.inferLog()) ResolutionLogger.initialiseOrGet(options.logsDir());
+        if (options.traceInference()) ResolutionTracer.initialiseOrGet(options.logsDir());
         this.rootResolver = resolverRegistry.rootConjunction(conjunction, modifiers.offset().orElse(null),
                                                              modifiers.limit().orElse(null), this::requestAnswered, this::requestFailed);
         Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver).toDownstream();
@@ -80,7 +80,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     public ReasonerProducer(Disjunction disjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers,
                             Options.Query options) {
-        if (options.inferLog()) ResolutionLogger.initialiseOrGet(options.logsDir());
+        if (options.traceInference()) ResolutionTracer.initialiseOrGet(options.logsDir());
         this.options = options;
         this.rootResolver = resolverRegistry.rootDisjunction(disjunction, modifiers.offset().orElse(null),
                                                              modifiers.limit().orElse(null), this::requestAnswered, this::requestFailed);
@@ -117,7 +117,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     private void requestAnswered(Top resolutionAnswer) {
-        if (options.inferLog()) ResolutionLogger.get().finish();
+        if (options.traceInference()) ResolutionTracer.get().finish();
         if (resolutionAnswer.requiresReiteration()) requiredReiteration = true;
         queue.put(resolutionAnswer.conceptMap());
         if (required.decrementAndGet() > 0) requestAnswer();
@@ -126,7 +126,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private void requestFailed(int iteration) {
         LOG.trace("Failed to find answer to request in iteration: " + iteration);
-        if (options.inferLog()) ResolutionLogger.get().finish();
+        if (options.traceInference()) ResolutionTracer.get().finish();
         if (!done && iteration == this.iteration && !mustReiterate()) {
             // query is completely terminated
             done = true;
@@ -166,7 +166,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     private void requestAnswer() {
-        if (options.inferLog()) ResolutionLogger.get().start();
+        if (options.traceInference()) ResolutionTracer.get().start();
         rootResolver.tell(actor -> actor.receiveRequest(resolveRequest, iteration));
     }
 }

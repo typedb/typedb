@@ -70,8 +70,8 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     public ConjunctionResolver(Actor<T> self, String name, grakn.core.pattern.Conjunction conjunction,
                                Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
-                               Planner planner, boolean resolutionLogging) {
-        super(self, name, registry, traversalEngine, conceptMgr, resolutionLogging);
+                               Planner planner, boolean resolutionTracing) {
+        super(self, name, registry, traversalEngine, conceptMgr, resolutionTracing);
         this.logicMgr = logicMgr;
         this.resolutionRecorder = resolutionRecorder;
         this.planner = planner;
@@ -270,9 +270,9 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
 
         public Nested(Actor<Nested> self, Conjunction conjunction, Actor<ResolutionRecorder> resolutionRecorder,
                       ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                      LogicManager logicMgr, Planner planner, boolean resolutionLogging) {
+                      LogicManager logicMgr, Planner planner, boolean resolutionTracing) {
             super(self, Nested.class.getSimpleName() + "(pattern: " + conjunction + ")", conjunction,
-                  resolutionRecorder, registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionLogging);
+                  resolutionRecorder, registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
         }
 
         @Override

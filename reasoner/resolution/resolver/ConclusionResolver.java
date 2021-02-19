@@ -61,9 +61,9 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
 
     public ConclusionResolver(Actor<ConclusionResolver> self, Rule.Conclusion conclusion, ResolverRegistry registry,
                               Actor<ResolutionRecorder> resolutionRecorder, TraversalEngine traversalEngine,
-                              ConceptManager conceptMgr, boolean resolutionLogging) {
+                              ConceptManager conceptMgr, boolean resolutionTracing) {
         super(self, ConclusionResolver.class.getSimpleName() + "(" + conclusion.rule().getLabel() + ")",
-              registry, traversalEngine, conceptMgr, resolutionLogging);
+              registry, traversalEngine, conceptMgr, resolutionTracing);
         this.conclusion = conclusion;
         this.resolutionRecorder = resolutionRecorder;
         this.conclusionResponsess = new HashMap<>();

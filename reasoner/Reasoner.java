@@ -75,7 +75,7 @@ public class Reasoner {
         this.defaultContext.producer(EXHAUSTIVE);
         this.resolutionRecorder = Actor.create(eventLoopGroup(), ResolutionRecorder::new);
         this.resolverRegistry = new ResolverRegistry(eventLoopGroup(), resolutionRecorder, traversalEng, conceptMgr,
-                                                     logicMgr, this.defaultContext.options().inferLog());
+                                                     logicMgr, this.defaultContext.options().traceInference());
     }
 
     ResolverRegistry resolverRegistry() {
