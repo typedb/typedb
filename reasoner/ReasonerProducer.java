@@ -18,6 +18,7 @@
 package grakn.core.reasoner;
 
 import grakn.core.common.exception.GraknCheckedException;
+import grakn.core.common.exception.GraknException;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.common.Executors;
@@ -42,6 +43,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static grakn.core.common.exception.ErrorMessage.Reasoner.RESOLUTION_TERMINATED;
 import static grakn.core.common.iterator.Iterators.iterate;
 
 @ThreadSafe
@@ -69,7 +71,6 @@ public class ReasonerProducer implements Producer<ConceptMap> {
                                              this::requestAnswered, this::requestFailed, this::exception);
         } catch (GraknCheckedException e) {
             resolver = null;
-            queue.done(e);
         }
         this.rootResolver = resolver;
         Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver).toDownstream();
@@ -88,7 +89,6 @@ public class ReasonerProducer implements Producer<ConceptMap> {
                                              this::requestAnswered, this::requestFailed, this::exception);
         } catch (GraknCheckedException e) {
             resolver = null;
-            queue.done(e);
         }
         this.rootResolver = resolver;
         Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver).toDownstream();
@@ -104,6 +104,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     public synchronized void produce(Queue<ConceptMap> queue, int request, ExecutorService executor) {
         assert this.queue == null || this.queue == queue;
         this.queue = queue;
+        if (rootResolver == null) exception(GraknException.of(RESOLUTION_TERMINATED));
 
         this.required.addAndGet(request);
         int canRequest = COMPUTE_SIZE - processing.get();

@@ -74,14 +74,12 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
 
     @Override
     protected void exception(Throwable e) {
-        if (e instanceof GraknException) {
-            GraknException exception = (GraknException) e;
-            if (exception.code().isPresent() && exception.code().get().equals(TRANSACTION_CLOSED.code())) {
-                LOG.debug("Resolver interrupted by transaction close: {}", exception.getMessage());
-                return;
-            }
+        if (e instanceof GraknException && ((GraknException) e).code().isPresent()
+                && ((GraknException) e).code().get().equals(TRANSACTION_CLOSED.code())) {
+            LOG.debug("Resolver interrupted by transaction close: {}", e.getMessage());
+        } else {
+            LOG.error("Actor exception: {}", e.getMessage());
         }
-        LOG.error("Actor exception: {}", e.getMessage());
         registry.terminateResolvers(e);
     }
 
