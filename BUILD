@@ -70,14 +70,9 @@ artifact_repackage(
     files_to_keep = ["console"],
 )
 
-assemble_deps_common = [
-    "//server:server-deps-prod",
-    ":console-artifact-jars",
-]
-
 assemble_targz(
     name = "assemble-linux-targz",
-    targets = assemble_deps_common + ["//server:server-deps-linux", "@graknlabs_common//binary:assemble-bash-targz"],
+    targets = ["//server:server-deps-linux", ":console-artifact-jars", "@graknlabs_common//binary:assemble-bash-targz"],
     additional_files = assemble_files,
     permissions = permissions,
     output_filename = "grakn-core-all-linux",
@@ -85,7 +80,7 @@ assemble_targz(
 
 assemble_zip(
     name = "assemble-mac-zip",
-    targets = assemble_deps_common + ["//server:server-deps-mac", "@graknlabs_common//binary:assemble-bash-targz"],
+    targets = ["//server:server-deps-mac", "//server:server-deps-prod", ":console-artifact-jars", "@graknlabs_common//binary:assemble-bash-targz"],
     additional_files = assemble_files,
     permissions = permissions,
     output_filename = "grakn-core-all-mac",
@@ -93,7 +88,7 @@ assemble_zip(
 
 assemble_zip(
     name = "assemble-windows-zip",
-    targets = assemble_deps_common + ["//server:server-deps-windows", "@graknlabs_common//binary:assemble-bat-targz"],
+    targets = ["//server:server-deps-windows", ":console-artifact-jars", "@graknlabs_common//binary:assemble-bat-targz"],
     additional_files = assemble_files,
     permissions = permissions,
     output_filename = "grakn-core-all-windows",
