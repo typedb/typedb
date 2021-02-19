@@ -173,11 +173,6 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         failToUpstream(fromUpstreamSource, responses.iteration);
     }
 
-    @Override
-    protected void exception(Throwable e) {
-        LOG.error("Actor exception", e);
-    }
-
     private class Responses {
 
         private final int iteration;

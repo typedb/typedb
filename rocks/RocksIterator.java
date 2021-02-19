@@ -21,7 +21,6 @@ package grakn.core.rocks;
 import grakn.core.common.iterator.AbstractResourceIterator;
 
 import java.util.NoSuchElementException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 
 import static grakn.core.common.collection.Bytes.bytesHavePrefix;
@@ -30,7 +29,6 @@ public final class RocksIterator<T> extends AbstractResourceIterator<T> implemen
 
     private final byte[] prefix;
     private final RocksStorage storage;
-    private final AtomicBoolean isOpen;
     private final BiFunction<byte[], byte[], T> constructor;
     private org.rocksdb.RocksIterator internalRocksIterator;
     private State state;
@@ -42,32 +40,18 @@ public final class RocksIterator<T> extends AbstractResourceIterator<T> implemen
         this.storage = storage;
         this.prefix = prefix;
         this.constructor = constructor;
-
-        isOpen = new AtomicBoolean(true);
         state = State.INIT;
-    }
-
-    private void initalise() {
-        this.internalRocksIterator = storage.getInternalRocksIterator();
-        this.internalRocksIterator.seek(prefix);
-    }
-
-    private boolean fetchAndCheck() {
-        byte[] key;
-        if (!internalRocksIterator.isValid() || !bytesHavePrefix(key = internalRocksIterator.key(), prefix)) {
-            state = State.COMPLETED;
-            recycle();
-            return false;
-        }
-
-        next = constructor.apply(key, internalRocksIterator.value());
-        internalRocksIterator.next();
-        state = State.FETCHED;
-        return true;
     }
 
     public final T peek() {
         if (!hasNext()) throw new NoSuchElementException();
+        return next;
+    }
+
+    @Override
+    public synchronized final T next() {
+        if (!hasNext()) throw new NoSuchElementException();
+        state = State.EMPTY;
         return next;
     }
 
@@ -81,18 +65,41 @@ public final class RocksIterator<T> extends AbstractResourceIterator<T> implemen
             case EMPTY:
                 return fetchAndCheck();
             case INIT:
-                initalise();
-                return fetchAndCheck();
+                return initialiseAndCheck();
             default: // This should never be reached
                 return false;
         }
     }
 
-    @Override
-    public final T next() {
-        if (!hasNext()) throw new NoSuchElementException();
-        state = State.EMPTY;
-        return next;
+    private synchronized boolean initialiseAndCheck() {
+        if (state != State.COMPLETED) {
+            this.internalRocksIterator = storage.getInternalRocksIterator();
+            this.internalRocksIterator.seek(prefix);
+            state = State.EMPTY;
+            return hasValidNext();
+        } else {
+            return false;
+        }
+    }
+
+    private synchronized boolean fetchAndCheck() {
+        if (state != State.COMPLETED) {
+            internalRocksIterator.next();
+            return hasValidNext();
+        } else {
+            return false;
+        }
+    }
+
+    private synchronized boolean hasValidNext() {
+        byte[] key;
+        if (!internalRocksIterator.isValid() || !bytesHavePrefix(key = internalRocksIterator.key(), prefix)) {
+            recycle();
+            return false;
+        }
+        next = constructor.apply(key, internalRocksIterator.value());
+        state = State.FETCHED;
+        return true;
     }
 
     @Override
@@ -101,8 +108,8 @@ public final class RocksIterator<T> extends AbstractResourceIterator<T> implemen
     }
 
     @Override
-    public void close() {
-        if (isOpen.compareAndSet(true, false)) {
+    public synchronized void close() {
+        if (state != State.COMPLETED) {
             if (state != State.INIT) storage.recycle(internalRocksIterator);
             state = State.COMPLETED;
             storage.remove(this);
