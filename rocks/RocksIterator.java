@@ -43,24 +43,6 @@ public final class RocksIterator<T> extends AbstractResourceIterator<T> implemen
         state = State.INIT;
     }
 
-    private synchronized boolean initialise() {
-        if (state != State.COMPLETED) {
-            this.internalRocksIterator = storage.getInternalRocksIterator();
-            this.internalRocksIterator.seek(prefix);
-            state = State.EMPTY;
-            byte[] key;
-            if (!internalRocksIterator.isValid() || !bytesHavePrefix(key = internalRocksIterator.key(), prefix)) {
-                recycle();
-                return false;
-            }
-            next = constructor.apply(key, internalRocksIterator.value());
-            state = State.FETCHED;
-            return true;
-        } else {
-            return false;
-        }
-    }
-
     public final T peek() {
         if (!hasNext()) throw new NoSuchElementException();
         return next;
@@ -83,26 +65,41 @@ public final class RocksIterator<T> extends AbstractResourceIterator<T> implemen
             case EMPTY:
                 return fetchAndCheck();
             case INIT:
-                return initialise();
+                return initialiseAndFetch();
             default: // This should never be reached
                 return false;
+        }
+    }
+
+    private synchronized boolean initialiseAndFetch() {
+        if (state != State.COMPLETED) {
+            this.internalRocksIterator = storage.getInternalRocksIterator();
+            this.internalRocksIterator.seek(prefix);
+            state = State.EMPTY;
+            return mayConstructNext();
+        } else {
+            return false;
         }
     }
 
     private synchronized boolean fetchAndCheck() {
         if (state != State.COMPLETED) {
             internalRocksIterator.next();
-            byte[] key;
-            if (!internalRocksIterator.isValid() || !bytesHavePrefix(key = internalRocksIterator.key(), prefix)) {
-                recycle();
-                return false;
-            }
-            next = constructor.apply(key, internalRocksIterator.value());
-            state = State.FETCHED;
-            return true;
+            return mayConstructNext();
         } else {
             return false;
         }
+    }
+
+    private synchronized boolean mayConstructNext() {
+        byte[] key;
+        if (!internalRocksIterator.isValid() || !bytesHavePrefix(key = internalRocksIterator.key(), prefix)) {
+            recycle();
+            return false;
+        }
+        next = constructor.apply(key, internalRocksIterator.value());
+        state = State.FETCHED;
+        return true;
     }
 
     @Override
