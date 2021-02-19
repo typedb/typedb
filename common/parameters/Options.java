@@ -33,7 +33,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     public static final int DEFAULT_SESSION_IDLE_TIMEOUT_MILLIS = 10_000;
     public static final int DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS = 10_000;
     public static final boolean DEFAULT_INFERENCE = false;
-    public static final boolean DEFAULT_INFERENCE_LOGGING = false;
+    public static final boolean DEFAULT_TRACE_INFERENCE = false;
     public static final boolean DEFAULT_EXPLAIN = false;
     public static final boolean DEFAULT_PARALLEL = true;
     public static final boolean DEFAULT_QUERY_READ_PREFETCH = true;
@@ -75,7 +75,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     public boolean traceInference() {
         if (traceInference != null) return traceInference;
         else if (parent != null) return parent.traceInference();
-        else return DEFAULT_INFERENCE_LOGGING;
+        else return DEFAULT_TRACE_INFERENCE;
     }
 
     public SELF traceInference(boolean traceInference) {

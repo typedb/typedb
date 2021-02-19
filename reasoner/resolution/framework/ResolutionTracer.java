@@ -47,14 +47,13 @@ public final class ResolutionTracer {
         ResolutionTracer.logDir = logDir;
     }
 
-    public static ResolutionTracer initialiseOrGet(Path logDir) {
+    public static void initialise(Path logDir) {
         if (ResolutionTracer.logDir != null && !ResolutionTracer.logDir.equals(logDir)) {
             throw GraknException.of(ILLEGAL_STATE);
         }
         if (INSTANCE == null) {
             INSTANCE = new ResolutionTracer(logDir);
         }
-        return INSTANCE;
     }
 
     public static ResolutionTracer get() {

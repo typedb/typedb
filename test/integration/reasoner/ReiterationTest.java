@@ -67,6 +67,7 @@ public class ReiterationTest {
         Util.resetDirectory(dataDir);
         grakn = RocksGrakn.open(options);
         grakn.databases().create(database);
+        ResolutionTracer.initialise(logDir);
     }
 
     @After
@@ -124,7 +125,7 @@ public class ReiterationTest {
                 int[] doneInIteration = {0};
                 boolean[] receivedInferredAnswer = {false};
 
-                ResolutionTracer.initialiseOrGet(logDir).start();
+                ResolutionTracer.get().start();
                 Actor<Root.Conjunction> root = registry.rootConjunction(conjunction, null, null, answer -> {
                     if (answer.requiresReiteration()) receivedInferredAnswer[0] = true;
                     responses.add(answer);

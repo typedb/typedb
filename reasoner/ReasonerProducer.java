@@ -49,7 +49,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerProducer.class);
 
-    private int computeSize = Executors.PARALLELISATION_FACTOR * 2;
+    private int computeSize;
     private final Actor<? extends Resolver<?>> rootResolver;
     private final AtomicInteger required;
     private final AtomicInteger processing;
@@ -63,11 +63,11 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers,
                             Options.Query options) {
-        if (options.traceInference()) ResolutionTracer.initialiseOrGet(options.logsDir());
+        if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
         this.rootResolver = resolverRegistry.rootConjunction(conjunction, modifiers.offset().orElse(null),
                                                              modifiers.limit().orElse(null), this::requestAnswered, this::requestFailed);
         Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver).toDownstream();
-        if (!options.parallel()) this.computeSize = 1;
+        this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
         this.options = options;
         this.resolveRequest = Request.create(rootResolver, downstream);
@@ -80,12 +80,12 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     public ReasonerProducer(Disjunction disjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers,
                             Options.Query options) {
-        if (options.traceInference()) ResolutionTracer.initialiseOrGet(options.logsDir());
+        if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
         this.options = options;
         this.rootResolver = resolverRegistry.rootDisjunction(disjunction, modifiers.offset().orElse(null),
                                                              modifiers.limit().orElse(null), this::requestAnswered, this::requestFailed);
         Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver).toDownstream();
-        if (!options.parallel()) this.computeSize = 1;
+        this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
         this.resolveRequest = Request.create(rootResolver, downstream);
         this.queue = null;

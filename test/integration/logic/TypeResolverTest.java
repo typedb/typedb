@@ -61,6 +61,7 @@ public class TypeResolverTest {
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("type-resolver-test");
     private static final Path logDir = dataDir.resolve("logs");
     private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
+    private static final String database = "type-resolver-test";
     private static RocksGrakn grakn;
     private static RocksSession session;
     private static RocksTransaction transaction;
@@ -69,7 +70,6 @@ public class TypeResolverTest {
     public static void open_session() throws IOException {
         Util.resetDirectory(dataDir);
         grakn = RocksGrakn.open(options);
-        String database = "type-resolver-test";
         grakn.databases().create(database);
         session = grakn.session(database, Arguments.Session.Type.SCHEMA);
     }
