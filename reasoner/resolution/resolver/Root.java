@@ -23,6 +23,8 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.LogicManager;
+import grakn.core.pattern.Conjunction;
+import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
@@ -61,6 +63,7 @@ public interface Root {
 
         private final Consumer<Top> onAnswer;
         private final Consumer<Integer> onFail;
+        private Consumer<Throwable> onException;
         private final Long offset;
         private final Long limit;
         private long skipped;
@@ -68,7 +71,7 @@ public interface Root {
 
         public Conjunction(Actor<Conjunction> self, grakn.core.pattern.Conjunction conjunction,
                            @Nullable Long offset, @Nullable Long limit, Consumer<Top> onAnswer,
-                           Consumer<Integer> onFail, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
+                           Consumer<Integer> onFail, Consumer<Throwable> onException, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                            TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr, Planner planner, boolean explanations) {
             super(self, Conjunction.class.getSimpleName() + "(pattern:" + conjunction + ")", conjunction, resolutionRecorder,
                   registry, traversalEngine, conceptMgr, logicMgr, planner, explanations);
@@ -76,6 +79,7 @@ public interface Root {
             this.limit = limit;
             this.onAnswer = onAnswer;
             this.onFail = onFail;
+            this.onException = onException;
             this.skipped = 0;
             this.answered = 0;
         }
@@ -105,9 +109,15 @@ public interface Root {
             }
         }
 
+        @Override
+        public void terminate(Throwable cause) {
+            super.terminate(cause);
+            onException.accept(cause);
+        }
+
         /*
-        NOTE special behaviour: don't clear the deduplication set, in the root
-         */
+                NOTE special behaviour: don't clear the deduplication set, in the root
+                 */
         @Override
         protected ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer responseProducerPrevious,
                                                              int newIteration) {
@@ -168,6 +178,7 @@ public interface Root {
         private final Actor<ResolutionRecorder> resolutionRecorder;
         private final Consumer<Top> onAnswer;
         private final Consumer<Integer> onFail;
+        private Consumer<Throwable> onException;
         private final List<Actor<ConjunctionResolver.Nested>> downstreamResolvers;
         private final grakn.core.pattern.Disjunction disjunction;
         private final Long offset;
@@ -179,7 +190,7 @@ public interface Root {
 
         public Disjunction(Actor<Disjunction> self, grakn.core.pattern.Disjunction disjunction,
                            @Nullable Long offset, @Nullable Long limit, Consumer<Top> onAnswer,
-                           Consumer<Integer> onFail, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
+                           Consumer<Integer> onFail, Consumer<Throwable> onException, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                            TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean explanations) {
             super(self, Disjunction.class.getSimpleName() + "(pattern:" + disjunction + ")", registry, traversalEngine, conceptMgr, explanations);
             this.disjunction = disjunction;
@@ -187,6 +198,7 @@ public interface Root {
             this.limit = limit;
             this.onAnswer = onAnswer;
             this.onFail = onFail;
+            this.onException = onException;
             this.resolutionRecorder = resolutionRecorder;
             this.isInitialised = false;
             this.downstreamResolvers = new ArrayList<>();
@@ -285,6 +297,7 @@ public interface Root {
         @Override
         public void terminate(Throwable cause) {
             super.terminate(cause);
+            onException.accept(cause);
         }
 
         @Override

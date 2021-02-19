@@ -120,7 +120,7 @@ public class ReiterationTest {
                 int[] doneInIteration = {0};
                 boolean[] receivedInferredAnswer = {false};
 
-                Actor<Root.Conjunction> root = registry.rootConjunction(conjunction, null, null, answer -> {
+                Actor<Root.Conjunction> root = registry.root(conjunction, null, null, answer -> {
                     if (answer.requiresReiteration()) receivedInferredAnswer[0] = true;
                     responses.add(answer);
                 }, iterDone -> {

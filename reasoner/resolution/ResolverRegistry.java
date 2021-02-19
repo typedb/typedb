@@ -102,26 +102,26 @@ public class ResolverRegistry {
         }
     }
 
-    public Actor<Root.Conjunction> rootConjunction(Conjunction conjunction, @Nullable Long offset,
-                                                   @Nullable Long limit, Consumer<Top> onAnswer,
-                                                   Consumer<Integer> onFail) throws GraknCheckedException {
+    public Actor<Root.Conjunction> root(Conjunction conjunction, @Nullable Long offset,
+                                        @Nullable Long limit, Consumer<Top> onAnswer,
+                                        Consumer<Integer> onFail, Consumer<Throwable> onException) throws GraknCheckedException {
         LOG.debug("Creating Root.Conjunction for: '{}'", conjunction);
         Actor<Root.Conjunction> resolver = Actor.create(
                 elg, self -> new Root.Conjunction(
-                        self, conjunction, offset, limit, onAnswer, onFail, resolutionRecorder, this,
+                        self, conjunction, offset, limit, onAnswer, onFail, onException, resolutionRecorder, this,
                         traversalEngine, conceptMgr, logicMgr, planner, explanations));
         resolvers.add(resolver);
         if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard against races without synchronized
         return resolver;
     }
 
-    public Actor<Root.Disjunction> rootDisjunction(Disjunction disjunction, @Nullable Long offset,
-                                                   @Nullable Long limit, Consumer<Top> onAnswer,
-                                                   Consumer<Integer> onExhausted) throws GraknCheckedException {
+    public Actor<Root.Disjunction> root(Disjunction disjunction, @Nullable Long offset,
+                                        @Nullable Long limit, Consumer<Top> onAnswer,
+                                        Consumer<Integer> onExhausted, Consumer<Throwable> onException) throws GraknCheckedException {
         LOG.debug("Creating Root.Disjunction for: '{}'", disjunction);
         Actor<Root.Disjunction> resolver = Actor.create(
-                elg, self -> new Root.Disjunction(self, disjunction, offset, limit, onAnswer, onExhausted, resolutionRecorder,
-                                                  this, traversalEngine, conceptMgr, explanations)
+                elg, self -> new Root.Disjunction(self, disjunction, offset, limit, onAnswer, onExhausted, onException,
+                                                  resolutionRecorder, this, traversalEngine, conceptMgr, explanations)
         );
         resolvers.add(resolver);
         if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard against races without synchronized

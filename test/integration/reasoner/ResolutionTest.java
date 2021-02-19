@@ -451,7 +451,7 @@ public class ResolutionTest {
                 Set<Identifier.Variable.Name> filter = iterate(conjunctionPattern.variables()).map(Variable::id)
                         .filter(Identifier::isName).map(Identifier.Variable::asName).toSet();
                 Actor<Root.Conjunction> root =
-                        registry.rootConjunction(conjunctionPattern, null, null, responses::add,
+                        registry.root(conjunctionPattern, null, null, responses::add,
                                                  iterDone -> doneReceived.incrementAndGet());
 
                 for (int i = 0; i < answerCount; i++) {
@@ -502,7 +502,7 @@ public class ResolutionTest {
         LinkedBlockingQueue<Top> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
         Actor<Root.Disjunction> root =
-                registry.rootDisjunction(disjunction, offset, limit, responses::add, iterDone -> doneReceived.incrementAndGet());
+                registry.root(disjunction, offset, limit, responses::add, iterDone -> doneReceived.incrementAndGet());
         assertResponses(root, filter, responses, doneReceived, answerCount);
     }
 
@@ -514,7 +514,7 @@ public class ResolutionTest {
         Set<Identifier.Variable.Name> filter = iterate(conjunction.variables()).map(Variable::id)
                 .filter(Identifier::isName).map(Identifier.Variable::asName).toSet();
         Actor<Root.Conjunction> root =
-                registry.rootConjunction(conjunction, offset, limit, responses::add, iterDone -> doneReceived.incrementAndGet());
+                registry.root(conjunction, offset, limit, responses::add, iterDone -> doneReceived.incrementAndGet());
         assertResponses(root, filter, responses, doneReceived, answerCount);
     }
 
