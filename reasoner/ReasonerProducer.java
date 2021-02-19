@@ -49,7 +49,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerProducer.class);
 
-    private int computeSize;
+    private final int computeSize;
     private final Actor<? extends Resolver<?>> rootResolver;
     private final AtomicInteger required;
     private final AtomicInteger processing;
