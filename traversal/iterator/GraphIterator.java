@@ -42,6 +42,7 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
 import static java.util.stream.Collectors.toMap;
 
@@ -104,9 +105,11 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
             return state == State.FETCHED;
         } catch (Throwable e) {
             // note: catching runtime exception until we can gracefully interrupt running queries on tx close
-            if (e instanceof GraknException && ((GraknException) e).code().isPresent()
-                    && ((GraknException) e).code().get().equals(TRANSACTION_CLOSED.code())) {
-                LOG.debug("Transaction was closed during graph iteration");
+            if (e instanceof GraknException && ((GraknException) e).code().isPresent()) {
+                String code = ((GraknException) e).code().get();
+                if (code.equals(TRANSACTION_CLOSED.code()) || code.equals(RESOURCE_CLOSED.code())) {
+                    LOG.debug("Transaction was closed during graph iteration");
+                }
             } else {
                 LOG.error("Parameters: " + params.toString());
                 LOG.error("GraphProcedure: " + procedure.toString());
