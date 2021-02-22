@@ -38,7 +38,7 @@ public class Executors {
     private static final Logger LOG = LoggerFactory.getLogger(Executors.class);
     private static final String GRAKN_CORE_MAIN_POOL_NAME = "grakn-core-main";
     private static final String GRAKN_CORE_ASYNC_POOL_1_NAME = "grakn-core-async-1";
-    private static final String GRAKN_CORE_ASYNC_POOL_2_NAME = "grakn-core-async-1";
+    private static final String GRAKN_CORE_ASYNC_POOL_2_NAME = "grakn-core-async-2";
     private static final String GRAKN_CORE_NETWORK_POOL_NAME = "grakn-core-network";
     private static final String GRAKN_CORE_EVENTLOOP_POOL_NAME = "grakn-core-eventloop";
     private static final String GRAKN_CORE_SCHEDULED_POOL_NAME = "grakn-core-scheduled";
