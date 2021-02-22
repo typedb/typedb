@@ -128,9 +128,10 @@ public interface Root {
 
             assert !plan.isEmpty();
             ResponseProducer responseProducerNewIter = responseProducerPrevious.newIterationRetainDedup(Iterators.empty(), newIteration);
+            ResolverRegistry.MappedResolver mappedResolver = downstreamResolvers.get(plan.get(0));
             Partial.Mapped downstream = fromUpstream.partialAnswer()
-                    .mapToDownstream(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping()));
-            Request toDownstream = Request.create(self(),downstreamResolvers.get(plan.get(0)).resolver(), downstream, 0);
+                    .mapToDownstream(Mapping.of(mappedResolver.mapping()), mappedResolver.resolver());
+            Request toDownstream = Request.create(self(), mappedResolver.resolver(), downstream, 0);
             responseProducerNewIter.addDownstreamProducer(toDownstream);
             return responseProducerNewIter;
         }
@@ -322,7 +323,7 @@ public interface Root {
             assert !downstreamResolvers.isEmpty();
             for (Actor<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers) {
                 Filtered downstream = fromUpstream.partialAnswer().asIdentity()
-                        .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver));
+                        .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver), conjunctionResolver);
                 Request request = Request.create(self(), conjunctionResolver, downstream);
                 responseProducer.addDownstreamProducer(request);
             }
@@ -345,7 +346,7 @@ public interface Root {
             ResponseProducer responseProducerNewIter = responseProducerPrevious.newIterationRetainDedup(Iterators.empty(), newIteration);
             for (Actor<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers) {
                 Filtered downstream = fromUpstream.partialAnswer().asIdentity()
-                        .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver));
+                        .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver), conjunctionResolver);
                 Request request = Request.create(self(), conjunctionResolver, downstream);
                 responseProducer.addDownstreamProducer(request);
             }

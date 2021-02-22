@@ -99,7 +99,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         Request fromUpstream = fromUpstream(toDownstream);
         ResponseProducer responseProducer = responseProducers.get(fromUpstream);
 
-        Partial<?> upstreamAnswer = fromDownstream.answer().asMapped().toUpstream(self());
+        Partial<?> upstreamAnswer = fromDownstream.answer().asMapped().toUpstream();
 
         if (!responseProducer.hasProduced(upstreamAnswer.conceptMap())) {
             responseProducer.recordProduced(upstreamAnswer.conceptMap());
@@ -167,7 +167,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         assert fromUpstream.partialAnswer().isMapped();
         ResourceIterator<Partial<?>> upstreamAnswers =
                 traversalIterator(concludable.pattern(), fromUpstream.partialAnswer().conceptMap())
-                        .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap, self()));
+                        .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap));
 
         ResponseProducer responseProducer = new ResponseProducer(upstreamAnswers, iteration);
         mayRegisterRules(fromUpstream, iterationState, responseProducer);
@@ -190,7 +190,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         assert fromUpstream.partialAnswer().isMapped();
         ResourceIterator<Partial<?>> upstreamAnswers =
                 traversalIterator(concludable.pattern(), fromUpstream.partialAnswer().conceptMap())
-                        .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap, self()));
+                        .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap));
 
         ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(upstreamAnswers, newIteration);
         mayRegisterRules(fromUpstream, iterationState, responseProducerNewIter);
@@ -233,11 +233,11 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         // if we have, we do not allow rules to be registered as possible downstreams
         if (!recursionState.hasReceived(fromUpstream.partialAnswer().conceptMap())) {
             for (Map.Entry<Actor<ConclusionResolver>, Set<Unifier>> entry : applicableRules.entrySet()) {
-                Actor<ConclusionResolver> ruleActor = entry.getKey();
+                Actor<ConclusionResolver> conclusionResolver = entry.getKey();
                 for (Unifier unifier : entry.getValue()) {
-                    Optional<Unified> unified = fromUpstream.partialAnswer().unifyToDownstream(unifier);
+                    Optional<Unified> unified = fromUpstream.partialAnswer().unifyToDownstream(unifier, conclusionResolver);
                     if (unified.isPresent()) {
-                        Request toDownstream = Request.create(self(), ruleActor, unified.get());
+                        Request toDownstream = Request.create(self(), conclusionResolver, unified.get());
                         responseProducer.addDownstreamProducer(toDownstream);
                     }
                 }
