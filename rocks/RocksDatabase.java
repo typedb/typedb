@@ -68,8 +68,8 @@ public class RocksDatabase implements Grakn.Database {
     protected final String name;
     protected StatisticsBackgroundCounter statisticsBackgroundCounter;
     protected RocksSession.Data statisticsBackgroundCounterSession;
-    private final KeyGenerator.Schema.Persisted schemaKeyGenerator;
-    private final KeyGenerator.Data.Persisted dataKeyGenerator;
+    protected final KeyGenerator.Schema.Persisted schemaKeyGenerator;
+    protected final KeyGenerator.Data.Persisted dataKeyGenerator;
     private final StampedLock schemaLock;
     private final RocksGrakn grakn;
     private final AtomicInteger schemaLockWriteRequests;
