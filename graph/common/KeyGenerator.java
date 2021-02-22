@@ -25,12 +25,20 @@ import grakn.core.graph.iid.PrefixIID;
 import grakn.core.graph.iid.StructureIID;
 import grakn.core.graph.iid.VertexIID;
 
+import java.io.ByteArrayOutputStream;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static grakn.core.common.collection.Bytes.INTEGER_SIZE;
+import static grakn.core.common.collection.Bytes.LONG_SIZE;
+import static grakn.core.common.collection.Bytes.bytesToInt;
+import static grakn.core.common.collection.Bytes.bytesToLong;
+import static grakn.core.common.collection.Bytes.intToBytes;
 import static grakn.core.common.collection.Bytes.join;
+import static grakn.core.common.collection.Bytes.longToBytes;
 import static grakn.core.common.collection.Bytes.longToSortedBytes;
 import static grakn.core.common.collection.Bytes.shortToSortedBytes;
 import static grakn.core.common.collection.Bytes.sortedBytesToLong;
@@ -85,6 +93,39 @@ public class KeyGenerator {
             return shortToSortedBytes(key);
         }
 
+        public byte[] serialise() {
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            byte[] typeKeysSize = intToBytes(typeKeys.size());
+            bytes.write(typeKeysSize, 0, typeKeysSize.length);
+            for (Map.Entry<PrefixIID, AtomicInteger> typeKey : typeKeys.entrySet()) {
+                byte[] key = typeKey.getKey().bytes();
+                bytes.write(key, 0, key.length);
+                byte[] value = intToBytes(typeKey.getValue().get());
+                bytes.write(value, 0, value.length);
+            }
+            byte[] ruleKeyValue = intToBytes(ruleKey.get());
+            bytes.write(ruleKeyValue, 0, ruleKeyValue.length);
+            return bytes.toByteArray();
+        }
+
+        public void deserialise(byte[] bytes) {
+            int pos = 0;
+            typeKeys.clear();
+            int typeKeysSize = bytesToInt(copyOfRange(bytes, pos, pos + INTEGER_SIZE));
+            pos += INTEGER_SIZE;
+            for (int i = 0; i < typeKeysSize; i++) {
+                PrefixIID key = PrefixIID.of(Encoding.Prefix.of(bytes[pos]));
+                pos += 1;
+                AtomicInteger value = new AtomicInteger(bytesToInt(copyOfRange(bytes, pos, pos + INTEGER_SIZE)));
+                pos += INTEGER_SIZE;
+                typeKeys.put(key, value);
+            }
+            int ruleKeyValue = bytesToInt(copyOfRange(bytes, pos, pos + INTEGER_SIZE));
+            pos += INTEGER_SIZE;
+            ruleKey.set(ruleKeyValue);
+            assert pos == bytes.length;
+        }
+
         public static class Buffered extends Schema {
 
             public Buffered() {
@@ -131,13 +172,11 @@ public class KeyGenerator {
         private static final long LONG_MAX_VALUE = Long.MAX_VALUE - 64;
         private static final long LONG_MIN_VALUE = Long.MIN_VALUE + 64;
 
-        protected final ConcurrentMap<PrefixIID, AtomicInteger> typeKeys;
         protected final ConcurrentMap<VertexIID.Type, AtomicLong> thingKeys;
         protected final int initialValue;
         protected final int delta;
 
         Data(int initialValue, int delta) {
-            typeKeys = new ConcurrentHashMap<>();
             thingKeys = new ConcurrentHashMap<>();
             this.initialValue = initialValue;
             this.delta = delta;
@@ -151,6 +190,34 @@ public class KeyGenerator {
                 throw GraknException.of(MAX_INSTANCE_REACHED, typeLabel, LONG_MAX_VALUE);
             }
             return longToSortedBytes(key);
+        }
+
+        public byte[] serialise() {
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            byte[] thingKeysSize = intToBytes(thingKeys.size());
+            bytes.write(thingKeysSize, 0, thingKeysSize.length);
+            for (Map.Entry<VertexIID.Type, AtomicLong> thingKey : thingKeys.entrySet()) {
+                byte[] key = thingKey.getKey().bytes();
+                bytes.write(key, 0, key.length);
+                byte[] value = longToBytes(thingKey.getValue().get());
+                bytes.write(value, 0, value.length);
+            }
+            return bytes.toByteArray();
+        }
+
+        public void deserialise(byte[] bytes) {
+            int pos = 0;
+            thingKeys.clear();
+            int thingKeysSize = bytesToInt(copyOfRange(bytes, pos, pos + INTEGER_SIZE));
+            pos += INTEGER_SIZE;
+            for (int i = 0; i < thingKeysSize; i++) {
+                VertexIID.Type key = VertexIID.Type.extract(bytes, pos);
+                pos += key.bytes().length;
+                AtomicLong value = new AtomicLong(bytesToLong(copyOfRange(bytes, pos, pos + LONG_SIZE)));
+                pos += LONG_SIZE;
+                thingKeys.put(key, value);
+            }
+            assert pos == bytes.length;
         }
 
         public static class Buffered extends Data {

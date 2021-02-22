@@ -86,7 +86,7 @@ public abstract class VertexIID extends IID {
             return new Type(bytes);
         }
 
-        static VertexIID.Type extract(byte[] bytes, int from) {
+        public static VertexIID.Type extract(byte[] bytes, int from) {
             return new Type(copyOfRange(bytes, from, from + LENGTH));
         }
 
