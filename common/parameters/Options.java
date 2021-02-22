@@ -32,7 +32,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     public static final int DEFAULT_RESPONSE_BATCH_SIZE = 50;
     public static final int DEFAULT_SESSION_IDLE_TIMEOUT_MILLIS = 10_000;
     public static final int DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS = 10_000;
-    public static final boolean DEFAULT_INFER = true;
+    public static final boolean DEFAULT_INFER = false;
     public static final boolean DEFAULT_TRACE_INFERENCE = false;
     public static final boolean DEFAULT_EXPLAIN = false;
     public static final boolean DEFAULT_PARALLEL = true;
