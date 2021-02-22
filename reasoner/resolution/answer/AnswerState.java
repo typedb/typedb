@@ -299,7 +299,7 @@ public abstract class AnswerState {
                              boolean requiresReiteration, @Nullable Derivation derivation, boolean recordExplanations) {
                 super(filteredConceptMap, parent, resolver, root, requiresReiteration, derivation, recordExplanations);
                 this.filter = filter;
-                this.hash = Objects.hash(resolver, conceptMap, filter, parent);
+                this.hash = Objects.hash(root, resolver, conceptMap, parent, filter);
             }
 
             static Filtered filter(Partial<?> parent, Set<Identifier.Variable.Retrievable> filter, Actor<? extends Resolver<?>> root,
@@ -333,6 +333,7 @@ public abstract class AnswerState {
             public String toString() {
                 return "AnswerState.Partial.Filtered{" +
                         "root=" + root() +
+                        "resolver=" + resolver() +
                         ", conceptMap=" + conceptMap() +
                         ", filter=" + filter +
                         '}';
@@ -344,6 +345,7 @@ public abstract class AnswerState {
                 if (o == null || getClass() != o.getClass()) return false;
                 Filtered filtered = (Filtered) o;
                 return Objects.equals(root(), filtered.root()) &&
+                        Objects.equals(resolver(), filtered.resolver()) &&
                         Objects.equals(conceptMap, filtered.conceptMap) &&
                         Objects.equals(parent, filtered.parent) &&
                         Objects.equals(filter, filtered.filter);
@@ -366,7 +368,7 @@ public abstract class AnswerState {
                            boolean requiresReiteration, @Nullable Derivation derivation, boolean recordExplanations) {
                 super(mappedConceptMap, parent, resolver, root, requiresReiteration, derivation, recordExplanations);
                 this.mapping = mapping;
-                this.hash = Objects.hash(resolver, conceptMap, mapping, parent);
+                this.hash = Objects.hash(root, resolver, conceptMap, mapping, parent);
             }
 
             static Mapped map(Partial<?> parent, Mapping mapping, Actor<? extends Resolver<?>> root,
@@ -406,6 +408,7 @@ public abstract class AnswerState {
             public String toString() {
                 return "AnswerState.Partial.Mapped{" +
                         "root=" + root() +
+                        "resolver=" + resolver() +
                         ", conceptMap=" + conceptMap() +
                         ", mapping=" + mapping +
                         '}';
@@ -417,6 +420,7 @@ public abstract class AnswerState {
                 if (o == null || getClass() != o.getClass()) return false;
                 Mapped mapped = (Mapped) o;
                 return Objects.equals(root(), mapped.root()) &&
+                        Objects.equals(resolver(), mapped.resolver()) &&
                         Objects.equals(conceptMap, mapped.conceptMap) &&
                         Objects.equals(parent, mapped.parent) &&
                         Objects.equals(mapping, mapped.mapping);
@@ -441,7 +445,7 @@ public abstract class AnswerState {
                 super(unifiedConceptMap, parent, resolver, root, requiresReiteration, derivation, recordExplanations);
                 this.unifier = unifier;
                 this.instanceRequirements = instanceRequirements;
-                this.hash = Objects.hash(resolver, conceptMap, unifier, instanceRequirements, parent);
+                this.hash = Objects.hash(root, resolver, conceptMap, unifier, instanceRequirements, parent);
             }
 
             static Optional<Partial.Unified> unify(Partial<?> parent, Unifier unifier,
@@ -486,6 +490,7 @@ public abstract class AnswerState {
             public String toString() {
                 return "AnswerState.Partial.Unified{" +
                         "root=" + root() +
+                        "resolver=" + resolver() +
                         ", conceptMap=" + conceptMap() +
                         ", unifier=" + unifier +
                         ", instanceRequirements=" + instanceRequirements +
@@ -498,6 +503,7 @@ public abstract class AnswerState {
                 if (o == null || getClass() != o.getClass()) return false;
                 Unified unified = (Unified) o;
                 return Objects.equals(root(), unified.root()) &&
+                        Objects.equals(resolver(), unified.resolver()) &&
                         Objects.equals(conceptMap, unified.conceptMap) &&
                         Objects.equals(parent, unified.parent) &&
                         Objects.equals(unifier, unified.unifier) &&
