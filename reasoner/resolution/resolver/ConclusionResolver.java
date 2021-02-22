@@ -103,7 +103,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         if (!materialisations.hasNext()) throw GraknException.of(ILLEGAL_STATE);
 
         ResourceIterator<AnswerState.Partial<?>> materialisedAnswers = materialisations
-                .map(concepts -> fromUpstream.partialAnswer().asUnified().aggregateToUpstream(concepts, self()))
+                .map(concepts -> fromUpstream.partialAnswer().asUnified().aggregateToUpstream(concepts))
                 .filter(Optional::isPresent)
                 .map(Optional::get);
         conclusionResponses.addResponses(materialisedAnswers);
@@ -191,7 +191,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
                                                                                                          answer)));
         } else {
             Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
-            AnswerState.Partial.Filtered downstreamAnswer = fromUpstream.partialAnswer().filterToDownstream(named);
+            AnswerState.Partial.Filtered downstreamAnswer = fromUpstream.partialAnswer().filterToDownstream(named, ruleResolver);
             conclusionResponses.addDownstream(Request.create(self(), ruleResolver, downstreamAnswer));
         }
 
@@ -202,7 +202,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         Traversal traversal1 = boundTraversal(conclusion.conjunction().traversal(), answer);
         ResourceIterator<ConceptMap> traversal = traversalEngine.iterator(traversal1).map(conceptMgr::conceptMap);
         Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
-        return traversal.map(ans -> fromUpstream.partialAnswer().asUnified().extend(ans).filterToDownstream(named));
+        return traversal.map(ans -> fromUpstream.partialAnswer().asUnified().extend(ans).filterToDownstream(named, ruleResolver));
     }
 
     @Override

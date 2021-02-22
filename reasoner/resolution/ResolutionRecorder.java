@@ -23,6 +23,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.answer.AnswerState.Derivation;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +38,7 @@ public class ResolutionRecorder extends Actor.State<ResolutionRecorder> {
     private static final Logger LOG = LoggerFactory.getLogger(ResolutionRecorder.class);
 
     private final Map<Actor<? extends Resolver<?>>, Integer> actorIndices;
-    private final Map<AnswerIndex, AnswerState> answers;
+    private final Map<AnswerIndex, Partial<?>> answers;
 
     public ResolutionRecorder(Actor<ResolutionRecorder> self) {
         super(self);
@@ -61,23 +62,23 @@ public class ResolutionRecorder extends Actor.State<ResolutionRecorder> {
      * @return
      * @param newAnswer
      */
-    private AnswerState merge(AnswerState newAnswer) {
+    private Partial<?> merge(Partial<?> newAnswer) {
         Derivation newDerivation = newAnswer.derivation();
-        Map<Actor<? extends Resolver<?>>, AnswerState> subAnswers = newDerivation.answers();
+        Map<Actor<? extends Resolver<?>>, Partial<?>> subAnswers = newDerivation.answers();
 
-        Map<Actor<? extends Resolver<?>>, AnswerState> mergedSubAnswers = new HashMap<>();
+        Map<Actor<? extends Resolver<?>>, Partial<?>> mergedSubAnswers = new HashMap<>();
         for (Actor<? extends Resolver<?>> key : subAnswers.keySet()) {
-            AnswerState subAnswer = subAnswers.get(key);
-            AnswerState mergedSubAnswer = merge(subAnswer);
+            Partial<?> subAnswer = subAnswers.get(key);
+            Partial<?> mergedSubAnswer = merge(subAnswer);
             mergedSubAnswers.put(key, mergedSubAnswer);
         }
         newDerivation.replace(mergedSubAnswers);
 
-        int actorIndex = actorIndices.computeIfAbsent(newAnswer.resolver(), key -> actorIndices.size());
-        LOG.debug("actor index for " + newAnswer.resolver() + ": " + actorIndex);
+        int actorIndex = actorIndices.computeIfAbsent(newAnswer.resolvedBy(), key -> actorIndices.size());
+        LOG.debug("actor index for " + newAnswer.resolvedBy() + ": " + actorIndex);
         AnswerIndex newAnswerIndex = new AnswerIndex(actorIndex, newAnswer.conceptMap());
         if (answers.containsKey(newAnswerIndex)) {
-            AnswerState existingAnswer = answers.get(newAnswerIndex);
+            Partial<?> existingAnswer = answers.get(newAnswerIndex);
             Derivation existingDerivation = existingAnswer.derivation();
             existingDerivation.update(newDerivation.answers());
             return existingAnswer;

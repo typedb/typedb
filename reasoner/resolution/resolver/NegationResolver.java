@@ -116,7 +116,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
               the toplevel root with the negation iterations, which we cannot allow. So, we must use THIS resolver
               as a sort of new root! TODO: should NegationResolvers also implement a kind of Root interface??
         */
-        Filtered downstreamPartial = fromUpstream.partialAnswer().filterToDownstream(negated.retrieves());
+        Filtered downstreamPartial = fromUpstream.partialAnswer().filterToDownstream(negated.retrieves(), downstream);
         Request request = Request.create(self(), this.downstream, downstreamPartial);
         requestFromDownstream(request, fromUpstream, 0);
         negationResponse.setRequested();
@@ -156,7 +156,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
     private Partial<?> upstreamAnswer(Request fromUpstream) {
         // TODO: decide if we want to use isMapped here? Can Mapped currently act as a filter?
         assert fromUpstream.partialAnswer().isMapped();
-        Partial<?> upstreamAnswer = fromUpstream.partialAnswer().asMapped().toUpstream(self());
+        Partial<?> upstreamAnswer = fromUpstream.partialAnswer().asMapped().toUpstream();
 
         if (fromUpstream.partialAnswer().recordExplanations()) {
             resolutionRecorder.tell(state -> state.record(fromUpstream.partialAnswer()));
