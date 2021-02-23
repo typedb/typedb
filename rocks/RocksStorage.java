@@ -182,10 +182,10 @@ public abstract class RocksStorage implements Storage {
         @Override
         public <G> ResourceIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
 //            assert isOpen(); // TODO: verify why this was an assertion rather than an exception
-            if (!isOpen()) throw GraknException.of(TRANSACTION_CLOSED);
+            if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
             RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
             iterators.add(iterator);
-            if (!isOpen()) throw GraknException.of(TRANSACTION_CLOSED); //guard against close() race conditions
+            if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED); //guard against close() race conditions
             return iterator.onFinalise(iterator::close);
         }
     }
