@@ -132,7 +132,7 @@ public class ReasonerTest {
                 try {
                     List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $x isa is-still-good;").asMatch()).toList();
                 } catch (GraknException e) {
-                    assertEquals(e.code().get(), RESOLUTION_TERMINATED.code());
+                    assertEquals(((GraknException)e.getCause()).code().get(), RESOLUTION_TERMINATED.code());
                     return;
                 }
                 fail();
