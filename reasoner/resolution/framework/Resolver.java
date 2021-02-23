@@ -46,7 +46,6 @@ import java.util.Optional;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
-import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
 
 public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
     private static final Logger LOG = LoggerFactory.getLogger(Resolver.class);
@@ -77,7 +76,7 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
     protected void exception(Throwable e) {
         if (e instanceof GraknException && ((GraknException) e).code().isPresent()) {
             String code = ((GraknException) e).code().get();
-            if (code.equals(TRANSACTION_CLOSED.code()) || code.equals(RESOURCE_CLOSED.code())) {
+            if (code.equals(RESOURCE_CLOSED.code())) {
                 LOG.debug("Resolver interrupted by transaction close: {}", e.getMessage());
                 registry.terminateResolvers(e);
                 return;

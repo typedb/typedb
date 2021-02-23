@@ -87,20 +87,20 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Internal(3, "Illegal internal operation! This method should not have been called.");
         public static final Internal ILLEGAL_ARGUMENT =
                 new Internal(4, "Illegal argument provided.");
-        public static final Internal UNRECOGNISED_VALUE =
-                new Internal(5, "Unrecognised encoding value!");
-        public static final Internal DIRTY_INITIALISATION =
-                new Internal(6, "Invalid Database Initialisation.");
-        public static final Internal GRAKN_CLOSED =
-                new Internal(7, "Attempted to open a session on a closed Grakn backend.");
-        public static final Internal OUT_OF_BOUNDS =
-                new Internal(8, "Resource out of bounds.");
-        public static final Internal UNEXPECTED_INTERRUPTION =
-                new Internal(9, "Unexpected thread interruption!");
-        public static final Internal UNEXPECTED_PLANNING_ERROR =
-                new Internal(10, "Unexpected error during traversal plan optimisation.");
         public static final Internal RESOURCE_CLOSED =
-                new Internal(11, "Attempted to utilise a closed resource.");
+                new Internal(5, "Attempted to utilise a closed resource.");
+        public static final Internal UNRECOGNISED_VALUE =
+                new Internal(6, "Unrecognised encoding value!");
+        public static final Internal DIRTY_INITIALISATION =
+                new Internal(7, "Invalid Database Initialisation.");
+        public static final Internal GRAKN_CLOSED =
+                new Internal(8, "Attempted to open a session on a closed Grakn backend.");
+        public static final Internal OUT_OF_BOUNDS =
+                new Internal(9, "Resource out of bounds.");
+        public static final Internal UNEXPECTED_INTERRUPTION =
+                new Internal(10, "Unexpected thread interruption!");
+        public static final Internal UNEXPECTED_PLANNING_ERROR =
+                new Internal(11, "Unexpected error during traversal plan optimisation.");
         public static final Internal UNIMPLEMENTED =
                 new Internal(12, "This functionality is not yet implemented.");
 
