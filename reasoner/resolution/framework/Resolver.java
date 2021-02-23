@@ -77,7 +77,7 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
         if (e instanceof GraknException && ((GraknException) e).code().isPresent()) {
             String code = ((GraknException) e).code().get();
             if (code.equals(RESOURCE_CLOSED.code())) {
-                LOG.debug("Resolver interrupted by transaction close: {}", e.getMessage());
+                LOG.debug("Resolver interrupted by resource close: {}", e.getMessage());
                 registry.terminateResolvers(e);
                 return;
             }
