@@ -62,7 +62,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
             failToUpstream(fromUpstream, iteration);
         } else {
             assert iteration == responseProducer.iteration();
-            tryAnswer(fromUpstream, responseProducer, iteration);
+            nextAnswer(fromUpstream, responseProducer, iteration);
         }
     }
 
@@ -120,7 +120,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         return responseProducers.get(fromUpstream);
     }
 
-    private void tryAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
+    private void nextAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
         if (responseProducer.hasUpstreamAnswer()) {
             Partial<?> upstreamAnswer = responseProducer.upstreamAnswers().next();
             responseProducer.recordProduced(upstreamAnswer.conceptMap());
@@ -129,10 +129,4 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
             failToUpstream(fromUpstream, iteration);
         }
     }
-
-    @Override
-    protected void exception(Throwable e) {
-        LOG.error("Actor exception", e);
-    }
-
 }
