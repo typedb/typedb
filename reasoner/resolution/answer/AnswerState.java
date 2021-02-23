@@ -396,8 +396,7 @@ public abstract class AnswerState {
             protected Mapped with(ConceptMap extension, boolean requiresReiteration, Actor<? extends Resolver<?>> extendedBy,
                                   @Nullable Partial<?> extensionState) {
                 Optional<Derivation> derivation = extendDerivation(extendedBy, extensionState);
-                assert resolvedBy().state instanceof ConcludableResolver;
-                return new Mapped(extendAnswer(extension), parent(), mapping, (Actor<ConcludableResolver>) resolvedBy(), root(), requiresReiteration,
+                return new Mapped(extendAnswer(extension), parent(), mapping, resolvedBy(), root(), requiresReiteration,
                                   derivation.orElse(null), recordExplanations());
             }
 
