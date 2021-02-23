@@ -63,6 +63,8 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     @Override
     public void receiveRequest(Request fromUpstream, int iteration) {
         LOG.trace("{}: received Request: {}", name(), fromUpstream);
+        if (isTerminated()) return;
+
         Responses responses = mayUpdateAndGetResponses(fromUpstream, iteration);
         if (iteration < responses.iteration()) {
             // short circuit old iteration exhausted messages to upstream
@@ -94,7 +96,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
 
         Producer<ConceptMap> traversalAsync = traversalProducer(retrievable.pattern(), fromUpstream.partialAnswer().conceptMap(), 2);
         Producer<Partial<?>> upstreamAnswersAsync = traversalAsync
-                .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap, self()));
+                .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap));
 
         return new Responses(fromUpstream, upstreamAnswersAsync, iteration);
     }
@@ -108,7 +110,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         assert fromUpstream.partialAnswer().isMapped();
         Producer<ConceptMap> traversalAsync = traversalProducer(retrievable.pattern(), fromUpstream.partialAnswer().conceptMap(), 2);
         Producer<Partial<?>> upstreamAnswersAsync = traversalAsync
-                .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap, self()));
+                .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap));
 
         return new Responses(fromUpstream, upstreamAnswersAsync, newIteration);
     }
@@ -143,6 +145,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     }
 
     public void receiveTraversalAnswer(Partial<?> upstreamAnswer, Request fromUpstreamSource) {
+        if (isTerminated()) return;
         Responses responses = this.responses.get(fromUpstreamSource);
         responses.decrementProcessing();
         if (responses.hasAwaitingRequest()) {
@@ -154,6 +157,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     }
 
     public void receiveTraversalDone(Request fromUpstreamSource) {
+        if (isTerminated()) return;
         Responses responses = this.responses.get(fromUpstreamSource);
         responses.setTraversalDone();
         if (!responses.hasFetched()) {

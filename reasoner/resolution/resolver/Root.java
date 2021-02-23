@@ -19,7 +19,6 @@ package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.ConceptManager;
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.LogicManager;
 import grakn.core.reasoner.resolution.Planner;
@@ -30,7 +29,6 @@ import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.answer.Mapping;
 import grakn.core.reasoner.resolution.framework.Request;
-import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
@@ -52,6 +50,7 @@ public interface Root {
 
         private final Consumer<Top> onAnswer;
         private final Consumer<Integer> onFail;
+        private Consumer<Throwable> onException;
         private final Long offset;
         private final Long limit;
         private long skipped;
@@ -59,15 +58,15 @@ public interface Root {
 
         public Conjunction(Actor<Conjunction> self, grakn.core.pattern.Conjunction conjunction,
                            @Nullable Long offset, @Nullable Long limit, Consumer<Top> onAnswer,
-                           Consumer<Integer> onFail, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
-                           TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr, Planner planner,
-                           boolean resolutionTracing) {
+                           Consumer<Integer> onFail, Consumer<Throwable> onException, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
+                           TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr, Planner planner, boolean resolutionTracing) {
             super(self, Conjunction.class.getSimpleName() + "(pattern:" + conjunction + ")", conjunction, resolutionRecorder,
                   registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
             this.offset = offset;
             this.limit = limit;
             this.onAnswer = onAnswer;
             this.onFail = onFail;
+            this.onException = onException;
             this.skipped = 0;
             this.answered = 0;
         }
@@ -97,9 +96,15 @@ public interface Root {
             }
         }
 
+        @Override
+        public void terminate(Throwable cause) {
+            super.terminate(cause);
+            onException.accept(cause);
+        }
+
         /*
         NOTE special behaviour: don't clear the deduplication set, in the root
-         */
+        */
         @Override
         protected ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer responseProducerPrevious,
                                                              int newIteration) {
@@ -110,9 +115,10 @@ public interface Root {
 
             assert !plan.isEmpty();
             ResponseProducer responseProducerNewIter = responseProducerPrevious.newIterationRetainDedup(Iterators.empty(), newIteration);
+            ResolverRegistry.MappedResolver mappedResolver = downstreamResolvers.get(plan.get(0));
             Partial.Mapped downstream = fromUpstream.partialAnswer()
-                    .mapToDownstream(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping()));
-            Request toDownstream = Request.create(self(),downstreamResolvers.get(plan.get(0)).resolver(), downstream, 0);
+                    .mapToDownstream(Mapping.of(mappedResolver.mapping()), mappedResolver.resolver());
+            Request toDownstream = Request.create(self(), mappedResolver.resolver(), downstream, 0);
             responseProducerNewIter.addDownstreamProducer(toDownstream);
             return responseProducerNewIter;
         }
@@ -160,10 +166,11 @@ public interface Root {
         private final Long limit;
         private final Consumer<Top> onAnswer;
         private final Consumer<Integer> onFail;
+        private final Consumer<Throwable> onException;
 
         public Disjunction(Actor<Disjunction> self, grakn.core.pattern.Disjunction disjunction,
                            @Nullable Long offset, @Nullable Long limit, Consumer<Top> onAnswer,
-                           Consumer<Integer> onFail, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
+                           Consumer<Integer> onFail, Consumer<Throwable> onException, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                            TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
             super(self, Disjunction.class.getSimpleName() + "(pattern:" + disjunction + ")", disjunction,
                   resolutionRecorder, registry, traversalEngine, conceptMgr, resolutionTracing);
@@ -171,6 +178,8 @@ public interface Root {
             this.limit = limit;
             this.onAnswer = onAnswer;
             this.onFail = onFail;
+            this.onException = onException;
+            this.isInitialised = false;
         }
 
         protected void nextAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
@@ -210,6 +219,12 @@ public interface Root {
         @Override
         public boolean mustOffset() {
             return offset != null && skipped < offset;
+        }
+
+        @Override
+        public void terminate(Throwable cause) {
+            super.terminate(cause);
+            onException.accept(cause);
         }
 
         @Override

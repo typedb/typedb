@@ -18,6 +18,7 @@
 package grakn.core.reasoner;
 
 import grakn.common.concurrent.NamedThreadFactory;
+import grakn.core.common.exception.GraknCheckedException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.actor.EventLoopGroup;
@@ -126,14 +127,14 @@ public class ReiterationTest {
                 boolean[] receivedInferredAnswer = {false};
 
                 ResolutionTracer.get().start();
-                Actor<Root.Conjunction> root = registry.rootConjunction(conjunction, null, null, answer -> {
+                Actor<Root.Conjunction> root = registry.root(conjunction, null, null, answer -> {
                     if (answer.requiresReiteration()) receivedInferredAnswer[0] = true;
                     responses.add(answer);
                 }, iterDone -> {
                     assert iteration[0] == iterDone;
                     doneInIteration[0]++;
                     failed.add(iterDone);
-                });
+                }, throwable -> fail());
 
                 Set<Top> answers = new HashSet<>();
                 // iteration 0
@@ -166,6 +167,9 @@ public class ReiterationTest {
                     }
                     ResolutionTracer.get().finish();
                 }
+            } catch (GraknCheckedException e) {
+                e.printStackTrace();
+                fail();
             }
         }
     }

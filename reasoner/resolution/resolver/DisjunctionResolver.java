@@ -17,6 +17,7 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
+import grakn.core.common.exception.GraknCheckedException;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.ConceptManager;
@@ -76,8 +77,8 @@ public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> exte
     @Override
     public void receiveRequest(Request fromUpstream, int iteration) {
         LOG.trace("{}: received Request: {}", name(), fromUpstream);
-
         if (!isInitialised) initialiseDownstreamResolvers();
+        if (isTerminated()) return;
 
         ResponseProducer responseProducer = mayUpdateAndGetResponseProducer(fromUpstream, iteration);
         if (iteration < responseProducer.iteration()) {
@@ -92,6 +93,7 @@ public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> exte
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
         LOG.trace("{}: received answer: {}", name(), fromDownstream);
+        if (isTerminated()) return;
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
@@ -115,6 +117,8 @@ public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> exte
     @Override
     protected void receiveFail(Response.Fail fromDownstream, int iteration) {
         LOG.trace("{}: received Exhausted, with iter {}: {}", name(), iteration, fromDownstream);
+        if (isTerminated()) return;
+
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
         ResponseProducer responseProducer = responseProducers.get(fromUpstream);
@@ -132,9 +136,14 @@ public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> exte
     protected void initialiseDownstreamResolvers() {
         LOG.debug("{}: initialising downstream resolvers", name());
         for (grakn.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
-            downstreamResolvers.add(registry.nested(conjunction));
+            try {
+                downstreamResolvers.add(registry.nested(conjunction));
+            } catch (GraknCheckedException e) {
+                terminate(e);
+                return;
+            }
         }
-        isInitialised = true;
+        if (!isTerminated()) isInitialised = true;
     }
 
     private ResponseProducer mayUpdateAndGetResponseProducer(Request fromUpstream, int iteration) {
@@ -162,7 +171,7 @@ public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> exte
         assert !downstreamResolvers.isEmpty();
         for (Actor<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers) {
             Filtered downstream = fromUpstream.partialAnswer()
-                    .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver));
+                    .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver), conjunctionResolver);
             Request request = Request.create(self(), conjunctionResolver, downstream);
             responseProducer.addDownstreamProducer(request);
         }
@@ -180,7 +189,7 @@ public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> exte
         ResponseProducer responseProducerNewIter = responseProducerNewIteration(responseProducerPrevious, newIteration);
         for (Actor<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers) {
             Filtered downstream = fromUpstream.partialAnswer()
-                    .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver));
+                    .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver), conjunctionResolver);
             Request request = Request.create(self(), conjunctionResolver, downstream);
             responseProducerNewIter.addDownstreamProducer(request);
         }

@@ -17,6 +17,7 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
+import grakn.core.common.exception.GraknCheckedException;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.Concept;
@@ -56,7 +57,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
 
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private final Rule.Conclusion conclusion;
-    private final Map<Request, ConclusionResponses> conclusionResponsess;
+    private final Map<Request, ConclusionResponses> conclusionResponses;
     private boolean isInitialised;
     private Actor<ConditionResolver> ruleResolver;
 
@@ -67,15 +68,15 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
               registry, traversalEngine, conceptMgr, resolutionTracing);
         this.conclusion = conclusion;
         this.resolutionRecorder = resolutionRecorder;
-        this.conclusionResponsess = new HashMap<>();
+        this.conclusionResponses = new HashMap<>();
         this.isInitialised = false;
     }
 
     @Override
     public void receiveRequest(Request fromUpstream, int iteration) {
         LOG.trace("{}: received Request: {}", name(), fromUpstream);
-
         if (!isInitialised) initialiseDownstreamResolvers();
+        if (isTerminated()) return;
 
         ConclusionResponses conclusionResponses = getOrUpdateResponses(fromUpstream, iteration);
 
@@ -88,35 +89,21 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         }
     }
 
-    private void tryAnswer(Request fromUpstream, ConclusionResponses conclusionResponses, int iteration) {
-        // TODO try to use a downstream that is available, or a local iterator
-        // TODO to produce an upstream answer
-
-        Optional<AnswerState.Partial<?>> answer = conclusionResponses.nextResponse();
-        if (answer.isPresent()) {
-            conclusionResponses.recordProduced(answer.get().conceptMap());
-            answerToUpstream(answer.get(), fromUpstream, iteration);
-        } else if (conclusionResponses.hasDownstream()) {
-            requestFromDownstream(conclusionResponses.nextDownstream(), fromUpstream, iteration);
-        } else {
-            failToUpstream(fromUpstream, iteration);
-        }
-    }
-
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
         LOG.trace("{}: received Answer: {}", name(), fromDownstream);
+        if (isTerminated()) return;
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        ConclusionResponses conclusionResponses = conclusionResponsess.get(fromUpstream);
+        ConclusionResponses conclusionResponses = this.conclusionResponses.get(fromUpstream);
 
         ResourceIterator<Map<Identifier.Variable, Concept>> materialisations = conclusion
                 .materialise(fromDownstream.answer().conceptMap(), traversalEngine, conceptMgr);
         if (!materialisations.hasNext()) throw GraknException.of(ILLEGAL_STATE);
 
         ResourceIterator<AnswerState.Partial<?>> materialisedAnswers = materialisations
-                .map(concepts -> fromUpstream.partialAnswer().asUnified().aggregateToUpstream(concepts, self()))
+                .map(concepts -> fromUpstream.partialAnswer().asUnified().aggregateToUpstream(concepts))
                 .filter(Optional::isPresent)
                 .map(Optional::get);
         conclusionResponses.addResponses(materialisedAnswers);
@@ -126,9 +113,11 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
     @Override
     protected void receiveFail(Response.Fail fromDownstream, int iteration) {
         LOG.trace("{}: received Fail: {}", name(), fromDownstream);
+        if (isTerminated()) return;
+
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        ConclusionResponses conclusionResponses = conclusionResponsess.get(fromUpstream);
+        ConclusionResponses conclusionResponses = this.conclusionResponses.get(fromUpstream);
 
         if (iteration < conclusionResponses.iteration()) {
             // short circuit old iteration fail messages to upstream
@@ -141,27 +130,49 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
     }
 
     @Override
+    public void terminate(Throwable cause) {
+        super.terminate(cause);
+        conclusionResponses.clear();
+    }
+
+    @Override
     protected void initialiseDownstreamResolvers() {
         LOG.debug("{}: initialising downstream resolvers", name());
-        ruleResolver = registry.registerCondition(conclusion.rule());
-        isInitialised = true;
+        try {
+            ruleResolver = registry.registerCondition(conclusion.rule());
+            isInitialised = true;
+        } catch (GraknCheckedException e) {
+            terminate(e);
+        }
+    }
+
+    private void tryAnswer(Request fromUpstream, ConclusionResponses conclusionResponses, int iteration) {
+        Optional<AnswerState.Partial<?>> answer = conclusionResponses.nextResponse();
+        if (answer.isPresent()) {
+            conclusionResponses.recordProduced(answer.get().conceptMap());
+            answerToUpstream(answer.get(), fromUpstream, iteration);
+        } else if (conclusionResponses.hasDownstream()) {
+            requestFromDownstream(conclusionResponses.nextDownstream(), fromUpstream, iteration);
+        } else {
+            failToUpstream(fromUpstream, iteration);
+        }
     }
 
     private ConclusionResponses getOrUpdateResponses(Request fromUpstream, int iteration) {
-        if (!conclusionResponsess.containsKey(fromUpstream)) {
-            conclusionResponsess.put(fromUpstream, createConclusionResponses(fromUpstream, iteration));
+        if (!conclusionResponses.containsKey(fromUpstream)) {
+            conclusionResponses.put(fromUpstream, createConclusionResponses(fromUpstream, iteration));
         } else {
-            ConclusionResponses conclusionResponses = conclusionResponsess.get(fromUpstream);
+            ConclusionResponses conclusionResponses = this.conclusionResponses.get(fromUpstream);
             assert conclusionResponses.iteration() == iteration ||
                     conclusionResponses.iteration() + 1 == iteration;
 
             if (conclusionResponses.iteration() + 1 == iteration) {
                 // when the same request for the next iteration the first time, re-initialise required state
                 ConclusionResponses conclusionResponsesNextIter = createConclusionResponses(fromUpstream, iteration);
-                conclusionResponsess.put(fromUpstream, conclusionResponsesNextIter);
+                this.conclusionResponses.put(fromUpstream, conclusionResponsesNextIter);
             }
         }
-        return conclusionResponsess.get(fromUpstream);
+        return conclusionResponses.get(fromUpstream);
     }
 
     private ConclusionResponses createConclusionResponses(Request fromUpstream, int iteration) {
@@ -180,7 +191,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
                                                                                                          answer)));
         } else {
             Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
-            AnswerState.Partial.Filtered downstreamAnswer = fromUpstream.partialAnswer().filterToDownstream(named);
+            AnswerState.Partial.Filtered downstreamAnswer = fromUpstream.partialAnswer().filterToDownstream(named, ruleResolver);
             conclusionResponses.addDownstream(Request.create(self(), ruleResolver, downstreamAnswer));
         }
 
@@ -191,7 +202,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         Traversal traversal1 = boundTraversal(conclusion.conjunction().traversal(), answer);
         ResourceIterator<ConceptMap> traversal = traversalEngine.iterator(traversal1).map(conceptMgr::conceptMap);
         Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
-        return traversal.map(ans -> fromUpstream.partialAnswer().asUnified().extend(ans).filterToDownstream(named));
+        return traversal.map(ans -> fromUpstream.partialAnswer().asUnified().extend(ans).filterToDownstream(named, ruleResolver));
     }
 
     @Override

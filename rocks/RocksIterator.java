@@ -18,12 +18,14 @@
 
 package grakn.core.rocks;
 
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.AbstractResourceIterator;
 
 import java.util.NoSuchElementException;
 import java.util.function.BiFunction;
 
 import static grakn.core.common.collection.Bytes.bytesHavePrefix;
+import static grakn.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
 public final class RocksIterator<T> extends AbstractResourceIterator<T> implements AutoCloseable {
 
@@ -33,6 +35,7 @@ public final class RocksIterator<T> extends AbstractResourceIterator<T> implemen
     private org.rocksdb.RocksIterator internalRocksIterator;
     private State state;
     private T next;
+    private boolean isClosed;
 
     private enum State {INIT, EMPTY, FETCHED, COMPLETED}
 
@@ -41,16 +44,24 @@ public final class RocksIterator<T> extends AbstractResourceIterator<T> implemen
         this.prefix = prefix;
         this.constructor = constructor;
         state = State.INIT;
+        isClosed = false;
     }
 
     public final T peek() {
-        if (!hasNext()) throw new NoSuchElementException();
+        if (!hasNext()) {
+            if (isClosed) throw GraknException.of(RESOURCE_CLOSED);
+            else throw new NoSuchElementException();
+        }
+
         return next;
     }
 
     @Override
     public synchronized final T next() {
-        if (!hasNext()) throw new NoSuchElementException();
+        if (!hasNext()) {
+            if (isClosed) throw GraknException.of(RESOURCE_CLOSED);
+            else throw new NoSuchElementException();
+        }
         state = State.EMPTY;
         return next;
     }
@@ -112,6 +123,7 @@ public final class RocksIterator<T> extends AbstractResourceIterator<T> implemen
         if (state != State.COMPLETED) {
             if (state != State.INIT) storage.recycle(internalRocksIterator);
             state = State.COMPLETED;
+            isClosed = true;
             storage.remove(this);
         }
     }

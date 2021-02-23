@@ -18,6 +18,7 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
+import grakn.core.common.exception.GraknCheckedException;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
@@ -67,25 +68,13 @@ public class NegationResolver extends Resolver<NegationResolver> {
     }
 
     @Override
-    protected void initialiseDownstreamResolvers() {
-        LOG.debug("{}: initialising downstream resolvers", name());
-
-        Disjunction disjunction = negated.pattern();
-        if (disjunction.conjunctions().size() == 1) {
-            downstream = registry.nested(disjunction.conjunctions().get(0));
-        } else {
-            downstream = registry.nested(disjunction);
-        }
-        isInitialised = true;
-    }
-
-    @Override
     public void receiveRequest(Request fromUpstream, int iteration) {
         LOG.trace("{}: received Request: {}", name(), fromUpstream);
-
         if (!isInitialised) initialiseDownstreamResolvers();
+        if (isTerminated()) return;
 
-        NegationResponse negationResponse = getOrInitialise(fromUpstream.partialAnswer().conceptMap());
+        NegationResponse negationResponse = responses.computeIfAbsent(fromUpstream.partialAnswer().conceptMap(),
+                                                                      (cm) -> new NegationResponse());
         if (negationResponse.status.isEmpty()) {
             negationResponse.addAwaiting(fromUpstream, iteration);
             tryAnswer(fromUpstream, negationResponse);
@@ -100,8 +89,21 @@ public class NegationResolver extends Resolver<NegationResolver> {
         }
     }
 
-    private NegationResponse getOrInitialise(ConceptMap conceptMap) {
-        return responses.computeIfAbsent(conceptMap, (cm) -> new NegationResponse());
+    @Override
+    protected void initialiseDownstreamResolvers() {
+        LOG.debug("{}: initialising downstream resolvers", name());
+
+        Disjunction disjunction = negated.pattern();
+        if (disjunction.conjunctions().size() == 1) {
+            try {
+                downstream = registry.nested(disjunction.conjunctions().get(0));
+            } catch (GraknCheckedException e) {
+                terminate(e);
+            }
+        } else {
+            downstream = registry.nested(disjunction);
+        }
+        isInitialised = true;
     }
 
     private void tryAnswer(Request fromUpstream, NegationResponse negationResponse) {
@@ -114,7 +116,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
               the toplevel root with the negation iterations, which we cannot allow. So, we must use THIS resolver
               as a sort of new root! TODO: should NegationResolvers also implement a kind of Root interface??
         */
-        Filtered downstreamPartial = fromUpstream.partialAnswer().filterToDownstream(negated.retrieves());
+        Filtered downstreamPartial = fromUpstream.partialAnswer().filterToDownstream(negated.retrieves(), downstream);
         Request request = Request.create(self(), this.downstream, downstreamPartial);
         requestFromDownstream(request, fromUpstream, 0);
         negationResponse.setRequested();
@@ -123,6 +125,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
         LOG.trace("{}: received Answer: {}, therefore is FAILED", name(), fromDownstream);
+        if (isTerminated()) return;
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
@@ -136,7 +139,8 @@ public class NegationResolver extends Resolver<NegationResolver> {
 
     @Override
     protected void receiveFail(Response.Fail fromDownstream, int iteration) {
-        LOG.trace("{}: Receiving EFailed: {}, therefore is SATISFIED", name(), fromDownstream);
+        LOG.trace("{}: Receiving Failed: {}, therefore is SATISFIED", name(), fromDownstream);
+        if (isTerminated()) return;
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
@@ -152,7 +156,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
     private Partial<?> upstreamAnswer(Request fromUpstream) {
         // TODO: decide if we want to use isMapped here? Can Mapped currently act as a filter?
         assert fromUpstream.partialAnswer().isMapped();
-        Partial<?> upstreamAnswer = fromUpstream.partialAnswer().asMapped().toUpstream(self());
+        Partial<?> upstreamAnswer = fromUpstream.partialAnswer().asMapped().toUpstream();
 
         if (fromUpstream.partialAnswer().recordExplanations()) {
             resolutionRecorder.tell(state -> state.record(fromUpstream.partialAnswer()));
