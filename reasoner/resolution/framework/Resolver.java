@@ -45,7 +45,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
+import static grakn.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
 public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
     private static final Logger LOG = LoggerFactory.getLogger(Resolver.class);
@@ -56,6 +56,7 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
     protected final TraversalEngine traversalEngine;
     protected final ConceptManager conceptMgr;
     private final boolean resolutionTracing;
+    private boolean terminated;
 
     protected Resolver(Actor<T> self, String name, ResolverRegistry registry, TraversalEngine traversalEngine,
                       ConceptManager conceptMgr, boolean resolutionTracing) {
@@ -65,6 +66,7 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
         this.traversalEngine = traversalEngine;
         this.conceptMgr = conceptMgr;
         this.resolutionTracing = resolutionTracing;
+        this.terminated = false;
         this.requestRouter = new HashMap<>();
         // Note: initialising downstream actors in constructor will create all actors ahead of time, so it is non-lazy
         // additionally, it can cause deadlock within ResolverRegistry as different threads initialise actors
@@ -72,16 +74,16 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
 
     @Override
     protected void exception(Throwable e) {
-        if (e instanceof GraknException) {
-            GraknException exception = (GraknException) e;
-            if (exception.code().isPresent() && exception.code().get().equals(TRANSACTION_CLOSED.code())) {
-                LOG.debug("Resolver interrupted by transaction close: {}", exception.getMessage());
+        if (e instanceof GraknException && ((GraknException) e).code().isPresent()) {
+            String code = ((GraknException) e).code().get();
+            if (code.equals(RESOURCE_CLOSED.code())) {
+                LOG.debug("Resolver interrupted by resource close: {}", e.getMessage());
+                registry.terminateResolvers(e);
                 return;
             }
         }
         LOG.error("Actor exception: {}", e.getMessage());
-        // TODO, once integrated into the larger flow of executing queries, kill the resolvers and report and exception to root
-        // TODO we should really be cooperatively killing resolvers, rather than forcibly from lower down
+        registry.terminateResolvers(e);
     }
 
     public String name() {
@@ -94,11 +96,18 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
 
     protected abstract void receiveFail(Response.Fail fromDownstream, int iteration);
 
+    public void terminate(Throwable cause) {
+        this.terminated = true;
+    }
+
+    public boolean isTerminated() { return terminated; }
+
     protected abstract void initialiseDownstreamResolvers();
 
     protected abstract ResponseProducer responseProducerCreate(Request fromUpstream, int iteration);
 
-    protected abstract ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer responseProducer, int newIteration);
+    protected abstract ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer
+            responseProducer, int newIteration);
 
     protected Request fromUpstream(Request toDownstream) {
         assert requestRouter.containsKey(toDownstream);

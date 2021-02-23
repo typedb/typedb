@@ -17,11 +17,14 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
+import grakn.core.common.exception.GraknCheckedException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.LogicManager;
+import grakn.core.pattern.Conjunction;
+import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
@@ -60,6 +63,7 @@ public interface Root {
 
         private final Consumer<Top> onAnswer;
         private final Consumer<Integer> onFail;
+        private Consumer<Throwable> onException;
         private final Long offset;
         private final Long limit;
         private long skipped;
@@ -67,15 +71,15 @@ public interface Root {
 
         public Conjunction(Actor<Conjunction> self, grakn.core.pattern.Conjunction conjunction,
                            @Nullable Long offset, @Nullable Long limit, Consumer<Top> onAnswer,
-                           Consumer<Integer> onFail, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
-                           TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr, Planner planner,
-                           boolean resolutionTracing) {
+                           Consumer<Integer> onFail, Consumer<Throwable> onException, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
+                           TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr, Planner planner, boolean resolutionTracing) {
             super(self, Conjunction.class.getSimpleName() + "(pattern:" + conjunction + ")", conjunction, resolutionRecorder,
                   registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
             this.offset = offset;
             this.limit = limit;
             this.onAnswer = onAnswer;
             this.onFail = onFail;
+            this.onException = onException;
             this.skipped = 0;
             this.answered = 0;
         }
@@ -105,9 +109,15 @@ public interface Root {
             }
         }
 
+        @Override
+        public void terminate(Throwable cause) {
+            super.terminate(cause);
+            onException.accept(cause);
+        }
+
         /*
         NOTE special behaviour: don't clear the deduplication set, in the root
-         */
+        */
         @Override
         protected ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer responseProducerPrevious,
                                                              int newIteration) {
@@ -168,6 +178,7 @@ public interface Root {
         private final Actor<ResolutionRecorder> resolutionRecorder;
         private final Consumer<Top> onAnswer;
         private final Consumer<Integer> onFail;
+        private Consumer<Throwable> onException;
         private final List<Actor<ConjunctionResolver.Nested>> downstreamResolvers;
         private final grakn.core.pattern.Disjunction disjunction;
         private final Long offset;
@@ -179,15 +190,15 @@ public interface Root {
 
         public Disjunction(Actor<Disjunction> self, grakn.core.pattern.Disjunction disjunction,
                            @Nullable Long offset, @Nullable Long limit, Consumer<Top> onAnswer,
-                           Consumer<Integer> onFail, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
+                           Consumer<Integer> onFail, Consumer<Throwable> onException, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                            TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
-            super(self, Disjunction.class.getSimpleName() + "(pattern:" + disjunction + ")", registry, traversalEngine,
-                  conceptMgr, resolutionTracing);
+            super(self, Disjunction.class.getSimpleName() + "(pattern:" + disjunction + ")", registry, traversalEngine, conceptMgr, resolutionTracing);
             this.disjunction = disjunction;
             this.offset = offset;
             this.limit = limit;
             this.onAnswer = onAnswer;
             this.onFail = onFail;
+            this.onException = onException;
             this.resolutionRecorder = resolutionRecorder;
             this.isInitialised = false;
             this.downstreamResolvers = new ArrayList<>();
@@ -216,6 +227,8 @@ public interface Root {
                 initialiseDownstreamResolvers();
                 responseProducer = responseProducerCreate(fromUpstream, iteration);
             }
+            if (isTerminated()) return;
+
             mayReiterateResponseProducer(fromUpstream, iteration);
             if (iteration < responseProducer.iteration()) {
                 // short circuit if the request came from a prior iteration
@@ -243,6 +256,7 @@ public interface Root {
         @Override
         protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
             LOG.trace("{}: received answer: {}", name(), fromDownstream);
+            if (isTerminated()) return;
 
             Request toDownstream = fromDownstream.sourceRequest();
             Request fromUpstream = fromUpstream(toDownstream);
@@ -266,6 +280,8 @@ public interface Root {
         @Override
         protected void receiveFail(Response.Fail fromDownstream, int iteration) {
             LOG.trace("{}: received Exhausted, with iter {}: {}", name(), iteration, fromDownstream);
+            if (isTerminated()) return;
+
             Request toDownstream = fromDownstream.sourceRequest();
             Request fromUpstream = fromUpstream(toDownstream);
 
@@ -279,10 +295,21 @@ public interface Root {
         }
 
         @Override
+        public void terminate(Throwable cause) {
+            super.terminate(cause);
+            onException.accept(cause);
+        }
+
+        @Override
         protected void initialiseDownstreamResolvers() {
             LOG.debug("{}: initialising downstream resolvers", name());
             for (grakn.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
-                downstreamResolvers.add(registry.nested(conjunction));
+                try {
+                    downstreamResolvers.add(registry.nested(conjunction));
+                } catch (GraknCheckedException e) {
+                    terminate(e);
+                    return;
+                }
             }
             isInitialised = true;
         }
