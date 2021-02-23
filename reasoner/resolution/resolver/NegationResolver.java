@@ -25,6 +25,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.resolvable.Negated;
 import grakn.core.pattern.Conjunction;
+import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
@@ -92,16 +93,15 @@ public class NegationResolver extends Resolver<NegationResolver> {
     protected void initialiseDownstreamResolvers() {
         LOG.debug("{}: initialising downstream resolvers", name());
 
-        List<Conjunction> disjunction = negated.pattern().conjunctions();
-        if (disjunction.size() == 1) {
+        Disjunction disjunction = negated.pattern();
+        if (disjunction.conjunctions().size() == 1) {
             try {
-                downstream = registry.nested(disjunction.get(0));
+                downstream = registry.nested(disjunction.conjunctions().get(0));
             } catch (GraknCheckedException e) {
                 terminate(e);
             }
         } else {
-            // negations with complex disjunctions not yet working
-            throw GraknException.of(UNIMPLEMENTED);
+            downstream = registry.nested(disjunction);
         }
         isInitialised = true;
     }

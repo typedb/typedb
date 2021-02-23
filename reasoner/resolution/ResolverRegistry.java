@@ -36,6 +36,7 @@ import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.resolver.ConcludableResolver;
 import grakn.core.reasoner.resolution.resolver.ConjunctionResolver;
+import grakn.core.reasoner.resolution.resolver.DisjunctionResolver;
 import grakn.core.reasoner.resolution.resolver.NegationResolver;
 import grakn.core.reasoner.resolution.resolver.RetrievableResolver;
 import grakn.core.reasoner.resolution.resolver.Root;
@@ -208,6 +209,14 @@ public class ResolverRegistry {
         resolvers.add(resolver);
         if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard against races without synchronized
         return resolver;
+    }
+
+    public Actor<DisjunctionResolver.Nested> nested(Disjunction disjunction) {
+        LOG.debug("Creating Disjunction resolver for : {}", disjunction);
+        return Actor.create(
+                elg, self -> new DisjunctionResolver.Nested(
+                        self, disjunction, resolutionRecorder, this, traversalEngine, conceptMgr, resolutionTracing)
+        );
     }
 
     private Map<Retrievable, Retrievable> identity(Resolvable<Conjunction> conjunctionResolvable) {

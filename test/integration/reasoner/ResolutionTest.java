@@ -18,13 +18,14 @@
 package grakn.core.reasoner;
 
 import grakn.core.common.exception.GraknCheckedException;
-import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options.Database;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.actor.EventLoopGroup;
+import grakn.core.logic.LogicManager;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
+import grakn.core.pattern.Negation;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Identity;
@@ -47,7 +48,6 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -55,11 +55,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 public class ResolutionTest {
@@ -305,6 +305,38 @@ public class ResolutionTest {
     }
 
     @Test
+    public void test_nested_disjunction() throws InterruptedException {
+        try (RocksSession session = schemaSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+                transaction.query().define(Graql.parseQuery(
+                        "define person sub entity, owns age, owns name;" +
+                                "age sub attribute, value long;" +
+                                "name sub attribute, value string;" +
+                                "rule bobs-are-42: when { $p1 has name \"Bob\"; } then { $p1 has age 42; };" +
+                                "rule susans-are-24: when { $p1 has name \"Susan\"; } then { $p1 has age 24; };"
+                                ));
+                transaction.commit();
+            }
+        }
+
+        try (RocksSession session = dataSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+                transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has name \"Bob\";"));
+                transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has name \"Bob\";"));
+                transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has name \"Susan\";"));
+                transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 30;"));
+                transaction.commit();
+            }
+        }
+        try (RocksSession session = dataSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+                Conjunction conjunctionPattern = parseConjunction(transaction, "{ $p isa person; not { { $p has age 24; } or { $p has age 42; }; }; }");
+                createRootAndAssertResponses(transaction, conjunctionPattern, null, null, 1L);
+            }
+        }
+    }
+
+    @Test
     public void test_chained_rules() throws InterruptedException {
         try (RocksSession session = schemaSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
@@ -526,14 +558,23 @@ public class ResolutionTest {
 
     private Disjunction parseDisjunction(RocksTransaction transaction, String query) {
         Disjunction disjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise());
-        disjunction.conjunctions().forEach(conj -> transaction.logic().typeResolver().resolve(conj));
+        resolveTypes(disjunction, list(), transaction.logic());
         return disjunction;
     }
 
     private Conjunction parseConjunction(RocksTransaction transaction, String query) {
-        Conjunction conjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
-        transaction.logic().typeResolver().resolve(conjunction);
-        return conjunction;
+        Disjunction disjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise());
+        resolveTypes(disjunction, list(), transaction.logic());
+        return disjunction.conjunctions().iterator().next();
+    }
+
+    private void resolveTypes(Disjunction disjunction, List<Conjunction> scopingConjunctions, LogicManager logicMgr) {
+        for (Conjunction conjunction : disjunction.conjunctions()) {
+            logicMgr.typeResolver().resolve(conjunction, scopingConjunctions);
+            for (Negation negation : conjunction.negations()) {
+                resolveTypes(negation.disjunction(), list(scopingConjunctions, conjunction), logicMgr);
+            }
+        }
     }
 
     private RocksSession schemaSession() {
