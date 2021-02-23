@@ -96,7 +96,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
 
         Producer<ConceptMap> traversalAsync = traversalProducer(retrievable.pattern(), fromUpstream.partialAnswer().conceptMap(), 2);
         Producer<Partial<?>> upstreamAnswersAsync = traversalAsync
-                .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap, self()));
+                .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap));
 
         return new Responses(fromUpstream, upstreamAnswersAsync, iteration);
     }
@@ -110,7 +110,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         assert fromUpstream.partialAnswer().isMapped();
         Producer<ConceptMap> traversalAsync = traversalProducer(retrievable.pattern(), fromUpstream.partialAnswer().conceptMap(), 2);
         Producer<Partial<?>> upstreamAnswersAsync = traversalAsync
-                .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap, self()));
+                .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap));
 
         return new Responses(fromUpstream, upstreamAnswersAsync, newIteration);
     }

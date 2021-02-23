@@ -141,7 +141,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         } else {
             int nextResolverIndex = fromDownstream.planIndex() + 1;
             ResolverRegistry.MappedResolver nextPlannedDownstream = downstreamResolvers.get(plan.get(nextResolverIndex));
-            Mapped downstream = fromDownstream.answer().mapToDownstream(Mapping.of(nextPlannedDownstream.mapping()));
+            Mapped downstream = fromDownstream.answer().mapToDownstream(Mapping.of(nextPlannedDownstream.mapping()), nextPlannedDownstream.resolver());
             Request downstreamRequest = Request.create(self(), nextPlannedDownstream.resolver(), downstream, nextResolverIndex);
             responseProducer.addDownstreamProducer(downstreamRequest);
             requestFromDownstream(downstreamRequest, fromUpstream, iteration);
@@ -218,9 +218,10 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         assert !plan.isEmpty();
 
         ResponseProducer responseProducer = new ResponseProducer(Iterators.empty(), iteration);
+        ResolverRegistry.MappedResolver mappedResolver = downstreamResolvers.get(plan.get(0));
         Mapped downstream = fromUpstream.partialAnswer()
-                .mapToDownstream(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping()));
-        Request toDownstream = Request.create(self(), downstreamResolvers.get(plan.get(0)).resolver(), downstream, 0);
+                .mapToDownstream(Mapping.of(mappedResolver.mapping()), mappedResolver.resolver());
+        Request toDownstream = Request.create(self(), mappedResolver.resolver(), downstream, 0);
         responseProducer.addDownstreamProducer(toDownstream);
         return responseProducer;
     }
@@ -234,9 +235,10 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
 
         assert !plan.isEmpty();
         ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(Iterators.empty(), newIteration);
+        ResolverRegistry.MappedResolver mappedResolver = downstreamResolvers.get(plan.get(0));
         Mapped downstream = fromUpstream.partialAnswer()
-                .mapToDownstream(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping()));
-        Request toDownstream = Request.create(self(), downstreamResolvers.get(plan.get(0)).resolver(), downstream, 0);
+                .mapToDownstream(Mapping.of(mappedResolver.mapping()), mappedResolver.resolver());
+        Request toDownstream = Request.create(self(), mappedResolver.resolver(), downstream, 0);
         responseProducerNewIter.addDownstreamProducer(toDownstream);
         return responseProducerNewIter;
     }
@@ -244,6 +246,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     class Plans {
 
         Map<Set<Retrievable>, Plan> plans;
+
         public Plans() { this.plans = new HashMap<>(); }
 
         public Plan getOrCreate(Set<Retrievable> boundVars, Set<Resolvable<?>> resolvable, Set<Negated> negations) {
@@ -261,6 +264,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
 
         public class Plan {
             List<Resolvable<?>> plan;
+
             private Plan(List<Resolvable<?>> plan) { this.plan = plan; }
 
             public Resolvable<?> get(int index) {
@@ -305,8 +309,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
 
         @Override
         protected Optional<AnswerState> toUpstreamAnswer(Partial<?> fromDownstream) {
-            return Optional.of(fromDownstream.asFiltered().toUpstream(self()));
+            return Optional.of(fromDownstream.asFiltered().toUpstream());
         }
-
     }
 }
