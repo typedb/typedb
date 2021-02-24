@@ -39,7 +39,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -57,7 +56,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
 
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private final Rule.Conclusion conclusion;
-    private final Map<Request, ConclusionResponses> conclusionResponses;
+    private final Map<Request, Responses> conclusionResponses;
     private boolean isInitialised;
     private Actor<ConditionResolver> ruleResolver;
 
@@ -78,14 +77,14 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
 
-        ConclusionResponses conclusionResponses = getOrUpdateResponses(fromUpstream, iteration);
+        Responses responses = getOrUpdateResponses(fromUpstream, iteration);
 
-        if (iteration < conclusionResponses.iteration()) {
+        if (iteration < responses.iteration()) {
             // short circuit if the request came from a prior iteration
             failToUpstream(fromUpstream, iteration);
         } else {
-            assert iteration == conclusionResponses.iteration();
-            tryAnswer(fromUpstream, conclusionResponses, iteration);
+            assert iteration == responses.iteration();
+            nextAnswer(fromUpstream, responses, iteration);
         }
     }
 
@@ -96,7 +95,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        ConclusionResponses conclusionResponses = this.conclusionResponses.get(fromUpstream);
+        Responses responses = this.conclusionResponses.get(fromUpstream);
 
         ResourceIterator<Map<Identifier.Variable, Concept>> materialisations = conclusion
                 .materialise(fromDownstream.answer().conceptMap(), traversalEngine, conceptMgr);
@@ -106,8 +105,8 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
                 .map(concepts -> fromUpstream.partialAnswer().asUnified().aggregateToUpstream(concepts))
                 .filter(Optional::isPresent)
                 .map(Optional::get);
-        conclusionResponses.addResponses(materialisedAnswers);
-        tryAnswer(fromUpstream, conclusionResponses, iteration);
+        responses.addResponses(materialisedAnswers);
+        nextAnswer(fromUpstream, responses, iteration);
     }
 
     @Override
@@ -117,16 +116,16 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        ConclusionResponses conclusionResponses = this.conclusionResponses.get(fromUpstream);
+        Responses responses = this.conclusionResponses.get(fromUpstream);
 
-        if (iteration < conclusionResponses.iteration()) {
+        if (iteration < responses.iteration()) {
             // short circuit old iteration fail messages to upstream
             failToUpstream(fromUpstream, iteration);
             return;
         }
 
-        conclusionResponses.removeDownstream(fromDownstream.sourceRequest());
-        tryAnswer(fromUpstream, conclusionResponses, iteration);
+        responses.removeDownstream(fromDownstream.sourceRequest());
+        nextAnswer(fromUpstream, responses, iteration);
     }
 
     @Override
@@ -146,39 +145,38 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         }
     }
 
-    private void tryAnswer(Request fromUpstream, ConclusionResponses conclusionResponses, int iteration) {
-        Optional<AnswerState.Partial<?>> answer = conclusionResponses.nextResponse();
+    private void nextAnswer(Request fromUpstream, Responses responses, int iteration) {
+        Optional<AnswerState.Partial<?>> answer = responses.nextResponse();
         if (answer.isPresent()) {
-            conclusionResponses.recordProduced(answer.get().conceptMap());
             answerToUpstream(answer.get(), fromUpstream, iteration);
-        } else if (conclusionResponses.hasDownstream()) {
-            requestFromDownstream(conclusionResponses.nextDownstream(), fromUpstream, iteration);
+        } else if (responses.hasDownstream()) {
+            requestFromDownstream(responses.nextDownstream(), fromUpstream, iteration);
         } else {
             failToUpstream(fromUpstream, iteration);
         }
     }
 
-    private ConclusionResponses getOrUpdateResponses(Request fromUpstream, int iteration) {
+    private Responses getOrUpdateResponses(Request fromUpstream, int iteration) {
         if (!conclusionResponses.containsKey(fromUpstream)) {
             conclusionResponses.put(fromUpstream, createConclusionResponses(fromUpstream, iteration));
         } else {
-            ConclusionResponses conclusionResponses = this.conclusionResponses.get(fromUpstream);
-            assert conclusionResponses.iteration() == iteration ||
-                    conclusionResponses.iteration() + 1 == iteration;
+            Responses responses = this.conclusionResponses.get(fromUpstream);
+            assert responses.iteration() == iteration ||
+                    responses.iteration() + 1 == iteration;
 
-            if (conclusionResponses.iteration() + 1 == iteration) {
+            if (responses.iteration() + 1 == iteration) {
                 // when the same request for the next iteration the first time, re-initialise required state
-                ConclusionResponses conclusionResponsesNextIter = createConclusionResponses(fromUpstream, iteration);
-                this.conclusionResponses.put(fromUpstream, conclusionResponsesNextIter);
+                Responses responsesNextIter = createConclusionResponses(fromUpstream, iteration);
+                this.conclusionResponses.put(fromUpstream, responsesNextIter);
             }
         }
         return conclusionResponses.get(fromUpstream);
     }
 
-    private ConclusionResponses createConclusionResponses(Request fromUpstream, int iteration) {
+    private Responses createConclusionResponses(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new ConclusionResponse for request: {}", name(), fromUpstream);
 
-        ConclusionResponses conclusionResponses = new ConclusionResponses(iteration);
+        Responses responses = new Responses(iteration);
 
         ConceptMap partialAnswer = fromUpstream.partialAnswer().conceptMap();
         // we do a extra traversal to expand the partial answer if we already have the concept that is meant to be generated
@@ -187,15 +185,15 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         if (conclusion.generating().isPresent() && conclusion.retrievableIds().size() > partialAnswer.concepts().size() &&
                 partialAnswer.concepts().containsKey(conclusion.generating().get().id())) {
             ResourceIterator<AnswerState.Partial.Filtered> completedAnswers = candidateAnswers(fromUpstream, partialAnswer);
-            completedAnswers.forEachRemaining(answer -> conclusionResponses.addDownstream(Request.create(self(), ruleResolver,
-                                                                                                         answer)));
+            completedAnswers.forEachRemaining(answer -> responses.addDownstream(Request.create(self(), ruleResolver,
+                                                                                               answer)));
         } else {
             Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
             AnswerState.Partial.Filtered downstreamAnswer = fromUpstream.partialAnswer().filterToDownstream(named, ruleResolver);
-            conclusionResponses.addDownstream(Request.create(self(), ruleResolver, downstreamAnswer));
+            responses.addDownstream(Request.create(self(), ruleResolver, downstreamAnswer));
         }
 
-        return conclusionResponses;
+        return responses;
     }
 
     private ResourceIterator<AnswerState.Partial.Filtered> candidateAnswers(Request fromUpstream, ConceptMap answer) {
@@ -220,18 +218,16 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         return name() + ": then " + conclusion.rule().then();
     }
 
-    private static class ConclusionResponses {
+    private static class Responses {
 
         private final List<ResourceIterator<AnswerState.Partial<?>>> materialisedAnswers;
         private final LinkedHashSet<Request> downstreams;
-        private final Set<ConceptMap> produced;
         private Iterator<Request> downstreamProducerSelector;
         private final int iteration;
 
-        public ConclusionResponses(int iteration) {
+        public Responses(int iteration) {
             this.materialisedAnswers = new LinkedList<>();
             this.downstreams = new LinkedHashSet<>();
-            this.produced = new HashSet<>();
             this.iteration = iteration;
             downstreamProducerSelector = downstreams.iterator();
         }
@@ -240,16 +236,8 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
             return iteration;
         }
 
-        public boolean hasProduced(ConceptMap conceptMap) {
-            return produced.contains(conceptMap);
-        }
-
-        public void recordProduced(ConceptMap conceptMap) {
-            produced.add(conceptMap);
-        }
-
         public void addResponses(ResourceIterator<AnswerState.Partial<?>> materialisations) {
-            materialisedAnswers.add(materialisations.filter(partial -> !hasProduced(partial.conceptMap())));
+            materialisedAnswers.add(materialisations);
         }
 
         public Optional<AnswerState.Partial<?>> nextResponse() {
