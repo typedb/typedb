@@ -31,7 +31,6 @@ import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
-import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
@@ -201,16 +200,6 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         ResourceIterator<ConceptMap> traversal = traversalEngine.iterator(traversal1).map(conceptMgr::conceptMap);
         Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
         return traversal.map(ans -> fromUpstream.partialAnswer().asUnified().extend(ans).filterToDownstream(named, ruleResolver));
-    }
-
-    @Override
-    protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
-        throw GraknException.of(ILLEGAL_STATE);
-    }
-
-    @Override
-    protected ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer conclusionResponses, int newIteration) {
-        throw GraknException.of(ILLEGAL_STATE);
     }
 
     @Override
