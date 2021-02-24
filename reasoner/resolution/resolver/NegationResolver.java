@@ -24,7 +24,6 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.resolvable.Negated;
-import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
@@ -32,8 +31,6 @@ import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Filtered;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
-import grakn.core.reasoner.resolution.framework.Response;
-import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +41,6 @@ import java.util.List;
 import java.util.Map;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Internal.UNIMPLEMENTED;
 
 public class NegationResolver extends Resolver<NegationResolver> {
 
@@ -52,7 +48,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
 
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private final Negated negated;
-    private final Map<ConceptMap, NegationResponse> responses;
+    private final Map<ConceptMap, Responses> responses;
     private boolean isInitialised;
     private Actor<? extends Resolver<?>> downstream;
 
@@ -73,16 +69,16 @@ public class NegationResolver extends Resolver<NegationResolver> {
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
 
-        NegationResponse negationResponse = responses.computeIfAbsent(fromUpstream.partialAnswer().conceptMap(),
-                                                                      (cm) -> new NegationResponse());
-        if (negationResponse.status.isEmpty()) {
-            negationResponse.addAwaiting(fromUpstream, iteration);
-            tryAnswer(fromUpstream, negationResponse);
-        } else if (negationResponse.status.isRequested()) {
-            negationResponse.addAwaiting(fromUpstream, iteration);
-        } else if (negationResponse.status.isSatisfied()) {
+        Responses responses = this.responses.computeIfAbsent(fromUpstream.partialAnswer().conceptMap(),
+                                                             (cm) -> new Responses());
+        if (responses.status.isEmpty()) {
+            responses.addAwaiting(fromUpstream, iteration);
+            tryAnswer(fromUpstream, responses);
+        } else if (responses.status.isRequested()) {
+            responses.addAwaiting(fromUpstream, iteration);
+        } else if (responses.status.isSatisfied()) {
             answerToUpstream(upstreamAnswer(fromUpstream), fromUpstream, iteration);
-        } else if (negationResponse.status.isFailed()) {
+        } else if (responses.status.isFailed()) {
             failToUpstream(fromUpstream, iteration);
         } else {
             throw GraknException.of(ILLEGAL_STATE);
@@ -106,7 +102,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
         isInitialised = true;
     }
 
-    private void tryAnswer(Request fromUpstream, NegationResponse negationResponse) {
+    private void tryAnswer(Request fromUpstream, Responses responses) {
         // TODO: if we wanted to accelerate the searching of a negation counter example,
         // TODO: we could send multiple requests into the sub system at once!
 
@@ -114,43 +110,43 @@ public class NegationResolver extends Resolver<NegationResolver> {
         NOTE:
            Correctness: concludables that get reused in the negated portion, would conflate recursion/reiteration state from
               the toplevel root with the negation iterations, which we cannot allow. So, we must use THIS resolver
-              as a sort of new root! TODO: should NegationResolvers also implement a kind of Root interface??
+              as a sort of new root!
         */
         Filtered downstreamPartial = fromUpstream.partialAnswer().filterToDownstream(negated.retrieves(), downstream);
         Request request = Request.create(self(), this.downstream, downstreamPartial);
         requestFromDownstream(request, fromUpstream, 0);
-        negationResponse.setRequested();
+        responses.setRequested();
     }
 
     @Override
-    protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
+    protected void receiveAnswer(grakn.core.reasoner.resolution.framework.Response.Answer fromDownstream, int iteration) {
         LOG.trace("{}: received Answer: {}, therefore is FAILED", name(), fromDownstream);
         if (isTerminated()) return;
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        NegationResponse negationResponse = this.responses.get(fromUpstream.partialAnswer().conceptMap());
-        negationResponse.setFailed();
-        for (NegationResponse.Awaiting awaiting : negationResponse.awaiting) {
+        Responses responses = this.responses.get(fromUpstream.partialAnswer().conceptMap());
+        responses.setFailed();
+        for (Responses.Awaiting awaiting : responses.awaiting) {
             failToUpstream(awaiting.request, awaiting.iterationRequested);
         }
-        negationResponse.clearAwaiting();
+        responses.clearAwaiting();
     }
 
     @Override
-    protected void receiveFail(Response.Fail fromDownstream, int iteration) {
+    protected void receiveFail(grakn.core.reasoner.resolution.framework.Response.Fail fromDownstream, int iteration) {
         LOG.trace("{}: Receiving Failed: {}, therefore is SATISFIED", name(), fromDownstream);
         if (isTerminated()) return;
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        NegationResponse negationResponse = this.responses.get(fromUpstream.partialAnswer().conceptMap());
+        Responses responses = this.responses.get(fromUpstream.partialAnswer().conceptMap());
 
-        negationResponse.setSatisfied();
-        for (NegationResponse.Awaiting awaiting : negationResponse.awaiting) {
+        responses.setSatisfied();
+        for (Responses.Awaiting awaiting : responses.awaiting) {
             answerToUpstream(upstreamAnswer(awaiting.request), awaiting.request, awaiting.iterationRequested);
         }
-        negationResponse.clearAwaiting();
+        responses.clearAwaiting();
     }
 
     private Partial<?> upstreamAnswer(Request fromUpstream) {
@@ -163,22 +159,12 @@ public class NegationResolver extends Resolver<NegationResolver> {
         return upstreamAnswer;
     }
 
-    @Override
-    protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
-        throw GraknException.of(ILLEGAL_STATE);
-    }
-
-    @Override
-    protected ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer responseProducer, int newIteration) {
-        throw GraknException.of(ILLEGAL_STATE);
-    }
-
-    private static class NegationResponse {
+    private static class Responses {
 
         List<Awaiting> awaiting;
         Status status;
 
-        public NegationResponse() {
+        public Responses() {
             this.awaiting = new LinkedList<>();
             this.status = Status.EMPTY;
         }
