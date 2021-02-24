@@ -115,10 +115,9 @@ public interface Root {
 
             assert !plan.isEmpty();
             ResponseProducer responseProducerNewIter = responseProducerPrevious.newIterationRetainDedup(Iterators.empty(), newIteration);
-            ResolverRegistry.MappedResolver mappedResolver = downstreamResolvers.get(plan.get(0));
-            Partial.Mapped downstream = fromUpstream.partialAnswer()
-                    .mapToDownstream(Mapping.of(mappedResolver.mapping()), mappedResolver.resolver());
-            Request toDownstream = Request.create(self(), mappedResolver.resolver(), downstream, 0);
+            ResolverRegistry.ResolverView childResolver = downstreamResolvers.get(plan.get(0));
+            Partial<?> downstream = forDownstreamResolver(childResolver, fromUpstream.partialAnswer());
+            Request toDownstream = Request.create(self(), childResolver.resolver(), downstream, 0);
             responseProducerNewIter.addDownstreamProducer(toDownstream);
             return responseProducerNewIter;
         }

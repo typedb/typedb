@@ -19,6 +19,7 @@
 package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.common.exception.GraknCheckedException;
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concurrent.actor.Actor;
@@ -33,7 +34,6 @@ import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Mapped;
 import grakn.core.reasoner.resolution.answer.Mapping;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
@@ -51,6 +51,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.iterate;
 
 public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> extends Resolver<T> {
@@ -64,7 +65,7 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
     final Set<Resolvable<?>> resolvables;
     final Set<Negated> negateds;
     final Plans plans;
-    final Map<Resolvable<?>, ResolverRegistry.MappedResolver> downstreamResolvers;
+    final Map<Resolvable<?>, ResolverRegistry.ResolverView> downstreamResolvers;
     final Map<Request, ResponseProducer> responseProducers;
     private boolean isInitialised;
 
@@ -140,13 +141,14 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
             }
         } else {
             int nextResolverIndex = fromDownstream.planIndex() + 1;
-            ResolverRegistry.MappedResolver nextPlannedDownstream = downstreamResolvers.get(plan.get(nextResolverIndex));
-            Mapped downstream = fromDownstream.answer().mapToDownstream(Mapping.of(nextPlannedDownstream.mapping()), nextPlannedDownstream.resolver());
+            ResolverRegistry.ResolverView nextPlannedDownstream = downstreamResolvers.get(plan.get(nextResolverIndex));
+            Partial<?> downstream = forDownstreamResolver(nextPlannedDownstream, fromDownstream.answer());
             Request downstreamRequest = Request.create(self(), nextPlannedDownstream.resolver(), downstream, nextResolverIndex);
             responseProducer.addDownstreamProducer(downstreamRequest);
             requestFromDownstream(downstreamRequest, fromUpstream, iteration);
         }
     }
+
 
     @Override
     protected void receiveFail(Response.Fail fromDownstream, int iteration) {
@@ -218,10 +220,9 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
         assert !plan.isEmpty();
 
         ResponseProducer responseProducer = new ResponseProducer(Iterators.empty(), iteration);
-        ResolverRegistry.MappedResolver mappedResolver = downstreamResolvers.get(plan.get(0));
-        Mapped downstream = fromUpstream.partialAnswer()
-                .mapToDownstream(Mapping.of(mappedResolver.mapping()), mappedResolver.resolver());
-        Request toDownstream = Request.create(self(), mappedResolver.resolver(), downstream, 0);
+        ResolverRegistry.ResolverView childResolver = downstreamResolvers.get(plan.get(0));
+        Partial<?> downstream = forDownstreamResolver(childResolver, fromUpstream.partialAnswer());
+        Request toDownstream = Request.create(self(), childResolver.resolver(), downstream, 0);
         responseProducer.addDownstreamProducer(toDownstream);
         return responseProducer;
     }
@@ -235,12 +236,23 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> exte
 
         assert !plan.isEmpty();
         ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(Iterators.empty(), newIteration);
-        ResolverRegistry.MappedResolver mappedResolver = downstreamResolvers.get(plan.get(0));
-        Mapped downstream = fromUpstream.partialAnswer()
-                .mapToDownstream(Mapping.of(mappedResolver.mapping()), mappedResolver.resolver());
-        Request toDownstream = Request.create(self(), mappedResolver.resolver(), downstream, 0);
+        ResolverRegistry.ResolverView childResolver = downstreamResolvers.get(plan.get(0));
+        Partial<?> downstream = forDownstreamResolver(childResolver, fromUpstream.partialAnswer());
+        Request toDownstream = Request.create(self(), childResolver.resolver(), downstream, 0);
         responseProducerNewIter.addDownstreamProducer(toDownstream);
         return responseProducerNewIter;
+    }
+
+    Partial<?> forDownstreamResolver(ResolverRegistry.ResolverView resolver, Partial<?> partialAnswer) {
+        if (resolver.isMapped()) {
+            return partialAnswer
+                    .mapToDownstream(Mapping.of(resolver.asMapped().mapping()), resolver.resolver());
+        } else if (resolver.isFiltered()) {
+            return partialAnswer
+                    .filterToDownstream(resolver.asFiltered().filter(), resolver.resolver());
+        } else {
+            throw GraknException.of(ILLEGAL_STATE);
+        }
     }
 
     class Plans {
