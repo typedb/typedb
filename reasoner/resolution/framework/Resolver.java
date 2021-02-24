@@ -104,11 +104,6 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
 
     protected abstract void initialiseDownstreamResolvers();
 
-    protected abstract ResponseProducer responseProducerCreate(Request fromUpstream, int iteration);
-
-    protected abstract ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer
-            responseProducer, int newIteration);
-
     protected Request fromUpstream(Request toDownstream) {
         assert requestRouter.containsKey(toDownstream);
         return requestRouter.get(toDownstream);

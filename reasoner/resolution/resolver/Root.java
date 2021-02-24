@@ -232,7 +232,7 @@ public interface Root {
         }
 
         @Override
-        protected ResponseProducer responseProducerNewIteration(ResponseProducer responseProducerPrevious, int newIteration) {
+        protected ResponseProducer responsesReiterate(Responses responseProducerPrevious, int newIteration) {
             return responseProducerPrevious.newIterationRetainDedup(Iterators.empty(), newIteration);
         }
 
