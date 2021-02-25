@@ -38,6 +38,7 @@ import java.util.Set;
 
 import static grakn.common.collection.Collections.map;
 import static grakn.common.util.Objects.className;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
@@ -318,6 +319,12 @@ public abstract class AnswerState {
                                      resolvedBy(), this);
             }
 
+            public Partial<?> aggregateToUpstream(ConceptMap conceptMap) {
+                if (conceptMap.concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
+                return parent().with(conceptMap.filter(filter), requiresReiteration || parent().requiresReiteration(),
+                                     resolvedBy(), this);
+            }
+
             @Override
             Filtered with(ConceptMap extension, boolean requiresReiteration, Actor<? extends Resolver<?>> extendedBy,
                           Partial<?> extensionState) {
@@ -358,7 +365,6 @@ public abstract class AnswerState {
             public int hashCode() {
                 return hash;
             }
-
         }
 
         public static class Mapped extends Partial<Partial<?>> {

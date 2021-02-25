@@ -29,6 +29,7 @@ import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Negated;
 import grakn.core.logic.resolvable.Resolvable;
+import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
@@ -43,13 +44,12 @@ import grakn.core.reasoner.resolution.resolver.Root;
 import grakn.core.reasoner.resolution.resolver.ConclusionResolver;
 import grakn.core.reasoner.resolution.resolver.ConditionResolver;
 import grakn.core.traversal.TraversalEngine;
-import grakn.core.traversal.common.Identifier.Variable.Retrievable;
+import grakn.core.traversal.common.Identifier.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -59,6 +59,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Reasoner.RESOLUTION_TERMINATED;
 
@@ -113,7 +114,7 @@ public class ResolverRegistry {
                         self, conjunction, offset, limit, onAnswer, onFail, onException, resolutionRecorder, this,
                         traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing));
         resolvers.add(resolver);
-        if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard against races without synchronized
+        if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
     }
 
@@ -126,20 +127,27 @@ public class ResolverRegistry {
                                                   resolutionRecorder, this, traversalEngine, conceptMgr, resolutionTracing)
         );
         resolvers.add(resolver);
-        if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard against races without synchronized
+        if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
     }
 
-    public MappedResolver negated(Negated negated, Conjunction upstream) throws GraknCheckedException {
+    public ResolverView.Filtered negated(Negated negated, Conjunction upstream) throws GraknCheckedException {
         LOG.debug("Creating Negation resolver for : {}", negated);
         Actor<NegationResolver> negatedResolver = Actor.create(
                 elg, self -> new NegationResolver(self, negated, this, traversalEngine, conceptMgr,
                                                   resolutionRecorder, resolutionTracing)
         );
         resolvers.add(negatedResolver);
-        if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard against races without synchronized
-        Map<Retrievable, Retrievable> filteredMapping = identityFiltered(upstream, negated);
-        return MappedResolver.of(negatedResolver, filteredMapping);
+        if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        Set<Variable.Retrievable> filter = filter(upstream, negated);
+        return ResolverView.filtered(negatedResolver, filter);
+    }
+
+    private Set<Variable.Retrievable> filter(Conjunction scope, Negated inner) {
+        return scope.variables().stream()
+                .filter(var -> var.id().isRetrievable() && inner.retrieves().contains(var.id().asRetrievable()))
+                .map(var -> var.id().asRetrievable())
+                .collect(Collectors.toSet());
     }
 
     public Actor<ConditionResolver> registerCondition(Rule rule) throws GraknCheckedException {
@@ -148,7 +156,7 @@ public class ResolverRegistry {
                 self, r, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr, planner,
                 resolutionTracing)));
         resolvers.add(resolver);
-        if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard against races without synchronized
+        if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
 
     }
@@ -158,12 +166,12 @@ public class ResolverRegistry {
         Actor<ConclusionResolver> resolver = ruleConclusions.computeIfAbsent(conclusion.rule(), (r) -> Actor.create(elg, self -> new ConclusionResolver(
                 self, conclusion, this, resolutionRecorder, traversalEngine, conceptMgr, resolutionTracing)));
         resolvers.add(resolver);
-        if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard against races without synchronized
+        if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
 
     }
 
-    public MappedResolver registerResolvable(Resolvable<?> resolvable) throws GraknCheckedException {
+    public ResolverView registerResolvable(Resolvable<?> resolvable) throws GraknCheckedException {
         if (resolvable.isRetrievable()) {
             return registerRetrievable(resolvable.asRetrievable());
         } else if (resolvable.isConcludable()) {
@@ -171,23 +179,23 @@ public class ResolverRegistry {
         } else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    private MappedResolver registerRetrievable(grakn.core.logic.resolvable.Retrievable retrievable) throws GraknCheckedException {
+    private ResolverView.Filtered registerRetrievable(Retrievable retrievable) throws GraknCheckedException {
         LOG.debug("Register RetrievableResolver: '{}'", retrievable.pattern());
         Actor<RetrievableResolver> resolver = Actor.create(elg, self -> new RetrievableResolver(
                 self, retrievable, this, traversalEngine, conceptMgr, resolutionTracing));
         resolvers.add(resolver);
-        if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard against races without synchronized
-        return MappedResolver.of(resolver, identity(retrievable));
+        if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        return ResolverView.filtered(resolver, retrievable.retrieves());
     }
 
     // note: must be thread safe. We could move to a ConcurrentHashMap if we create an alpha-equivalence wrapper
-    private synchronized MappedResolver registerConcludable(Concludable concludable) throws GraknCheckedException {
+    private synchronized ResolverView.Mapped registerConcludable(Concludable concludable) throws GraknCheckedException {
         LOG.debug("Register ConcludableResolver: '{}'", concludable.pattern());
         for (Map.Entry<Concludable, Actor<ConcludableResolver>> c : concludableResolvers.entrySet()) {
             // TODO: This needs to be optimised from a linear search to use an alpha hash
             AlphaEquivalence alphaEquality = concludable.alphaEquals(c.getKey());
             if (alphaEquality.isValid()) {
-                return MappedResolver.of(c.getValue(), alphaEquality.asValid().idMapping());
+                return ResolverView.mapped(c.getValue(), alphaEquality.asValid().idMapping());
             }
         }
         Actor<ConcludableResolver> resolver = Actor.create(elg, self ->
@@ -195,8 +203,8 @@ public class ResolverRegistry {
                                         logicMgr, resolutionTracing));
         concludableResolvers.put(concludable, resolver);
         resolvers.add(resolver);
-        if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard against races without synchronized
-        return MappedResolver.of(resolver, identity(concludable));
+        if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        return ResolverView.mapped(resolver, identity(concludable));
     }
 
     public Actor<ConjunctionResolver.Nested> nested(Conjunction conjunction) throws GraknCheckedException {
@@ -207,7 +215,7 @@ public class ResolverRegistry {
                         resolutionTracing)
         );
         resolvers.add(resolver);
-        if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard against races without synchronized
+        if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
     }
 
@@ -219,15 +227,8 @@ public class ResolverRegistry {
         );
     }
 
-    private Map<Retrievable, Retrievable> identity(Resolvable<Conjunction> conjunctionResolvable) {
+    private Map<Variable.Retrievable, Variable.Retrievable> identity(Resolvable<Conjunction> conjunctionResolvable) {
         return conjunctionResolvable.retrieves().stream()
-                .collect(Collectors.toMap(Function.identity(), Function.identity()));
-    }
-
-    private Map<Retrievable, Retrievable> identityFiltered(Conjunction upstream, Negated negated) {
-        return upstream.variables().stream()
-                .filter(var -> var.id().isRetrievable() && negated.retrieves().contains(var.id().asRetrievable()))
-                .map(var -> var.id().asRetrievable())
                 .collect(Collectors.toMap(Function.identity(), Function.identity()));
     }
 
@@ -237,25 +238,96 @@ public class ResolverRegistry {
         this.elg = eventLoopGroup;
     }
 
-    public static class MappedResolver {
-        private final Actor<? extends Resolver<?>> resolver;
-        private final Map<Retrievable, Retrievable> mapping;
+    public static abstract class ResolverView {
 
-        private MappedResolver(Actor<? extends Resolver<?>> resolver, Map<Retrievable, Retrievable> mapping) {
-            this.resolver = resolver;
-            this.mapping = mapping;
+        public static Mapped mapped(Actor<ConcludableResolver> resolver, Map<Variable.Retrievable, Variable.Retrievable> mapping) {
+            return new Mapped(resolver, mapping);
         }
 
-        public static MappedResolver of(Actor<? extends Resolver<?>> resolver, Map<Retrievable, Retrievable> mapping) {
-            return new MappedResolver(resolver, mapping);
+        public static Filtered filtered(Actor<? extends Resolver<?>> resolver, Set<Variable.Retrievable> filter) {
+            return new Filtered(resolver, filter);
         }
 
-        public Map<Retrievable, Retrievable> mapping() {
-            return mapping;
+        public abstract boolean isMapped();
+
+        public abstract boolean isFiltered();
+
+        public Mapped asMapped() {
+            throw GraknException.of(ILLEGAL_CAST, getClass(), Mapped.class);
         }
 
-        public Actor<? extends Resolver<?>> resolver() {
-            return resolver;
+        public Filtered asFiltered() {
+            throw GraknException.of(ILLEGAL_CAST, getClass(), Mapped.class);
+        }
+
+        public abstract Actor<? extends Resolver<?>> resolver();
+
+        public static class Mapped extends ResolverView {
+            private final Actor<ConcludableResolver> resolver;
+            private final Map<Variable.Retrievable, Variable.Retrievable> mapping;
+
+            public Mapped(Actor<ConcludableResolver> resolver, Map<Variable.Retrievable, Variable.Retrievable> mapping) {
+                this.resolver = resolver;
+                this.mapping = mapping;
+            }
+
+            public Map<Variable.Retrievable, Variable.Retrievable> mapping() {
+                return mapping;
+            }
+
+            @Override
+            public boolean isMapped() {
+                return true;
+            }
+
+            @Override
+            public boolean isFiltered() {
+                return false;
+            }
+
+            @Override
+            public Mapped asMapped() {
+                return this;
+            }
+
+            @Override
+            public Actor<ConcludableResolver> resolver() {
+                return resolver;
+            }
+        }
+
+        public static class Filtered extends ResolverView {
+            private final Actor<? extends Resolver<?>> resolver;
+            private final Set<Variable.Retrievable> filter;
+
+            public Filtered(Actor<? extends Resolver<?>> resolver, Set<Variable.Retrievable> filter) {
+                this.resolver = resolver;
+                this.filter = filter;
+            }
+
+            public Set<Variable.Retrievable> filter() {
+                return filter;
+            }
+
+            @Override
+            public boolean isMapped() {
+                return false;
+            }
+
+            @Override
+            public boolean isFiltered() {
+                return true;
+            }
+
+            @Override
+            public Filtered asFiltered() {
+                return this;
+            }
+
+            @Override
+            public Actor<? extends Resolver<?>> resolver() {
+                return resolver;
+            }
         }
     }
 }

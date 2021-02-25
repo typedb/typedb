@@ -84,10 +84,10 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     @Override
     protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), fromUpstream);
-        assert fromUpstream.partialAnswer().isMapped();
+        assert fromUpstream.partialAnswer().isFiltered();
         ResourceIterator<Partial<?>> upstreamAnswers =
                 traversalIterator(retrievable.pattern(), fromUpstream.partialAnswer().conceptMap())
-                        .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap));
+                        .map(conceptMap -> fromUpstream.partialAnswer().asFiltered().aggregateToUpstream(conceptMap));
         return new ResponseProducer(upstreamAnswers, iteration);
     }
 
@@ -97,10 +97,10 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
 
         assert newIteration > responseProducerPrevious.iteration();
-        assert fromUpstream.partialAnswer().isMapped();
+        assert fromUpstream.partialAnswer().isFiltered();
         ResourceIterator<Partial<?>> upstreamAnswers =
                 traversalIterator(retrievable.pattern(), fromUpstream.partialAnswer().conceptMap())
-                        .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap));
+                        .map(conceptMap -> fromUpstream.partialAnswer().asFiltered().aggregateToUpstream(conceptMap));
         return responseProducerPrevious.newIteration(upstreamAnswers, newIteration);
     }
 

@@ -154,9 +154,8 @@ public class NegationResolver extends Resolver<NegationResolver> {
     }
 
     private Partial<?> upstreamAnswer(Request fromUpstream) {
-        // TODO: decide if we want to use isMapped here? Can Mapped currently act as a filter?
-        assert fromUpstream.partialAnswer().isMapped();
-        Partial<?> upstreamAnswer = fromUpstream.partialAnswer().asMapped().toUpstream();
+        assert fromUpstream.partialAnswer().isFiltered();
+        Partial<?> upstreamAnswer = fromUpstream.partialAnswer().asFiltered().toUpstream();
 
         if (fromUpstream.partialAnswer().recordExplanations()) {
             resolutionRecorder.tell(state -> state.record(fromUpstream.partialAnswer()));
