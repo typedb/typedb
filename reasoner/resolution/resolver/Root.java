@@ -19,6 +19,7 @@ package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.ConceptManager;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.LogicManager;
 import grakn.core.reasoner.resolution.Planner;
@@ -29,13 +30,16 @@ import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.answer.Mapping;
 import grakn.core.reasoner.resolution.framework.Request;
+import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public interface Root {
@@ -44,7 +48,7 @@ public interface Root {
 
     void submitFail(int iteration);
 
-    class Conjunction extends ConjunctionResolver<Conjunction> implements Root {
+    class Conjunction extends ConjunctionResolver<Conjunction, Conjunction.Responses> implements Root {
 
         private static final Logger LOG = LoggerFactory.getLogger(Conjunction.class);
 
@@ -69,6 +73,12 @@ public interface Root {
             this.onException = onException;
             this.skipped = 0;
             this.answered = 0;
+        }
+
+        @Override
+        public void terminate(Throwable cause) {
+            super.terminate(cause);
+            onException.accept(cause);
         }
 
         @Override
@@ -97,53 +107,33 @@ public interface Root {
         }
 
         @Override
-        public void terminate(Throwable cause) {
-            super.terminate(cause);
-            onException.accept(cause);
-        }
-
-        /*
-        NOTE special behaviour: don't clear the deduplication set, in the root
-        */
-        @Override
-        protected ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer responseProducerPrevious,
-                                                             int newIteration) {
-            assert newIteration > responseProducerPrevious.iteration();
-            LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
-
-            Plans.Plan plan = plans.getOrCreate(fromUpstream.partialAnswer().conceptMap().concepts().keySet(), resolvables, negateds);
-
-            assert !plan.isEmpty();
-            ResponseProducer responseProducerNewIter = responseProducerPrevious.newIterationRetainDedup(Iterators.empty(), newIteration);
-            ResolverRegistry.ResolverView childResolver = downstreamResolvers.get(plan.get(0));
-            Partial<?> downstream = forDownstreamResolver(childResolver, fromUpstream.partialAnswer());
-            Request toDownstream = Request.create(self(), childResolver.resolver(), downstream, 0);
-            responseProducerNewIter.addDownstreamProducer(toDownstream);
-            return responseProducerNewIter;
-        }
-
         protected void failToUpstream(Request fromUpstream, int iteration) {
             submitFail(iteration);
         }
 
         @Override
-        protected void nextAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
-            if (responseProducer.hasUpstreamAnswer()) {
-                Top upstreamAnswer = responseProducer.upstreamAnswers().next().asTop();
-                responseProducer.recordProduced(upstreamAnswer.conceptMap());
-                submitAnswer(upstreamAnswer);
+        protected void nextAnswer(Request fromUpstream, Responses responses, int iteration) {
+            if (responses.hasDownstreamProducer()) {
+                requestFromDownstream(responses.nextDownstreamProducer(), fromUpstream, iteration);
             } else {
-                if (responseProducer.hasDownstreamProducer()) {
-                    requestFromDownstream(responseProducer.nextDownstreamProducer(), fromUpstream, iteration);
-                } else {
-                    submitFail(iteration);
-                }
+                submitFail(iteration);
             }
         }
 
         @Override
         protected Optional<AnswerState> toUpstreamAnswer(Partial<?> fromDownstream) {
+            assert fromDownstream.isIdentity();
             return Optional.of(fromDownstream.asIdentity().toTop());
+        }
+
+        @Override
+        Responses responsesNew(int iteration) {
+            return new Responses(iteration);
+        }
+
+        @Override
+        Responses responsesForIteration(Responses responsesPrior, int iteration) {
+            return new Responses(iteration, responsesPrior.produced());
         }
 
         @Override
@@ -156,6 +146,31 @@ public interface Root {
             this.skipped++;
         }
 
+        static class Responses extends CompoundResolver.Responses {
+
+            private final Set<ConceptMap> produced;
+
+            public Responses(int iteration) {
+                this(iteration, new HashSet<>());
+            }
+
+            public Responses(int iteration, Set<ConceptMap> produced) {
+                super(iteration);
+                this.produced = produced;
+            }
+
+            public void recordProduced(ConceptMap conceptMap) {
+                produced.add(conceptMap);
+            }
+
+            public boolean hasProduced(ConceptMap conceptMap) {
+                return produced.contains(conceptMap);
+            }
+
+            public Set<ConceptMap> produced() {
+                return produced;
+            }
+        }
     }
 
     class Disjunction extends DisjunctionResolver<Disjunction> implements Root {

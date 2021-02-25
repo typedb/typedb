@@ -50,7 +50,6 @@ public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> exte
     private final grakn.core.pattern.Disjunction disjunction;
     protected long skipped;
     protected long answered;
-    final Map<Request, Responses> responseProducers;
 
     public DisjunctionResolver(Actor<T> self, String name, grakn.core.pattern.Disjunction disjunction,
                                Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
@@ -58,7 +57,6 @@ public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> exte
         super(self, name, registry, traversalEngine, conceptMgr, explanations, resolutionRecorder);
         this.disjunction = disjunction;
         this.downstreamResolvers = new ArrayList<>();
-        this.responseProducers = new HashMap<>();
     }
 
     protected boolean mustOffset() { return false; }
@@ -72,7 +70,7 @@ public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> exte
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        Responses responses = responseProducers.get(fromUpstream);
+        Responses responses = this.responses.get(fromUpstream);
 
         Partial<?> answer = fromDownstream.answer();
         ConceptMap filteredMap = answer.conceptMap();
@@ -125,17 +123,17 @@ public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> exte
 
         assert newIteration > priorResponses.iteration();
 
-        Responses responseProducerNewIter = responsesForIteration(priorResponses, newIteration);
+        Responses responsesNextIteration = responsesForIteration(priorResponses, newIteration);
         for (Actor<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers) {
             AnswerState.Partial.Filtered downstream = fromUpstream.partialAnswer()
                     .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver), conjunctionResolver);
             Request request = Request.create(self(), conjunctionResolver, downstream);
-            responseProducerNewIter.addDownstreamProducer(request);
+            responsesNextIteration.addDownstreamProducer(request);
         }
-        return responseProducerNewIter;
+        return responsesNextIteration;
     }
 
-    abstract Responses responsesForIteration(Responses responseProducerPrevious, int newIteration);
+    abstract Responses responsesForIteration(Responses responsesPrior, int newIteration);
 
     protected Set<Identifier.Variable.Retrievable> conjunctionRetrievedIds(Actor<ConjunctionResolver.Nested> conjunctionResolver) {
         // TODO use a map from resolvable to resolvers, then we don't have to reach into the state and use the conjunction
@@ -188,7 +186,7 @@ public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> exte
         }
 
         @Override
-        protected DisjunctionResolver.Responses responsesForIteration(DisjunctionResolver.Responses responseProducerPrevious, int newIteration) {
+        protected DisjunctionResolver.Responses responsesForIteration(DisjunctionResolver.Responses responsesPrior, int newIteration) {
             return new DisjunctionResolver.Responses(newIteration);
         }
 

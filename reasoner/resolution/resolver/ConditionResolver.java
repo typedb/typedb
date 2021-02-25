@@ -33,7 +33,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
-public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
+// note: in the future, we may introduce query rewriting here
+public class ConditionResolver extends ConjunctionResolver<ConditionResolver, CompoundResolver.Responses> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ConditionResolver.class);
 
@@ -48,23 +49,27 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
     }
 
     @Override
-    protected void nextAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
-        if (responseProducer.hasUpstreamAnswer()) {
-            AnswerState.Partial<?> upstreamAnswer = responseProducer.upstreamAnswers().next();
-            responseProducer.recordProduced(upstreamAnswer.conceptMap());
-            answerToUpstream(upstreamAnswer, fromUpstream, iteration);
+    protected void nextAnswer(Request fromUpstream, CompoundResolver.Responses responses, int iteration) {
+        if (responses.hasDownstreamProducer()) {
+            requestFromDownstream(responses.nextDownstreamProducer(), fromUpstream, iteration);
         } else {
-            if (responseProducer.hasDownstreamProducer()) {
-                requestFromDownstream(responseProducer.nextDownstreamProducer(), fromUpstream, iteration);
-            } else {
-                failToUpstream(fromUpstream, iteration);
-            }
+            failToUpstream(fromUpstream, iteration);
         }
     }
 
     @Override
     protected Optional<AnswerState> toUpstreamAnswer(AnswerState.Partial<?> fromDownstream) {
         return Optional.of(fromDownstream.asFiltered().toUpstream());
+    }
+
+    @Override
+    CompoundResolver.Responses responsesNew(int iteration) {
+        return new CompoundResolver.Responses(iteration);
+    }
+
+    @Override
+    CompoundResolver.Responses responsesForIteration(CompoundResolver.Responses responsesPrior, int iteration) {
+        return new CompoundResolver.Responses(iteration);
     }
 
     @Override
