@@ -103,6 +103,41 @@ public class ReasonerTest {
     }
 
     @Test
+    public void test_offset_limit() {
+        try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+                ConceptManager conceptMgr = txn.concepts();
+                EntityType milk = conceptMgr.putEntityType("milk");
+                AttributeType ageInDays = conceptMgr.putAttributeType("age-in-days", AttributeType.ValueType.LONG);
+                milk.setOwns(ageInDays);
+                txn.commit();
+            }
+        }
+        try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+                txn.query().insert(Graql.parseQuery("insert $x isa milk, has age-in-days 5;").asInsert());
+                txn.query().insert(Graql.parseQuery("insert $x isa milk, has age-in-days 10;").asInsert());
+                txn.commit();
+            }
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
+                List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $x has age-in-days $a;").asMatch()).toList();
+
+                ans.iterator().forEachRemaining(a -> {
+                    assertEquals("age-in-days", a.get("a").asThing().getType().getLabel().scopedName());
+                    assertEquals("milk", a.get("x").asThing().getType().getLabel().scopedName());
+                });
+                assertEquals(2, ans.size());
+
+                List<ConceptMap> ansLimited = txn.query().match(Graql.parseQuery("match $x has age-in-days $a; limit 1;").asMatch()).toList();
+                assertEquals(1, ansLimited.size());
+
+                List<ConceptMap> ansLimitedOffsetted = txn.query().match(Graql.parseQuery("match $x has age-in-days $a; offset 1; limit 1;").asMatch()).toList();
+                assertEquals(1, ansLimitedOffsetted.size());
+            }
+        }
+    }
+
+    @Test
     public void test_exception_kills_query() {
         try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {

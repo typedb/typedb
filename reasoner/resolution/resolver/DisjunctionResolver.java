@@ -25,6 +25,7 @@ import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Filtered;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.traversal.TraversalEngine;
@@ -39,7 +40,8 @@ import java.util.Set;
 
 import static grakn.core.common.iterator.Iterators.iterate;
 
-public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<RESOLVER>> extends CompoundResolver<RESOLVER, DisjunctionResolver.RequestState> {
+public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<RESOLVER>>
+        extends CompoundResolver<RESOLVER, DisjunctionResolver.RequestState> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Disjunction.class);
 
@@ -94,7 +96,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         assert fromUpstream.partialAnswer().isFiltered() || fromUpstream.partialAnswer().isIdentity();
         RequestState requestState = new RequestState(iteration);
         for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers) {
-            AnswerState.Partial.Filtered downstream = fromUpstream.partialAnswer()
+            Filtered downstream = fromUpstream.partialAnswer()
                     .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver), conjunctionResolver);
             Request request = Request.create(driver(), conjunctionResolver, downstream);
             requestState.addDownstreamProducer(request);
@@ -111,7 +113,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
 
         RequestState requestStateNextIteration = requestStateForIteration(requestStatePrior, newIteration);
         for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers) {
-            AnswerState.Partial.Filtered downstream = fromUpstream.partialAnswer()
+            Filtered downstream = fromUpstream.partialAnswer()
                     .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver), conjunctionResolver);
             Request request = Request.create(driver(), conjunctionResolver, downstream);
             requestStateNextIteration.addDownstreamProducer(request);
