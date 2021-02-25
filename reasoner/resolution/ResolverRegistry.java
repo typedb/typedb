@@ -185,7 +185,7 @@ public class ResolverRegistry {
                 self, retrievable, this, traversalEngine, conceptMgr, resolutionTracing));
         resolvers.add(resolver);
         if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard races without synchronized
-        return ResolverView.filtered(resolver, ((Resolvable<Conjunction>) retrievable).retrieves());
+        return ResolverView.filtered(resolver, retrievable.retrieves());
     }
 
     // note: must be thread safe. We could move to a ConcurrentHashMap if we create an alpha-equivalence wrapper
