@@ -26,7 +26,6 @@ import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.framework.Request;
-import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +33,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Optional;
 
 // note: in the future, we may introduce query rewriting here
-public class ConditionResolver extends ConjunctionResolver<ConditionResolver, CompoundResolver.Responses> {
+public class ConditionResolver extends ConjunctionResolver<ConditionResolver, CompoundResolver.RequestState> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ConditionResolver.class);
 
@@ -49,9 +48,9 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver, Co
     }
 
     @Override
-    protected void nextAnswer(Request fromUpstream, CompoundResolver.Responses responses, int iteration) {
-        if (responses.hasDownstreamProducer()) {
-            requestFromDownstream(responses.nextDownstreamProducer(), fromUpstream, iteration);
+    protected void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
+        if (requestState.hasDownstreamProducer()) {
+            requestFromDownstream(requestState.nextDownstreamProducer(), fromUpstream, iteration);
         } else {
             failToUpstream(fromUpstream, iteration);
         }
@@ -69,13 +68,13 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver, Co
     }
 
     @Override
-    CompoundResolver.Responses responsesNew(int iteration) {
-        return new CompoundResolver.Responses(iteration);
+    RequestState requestStateNew(int iteration) {
+        return new RequestState(iteration);
     }
 
     @Override
-    CompoundResolver.Responses responsesForIteration(CompoundResolver.Responses responsesPrior, int iteration) {
-        return new CompoundResolver.Responses(iteration);
+    RequestState requestStateForIteration(RequestState requestStatePrior, int iteration) {
+        return new RequestState(iteration);
     }
 
     @Override

@@ -44,7 +44,7 @@ public interface Root {
 
     void submitFail(int iteration);
 
-    class Conjunction extends ConjunctionResolver<Conjunction, Conjunction.Responses> implements Root {
+    class Conjunction extends ConjunctionResolver<Conjunction, Conjunction.RequestState> implements Root {
 
         private static final Logger LOG = LoggerFactory.getLogger(Conjunction.class);
 
@@ -108,9 +108,9 @@ public interface Root {
         }
 
         @Override
-        protected void nextAnswer(Request fromUpstream, Responses responses, int iteration) {
-            if (responses.hasDownstreamProducer()) {
-                requestFromDownstream(responses.nextDownstreamProducer(), fromUpstream, iteration);
+        protected void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
+            if (requestState.hasDownstreamProducer()) {
+                requestFromDownstream(requestState.nextDownstreamProducer(), fromUpstream, iteration);
             } else {
                 submitFail(iteration);
             }
@@ -123,20 +123,20 @@ public interface Root {
         }
 
         @Override
-        Responses responsesNew(int iteration) {
-            return new Responses(iteration);
+        RequestState requestStateNew(int iteration) {
+            return new RequestState(iteration);
         }
 
         @Override
-        Responses responsesForIteration(Responses responsesPrior, int iteration) {
-            return new Responses(iteration, responsesPrior.produced());
+        RequestState requestStateForIteration(RequestState requestStatePrior, int iteration) {
+            return new RequestState(iteration, requestStatePrior.produced());
         }
 
         @Override
         boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
-            Responses responses = this.responses.get(fromUpstream);
-            if (!responses.hasProduced(upstreamAnswer.conceptMap())) {
-                responses.recordProduced(upstreamAnswer.conceptMap());
+            RequestState requestState = requestStates.get(fromUpstream);
+            if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
+                requestState.recordProduced(upstreamAnswer.conceptMap());
                 if (mustOffset()) {
                     this.skipped++;
                     return false;
@@ -153,15 +153,15 @@ public interface Root {
             return offset != null && skipped < offset;
         }
 
-        static class Responses extends CompoundResolver.Responses {
+        static class RequestState extends CompoundResolver.RequestState {
 
             private final Set<ConceptMap> produced;
 
-            public Responses(int iteration) {
+            public RequestState(int iteration) {
                 this(iteration, new HashSet<>());
             }
 
-            public Responses(int iteration, Set<ConceptMap> produced) {
+            public RequestState(int iteration, Set<ConceptMap> produced) {
                 super(iteration);
                 this.produced = produced;
             }
@@ -210,9 +210,9 @@ public interface Root {
         }
 
         @Override
-        protected void nextAnswer(Request fromUpstream, Responses responseProducer, int iteration) {
-            if (responseProducer.hasDownstreamProducer()) {
-                requestFromDownstream(responseProducer.nextDownstreamProducer(), fromUpstream, iteration);
+        protected void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
+            if (requestState.hasDownstreamProducer()) {
+                requestFromDownstream(requestState.nextDownstreamProducer(), fromUpstream, iteration);
             } else {
                 submitFail(iteration);
             }
@@ -251,9 +251,9 @@ public interface Root {
 
         @Override
         protected boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
-            Responses responses = this.responses.get(fromUpstream);
-            if (!responses.hasProduced(upstreamAnswer.conceptMap())) {
-                responses.recordProduced(upstreamAnswer.conceptMap());
+            RequestState requestState = requestStates.get(fromUpstream);
+            if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
+                requestState.recordProduced(upstreamAnswer.conceptMap());
                 if (mustOffset()) {
                     this.skipped++;
                     return false;
@@ -273,8 +273,8 @@ public interface Root {
         }
 
         @Override
-        protected Responses responsesForIteration(Responses responsesPrior, int newIteration) {
-            return new Responses(newIteration, responsesPrior.produced());
+        protected RequestState requestStateForIteration(RequestState requestStatePrior, int newIteration) {
+            return new RequestState(newIteration, requestStatePrior.produced());
         }
     }
 }

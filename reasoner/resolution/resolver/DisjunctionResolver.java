@@ -40,7 +40,7 @@ import java.util.Set;
 
 import static grakn.core.common.iterator.Iterators.iterate;
 
-public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> extends CompoundResolver<T, DisjunctionResolver.Responses> {
+public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<RESOLVER>> extends CompoundResolver<RESOLVER, DisjunctionResolver.RequestState> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Disjunction.class);
 
@@ -49,7 +49,7 @@ public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> exte
     protected long skipped;
     protected long answered;
 
-    public DisjunctionResolver(Actor<T> self, String name, grakn.core.pattern.Disjunction disjunction,
+    public DisjunctionResolver(Actor<RESOLVER> self, String name, grakn.core.pattern.Disjunction disjunction,
                                Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean explanations) {
         super(self, name, registry, traversalEngine, conceptMgr, explanations, resolutionRecorder);
@@ -64,11 +64,11 @@ public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> exte
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        Responses responses = this.responses.get(fromUpstream);
+        RequestState requestState = requestStates.get(fromUpstream);
 
         AnswerState answer = toUpstreamAnswer(fromDownstream.answer());
         boolean acceptedAnswer = tryAcceptUpstreamAnswer(answer, fromUpstream, iteration);
-        if (!acceptedAnswer) nextAnswer(fromUpstream, responses, iteration);
+        if (!acceptedAnswer) nextAnswer(fromUpstream, requestState, iteration);
     }
 
     protected abstract boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration);
@@ -90,37 +90,37 @@ public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> exte
     }
 
     @Override
-    protected Responses responsesCreate(Request fromUpstream, int iteration) {
-        LOG.debug("{}: Creating a new Responses for request: {}", name(), fromUpstream);
+    protected RequestState requestStateCreate(Request fromUpstream, int iteration) {
+        LOG.debug("{}: Creating a new RequestState for request: {}", name(), fromUpstream);
         assert fromUpstream.partialAnswer().isFiltered() || fromUpstream.partialAnswer().isIdentity();
-        Responses responses = new Responses(iteration);
+        RequestState requestState = new RequestState(iteration);
         for (Actor<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers) {
             AnswerState.Partial.Filtered downstream = fromUpstream.partialAnswer()
                     .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver), conjunctionResolver);
             Request request = Request.create(self(), conjunctionResolver, downstream);
-            responses.addDownstreamProducer(request);
+            requestState.addDownstreamProducer(request);
         }
-        return responses;
+        return requestState;
     }
 
     @Override
-    protected Responses responsesReiterate(Request fromUpstream, Responses priorResponses,
-                                           int newIteration) {
-        LOG.debug("{}: Updating Responses for iteration '{}'", name(), newIteration);
+    protected RequestState requestStateReiterate(Request fromUpstream, RequestState requestStatePrior,
+                                                 int newIteration) {
+        LOG.debug("{}: Updating RequestState for iteration '{}'", name(), newIteration);
 
-        assert newIteration > priorResponses.iteration();
+        assert newIteration > requestStatePrior.iteration();
 
-        Responses responsesNextIteration = responsesForIteration(priorResponses, newIteration);
+        RequestState requestStateNextIteration = requestStateForIteration(requestStatePrior, newIteration);
         for (Actor<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers) {
             AnswerState.Partial.Filtered downstream = fromUpstream.partialAnswer()
                     .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver), conjunctionResolver);
             Request request = Request.create(self(), conjunctionResolver, downstream);
-            responsesNextIteration.addDownstreamProducer(request);
+            requestStateNextIteration.addDownstreamProducer(request);
         }
-        return responsesNextIteration;
+        return requestStateNextIteration;
     }
 
-    abstract Responses responsesForIteration(Responses responsesPrior, int newIteration);
+    abstract RequestState requestStateForIteration(RequestState requestStatePrior, int newIteration);
 
     protected Set<Identifier.Variable.Retrievable> conjunctionRetrievedIds(Actor<ConjunctionResolver.Nested> conjunctionResolver) {
         // TODO use a map from resolvable to resolvers, then we don't have to reach into the state and use the conjunction
@@ -128,15 +128,15 @@ public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> exte
                 .map(v -> v.id().asRetrievable()).toSet();
     }
 
-    static class Responses extends CompoundResolver.Responses {
+    static class RequestState extends CompoundResolver.RequestState {
 
         private final Set<ConceptMap> produced;
 
-        public Responses(int iteration) {
+        public RequestState(int iteration) {
             this(iteration, new HashSet<>());
         }
 
-        public Responses(int iteration, Set<ConceptMap> produced) {
+        public RequestState(int iteration, Set<ConceptMap> produced) {
             super(iteration);
             this.produced = produced;
         }
@@ -164,9 +164,9 @@ public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> exte
         }
 
         @Override
-        protected void nextAnswer(Request fromUpstream, DisjunctionResolver.Responses responses, int iteration) {
-            if (responses.hasDownstreamProducer()) {
-                requestFromDownstream(responses.nextDownstreamProducer(), fromUpstream, iteration);
+        protected void nextAnswer(Request fromUpstream, DisjunctionResolver.RequestState requestState, int iteration) {
+            if (requestState.hasDownstreamProducer()) {
+                requestFromDownstream(requestState.nextDownstreamProducer(), fromUpstream, iteration);
             } else {
                 failToUpstream(fromUpstream, iteration);
             }
@@ -185,8 +185,8 @@ public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> exte
         }
 
         @Override
-        protected DisjunctionResolver.Responses responsesForIteration(DisjunctionResolver.Responses responsesPrior, int newIteration) {
-            return new DisjunctionResolver.Responses(newIteration);
+        protected DisjunctionResolver.RequestState requestStateForIteration(DisjunctionResolver.RequestState requestStatePrior, int newIteration) {
+            return new DisjunctionResolver.RequestState(newIteration);
         }
 
     }

@@ -47,7 +47,7 @@ import java.util.Optional;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
-public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
+public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Actor.State<RESOLVER> {
     private static final Logger LOG = LoggerFactory.getLogger(Resolver.class);
 
     private final String name;
@@ -58,8 +58,8 @@ public abstract class Resolver<T extends Resolver<T>> extends Actor.State<T> {
     private final boolean resolutionTracing;
     private boolean terminated;
 
-    protected Resolver(Actor<T> self, String name, ResolverRegistry registry, TraversalEngine traversalEngine,
-                      ConceptManager conceptMgr, boolean resolutionTracing) {
+    protected Resolver(Actor<RESOLVER> self, String name, ResolverRegistry registry, TraversalEngine traversalEngine,
+                       ConceptManager conceptMgr, boolean resolutionTracing) {
         super(self);
         this.name = name;
         this.registry = registry;

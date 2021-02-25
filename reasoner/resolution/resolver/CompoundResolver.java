@@ -33,23 +33,24 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
 
-public abstract class CompoundResolver<T extends CompoundResolver<T, R>, R extends CompoundResolver.Responses> extends Resolver<T> {
+public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVER, REQ_STATE>, REQ_STATE extends CompoundResolver.RequestState>
+        extends Resolver<RESOLVER> {
 
     private static final Logger LOG = LoggerFactory.getLogger(CompoundResolver.class);
 
     final Actor<ResolutionRecorder> resolutionRecorder;
-    final Map<Request, R> responses;
+    final Map<Request, REQ_STATE> requestStates;
     boolean isInitialised;
 
-    protected CompoundResolver(Actor<T> self, String name, ResolverRegistry registry, TraversalEngine traversalEngine,
+    protected CompoundResolver(Actor<RESOLVER> self, String name, ResolverRegistry registry, TraversalEngine traversalEngine,
                                ConceptManager conceptMgr, boolean resolutionTracing, Actor<ResolutionRecorder> resolutionRecorder) {
         super(self, name, registry, traversalEngine, conceptMgr, resolutionTracing);
         this.resolutionRecorder = resolutionRecorder;
-        this.responses = new HashMap<>();
+        this.requestStates = new HashMap<>();
         this.isInitialised = false;
     }
 
-    protected abstract void nextAnswer(Request fromUpstream, R responseProducer, int iteration);
+    protected abstract void nextAnswer(Request fromUpstream, REQ_STATE requestState, int iteration);
 
     @Override
     public void receiveRequest(Request fromUpstream, int iteration) {
@@ -57,13 +58,13 @@ public abstract class CompoundResolver<T extends CompoundResolver<T, R>, R exten
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
 
-        R responses = getOrUpdateResponses(fromUpstream, iteration);
-        if (iteration < responses.iteration()) {
+        REQ_STATE requestState = getOrUpdateRequestState(fromUpstream, iteration);
+        if (iteration < requestState.iteration()) {
             // short circuit if the request came from a prior iteration
             failToUpstream(fromUpstream, iteration);
         } else {
-            assert iteration == responses.iteration();
-            nextAnswer(fromUpstream, responses, iteration);
+            assert iteration == requestState.iteration();
+            nextAnswer(fromUpstream, requestState, iteration);
         }
     }
 
@@ -74,45 +75,45 @@ public abstract class CompoundResolver<T extends CompoundResolver<T, R>, R exten
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        R responseProducer = responses.get(fromUpstream);
+        REQ_STATE requestState = requestStates.get(fromUpstream);
 
-        if (iteration < responseProducer.iteration()) {
+        if (iteration < requestState.iteration()) {
             // short circuit old iteration failed messages back out of the actor model
             failToUpstream(fromUpstream, iteration);
             return;
         }
-        responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
-        nextAnswer(fromUpstream, responseProducer, iteration);
+        requestState.removeDownstreamProducer(fromDownstream.sourceRequest());
+        nextAnswer(fromUpstream, requestState, iteration);
     }
 
-    private R getOrUpdateResponses(Request fromUpstream, int iteration) {
-        if (!responses.containsKey(fromUpstream)) {
-            responses.put(fromUpstream, responsesCreate(fromUpstream, iteration));
+    private REQ_STATE getOrUpdateRequestState(Request fromUpstream, int iteration) {
+        if (!requestStates.containsKey(fromUpstream)) {
+            requestStates.put(fromUpstream, requestStateCreate(fromUpstream, iteration));
         } else {
-            R responses = this.responses.get(fromUpstream);
-            assert responses.iteration() == iteration ||
-                    responses.iteration() + 1 == iteration;
+            REQ_STATE requestState = requestStates.get(fromUpstream);
+            assert requestState.iteration() == iteration ||
+                    requestState.iteration() + 1 == iteration;
 
-            if (responses.iteration() + 1 == iteration) {
+            if (requestState.iteration() + 1 == iteration) {
                 // when the same request for the next iteration the first time, re-initialise required state
-                R responseProducerNextIter = responsesReiterate(fromUpstream, responses, iteration);
-                this.responses.put(fromUpstream, responseProducerNextIter);
+                REQ_STATE responseProducerNextIter = requestStateReiterate(fromUpstream, requestState, iteration);
+                this.requestStates.put(fromUpstream, responseProducerNextIter);
             }
         }
-        return responses.get(fromUpstream);
+        return requestStates.get(fromUpstream);
     }
 
-    abstract R responsesCreate(Request fromUpstream, int iteration);
+    abstract REQ_STATE requestStateCreate(Request fromUpstream, int iteration);
 
-    abstract R responsesReiterate(Request fromUpstream, R priorResponses, int iteration);
+    abstract REQ_STATE requestStateReiterate(Request fromUpstream, REQ_STATE priorResponses, int iteration);
 
-    static class Responses {
+    static class RequestState {
 
         private final int iteration;
         private final LinkedHashSet<Request> downstreamProducer;
         private Iterator<Request> downstreamProducerSelector;
 
-        public Responses(int iteration) {
+        public RequestState(int iteration) {
             this.iteration = iteration;
             downstreamProducer = new LinkedHashSet<>();
             downstreamProducerSelector = downstreamProducer.iterator();

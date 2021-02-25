@@ -55,7 +55,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private final LogicManager logicMgr;
     private final Map<Actor<? extends Resolver<?>>, RecursionState> recursionStates;
     private final Actor<ResolutionRecorder> resolutionRecorder;
-    private final Map<Request, Responses> responses;
+    private final Map<Request, RequestState> requestStates;
     private boolean isInitialised;
 
     public ConcludableResolver(Actor<ConcludableResolver> self, Concludable concludable,
@@ -69,7 +69,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         this.concludable = concludable;
         this.applicableRules = new LinkedHashMap<>();
         this.recursionStates = new HashMap<>();
-        this.responses = new HashMap<>();
+        this.requestStates = new HashMap<>();
         this.isInitialised = false;
     }
 
@@ -79,13 +79,13 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
 
-        Responses responses = getOrUpdateResponses(fromUpstream, iteration);
-        if (iteration < responses.iteration()) {
+        RequestState requestState = getOrUpdateRequestState(fromUpstream, iteration);
+        if (iteration < requestState.iteration()) {
             // short circuit if the request came from a prior iteration
             failToUpstream(fromUpstream, iteration);
         } else {
-            assert iteration == responses.iteration();
-            nextAnswer(fromUpstream, responses, iteration);
+            assert iteration == requestState.iteration();
+            nextAnswer(fromUpstream, requestState, iteration);
         }
     }
 
@@ -96,19 +96,19 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        Responses responses = this.responses.get(fromUpstream);
+        RequestState requestState = this.requestStates.get(fromUpstream);
 
         Partial<?> upstreamAnswer = fromDownstream.answer().asMapped().toUpstream();
 
-        if (!responses.hasProduced(upstreamAnswer.conceptMap())) {
-            responses.recordProduced(upstreamAnswer.conceptMap());
+        if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
+            requestState.recordProduced(upstreamAnswer.conceptMap());
             answerToUpstream(upstreamAnswer, fromUpstream, iteration);
         } else {
             if (fromDownstream.answer().recordExplanations()) {
                 LOG.trace("{}: Recording deduplicated answer derivation: {}", name(), upstreamAnswer);
                 resolutionRecorder.tell(actor -> actor.record(upstreamAnswer));
             }
-            nextAnswer(fromUpstream, responses, iteration);
+            nextAnswer(fromUpstream, requestState, iteration);
         }
     }
 
@@ -119,22 +119,22 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        Responses responses = this.responses.get(fromUpstream);
+        RequestState requestState = this.requestStates.get(fromUpstream);
 
-        if (iteration < responses.iteration()) {
+        if (iteration < requestState.iteration()) {
             // short circuit old iteration failed messages to upstream
             failToUpstream(fromUpstream, iteration);
             return;
         }
 
-        responses.removeDownstreamProducer(fromDownstream.sourceRequest());
-        nextAnswer(fromUpstream, responses, iteration);
+        requestState.removeDownstreamProducer(fromDownstream.sourceRequest());
+        nextAnswer(fromUpstream, requestState, iteration);
     }
 
     @Override
     public void terminate(Throwable cause) {
         super.terminate(cause);
-        responses.clear();
+        requestStates.clear();
         recursionStates.clear();
     }
 
@@ -156,37 +156,37 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         if (!isTerminated()) isInitialised = true;
     }
 
-    private void nextAnswer(Request fromUpstream, Responses responses, int iteration) {
-        if (responses.hasUpstreamAnswer()) {
-            Partial<?> upstreamAnswer = responses.upstreamAnswers().next();
-            responses.recordProduced(upstreamAnswer.conceptMap());
+    private void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
+        if (requestState.hasUpstreamAnswer()) {
+            Partial<?> upstreamAnswer = requestState.upstreamAnswers().next();
+            requestState.recordProduced(upstreamAnswer.conceptMap());
             answerToUpstream(upstreamAnswer, fromUpstream, iteration);
         } else {
-            if (responses.hasDownstreamProducer()) {
-                requestFromDownstream(responses.nextDownstreamProducer(), fromUpstream, iteration);
+            if (requestState.hasDownstreamProducer()) {
+                requestFromDownstream(requestState.nextDownstreamProducer(), fromUpstream, iteration);
             } else {
                 failToUpstream(fromUpstream, iteration);
             }
         }
     }
 
-    private Responses getOrUpdateResponses(Request fromUpstream, int iteration) {
-        if (!responses.containsKey(fromUpstream)) {
-            responses.put(fromUpstream, responsesCreate(fromUpstream, iteration));
+    private RequestState getOrUpdateRequestState(Request fromUpstream, int iteration) {
+        if (!requestStates.containsKey(fromUpstream)) {
+            requestStates.put(fromUpstream, requestStateCreate(fromUpstream, iteration));
         } else {
-            Responses responses = this.responses.get(fromUpstream);
-            assert responses.iteration() == iteration || responses.iteration() + 1 == iteration;
+            RequestState requestState = this.requestStates.get(fromUpstream);
+            assert requestState.iteration() == iteration || requestState.iteration() + 1 == iteration;
 
-            if (responses.iteration() + 1 == iteration) {
+            if (requestState.iteration() + 1 == iteration) {
                 // when the same request for the next iteration the first time, re-initialise required state
-                Responses newResponses = responsesCreate(fromUpstream, iteration);
-                this.responses.put(fromUpstream, newResponses);
+                RequestState newRequestState = requestStateCreate(fromUpstream, iteration);
+                this.requestStates.put(fromUpstream, newRequestState);
             }
         }
-        return responses.get(fromUpstream);
+        return requestStates.get(fromUpstream);
     }
 
-    protected Responses responsesCreate(Request fromUpstream, int iteration) {
+    protected RequestState requestStateCreate(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating new Responses for iteration{}, request: {}", name(), iteration, fromUpstream);
         Actor<? extends Resolver<?>> root = fromUpstream.partialAnswer().root();
         recursionStates.putIfAbsent(root, new RecursionState(iteration));
@@ -200,12 +200,12 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
                 traversalIterator(concludable.pattern(), fromUpstream.partialAnswer().conceptMap())
                         .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap));
 
-        Responses responses = new Responses(upstreamAnswers, iteration);
-        mayRegisterRules(fromUpstream, iterationState, responses);
-        return responses;
+        RequestState requestState = new RequestState(upstreamAnswers, iteration);
+        mayRegisterRules(fromUpstream, iterationState, requestState);
+        return requestState;
     }
 
-    private void mayRegisterRules(Request fromUpstream, RecursionState recursionState, Responses responses) {
+    private void mayRegisterRules(Request fromUpstream, RecursionState recursionState, RequestState requestState) {
         // loop termination: when receiving a new request, we check if we have seen it before from this root query
         // if we have, we do not allow rules to be registered as possible downstreams
         if (!recursionState.hasReceived(fromUpstream.partialAnswer().conceptMap())) {
@@ -215,7 +215,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
                     Optional<Unified> unified = fromUpstream.partialAnswer().unifyToDownstream(unifier, conclusionResolver);
                     if (unified.isPresent()) {
                         Request toDownstream = Request.create(self(), conclusionResolver, unified.get());
-                        responses.addDownstreamProducer(toDownstream);
+                        requestState.addDownstreamProducer(toDownstream);
                     }
                 }
             }
@@ -223,18 +223,18 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         }
     }
 
-    private static class Responses {
+    private static class RequestState {
         private final Set<ConceptMap> produced;
         private final ResourceIterator<Partial<?>> newUpstreamAnswers;
         private final LinkedHashSet<Request> downstreamProducer;
         private final int iteration;
         private Iterator<Request> downstreamProducerSelector;
 
-        public Responses(ResourceIterator<Partial<?>> upstreamAnswers, int iteration) {
+        public RequestState(ResourceIterator<Partial<?>> upstreamAnswers, int iteration) {
             this(upstreamAnswers, iteration, new HashSet<>());
         }
 
-        private Responses(ResourceIterator<Partial<?>> upstreamAnswers, int iteration, Set<ConceptMap> produced) {
+        private RequestState(ResourceIterator<Partial<?>> upstreamAnswers, int iteration, Set<ConceptMap> produced) {
             this.newUpstreamAnswers = upstreamAnswers.filter(partial -> !hasProduced(partial.conceptMap()));
             this.iteration = iteration;
             this.produced = produced;
