@@ -49,6 +49,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class QueryTest {
+
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("query-test");
     private static final Path logDir = dataDir.resolve("logs");
     private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);

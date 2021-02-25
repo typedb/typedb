@@ -799,4 +799,31 @@ public class BasicTest {
             }
         }
     }
+
+    @Test
+    public void test_query_cancelled_asynchronously() throws IOException {
+        Util.resetDirectory(dataDir);
+        try (Grakn grakn = RocksGrakn.open(options)) {
+            grakn.databases().create(database);
+            for (int i = 0; i < 50; i++) {
+                new Thread(() -> {
+                    Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA);
+                    Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE);
+                    new Thread(() -> {
+                        try {
+                            Thread.sleep(1);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        tx.close();
+                        session.close();
+                    }).start();
+                    tx.query().match(Graql.parseQuery("match $x isa thing;").asMatch());
+                }).start();
+            }
+            Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA);
+            Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE);
+            tx.query().match(Graql.parseQuery("match $x isa thing;").asMatch());
+        }
+    }
 }
