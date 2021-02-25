@@ -31,7 +31,6 @@ import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
-import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
@@ -39,7 +38,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -57,9 +55,9 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
 
     private final Actor<ResolutionRecorder> resolutionRecorder;
     private final Rule.Conclusion conclusion;
-    private final Map<Request, ConclusionResponses> conclusionResponses;
-    private boolean isInitialised;
+    private final Map<Request, RequestState> requestStates;
     private Actor<ConditionResolver> ruleResolver;
+    private boolean isInitialised;
 
     public ConclusionResolver(Actor<ConclusionResolver> self, Rule.Conclusion conclusion, ResolverRegistry registry,
                               Actor<ResolutionRecorder> resolutionRecorder, TraversalEngine traversalEngine,
@@ -68,7 +66,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
               registry, traversalEngine, conceptMgr, resolutionTracing);
         this.conclusion = conclusion;
         this.resolutionRecorder = resolutionRecorder;
-        this.conclusionResponses = new HashMap<>();
+        this.requestStates = new HashMap<>();
         this.isInitialised = false;
     }
 
@@ -78,14 +76,14 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
 
-        ConclusionResponses conclusionResponses = getOrUpdateResponses(fromUpstream, iteration);
+        RequestState requestState = getOrUpdateRequestState(fromUpstream, iteration);
 
-        if (iteration < conclusionResponses.iteration()) {
+        if (iteration < requestState.iteration()) {
             // short circuit if the request came from a prior iteration
             failToUpstream(fromUpstream, iteration);
         } else {
-            assert iteration == conclusionResponses.iteration();
-            tryAnswer(fromUpstream, conclusionResponses, iteration);
+            assert iteration == requestState.iteration();
+            nextAnswer(fromUpstream, requestState, iteration);
         }
     }
 
@@ -96,7 +94,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        ConclusionResponses conclusionResponses = this.conclusionResponses.get(fromUpstream);
+        RequestState requestState = this.requestStates.get(fromUpstream);
 
         ResourceIterator<Map<Identifier.Variable, Concept>> materialisations = conclusion
                 .materialise(fromDownstream.answer().conceptMap(), traversalEngine, conceptMgr);
@@ -106,8 +104,8 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
                 .map(concepts -> fromUpstream.partialAnswer().asUnified().aggregateToUpstream(concepts))
                 .filter(Optional::isPresent)
                 .map(Optional::get);
-        conclusionResponses.addResponses(materialisedAnswers);
-        tryAnswer(fromUpstream, conclusionResponses, iteration);
+        requestState.addResponses(materialisedAnswers);
+        nextAnswer(fromUpstream, requestState, iteration);
     }
 
     @Override
@@ -117,22 +115,22 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        ConclusionResponses conclusionResponses = this.conclusionResponses.get(fromUpstream);
+        RequestState requestState = this.requestStates.get(fromUpstream);
 
-        if (iteration < conclusionResponses.iteration()) {
+        if (iteration < requestState.iteration()) {
             // short circuit old iteration fail messages to upstream
             failToUpstream(fromUpstream, iteration);
             return;
         }
 
-        conclusionResponses.removeDownstream(fromDownstream.sourceRequest());
-        tryAnswer(fromUpstream, conclusionResponses, iteration);
+        requestState.removeDownstream(fromDownstream.sourceRequest());
+        nextAnswer(fromUpstream, requestState, iteration);
     }
 
     @Override
     public void terminate(Throwable cause) {
         super.terminate(cause);
-        conclusionResponses.clear();
+        requestStates.clear();
     }
 
     @Override
@@ -146,39 +144,38 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         }
     }
 
-    private void tryAnswer(Request fromUpstream, ConclusionResponses conclusionResponses, int iteration) {
-        Optional<AnswerState.Partial<?>> answer = conclusionResponses.nextResponse();
+    private void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
+        Optional<AnswerState.Partial<?>> answer = requestState.nextResponse();
         if (answer.isPresent()) {
-            conclusionResponses.recordProduced(answer.get().conceptMap());
             answerToUpstream(answer.get(), fromUpstream, iteration);
-        } else if (conclusionResponses.hasDownstream()) {
-            requestFromDownstream(conclusionResponses.nextDownstream(), fromUpstream, iteration);
+        } else if (requestState.hasDownstream()) {
+            requestFromDownstream(requestState.nextDownstream(), fromUpstream, iteration);
         } else {
             failToUpstream(fromUpstream, iteration);
         }
     }
 
-    private ConclusionResponses getOrUpdateResponses(Request fromUpstream, int iteration) {
-        if (!conclusionResponses.containsKey(fromUpstream)) {
-            conclusionResponses.put(fromUpstream, createConclusionResponses(fromUpstream, iteration));
+    private RequestState getOrUpdateRequestState(Request fromUpstream, int iteration) {
+        if (!requestStates.containsKey(fromUpstream)) {
+            requestStates.put(fromUpstream, createRequestState(fromUpstream, iteration));
         } else {
-            ConclusionResponses conclusionResponses = this.conclusionResponses.get(fromUpstream);
-            assert conclusionResponses.iteration() == iteration ||
-                    conclusionResponses.iteration() + 1 == iteration;
+            RequestState requestState = this.requestStates.get(fromUpstream);
+            assert requestState.iteration() == iteration ||
+                    requestState.iteration() + 1 == iteration;
 
-            if (conclusionResponses.iteration() + 1 == iteration) {
+            if (requestState.iteration() + 1 == iteration) {
                 // when the same request for the next iteration the first time, re-initialise required state
-                ConclusionResponses conclusionResponsesNextIter = createConclusionResponses(fromUpstream, iteration);
-                this.conclusionResponses.put(fromUpstream, conclusionResponsesNextIter);
+                RequestState requestStateNextIter = createRequestState(fromUpstream, iteration);
+                this.requestStates.put(fromUpstream, requestStateNextIter);
             }
         }
-        return conclusionResponses.get(fromUpstream);
+        return requestStates.get(fromUpstream);
     }
 
-    private ConclusionResponses createConclusionResponses(Request fromUpstream, int iteration) {
+    private RequestState createRequestState(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new ConclusionResponse for request: {}", name(), fromUpstream);
 
-        ConclusionResponses conclusionResponses = new ConclusionResponses(iteration);
+        RequestState requestState = new RequestState(iteration);
 
         ConceptMap partialAnswer = fromUpstream.partialAnswer().conceptMap();
         // we do a extra traversal to expand the partial answer if we already have the concept that is meant to be generated
@@ -187,15 +184,15 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         if (conclusion.generating().isPresent() && conclusion.retrievableIds().size() > partialAnswer.concepts().size() &&
                 partialAnswer.concepts().containsKey(conclusion.generating().get().id())) {
             ResourceIterator<AnswerState.Partial.Filtered> completedAnswers = candidateAnswers(fromUpstream, partialAnswer);
-            completedAnswers.forEachRemaining(answer -> conclusionResponses.addDownstream(Request.create(self(), ruleResolver,
-                                                                                                         answer)));
+            completedAnswers.forEachRemaining(answer -> requestState.addDownstream(Request.create(self(), ruleResolver,
+                                                                                                  answer)));
         } else {
             Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
             AnswerState.Partial.Filtered downstreamAnswer = fromUpstream.partialAnswer().filterToDownstream(named, ruleResolver);
-            conclusionResponses.addDownstream(Request.create(self(), ruleResolver, downstreamAnswer));
+            requestState.addDownstream(Request.create(self(), ruleResolver, downstreamAnswer));
         }
 
-        return conclusionResponses;
+        return requestState;
     }
 
     private ResourceIterator<AnswerState.Partial.Filtered> candidateAnswers(Request fromUpstream, ConceptMap answer) {
@@ -206,32 +203,20 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
     }
 
     @Override
-    protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
-        throw GraknException.of(ILLEGAL_STATE);
-    }
-
-    @Override
-    protected ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer conclusionResponses, int newIteration) {
-        throw GraknException.of(ILLEGAL_STATE);
-    }
-
-    @Override
     public String toString() {
         return name() + ": then " + conclusion.rule().then();
     }
 
-    private static class ConclusionResponses {
+    private static class RequestState {
 
         private final List<ResourceIterator<AnswerState.Partial<?>>> materialisedAnswers;
         private final LinkedHashSet<Request> downstreams;
-        private final Set<ConceptMap> produced;
         private Iterator<Request> downstreamProducerSelector;
         private final int iteration;
 
-        public ConclusionResponses(int iteration) {
+        public RequestState(int iteration) {
             this.materialisedAnswers = new LinkedList<>();
             this.downstreams = new LinkedHashSet<>();
-            this.produced = new HashSet<>();
             this.iteration = iteration;
             downstreamProducerSelector = downstreams.iterator();
         }
@@ -240,16 +225,8 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
             return iteration;
         }
 
-        public boolean hasProduced(ConceptMap conceptMap) {
-            return produced.contains(conceptMap);
-        }
-
-        public void recordProduced(ConceptMap conceptMap) {
-            produced.add(conceptMap);
-        }
-
         public void addResponses(ResourceIterator<AnswerState.Partial<?>> materialisations) {
-            materialisedAnswers.add(materialisations.filter(partial -> !hasProduced(partial.conceptMap())));
+            materialisedAnswers.add(materialisations);
         }
 
         public Optional<AnswerState.Partial<?>> nextResponse() {

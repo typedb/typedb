@@ -26,14 +26,14 @@ import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.framework.Request;
-import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
-public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
+// note: in the future, we may introduce query rewriting here
+public class ConditionResolver extends ConjunctionResolver<ConditionResolver, CompoundResolver.RequestState> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ConditionResolver.class);
 
@@ -48,23 +48,33 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
     }
 
     @Override
-    protected void nextAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
-        if (responseProducer.hasUpstreamAnswer()) {
-            AnswerState.Partial<?> upstreamAnswer = responseProducer.upstreamAnswers().next();
-            responseProducer.recordProduced(upstreamAnswer.conceptMap());
-            answerToUpstream(upstreamAnswer, fromUpstream, iteration);
+    protected void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
+        if (requestState.hasDownstreamProducer()) {
+            requestFromDownstream(requestState.nextDownstreamProducer(), fromUpstream, iteration);
         } else {
-            if (responseProducer.hasDownstreamProducer()) {
-                requestFromDownstream(responseProducer.nextDownstreamProducer(), fromUpstream, iteration);
-            } else {
-                failToUpstream(fromUpstream, iteration);
-            }
+            failToUpstream(fromUpstream, iteration);
         }
     }
 
     @Override
     protected Optional<AnswerState> toUpstreamAnswer(AnswerState.Partial<?> fromDownstream) {
         return Optional.of(fromDownstream.asFiltered().toUpstream());
+    }
+
+    @Override
+    boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
+        answerToUpstream(upstreamAnswer, fromUpstream, iteration);
+        return true;
+    }
+
+    @Override
+    RequestState requestStateNew(int iteration) {
+        return new RequestState(iteration);
+    }
+
+    @Override
+    RequestState requestStateForIteration(RequestState requestStatePrior, int iteration) {
+        return new RequestState(iteration);
     }
 
     @Override
