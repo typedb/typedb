@@ -37,7 +37,6 @@ import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import grakn.core.reasoner.resolution.answer.Mapping;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Response;
-import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import org.slf4j.Logger;
@@ -84,10 +83,6 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T, R>, R
 
     abstract Optional<AnswerState> toUpstreamAnswer(Partial<?> fromDownstream);
 
-    boolean mustOffset() { return false; }
-
-    void offsetOccurred() {}
-
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
         LOG.trace("{}: received Answer: {}", name(), fromDownstream);
@@ -105,18 +100,9 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T, R>, R
         if (plan.get(toDownstream.planIndex()).isNegated()) responses.removeDownstreamProducer(toDownstream);
 
         if (plan.isLast(fromDownstream.planIndex())) {
-            Optional<AnswerState> answer = toUpstreamAnswer(fromDownstream.answer());
-            if (answer.isPresent() && !responses.hasProduced(answer.get().conceptMap())) {
-                responses.recordProduced(answer.get().conceptMap());
-                if (mustOffset()) {
-                    offsetOccurred();
-                    nextAnswer(fromUpstream, responses, iteration);
-                    return;
-                }
-                answerToUpstream(answer.get(), fromUpstream, iteration);
-            } else {
-                nextAnswer(fromUpstream, responses, iteration);
-            }
+            Optional<AnswerState> upstreamAnswer = toUpstreamAnswer(fromDownstream.answer());
+            boolean answerAccepted = upstreamAnswer.isPresent() && tryAcceptUpstreamAnswer(upstreamAnswer.get(), fromUpstream, iteration);
+            if (!answerAccepted) nextAnswer(fromUpstream, responses, iteration);
         } else {
             int nextResolverIndex = fromDownstream.planIndex() + 1;
             ResolverRegistry.ResolverView nextPlannedDownstream = downstreamResolvers.get(plan.get(nextResolverIndex));
@@ -126,6 +112,8 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T, R>, R
             requestFromDownstream(downstreamRequest, fromUpstream, iteration);
         }
     }
+
+    abstract boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration);
 
     @Override
     protected void receiveFail(Response.Fail fromDownstream, int iteration) {
@@ -280,6 +268,12 @@ public abstract class ConjunctionResolver<T extends ConjunctionResolver<T, R>, R
         @Override
         protected Optional<AnswerState> toUpstreamAnswer(Partial<?> fromDownstream) {
             return Optional.of(fromDownstream.asFiltered().toUpstream());
+        }
+
+        @Override
+        boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
+            answerToUpstream(upstreamAnswer, fromUpstream, iteration);
+            return true;
         }
 
         @Override

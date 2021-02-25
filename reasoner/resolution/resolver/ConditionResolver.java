@@ -63,6 +63,12 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver, Co
     }
 
     @Override
+    boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
+        answerToUpstream(upstreamAnswer, fromUpstream, iteration);
+        return true;
+    }
+
+    @Override
     CompoundResolver.Responses responsesNew(int iteration) {
         return new CompoundResolver.Responses(iteration);
     }

@@ -34,10 +34,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static grakn.core.common.iterator.Iterators.iterate;
@@ -59,10 +57,6 @@ public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> exte
         this.downstreamResolvers = new ArrayList<>();
     }
 
-    protected boolean mustOffset() { return false; }
-
-    protected void offsetOccurred() {}
-
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
         LOG.trace("{}: received answer: {}", name(), fromDownstream);
@@ -72,20 +66,14 @@ public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> exte
         Request fromUpstream = fromUpstream(toDownstream);
         Responses responses = this.responses.get(fromUpstream);
 
-        Partial<?> answer = fromDownstream.answer();
-        ConceptMap filteredMap = answer.conceptMap();
-        if (!responses.hasProduced(filteredMap)) {
-            responses.recordProduced(filteredMap);
-            if (mustOffset()) {
-                offsetOccurred();
-                nextAnswer(fromUpstream, responses, iteration);
-                return;
-            }
-            answerToUpstream(answer, fromUpstream, iteration);
-        } else {
-            nextAnswer(fromUpstream, responses, iteration);
-        }
+        AnswerState answer = toUpstreamAnswer(fromDownstream.answer());
+        boolean acceptedAnswer = tryAcceptUpstreamAnswer(answer, fromUpstream, iteration);
+        if (!acceptedAnswer) nextAnswer(fromUpstream, responses, iteration);
     }
+
+    protected abstract boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration);
+
+    protected abstract AnswerState toUpstreamAnswer(Partial<?> answer);
 
     @Override
     protected void initialiseDownstreamResolvers() {
@@ -183,6 +171,18 @@ public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> exte
             } else {
                 failToUpstream(fromUpstream, iteration);
             }
+        }
+
+        @Override
+        protected boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
+            answerToUpstream(upstreamAnswer, fromUpstream, iteration);
+            return true;
+        }
+
+        @Override
+        protected AnswerState toUpstreamAnswer(Partial<?> answer) {
+            assert answer.isFiltered();
+            return answer.asFiltered().toUpstream();
         }
 
         @Override

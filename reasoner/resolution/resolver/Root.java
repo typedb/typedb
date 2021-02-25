@@ -17,7 +17,6 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
-import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
@@ -28,10 +27,7 @@ import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top;
-import grakn.core.reasoner.resolution.answer.Mapping;
 import grakn.core.reasoner.resolution.framework.Request;
-import grakn.core.reasoner.resolution.framework.Response;
-import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -137,13 +133,24 @@ public interface Root {
         }
 
         @Override
-        public boolean mustOffset() {
-            return offset != null && skipped < offset;
+        boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
+            Responses responses = this.responses.get(fromUpstream);
+            if (!responses.hasProduced(upstreamAnswer.conceptMap())) {
+                responses.recordProduced(upstreamAnswer.conceptMap());
+                if (mustOffset()) {
+                    this.skipped++;
+                    return false;
+                } else {
+                    answerToUpstream(upstreamAnswer, fromUpstream, iteration);
+                    return true;
+                }
+            } else {
+                return false;
+            }
         }
 
-        @Override
-        public void offsetOccurred() {
-            this.skipped++;
+        private boolean mustOffset() {
+            return offset != null && skipped < offset;
         }
 
         static class Responses extends CompoundResolver.Responses {
@@ -197,6 +204,12 @@ public interface Root {
         }
 
         @Override
+        public void terminate(Throwable cause) {
+            super.terminate(cause);
+            onException.accept(cause);
+        }
+
+        @Override
         protected void nextAnswer(Request fromUpstream, Responses responseProducer, int iteration) {
             if (responseProducer.hasDownstreamProducer()) {
                 requestFromDownstream(responseProducer.nextDownstreamProducer(), fromUpstream, iteration);
@@ -231,26 +244,36 @@ public interface Root {
             onFail.accept(iteration);
         }
 
-        @Override
         public boolean mustOffset() {
             return offset != null && skipped < offset;
         }
 
         @Override
-        public void terminate(Throwable cause) {
-            super.terminate(cause);
-            onException.accept(cause);
+        protected boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
+            Responses responses = this.responses.get(fromUpstream);
+            if (!responses.hasProduced(upstreamAnswer.conceptMap())) {
+                responses.recordProduced(upstreamAnswer.conceptMap());
+                if (mustOffset()) {
+                    this.skipped++;
+                    return false;
+                } else {
+                    answerToUpstream(upstreamAnswer, fromUpstream, iteration);
+                    return true;
+                }
+            } else {
+                return false;
+            }
         }
 
         @Override
-        public void offsetOccurred() {
-            this.skipped++;
+        protected AnswerState toUpstreamAnswer(Partial<?> answer) {
+            assert answer.isIdentity();
+            return answer.asIdentity().toTop();
         }
 
         @Override
         protected Responses responsesForIteration(Responses responsesPrior, int newIteration) {
             return new Responses(newIteration, responsesPrior.produced());
         }
-
     }
 }

@@ -57,7 +57,7 @@ public abstract class CompoundResolver<T extends CompoundResolver<T, R>, R exten
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
 
-        R responses = mayUpdateAndGetResponseProducer(fromUpstream, iteration);
+        R responses = getOrUpdateResponses(fromUpstream, iteration);
         if (iteration < responses.iteration()) {
             // short circuit if the request came from a prior iteration
             failToUpstream(fromUpstream, iteration);
@@ -85,7 +85,7 @@ public abstract class CompoundResolver<T extends CompoundResolver<T, R>, R exten
         nextAnswer(fromUpstream, responseProducer, iteration);
     }
 
-    private R mayUpdateAndGetResponseProducer(Request fromUpstream, int iteration) {
+    private R getOrUpdateResponses(Request fromUpstream, int iteration) {
         if (!responses.containsKey(fromUpstream)) {
             responses.put(fromUpstream, responsesCreate(fromUpstream, iteration));
         } else {
