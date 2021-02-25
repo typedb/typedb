@@ -220,8 +220,9 @@ public interface Root {
 
         @Override
         protected void answerToUpstream(AnswerState answer, Request fromUpstream, int iteration) {
+            assert answer.isTop();
             if ((limit == null) || (answered < limit)) {
-                submitAnswer(answer.asIdentity().toTop());
+                submitAnswer(answer.asTop());
                 this.answered++;
             } else {
                 submitFail(iteration);

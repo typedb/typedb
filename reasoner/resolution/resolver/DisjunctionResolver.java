@@ -94,7 +94,6 @@ public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> exte
         LOG.debug("{}: Creating a new Responses for request: {}", name(), fromUpstream);
         assert fromUpstream.partialAnswer().isFiltered() || fromUpstream.partialAnswer().isIdentity();
         Responses responses = new Responses(iteration);
-        assert !this.responses.isEmpty();
         for (Actor<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers) {
             AnswerState.Partial.Filtered downstream = fromUpstream.partialAnswer()
                     .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver), conjunctionResolver);
