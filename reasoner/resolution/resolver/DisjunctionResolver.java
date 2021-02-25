@@ -18,8 +18,6 @@
 package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.common.exception.GraknCheckedException;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
@@ -30,7 +28,6 @@ import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Response;
-import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
 import org.slf4j.Logger;
@@ -43,10 +40,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.iterate;
 
-public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> extends CompoundResolver<T> {
+public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> extends CompoundResolver<T, DisjunctionResolver.Responses> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Disjunction.class);
 
@@ -129,7 +125,7 @@ public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> exte
 
         assert newIteration > priorResponses.iteration();
 
-        Responses responseProducerNewIter = responsesReiterate(priorResponses, newIteration);
+        Responses responseProducerNewIter = responsesForIteration(priorResponses, newIteration);
         for (Actor<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers) {
             AnswerState.Partial.Filtered downstream = fromUpstream.partialAnswer()
                     .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver), conjunctionResolver);
@@ -139,8 +135,7 @@ public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> exte
         return responseProducerNewIter;
     }
 
-    abstract Responses responsesReiterate(Responses responseProducerPrevious, int newIteration);
-
+    abstract Responses responsesForIteration(Responses responseProducerPrevious, int newIteration);
 
     protected Set<Identifier.Variable.Retrievable> conjunctionRetrievedIds(Actor<ConjunctionResolver.Nested> conjunctionResolver) {
         // TODO use a map from resolvable to resolvers, then we don't have to reach into the state and use the conjunction
@@ -153,8 +148,12 @@ public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> exte
         private final Set<ConceptMap> produced;
 
         public Responses(int iteration) {
+            this(iteration, new HashSet<>());
+        }
+
+        public Responses(int iteration, Set<ConceptMap> produced) {
             super(iteration);
-            this.produced = new HashSet<>();
+            this.produced = produced;
         }
 
         public void recordProduced(ConceptMap conceptMap) {
@@ -165,6 +164,9 @@ public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> exte
             return produced.contains(conceptMap);
         }
 
+        public Set<ConceptMap> produced() {
+            return produced;
+        }
     }
 
     public static class Nested extends DisjunctionResolver<Nested> {
@@ -177,21 +179,17 @@ public abstract class DisjunctionResolver<T extends DisjunctionResolver<T>> exte
         }
 
         @Override
-        protected void nextAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
-            if (responseProducer.hasUpstreamAnswer()) {
-                throw GraknException.of(ILLEGAL_STATE);
+        protected void nextAnswer(Request fromUpstream, DisjunctionResolver.Responses responses, int iteration) {
+            if (responses.hasDownstreamProducer()) {
+                requestFromDownstream(responses.nextDownstreamProducer(), fromUpstream, iteration);
             } else {
-                if (responseProducer.hasDownstreamProducer()) {
-                    requestFromDownstream(responseProducer.nextDownstreamProducer(), fromUpstream, iteration);
-                } else {
-                    failToUpstream(fromUpstream, iteration);
-                }
+                failToUpstream(fromUpstream, iteration);
             }
         }
 
         @Override
-        protected ResponseProducer responsesReiterate(Responses responseProducerPrevious, int newIteration) {
-            return responseProducerPrevious.newIteration(Iterators.empty(), newIteration);
+        protected DisjunctionResolver.Responses responsesForIteration(DisjunctionResolver.Responses responseProducerPrevious, int newIteration) {
+            return new DisjunctionResolver.Responses(newIteration);
         }
 
     }

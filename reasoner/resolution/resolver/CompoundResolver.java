@@ -33,12 +33,12 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
 
-public abstract class CompoundResolver<T extends CompoundResolver<T>> extends Resolver<T> {
+public abstract class CompoundResolver<T extends CompoundResolver<T, R>, R extends CompoundResolver.Responses> extends Resolver<T> {
 
     private static final Logger LOG = LoggerFactory.getLogger(CompoundResolver.class);
 
-    private final Actor<ResolutionRecorder> resolutionRecorder;
-    final Map<Request, Responses> responses;
+    final Actor<ResolutionRecorder> resolutionRecorder;
+    final Map<Request, R> responses;
     boolean isInitialised;
 
     protected CompoundResolver(Actor<T> self, String name, ResolverRegistry registry, TraversalEngine traversalEngine,
@@ -49,7 +49,7 @@ public abstract class CompoundResolver<T extends CompoundResolver<T>> extends Re
         this.isInitialised = false;
     }
 
-    protected abstract void nextAnswer(Request fromUpstream, Responses responseProducer, int iteration);
+    protected abstract void nextAnswer(Request fromUpstream, R responseProducer, int iteration);
 
     @Override
     public void receiveRequest(Request fromUpstream, int iteration) {
@@ -57,13 +57,13 @@ public abstract class CompoundResolver<T extends CompoundResolver<T>> extends Re
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
 
-        Responses responseProducer = mayUpdateAndGetResponseProducer(fromUpstream, iteration);
-        if (iteration < responseProducer.iteration()) {
+        R responses = mayUpdateAndGetResponseProducer(fromUpstream, iteration);
+        if (iteration < responses.iteration()) {
             // short circuit if the request came from a prior iteration
             failToUpstream(fromUpstream, iteration);
         } else {
-            assert iteration == responseProducer.iteration();
-            nextAnswer(fromUpstream, responseProducer, iteration);
+            assert iteration == responses.iteration();
+            nextAnswer(fromUpstream, responses, iteration);
         }
     }
 
@@ -74,7 +74,7 @@ public abstract class CompoundResolver<T extends CompoundResolver<T>> extends Re
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        Responses responseProducer = responses.get(fromUpstream);
+        R responseProducer = responses.get(fromUpstream);
 
         if (iteration < responseProducer.iteration()) {
             // short circuit old iteration failed messages back out of the actor model
@@ -85,26 +85,26 @@ public abstract class CompoundResolver<T extends CompoundResolver<T>> extends Re
         nextAnswer(fromUpstream, responseProducer, iteration);
     }
 
-    private Responses mayUpdateAndGetResponseProducer(Request fromUpstream, int iteration) {
+    private R mayUpdateAndGetResponseProducer(Request fromUpstream, int iteration) {
         if (!responses.containsKey(fromUpstream)) {
             responses.put(fromUpstream, responsesCreate(fromUpstream, iteration));
         } else {
-            Responses responses = this.responses.get(fromUpstream);
+            R responses = this.responses.get(fromUpstream);
             assert responses.iteration() == iteration ||
                     responses.iteration() + 1 == iteration;
 
             if (responses.iteration() + 1 == iteration) {
                 // when the same request for the next iteration the first time, re-initialise required state
-                Responses responseProducerNextIter = responsesReiterate(fromUpstream, responses, iteration);
+                R responseProducerNextIter = responsesReiterate(fromUpstream, responses, iteration);
                 this.responses.put(fromUpstream, responseProducerNextIter);
             }
         }
         return responses.get(fromUpstream);
     }
 
-    abstract Responses responsesCreate(Request fromUpstream, int iteration);
+    abstract R responsesCreate(Request fromUpstream, int iteration);
 
-    abstract Responses responsesReiterate(Request fromUpstrea, Responses priorResponses, int iteration);
+    abstract R responsesReiterate(Request fromUpstream, R priorResponses, int iteration);
 
     static class Responses {
 

@@ -181,7 +181,8 @@ public interface Root {
             this.isInitialised = false;
         }
 
-        protected void nextAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
+        @Override
+        protected void nextAnswer(Request fromUpstream, Responses responseProducer, int iteration) {
             if (responseProducer.hasDownstreamProducer()) {
                 requestFromDownstream(responseProducer.nextDownstreamProducer(), fromUpstream, iteration);
             } else {
@@ -232,8 +233,8 @@ public interface Root {
         }
 
         @Override
-        protected ResponseProducer responsesReiterate(Responses responseProducerPrevious, int newIteration) {
-            return responseProducerPrevious.newIterationRetainDedup(Iterators.empty(), newIteration);
+        protected Responses responsesForIteration(Responses responsesPrior, int newIteration) {
+            return new Responses(newIteration, responsesPrior.produced());
         }
 
     }
