@@ -20,6 +20,7 @@ package grakn.core.concurrent.producer;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.concurrent.common.ConcurrentSet;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.concurrent.CompletableFuture;
@@ -27,12 +28,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
 @ThreadSafe
-public class AsyncProducer<T> implements Producer<T> {
+public class AsyncProducer<T> implements FunctionalProducer<T> {
 
     private final int parallelisation;
     private final ResourceIterator<ResourceIterator<T>> iterators;
@@ -47,6 +50,22 @@ public class AsyncProducer<T> implements Producer<T> {
         this.runningJobs = new ConcurrentHashMap<>();
         this.isDone = new AtomicBoolean(false);
         this.isInitialised = false;
+    }
+
+    @Override
+    public <U> AsyncProducer<U> map(Function<T, U> mappingFn) {
+        return new AsyncProducer<>(iterators.map(iter -> iter.map(mappingFn)), parallelisation);
+    }
+
+    @Override
+    public AsyncProducer<T> filter(Predicate<T> predicate) {
+        return new AsyncProducer<>(iterators.map(iter -> iter.filter(predicate)), parallelisation);
+    }
+
+    @Override
+    public AsyncProducer<T> distinct() {
+        ConcurrentSet<T> produced = new ConcurrentSet<>();
+        return new AsyncProducer<>(iterators.map(iter -> iter.distinct(produced)), parallelisation);
     }
 
     @Override

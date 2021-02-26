@@ -24,9 +24,11 @@ import javax.annotation.concurrent.ThreadSafe;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 @ThreadSafe
-public class BaseProducer<T> implements Producer<T> {
+public class BaseProducer<T> implements FunctionalProducer<T> {
 
     private final ResourceIterator<T> iterator;
     private final AtomicBoolean isDone;
@@ -36,6 +38,21 @@ public class BaseProducer<T> implements Producer<T> {
         this.iterator = iterator;
         this.isDone = new AtomicBoolean(false);
         this.future = CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    public <U> BaseProducer<U> map(Function<T, U> mappingFn) {
+        return new BaseProducer<>(iterator.map(mappingFn));
+    }
+
+    @Override
+    public BaseProducer<T> filter(Predicate<T> predicate) {
+        return new BaseProducer<>(iterator.filter(predicate));
+    }
+
+    @Override
+    public BaseProducer<T> distinct() {
+        return new BaseProducer<>(iterator.distinct());
     }
 
     @Override

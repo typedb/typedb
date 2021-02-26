@@ -32,13 +32,13 @@ public class Producers {
     public static final int DEFAULT_BATCH_SIZE = 32;
     public static final int MAX_BATCH_SIZE = (Integer.MAX_VALUE / 2) - 1;
 
-    public static <T> BaseProducer<T> empty() { return async(Iterators.empty()); }
+    public static <T> FunctionalProducer<T> empty() { return async(Iterators.empty()); }
 
-    public static <T> Producer<T> async(ResourceIterator<ResourceIterator<T>> iterators, int parallelisation) {
+    public static <T> FunctionalProducer<T> async(ResourceIterator<ResourceIterator<T>> iterators, int parallelisation) {
         return new AsyncProducer<>(iterators, parallelisation);
     }
 
-    public static <T> BaseProducer<T> async(ResourceIterator<T> iterator) {
+    public static <T> FunctionalProducer<T> async(ResourceIterator<T> iterator) {
         return new BaseProducer<>(iterator);
     }
 

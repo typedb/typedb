@@ -23,7 +23,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
-import grakn.core.concurrent.producer.Producer;
+import grakn.core.concurrent.producer.FunctionalProducer;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.common.Encoding;
 import grakn.core.graph.iid.VertexIID;
@@ -121,8 +121,8 @@ public class Traversal {
         }
     }
 
-    Producer<VertexMap> producer(GraphManager graphMgr, Arguments.Query.Producer mode,
-                                 int parallelisation, boolean extraPlanningTime) {
+    FunctionalProducer<VertexMap> producer(GraphManager graphMgr, Arguments.Query.Producer mode,
+                                           int parallelisation, boolean extraPlanningTime) {
         assert !planners.isEmpty();
         if (planners.size() == 1) {
             planners.get(0).tryOptimise(graphMgr, extraPlanningTime);

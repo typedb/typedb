@@ -158,42 +158,39 @@ public class Reasoner {
                 || iterate(conjunction.variables()).noneMatch(Variable::isThing);
     }
 
-    // ---- non-reasoning paths ----
-
     private Producer<ConceptMap> producer(Conjunction conjunction, Set<Identifier.Variable.Name> filter,
                                           Context.Query context) {
-        Producer<ConceptMap> producer = traversalEng.producer(
-                conjunction.traversal(filter), context.producer(), PARALLELISATION_FACTOR
-        ).map(conceptMgr::conceptMap);
-
-        if (conjunction.negations().isEmpty()) return producer;
-        else return producer.filter(answer -> !iterate(conjunction.negations())
-                .flatMap(negation -> iterator(negation.disjunction(), answer)).hasNext()
-        );
+        if (conjunction.negations().isEmpty()) {
+            return traversalEng.producer(
+                    conjunction.traversal(filter), context.producer(), PARALLELISATION_FACTOR
+            ).map(conceptMgr::conceptMap);
+        } else {
+            return traversalEng.producer(
+                    conjunction.traversal(), context.producer(), PARALLELISATION_FACTOR
+            ).map(conceptMgr::conceptMap).filter(answer -> !iterate(conjunction.negations()).flatMap(
+                    negation -> iterator(negation.disjunction(), answer)
+            ).hasNext()).map(answer -> answer.filter(filter)).distinct();
+        }
     }
 
     private ResourceIterator<ConceptMap> iterator(Disjunction disjunction, ConceptMap bounds) {
-        if (disjunction.conjunctions().isEmpty()) return Iterators.empty();
         return iterate(disjunction.conjunctions()).flatMap(c -> iterator(c, bounds));
     }
 
     private ResourceIterator<ConceptMap> iterator(Conjunction conjunction, ConceptMap bounds) {
-        return iterator(bound(conjunction, bounds));
-    }
-
-    private ResourceIterator<ConceptMap> iterator(Conjunction conjunction) {
-        return iterator(conjunction, set(), defaultContext);
+        return iterator(bound(conjunction, bounds), set(), defaultContext);
     }
 
     private ResourceIterator<ConceptMap> iterator(Conjunction conjunction, Set<Identifier.Variable.Name> filter,
                                                   Context.Query context) {
         if (!conjunction.isSatisfiable()) return Iterators.empty();
-        ResourceIterator<ConceptMap> answers = traversalEng.iterator(conjunction.traversal(filter))
-                .map(conceptMgr::conceptMap);
-        if (conjunction.negations().isEmpty()) return answers;
-        else return answers.filter(answer -> !iterate(conjunction.negations()).flatMap(
-                negation -> iterator(negation.disjunction(), answer)
-        ).hasNext());
+        if (conjunction.negations().isEmpty()) {
+            return traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
+        } else {
+            return traversalEng.iterator(conjunction.traversal()).map(conceptMgr::conceptMap).filter(
+                    ans -> !iterate(conjunction.negations()).flatMap(n -> iterator(n.disjunction(), ans)).hasNext()
+            ).map(conceptMap -> conceptMap.filter(filter)).distinct();
+        }
     }
 
     private Conjunction bound(Conjunction conjunction, ConceptMap bounds) {

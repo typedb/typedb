@@ -22,7 +22,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concurrent.common.ConcurrentSet;
-import grakn.core.concurrent.producer.Producer;
+import grakn.core.concurrent.producer.FunctionalProducer;
 import grakn.core.graph.GraphManager;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.Identifier;
@@ -169,8 +169,8 @@ public class GraphProcedure implements Procedure {
     }
 
     @Override
-    public Producer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params, Set<Identifier.Variable.Retrievable> filter,
-                                        int parallelisation) {
+    public FunctionalProducer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
+                                                  Set<Identifier.Variable.Retrievable> filter, int parallelisation) {
         if (LOG.isDebugEnabled()) {
             LOG.debug(params.toString());
             LOG.debug(this.toString());

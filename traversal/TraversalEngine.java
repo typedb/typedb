@@ -20,7 +20,7 @@ package grakn.core.traversal;
 
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Arguments;
-import grakn.core.concurrent.producer.Producer;
+import grakn.core.concurrent.producer.FunctionalProducer;
 import grakn.core.graph.GraphManager;
 import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.common.VertexMap;
@@ -44,12 +44,12 @@ public class TraversalEngine {
         return graphMgr;
     }
 
-    public Producer<VertexMap> producer(Traversal traversal, Arguments.Query.Producer mode, int parallelisation) {
+    public FunctionalProducer<VertexMap> producer(Traversal traversal, Arguments.Query.Producer mode, int parallelisation) {
         return producer(traversal, mode, parallelisation, false);
     }
 
-    public Producer<VertexMap> producer(Traversal traversal, Arguments.Query.Producer mode,
-                                        int parallelisation, boolean extraPlanningTime) {
+    public FunctionalProducer<VertexMap> producer(Traversal traversal, Arguments.Query.Producer mode,
+                                                  int parallelisation, boolean extraPlanningTime) {
         traversal.initialise(cache);
         return traversal.producer(graphMgr, mode, parallelisation, extraPlanningTime);
     }

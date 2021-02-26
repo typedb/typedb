@@ -19,7 +19,7 @@
 package grakn.core.traversal.procedure;
 
 import grakn.core.common.iterator.ResourceIterator;
-import grakn.core.concurrent.producer.Producer;
+import grakn.core.concurrent.producer.FunctionalProducer;
 import grakn.core.graph.GraphManager;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.Identifier;
@@ -29,8 +29,8 @@ import java.util.Set;
 
 public interface Procedure {
 
-    Producer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
-                                 Set<Identifier.Variable.Retrievable> filter, int parallelisation);
+    FunctionalProducer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
+                                           Set<Identifier.Variable.Retrievable> filter, int parallelisation);
 
     ResourceIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
                                          Set<Identifier.Variable.Retrievable> filter);

@@ -13,27 +13,19 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.concurrent.producer;
 
-import javax.annotation.concurrent.ThreadSafe;
-import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
-@ThreadSafe
-public interface Producer<T> {
+public interface FunctionalProducer<T> extends Producer<T> {
 
-    void produce(Queue<T> queue, int request, ExecutorService executor);
+    <U> FunctionalProducer<U> map(Function<T, U> mappingFn);
 
-    void recycle();
+    FunctionalProducer<T> filter(Predicate<T> predicate);
 
-    @ThreadSafe
-    interface Queue<U> {
-
-        void put(U item);
-
-        void done();
-
-        void done(Throwable e);
-    }
+    FunctionalProducer<T> distinct();
 }
