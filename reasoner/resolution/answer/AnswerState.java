@@ -466,7 +466,7 @@ public abstract class AnswerState {
 
             public Optional<Partial<?>> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts) {
                 Optional<ConceptMap> unUnified = unifier.unUnify(concepts, instanceRequirements);
-                return unUnified.map(ans -> parent().with(new ConceptMap(ans.concepts()), true, resolvedBy(), this));
+                return unUnified.map(ans -> parent().with(ans, true, resolvedBy(), this));
             }
 
             @Override
