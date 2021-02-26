@@ -187,12 +187,6 @@ public class Rule {
         });
     }
 
-    @Override
-    public String toString() {
-        return "" + RULE + SPACE + getLabel() + COLON + NEW_LINE + WHEN + SPACE + CURLY_OPEN + NEW_LINE + when + NEW_LINE +
-                CURLY_CLOSE + SPACE + THEN + SPACE + CURLY_OPEN + NEW_LINE + then + NEW_LINE + CURLY_CLOSE + SEMICOLON;
-    }
-
     void validateCycles() {
         // TODO: implement this when we have negation
         // TODO: detect negated cycles in the rule graph
@@ -254,6 +248,12 @@ public class Rule {
     public void reindex() {
         conclusion().unindex();
         conclusion().index();
+    }
+
+    @Override
+    public String toString() {
+        return "" + RULE + SPACE + getLabel() + COLON + NEW_LINE + WHEN + SPACE + CURLY_OPEN + NEW_LINE + when + NEW_LINE +
+                CURLY_CLOSE + SPACE + THEN + SPACE + CURLY_OPEN + NEW_LINE + then + NEW_LINE + CURLY_CLOSE + SEMICOLON;
     }
 
     public static abstract class Conclusion {
@@ -486,7 +486,7 @@ public class Rule {
                                                                                         TraversalEngine traversalEng, ConceptManager conceptMgr) {
                 Traversal traversal = new Traversal();
                 Identifier.Variable.Retrievable relationId = relation().owner().id();
-                traversal.isa(relationId, Identifier.Variable.label(relationType.getLabel().name()), false);
+                traversal.types(relationId, set(relationType.getLabel()));
                 Set<Identifier.Variable> playersWithIds = new HashSet<>();
                 players.forEach(rp -> {
                     // note: NON-transitive role player types - we require an exact role being played
