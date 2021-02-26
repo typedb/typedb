@@ -206,6 +206,7 @@ public abstract class RocksStorage implements Storage {
             if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
             try {
                 readWriteLock.readLock().lock();
+                if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
                 return storageTransaction.get(readOptions, key);
             } catch (RocksDBException e) {
                 throw exception(e);
@@ -241,6 +242,7 @@ public abstract class RocksStorage implements Storage {
             }
             try {
                 readWriteLock.writeLock().lock();
+                if (!isOpen() || !transaction.isOpen()) throw GraknException.of(RESOURCE_CLOSED);
                 storageTransaction.delete(key);
             } catch (RocksDBException e) {
                 throw exception(e);
