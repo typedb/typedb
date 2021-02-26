@@ -139,11 +139,11 @@ public final class ResolutionTracer {
         if (path.get() == null) throw GraknException.of(REASONER_TRACING_CALL_TO_FINISH_BEFORE_START);
         endFile();
         try {
-            LOG.trace("Resolution traces written to {}", path.get().toAbsolutePath());
+            LOG.debug("Resolution traces written to {}", path.get().toAbsolutePath());
             writer.close();
         } catch (Exception e) {
             e.printStackTrace();
-            LOG.trace("Resolution tracing failed to write to file");
+            LOG.debug("Resolution tracing failed to write to file");
         }
         rootRequestNumber += 1;
         path.set(null);
