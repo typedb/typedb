@@ -257,13 +257,23 @@ public abstract class RocksStorage implements Storage {
 
         @Override
         public GraknException exception(ErrorMessage errorMessage) {
-            transaction.close();
+            try {
+                readWriteLock.writeLock().lock();
+                transaction.close();
+            } finally {
+                readWriteLock.writeLock().unlock();
+            }
             return super.exception(errorMessage);
         }
 
         @Override
         public GraknException exception(Exception exception) {
-            transaction.close();
+            try {
+                readWriteLock.writeLock().lock();
+                transaction.close();
+            } finally {
+                readWriteLock.writeLock().unlock();
+            }
             return super.exception(exception);
         }
 
@@ -276,6 +286,16 @@ public abstract class RocksStorage implements Storage {
 
         public void rollback() throws RocksDBException {
             storageTransaction.rollback();
+        }
+
+        @Override
+        public void close() {
+            try {
+                readWriteLock.writeLock().lock();
+                super.close();
+            } finally {
+                readWriteLock.writeLock().unlock();
+            }
         }
     }
 
