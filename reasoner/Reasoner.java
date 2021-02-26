@@ -82,68 +82,6 @@ public class Reasoner {
         return resolverRegistry;
     }
 
-    public ResourceIterator<ConceptMap> execute(Disjunction disjunction, GraqlMatch.Modifiers modifiers, Context.Query context) {
-        resolveTypes(disjunction, list());
-        Set<Identifier.Variable.Name> filter = iterate(modifiers.filter()).map(
-                v -> Identifier.Variable.of(v.reference().asName())
-        ).toSet();
-        disjunction.conjunctions().forEach(conj -> {
-            if (!conj.isSatisfiable() && !isSchemaQuery(conj, filter)) {
-                throw GraknException.of(UNSATISFIABLE_CONJUNCTION, conj);
-            }
-        });
-
-        if (isInfer(disjunction, context)) return resolve(disjunction, modifiers, context);
-
-        ResourceIterator<ConceptMap> answers;
-        ResourceIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
-        if (!context.options().parallel()) answers = conjs.flatMap(conj -> iterator(conj, filter, context));
-        else answers = produce(conjs.map(c -> producer(c, filter, context)).toList(), context.producer(), asyncPool1());
-        if (disjunction.conjunctions().size() > 1) answers = answers.distinct();
-        return answers;
-    }
-
-    private boolean isInfer(Disjunction disjunction, Context.Query context) {
-        if (!context.options().infer() || context.transactionType().isWrite() || !logicMgr.rules().hasNext()) {
-            return false;
-        }
-        return mayTriggerRules(disjunction);
-    }
-
-    private boolean mayTriggerRules(Disjunction disjunction) {
-        for (Conjunction conj : disjunction.conjunctions()) {
-            for (Variable var : conj.variables()) {
-                if (var.resolvedTypes().isEmpty()) return true;
-                for (Label type : var.resolvedTypes()) {
-                    if (logicMgr.rulesConcluding(type).hasNext() || logicMgr.rulesConcludingHas(type).hasNext()) {
-                        return true;
-                    }
-                }
-            }
-            if (!conj.negations().isEmpty()) {
-                for (Negation negation : conj.negations()) if (mayTriggerRules(negation.disjunction())) return true;
-            }
-        }
-        return false;
-    }
-
-    private ResourceIterator<ConceptMap> resolve(Disjunction disjunction, GraqlMatch.Modifiers modifiers,
-                                                 Context.Query context) {
-        if (disjunction.conjunctions().size() == 1) {
-            return produce(
-                    new ReasonerProducer(disjunction.conjunctions().get(0), resolverRegistry, modifiers, context.options()),
-                    context.producer(), asyncPool1());
-        } else {
-            return produce(
-                    new ReasonerProducer(disjunction, resolverRegistry, modifiers, context.options()),
-                    context.producer(), asyncPool1());
-        }
-    }
-
-    /**
-     * Recursively resolve a disjunction's types
-     * @param disjunction - the disjunction to recursively apply type resolver to
-     */
     private void resolveTypes(Disjunction disjunction, List<Conjunction> scopingConjunctions) {
         for (Conjunction conjunction : disjunction.conjunctions()) {
             logicMgr.typeResolver().resolve(conjunction, scopingConjunctions);
@@ -156,6 +94,56 @@ public class Reasoner {
     private boolean isSchemaQuery(Conjunction conjunction, Set<Identifier.Variable.Name> filter) {
         return !filter.isEmpty() && iterate(filter).noneMatch(id -> conjunction.variable(id).isThing())
                 || iterate(conjunction.variables()).noneMatch(Variable::isThing);
+    }
+
+    private boolean mayReason(Disjunction disjunction, Context.Query context) {
+        if (!context.options().infer() || context.transactionType().isWrite() || !logicMgr.rules().hasNext()) {
+            return false;
+        }
+        return mayReason(disjunction);
+    }
+
+    private boolean mayReason(Disjunction disjunction) {
+        for (Conjunction conj : disjunction.conjunctions()) {
+            Set<Variable> vars = conj.variables();
+            Set<Negation> negs = conj.negations();
+            if (iterate(vars).anyMatch(v -> v.resolvedTypes().isEmpty())) return true;
+            if (iterate(vars).flatMap(v -> iterate(v.resolvedTypes())).distinct().anyMatch(this::hasRule)) return true;
+            if (!negs.isEmpty() && iterate(negs).anyMatch(n -> mayReason(n.disjunction()))) return true;
+        }
+        return false;
+    }
+
+    private boolean hasRule(Label type) {
+        return logicMgr.rulesConcluding(type).hasNext() || logicMgr.rulesConcludingHas(type).hasNext();
+    }
+
+    public ResourceIterator<ConceptMap> execute(Disjunction disjunction, GraqlMatch.Modifiers modifiers, Context.Query context) {
+        resolveTypes(disjunction, list());
+        Set<Identifier.Variable.Name> filter = iterate(modifiers.filter()).map(v -> v.reference().asName()).map(Identifier.Variable::of).toSet();
+        iterate(disjunction.conjunctions()).filter(c -> !c.isSatisfiable() && !isSchemaQuery(c, filter)).map(c -> {
+            throw GraknException.of(UNSATISFIABLE_CONJUNCTION, c);
+        });
+
+        if (mayReason(disjunction, context)) return executeReasoner(disjunction, modifiers, context);
+        else return executeTraversal(disjunction, context, filter);
+    }
+
+    private ResourceIterator<ConceptMap> executeReasoner(Disjunction disjunction, GraqlMatch.Modifiers modifiers,
+                                                         Context.Query context) {
+        ReasonerProducer producer = disjunction.conjunctions().size() == 1
+                ? new ReasonerProducer(disjunction.conjunctions().get(0), resolverRegistry, modifiers, context.options())
+                : new ReasonerProducer(disjunction, resolverRegistry, modifiers, context.options());
+        return produce(producer, context.producer(), asyncPool1());
+    }
+
+    private ResourceIterator<ConceptMap> executeTraversal(Disjunction disjunction, Context.Query context, Set<Identifier.Variable.Name> filter) {
+        ResourceIterator<ConceptMap> answers;
+        ResourceIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
+        if (!context.options().parallel()) answers = conjs.flatMap(conj -> iterator(conj, filter, context));
+        else answers = produce(conjs.map(c -> producer(c, filter, context)).toList(), context.producer(), asyncPool1());
+        if (disjunction.conjunctions().size() > 1) answers = answers.distinct();
+        return answers;
     }
 
     private Producer<ConceptMap> producer(Conjunction conjunction, Set<Identifier.Variable.Name> filter,
