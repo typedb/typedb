@@ -205,12 +205,12 @@ public abstract class RocksStorage implements Storage {
         public byte[] get(byte[] key) {
             if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
             try {
-                if (!isReadOnly) readWriteLock.readLock().lock();
+                readWriteLock.readLock().lock();
                 return storageTransaction.get(readOptions, key);
             } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
-                if (!isReadOnly) readWriteLock.readLock().unlock();
+                readWriteLock.readLock().unlock();
             }
         }
 
@@ -222,9 +222,12 @@ public abstract class RocksStorage implements Storage {
             assert upperBound[upperBound.length - 1] != Byte.MIN_VALUE;
 
             try (org.rocksdb.RocksIterator iterator = getInternalRocksIterator()) {
+                readWriteLock.readLock().lock();
                 iterator.seekForPrev(upperBound);
                 if (bytesHavePrefix(iterator.key(), prefix)) return iterator.key();
                 else return null;
+            } finally {
+                readWriteLock.readLock().unlock();
             }
         }
 
