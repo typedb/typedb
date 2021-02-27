@@ -19,7 +19,7 @@
 package grakn.core.traversal.procedure;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.SchemaGraph;
@@ -101,8 +101,8 @@ public abstract class ProcedureEdge<
         }
     }
 
-    public abstract ResourceIterator<? extends Vertex<?, ?>> branch(GraphManager graphMgr, Vertex<?, ?> fromVertex,
-                                                                    Traversal.Parameters params);
+    public abstract FunctionalIterator<? extends Vertex<?, ?>> branch(GraphManager graphMgr, Vertex<?, ?> fromVertex,
+                                                                      Traversal.Parameters params);
 
     public abstract boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                       Traversal.Parameters params);
@@ -156,8 +156,8 @@ public abstract class ProcedureEdge<
         }
 
         @Override
-        public ResourceIterator<? extends Vertex<?, ?>> branch(GraphManager graphMgr, Vertex<?, ?> fromVertex,
-                                                               Traversal.Parameters params) {
+        public FunctionalIterator<? extends Vertex<?, ?>> branch(GraphManager graphMgr, Vertex<?, ?> fromVertex,
+                                                                 Traversal.Parameters params) {
             if (fromVertex.isThing()) {
                 if (to.isType()) return empty();
                 else return to.asThing().filter(single(fromVertex.asThing()), params);
@@ -191,10 +191,10 @@ public abstract class ProcedureEdge<
         public boolean onlyStartsFromAttribute() { return true; }
 
         @Override
-        public ResourceIterator<? extends Vertex<?, ?>> branch(
+        public FunctionalIterator<? extends Vertex<?, ?>> branch(
                 GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
             assert fromVertex.isThing() && fromVertex.asThing().isAttribute();
-            ResourceIterator<? extends AttributeVertex<?>> toIter;
+            FunctionalIterator<? extends AttributeVertex<?>> toIter;
 
             if (to.props().hasIID()) {
                 toIter = to.iterateAndFilterFromIID(graphMgr, params)
@@ -265,7 +265,7 @@ public abstract class ProcedureEdge<
                 this.isTransitive = isTransitive;
             }
 
-            ResourceIterator<TypeVertex> isaTypes(ThingVertex thing) {
+            FunctionalIterator<TypeVertex> isaTypes(ThingVertex thing) {
                 if (!isTransitive) return single(thing.type());
                 else return loop(thing.type(), Objects::nonNull, v -> v.outs().edge(SUB).to().firstOrNull());
             }
@@ -282,10 +282,10 @@ public abstract class ProcedureEdge<
                 }
 
                 @Override
-                public ResourceIterator<? extends Vertex<?, ?>> branch(
+                public FunctionalIterator<? extends Vertex<?, ?>> branch(
                         GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                     assert fromVertex.isThing();
-                    ResourceIterator<TypeVertex> iter = isaTypes(fromVertex.asThing());
+                    FunctionalIterator<TypeVertex> iter = isaTypes(fromVertex.asThing());
                     return to.filter(iter);
                 }
 
@@ -304,19 +304,19 @@ public abstract class ProcedureEdge<
                 }
 
                 @Override
-                public ResourceIterator<? extends Vertex<?, ?>> branch(
+                public FunctionalIterator<? extends Vertex<?, ?>> branch(
                         GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                     assert fromVertex.isType();
                     TypeVertex type = fromVertex.asType();
                     Set<Label> toTypes = to.props().types();
-                    ResourceIterator<TypeVertex> typeIter;
+                    FunctionalIterator<TypeVertex> typeIter;
 
                     if (!isTransitive) typeIter = single(type);
                     else typeIter = tree(type, v -> v.ins().edge(SUB).from());
 
                     if (!toTypes.isEmpty()) typeIter = typeIter.filter(t -> toTypes.contains(t.properLabel()));
 
-                    ResourceIterator<? extends ThingVertex> iter = typeIter.flatMap(t -> graphMgr.data().get(t));
+                    FunctionalIterator<? extends ThingVertex> iter = typeIter.flatMap(t -> graphMgr.data().get(t));
                     if (to.id().isVariable()) iter = to.filterReferableThings(iter);
                     if (to.props().hasIID()) iter = to.filterIID(iter, params);
                     if (!to.props().predicates().isEmpty()) iter = to.filterPredicates(filterAttributes(iter), params);
@@ -372,7 +372,7 @@ public abstract class ProcedureEdge<
                     this.isTransitive = isTransitive;
                 }
 
-                ResourceIterator<TypeVertex> superTypes(TypeVertex type) {
+                FunctionalIterator<TypeVertex> superTypes(TypeVertex type) {
                     if (!isTransitive) return type.outs().edge(SUB).to();
                     else return loop(type, Objects::nonNull, v -> v.outs().edge(SUB).to().firstOrNull());
                 }
@@ -389,9 +389,9 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public ResourceIterator<? extends Vertex<?, ?>> branch(
+                    public FunctionalIterator<? extends Vertex<?, ?>> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
-                        ResourceIterator<TypeVertex> iterator = superTypes(fromVertex.asType());
+                        FunctionalIterator<TypeVertex> iterator = superTypes(fromVertex.asType());
                         return to.filter(iterator);
                     }
 
@@ -409,10 +409,10 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public ResourceIterator<? extends Vertex<?, ?>> branch(
+                    public FunctionalIterator<? extends Vertex<?, ?>> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isType();
-                        ResourceIterator<TypeVertex> iter;
+                        FunctionalIterator<TypeVertex> iter;
                         TypeVertex type = fromVertex.asType();
                         if (!isTransitive) iter = type.ins().edge(SUB).from();
                         else iter = tree(type, t -> t.ins().edge(SUB).from());
@@ -448,14 +448,14 @@ public abstract class ProcedureEdge<
                         super(from, to, order, FORWARD, isKey);
                     }
 
-                    private ResourceIterator<TypeEdge> ownsEdges(TypeVertex owner) {
+                    private FunctionalIterator<TypeEdge> ownsEdges(TypeVertex owner) {
                         if (isKey) return owner.outs().edge(OWNS_KEY).edge();
                         else return link(owner.outs().edge(OWNS).edge(), owner.outs().edge(OWNS_KEY).edge());
                     }
 
-                    private ResourceIterator<TypeVertex> ownedAttributeTypes(TypeVertex owner) {
+                    private FunctionalIterator<TypeVertex> ownedAttributeTypes(TypeVertex owner) {
                         Set<TypeVertex> overriddens = new HashSet<>();
-                        ResourceIterator<TypeVertex> supertypes, iterator;
+                        FunctionalIterator<TypeVertex> supertypes, iterator;
 
                         supertypes = loop(owner, Objects::nonNull, o -> o.outs().edge(SUB).to().firstOrNull());
                         iterator = supertypes.flatMap(o -> ownsEdges(o).map(e -> {
@@ -470,7 +470,7 @@ public abstract class ProcedureEdge<
                     public boolean onlyStartsFromThingType() { return true; }
 
                     @Override
-                    public ResourceIterator<? extends Vertex<?, ?>> branch(
+                    public FunctionalIterator<? extends Vertex<?, ?>> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isType();
                         return to.filter(ownedAttributeTypes(fromVertex.asType()));
@@ -489,19 +489,19 @@ public abstract class ProcedureEdge<
                         super(from, to, order, BACKWARD, isKey);
                     }
 
-                    private ResourceIterator<TypeVertex> overriddens(TypeVertex owner) {
+                    private FunctionalIterator<TypeVertex> overriddens(TypeVertex owner) {
                         if (isKey) return owner.outs().edge(OWNS_KEY).overridden().noNulls();
                         else return link(owner.outs().edge(OWNS).overridden().noNulls(),
                                          owner.outs().edge(OWNS_KEY).overridden().noNulls());
                     }
 
-                    private ResourceIterator<TypeVertex> declaredOwnersOfAttType(TypeVertex attType) {
+                    private FunctionalIterator<TypeVertex> declaredOwnersOfAttType(TypeVertex attType) {
                         if (isKey) return attType.ins().edge(OWNS_KEY).from();
                         else return link(attType.ins().edge(OWNS).from(), attType.ins().edge(OWNS_KEY).from());
                     }
 
 
-                    private ResourceIterator<TypeVertex> ownersOfAttType(TypeVertex attType) {
+                    private FunctionalIterator<TypeVertex> ownersOfAttType(TypeVertex attType) {
                         return declaredOwnersOfAttType(attType).flatMap(owner -> tree(owner, o ->
                                 o.ins().edge(SUB).from().filter(s -> overriddens(s).noneMatch(ov -> ov.equals(attType)))
                         ));
@@ -511,7 +511,7 @@ public abstract class ProcedureEdge<
                     public boolean onlyStartsFromAttributeType() { return true; }
 
                     @Override
-                    public ResourceIterator<? extends Vertex<?, ?>> branch(
+                    public FunctionalIterator<? extends Vertex<?, ?>> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isType();
                         return to.filter(ownersOfAttType(fromVertex.asType()));
@@ -538,9 +538,9 @@ public abstract class ProcedureEdge<
                         super(from, to, order, FORWARD);
                     }
 
-                    private ResourceIterator<TypeVertex> playedRoleTypes(TypeVertex player) {
+                    private FunctionalIterator<TypeVertex> playedRoleTypes(TypeVertex player) {
                         Set<TypeVertex> overriddens = new HashSet<>();
-                        ResourceIterator<TypeVertex> supertypes, iterator;
+                        FunctionalIterator<TypeVertex> supertypes, iterator;
 
                         supertypes = loop(player, Objects::nonNull, p -> p.outs().edge(SUB).to().firstOrNull());
                         iterator = supertypes.flatMap(s -> s.outs().edge(PLAYS).edge().map(e -> {
@@ -555,7 +555,7 @@ public abstract class ProcedureEdge<
                     public boolean onlyStartsFromThingType() { return true; }
 
                     @Override
-                    public ResourceIterator<? extends Vertex<?, ?>> branch(
+                    public FunctionalIterator<? extends Vertex<?, ?>> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isType();
                         return to.filter(playedRoleTypes(fromVertex.asType()));
@@ -574,7 +574,7 @@ public abstract class ProcedureEdge<
                         super(from, to, order, BACKWARD);
                     }
 
-                    private ResourceIterator<TypeVertex> playersOfRoleType(TypeVertex roleType) {
+                    private FunctionalIterator<TypeVertex> playersOfRoleType(TypeVertex roleType) {
                         return roleType.ins().edge(PLAYS).from().flatMap(player -> tree(player, p ->
                                 p.ins().edge(SUB).from().filter(s -> s.outs().edge(PLAYS).overridden()
                                         .noNulls().noneMatch(ov -> ov.equals(roleType)))));
@@ -584,7 +584,7 @@ public abstract class ProcedureEdge<
                     public boolean onlyStartsFromRoleType() { return true; }
 
                     @Override
-                    public ResourceIterator<? extends Vertex<?, ?>> branch(
+                    public FunctionalIterator<? extends Vertex<?, ?>> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isType();
                         return to.filter(playersOfRoleType(fromVertex.asType()));
@@ -611,9 +611,9 @@ public abstract class ProcedureEdge<
                         super(from, to, order, FORWARD);
                     }
 
-                    private ResourceIterator<TypeVertex> relatedRoleTypes(TypeVertex relation) {
+                    private FunctionalIterator<TypeVertex> relatedRoleTypes(TypeVertex relation) {
                         Set<TypeVertex> overriddens = new HashSet<>();
-                        ResourceIterator<TypeVertex> supertypes, iterator;
+                        FunctionalIterator<TypeVertex> supertypes, iterator;
 
                         supertypes = loop(relation, Objects::nonNull, r -> r.outs().edge(SUB).to().firstOrNull());
                         iterator = supertypes.flatMap(s -> s.outs().edge(RELATES).edge().map(e -> {
@@ -628,7 +628,7 @@ public abstract class ProcedureEdge<
                     public boolean onlyStartsFromRelationType() { return true; }
 
                     @Override
-                    public ResourceIterator<? extends Vertex<?, ?>> branch(
+                    public FunctionalIterator<? extends Vertex<?, ?>> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isType();
                         return to.filter(relatedRoleTypes(fromVertex.asType()));
@@ -647,7 +647,7 @@ public abstract class ProcedureEdge<
                         super(from, to, order, BACKWARD);
                     }
 
-                    private ResourceIterator<TypeVertex> relationsOfRoleType(TypeVertex roleType) {
+                    private FunctionalIterator<TypeVertex> relationsOfRoleType(TypeVertex roleType) {
                         return roleType.ins().edge(RELATES).from().flatMap(relation -> tree(relation, r ->
                                 r.ins().edge(SUB).from().filter(s -> s.outs().edge(RELATES).overridden()
                                         .noNulls().noneMatch(ov -> ov.equals(roleType)))));
@@ -657,7 +657,7 @@ public abstract class ProcedureEdge<
                     public boolean onlyStartsFromRoleType() { return true; }
 
                     @Override
-                    public ResourceIterator<? extends Vertex<?, ?>> branch(
+                    public FunctionalIterator<? extends Vertex<?, ?>> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isType();
                         return to.filter(relationsOfRoleType(fromVertex.asType()));
@@ -702,7 +702,7 @@ public abstract class ProcedureEdge<
                 }
             }
 
-            ResourceIterator<? extends ThingVertex> backwardBranchToIID(
+            FunctionalIterator<? extends ThingVertex> backwardBranchToIID(
                     GraphManager graphMgr, ThingVertex fromVertex,
                     Encoding.Edge.Thing encoding, VertexIID.Thing toIID) {
                 ThingVertex toVertex = graphMgr.data().get(toIID);
@@ -710,10 +710,10 @@ public abstract class ProcedureEdge<
                 else return empty();
             }
 
-            ResourceIterator<? extends Vertex<?, ?>> forwardBranchToRole(GraphManager graphMgr, Vertex<?, ?> fromVertex,
-                                                                         Encoding.Edge.Thing encoding) {
+            FunctionalIterator<? extends Vertex<?, ?>> forwardBranchToRole(GraphManager graphMgr, Vertex<?, ?> fromVertex,
+                                                                           Encoding.Edge.Thing encoding) {
                 assert !to.props().hasIID() && to.props().predicates().isEmpty();
-                ResourceIterator<ThingVertex> iter;
+                FunctionalIterator<ThingVertex> iter;
                 ThingVertex relation = fromVertex.asThing();
                 Set<Label> toTypes = to.props().types();
                 if (!toTypes.isEmpty()) {
@@ -739,10 +739,10 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public ResourceIterator<? extends Vertex<?, ?>> branch(
+                    public FunctionalIterator<? extends Vertex<?, ?>> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isThing();
-                        ResourceIterator<? extends AttributeVertex<?>> iter;
+                        FunctionalIterator<? extends AttributeVertex<?>> iter;
                         grakn.core.traversal.predicate.Predicate.Value<?> eq = null;
                         ThingVertex owner = fromVertex.asThing();
                         if (to.props().hasIID()) {
@@ -788,10 +788,10 @@ public abstract class ProcedureEdge<
                     public boolean onlyStartsFromAttribute() { return true; }
 
                     @Override
-                    public ResourceIterator<? extends Vertex<?, ?>> branch(
+                    public FunctionalIterator<? extends Vertex<?, ?>> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isThing() && fromVertex.asThing().isAttribute();
-                        ResourceIterator<? extends ThingVertex> iter;
+                        FunctionalIterator<? extends ThingVertex> iter;
                         AttributeVertex<?> att = fromVertex.asThing().asAttribute();
 
                         if (to.props().hasIID()) {
@@ -829,7 +829,7 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public ResourceIterator<? extends Vertex<?, ?>> branch(
+                    public FunctionalIterator<? extends Vertex<?, ?>> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isThing();
                         return forwardBranchToRole(graphMgr, fromVertex, PLAYING);
@@ -849,12 +849,12 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public ResourceIterator<? extends Vertex<?, ?>> branch(
+                    public FunctionalIterator<? extends Vertex<?, ?>> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isThing();
                         ThingVertex role = fromVertex.asThing();
                         Set<Label> toTypes = to.props().types();
-                        ResourceIterator<? extends ThingVertex> iter;
+                        FunctionalIterator<? extends ThingVertex> iter;
 
                         if (to.props().hasIID()) {
                             assert to.id().isVariable();
@@ -895,7 +895,7 @@ public abstract class ProcedureEdge<
                     public boolean onlyStartsFromRelation() { return true; }
 
                     @Override
-                    public ResourceIterator<? extends Vertex<?, ?>> branch(
+                    public FunctionalIterator<? extends Vertex<?, ?>> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isThing();
                         return forwardBranchToRole(graphMgr, fromVertex, RELATING);
@@ -915,12 +915,12 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public ResourceIterator<? extends Vertex<?, ?>> branch(
+                    public FunctionalIterator<? extends Vertex<?, ?>> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isThing() && to.props().predicates().isEmpty();
                         ThingVertex role = fromVertex.asThing();
                         Set<Label> toTypes = to.props().types();
-                        ResourceIterator<? extends ThingVertex> iter;
+                        FunctionalIterator<? extends ThingVertex> iter;
 
                         if (to.props().hasIID()) {
                             assert to.id().isVariable();
@@ -971,15 +971,15 @@ public abstract class ProcedureEdge<
                     return resolvedRoleTypes;
                 }
 
-                public abstract ResourceIterator<ThingEdge> branchEdge(GraphManager graphMgr, Vertex<?, ?> fromVertex,
-                                                                       Traversal.Parameters params);
+                public abstract FunctionalIterator<ThingEdge> branchEdge(GraphManager graphMgr, Vertex<?, ?> fromVertex,
+                                                                         Traversal.Parameters params);
 
                 public abstract boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex,
                                                   Vertex<?, ?> toVertex, Traversal.Parameters params,
                                                   GraphIterator.Scopes.Scoped withinScope);
 
                 @Override
-                public ResourceIterator<? extends Vertex<?, ?>> branch(
+                public FunctionalIterator<? extends Vertex<?, ?>> branch(
                         GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                     throw GraknException.of(ILLEGAL_OPERATION);
                 }
@@ -1016,15 +1016,15 @@ public abstract class ProcedureEdge<
                     public boolean onlyStartsFromRelation() { return true; }
 
                     @Override
-                    public ResourceIterator<ThingEdge> branchEdge(GraphManager graphMgr, Vertex<?, ?> fromVertex,
-                                                                  Traversal.Parameters params) {
+                    public FunctionalIterator<ThingEdge> branchEdge(GraphManager graphMgr, Vertex<?, ?> fromVertex,
+                                                                    Traversal.Parameters params) {
                         assert fromVertex.isThing();
                         ThingVertex rel = fromVertex.asThing();
-                        ResourceIterator<ThingEdge> iter;
+                        FunctionalIterator<ThingEdge> iter;
                         boolean filteredIID = false, filteredTypes = false;
 
                         if (!roleTypes.isEmpty()) {
-                            ResourceIterator<TypeVertex> resolveRoleTypesIter = iterate(resolvedRoleTypes(graphMgr.schema()));
+                            FunctionalIterator<TypeVertex> resolveRoleTypesIter = iterate(resolvedRoleTypes(graphMgr.schema()));
                             if (to.props().hasIID()) {
                                 assert to.id().isVariable();
                                 filteredIID = true;
@@ -1081,15 +1081,15 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public ResourceIterator<ThingEdge> branchEdge(GraphManager graphMgr, Vertex<?, ?> fromVertex,
-                                                                  Traversal.Parameters params) {
+                    public FunctionalIterator<ThingEdge> branchEdge(GraphManager graphMgr, Vertex<?, ?> fromVertex,
+                                                                    Traversal.Parameters params) {
                         assert fromVertex.isThing() && to.props().predicates().isEmpty();
                         ThingVertex player = fromVertex.asThing();
-                        ResourceIterator<ThingEdge> iter;
+                        FunctionalIterator<ThingEdge> iter;
                         boolean filteredIID = false, filteredTypes = false;
 
                         if (!roleTypes.isEmpty()) {
-                            ResourceIterator<TypeVertex> resolveRoleTypesIter = iterate(resolvedRoleTypes(graphMgr.schema()));
+                            FunctionalIterator<TypeVertex> resolveRoleTypesIter = iterate(resolvedRoleTypes(graphMgr.schema()));
                             if (to.props().hasIID()) {
                                 assert to.id().isVariable();
                                 filteredIID = true;

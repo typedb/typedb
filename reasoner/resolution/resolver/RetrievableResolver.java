@@ -18,7 +18,7 @@
 package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.resolvable.Retrievable;
@@ -101,7 +101,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     protected RequestStates createRequestState(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new ResponseProducer for iteration:{}, request: {}", name(), iteration, fromUpstream);
         assert fromUpstream.partialAnswer().isFiltered();
-        ResourceIterator<Partial<?>> upstreamAnswers =
+        FunctionalIterator<Partial<?>> upstreamAnswers =
                 traversalIterator(retrievable.pattern(), fromUpstream.partialAnswer().conceptMap())
                         .map(conceptMap -> fromUpstream.partialAnswer().asFiltered().aggregateToUpstream(conceptMap));
         return new RequestStates(upstreamAnswers, iteration);
@@ -118,10 +118,10 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
 
     private static class RequestStates {
 
-        private final ResourceIterator<Partial<?>> newUpstreamAnswers;
+        private final FunctionalIterator<Partial<?>> newUpstreamAnswers;
         private final int iteration;
 
-        public RequestStates(ResourceIterator<Partial<?>> upstreamAnswers, int iteration) {
+        public RequestStates(FunctionalIterator<Partial<?>> upstreamAnswers, int iteration) {
             this.newUpstreamAnswers = upstreamAnswers;
             this.iteration = iteration;
         }
@@ -130,7 +130,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
             return newUpstreamAnswers.hasNext();
         }
 
-        public ResourceIterator<Partial<?>> upstreamAnswers() {
+        public FunctionalIterator<Partial<?>> upstreamAnswers() {
             return newUpstreamAnswers;
         }
 

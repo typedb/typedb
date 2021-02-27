@@ -20,8 +20,8 @@ package grakn.core.reasoner.resolution.framework;
 
 import grakn.common.collection.Either;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.iterator.Iterators;
-import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
@@ -136,7 +136,7 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
         fromUpstream.sender().tell(actor -> actor.receiveFail(response, iteration));
     }
 
-    protected ResourceIterator<ConceptMap> traversalIterator(Conjunction conjunction, ConceptMap bounds) {
+    protected FunctionalIterator<ConceptMap> traversalIterator(Conjunction conjunction, ConceptMap bounds) {
         return compatibleBounds(conjunction, bounds).map(c -> {
             Traversal traversal = boundTraversal(conjunction.traversal(), c);
             return traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);

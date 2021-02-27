@@ -19,8 +19,8 @@
 package grakn.core.traversal.iterator;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.AbstractResourceIterator;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.AbstractFunctionalIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.Vertex;
@@ -45,7 +45,7 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 import static java.util.stream.Collectors.toMap;
 
-public class GraphIterator extends AbstractResourceIterator<VertexMap> {
+public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphIterator.class);
 
@@ -53,7 +53,7 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
     private final GraphProcedure procedure;
     private final Traversal.Parameters params;
     private final Set<Retrievable> filter;
-    private final Map<Identifier, ResourceIterator<? extends Vertex<?, ?>>> iterators;
+    private final Map<Identifier, FunctionalIterator<? extends Vertex<?, ?>>> iterators;
     private final Map<Identifier, Vertex<?, ?>> answer;
     private final Scopes scopes;
     private final SeekStack seekStack;
@@ -124,7 +124,7 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
         ProcedureEdge<?, ?> edge = procedure.edge(pos);
         Identifier toID = edge.to().id();
         Identifier fromId = edge.from().id();
-        ResourceIterator<? extends Vertex<?, ?>> toIter = branch(answer.get(fromId), edge);
+        FunctionalIterator<? extends Vertex<?, ?>> toIter = branch(answer.get(fromId), edge);
 
         if (toIter.hasNext()) {
             iterators.put(toID, toIter);
@@ -206,7 +206,7 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
                 if (isClosure(edge, fromVertex, toVertex)) return true;
                 else return computeNextClosure(pos);
             } else {
-                ResourceIterator<? extends Vertex<?, ?>> toIter = branch(answer.get(edge.from().id()), edge);
+                FunctionalIterator<? extends Vertex<?, ?>> toIter = branch(answer.get(edge.from().id()), edge);
                 iterators.put(toID, toIter);
             }
         }
@@ -237,7 +237,7 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
 
     private boolean computeNextBranch(int pos) {
         ProcedureEdge<?, ?> edge = procedure.edge(pos);
-        ResourceIterator<? extends Vertex<?, ?>> newIter;
+        FunctionalIterator<? extends Vertex<?, ?>> newIter;
 
         do {
             if (backTrack(pos)) {
@@ -271,8 +271,8 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
         }
     }
 
-    private ResourceIterator<? extends Vertex<?, ?>> branch(Vertex<?, ?> fromVertex, ProcedureEdge<?, ?> edge) {
-        ResourceIterator<? extends Vertex<?, ?>> toIter;
+    private FunctionalIterator<? extends Vertex<?, ?>> branch(Vertex<?, ?> fromVertex, ProcedureEdge<?, ?> edge) {
+        FunctionalIterator<? extends Vertex<?, ?>> toIter;
         if (edge.to().id().isScoped()) {
             Identifier.Variable scope = edge.to().id().asScoped().scope();
             Scopes.Scoped scoped = scopes.getOrInitialise(scope);

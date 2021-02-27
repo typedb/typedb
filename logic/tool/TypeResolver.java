@@ -19,7 +19,7 @@
 package grakn.core.logic.tool;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.thing.Thing;
@@ -80,7 +80,7 @@ public class TypeResolver {
         this.logicCache = logicCache;
     }
 
-    public ResourceIterator<Map<Identifier.Variable.Name, Label>> namedCombinations(Conjunction conjunction, boolean insertable) {
+    public FunctionalIterator<Map<Identifier.Variable.Name, Label>> namedCombinations(Conjunction conjunction, boolean insertable) {
         Traversal resolverTraversal = new Traversal();
         TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, conceptMgr, resolverTraversal, 0, insertable);
         resolverTraversal.filter(traversalBuilder.retrievedResolvers());

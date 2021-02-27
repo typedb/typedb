@@ -18,7 +18,7 @@
 
 package grakn.core.graph.adjacency.impl;
 
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concurrent.common.ConcurrentSet;
 import grakn.core.graph.adjacency.ThingAdjacency;
 import grakn.core.graph.common.Encoding;
@@ -75,7 +75,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         }
     }
 
-    ResourceIterator<ThingEdge> bufferedEdgeIterator(Encoding.Edge.Thing encoding, IID[] lookAhead) {
+    FunctionalIterator<ThingEdge> bufferedEdgeIterator(Encoding.Edge.Thing encoding, IID[] lookAhead) {
         ConcurrentMap<EdgeIID.Thing, ThingEdge> result;
         InfixIID.Thing infixIID = infixIID(encoding, lookAhead);
         if (lookAhead.length == encoding.lookAhead()) {
@@ -106,7 +106,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         Predicate<ThingEdge> predicate = direction.isOut()
                 ? e -> e.to().equals(adjacent) && e.outIID().suffix().equals(SuffixIID.of(optimised.iid().key()))
                 : e -> e.from().equals(adjacent) && e.inIID().suffix().equals(SuffixIID.of(optimised.iid().key()));
-        ResourceIterator<ThingEdge> iterator = bufferedEdgeIterator(
+        FunctionalIterator<ThingEdge> iterator = bufferedEdgeIterator(
                 encoding, new IID[]{optimised.iid().type(), adjacent.iid().prefix(), adjacent.iid().type()}
         );
         ThingEdge edge = null;
@@ -123,7 +123,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         assert !encoding.isOptimisation();
         Predicate<ThingEdge> predicate =
                 direction.isOut() ? e -> e.to().equals(adjacent) : e -> e.from().equals(adjacent);
-        ResourceIterator<ThingEdge> iterator =
+        FunctionalIterator<ThingEdge> iterator =
                 bufferedEdgeIterator(encoding, new IID[]{adjacent.iid().prefix(), adjacent.iid().type()});
         ThingEdge edge = null;
         while (iterator.hasNext()) {
@@ -220,24 +220,24 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
     static class ThingIteratorBuilderImpl implements ThingIteratorBuilder {
 
-        private final ResourceIterator<ThingEdge> edgeIterator;
+        private final FunctionalIterator<ThingEdge> edgeIterator;
 
-        ThingIteratorBuilderImpl(ResourceIterator<ThingEdge> edgeIterator) {
+        ThingIteratorBuilderImpl(FunctionalIterator<ThingEdge> edgeIterator) {
             this.edgeIterator = edgeIterator;
         }
 
         @Override
-        public ResourceIterator<ThingVertex> from() {
+        public FunctionalIterator<ThingVertex> from() {
             return edgeIterator.map(Edge::from);
         }
 
         @Override
-        public ResourceIterator<ThingVertex> to() {
+        public FunctionalIterator<ThingVertex> to() {
             return edgeIterator.map(Edge::to);
         }
 
         @Override
-        public ResourceIterator<ThingEdge> get() {
+        public FunctionalIterator<ThingEdge> get() {
             return edgeIterator;
         }
     }
@@ -275,11 +275,11 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             super(owner, direction);
         }
 
-        private ResourceIterator<ThingEdge> edgeIterator(Encoding.Edge.Thing encoding, IID... lookahead) {
+        private FunctionalIterator<ThingEdge> edgeIterator(Encoding.Edge.Thing encoding, IID... lookahead) {
             byte[] iid = join(owner.iid().bytes(), infixIID(encoding, lookahead).bytes());
-            ResourceIterator<ThingEdge> storageIterator = owner.graph().storage()
+            FunctionalIterator<ThingEdge> storageIterator = owner.graph().storage()
                     .iterate(iid, (key, value) -> cache(newPersistedEdge(EdgeIID.Thing.of(key))));
-            ResourceIterator<ThingEdge> bufferedIterator = bufferedEdgeIterator(encoding, lookahead);
+            FunctionalIterator<ThingEdge> bufferedIterator = bufferedEdgeIterator(encoding, lookahead);
             return link(bufferedIterator, storageIterator).distinct();
         }
 

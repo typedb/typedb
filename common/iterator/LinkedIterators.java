@@ -22,16 +22,16 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-class LinkedIterators<T> extends AbstractResourceIterator<T> {
+class LinkedIterators<T> extends AbstractFunctionalIterator<T> {
 
-    private final List<ResourceIterator<T>> iterators;
+    private final List<FunctionalIterator<T>> iterators;
 
-    LinkedIterators(List<ResourceIterator<T>> iterators) {
+    LinkedIterators(List<FunctionalIterator<T>> iterators) {
         this.iterators = new LinkedList<>(iterators);
     }
 
     @Override
-    public final LinkedIterators<T> link(ResourceIterator<T> iterator) {
+    public final LinkedIterators<T> link(FunctionalIterator<T> iterator) {
         iterators.add(iterator);
         return this;
     }
@@ -50,6 +50,6 @@ class LinkedIterators<T> extends AbstractResourceIterator<T> {
 
     @Override
     public void recycle() {
-        iterators.forEach(ResourceIterator::recycle);
+        iterators.forEach(FunctionalIterator::recycle);
     }
 }

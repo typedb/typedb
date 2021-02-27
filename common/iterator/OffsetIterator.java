@@ -20,15 +20,15 @@ package grakn.core.common.iterator;
 
 import java.util.NoSuchElementException;
 
-class OffsetIterator<T> extends AbstractResourceIterator<T> {
+class OffsetIterator<T> extends AbstractFunctionalIterator<T> {
 
-    private final ResourceIterator<T> iterator;
+    private final FunctionalIterator<T> iterator;
     private final long offset;
     private State state;
 
     private enum State {INIT, OFFSET}
 
-    public OffsetIterator(ResourceIterator<T> iterator, long offset) {
+    public OffsetIterator(FunctionalIterator<T> iterator, long offset) {
         this.iterator = iterator;
         this.offset = offset;
         state = State.INIT;

@@ -21,7 +21,7 @@ package grakn.core.query;
 import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.common.collection.Either;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Context;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
@@ -87,13 +87,13 @@ public class Updater {
         }
     }
 
-    public ResourceIterator<ConceptMap> execute() {
+    public FunctionalIterator<ConceptMap> execute() {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
             return context.options().parallel() ? executeParallel() : executeSerial();
         }
     }
 
-    private ResourceIterator<ConceptMap> executeParallel() {
+    private FunctionalIterator<ConceptMap> executeParallel() {
         List<List<ConceptMap>> lists = matcher.execute(context).toLists(PARALLELISATION_SPLIT_MIN, PARALLELISATION_FACTOR);
         assert !lists.isEmpty();
         List<ConceptMap> updates;
@@ -108,7 +108,7 @@ public class Updater {
         return iterate(updates);
     }
 
-    private ResourceIterator<ConceptMap> executeSerial() {
+    private FunctionalIterator<ConceptMap> executeSerial() {
         List<ConceptMap> matches = matcher.execute(context).onError(conceptMgr::exception).toList();
         List<ConceptMap> answers = iterate(matches).map(matched -> {
             new Deleter.Operation(matched, deleteVariables).execute();

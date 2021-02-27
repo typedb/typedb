@@ -19,7 +19,7 @@ package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.common.exception.GraknCheckedException;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
@@ -96,11 +96,11 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         Request fromUpstream = fromUpstream(toDownstream);
         RequestState requestState = this.requestStates.get(fromUpstream);
 
-        ResourceIterator<Map<Identifier.Variable, Concept>> materialisations = conclusion
+        FunctionalIterator<Map<Identifier.Variable, Concept>> materialisations = conclusion
                 .materialise(fromDownstream.answer().conceptMap(), traversalEngine, conceptMgr);
         if (!materialisations.hasNext()) throw GraknException.of(ILLEGAL_STATE);
 
-        ResourceIterator<AnswerState.Partial<?>> materialisedAnswers = materialisations
+        FunctionalIterator<AnswerState.Partial<?>> materialisedAnswers = materialisations
                 .map(concepts -> fromUpstream.partialAnswer().asUnified().aggregateToUpstream(concepts))
                 .filter(Optional::isPresent)
                 .map(Optional::get);
@@ -183,7 +183,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         assert conclusion.retrievableIds().containsAll(partialAnswer.concepts().keySet());
         if (conclusion.generating().isPresent() && conclusion.retrievableIds().size() > partialAnswer.concepts().size() &&
                 partialAnswer.concepts().containsKey(conclusion.generating().get().id())) {
-            ResourceIterator<AnswerState.Partial.Filtered> completedAnswers = candidateAnswers(fromUpstream, partialAnswer);
+            FunctionalIterator<AnswerState.Partial.Filtered> completedAnswers = candidateAnswers(fromUpstream, partialAnswer);
             completedAnswers.forEachRemaining(answer -> requestState.addDownstream(Request.create(self(), ruleResolver,
                                                                                                   answer)));
         } else {
@@ -195,9 +195,9 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         return requestState;
     }
 
-    private ResourceIterator<AnswerState.Partial.Filtered> candidateAnswers(Request fromUpstream, ConceptMap answer) {
+    private FunctionalIterator<AnswerState.Partial.Filtered> candidateAnswers(Request fromUpstream, ConceptMap answer) {
         Traversal traversal1 = boundTraversal(conclusion.conjunction().traversal(), answer);
-        ResourceIterator<ConceptMap> traversal = traversalEngine.iterator(traversal1).map(conceptMgr::conceptMap);
+        FunctionalIterator<ConceptMap> traversal = traversalEngine.iterator(traversal1).map(conceptMgr::conceptMap);
         Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
         return traversal.map(ans -> fromUpstream.partialAnswer().asUnified().extend(ans).filterToDownstream(named, ruleResolver));
     }
@@ -209,7 +209,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
 
     private static class RequestState {
 
-        private final List<ResourceIterator<AnswerState.Partial<?>>> materialisedAnswers;
+        private final List<FunctionalIterator<AnswerState.Partial<?>>> materialisedAnswers;
         private final LinkedHashSet<Request> downstreams;
         private Iterator<Request> downstreamProducerSelector;
         private final int iteration;
@@ -225,7 +225,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
             return iteration;
         }
 
-        public void addResponses(ResourceIterator<AnswerState.Partial<?>> materialisations) {
+        public void addResponses(FunctionalIterator<AnswerState.Partial<?>> materialisations) {
             materialisedAnswers.add(materialisations);
         }
 

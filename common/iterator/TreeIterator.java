@@ -22,10 +22,10 @@ import java.util.LinkedList;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 
-class TreeIterator<T> extends AbstractResourceIterator<T> {
+class TreeIterator<T> extends AbstractFunctionalIterator<T> {
 
-    private final Function<T, ResourceIterator<T>> childrenFn;
-    private final LinkedList<ResourceIterator<T>> families;
+    private final Function<T, FunctionalIterator<T>> childrenFn;
+    private final LinkedList<FunctionalIterator<T>> families;
     // a 'family' is [an iterator for] a collection of children from the same parent
 
     private T next;
@@ -33,7 +33,7 @@ class TreeIterator<T> extends AbstractResourceIterator<T> {
 
     private enum State {EMPTY, FETCHED, COMPLETED}
 
-    TreeIterator(T root, Function<T, ResourceIterator<T>> childrenFn) {
+    TreeIterator(T root, Function<T, FunctionalIterator<T>> childrenFn) {
         this.next = root;
         this.childrenFn = childrenFn;
 
@@ -77,6 +77,6 @@ class TreeIterator<T> extends AbstractResourceIterator<T> {
 
     @Override
     public void recycle() {
-        families.forEach(ResourceIterator::recycle);
+        families.forEach(FunctionalIterator::recycle);
     }
 }

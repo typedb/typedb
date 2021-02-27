@@ -22,11 +22,11 @@ import grakn.common.collection.Either;
 
 import java.util.Iterator;
 
-class BaseIterator<T> extends AbstractResourceIterator<T> {
+class BaseIterator<T> extends AbstractFunctionalIterator<T> {
 
-    private final Either<ResourceIterator<T>, Iterator<T>> iterator;
+    private final Either<FunctionalIterator<T>, Iterator<T>> iterator;
 
-    public BaseIterator(Either<ResourceIterator<T>, Iterator<T>> iterator) {
+    public BaseIterator(Either<FunctionalIterator<T>, Iterator<T>> iterator) {
         this.iterator = iterator;
     }
 
@@ -42,6 +42,6 @@ class BaseIterator<T> extends AbstractResourceIterator<T> {
 
     @Override
     public void recycle() {
-        iterator.ifFirst(ResourceIterator::recycle);
+        iterator.ifFirst(FunctionalIterator::recycle);
     }
 }

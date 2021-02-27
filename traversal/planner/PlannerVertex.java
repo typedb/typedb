@@ -21,7 +21,7 @@ package grakn.core.traversal.planner;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPVariable;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.common.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
@@ -272,7 +272,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
                     setObjectiveCoefficient(graph.data().stats().thingVertexSum(props().types()));
                 }
             } else if (!props().predicates().isEmpty()) {
-                ResourceIterator<TypeVertex> attTypes = iterate(props().predicates())
+                FunctionalIterator<TypeVertex> attTypes = iterate(props().predicates())
                         .flatMap(p -> iterate(p.valueType().comparables()))
                         .flatMap(vt -> graph.schema().attributeTypes(vt));
                 if (iterate(props().predicates()).anyMatch(p -> p.operator().equals(EQ))) {

@@ -19,7 +19,7 @@
 package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.common.exception.GraknCheckedException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
@@ -196,7 +196,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         }
 
         assert fromUpstream.partialAnswer().isMapped();
-        ResourceIterator<Partial<?>> upstreamAnswers =
+        FunctionalIterator<Partial<?>> upstreamAnswers =
                 traversalIterator(concludable.pattern(), fromUpstream.partialAnswer().conceptMap())
                         .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap));
 
@@ -225,16 +225,16 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     private static class RequestState {
         private final Set<ConceptMap> produced;
-        private final ResourceIterator<Partial<?>> newUpstreamAnswers;
+        private final FunctionalIterator<Partial<?>> newUpstreamAnswers;
         private final LinkedHashSet<Request> downstreamProducer;
         private final int iteration;
         private Iterator<Request> downstreamProducerSelector;
 
-        public RequestState(ResourceIterator<Partial<?>> upstreamAnswers, int iteration) {
+        public RequestState(FunctionalIterator<Partial<?>> upstreamAnswers, int iteration) {
             this(upstreamAnswers, iteration, new HashSet<>());
         }
 
-        private RequestState(ResourceIterator<Partial<?>> upstreamAnswers, int iteration, Set<ConceptMap> produced) {
+        private RequestState(FunctionalIterator<Partial<?>> upstreamAnswers, int iteration, Set<ConceptMap> produced) {
             this.newUpstreamAnswers = upstreamAnswers.filter(partial -> !hasProduced(partial.conceptMap()));
             this.iteration = iteration;
             this.produced = produced;
@@ -254,7 +254,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             return newUpstreamAnswers.hasNext();
         }
 
-        public ResourceIterator<Partial<?>> upstreamAnswers() {
+        public FunctionalIterator<Partial<?>> upstreamAnswers() {
             return newUpstreamAnswers;
         }
 

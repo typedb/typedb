@@ -19,7 +19,7 @@
 package grakn.core.rocks;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.AbstractResourceIterator;
+import grakn.core.common.iterator.AbstractFunctionalIterator;
 
 import java.util.NoSuchElementException;
 import java.util.function.BiFunction;
@@ -27,7 +27,7 @@ import java.util.function.BiFunction;
 import static grakn.core.common.collection.Bytes.bytesHavePrefix;
 import static grakn.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
-public final class RocksIterator<T> extends AbstractResourceIterator<T> implements AutoCloseable {
+public final class RocksIterator<T> extends AbstractFunctionalIterator<T> implements AutoCloseable {
 
     private final byte[] prefix;
     private final RocksStorage storage;

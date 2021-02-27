@@ -24,15 +24,15 @@ import java.util.NoSuchElementException;
 
 import static grakn.common.collection.Collections.list;
 
-class CartesianIterator<T> extends AbstractResourceIterator<List<T>> {
+class CartesianIterator<T> extends AbstractFunctionalIterator<List<T>> {
 
     private final ArrayList<ArrayList<T>> copies;
     private final ArrayList<Boolean> iterated;
-    private final ArrayList<ResourceIterator<T>> iterators;
+    private final ArrayList<FunctionalIterator<T>> iterators;
     private final ArrayList<T> result;
     private State state;
 
-    CartesianIterator(List<ResourceIterator<T>> iterators) {
+    CartesianIterator(List<FunctionalIterator<T>> iterators) {
         this.iterators = new ArrayList<>(iterators);
         this.result = new ArrayList<>(iterators.size());
         this.copies = new ArrayList<>(iterators.size());
@@ -48,7 +48,7 @@ class CartesianIterator<T> extends AbstractResourceIterator<List<T>> {
             return false;
         }
 
-        for (ResourceIterator<T> iterator : iterators) {
+        for (FunctionalIterator<T> iterator : iterators) {
             if (iterator.hasNext()) {
                 T next = iterator.next();
                 ArrayList<T> copy = new ArrayList<>();
@@ -84,7 +84,7 @@ class CartesianIterator<T> extends AbstractResourceIterator<List<T>> {
         } else if (i == 0) {
             return false;
         } else if (tryIncrement(i - 1)) {
-            ResourceIterator<T> iterator = Iterators.iterate(copies.get(i).iterator());
+            FunctionalIterator<T> iterator = Iterators.iterate(copies.get(i).iterator());
             iterated.set(i, true);
             iterators.set(i, iterator);
             result.set(i, iterator.next());
@@ -96,7 +96,7 @@ class CartesianIterator<T> extends AbstractResourceIterator<List<T>> {
 
     @Override
     public void recycle() {
-        iterators.forEach(ResourceIterator::recycle);
+        iterators.forEach(FunctionalIterator::recycle);
     }
 
     @Override

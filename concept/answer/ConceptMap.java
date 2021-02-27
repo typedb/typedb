@@ -21,7 +21,7 @@ package grakn.core.concept.answer;
 import grakn.common.collection.Either;
 import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concept.Concept;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.Type;
@@ -56,7 +56,7 @@ public class ConceptMap implements Answer {
         this.hash = Objects.hash(this.concepts);
     }
 
-    public ResourceIterator<Pair<Retrievable, Concept>> iterator() {
+    public FunctionalIterator<Pair<Retrievable, Concept>> iterator() {
         return iterate(concepts.entrySet()).map(e -> pair(e.getKey(), e.getValue()));
     }
 

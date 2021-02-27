@@ -39,56 +39,56 @@ import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
 
-public abstract class AbstractResourceIterator<T> implements ResourceIterator<T> {
+public abstract class AbstractFunctionalIterator<T> implements FunctionalIterator<T> {
 
     @Override
-    public ResourceIterator<T> distinct() {
+    public FunctionalIterator<T> distinct() {
         return new DistinctIterator<>(this);
     }
 
     @Override
-    public ResourceIterator<T> distinct(Set<T> duplicates) {
+    public FunctionalIterator<T> distinct(Set<T> duplicates) {
         return new DistinctIterator<>(this, duplicates);
     }
 
     @Override
-    public <U> ResourceIterator<U> map(Function<T, U> mappingFn) {
+    public <U> FunctionalIterator<U> map(Function<T, U> mappingFn) {
         return new MappedIterator<>(this, mappingFn);
     }
 
     @Override
-    public <U> ResourceIterator<U> flatMap(Function<T, ResourceIterator<U>> flatMappingFn) {
+    public <U> FunctionalIterator<U> flatMap(Function<T, FunctionalIterator<U>> flatMappingFn) {
         return new FlatMappedIterator<>(this, flatMappingFn);
     }
 
     @Override
-    public ResourceIterator<T> filter(Predicate<T> predicate) {
+    public FunctionalIterator<T> filter(Predicate<T> predicate) {
         return new FilteredIterator<>(this, predicate);
     }
 
     @Override
-    public ResourceIterator<T> offset(long offset) {
+    public FunctionalIterator<T> offset(long offset) {
         return new OffsetIterator<>(this, offset);
     }
 
     @Override
-    public ResourceIterator<T> limit(long limit) {
+    public FunctionalIterator<T> limit(long limit) {
         return new LimitedIterator<>(this, limit);
     }
 
     @Override
-    public ResourceIterator<T> link(ResourceIterator<T> iterator) {
+    public FunctionalIterator<T> link(FunctionalIterator<T> iterator) {
         return new LinkedIterators<>(list(this, iterator));
     }
 
     @Override
-    public ResourceIterator<T> link(Iterator<T> iterator) {
-        if (iterator instanceof AbstractResourceIterator<?>) return link((ResourceIterator<T>) iterator);
+    public FunctionalIterator<T> link(Iterator<T> iterator) {
+        if (iterator instanceof AbstractFunctionalIterator<?>) return link((FunctionalIterator<T>) iterator);
         return new LinkedIterators<>(list(this, iterate(iterator)));
     }
 
     @Override
-    public ResourceIterator<T> noNulls() {
+    public FunctionalIterator<T> noNulls() {
         return this.filter(Objects::nonNull);
     }
 
@@ -211,17 +211,17 @@ public abstract class AbstractResourceIterator<T> implements ResourceIterator<T>
     }
 
     @Override
-    public ResourceIterator<T> onConsumed(Runnable function) {
+    public FunctionalIterator<T> onConsumed(Runnable function) {
         return new ConsumeHandledIterator<>(this, function);
     }
 
     @Override
-    public ResourceIterator<T> onError(Function<Exception, GraknException> exceptionFn) {
+    public FunctionalIterator<T> onError(Function<Exception, GraknException> exceptionFn) {
         return new ErrorHandledIterator<>(this, exceptionFn);
     }
 
     @Override
-    public ResourceIterator<T> onFinalise(Runnable function) {
+    public FunctionalIterator<T> onFinalise(Runnable function) {
         return new FinaliseHandledIterator<>(this, function);
     }
 

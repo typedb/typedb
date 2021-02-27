@@ -19,7 +19,7 @@
 package grakn.core.concurrent.producer;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concurrent.common.ConcurrentSet;
 
 import javax.annotation.concurrent.ThreadSafe;
@@ -38,12 +38,12 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 public class AsyncProducer<T> implements FunctionalProducer<T> {
 
     private final int parallelisation;
-    private final ResourceIterator<ResourceIterator<T>> iterators;
-    private final ConcurrentMap<ResourceIterator<T>, CompletableFuture<Void>> runningJobs;
+    private final FunctionalIterator<FunctionalIterator<T>> iterators;
+    private final ConcurrentMap<FunctionalIterator<T>, CompletableFuture<Void>> runningJobs;
     private final AtomicBoolean isDone;
     private boolean isInitialised;
 
-    AsyncProducer(ResourceIterator<ResourceIterator<T>> iterators, int parallelisation) {
+    AsyncProducer(FunctionalIterator<FunctionalIterator<T>> iterators, int parallelisation) {
         assert parallelisation > 0;
         this.iterators = iterators;
         this.parallelisation = parallelisation;
@@ -87,7 +87,7 @@ public class AsyncProducer<T> implements FunctionalProducer<T> {
         if (isDone.get()) return;
         int requestSplitMax = (int) Math.ceil((double) request / runningJobs.size());
         int requestSent = 0;
-        for (ResourceIterator<T> iterator : runningJobs.keySet()) {
+        for (FunctionalIterator<T> iterator : runningJobs.keySet()) {
             int requestSplit = Math.min(requestSplitMax, request - requestSent);
             runningJobs.computeIfPresent(iterator, (iter, asyncJob) -> asyncJob.thenRunAsync(
                     () -> job(queue, iter, requestSplit, executor), executor
@@ -97,7 +97,7 @@ public class AsyncProducer<T> implements FunctionalProducer<T> {
         }
     }
 
-    private synchronized void transition(Queue<T> queue, ResourceIterator<T> iterator, int unfulfilled, ExecutorService executor) {
+    private synchronized void transition(Queue<T> queue, FunctionalIterator<T> iterator, int unfulfilled, ExecutorService executor) {
         if (!iterator.hasNext()) {
             if (runningJobs.remove(iterator) != null && iterators.hasNext()) compensate(queue, unfulfilled, executor);
             else if (!runningJobs.isEmpty() && unfulfilled > 0) distribute(queue, unfulfilled, executor);
@@ -109,7 +109,7 @@ public class AsyncProducer<T> implements FunctionalProducer<T> {
     }
 
     private synchronized void compensate(Queue<T> queue, int unfulfilled, ExecutorService executor) {
-        ResourceIterator<T> it = iterators.next();
+        FunctionalIterator<T> it = iterators.next();
         runningJobs.put(it, completedFuture(null));
         if (unfulfilled > 0) {
             runningJobs.computeIfPresent(it, (i, job) -> job.thenRunAsync(
@@ -118,7 +118,7 @@ public class AsyncProducer<T> implements FunctionalProducer<T> {
         }
     }
 
-    private void job(Queue<T> queue, ResourceIterator<T> iterator, int request, ExecutorService executor) {
+    private void job(Queue<T> queue, FunctionalIterator<T> iterator, int request, ExecutorService executor) {
         try {
             int unfulfilled = request;
             if (runningJobs.containsKey(iterator)) {
@@ -147,6 +147,6 @@ public class AsyncProducer<T> implements FunctionalProducer<T> {
     @Override
     public synchronized void recycle() {
         iterators.recycle();
-        runningJobs.keySet().forEach(ResourceIterator::recycle);
+        runningJobs.keySet().forEach(FunctionalIterator::recycle);
     }
 }

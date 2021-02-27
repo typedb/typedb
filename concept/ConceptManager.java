@@ -21,7 +21,7 @@ package grakn.core.concept;
 import grakn.common.collection.Either;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.thing.impl.ThingImpl;
@@ -69,7 +69,7 @@ public final class ConceptManager {
         this.graphMgr = graphMgr;
     }
 
-    public ResourceIterator<ConceptMap> conceptMaps(ResourceIterator<VertexMap> vertexMap) {
+    public FunctionalIterator<ConceptMap> conceptMaps(FunctionalIterator<VertexMap> vertexMap) {
         return vertexMap.map(this::conceptMap);
     }
 

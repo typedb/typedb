@@ -18,7 +18,7 @@
 
 package grakn.core.reasoner.resolution.framework;
 
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 
@@ -29,16 +29,16 @@ import java.util.Set;
 
 public class ResponseProducer {
     private final Set<ConceptMap> produced;
-    private final ResourceIterator<Partial<?>> newUpstreamAnswers;
+    private final FunctionalIterator<Partial<?>> newUpstreamAnswers;
     private final LinkedHashSet<Request> downstreamProducer;
     private final int iteration;
     private Iterator<Request> downstreamProducerSelector;
 
-    public ResponseProducer(ResourceIterator<Partial<?>> upstreamAnswers, int iteration) {
+    public ResponseProducer(FunctionalIterator<Partial<?>> upstreamAnswers, int iteration) {
         this(upstreamAnswers, iteration, new HashSet<>());
     }
 
-    private ResponseProducer(ResourceIterator<Partial<?>> upstreamAnswers, int iteration, Set<ConceptMap> produced) {
+    private ResponseProducer(FunctionalIterator<Partial<?>> upstreamAnswers, int iteration, Set<ConceptMap> produced) {
         this.newUpstreamAnswers = upstreamAnswers.filter(partial -> !hasProduced(partial.conceptMap()));
         this.iteration = iteration;
         this.produced = produced;
@@ -58,7 +58,7 @@ public class ResponseProducer {
         return newUpstreamAnswers.hasNext();
     }
 
-    public ResourceIterator<Partial<?>> upstreamAnswers() {
+    public FunctionalIterator<Partial<?>> upstreamAnswers() {
         return newUpstreamAnswers;
     }
 
@@ -92,7 +92,7 @@ public class ResponseProducer {
     /**
      * Prepare a response producer for the another iteration from this one
      */
-    public ResponseProducer newIteration(ResourceIterator<Partial<?>> upstreamAnswers, int iteration) {
+    public ResponseProducer newIteration(FunctionalIterator<Partial<?>> upstreamAnswers, int iteration) {
         return new ResponseProducer(upstreamAnswers, iteration, new HashSet<>());
     }
 
@@ -100,7 +100,7 @@ public class ResponseProducer {
      * Prepare a response producer for the another iteration from this one
      * Notably maintains the set of produced answers for deduplication
      */
-    public ResponseProducer newIterationRetainDedup(ResourceIterator<Partial<?>> upstreamAnswers, int iteration) {
+    public ResponseProducer newIterationRetainDedup(FunctionalIterator<Partial<?>> upstreamAnswers, int iteration) {
         return new ResponseProducer(upstreamAnswers, iteration, this.produced);
     }
 }

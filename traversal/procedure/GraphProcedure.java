@@ -19,7 +19,7 @@
 package grakn.core.traversal.procedure;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concurrent.common.ConcurrentSet;
 import grakn.core.concurrent.producer.FunctionalProducer;
@@ -177,14 +177,14 @@ public class GraphProcedure implements Procedure {
         }
         assertWithinFilterBounds(filter);
         ConcurrentSet<VertexMap> produced = new ConcurrentSet<>();
-        ResourceIterator<ResourceIterator<VertexMap>> iterators = startVertex().iterator(graphMgr, params)
+        FunctionalIterator<FunctionalIterator<VertexMap>> iterators = startVertex().iterator(graphMgr, params)
                 .map(v -> new GraphIterator(graphMgr, v, this, params, filter).distinct(produced));
         return async(iterators, parallelisation);
     }
 
     @Override
-    public ResourceIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
-                                                Set<Identifier.Variable.Retrievable> filter) {
+    public FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
+                                                  Set<Identifier.Variable.Retrievable> filter) {
         if (LOG.isDebugEnabled()) {
             LOG.debug(params.toString());
             LOG.debug(this.toString());

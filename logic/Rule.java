@@ -19,8 +19,8 @@
 package grakn.core.logic;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.iterator.Iterators;
-import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
@@ -178,7 +178,7 @@ public class Rule {
     }
 
     public void validateInsertable(LogicManager logicMgr) {
-        ResourceIterator<Map<Identifier.Variable.Name, Label>> whenCombinations = logicMgr.typeResolver().namedCombinations(when, false);
+        FunctionalIterator<Map<Identifier.Variable.Name, Label>> whenCombinations = logicMgr.typeResolver().namedCombinations(when, false);
         Set<Map<Identifier.Variable.Name, Label>> allowedThenCombinations = logicMgr.typeResolver().namedCombinations(then, true).toSet();
 
         whenCombinations.forEachRemaining(nameLabelMap -> {
@@ -288,8 +288,8 @@ public class Rule {
          * @param conceptMgr   - used to insert the conclusion if it doesn't already exist
          * @return - all possible conclusions: there may be multiple preexisting satisfactory conclusions, we return all
          */
-        public abstract ResourceIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
-                                                                                        ConceptManager conceptMgr);
+        public abstract FunctionalIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
+                                                                                          ConceptManager conceptMgr);
 
         public Rule rule() { return rule; }
 
@@ -395,13 +395,13 @@ public class Rule {
             }
 
             @Override
-            public ResourceIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
-                                                                                   ConceptManager conceptMgr) {
+            public FunctionalIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
+                                                                                     ConceptManager conceptMgr) {
                 Identifier.Variable relationTypeIdentifier = isa().type().id();
                 RelationType relationType = relationType(whenConcepts, conceptMgr);
                 Set<RolePlayer> players = new HashSet<>();
                 relation().players().forEach(rp -> players.add(new RolePlayer(rp, relationType, whenConcepts)));
-                ResourceIterator<grakn.core.concept.thing.Relation> existingRelations = matchRelation(
+                FunctionalIterator<grakn.core.concept.thing.Relation> existingRelations = matchRelation(
                         relationType, players, traversalEng, conceptMgr
                 );
 
@@ -482,8 +482,8 @@ public class Rule {
                 return relation;
             }
 
-            private ResourceIterator<grakn.core.concept.thing.Relation> matchRelation(RelationType relationType, Set<RolePlayer> players,
-                                                                                      TraversalEngine traversalEng, ConceptManager conceptMgr) {
+            private FunctionalIterator<grakn.core.concept.thing.Relation> matchRelation(RelationType relationType, Set<RolePlayer> players,
+                                                                                        TraversalEngine traversalEng, ConceptManager conceptMgr) {
                 Traversal traversal = new Traversal();
                 Identifier.Variable.Retrievable relationId = relation().owner().id();
                 traversal.isa(relationId, Identifier.Variable.label(relationType.getLabel().name()), false);
@@ -586,8 +586,8 @@ public class Rule {
                 }
 
                 @Override
-                public ResourceIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
-                                                                                       ConceptManager conceptMgr) {
+                public FunctionalIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
+                                                                                         ConceptManager conceptMgr) {
                     Identifier.Variable.Retrievable ownerId = has().owner().id();
                     assert whenConcepts.contains(ownerId) && whenConcepts.get(ownerId).isThing();
                     Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
@@ -709,8 +709,8 @@ public class Rule {
                 }
 
                 @Override
-                public ResourceIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
-                                                                                       ConceptManager conceptMgr) {
+                public FunctionalIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
+                                                                                         ConceptManager conceptMgr) {
                     Identifier.Variable.Retrievable ownerId = has().owner().id();
                     assert whenConcepts.contains(ownerId) && whenConcepts.get(ownerId).isThing();
                     Thing owner = whenConcepts.get(ownerId).asThing();

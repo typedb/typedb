@@ -21,7 +21,7 @@ package grakn.core.graph;
 import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknCheckedException;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concurrent.common.ConcurrentSet;
 import grakn.core.graph.common.Encoding;
@@ -113,7 +113,7 @@ public class DataGraph implements Graph {
         return statistics;
     }
 
-    public ResourceIterator<ThingVertex> vertices() {
+    public FunctionalIterator<ThingVertex> vertices() {
         return link(thingsByIID.values().iterator(), attributesByIID.valuesIterator());
     }
 
@@ -187,8 +187,8 @@ public class DataGraph implements Graph {
         });
     }
 
-    public ResourceIterator<ThingVertex> get(TypeVertex typeVertex) {
-        ResourceIterator<ThingVertex> storageIterator = storage.iterate(
+    public FunctionalIterator<ThingVertex> get(TypeVertex typeVertex) {
+        FunctionalIterator<ThingVertex> storageIterator = storage.iterate(
                 join(typeVertex.iid().bytes(), Encoding.Edge.ISA.in().bytes()),
                 (key, value) -> convert(EdgeIID.InwardsISA.of(key).end())
         );
@@ -464,7 +464,7 @@ public class DataGraph implements Graph {
             dateTimes = new ConcurrentHashMap<>();
         }
 
-        ResourceIterator<AttributeVertex<?>> valuesIterator() {
+        FunctionalIterator<AttributeVertex<?>> valuesIterator() {
             return link(list(
                     booleans.values().iterator(),
                     longs.values().iterator(),
@@ -670,7 +670,7 @@ public class DataGraph implements Graph {
                     if (persistedVertexTransitiveCount.containsKey(typeIID)) {
                         return persistedVertexTransitiveCount.get(typeIID);
                     } else {
-                        ResourceIterator<TypeVertex> subTypes = schemaGraph.convert(typeIID).ins().edge(SUB).from();
+                        FunctionalIterator<TypeVertex> subTypes = schemaGraph.convert(typeIID).ins().edge(SUB).from();
                         long childrenPersistedCount = 0;
                         while (subTypes.hasNext()) {
                             TypeVertex subType = subTypes.next();
@@ -745,7 +745,7 @@ public class DataGraph implements Graph {
         }
 
         public boolean processCountJobs() {
-            ResourceIterator<CountJob> countJobs = storage.iterate(StatisticsBytes.countJobKey(), CountJob::of);
+            FunctionalIterator<CountJob> countJobs = storage.iterate(StatisticsBytes.countJobKey(), CountJob::of);
             for (long processed = 0; processed < COUNT_JOB_BATCH_SIZE && countJobs.hasNext(); processed++) {
                 CountJob countJob = countJobs.next();
                 if (countJob instanceof CountJob.Attribute) {

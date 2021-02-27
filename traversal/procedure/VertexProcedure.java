@@ -18,7 +18,7 @@
 
 package grakn.core.traversal.procedure;
 
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concurrent.producer.FunctionalProducer;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.Vertex;
@@ -96,12 +96,12 @@ public class VertexProcedure implements Procedure {
     }
 
     @Override
-    public ResourceIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
-                                                Set<Identifier.Variable.Retrievable> filter) {
+    public FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
+                                                  Set<Identifier.Variable.Retrievable> filter) {
         LOG.debug(params.toString());
         LOG.debug(this.toString());
         assert vertex.id().isRetrievable() && filter.contains(vertex.id().asVariable().asRetrievable());
-        ResourceIterator<? extends Vertex<?, ?>> iterator = vertex.iterator(graphMgr, params);
+        FunctionalIterator<? extends Vertex<?, ?>> iterator = vertex.iterator(graphMgr, params);
         for (ProcedureEdge<?, ?> e : vertex.outs()) {
             iterator = iterator.filter(v -> e.isClosure(graphMgr, v, v, params));
         }

@@ -21,7 +21,7 @@ package grakn.core.query;
 import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.common.collection.Either;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Context;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
@@ -114,14 +114,14 @@ public class Inserter {
         }
     }
 
-    public ResourceIterator<ConceptMap> execute() {
+    public FunctionalIterator<ConceptMap> execute() {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
             if (matcher != null) return context.options().parallel() ? executeParallel() : executeSerial();
             else return single(new Operation(conceptMgr, new ConceptMap(), variables).execute());
         }
     }
 
-    private ResourceIterator<ConceptMap> executeParallel() {
+    private FunctionalIterator<ConceptMap> executeParallel() {
         List<List<ConceptMap>> lists = matcher.execute(context).toLists(PARALLELISATION_SPLIT_MIN, PARALLELISATION_FACTOR);
         assert !lists.isEmpty();
         List<ConceptMap> inserts;
@@ -134,7 +134,7 @@ public class Inserter {
         return iterate(inserts);
     }
 
-    private ResourceIterator<ConceptMap> executeSerial() {
+    private FunctionalIterator<ConceptMap> executeSerial() {
         List<ConceptMap> matches = matcher.execute(context).toList();
         return iterate(iterate(matches).map(matched -> new Operation(conceptMgr, matched, variables).execute()).toList());
     }

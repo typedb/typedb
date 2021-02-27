@@ -18,7 +18,7 @@
 
 package grakn.core.concurrent.producer;
 
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.concurrent.CompletableFuture;
@@ -30,11 +30,11 @@ import java.util.function.Predicate;
 @ThreadSafe
 public class BaseProducer<T> implements FunctionalProducer<T> {
 
-    private final ResourceIterator<T> iterator;
+    private final FunctionalIterator<T> iterator;
     private final AtomicBoolean isDone;
     private CompletableFuture<Void> future;
 
-    BaseProducer(ResourceIterator<T> iterator) {
+    BaseProducer(FunctionalIterator<T> iterator) {
         this.iterator = iterator;
         this.isDone = new AtomicBoolean(false);
         this.future = CompletableFuture.completedFuture(null);

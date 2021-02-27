@@ -22,7 +22,7 @@ import java.util.NoSuchElementException;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
-class LoopIterator<T> extends AbstractResourceIterator<T> {
+class LoopIterator<T> extends AbstractFunctionalIterator<T> {
 
     private final Predicate<T> predicate;
     private final UnaryOperator<T> function;

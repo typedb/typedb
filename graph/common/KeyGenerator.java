@@ -19,7 +19,7 @@
 package grakn.core.graph.common;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.iid.PrefixIID;
 import grakn.core.graph.iid.StructureIID;
@@ -238,7 +238,7 @@ public class KeyGenerator {
 
                 for (Encoding.Vertex.Thing thingEncoding : thingsWithGeneratedIID) {
                     byte[] typeEncoding = Encoding.Vertex.Type.of(thingEncoding).prefix().bytes();
-                    ResourceIterator<byte[]> typeIterator = schemaStorage.iterate(typeEncoding, (iid, value) -> iid)
+                    FunctionalIterator<byte[]> typeIterator = schemaStorage.iterate(typeEncoding, (iid, value) -> iid)
                             .filter(iid1 -> iid1.length == VertexIID.Type.LENGTH);
                     while (typeIterator.hasNext()) {
                         byte[] typeIID = typeIterator.next();

@@ -18,8 +18,8 @@
 package grakn.core.logic.resolvable;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.iterator.Iterators;
-import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.type.RoleType;
@@ -100,12 +100,12 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         return new Extractor(conjunction).concludables();
     }
 
-    public ResourceIterator<Unifier> getUnifiers(Rule rule) {
+    public FunctionalIterator<Unifier> getUnifiers(Rule rule) {
         assert applicableRules != null;
         return iterate(applicableRules.get(rule));
     }
 
-    public ResourceIterator<Rule> getApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+    public FunctionalIterator<Rule> getApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
         synchronized (this) {
             if (applicableRules == null) applicableRules = applicableRules(conceptMgr, logicMgr);
         }
@@ -115,7 +115,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
 
     abstract Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr);
 
-    abstract ResourceIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr);
+    abstract FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr);
 
     public abstract AlphaEquivalence alphaEquals(Concludable that);
 
@@ -319,12 +319,12 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        ResourceIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
+        FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
             if (conclusion.isRelation()) return unify(conclusion.asRelation(), conceptMgr);
             return Iterators.empty();
         }
 
-        public ResourceIterator<Unifier> unify(Rule.Conclusion.Relation relationConclusion, ConceptManager conceptMgr) {
+        public FunctionalIterator<Unifier> unify(Rule.Conclusion.Relation relationConclusion, ConceptManager conceptMgr) {
             if (this.relation().players().size() > relationConclusion.relation().players().size())
                 return Iterators.empty();
             Unifier.Builder unifierBuilder = Unifier.builder();
@@ -362,7 +362,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
             return Optional.of(relation.owner());
         }
 
-        private ResourceIterator<Map<RolePlayer, Set<RolePlayer>>> matchRolePlayers(
+        private FunctionalIterator<Map<RolePlayer, Set<RolePlayer>>> matchRolePlayers(
                 List<RolePlayer> conjRolePLayers, Set<RolePlayer> thenRolePlayers,
                 Map<RolePlayer, Set<RolePlayer>> mapping, ConceptManager conceptMgr) {
             if (conjRolePLayers.isEmpty()) return single(mapping);
@@ -484,7 +484,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
                 cloner = Conjunction.Cloner.cloneExactly(labels, values, isa, has);
                 clonedIsa = cloner.getClone(isa).asThing().asIsa();
             }
-            ResourceIterator<ValueConstraint<?>> valueIt = iterate(values).map(cloner::getClone).map(c -> c.asThing().asValue());
+            FunctionalIterator<ValueConstraint<?>> valueIt = iterate(values).map(cloner::getClone).map(c -> c.asThing().asValue());
             return new Has(cloner.conjunction(), cloner.getClone(has).asThing().asHas(), clonedIsa, valueIt.toSet());
         }
 
@@ -502,12 +502,12 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        ResourceIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
+        FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
             if (conclusion.isHas()) return unify(conclusion.asHas(), conceptMgr);
             return Iterators.empty();
         }
 
-        public ResourceIterator<Unifier> unify(Rule.Conclusion.Has hasConclusion, ConceptManager conceptMgr) {
+        public FunctionalIterator<Unifier> unify(Rule.Conclusion.Has hasConclusion, ConceptManager conceptMgr) {
             Unifier.Builder unifierBuilder = Unifier.builder();
             if (unificationSatisfiable(has().owner(), hasConclusion.has().owner())) {
                 unifierBuilder.add(has().owner().id(), hasConclusion.has().owner().id());
@@ -600,7 +600,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
 
         public static Isa of(IsaConstraint isa, Set<ValueConstraint<?>> values, Set<LabelConstraint> labelConstraints) {
             Conjunction.Cloner cloner = Conjunction.Cloner.cloneExactly(labelConstraints, values, isa);
-            ResourceIterator<ValueConstraint<?>> valueIt = iterate(values).map(cloner::getClone).map(c -> c.asThing().asValue());
+            FunctionalIterator<ValueConstraint<?>> valueIt = iterate(values).map(cloner::getClone).map(c -> c.asThing().asValue());
             return new Isa(cloner.conjunction(), cloner.getClone(isa).asThing().asIsa(), valueIt.toSet());
         }
 
@@ -617,12 +617,12 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        ResourceIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
+        FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
             if (conclusion.isIsa()) return unify(conclusion.asIsa(), conceptMgr);
             return Iterators.empty();
         }
 
-        ResourceIterator<Unifier> unify(Rule.Conclusion.Isa isa, ConceptManager conceptMgr) {
+        FunctionalIterator<Unifier> unify(Rule.Conclusion.Isa isa, ConceptManager conceptMgr) {
             Unifier.Builder unifierBuilder = Unifier.builder();
             if (unificationSatisfiable(isa().owner(), isa.isa().owner())) {
                 unifierBuilder.add(isa().owner().id(), isa.isa().owner().id());
@@ -727,7 +727,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
             assert iterate(values).map(ThingConstraint::owner).toSet().equals(set(attribute));
             Conjunction.Cloner cloner = Conjunction.Cloner.cloneExactly(values);
             assert cloner.conjunction().variables().size() == 1;
-            ResourceIterator<ValueConstraint<?>> valueIt = iterate(values).map(v -> cloner.getClone(v).asThing().asValue());
+            FunctionalIterator<ValueConstraint<?>> valueIt = iterate(values).map(v -> cloner.getClone(v).asThing().asValue());
             return new Attribute(cloner.conjunction().variables().iterator().next().asThing(), valueIt.toSet());
         }
 
@@ -737,12 +737,12 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        ResourceIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
+        FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
             if (conclusion.isValue()) return unify(conclusion.asValue());
             return Iterators.empty();
         }
 
-        ResourceIterator<Unifier> unify(Rule.Conclusion.Value value) {
+        FunctionalIterator<Unifier> unify(Rule.Conclusion.Value value) {
             assert iterate(values).filter(ValueConstraint::isVariable).toSet().size() == 0;
             Unifier.Builder unifierBuilder = Unifier.builder();
             if (unificationSatisfiable(attribute, value.value().owner())) {

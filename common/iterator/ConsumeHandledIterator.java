@@ -20,13 +20,13 @@ package grakn.core.common.iterator;
 
 import java.util.NoSuchElementException;
 
-public class ConsumeHandledIterator<T> extends AbstractResourceIterator<T> implements ResourceIterator<T> {
+public class ConsumeHandledIterator<T> extends AbstractFunctionalIterator<T> implements FunctionalIterator<T> {
 
-    private final ResourceIterator<T> iterator;
+    private final FunctionalIterator<T> iterator;
     private final Runnable function;
     private boolean isConsumed;
 
-    public ConsumeHandledIterator(ResourceIterator<T> iterator, Runnable function) {
+    public ConsumeHandledIterator(FunctionalIterator<T> iterator, Runnable function) {
         this.iterator = iterator;
         this.function = function;
         this.isConsumed = false;

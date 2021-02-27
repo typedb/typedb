@@ -38,37 +38,37 @@ import static java.util.Spliterators.spliteratorUnknownSize;
 
 public class Iterators {
 
-    public static <T> ResourceIterator<T> empty() {
+    public static <T> FunctionalIterator<T> empty() {
         return iterate(set());
     }
 
-    public static <T> ResourceIterator<T> single(T item) {
+    public static <T> FunctionalIterator<T> single(T item) {
         return iterate(set(item));
     }
 
-    public static <T> ResourceIterator<T> iterate(Collection<T> collection) {
+    public static <T> FunctionalIterator<T> iterate(Collection<T> collection) {
         return new BaseIterator<>(Either.second(collection.iterator()));
     }
 
-    public static <T> ResourceIterator<T> iterate(Iterator<T> iterator) {
+    public static <T> FunctionalIterator<T> iterate(Iterator<T> iterator) {
         return new BaseIterator<>(Either.second(iterator));
     }
 
-    public static <T> ResourceIterator<T> link(Iterator<? extends T> iter1, Iterator<? extends T> iter2) {
+    public static <T> FunctionalIterator<T> link(Iterator<? extends T> iter1, Iterator<? extends T> iter2) {
         return link(list(iter1, iter2));
     }
 
-    public static <T> ResourceIterator<T> link(Iterator<? extends T> iter1, Iterator<? extends T> iter2,
-                                               Iterator<? extends T> iter3) {
+    public static <T> FunctionalIterator<T> link(Iterator<? extends T> iter1, Iterator<? extends T> iter2,
+                                                 Iterator<? extends T> iter3) {
         return link(list(iter1, iter2, iter3));
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> ResourceIterator<T> link(List<? extends Iterator<? extends T>> iterators) {
-        List<ResourceIterator<T>> converted = new ArrayList<>();
+    public static <T> FunctionalIterator<T> link(List<? extends Iterator<? extends T>> iterators) {
+        List<FunctionalIterator<T>> converted = new ArrayList<>();
         iterators.forEach(iterator -> {
-            if (iterator instanceof AbstractResourceIterator<?>) {
-                converted.add((ResourceIterator<T>) iterator);
+            if (iterator instanceof AbstractFunctionalIterator<?>) {
+                converted.add((FunctionalIterator<T>) iterator);
             } else {
                 converted.add(iterate((Iterator<T>) iterator));
             }
@@ -76,23 +76,23 @@ public class Iterators {
         return new LinkedIterators<>(converted);
     }
 
-    public static <T> ResourceIterator<T> loop(T seed, Predicate<T> predicate, UnaryOperator<T> function) {
+    public static <T> FunctionalIterator<T> loop(T seed, Predicate<T> predicate, UnaryOperator<T> function) {
         return new LoopIterator<>(seed, predicate, function);
     }
 
-    public static <T> ResourceIterator<T> tree(T root, Function<T, ResourceIterator<T>> childrenFn) {
+    public static <T> FunctionalIterator<T> tree(T root, Function<T, FunctionalIterator<T>> childrenFn) {
         return new TreeIterator<>(root, childrenFn);
     }
 
-    public static <T> SynchronisedIterator<T> synchronised(ResourceIterator<T> iterator) {
+    public static <T> SynchronisedIterator<T> synchronised(FunctionalIterator<T> iterator) {
         return new SynchronisedIterator<>(iterator);
     }
 
-    public static <T> ResourceIterator<List<T>> cartesian(List<ResourceIterator<T>> iteratorProducers) {
+    public static <T> FunctionalIterator<List<T>> cartesian(List<FunctionalIterator<T>> iteratorProducers) {
         return new CartesianIterator<>(iteratorProducers);
     }
 
-    public static <T> ResourceIterator<List<T>> permutation(Collection<T> list) {
+    public static <T> FunctionalIterator<List<T>> permutation(Collection<T> list) {
         return new PermutationIterator<>(list);
     }
 

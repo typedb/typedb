@@ -20,7 +20,7 @@ package grakn.core.rocks;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concurrent.common.ConcurrentSet;
 import grakn.core.graph.common.KeyGenerator;
 import grakn.core.graph.common.Storage;
@@ -180,7 +180,7 @@ public abstract class RocksStorage implements Storage {
         }
 
         @Override
-        public <G> ResourceIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
+        public <G> FunctionalIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
 //            assert isOpen(); // TODO: verify why this was an assertion rather than an exception
             if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
             RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
@@ -247,7 +247,7 @@ public abstract class RocksStorage implements Storage {
         }
 
         @Override
-        public <G> ResourceIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
+        public <G> FunctionalIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
             if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
             RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
             iterators.add(iterator);

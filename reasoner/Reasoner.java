@@ -20,8 +20,8 @@ package grakn.core.reasoner;
 
 import grakn.common.collection.Either;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.iterator.Iterators;
-import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Label;
 import grakn.core.common.parameters.Options;
@@ -119,7 +119,7 @@ public class Reasoner {
         return logicMgr.rulesConcluding(type).hasNext() || logicMgr.rulesConcludingHas(type).hasNext();
     }
 
-    public ResourceIterator<ConceptMap> execute(Disjunction disjunction, GraqlMatch.Modifiers modifiers, Context.Query context) {
+    public FunctionalIterator<ConceptMap> execute(Disjunction disjunction, GraqlMatch.Modifiers modifiers, Context.Query context) {
         resolveTypes(disjunction, list());
         Set<Identifier.Variable.Name> filter =
                 iterate(modifiers.filter()).map(v -> v.reference().asName()).map(Identifier.Variable::of).toSet();
@@ -131,18 +131,18 @@ public class Reasoner {
         else return executeTraversal(disjunction, context, filter);
     }
 
-    private ResourceIterator<ConceptMap> executeReasoner(Disjunction disjunction, GraqlMatch.Modifiers modifiers,
-                                                         Context.Query context) {
+    private FunctionalIterator<ConceptMap> executeReasoner(Disjunction disjunction, GraqlMatch.Modifiers modifiers,
+                                                           Context.Query context) {
         ReasonerProducer producer = disjunction.conjunctions().size() == 1
                 ? new ReasonerProducer(disjunction.conjunctions().get(0), resolverRegistry, modifiers, context.options())
                 : new ReasonerProducer(disjunction, resolverRegistry, modifiers, context.options());
         return produce(producer, context.producer(), asyncPool1());
     }
 
-    private ResourceIterator<ConceptMap> executeTraversal(Disjunction disjunction, Context.Query context,
-                                                          Set<Identifier.Variable.Name> filter) {
-        ResourceIterator<ConceptMap> answers;
-        ResourceIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
+    private FunctionalIterator<ConceptMap> executeTraversal(Disjunction disjunction, Context.Query context,
+                                                            Set<Identifier.Variable.Name> filter) {
+        FunctionalIterator<ConceptMap> answers;
+        FunctionalIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
         if (!context.options().parallel()) answers = conjs.flatMap(conj -> iterator(conj, filter, context));
         else answers = produce(conjs.map(c -> producer(c, filter, context)).toList(), context.producer(), asyncPool1());
         if (disjunction.conjunctions().size() > 1) answers = answers.distinct();
@@ -164,16 +164,16 @@ public class Reasoner {
         }
     }
 
-    private ResourceIterator<ConceptMap> iterator(Disjunction disjunction, ConceptMap bounds) {
+    private FunctionalIterator<ConceptMap> iterator(Disjunction disjunction, ConceptMap bounds) {
         return iterate(disjunction.conjunctions()).flatMap(c -> iterator(c, bounds));
     }
 
-    private ResourceIterator<ConceptMap> iterator(Conjunction conjunction, ConceptMap bounds) {
+    private FunctionalIterator<ConceptMap> iterator(Conjunction conjunction, ConceptMap bounds) {
         return iterator(bound(conjunction, bounds), set(), defaultContext);
     }
 
-    private ResourceIterator<ConceptMap> iterator(Conjunction conjunction, Set<Identifier.Variable.Name> filter,
-                                                  Context.Query context) {
+    private FunctionalIterator<ConceptMap> iterator(Conjunction conjunction, Set<Identifier.Variable.Name> filter,
+                                                    Context.Query context) {
         if (!conjunction.isSatisfiable()) return Iterators.empty();
         if (conjunction.negations().isEmpty()) {
             return traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);

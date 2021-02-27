@@ -21,7 +21,7 @@ package grakn.core.traversal;
 import grakn.common.collection.Either;
 import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
 import grakn.core.concurrent.producer.FunctionalProducer;
@@ -106,7 +106,7 @@ public class Traversal {
         )).map(s -> cache.get(s, Planner::create)).toList();
     }
 
-    ResourceIterator<VertexMap> iterator(GraphManager graphMgr, boolean extraPlanningTime) {
+    FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, boolean extraPlanningTime) {
         assert !planners.isEmpty();
         if (planners.size() == 1) {
             planners.get(0).tryOptimise(graphMgr, extraPlanningTime);

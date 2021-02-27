@@ -20,7 +20,7 @@ package grakn.core.concurrent.producer;
 
 import grakn.common.collection.Either;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.AbstractResourceIterator;
+import grakn.core.common.iterator.AbstractFunctionalIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class ProducerIterator<T> extends AbstractResourceIterator<T> {
+public class ProducerIterator<T> extends AbstractFunctionalIterator<T> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProducerIterator.class);
 

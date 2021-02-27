@@ -17,7 +17,7 @@
 
 package grakn.core.graph.structure.impl;
 
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.common.Encoding;
@@ -131,28 +131,28 @@ public abstract class RuleStructureImpl implements RuleStructure {
         graph.rules().delete(this);
     }
 
-    ResourceIterator<TypeVertex> types() {
+    FunctionalIterator<TypeVertex> types() {
         graql.lang.pattern.Conjunction<Conjunctable> whenNormalised = when().normalise().patterns().get(0);
-        ResourceIterator<BoundVariable> positiveVariables = iterate(whenNormalised.patterns()).filter(Conjunctable::isVariable)
+        FunctionalIterator<BoundVariable> positiveVariables = iterate(whenNormalised.patterns()).filter(Conjunctable::isVariable)
                 .map(Conjunctable::asVariable);
-        ResourceIterator<BoundVariable> negativeVariables = iterate(whenNormalised.patterns()).filter(Conjunctable::isNegation)
+        FunctionalIterator<BoundVariable> negativeVariables = iterate(whenNormalised.patterns()).filter(Conjunctable::isNegation)
                 .flatMap(p -> negationVariables(p.asNegation()));
-        ResourceIterator<Label> whenPositiveLabels = getTypeLabels(positiveVariables);
-        ResourceIterator<Label> whenNegativeLabels = getTypeLabels(negativeVariables);
-        ResourceIterator<Label> thenLabels = getTypeLabels(iterate(then().variables().iterator()));
+        FunctionalIterator<Label> whenPositiveLabels = getTypeLabels(positiveVariables);
+        FunctionalIterator<Label> whenNegativeLabels = getTypeLabels(negativeVariables);
+        FunctionalIterator<Label> thenLabels = getTypeLabels(iterate(then().variables().iterator()));
         // filter out invalid labels as if they were truly invalid (eg. not relation:friend) we will catch it validation
         // this lets us index only types the user can actually retrieve as a concept
         return link(whenPositiveLabels, whenNegativeLabels, thenLabels)
                 .filter(label -> graph.getType(label) != null).map(graph::getType);
     }
 
-    private ResourceIterator<BoundVariable> negationVariables(Negation<?> ruleNegation) {
+    private FunctionalIterator<BoundVariable> negationVariables(Negation<?> ruleNegation) {
         assert ruleNegation.patterns().size() == 1 && ruleNegation.patterns().get(0).isDisjunction();
         return iterate(ruleNegation.patterns().get(0).asDisjunction().patterns())
                 .flatMap(pattern -> iterate(pattern.asConjunction().patterns())).map(Pattern::asVariable);
     }
 
-    private ResourceIterator<Label> getTypeLabels(ResourceIterator<BoundVariable> variables) {
+    private FunctionalIterator<Label> getTypeLabels(FunctionalIterator<BoundVariable> variables) {
         return variables.flatMap(v -> iterate(connectedVars(v, new HashSet<>())))
                 .distinct().filter(v -> v.isBound() && v.asBound().isType()).map(var -> var.asBound().asType().label()).filter(Optional::isPresent)
                 .map(labelConstraint -> {
@@ -289,7 +289,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
         private void deleteVertexFromStorage() {
             graph.storage().delete(IndexIID.Rule.of(label).bytes());
-            ResourceIterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
+            FunctionalIterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
             while (keys.hasNext()) graph.storage().delete(keys.next());
         }
 

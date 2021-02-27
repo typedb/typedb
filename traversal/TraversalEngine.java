@@ -19,7 +19,7 @@
 package grakn.core.traversal;
 
 import grakn.common.collection.Either;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.concurrent.producer.FunctionalProducer;
 import grakn.core.graph.GraphManager;
@@ -56,21 +56,21 @@ public class TraversalEngine {
         return traversal.producer(graphMgr, context, parallelisation, extraPlanningTime);
     }
 
-    public ResourceIterator<VertexMap> iterator(Traversal traversal) {
+    public FunctionalIterator<VertexMap> iterator(Traversal traversal) {
         return iterator(traversal, false);
     }
 
-    public ResourceIterator<VertexMap> iterator(Traversal traversal, boolean extraPlanningTime) {
+    public FunctionalIterator<VertexMap> iterator(Traversal traversal, boolean extraPlanningTime) {
         traversal.initialise(cache);
         return traversal.iterator(graphMgr, extraPlanningTime);
     }
 
-    public ResourceIterator<VertexMap> iterator(GraphProcedure procedure, Traversal.Parameters params) {
+    public FunctionalIterator<VertexMap> iterator(GraphProcedure procedure, Traversal.Parameters params) {
         return iterator(procedure, params, set());
     }
 
-    public ResourceIterator<VertexMap> iterator(GraphProcedure procedure, Traversal.Parameters params,
-                                                Set<Identifier.Variable.Retrievable> filter) {
+    public FunctionalIterator<VertexMap> iterator(GraphProcedure procedure, Traversal.Parameters params,
+                                                  Set<Identifier.Variable.Retrievable> filter) {
         return procedure.iterator(graphMgr, params, filter);
     }
 }

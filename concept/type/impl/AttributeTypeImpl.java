@@ -19,8 +19,8 @@
 package grakn.core.concept.type.impl;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.iterator.Iterators;
-import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.impl.AttributeImpl;
 import grakn.core.concept.type.AttributeType;
@@ -121,11 +121,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     @Override
     public abstract Stream<? extends AttributeImpl<?>> getInstances();
 
-    ResourceIterator<TypeVertex> getSubtypeVertices(Encoding.ValueType valueType) {
+    FunctionalIterator<TypeVertex> getSubtypeVertices(Encoding.ValueType valueType) {
         return Iterators.tree(vertex, v -> v.ins().edge(SUB).from().filter(sv -> sv.valueType().equals(valueType)));
     }
 
-    ResourceIterator<TypeVertex> getSubtypeVerticesDirect(Encoding.ValueType valueType) {
+    FunctionalIterator<TypeVertex> getSubtypeVerticesDirect(Encoding.ValueType valueType) {
         return vertex.ins().edge(SUB).from().filter(sv -> sv.valueType().equals(valueType));
     }
 

@@ -20,13 +20,13 @@ package grakn.core.common.iterator;
 
 import java.util.NoSuchElementException;
 
-class LimitedIterator<T> extends AbstractResourceIterator<T> {
+class LimitedIterator<T> extends AbstractFunctionalIterator<T> {
 
-    private final ResourceIterator<T> iterator;
+    private final FunctionalIterator<T> iterator;
     private final long limit;
     private long counter;
 
-    public LimitedIterator(ResourceIterator<T> iterator, long limit) {
+    public LimitedIterator(FunctionalIterator<T> iterator, long limit) {
         this.iterator = iterator;
         this.limit = limit;
         this.counter = 0L;

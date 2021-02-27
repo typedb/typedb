@@ -19,8 +19,8 @@
 package grakn.core.concurrent.producer;
 
 import grakn.common.collection.Either;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.iterator.Iterators;
-import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Arguments;
 
 import java.util.List;
@@ -36,11 +36,11 @@ public class Producers {
 
     public static <T> FunctionalProducer<T> empty() { return async(Iterators.empty()); }
 
-    public static <T> FunctionalProducer<T> async(ResourceIterator<ResourceIterator<T>> iterators, int parallelisation) {
+    public static <T> FunctionalProducer<T> async(FunctionalIterator<FunctionalIterator<T>> iterators, int parallelisation) {
         return new AsyncProducer<>(iterators, parallelisation);
     }
 
-    public static <T> FunctionalProducer<T> async(ResourceIterator<T> iterator) {
+    public static <T> FunctionalProducer<T> async(FunctionalIterator<T> iterator) {
         return new BaseProducer<>(iterator);
     }
 
