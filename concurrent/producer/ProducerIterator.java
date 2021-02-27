@@ -42,28 +42,34 @@ public class ProducerIterator<T> extends AbstractResourceIterator<T> {
     private final ConcurrentLinkedQueue<Producer<T>> producers;
     private final ExecutorService executor;
     private final Queue queue;
+    private volatile long requestLimit;
+    private long consumeLimit;
 
     private T next;
     private State state;
 
-    public ProducerIterator(List<Producer<T>> producers, int batchSize, ExecutorService executor) {
-        this.executor = executor;
+    public ProducerIterator(List<Producer<T>> producers, int batchSize, long limit, ExecutorService executor) {
         // TODO: Could we optimise IterableProducer by accepting ResourceIterator<Producer<T>> instead?
         assert !producers.isEmpty() && batchSize < Integer.MAX_VALUE / 2;
         this.producers = new ConcurrentLinkedQueue<>(producers);
         this.queue = new Queue(batchSize, batchSize * 2);
+        this.requestLimit = limit;
+        this.consumeLimit = limit;
+        this.executor = executor;
         this.state = State.EMPTY;
     }
 
     private void mayProduce() {
         synchronized (queue) {
-            if (producers.isEmpty()) return;
+            if (requestLimit == 0 || producers.isEmpty()) return;
             int available = queue.max - queue.size() - queue.pending;
             if (available > queue.max - queue.min) {
+                final int request = available < requestLimit ? available : (int) requestLimit;
+                requestLimit -= request;
                 queue.pending += available;
                 assert !producers.isEmpty();
                 Producer<T> producer = producers.peek();
-                executor.submit(() -> producer.produce(queue, available, executor));
+                executor.submit(() -> producer.produce(queue, request, executor));
             }
         }
     }
@@ -72,7 +78,7 @@ public class ProducerIterator<T> extends AbstractResourceIterator<T> {
 
     @Override
     public boolean hasNext() {
-        if (state == State.COMPLETED) return false;
+        if (state == State.COMPLETED || consumeLimit == 0) return false;
         else if (state == State.FETCHED) return true;
         else mayProduce();
 
@@ -97,6 +103,7 @@ public class ProducerIterator<T> extends AbstractResourceIterator<T> {
     public T next() {
         if (!hasNext()) throw new NoSuchElementException();
         state = State.EMPTY;
+        consumeLimit--;
         return next;
     }
 

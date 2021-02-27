@@ -18,6 +18,7 @@
 
 package grakn.core.common.parameters;
 
+import grakn.common.collection.Either;
 import graql.lang.query.GraqlQuery;
 
 import javax.annotation.Nullable;
@@ -79,8 +80,8 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
 
     public static class Query extends Context<Context.Transaction, Options.Query> {
 
-        private Arguments.Query.Producer producer;
-        private static final Arguments.Query.Producer DEFAULT_PRODUCER = INCREMENTAL;
+        private Either<Arguments.Query.Producer, Long> producerCtx;
+        private static final Either<Arguments.Query.Producer, Long> DEFAULT_PRODUCER = Either.first(INCREMENTAL);
 
         public Query(Transaction context, Options.Query options) {
             super(context, options.parent(context.options()));
@@ -91,13 +92,13 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
             options.query(query);
         }
 
-        public Arguments.Query.Producer producer() {
-            if (producer != null) return producer;
+        public Either<Arguments.Query.Producer, Long> producer() {
+            if (producerCtx != null) return producerCtx;
             else return DEFAULT_PRODUCER;
         }
 
-        public Query producer(Arguments.Query.Producer producer) {
-            this.producer = producer;
+        public Query producer(Either<Arguments.Query.Producer, Long> producerCtx) {
+            this.producerCtx = producerCtx;
             return this;
         }
     }

@@ -18,6 +18,7 @@
 
 package grakn.core.concept;
 
+import grakn.common.collection.Either;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
@@ -195,7 +196,7 @@ public final class ConceptManager {
                         t.validate();
                         return (Void) null;
                     })
-            ), PARALLELISATION_FACTOR), EXHAUSTIVE, asyncPool1());
+            ), PARALLELISATION_FACTOR), Either.first(EXHAUSTIVE), asyncPool1());
             while (validationIterator.hasNext()) validationIterator.next();
         }
     }

@@ -18,8 +18,10 @@
 
 package grakn.core.query;
 
+import grakn.common.collection.Either;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Context;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ConceptMapGroup;
@@ -28,7 +30,6 @@ import grakn.core.concept.answer.NumericGroup;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.Reasoner;
-import grakn.core.traversal.common.Identifier;
 import graql.lang.common.GraqlArg;
 import graql.lang.common.GraqlToken;
 import graql.lang.pattern.variable.Reference;
@@ -82,8 +83,12 @@ public class Matcher {
         this.disjunction = Disjunction.create(query.conjunction().normalise());
         this.context = context;
         if (context != null) {
-            if (query.modifiers().sort().isPresent()) this.context.producer(EXHAUSTIVE); // TODO: remove this once sort is optimised
-            else this.context.producer(INCREMENTAL);
+            Either<Arguments.Query.Producer, Long> prodCtx;
+            GraqlMatch.Modifiers mods = query.modifiers();
+            if (mods.sort().isPresent()) prodCtx = Either.first(EXHAUSTIVE); // TODO: remove this once sort is optimised
+            else if (mods.limit().isPresent()) prodCtx = Either.second(mods.offset().orElse(0L) + mods.limit().get());
+            else prodCtx = Either.first(INCREMENTAL);
+            this.context.producer(prodCtx);
         }
     }
 
@@ -174,7 +179,7 @@ public class Matcher {
             this.matcher = matcher;
             this.query = query;
             this.context = context;
-            this.context.producer(EXHAUSTIVE);
+            this.context.producer(Either.first(EXHAUSTIVE));
         }
 
         public Numeric execute() {
@@ -591,7 +596,7 @@ public class Matcher {
             this.matcher = matcher;
             this.query = query;
             this.context = context;
-            this.context.producer(EXHAUSTIVE);
+            this.context.producer(Either.first(EXHAUSTIVE));
         }
 
         public ResourceIterator<ConceptMapGroup> execute() {

@@ -18,10 +18,10 @@
 
 package grakn.core.reasoner.resolution.framework;
 
+import grakn.common.collection.Either;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
-import grakn.core.common.parameters.Arguments;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
@@ -46,6 +46,7 @@ import java.util.Optional;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
+import static grakn.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
 
 public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Actor.State<RESOLVER> {
     private static final Logger LOG = LoggerFactory.getLogger(Resolver.class);
@@ -145,7 +146,7 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
     protected Producer<ConceptMap> traversalProducer(Conjunction conjunction, ConceptMap bounds, int parallelisation) {
         return compatibleBounds(conjunction, bounds).map(b -> {
             Traversal traversal = boundTraversal(conjunction.traversal(), b);
-            return traversalEngine.producer(traversal, Arguments.Query.Producer.INCREMENTAL, parallelisation).map(conceptMgr::conceptMap);
+            return traversalEngine.producer(traversal, Either.first(INCREMENTAL), parallelisation).map(conceptMgr::conceptMap);
         }).orElse(Producers.empty());
     }
 

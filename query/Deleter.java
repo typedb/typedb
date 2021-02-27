@@ -18,6 +18,7 @@
 package grakn.core.query;
 
 import grabl.tracing.client.GrablTracingThreadStatic;
+import grakn.common.collection.Either;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Context;
@@ -69,7 +70,7 @@ public class Deleter {
         this.matcher = matcher;
         this.variables = variables;
         this.context = context;
-        this.context.producer(EXHAUSTIVE);
+        this.context.producer(Either.first(EXHAUSTIVE));
     }
 
     public static Deleter create(Reasoner reasoner, GraqlDelete query, Context.Query context) {
@@ -101,7 +102,7 @@ public class Deleter {
             produce(async(iterate(lists).map(list -> iterate(list).map(matched -> {
                 new Operation(matched, variables).execute();
                 return (Void) null;
-            })), PARALLELISATION_FACTOR), EXHAUSTIVE, asyncPool1()).toList();
+            })), PARALLELISATION_FACTOR), Either.first(EXHAUSTIVE), asyncPool1()).toList();
         }
     }
 

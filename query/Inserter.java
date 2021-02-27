@@ -19,6 +19,7 @@
 package grakn.core.query;
 
 import grabl.tracing.client.GrablTracingThreadStatic;
+import grakn.common.collection.Either;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Context;
@@ -90,7 +91,7 @@ public class Inserter {
         this.conceptMgr = conceptMgr;
         this.variables = variables;
         this.context = context;
-        this.context.producer(EXHAUSTIVE);
+        this.context.producer(Either.first(EXHAUSTIVE));
     }
 
     public static Inserter create(Reasoner reasoner, ConceptManager conceptMgr, GraqlInsert query, Context.Query context) {
@@ -129,7 +130,7 @@ public class Inserter {
         ).toList();
         else inserts = produce(async(iterate(lists).map(list -> iterate(list).map(
                 matched -> new Operation(conceptMgr, matched, variables).execute()
-        )), PARALLELISATION_FACTOR), EXHAUSTIVE, asyncPool1()).toList();
+        )), PARALLELISATION_FACTOR), Either.first(EXHAUSTIVE), asyncPool1()).toList();
         return iterate(inserts);
     }
 

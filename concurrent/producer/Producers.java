@@ -18,6 +18,7 @@
 
 package grakn.core.concurrent.producer;
 
+import grakn.common.collection.Either;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Arguments;
@@ -29,8 +30,9 @@ import static grakn.common.collection.Collections.list;
 
 public class Producers {
 
-    public static final int DEFAULT_BATCH_SIZE = 32;
-    public static final int MAX_BATCH_SIZE = (Integer.MAX_VALUE / 2) - 1;
+    public static final long LIMIT_DEFAULT = Long.MAX_VALUE;
+    public static final int BATCH_SIZE_DEFAULT = 32;
+    public static final int BATCH_SIZE_MAX = (Integer.MAX_VALUE / 2) - 1;
 
     public static <T> FunctionalProducer<T> empty() { return async(Iterators.empty()); }
 
@@ -42,19 +44,13 @@ public class Producers {
         return new BaseProducer<>(iterator);
     }
 
-    public static <T> ProducerIterator<T> produce(Producer<T> producer, Arguments.Query.Producer mode, ExecutorService executor) {
-        return produce(list(producer), mode, executor);
+    public static <T> ProducerIterator<T> produce(Producer<T> producer, Either<Arguments.Query.Producer, Long> context, ExecutorService executor) {
+        return produce(list(producer), context, executor);
     }
 
-    public static <T> ProducerIterator<T> produce(Producer<T> producer, int batchSize, ExecutorService executor) {
-        return produce(list(producer), batchSize, executor);
-    }
-
-    public static <T> ProducerIterator<T> produce(List<Producer<T>> producers, Arguments.Query.Producer mode, ExecutorService executor) {
-        return new ProducerIterator<>(producers, mode.isIncremental() ? DEFAULT_BATCH_SIZE : MAX_BATCH_SIZE, executor);
-    }
-
-    public static <T> ProducerIterator<T> produce(List<Producer<T>> producers, int batchSize, ExecutorService executor) {
-        return new ProducerIterator<>(producers, batchSize, executor);
+    public static <T> ProducerIterator<T> produce(List<Producer<T>> producers, Either<Arguments.Query.Producer, Long> context, ExecutorService executor) {
+        int batchSize = context.isSecond() || context.first().isIncremental() ? BATCH_SIZE_DEFAULT : BATCH_SIZE_MAX;
+        long limit = context.isSecond() ? context.second() : LIMIT_DEFAULT;
+        return new ProducerIterator<>(producers, batchSize, limit, executor);
     }
 }

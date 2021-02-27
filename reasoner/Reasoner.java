@@ -18,6 +18,7 @@
 
 package grakn.core.reasoner;
 
+import grakn.common.collection.Either;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.iterator.ResourceIterator;
@@ -72,7 +73,7 @@ public class Reasoner {
         this.traversalEng = traversalEng;
         this.logicMgr = logicMgr;
         this.defaultContext = new Context.Query(context, new Options.Query());
-        this.defaultContext.producer(EXHAUSTIVE);
+        this.defaultContext.producer(Either.first(EXHAUSTIVE));
         this.resolutionRecorder = Actor.create(eventLoopGroup(), ResolutionRecorder::new);
         this.resolverRegistry = new ResolverRegistry(eventLoopGroup(), resolutionRecorder, traversalEng, conceptMgr,
                                                      logicMgr, this.defaultContext.options().traceInference());
@@ -120,7 +121,8 @@ public class Reasoner {
 
     public ResourceIterator<ConceptMap> execute(Disjunction disjunction, GraqlMatch.Modifiers modifiers, Context.Query context) {
         resolveTypes(disjunction, list());
-        Set<Identifier.Variable.Name> filter = iterate(modifiers.filter()).map(v -> v.reference().asName()).map(Identifier.Variable::of).toSet();
+        Set<Identifier.Variable.Name> filter =
+                iterate(modifiers.filter()).map(v -> v.reference().asName()).map(Identifier.Variable::of).toSet();
         iterate(disjunction.conjunctions()).filter(c -> !c.isSatisfiable() && !isSchemaQuery(c, filter)).map(c -> {
             throw GraknException.of(UNSATISFIABLE_CONJUNCTION, c);
         });
@@ -137,7 +139,8 @@ public class Reasoner {
         return produce(producer, context.producer(), asyncPool1());
     }
 
-    private ResourceIterator<ConceptMap> executeTraversal(Disjunction disjunction, Context.Query context, Set<Identifier.Variable.Name> filter) {
+    private ResourceIterator<ConceptMap> executeTraversal(Disjunction disjunction, Context.Query context,
+                                                          Set<Identifier.Variable.Name> filter) {
         ResourceIterator<ConceptMap> answers;
         ResourceIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
         if (!context.options().parallel()) answers = conjs.flatMap(conj -> iterator(conj, filter, context));

@@ -19,6 +19,7 @@
 package grakn.core.query;
 
 import grabl.tracing.client.GrablTracingThreadStatic;
+import grakn.common.collection.Either;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Context;
@@ -103,7 +104,7 @@ public class Updater {
         if (lists.size() == 1) updates = iterate(lists.get(0)).map(updateFn).toList();
         else updates = produce(async(
                 iterate(lists).map(list -> iterate(list).map(updateFn)), PARALLELISATION_FACTOR
-        ), EXHAUSTIVE, asyncPool1()).toList();
+        ), Either.first(EXHAUSTIVE), asyncPool1()).toList();
         return iterate(updates);
     }
 

@@ -18,6 +18,7 @@
 
 package grakn.core.traversal;
 
+import grakn.common.collection.Either;
 import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.ResourceIterator;
@@ -51,6 +52,7 @@ import static grakn.common.collection.Collections.pair;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.cartesian;
 import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
 import static grakn.core.concurrent.common.Executors.asyncPool2;
 import static grakn.core.concurrent.producer.Producers.async;
 import static grakn.core.concurrent.producer.Producers.produce;
@@ -121,17 +123,18 @@ public class Traversal {
         }
     }
 
-    FunctionalProducer<VertexMap> producer(GraphManager graphMgr, Arguments.Query.Producer mode,
+    FunctionalProducer<VertexMap> producer(GraphManager graphMgr, Either<Arguments.Query.Producer, Long> context,
                                            int parallelisation, boolean extraPlanningTime) {
         assert !planners.isEmpty();
         if (planners.size() == 1) {
             planners.get(0).tryOptimise(graphMgr, extraPlanningTime);
             return planners.get(0).procedure().producer(graphMgr, parameters, filter(), parallelisation);
         } else {
+            Either<Arguments.Query.Producer, Long> nestedCtx = context.isFirst() ? context : Either.first(INCREMENTAL);
             return async(cartesian(planners.parallelStream().map(planner -> {
                 planner.tryOptimise(graphMgr, extraPlanningTime);
                 return planner.procedure().producer(graphMgr, parameters, filter(), parallelisation);
-            }).map(producer -> produce(producer, mode, asyncPool2())).collect(toList())).map(partialAnswers -> {
+            }).map(producer -> produce(producer, nestedCtx, asyncPool2())).collect(toList())).map(partialAnswers -> {
                 Map<Retrievable, Vertex<?, ?>> combinedAnswers = new HashMap<>();
                 partialAnswers.forEach(p -> combinedAnswers.putAll(p.map()));
                 return VertexMap.of(combinedAnswers);
