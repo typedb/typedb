@@ -34,10 +34,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static grakn.core.common.exception.ErrorMessage.ThingWrite.DELETE_ROLEPLAYER_NOT_PRESENT;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_PLAYER_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_ROLE_UNRELATED;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ROLE_UNPLAYED;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.DELETE_ROLEPLAYER_NOT_PRESENT;
 import static grakn.core.graph.common.Encoding.Edge.Thing.PLAYING;
 import static grakn.core.graph.common.Encoding.Edge.Thing.RELATING;
 import static grakn.core.graph.common.Encoding.Edge.Thing.ROLEPLAYER;

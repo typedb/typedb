@@ -1185,7 +1185,7 @@ public class TypeResolverTest {
      * we will see it here
      */
     @Test
-    public void nested_negation_is_satisfiable(){
+    public void nested_negation_is_satisfiable() {
         define_custom_schema("define session sub entity,\n" +
                                      "          plays reported-fault:parent-session,\n" +
                                      "          plays unanswered-question:parent-session;\n" +

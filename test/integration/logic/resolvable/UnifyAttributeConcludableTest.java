@@ -148,7 +148,7 @@ public class UnifyAttributeConcludableTest {
         assertFalse(unifier.unify(unUnified).isPresent());
 
         // test filter allows a valid answer
-       Map<Identifier.Variable, Concept> concepts = map(
+        Map<Identifier.Variable, Concept> concepts = map(
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "john"))
         );
         Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));

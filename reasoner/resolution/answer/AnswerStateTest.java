@@ -60,14 +60,14 @@ public class AnswerStateTest {
 
     @Test
     public void test_initial_partially_mapped_to_downstream_and_back() {
-        Map<Identifier.Variable.Retrievable, Identifier.Variable.Retrievable>  mapping = new HashMap<>();
+        Map<Identifier.Variable.Retrievable, Identifier.Variable.Retrievable> mapping = new HashMap<>();
         mapping.put(Identifier.Variable.name("a"), Identifier.Variable.name("x"));
         mapping.put(Identifier.Variable.name("b"), Identifier.Variable.name("y"));
         Map<Identifier.Variable.Retrievable, Concept> concepts = new HashMap<>();
         concepts.put(Identifier.Variable.name("a"), new MockConcept(0));
         Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
         Top top = Top.initial(filter, false, null);
-        Mapped mapped = identity(new ConceptMap(concepts), top,  null, null, false)
+        Mapped mapped = identity(new ConceptMap(concepts), top, null, null, false)
                 .mapToDownstream(Mapping.of(mapping), null);
 
         Map<Identifier.Variable.Retrievable, Concept> expectedMapped = new HashMap<>();
@@ -87,7 +87,7 @@ public class AnswerStateTest {
 
     @Test
     public void test_initial_with_unmapped_elements() {
-        Map<Identifier.Variable.Retrievable, Identifier.Variable.Retrievable>  mapping = new HashMap<>();
+        Map<Identifier.Variable.Retrievable, Identifier.Variable.Retrievable> mapping = new HashMap<>();
         mapping.put(Identifier.Variable.name("a"), Identifier.Variable.name("x"));
         mapping.put(Identifier.Variable.name("b"), Identifier.Variable.name("y"));
         Map<Identifier.Variable.Retrievable, Concept> concepts = new HashMap<>();

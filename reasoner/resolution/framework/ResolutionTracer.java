@@ -76,7 +76,7 @@ public final class ResolutionTracer {
 
     private void addMessage(Resolver<?> sender, Resolver<?> receiver, int iteration, EdgeType edgeType, String conceptMap) {
         writeEdge(sender.name(), receiver.name(), iteration, edgeType.colour(), messageNumber, conceptMap);
-        messageNumber ++;
+        messageNumber++;
     }
 
     private void writeEdge(String fromId, String toId, int iteration, String colour, int messageNumber, String conceptMap) {

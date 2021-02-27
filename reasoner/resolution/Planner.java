@@ -155,7 +155,7 @@ public class Planner {
 
         private Optional<Resolvable<?>> mostAnsweredVars(Stream<Resolvable<?>> resolvables) {
             return resolvables.max(Comparator.comparingInt(r -> iterate(r.retrieves())
-                            .filter(answered::contains).toSet().size()));
+                    .filter(answered::contains).toSet().size()));
         }
 
         private Optional<Resolvable<?>> mostUnansweredVars(Stream<Resolvable<?>> resolvableStream) {

@@ -110,10 +110,10 @@ public class StatisticsTest {
         try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
             try (Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 GraqlQuery query = Graql.parseQuery("" +
-                        "define " +
-                        "person sub entity, owns age; " +
-                        "age sub attribute, value long; " +
-                        "");
+                                                            "define " +
+                                                            "person sub entity, owns age; " +
+                                                            "age sub attribute, value long; " +
+                                                            "");
                 tx.query().define(query.asDefine());
                 tx.commit();
             }

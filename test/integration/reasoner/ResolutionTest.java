@@ -314,7 +314,7 @@ public class ResolutionTest {
                                 "name sub attribute, value string;" +
                                 "rule bobs-are-42: when { $p1 has name \"Bob\"; } then { $p1 has age 42; };" +
                                 "rule susans-are-24: when { $p1 has name \"Susan\"; } then { $p1 has age 24; };"
-                                ));
+                ));
                 transaction.commit();
             }
         }

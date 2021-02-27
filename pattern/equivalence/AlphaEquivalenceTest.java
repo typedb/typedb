@@ -53,7 +53,7 @@ public class AlphaEquivalenceTest {
                 .get(Reference.name(variableName));
     }
 
-    private Variable parseAnonymousRelationVariable(String... graqlVariables){
+    private Variable parseAnonymousRelationVariable(String... graqlVariables) {
         Set<Variable> anonVariables = parseAnonymousThingVariables(graqlVariables);
         return anonVariables.stream()
                 .filter(Variable::isThing)
@@ -98,7 +98,7 @@ public class AlphaEquivalenceTest {
                 parseVariables("x1", "$x1 isa organisation"),
                 parseVariables("x2", "$x2 isa company"),
                 parseVariables("y", "$y isa $type", "$type type organisation"),
-                parseVariables("z","$z isa $y")
+                parseVariables("z", "$z isa $y")
         )
                 .map(Variable::asThing)
                 .collect(Collectors.toList());
@@ -242,12 +242,12 @@ public class AlphaEquivalenceTest {
     @Test
     public void test_relation_as_player_with_different_binding_configurations() {
         List<ThingVariable> variables = Stream.of(
-                parseVariables("r1","$r1 ($x)", "($r1, $y)"),
-                parseVariables("r2","$r2 ($x)", "($r2, $y)", "($r2, $z)"),
-                parseVariables("r3","$r3 ($x)", "($r3, $join)", "($r3, $join)"),
-                parseVariables("r4","$r4 ($x)", "(from: $r4, to: $x)", "(from: $r4, to: $y)"),
-                parseVariables("r5","$r5 ($x)", "(from: $r5, to: $join)", "(from: $r5, to: $join)"),
-                parseVariables("r6","$r6 ($x)", "(from: $r6, to: $join)", "(from: $join, to: $r6)")
+                parseVariables("r1", "$r1 ($x)", "($r1, $y)"),
+                parseVariables("r2", "$r2 ($x)", "($r2, $y)", "($r2, $z)"),
+                parseVariables("r3", "$r3 ($x)", "($r3, $join)", "($r3, $join)"),
+                parseVariables("r4", "$r4 ($x)", "(from: $r4, to: $x)", "(from: $r4, to: $y)"),
+                parseVariables("r5", "$r5 ($x)", "(from: $r5, to: $join)", "(from: $r5, to: $join)"),
+                parseVariables("r6", "$r6 ($x)", "(from: $r6, to: $join)", "(from: $join, to: $r6)")
         )
                 .map(Variable::asThing)
                 .collect(Collectors.toList());
@@ -257,10 +257,10 @@ public class AlphaEquivalenceTest {
     @Test
     public void test_relation_with_different_roleplayer_variable_bindings() {
         List<ThingVariable> variables = Stream.of(
-                parseVariables("r1","$r1 (employer: $x, employee: $y)"),
-                parseVariables("r2","$r2 (employer: $x, employee: $x)"),
-                parseVariables("r3","$r3 (employer: $x, employee: $y, employee: $z)"),
-                parseVariables("r4","$r4 (employer: $x, employee: $x, employee: $y)")
+                parseVariables("r1", "$r1 (employer: $x, employee: $y)"),
+                parseVariables("r2", "$r2 (employer: $x, employee: $x)"),
+                parseVariables("r3", "$r3 (employer: $x, employee: $y, employee: $z)"),
+                parseVariables("r4", "$r4 (employer: $x, employee: $x, employee: $y)")
         )
                 .map(Variable::asThing)
                 .collect(Collectors.toList());
@@ -268,11 +268,11 @@ public class AlphaEquivalenceTest {
     }
 
     @Test
-    public void test_relation_with_typed_roleplayers(){
+    public void test_relation_with_typed_roleplayers() {
         List<ThingVariable> variables = Stream.of(
                 parseAnonymousRelationVariable("($x, $y)", "$x isa organisation"),
                 parseAnonymousRelationVariable("($x, $y)", "$y isa organisation"),
-                parseVariables("r0","$r0 ($x, $y)", "$x isa organisation"),
+                parseVariables("r0", "$r0 ($x, $y)", "$x isa organisation"),
                 parseVariables("r1", "$r1 ($x, $y)", "$y isa organisation"),
 
                 parseAnonymousRelationVariable("($x, $y)", "$x isa company"),
@@ -284,19 +284,19 @@ public class AlphaEquivalenceTest {
                 parseAnonymousRelationVariable("(employer: $x, employee: $y)", "$x isa organisation", "$y isa organisation"),
 
                 parseVariables("r2", "$r2 ($x, $y)", "$x isa company"),
-                parseVariables("r3","$r3 ($x, $y)", "$y isa organisation", "$x isa organisation"),
-                parseVariables("r4","$r4 (employer: $x, employee: $y)"),
-                parseVariables("r5","$r5 (employer: $x, employee: $y)", "$x isa organisation"),
-                parseVariables("r6","$r6 (employer: $x, employee: $y)", "$y isa organisation"),
-                parseVariables("r7","$r7 (employer: $x, employee: $y)", "$x isa organisation", "$y isa company"),
-                parseVariables("r8","$r8 (employer: $x, employee: $y)", "$x isa organisation", "$y isa organisation"))
+                parseVariables("r3", "$r3 ($x, $y)", "$y isa organisation", "$x isa organisation"),
+                parseVariables("r4", "$r4 (employer: $x, employee: $y)"),
+                parseVariables("r5", "$r5 (employer: $x, employee: $y)", "$x isa organisation"),
+                parseVariables("r6", "$r6 (employer: $x, employee: $y)", "$y isa organisation"),
+                parseVariables("r7", "$r7 (employer: $x, employee: $y)", "$x isa organisation", "$y isa company"),
+                parseVariables("r8", "$r8 (employer: $x, employee: $y)", "$x isa organisation", "$y isa organisation"))
                 .map(Variable::asThing)
                 .collect(Collectors.toList());
         testAlphaEquivalenceSymmetricReflexive(variables.get(0), variables, Collections.set(1));
         testAlphaEquivalenceSymmetricReflexive(variables.get(1), variables, Collections.set(0));
         testAlphaEquivalenceSymmetricReflexive(variables.get(2), variables, Collections.set(3));
         testAlphaEquivalenceSymmetricReflexive(variables.get(3), variables, Collections.set(2));
-        for (int vari = 4 ; vari < variables.size() ; vari++)
+        for (int vari = 4; vari < variables.size(); vari++)
             testAlphaEquivalenceSymmetricReflexive(variables.get(vari), variables, new HashSet<>());
     }
 
@@ -304,9 +304,9 @@ public class AlphaEquivalenceTest {
     public void test_relation_annotated_with_attribute() {
         List<ThingVariable> variables = Stream.of(
                 parseVariables("r1", "$r1 ($x, $y)"),
-                parseVariables("r2","$r2 ($x, $y)", "$r2 has $a"),
-                parseVariables("r3","$r3 ($x, $y)", "$r3 has $a", "$a 'annotation' isa annotation"),
-                parseVariables("r4","$r4 ($x, $y)", "$r4 has $a", "$a 'another annotation' isa annotation")
+                parseVariables("r2", "$r2 ($x, $y)", "$r2 has $a"),
+                parseVariables("r3", "$r3 ($x, $y)", "$r3 has $a", "$a 'annotation' isa annotation"),
+                parseVariables("r4", "$r4 ($x, $y)", "$r4 has $a", "$a 'another annotation' isa annotation")
         )
                 .map(Variable::asThing)
                 .collect(Collectors.toList());
@@ -318,7 +318,7 @@ public class AlphaEquivalenceTest {
         List<ThingVariable> variables = Stream.of(
                 parseVariables("r1", "$r1 ($x, $y)"),
                 parseVariables("r2", "$r2 ($x, $y)", "$x isa name"),
-                parseVariables("r3","$r3 ($x, $y)", "$x 'Bob' isa name"),
+                parseVariables("r3", "$r3 ($x, $y)", "$x 'Bob' isa name"),
                 parseVariables("r4", "$r4 ($x, $y)", "$y 'Bob' isa name"),
                 parseVariables("r5", "$r5 ($x, $y)", "$y 'Alice' isa name"),
                 parseVariables("r6", "$r6 ($x, $y)", "$x 'Bob' isa name", "$y 'Alice' isa name"),
@@ -335,7 +335,7 @@ public class AlphaEquivalenceTest {
     }
 
     @Test
-    public void test_relation_different_inequivalent_variants(){
+    public void test_relation_different_inequivalent_variants() {
         List<ThingVariable> variables = Stream.of(
                 parseAnonymousRelationVariable("($y)"),
                 parseAnonymousRelationVariable("($y) isa $type"),
@@ -352,18 +352,18 @@ public class AlphaEquivalenceTest {
                 parseAnonymousRelationVariable("($y, child: $z)"),
                 parseAnonymousRelationVariable("($y, child: $z) isa $type"),
                 parseAnonymousRelationVariable("($y, child: $z) isa parentship"),
-                parseAnonymousRelationVariable("($y, child: $z) isa $type","$type type parentship"),
+                parseAnonymousRelationVariable("($y, child: $z) isa $type", "$type type parentship"),
 
                 parseAnonymousRelationVariable("(parent: $x, child: $y)"),
                 parseAnonymousRelationVariable("(parent: $x, child: $y) isa $type"),
                 parseAnonymousRelationVariable("(parent: $x, child: $y) isa parentship"),
-                parseAnonymousRelationVariable("(parent: $x, child: $y) isa $type","$type type parentship"),
+                parseAnonymousRelationVariable("(parent: $x, child: $y) isa $type", "$type type parentship"),
                 parseAnonymousRelationVariable("(parent: $x, child: $y, $z) isa parentship"),
 
                 parseVariables("r0", "$r0 ($y)"),
                 parseVariables("r1", "$r1 ($y) isa $type"),
                 parseVariables("r2", "$r2 (parent: $y) isa parentship"),
-                parseVariables("r3", "$r3 (parent: $y) isa $type","$type type parentship"),
+                parseVariables("r3", "$r3 (parent: $y) isa $type", "$type type parentship"),
                 parseVariables("r4", "$r4 (parent: $y, child: $z) isa parentship"),
                 parseVariables("r5", "$r5 (parent: $y, child: $z) isa $pship", "$pship type parentship"),
                 parseVariables("r6", "$r6 ($y, $z) isa parentship"),
@@ -375,19 +375,19 @@ public class AlphaEquivalenceTest {
         variables.forEach(var -> testAlphaEquivalenceSymmetricReflexive(var.asThing(), variables, new HashSet<>()));
     }
 
-    private void testAlphaEquivalenceSymmetricReflexive(ThingVariable varA, ThingVariable varB, boolean isValid){
+    private void testAlphaEquivalenceSymmetricReflexive(ThingVariable varA, ThingVariable varB, boolean isValid) {
         assertTrue(varA.alphaEquals(varA).isValid());
         assertTrue(varB.alphaEquals(varB).isValid());
         assertEquals("Variable:\n" + varA + "\n=?\n" + varB, isValid, varA.alphaEquals(varB).isValid());
         assertEquals("Variable:\n" + varB + "\n=?\n" + varA, isValid, varB.alphaEquals(varA).isValid());
     }
 
-    private void testAlphaEquivalenceSymmetricReflexive(ThingVariable sourceVar, List<ThingVariable> toCheck, Set<Integer> validVars){
+    private void testAlphaEquivalenceSymmetricReflexive(ThingVariable sourceVar, List<ThingVariable> toCheck, Set<Integer> validVars) {
         //use var index as .equals on Variable doesn't seem reliable
-        for (int varIndex = 0 ; varIndex < toCheck.size(); varIndex++) {
+        for (int varIndex = 0; varIndex < toCheck.size(); varIndex++) {
             ThingVariable var = toCheck.get(varIndex);
             //compare only by reference
-            if ( var != sourceVar) {
+            if (var != sourceVar) {
                 testAlphaEquivalenceSymmetricReflexive(sourceVar, var, validVars.contains(varIndex));
             }
         }

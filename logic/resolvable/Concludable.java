@@ -528,8 +528,8 @@ public abstract class Concludable extends Resolvable<Conjunction> {
                     // form: $x has age $a (may also handle $x has $a; $a isa age)   -> require ISA age
                     Label attrLabel = attr.isa().get().type().label().get().properLabel();
                     Set<Label> labels = subtypeLabels(attrLabel, conceptMgr).collect(toSet());
-                    unifierBuilder.unifiedRequirements().isaExplicit(conclusionAttr.id(),labels);
-                    unifierBuilder.requirements().isaExplicit(attr.id(),labels);
+                    unifierBuilder.unifiedRequirements().isaExplicit(conclusionAttr.id(), labels);
+                    unifierBuilder.requirements().isaExplicit(attr.id(), labels);
                 }
                 addConstantValueRequirements(unifierBuilder, values, attr.id(), conclusionAttr.id());
             } else return Iterators.empty();

@@ -59,8 +59,9 @@ public class ResolutionRecorder extends Actor.State<ResolutionRecorder> {
     /**
      * Recursively merge derivation tree nodes into the existing derivation nodes that are recorded in the
      * answer index. Always keep the pre-existing derivation node, and merge the new ones into the existing node.
-     * @return
+     *
      * @param newAnswer
+     * @return
      */
     private Partial<?> merge(Partial<?> newAnswer) {
         Derivation newDerivation = newAnswer.derivation();
