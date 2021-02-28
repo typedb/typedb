@@ -92,12 +92,13 @@ public class EventLoop {
     private void loop() {
         state = State.RUNNING;
         while (state == State.RUNNING) {
-            ScheduledJob scheduledJob = scheduledJobs.poll();
+            long boundMillis = clock.get();
+            ScheduledJob scheduledJob = scheduledJobs.poll(boundMillis);
             if (scheduledJob != null) {
                 scheduledJob.run();
             } else {
                 try {
-                    Job job = submittedJobs.poll(scheduledJobs.timeToNext(), MILLISECONDS);
+                    Job job = submittedJobs.poll(scheduledJobs.timeToNext(boundMillis), MILLISECONDS);
                     if (job != null) job.run();
                 } catch (InterruptedException e) {
                     throw GraknException.of(UNEXPECTED_INTERRUPTION);
@@ -108,17 +109,17 @@ public class EventLoop {
 
     @NotThreadSafe
     private static class Job {
-        private final Runnable job;
+        private final Runnable runnable;
         private final Consumer<Throwable> errorHandler;
 
-        private Job(Runnable job, Consumer<Throwable> errorHandler) {
-            this.job = job;
+        private Job(Runnable runnable, Consumer<Throwable> errorHandler) {
+            this.runnable = runnable;
             this.errorHandler = errorHandler;
         }
 
         private void run() {
             try {
-                job.run();
+                runnable.run();
             } catch (Throwable e) {
                 errorHandler.accept(e);
             }
@@ -126,16 +127,16 @@ public class EventLoop {
     }
 
     @NotThreadSafe
-    public static class ScheduledJob implements Comparable<ScheduledJob> {
+    public class ScheduledJob implements Comparable<ScheduledJob> {
 
-        private final Job job;
+        private final Job runnable;
         private final long scheduleMillis;
         private boolean isCancelled;
         private boolean hasRan;
 
-        private ScheduledJob(Job job, long scheduleMillis) {
+        private ScheduledJob(Job runnable, long scheduleMillis) {
             this.scheduleMillis = scheduleMillis;
-            this.job = job;
+            this.runnable = runnable;
             isCancelled = false;
             hasRan = false;
         }
@@ -147,7 +148,7 @@ public class EventLoop {
         public void run() {
             if (isCancelled) throw GraknException.of(ILLEGAL_OPERATION);
             hasRan = true;
-            job.run();
+            runnable.run();
         }
 
         public void cancel() {
@@ -174,10 +175,10 @@ public class EventLoop {
             queue = new PriorityQueue<>();
         }
 
-        private long timeToNext() {
+        private long timeToNext(long boundMillis) {
             EventLoop.ScheduledJob job = peek();
             if (job == null) return Long.MAX_VALUE;
-            else return job.scheduleMillis - clock.get();
+            else return job.scheduleMillis - boundMillis;
         }
 
         private EventLoop.ScheduledJob peek() {
@@ -186,10 +187,10 @@ public class EventLoop {
             return job;
         }
 
-        private EventLoop.ScheduledJob poll() {
+        private EventLoop.ScheduledJob poll(long boundMillis) {
             EventLoop.ScheduledJob job = peek();
             if (job == null) return null;
-            else if (job.scheduleMillis > clock.get()) return null;
+            else if (job.scheduleMillis > boundMillis) return null;
             else queue.poll();
             return job;
         }
