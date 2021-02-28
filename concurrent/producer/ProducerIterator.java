@@ -50,7 +50,7 @@ public class ProducerIterator<T> extends AbstractFunctionalIterator<T> {
     private State state;
 
     public ProducerIterator(List<Producer<T>> producers, int batchSize, long limit, ExecutorService executor) {
-        // TODO: Could we optimise IterableProducer by accepting ResourceIterator<Producer<T>> instead?
+        // TODO: Could we optimise IterableProducer by accepting FunctionalIterator<Producer<T>> instead?
         assert !producers.isEmpty() && batchSize < Integer.MAX_VALUE / 2;
         this.producers = new ConcurrentLinkedQueue<>(producers);
         this.queue = new Queue();

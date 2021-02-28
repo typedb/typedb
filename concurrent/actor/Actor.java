@@ -46,7 +46,7 @@ public class Actor<STATE extends Actor.State<STATE>> {
 
     public void tell(Consumer<STATE> job) {
         assert state != null : ERROR_ACTOR_STATE_NOT_SETUP;
-        eventLoop.schedule(() -> job.accept(state), state::exception);
+        eventLoop.submit(() -> job.accept(state), state::exception);
     }
 
     @CheckReturnValue
@@ -61,7 +61,7 @@ public class Actor<STATE extends Actor.State<STATE>> {
     public <ANSWER> CompletableFuture<ANSWER> ask(Function<STATE, ANSWER> job) {
         assert state != null : ERROR_ACTOR_STATE_NOT_SETUP;
         CompletableFuture<ANSWER> future = new CompletableFuture<>();
-        eventLoop.schedule(
+        eventLoop.submit(
                 () -> future.complete(job.apply(state)),
                 e -> {
                     state.exception(e);
@@ -71,9 +71,9 @@ public class Actor<STATE extends Actor.State<STATE>> {
         return future;
     }
 
-    public EventLoop.Cancellable schedule(long deadlineMs, Consumer<STATE> job) {
+    public EventLoop.ScheduledJob schedule(Consumer<STATE> job, long scheduleMillis) {
         assert state != null : ERROR_ACTOR_STATE_NOT_SETUP;
-        return eventLoop.schedule(deadlineMs, () -> job.accept(state), state::exception);
+        return eventLoop.schedule(() -> job.accept(state), state::exception, scheduleMillis);
     }
 
     public EventLoopGroup eventLoopGroup() {
@@ -85,6 +85,7 @@ public class Actor<STATE extends Actor.State<STATE>> {
     }
 
     public static abstract class State<STATE extends State<STATE>> {
+
         private final Actor<STATE> self;
 
         protected abstract void exception(Throwable e);
