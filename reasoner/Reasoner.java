@@ -83,19 +83,6 @@ public class Reasoner {
         return resolverRegistry;
     }
 
-    private void resolveTypes(Disjunction disjunction, List<Conjunction> scopingConjunctions) {
-        for (Conjunction conjunction : disjunction.conjunctions()) {
-            logicMgr.typeResolver().resolve(conjunction, scopingConjunctions);
-            for (Negation negation : conjunction.negations()) {
-                resolveTypes(negation.disjunction(), list(scopingConjunctions, conjunction));
-            }
-        }
-    }
-
-    private boolean isSchemaQuery(Conjunction conjunction, Set<Identifier.Variable.Name> filter) {
-        return !filter.isEmpty() && iterate(filter).noneMatch(id -> conjunction.variable(id).isThing())
-                || iterate(conjunction.variables()).noneMatch(Variable::isThing);
-    }
 
     private boolean mayReason(Disjunction disjunction, Context.Query context) {
         if (!context.options().infer() || context.transactionType().isWrite() || !logicMgr.rules().hasNext()) {
@@ -123,7 +110,7 @@ public class Reasoner {
         resolveTypes(disjunction, list());
         Set<Identifier.Variable.Name> filter =
                 iterate(modifiers.filter()).map(v -> v.reference().asName()).map(Identifier.Variable::of).toSet();
-        iterate(disjunction.conjunctions()).filter(c -> !c.isSatisfiable() && !isSchemaQuery(c, filter)).map(c -> {
+        iterate(disjunction.conjunctions()).filter(c -> !c.isCoherent() && !isSchemaQuery(c, filter)).map(c -> {
             throw GraknException.of(UNSATISFIABLE_CONJUNCTION, c);
         });
 
@@ -174,7 +161,7 @@ public class Reasoner {
 
     private FunctionalIterator<ConceptMap> iterator(Conjunction conjunction, Set<Identifier.Variable.Name> filter,
                                                     Context.Query context) {
-        if (!conjunction.isSatisfiable()) return Iterators.empty();
+        if (!conjunction.isCoherent()) return Iterators.empty();
         if (conjunction.negations().isEmpty()) {
             return traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
         } else {

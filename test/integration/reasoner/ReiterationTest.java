@@ -183,7 +183,7 @@ public class ReiterationTest {
 
     private Conjunction parseConjunction(RocksTransaction transaction, String query) {
         Conjunction conjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
-        transaction.logic().typeResolver().resolve(conjunction);
+        transaction.logic().typeResolver().resolvePositive(conjunction);
         return conjunction;
     }
 

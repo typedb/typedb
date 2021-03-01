@@ -27,6 +27,8 @@ import grakn.core.graph.common.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.logic.LogicCache;
 import grakn.core.pattern.Conjunction;
+import grakn.core.pattern.Disjunction;
+import grakn.core.pattern.Negation;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IIDConstraint;
 import grakn.core.pattern.constraint.thing.IsConstraint;
@@ -53,6 +55,7 @@ import graql.lang.pattern.variable.Reference;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -112,37 +115,62 @@ public class TypeResolver {
                 });
     }
 
-    public void resolve(Conjunction conjunction) {
-        resolve(conjunction, list(), false);
+    public void resolve(Disjunction disjunction) {
+        resolve(disjunction, new LinkedList<>());
     }
 
-    public void resolve(Conjunction conjunction, List<Conjunction> scopingConjunctions) {
-        resolve(conjunction, scopingConjunctions, false);
+    private void resolve(Disjunction disjunction, List<Conjunction> scopingConjunctions) {
+        for (Conjunction conjunction : disjunction.conjunctions()) {
+            resolvePositive(conjunction, scopingConjunctions);
+            for (Negation negation : conjunction.negations()) {
+                resolve(negation.disjunction(), list(scopingConjunctions, conjunction));
+            }
+        }
     }
 
-    public void resolve(Conjunction conjunction, List<Conjunction> scopingConjunctions, boolean insertable) {
+    public void resolvePositive(Conjunction conjunction) {
+        resolvePositive(conjunction, list(), false);
+    }
+
+    public void resolvePositive(Conjunction conjunction, boolean insertable) {
+        resolvePositive(conjunction, list(), insertable);
+    }
+
+    public void resolvePositive(Conjunction conjunction, List<Conjunction> scopingConjunctions) {
+        resolvePositive(conjunction, scopingConjunctions, false);
+    }
+
+    public void resolvePositive(Conjunction conjunction, List<Conjunction> scopingConjunctions, boolean insertable) {
         resolveLabels(conjunction);
         Traversal resolverTraversal = new Traversal();
         TraversalBuilder traversalBuilder = builder(resolverTraversal, conjunction, scopingConjunctions, insertable);
-        resolverTraversal.filter(traversalBuilder.retrievedResolvers());
-        Map<Identifier.Variable.Retrievable, Set<Label>> resolvedLabels = executeResolverTraversals(traversalBuilder);
-        if (resolvedLabels.isEmpty()) {
-            conjunction.setSatisfiable(false);
-            return;
+
+        if (!isSchemaQuery(conjunction)) {
+            resolverTraversal.filter(traversalBuilder.retrievedResolvers());
+            Map<Identifier.Variable.Retrievable, Set<Label>> resolvedLabels = executeResolverTraversals(traversalBuilder);
+            if (resolvedLabels.isEmpty()) {
+                conjunction.setCoherent(false);
+                return;
+            }
+
+            long numOfTypes = traversalEng.graph().schema().stats().thingTypeCount();
+            long numOfConcreteTypes = traversalEng.graph().schema().stats().concreteThingTypeCount();
+            resolvedLabels.forEach((id, labels) -> {
+                traversalBuilder.getVariable(id)
+                        .filter(var -> (var.isType() && labels.size() < numOfTypes) || (var.isThing() && labels.size() < numOfConcreteTypes))
+                        .ifPresent(variable -> {
+                            assert variable.resolvedTypes().isEmpty() || variable.resolvedTypes().containsAll(labels);
+                            variable.setResolvedTypes(labels);
+                        });
+            });
         }
-
-        long numOfTypes = traversalEng.graph().schema().stats().thingTypeCount();
-        long numOfConcreteTypes = traversalEng.graph().schema().stats().concreteThingTypeCount();
-
-        resolvedLabels.forEach((id, labels) -> {
-            traversalBuilder.getVariable(id)
-                    .filter(var -> (var.isType() && labels.size() < numOfTypes) || (var.isThing() && labels.size() < numOfConcreteTypes))
-                    .ifPresent(variable -> {
-                        assert variable.resolvedTypes().isEmpty() || variable.resolvedTypes().containsAll(labels);
-                        variable.setResolvedTypes(labels);
-                    });
-        });
     }
+
+    private boolean isSchemaQuery(Conjunction conjunction) {
+        return iterate(conjunction.variables()).noneMatch(Variable::isThing);
+    }
+
+
 
     private TraversalBuilder builder(Traversal traversal, Conjunction conjunction, List<Conjunction> scopingConjunctions,
                                      boolean insertable) {

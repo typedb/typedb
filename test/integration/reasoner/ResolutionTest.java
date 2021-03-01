@@ -510,7 +510,7 @@ public class ResolutionTest {
 
     private void resolveTypes(Disjunction disjunction, List<Conjunction> scopingConjunctions, LogicManager logicMgr) {
         for (Conjunction conjunction : disjunction.conjunctions()) {
-            logicMgr.typeResolver().resolve(conjunction, scopingConjunctions);
+            logicMgr.typeResolver().resolvePositive(conjunction, scopingConjunctions);
             for (Negation negation : conjunction.negations()) {
                 resolveTypes(negation.disjunction(), list(scopingConjunctions, conjunction), logicMgr);
             }
