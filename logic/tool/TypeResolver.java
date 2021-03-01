@@ -64,7 +64,7 @@ import java.util.Set;
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CONJUNCTION;
+import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_PATTERN;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static grakn.core.common.iterator.Iterators.iterate;
@@ -142,35 +142,24 @@ public class TypeResolver {
 
     public void resolvePositive(Conjunction conjunction, List<Conjunction> scopingConjunctions, boolean insertable) {
         resolveLabels(conjunction);
-        Traversal resolverTraversal = new Traversal();
-        TraversalBuilder traversalBuilder = builder(resolverTraversal, conjunction, scopingConjunctions, insertable);
-
         if (!isSchemaQuery(conjunction)) {
+            Traversal resolverTraversal = new Traversal();
+            TraversalBuilder traversalBuilder = builder(resolverTraversal, conjunction, scopingConjunctions, insertable);
             resolverTraversal.filter(traversalBuilder.retrievedResolvers());
             Map<Identifier.Variable.Retrievable, Set<Label>> resolvedLabels = executeResolverTraversals(traversalBuilder);
-            if (resolvedLabels.isEmpty()) {
-                conjunction.setCoherent(false);
-                return;
+            if (resolvedLabels.isEmpty()) conjunction.setCoherent(false);
+            else {
+                resolvedLabels.forEach((id, labels) -> traversalBuilder.getVariable(id).ifPresent(variable -> {
+                    assert variable.resolvedTypes().isEmpty() || variable.resolvedTypes().containsAll(labels);
+                    variable.setResolvedTypes(labels);
+                }));
             }
-
-            long numOfTypes = traversalEng.graph().schema().stats().thingTypeCount();
-            long numOfConcreteTypes = traversalEng.graph().schema().stats().concreteThingTypeCount();
-            resolvedLabels.forEach((id, labels) -> {
-                traversalBuilder.getVariable(id)
-                        .filter(var -> (var.isType() && labels.size() < numOfTypes) || (var.isThing() && labels.size() < numOfConcreteTypes))
-                        .ifPresent(variable -> {
-                            assert variable.resolvedTypes().isEmpty() || variable.resolvedTypes().containsAll(labels);
-                            variable.setResolvedTypes(labels);
-                        });
-            });
         }
     }
 
     private boolean isSchemaQuery(Conjunction conjunction) {
         return iterate(conjunction.variables()).noneMatch(Variable::isThing);
     }
-
-
 
     private TraversalBuilder builder(Traversal traversal, Conjunction conjunction, List<Conjunction> scopingConjunctions,
                                      boolean insertable) {
@@ -220,6 +209,7 @@ public class TypeResolver {
         private final Map<Identifier.Variable, Set<ValueType>> resolverValueTypes;
         private final Map<Identifier.Variable, TypeVariable> originalToResolver;
         private final ConceptManager conceptMgr;
+        private final Conjunction conjunction;
         private final Traversal traversal;
         private final boolean insertable;
         private boolean hasRootAttribute;
@@ -228,6 +218,7 @@ public class TypeResolver {
         TraversalBuilder(Conjunction conjunction, ConceptManager conceptMgr, Traversal initialTraversal,
                          int initialAnonymousVarCounter, boolean insertable) {
             this.conceptMgr = conceptMgr;
+            this.conjunction = conjunction;
             this.traversal = initialTraversal;
             this.resolvers = new HashMap<>();
             this.originalToResolver = new HashMap<>();
@@ -404,7 +395,8 @@ public class TypeResolver {
                 valueTypes.forEach(valueType -> traversal.valueType(resolver.id(), valueType));
                 resolverValueTypes.put(resolver.id(), valueTypes);
             } else if (!resolverValueTypes.get(resolver.id()).containsAll(valueTypes)) {
-                throw GraknException.of(UNSATISFIABLE_CONJUNCTION, constraint);
+                // TODO this is a bit odd - can we set UNSATISFIABLE here and short circuit?
+                throw GraknException.of(UNSATISFIABLE_PATTERN, conjunction, constraint);
             }
             registerSubAttribute(resolver);
         }

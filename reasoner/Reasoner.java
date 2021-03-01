@@ -44,12 +44,11 @@ import graql.lang.query.GraqlMatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
+import java.util.HashSet;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
-import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CONJUNCTION;
+import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_PATTERN;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
 import static grakn.core.concurrent.common.Executors.PARALLELISATION_FACTOR;
@@ -107,15 +106,31 @@ public class Reasoner {
     }
 
     public FunctionalIterator<ConceptMap> execute(Disjunction disjunction, GraqlMatch.Modifiers modifiers, Context.Query context) {
-        resolveTypes(disjunction, list());
-        Set<Identifier.Variable.Name> filter =
-                iterate(modifiers.filter()).map(v -> v.reference().asName()).map(Identifier.Variable::of).toSet();
-        iterate(disjunction.conjunctions()).filter(c -> !c.isCoherent() && !isSchemaQuery(c, filter)).map(c -> {
-            throw GraknException.of(UNSATISFIABLE_CONJUNCTION, c);
-        });
+        logicMgr.typeResolver().resolve(disjunction);
+        Set<Identifier.Variable.Name> filter = iterate(modifiers.filter()).map(v -> v.reference().asName())
+                .map(Identifier.Variable::of).toSet();
+        if (!disjunction.isCoherent()) {
+            Set<Conjunction> causes = notCoherentCauses(disjunction);
+            throw GraknException.of(UNSATISFIABLE_PATTERN, disjunction, causes);
+        }
 
         if (mayReason(disjunction, context)) return executeReasoner(disjunction, modifiers, context);
         else return executeTraversal(disjunction, context, filter);
+    }
+
+    private Set<Conjunction> notCoherentCauses(Disjunction disjunction) {
+        assert !disjunction.isCoherent();
+        Set<Conjunction> causes = new HashSet<>();
+        for (Conjunction conjunction : disjunction.conjunctions()) {
+            boolean hasNonCoherentChildren = iterate(conjunction.negations()).anyMatch(n -> !n.isCoherent());
+            if (!conjunction.isCoherent() && !hasNonCoherentChildren) {
+                causes.add(conjunction);
+            } else {
+                iterate(conjunction.negations()).filter(negation -> !negation.isCoherent())
+                        .forEachRemaining(negation -> causes.addAll(notCoherentCauses(negation.disjunction())));
+            }
+        }
+        return causes;
     }
 
     private FunctionalIterator<ConceptMap> executeReasoner(Disjunction disjunction, GraqlMatch.Modifiers modifiers,

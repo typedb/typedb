@@ -111,6 +111,25 @@ public class TypeResolverTest {
     }
 
     @Test
+    public void schema_query_not_resolved_beyond_labels() throws IOException {
+        define_standard_schema("basic-schema");
+        String queryString = "match $p sub person, owns $a;";
+        TypeResolver typeResolver = transaction.logic().typeResolver();
+
+        Disjunction disjunction = createDisjunction(queryString);
+        typeResolver.resolve(disjunction);
+        assertTrue(disjunction.isCoherent());
+
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$_person", set("person"));
+            put("$p", set());
+            put("$a", set());
+        }};
+
+        assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
+    }
+
+    @Test
     public void isa_inference() throws IOException {
         define_standard_schema("basic-schema");
         String queryString = "match $p isa person;";
@@ -666,7 +685,8 @@ public class TypeResolverTest {
         typeResolver.resolve(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$x", set());
+            put("$x", set("animal", "mammal", "reptile", "tortoise", "person", "man", "woman", "dog", "name", "email",
+                          "marriage", "triangle", "right-angled-triangle", "square", "perimeter", "area", "hypotenuse-length", "label"));
             put("$_thing", set("thing"));
         }};
 
@@ -888,8 +908,9 @@ public class TypeResolverTest {
         String thingString = "match $x isa thing;";
         Disjunction thingDisjunction = createDisjunction(thingString);
         typeResolver.resolve(thingDisjunction);
+
         Map<String, Set<String>> thingExpected = new HashMap<String, Set<String>>() {{
-            put("$x", set());
+            put("$x", set("person", "company", "friendship", "employment", "name", "age", "ref"));
             put("$_thing", set("thing"));
         }};
         assertEquals(thingExpected, resolvedTypeMap(thingDisjunction.conjunctions().get(0)));
@@ -1152,7 +1173,7 @@ public class TypeResolverTest {
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0).negations().iterator().next().disjunction().conjunctions().get(0)));
 
         String restricted = "match $x isa woman; not { $x has name $a; };";
-        Disjunction restrictedDisjunction = createDisjunction(minimallyRestricted);
+        Disjunction restrictedDisjunction = createDisjunction(restricted);
         transaction.logic().typeResolver().resolve(restrictedDisjunction);
         expected = new HashMap<String, Set<String>>() {{
             put("$x", set("woman"));

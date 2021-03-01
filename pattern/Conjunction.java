@@ -176,7 +176,7 @@ public class Conjunction implements Pattern, Cloneable {
     }
 
     public boolean isCoherent() {
-        return isCoherent;
+        return isCoherent && iterate(negations).allMatch(Negation::isCoherent);
     }
 
     public boolean isBounded() {
