@@ -27,13 +27,12 @@ public class Actor<STATE extends Actor.State<STATE>> {
     private static final String ERROR_ACTOR_STATE_NOT_SETUP =
             "Attempting to access the Actor state, but it is not yet setup. Are you trying to send a message to yourself within the constructor?";
 
-    public STATE state;
+    private STATE state;
     private final EventLoopGroup eventLoopGroup;
     private final EventLoop eventLoop;
 
-    public static <NEW_STATE extends State<NEW_STATE>>
-    Actor<NEW_STATE> create(EventLoopGroup eventLoopGroup, Function<Actor<NEW_STATE>, NEW_STATE> stateConstructor) {
-
+    public static <NEW_STATE extends State<NEW_STATE>> Actor<NEW_STATE> create(
+            EventLoopGroup eventLoopGroup, Function<Actor<NEW_STATE>, NEW_STATE> stateConstructor) {
         Actor<NEW_STATE> actor = new Actor<>(eventLoopGroup);
         actor.state = stateConstructor.apply(actor);
         return actor;
@@ -42,6 +41,15 @@ public class Actor<STATE extends Actor.State<STATE>> {
     private Actor(EventLoopGroup eventLoopGroup) {
         this.eventLoopGroup = eventLoopGroup;
         this.eventLoop = eventLoopGroup.assignEventLoop();
+    }
+
+    // TODO: do not use this method - any usages should be removed ASAP
+    public STATE state() {
+        return state;
+    }
+
+    public String name() {
+        return state.name();
     }
 
     public void tell(Consumer<STATE> job) {
@@ -86,16 +94,22 @@ public class Actor<STATE extends Actor.State<STATE>> {
 
     public static abstract class State<STATE extends State<STATE>> {
         private final Actor<STATE> self;
+        private final String name;
 
         protected abstract void exception(Throwable e);
 
-        protected State(Actor<STATE> self) {
+        protected State(Actor<STATE> self, String name) {
             this.self = self;
+            this.name = name;
         }
 
         protected Actor<STATE> self() {
             assert this.self != null : ERROR_ACTOR_SELF_IS_NULL;
             return this.self;
+        }
+
+        public String name() {
+            return name;
         }
     }
 }

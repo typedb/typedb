@@ -17,7 +17,6 @@
 
 package grakn.core.reasoner;
 
-import grakn.core.common.exception.GraknCheckedException;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Options;
 import grakn.core.concept.answer.ConceptMap;
@@ -32,7 +31,6 @@ import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionTracer;
 import grakn.core.reasoner.resolution.framework.Resolver;
-import grakn.core.reasoner.resolution.resolver.Root;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.variable.UnboundVariable;
 import graql.lang.query.GraqlMatch;
@@ -65,17 +63,12 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private int iteration;
     private final Options.Query options;
 
+    // TODO: this class
     public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers,
                             Options.Query options) {
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
-        Actor<Root.Conjunction> resolver;
-        try {
-            resolver = resolverRegistry.root(conjunction, modifiers.offset().orElse(null), modifiers.limit().orElse(null),
-                                             this::requestAnswered, this::requestFailed, this::exception);
-        } catch (GraknCheckedException e) {
-            resolver = null;
-        }
-        this.rootResolver = resolver;
+        this.rootResolver = resolverRegistry.root(conjunction, modifiers.offset().orElse(null), modifiers.limit().orElse(null),
+                                                  this::requestAnswered, this::requestFailed, this::exception);
         this.options = options;
         Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver).toDownstream();
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
@@ -91,14 +84,8 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     public ReasonerProducer(Disjunction disjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers,
                             Options.Query options) {
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
-        Actor<Root.Disjunction> resolver;
-        try {
-            resolver = resolverRegistry.root(disjunction, modifiers.offset().orElse(null), modifiers.limit().orElse(null),
-                                             this::requestAnswered, this::requestFailed, this::exception);
-        } catch (GraknCheckedException e) {
-            resolver = null;
-        }
-        this.rootResolver = resolver;
+        this.rootResolver = resolverRegistry.root(disjunction, modifiers.offset().orElse(null), modifiers.limit().orElse(null),
+                                                  this::requestAnswered, this::requestFailed, this::exception); ;
         this.options = options;
         Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver).toDownstream();
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;

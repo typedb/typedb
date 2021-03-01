@@ -17,7 +17,6 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
-import grakn.core.common.exception.GraknCheckedException;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concept.Concept;
@@ -139,7 +138,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         try {
             ruleResolver = registry.registerCondition(conclusion.rule());
             isInitialised = true;
-        } catch (GraknCheckedException e) {
+        } catch (GraknException e) {
             terminate(e);
         }
     }

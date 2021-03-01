@@ -18,7 +18,6 @@
 
 package grakn.core.reasoner.resolution;
 
-import grakn.core.common.exception.GraknCheckedException;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concurrent.actor.Actor;
@@ -107,38 +106,38 @@ public class ResolverRegistry {
 
     public Actor<Root.Conjunction> root(Conjunction conjunction, @Nullable Long offset,
                                         @Nullable Long limit, Consumer<Top> onAnswer,
-                                        Consumer<Integer> onFail, Consumer<Throwable> onException) throws GraknCheckedException {
+                                        Consumer<Integer> onFail, Consumer<Throwable> onException) {
         LOG.debug("Creating Root.Conjunction for: '{}'", conjunction);
         Actor<Root.Conjunction> resolver = Actor.create(
                 elg, self -> new Root.Conjunction(
                         self, conjunction, offset, limit, onAnswer, onFail, onException, resolutionRecorder, this,
                         traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing));
         resolvers.add(resolver);
-        if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
     }
 
     public Actor<Root.Disjunction> root(Disjunction disjunction, @Nullable Long offset,
                                         @Nullable Long limit, Consumer<Top> onAnswer,
-                                        Consumer<Integer> onExhausted, Consumer<Throwable> onException) throws GraknCheckedException {
+                                        Consumer<Integer> onExhausted, Consumer<Throwable> onException) {
         LOG.debug("Creating Root.Disjunction for: '{}'", disjunction);
         Actor<Root.Disjunction> resolver = Actor.create(
                 elg, self -> new Root.Disjunction(self, disjunction, offset, limit, onAnswer, onExhausted, onException,
                                                   resolutionRecorder, this, traversalEngine, conceptMgr, resolutionTracing)
         );
         resolvers.add(resolver);
-        if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
     }
 
-    public ResolverView.Filtered negated(Negated negated, Conjunction upstream) throws GraknCheckedException {
+    public ResolverView.Filtered negated(Negated negated, Conjunction upstream) {
         LOG.debug("Creating Negation resolver for : {}", negated);
         Actor<NegationResolver> negatedResolver = Actor.create(
                 elg, self -> new NegationResolver(self, negated, this, traversalEngine, conceptMgr,
                                                   resolutionRecorder, resolutionTracing)
         );
         resolvers.add(negatedResolver);
-        if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         Set<Variable.Retrievable> filter = filter(upstream, negated);
         return ResolverView.filtered(negatedResolver, filter);
     }
@@ -150,28 +149,28 @@ public class ResolverRegistry {
                 .collect(Collectors.toSet());
     }
 
-    public Actor<ConditionResolver> registerCondition(Rule rule) throws GraknCheckedException {
+    public Actor<ConditionResolver> registerCondition(Rule rule) {
         LOG.debug("Register retrieval for rule condition actor: '{}'", rule);
         Actor<ConditionResolver> resolver = ruleConditions.computeIfAbsent(rule, (r) -> Actor.create(elg, self -> new ConditionResolver(
                 self, r, resolutionRecorder, this, traversalEngine, conceptMgr, logicMgr, planner,
                 resolutionTracing)));
         resolvers.add(resolver);
-        if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
 
     }
 
-    public Actor<ConclusionResolver> registerConclusion(Rule.Conclusion conclusion) throws GraknCheckedException {
+    public Actor<ConclusionResolver> registerConclusion(Rule.Conclusion conclusion) {
         LOG.debug("Register retrieval for rule conclusion actor: '{}'", conclusion);
         Actor<ConclusionResolver> resolver = ruleConclusions.computeIfAbsent(conclusion.rule(), (r) -> Actor.create(elg, self -> new ConclusionResolver(
                 self, conclusion, this, resolutionRecorder, traversalEngine, conceptMgr, resolutionTracing)));
         resolvers.add(resolver);
-        if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
 
     }
 
-    public ResolverView registerResolvable(Resolvable<?> resolvable) throws GraknCheckedException {
+    public ResolverView registerResolvable(Resolvable<?> resolvable) {
         if (resolvable.isRetrievable()) {
             return registerRetrievable(resolvable.asRetrievable());
         } else if (resolvable.isConcludable()) {
@@ -179,17 +178,17 @@ public class ResolverRegistry {
         } else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    private ResolverView.Filtered registerRetrievable(Retrievable retrievable) throws GraknCheckedException {
+    private ResolverView.Filtered registerRetrievable(Retrievable retrievable) {
         LOG.debug("Register RetrievableResolver: '{}'", retrievable.pattern());
         Actor<RetrievableResolver> resolver = Actor.create(elg, self -> new RetrievableResolver(
                 self, retrievable, this, traversalEngine, conceptMgr, resolutionTracing));
         resolvers.add(resolver);
-        if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return ResolverView.filtered(resolver, retrievable.retrieves());
     }
 
     // note: must be thread safe. We could move to a ConcurrentHashMap if we create an alpha-equivalence wrapper
-    private synchronized ResolverView.Mapped registerConcludable(Concludable concludable) throws GraknCheckedException {
+    private synchronized ResolverView.Mapped registerConcludable(Concludable concludable) {
         LOG.debug("Register ConcludableResolver: '{}'", concludable.pattern());
         for (Map.Entry<Concludable, Actor<ConcludableResolver>> c : concludableResolvers.entrySet()) {
             // TODO: This needs to be optimised from a linear search to use an alpha hash
@@ -203,11 +202,11 @@ public class ResolverRegistry {
                                         logicMgr, resolutionTracing));
         concludableResolvers.put(concludable, resolver);
         resolvers.add(resolver);
-        if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return ResolverView.mapped(resolver, identity(concludable));
     }
 
-    public Actor<ConjunctionResolver.Nested> nested(Conjunction conjunction) throws GraknCheckedException {
+    public Actor<ConjunctionResolver.Nested> nested(Conjunction conjunction) {
         LOG.debug("Creating Conjunction resolver for : {}", conjunction);
         Actor<ConjunctionResolver.Nested> resolver = Actor.create(
                 elg, self -> new ConjunctionResolver.Nested(
@@ -215,7 +214,7 @@ public class ResolverRegistry {
                         resolutionTracing)
         );
         resolvers.add(resolver);
-        if (terminated.get()) throw GraknCheckedException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
     }
 

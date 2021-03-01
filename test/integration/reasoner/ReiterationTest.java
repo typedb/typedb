@@ -18,7 +18,7 @@
 package grakn.core.reasoner;
 
 import grakn.common.concurrent.NamedThreadFactory;
-import grakn.core.common.exception.GraknCheckedException;
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.actor.EventLoopGroup;
@@ -167,7 +167,7 @@ public class ReiterationTest {
                     }
                     ResolutionTracer.get().finish();
                 }
-            } catch (GraknCheckedException e) {
+            } catch (GraknException e) {
                 e.printStackTrace();
                 fail();
             }

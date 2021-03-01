@@ -18,7 +18,6 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
-import grakn.core.common.exception.GraknCheckedException;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.ConceptManager;
@@ -145,7 +144,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         iterate(resolvables).forEachRemaining(resolvable -> {
             try {
                 downstreamResolvers.put(resolvable, registry.registerResolvable(resolvable));
-            } catch (GraknCheckedException e) {
+            } catch (GraknException e) {
                 terminate(e);
             }
         });
@@ -154,7 +153,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
             try {
                 downstreamResolvers.put(negated, registry.negated(negated, conjunction));
                 negateds.add(negated);
-            } catch (GraknCheckedException e) {
+            } catch (GraknException e) {
                 terminate(e);
             }
         }

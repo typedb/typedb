@@ -62,20 +62,20 @@ public final class ResolutionTracer {
         return INSTANCE;
     }
 
-    synchronized void request(Resolver<?> sender, Resolver<?> receiver, int iteration, String conceptMap) {
+    synchronized void request(String sender, String receiver, int iteration, String conceptMap) {
         addMessage(sender, receiver, iteration, EdgeType.REQUEST, conceptMap);
     }
 
-    synchronized void responseAnswer(Resolver<?> sender, Resolver<?> receiver, int iteration, String conceptMap) {
+    synchronized void responseAnswer(String sender, String receiver, int iteration, String conceptMap) {
         addMessage(sender, receiver, iteration, EdgeType.ANSWER, conceptMap);
     }
 
-    synchronized void responseExhausted(Resolver<?> sender, Resolver<?> receiver, int iteration) {
+    synchronized void responseExhausted(String sender, String receiver, int iteration) {
         addMessage(sender, receiver, iteration, EdgeType.EXHAUSTED, "");
     }
 
-    private void addMessage(Resolver<?> sender, Resolver<?> receiver, int iteration, EdgeType edgeType, String conceptMap) {
-        writeEdge(sender.name(), receiver.name(), iteration, edgeType.colour(), messageNumber, conceptMap);
+    private void addMessage(String sender, String receiver, int iteration, EdgeType edgeType, String conceptMap) {
+        writeEdge(sender, receiver, iteration, edgeType.colour(), messageNumber, conceptMap);
         messageNumber++;
     }
 

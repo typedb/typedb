@@ -18,7 +18,7 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
-import grakn.core.common.exception.GraknCheckedException;
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
@@ -149,7 +149,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
                         conclusionResolver = registry.registerConclusion(rule.conclusion());
                         applicableRules.putIfAbsent(conclusionResolver, new HashSet<>());
                         applicableRules.get(conclusionResolver).add(unifier);
-                    } catch (GraknCheckedException e) {
+                    } catch (GraknException e) {
                         terminate(e);
                     }
                 }));

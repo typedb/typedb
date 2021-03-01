@@ -41,7 +41,7 @@ public class ResolutionRecorder extends Actor.State<ResolutionRecorder> {
     private final Map<AnswerIndex, Partial<?>> answers;
 
     public ResolutionRecorder(Actor<ResolutionRecorder> self) {
-        super(self);
+        super(self, "ResolutionRecorder");
         answers = new HashMap<>();
         actorIndices = new HashMap<>();
     }

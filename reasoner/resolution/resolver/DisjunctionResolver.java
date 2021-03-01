@@ -17,7 +17,7 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
-import grakn.core.common.exception.GraknCheckedException;
+import grakn.core.common.exception.GraknException;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
@@ -81,7 +81,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         for (grakn.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
             try {
                 downstreamResolvers.add(registry.nested(conjunction));
-            } catch (GraknCheckedException e) {
+            } catch (GraknException e) {
                 terminate(e);
                 return;
             }
@@ -124,7 +124,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
 
     protected Set<Identifier.Variable.Retrievable> conjunctionRetrievedIds(Actor<ConjunctionResolver.Nested> conjunctionResolver) {
         // TODO use a map from resolvable to resolvers, then we don't have to reach into the state and use the conjunction
-        return iterate(conjunctionResolver.state.conjunction.variables()).filter(v -> v.id().isRetrievable())
+        return iterate(conjunctionResolver.state().conjunction.variables()).filter(v -> v.id().isRetrievable())
                 .map(v -> v.id().asRetrievable()).toSet();
     }
 

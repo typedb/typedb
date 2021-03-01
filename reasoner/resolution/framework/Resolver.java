@@ -51,7 +51,6 @@ import static grakn.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
 public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Actor.State<RESOLVER> {
     private static final Logger LOG = LoggerFactory.getLogger(Resolver.class);
 
-    private final String name;
     private final Map<Request, Request> requestRouter;
     protected final ResolverRegistry registry;
     protected final TraversalEngine traversalEngine;
@@ -61,8 +60,7 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
 
     protected Resolver(Actor<RESOLVER> self, String name, ResolverRegistry registry, TraversalEngine traversalEngine,
                        ConceptManager conceptMgr, boolean resolutionTracing) {
-        super(self);
-        this.name = name;
+        super(self, name);
         this.registry = registry;
         this.traversalEngine = traversalEngine;
         this.conceptMgr = conceptMgr;
@@ -87,10 +85,6 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
         registry.terminateResolvers(e);
     }
 
-    public String name() {
-        return name;
-    }
-
     public abstract void receiveRequest(Request fromUpstream, int iteration);
 
     protected abstract void receiveAnswer(Response.Answer fromDownstream, int iteration);
@@ -111,8 +105,8 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
     }
 
     protected void requestFromDownstream(Request request, Request fromUpstream, int iteration) {
-        LOG.trace("{} : Sending a new answer Request to downstream: {}", name, request);
-        if (resolutionTracing) ResolutionTracer.get().request(this, request.receiver().state, iteration,
+        LOG.trace("{} : Sending a new answer Request to downstream: {}", name(), request);
+        if (resolutionTracing) ResolutionTracer.get().request(this.name(), request.receiver().name(), iteration,
                                                               request.partialAnswer().conceptMap().concepts().keySet().toString());
         // TODO: we may overwrite if multiple identical requests are sent, when to clean up?
         requestRouter.put(request, fromUpstream);
@@ -124,7 +118,7 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
         assert answer.isPartial();
         Answer response = Answer.create(fromUpstream, answer.asPartial());
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
-        if (resolutionTracing) ResolutionTracer.get().responseAnswer(this, fromUpstream.sender().state, iteration,
+        if (resolutionTracing) ResolutionTracer.get().responseAnswer(this.name(), fromUpstream.sender().name(), iteration,
                                                                      response.asAnswer().answer().conceptMap().concepts().keySet().toString());
         fromUpstream.sender().tell(actor -> actor.receiveAnswer(response, iteration));
     }
@@ -132,7 +126,7 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
     protected void failToUpstream(Request fromUpstream, int iteration) {
         Response.Fail response = new Response.Fail(fromUpstream);
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
-        if (resolutionTracing) ResolutionTracer.get().responseExhausted(this, fromUpstream.sender().state, iteration);
+        if (resolutionTracing) ResolutionTracer.get().responseExhausted(this.name(), fromUpstream.sender().name(), iteration);
         fromUpstream.sender().tell(actor -> actor.receiveFail(response, iteration));
     }
 

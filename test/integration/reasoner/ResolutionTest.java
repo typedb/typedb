@@ -17,7 +17,7 @@
 
 package grakn.core.reasoner;
 
-import grakn.core.common.exception.GraknCheckedException;
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options.Database;
 import grakn.core.concurrent.actor.Actor;
@@ -138,7 +138,7 @@ public class ResolutionTest {
                 Actor<Root.Conjunction> root;
                 try {
                     root = registry.root(conjunctionPattern, null, null, responses::add, iterDone -> doneReceived.incrementAndGet(), exceptions::add);
-                } catch (GraknCheckedException e) {
+                } catch (GraknException e) {
                     fail();
                 }
 
@@ -536,7 +536,7 @@ public class ResolutionTest {
                 try {
                     root = registry.root(conjunctionPattern, null, null, responses::add,
                                          iterDone -> doneReceived.incrementAndGet(), (throwable) -> fail());
-                } catch (GraknCheckedException e) {
+                } catch (GraknException e) {
                     fail();
                     return;
                 }
@@ -600,7 +600,7 @@ public class ResolutionTest {
         Actor<Root.Disjunction> root;
         try {
             root = registry.root(disjunction, offset, limit, responses::add, iterDone -> doneReceived.incrementAndGet(), (throwable) -> fail());
-        } catch (GraknCheckedException e) {
+        } catch (GraknException e) {
             fail();
             return;
         }
@@ -617,7 +617,7 @@ public class ResolutionTest {
         Actor<Root.Conjunction> root;
         try {
             root = registry.root(conjunction, offset, limit, responses::add, iterDone -> doneReceived.incrementAndGet(), (throwable) -> fail());
-        } catch (GraknCheckedException e) {
+        } catch (GraknException e) {
             fail();
             return;
         }

@@ -18,7 +18,7 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
-import grakn.core.common.exception.GraknCheckedException;
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
@@ -93,7 +93,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
         if (disjunction.conjunctions().size() == 1) {
             try {
                 downstream = registry.nested(disjunction.conjunctions().get(0));
-            } catch (GraknCheckedException e) {
+            } catch (GraknException e) {
                 terminate(e);
             }
         } else {
