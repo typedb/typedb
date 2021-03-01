@@ -21,6 +21,7 @@ import grakn.core.common.exception.GraknException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.PriorityQueue;
@@ -65,9 +66,11 @@ public class EventLoop {
         submittedJobs.offer(new Job(runnable, errorHandler));
     }
 
-    public ScheduledJob schedule(Runnable runnable, Consumer<Throwable> errorHandler, long scheduleMillis) {
+    public Cancellable schedule(Runnable runnable, Consumer<Throwable> errorHandler, long scheduleMillis) {
         assert state != State.STOPPED : "unexpected state: " + state;
-        return scheduledJobs.offer(new Job(runnable, errorHandler), scheduleMillis);
+        Cancellable cancellable = new Cancellable(runnable, errorHandler, scheduleMillis);
+        cancellable.schedule();
+        return cancellable;
     }
 
     public synchronized void await() throws InterruptedException {
@@ -126,33 +129,45 @@ public class EventLoop {
         }
     }
 
+    public class Cancellable {
+        private final Job job;
+        private final long scheduleMillis;
+        @Nullable
+        private ScheduledJob scheduledJob;
+
+        private Cancellable(Runnable runnable, Consumer<Throwable> errorHandler, long scheduleMillis) {
+            this.job = new Job(runnable, errorHandler);
+            this.scheduleMillis = scheduleMillis;
+        }
+
+        private void schedule() {
+            EventLoop.this.submit(() -> scheduledJob = scheduledJobs.offer(job, scheduleMillis), DEFAULT_ERROR_HANDLER);
+        }
+
+        public void cancel() {
+            EventLoop.this.submit(() -> scheduledJob.cancel(), DEFAULT_ERROR_HANDLER);
+        }
+    }
+
     @NotThreadSafe
-    public class ScheduledJob implements Comparable<ScheduledJob> {
+    private static class ScheduledJob implements Comparable<ScheduledJob> {
 
         private final Job runnable;
         private final long scheduleMillis;
         private boolean isCancelled;
-        private boolean hasRan;
 
         private ScheduledJob(Job runnable, long scheduleMillis) {
             this.scheduleMillis = scheduleMillis;
             this.runnable = runnable;
             isCancelled = false;
-            hasRan = false;
         }
 
-        public long scheduleMillis() {
-            return scheduleMillis;
-        }
-
-        public void run() {
+        private void run() {
             if (isCancelled) throw GraknException.of(ILLEGAL_OPERATION);
-            hasRan = true;
             runnable.run();
         }
 
-        public void cancel() {
-            if (hasRan) throw GraknException.of(ILLEGAL_OPERATION);
+        private void cancel() {
             isCancelled = true;
         }
 
@@ -167,7 +182,7 @@ public class EventLoop {
     }
 
     @ThreadSafe
-    private class ScheduledJobQueue {
+    private static class ScheduledJobQueue {
 
         private final PriorityQueue<EventLoop.ScheduledJob> queue;
 

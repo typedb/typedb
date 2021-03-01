@@ -71,7 +71,7 @@ public class Actor<STATE extends Actor.State<STATE>> {
         return future;
     }
 
-    public EventLoop.ScheduledJob schedule(Consumer<STATE> job, long scheduleMillis) {
+    public EventLoop.Cancellable schedule(Consumer<STATE> job, long scheduleMillis) {
         assert state != null : ERROR_ACTOR_STATE_NOT_SETUP;
         return eventLoop.schedule(() -> job.accept(state), state::exception, scheduleMillis);
     }
