@@ -19,34 +19,32 @@ package grakn.core.concurrent.actor;
 
 import grakn.common.concurrent.NamedThreadFactory;
 
-import java.util.Random;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 
 public class EventLoopGroup {
     private final EventLoop[] eventLoops;
-    private int nextIndex;
+    private int selectedIndex;
 
     public EventLoopGroup(int threadCount) {
-        this(threadCount, new NamedThreadFactory("grakn-core-eventloop"));
+        this(threadCount, new NamedThreadFactory("grakn-core-elg"));
     }
 
     public EventLoopGroup(int threadCount, ThreadFactory threadFactory) {
-        this(threadCount, threadFactory, System::currentTimeMillis, ThreadLocalRandom.current());
+        this(threadCount, threadFactory, System::currentTimeMillis);
     }
 
-    public EventLoopGroup(int threadCount, ThreadFactory threadFactory, Supplier<Long> clock, Random random) {
+    public EventLoopGroup(int threadCount, ThreadFactory threadFactory, Supplier<Long> clock) {
         eventLoops = new EventLoop[threadCount];
         for (int i = 0; i < threadCount; i++) {
-            eventLoops[i] = new EventLoop(threadFactory, clock, random);
+            eventLoops[i] = new EventLoop(threadFactory, clock);
         }
-        nextIndex = 0;
+        selectedIndex = 0;
     }
 
-    public synchronized EventLoop assignEventLoop() {
-        EventLoop eventLoop = eventLoops[nextIndex];
-        nextIndex = (nextIndex + 1) % eventLoops.length;
+    public synchronized EventLoop selectedEventLoop() {
+        EventLoop eventLoop = eventLoops[selectedIndex];
+        selectNextEventLoop();
         return eventLoop;
     }
 
@@ -60,5 +58,9 @@ public class EventLoopGroup {
         for (int i = 0; i < eventLoops.length; i++) {
             eventLoops[i].stop();
         }
+    }
+
+    private void selectNextEventLoop() {
+        selectedIndex = (selectedIndex + 1) % eventLoops.length;
     }
 }

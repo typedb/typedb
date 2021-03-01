@@ -41,7 +41,7 @@ public class Actor<STATE extends Actor.State<STATE>> {
 
     private Actor(EventLoopGroup eventLoopGroup) {
         this.eventLoopGroup = eventLoopGroup;
-        this.eventLoop = eventLoopGroup.assignEventLoop();
+        this.eventLoop = eventLoopGroup.selectedEventLoop();
     }
 
     public void tell(Consumer<STATE> job) {

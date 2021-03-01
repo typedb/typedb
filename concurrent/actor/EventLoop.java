@@ -45,16 +45,14 @@ public class EventLoop {
     private final TransferQueue<Job> submittedJobs;
     private final ScheduledJobQueue scheduledJobs;
     private final Supplier<Long> clock;
-    private final Random random;
     private final Thread thread;
     private State state;
 
     private enum State {READY, RUNNING, STOPPED}
 
-    public EventLoop(ThreadFactory threadFactory, Supplier<Long> clock, Random random) {
+    public EventLoop(ThreadFactory threadFactory, Supplier<Long> clock) {
         this.thread = threadFactory.newThread(this::loop);
         this.clock = clock;
-        this.random = random; // TODO: this does not belong here, we should move Random to the owner, and delete this field
         submittedJobs = new LinkedTransferQueue<>();
         scheduledJobs = new ScheduledJobQueue();
         state = State.READY;
@@ -80,16 +78,6 @@ public class EventLoop {
     public synchronized void stop() throws InterruptedException {
         submit(() -> state = State.STOPPED, DEFAULT_ERROR_HANDLER);
         await();
-    }
-
-    public long time() {
-        // TODO: Does EventLoop need to provide time? It does not look like this class is the right domain for it.
-        return clock.get();
-    }
-
-    public Random random() {
-        // TODO: this does not belong here, we should move Random to the owner, and delete this method
-        return random;
     }
 
     private void loop() {
