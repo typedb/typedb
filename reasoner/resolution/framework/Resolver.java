@@ -48,7 +48,7 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 import static grakn.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
 
-public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Actor.State<RESOLVER> {
+public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Actor<RESOLVER> {
     private static final Logger LOG = LoggerFactory.getLogger(Resolver.class);
 
     private final Map<Request, Request> requestRouter;
@@ -58,9 +58,9 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
     private final boolean resolutionTracing;
     private boolean terminated;
 
-    protected Resolver(Actor<RESOLVER> self, String name, ResolverRegistry registry, TraversalEngine traversalEngine,
+    protected Resolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry, TraversalEngine traversalEngine,
                        ConceptManager conceptMgr, boolean resolutionTracing) {
-        super(self, name);
+        super(driver, name);
         this.registry = registry;
         this.traversalEngine = traversalEngine;
         this.conceptMgr = conceptMgr;
@@ -110,7 +110,7 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
                                                               request.partialAnswer().conceptMap().concepts().keySet().toString());
         // TODO: we may overwrite if multiple identical requests are sent, when to clean up?
         requestRouter.put(request, fromUpstream);
-        Actor<? extends Resolver<?>> receiver = request.receiver();
+        Driver<? extends Resolver<?>> receiver = request.receiver();
         receiver.tell(actor -> actor.receiveRequest(request, iteration));
     }
 

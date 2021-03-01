@@ -22,94 +22,96 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class Actor<STATE extends Actor.State<STATE>> {
-    private static final String ERROR_ACTOR_SELF_IS_NULL = "self() must not be null.";
-    private static final String ERROR_ACTOR_STATE_NOT_SETUP =
-            "Attempting to access the Actor state, but it is not yet setup. Are you trying to send a message to yourself within the constructor?";
+public abstract class Actor<ACTOR extends Actor<ACTOR>> {
 
-    private STATE state;
-    private final EventLoopGroup eventLoopGroup;
-    private final EventLoop eventLoop;
+    private static final String ERROR_ACTOR_DRIVER_IS_NULL = "driver() must not be null.";
+    private final Driver<ACTOR> driver;
+    private final String name;
 
-    public static <NEW_STATE extends State<NEW_STATE>> Actor<NEW_STATE> create(
-            EventLoopGroup eventLoopGroup, Function<Actor<NEW_STATE>, NEW_STATE> stateConstructor) {
-        Actor<NEW_STATE> actor = new Actor<>(eventLoopGroup);
-        actor.state = stateConstructor.apply(actor);
+    public static <NEW_ACTOR extends Actor<NEW_ACTOR>> Driver<NEW_ACTOR> driver(
+            Function<Driver<NEW_ACTOR>, NEW_ACTOR> actorFn, EventLoopGroup eventLoopGroup) {
+        Driver<NEW_ACTOR> actor = new Driver<>(eventLoopGroup);
+        actor.actor = actorFn.apply(actor);
         return actor;
     }
 
-    private Actor(EventLoopGroup eventLoopGroup) {
-        this.eventLoopGroup = eventLoopGroup;
-        this.eventLoop = eventLoopGroup.assignEventLoop();
+    protected abstract void exception(Throwable e);
+
+    protected Actor(Driver<ACTOR> driver, String name) {
+        this.driver = driver;
+        this.name = name;
     }
 
-    // TODO: do not use this method - any usages should be removed ASAP
-    public STATE state() {
-        return state;
+    protected Driver<ACTOR> driver() {
+        assert this.driver != null : ERROR_ACTOR_DRIVER_IS_NULL;
+        return this.driver;
     }
 
     public String name() {
-        return state.name();
+        return name;
     }
 
-    public void tell(Consumer<STATE> job) {
-        assert state != null : ERROR_ACTOR_STATE_NOT_SETUP;
-        eventLoop.schedule(() -> job.accept(state), state::exception);
-    }
+    public static class Driver<ACTOR extends Actor<ACTOR>> {
 
-    @CheckReturnValue
-    public CompletableFuture<Void> order(Consumer<STATE> job) {
-        return ask(state -> {
-            job.accept(state);
-            return null;
-        });
-    }
+        private static final String ERROR_ACTOR_NOT_SETUP =
+                "Attempting to access the Actor, but it is not yet setup. Are you trying to send a message to yourself within the constructor?";
 
-    @CheckReturnValue
-    public <ANSWER> CompletableFuture<ANSWER> ask(Function<STATE, ANSWER> job) {
-        assert state != null : ERROR_ACTOR_STATE_NOT_SETUP;
-        CompletableFuture<ANSWER> future = new CompletableFuture<>();
-        eventLoop.schedule(
-                () -> future.complete(job.apply(state)),
-                e -> {
-                    state.exception(e);
-                    future.completeExceptionally(e);
-                }
-        );
-        return future;
-    }
+        private ACTOR actor;
+        private final EventLoopGroup eventLoopGroup;
+        private final EventLoop eventLoop;
 
-    public EventLoop.Cancellable schedule(long deadlineMs, Consumer<STATE> job) {
-        assert state != null : ERROR_ACTOR_STATE_NOT_SETUP;
-        return eventLoop.schedule(deadlineMs, () -> job.accept(state), state::exception);
-    }
-
-    public EventLoopGroup eventLoopGroup() {
-        return eventLoopGroup;
-    }
-
-    public EventLoop eventLoop() {
-        return eventLoop;
-    }
-
-    public static abstract class State<STATE extends State<STATE>> {
-        private final Actor<STATE> self;
-        private final String name;
-
-        protected abstract void exception(Throwable e);
-
-        protected State(Actor<STATE> self, String name) {
-            this.self = self;
-            this.name = name;
+        private Driver(EventLoopGroup eventLoopGroup) {
+            this.eventLoopGroup = eventLoopGroup;
+            this.eventLoop = eventLoopGroup.assignEventLoop();
         }
 
-        protected Actor<STATE> self() {
-            assert this.self != null : ERROR_ACTOR_SELF_IS_NULL;
-            return this.self;
+        // TODO: do not use this method - any usages should be removed ASAP
+        public ACTOR actor() {
+            return actor;
         }
 
         public String name() {
-            return name;
+            return actor.name();
+        }
+
+        public void tell(Consumer<ACTOR> job) {
+            assert actor != null : ERROR_ACTOR_NOT_SETUP;
+            eventLoop.schedule(() -> job.accept(actor), actor::exception);
+        }
+
+        @CheckReturnValue
+        public CompletableFuture<Void> ask(Consumer<ACTOR> job) {
+            return ask(actor -> {
+                job.accept(actor);
+                return null;
+            });
+        }
+
+        @CheckReturnValue
+        public <ANSWER> CompletableFuture<ANSWER> ask(Function<ACTOR, ANSWER> job) {
+            assert actor != null : ERROR_ACTOR_NOT_SETUP;
+            CompletableFuture<ANSWER> future = new CompletableFuture<>();
+            eventLoop.schedule(
+                    () -> future.complete(job.apply(actor)),
+                    e -> {
+                        actor.exception(e);
+                        future.completeExceptionally(e);
+                    }
+            );
+            return future;
+        }
+
+        public EventLoop.Cancellable schedule(long deadlineMs, Consumer<ACTOR> job) {
+            assert actor != null : ERROR_ACTOR_NOT_SETUP;
+            return eventLoop.schedule(deadlineMs, () -> job.accept(actor), actor::exception);
+        }
+
+        public EventLoopGroup eventLoopGroup() {
+            return eventLoopGroup;
+        }
+
+        public EventLoop eventLoop() {
+            return eventLoop;
         }
     }
 }

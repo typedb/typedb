@@ -32,7 +32,7 @@ import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Identity;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
-import grakn.core.reasoner.resolution.resolver.Root;
+import grakn.core.reasoner.resolution.resolver.RootResolver;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
@@ -135,7 +135,7 @@ public class ResolutionTest {
                 LinkedBlockingQueue<Top> responses = new LinkedBlockingQueue<>();
                 AtomicLong doneReceived = new AtomicLong(0L);
                 LinkedBlockingQueue<Throwable> exceptions = new LinkedBlockingQueue<>();
-                Actor<Root.Conjunction> root;
+                Actor.Driver<RootResolver.Conjunction> root;
                 try {
                     root = registry.root(conjunctionPattern, null, null, responses::add, iterDone -> doneReceived.incrementAndGet(), exceptions::add);
                 } catch (GraknException e) {
@@ -532,7 +532,7 @@ public class ResolutionTest {
                 AtomicLong doneReceived = new AtomicLong(0L);
                 Set<Identifier.Variable.Name> filter = iterate(conjunctionPattern.variables()).map(Variable::id)
                         .filter(Identifier::isName).map(Identifier.Variable::asName).toSet();
-                Actor<Root.Conjunction> root;
+                Actor.Driver<RootResolver.Conjunction> root;
                 try {
                     root = registry.root(conjunctionPattern, null, null, responses::add,
                                          iterDone -> doneReceived.incrementAndGet(), (throwable) -> fail());
@@ -597,7 +597,7 @@ public class ResolutionTest {
         ResolverRegistry registry = transaction.reasoner().resolverRegistry();
         LinkedBlockingQueue<Top> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
-        Actor<Root.Disjunction> root;
+        Actor.Driver<RootResolver.Disjunction> root;
         try {
             root = registry.root(disjunction, offset, limit, responses::add, iterDone -> doneReceived.incrementAndGet(), (throwable) -> fail());
         } catch (GraknException e) {
@@ -614,7 +614,7 @@ public class ResolutionTest {
         AtomicLong doneReceived = new AtomicLong(0L);
         Set<Identifier.Variable.Name> filter = iterate(conjunction.variables()).map(Variable::id)
                 .filter(Identifier::isName).map(Identifier.Variable::asName).toSet();
-        Actor<Root.Conjunction> root;
+        Actor.Driver<RootResolver.Conjunction> root;
         try {
             root = registry.root(conjunction, offset, limit, responses::add, iterDone -> doneReceived.incrementAndGet(), (throwable) -> fail());
         } catch (GraknException e) {
@@ -624,7 +624,7 @@ public class ResolutionTest {
         assertResponses(root, filter, responses, doneReceived, answerCount);
     }
 
-    private void assertResponses(Actor<? extends Resolver<?>> root, Set<Identifier.Variable.Name> filter, LinkedBlockingQueue<Top> responses,
+    private void assertResponses(Actor.Driver<? extends Resolver<?>> root, Set<Identifier.Variable.Name> filter, LinkedBlockingQueue<Top> responses,
                                  AtomicLong doneReceived, long answerCount)
             throws InterruptedException {
         long startTime = System.currentTimeMillis();

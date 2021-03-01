@@ -64,7 +64,7 @@ public class Reasoner {
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
     private final ResolverRegistry resolverRegistry;
-    private final Actor<ResolutionRecorder> resolutionRecorder; // for explanations
+    private final Actor.Driver<ResolutionRecorder> resolutionRecorder; // for explanations
     private final Context.Query defaultContext;
 
     public Reasoner(ConceptManager conceptMgr, LogicManager logicMgr,
@@ -74,7 +74,7 @@ public class Reasoner {
         this.logicMgr = logicMgr;
         this.defaultContext = new Context.Query(context, new Options.Query());
         this.defaultContext.producer(Either.first(EXHAUSTIVE));
-        this.resolutionRecorder = Actor.create(eventLoopGroup(), ResolutionRecorder::new);
+        this.resolutionRecorder = Actor.driver(ResolutionRecorder::new, eventLoopGroup());
         this.resolverRegistry = new ResolverRegistry(eventLoopGroup(), resolutionRecorder, traversalEng, conceptMgr,
                                                      logicMgr, this.defaultContext.options().traceInference());
     }

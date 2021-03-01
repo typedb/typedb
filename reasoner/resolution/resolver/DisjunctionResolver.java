@@ -20,7 +20,6 @@ package grakn.core.reasoner.resolution.resolver;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concurrent.actor.Actor;
 import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
@@ -44,15 +43,15 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
 
     private static final Logger LOG = LoggerFactory.getLogger(Disjunction.class);
 
-    protected final List<Actor<ConjunctionResolver.Nested>> downstreamResolvers;
+    protected final List<Driver<ConjunctionResolver.Nested>> downstreamResolvers;
     private final grakn.core.pattern.Disjunction disjunction;
     protected long skipped;
     protected long answered;
 
-    public DisjunctionResolver(Actor<RESOLVER> self, String name, grakn.core.pattern.Disjunction disjunction,
-                               Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
+    public DisjunctionResolver(Driver<RESOLVER> driver, String name, grakn.core.pattern.Disjunction disjunction,
+                               Driver<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean explanations) {
-        super(self, name, registry, traversalEngine, conceptMgr, explanations, resolutionRecorder);
+        super(driver, name, registry, traversalEngine, conceptMgr, explanations, resolutionRecorder);
         this.disjunction = disjunction;
         this.downstreamResolvers = new ArrayList<>();
     }
@@ -94,10 +93,10 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         LOG.debug("{}: Creating a new RequestState for request: {}", name(), fromUpstream);
         assert fromUpstream.partialAnswer().isFiltered() || fromUpstream.partialAnswer().isIdentity();
         RequestState requestState = new RequestState(iteration);
-        for (Actor<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers) {
+        for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers) {
             AnswerState.Partial.Filtered downstream = fromUpstream.partialAnswer()
                     .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver), conjunctionResolver);
-            Request request = Request.create(self(), conjunctionResolver, downstream);
+            Request request = Request.create(driver(), conjunctionResolver, downstream);
             requestState.addDownstreamProducer(request);
         }
         return requestState;
@@ -111,10 +110,10 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         assert newIteration > requestStatePrior.iteration();
 
         RequestState requestStateNextIteration = requestStateForIteration(requestStatePrior, newIteration);
-        for (Actor<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers) {
+        for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers) {
             AnswerState.Partial.Filtered downstream = fromUpstream.partialAnswer()
                     .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver), conjunctionResolver);
-            Request request = Request.create(self(), conjunctionResolver, downstream);
+            Request request = Request.create(driver(), conjunctionResolver, downstream);
             requestStateNextIteration.addDownstreamProducer(request);
         }
         return requestStateNextIteration;
@@ -122,9 +121,9 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
 
     abstract RequestState requestStateForIteration(RequestState requestStatePrior, int newIteration);
 
-    protected Set<Identifier.Variable.Retrievable> conjunctionRetrievedIds(Actor<ConjunctionResolver.Nested> conjunctionResolver) {
+    protected Set<Identifier.Variable.Retrievable> conjunctionRetrievedIds(Driver<ConjunctionResolver.Nested> conjunctionResolver) {
         // TODO use a map from resolvable to resolvers, then we don't have to reach into the state and use the conjunction
-        return iterate(conjunctionResolver.state().conjunction.variables()).filter(v -> v.id().isRetrievable())
+        return iterate(conjunctionResolver.actor().conjunction.variables()).filter(v -> v.id().isRetrievable())
                 .map(v -> v.id().asRetrievable()).toSet();
     }
 
@@ -156,10 +155,10 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
 
     public static class Nested extends DisjunctionResolver<Nested> {
 
-        public Nested(Actor<Nested> self, grakn.core.pattern.Disjunction disjunction,
-                      Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
+        public Nested(Driver<Nested> driver, grakn.core.pattern.Disjunction disjunction,
+                      Driver<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                       TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean explanations) {
-            super(self, Nested.class.getSimpleName() + "(pattern: " + disjunction + ")", disjunction,
+            super(driver, Nested.class.getSimpleName() + "(pattern: " + disjunction + ")", disjunction,
                   resolutionRecorder, registry, traversalEngine, conceptMgr, explanations);
         }
 

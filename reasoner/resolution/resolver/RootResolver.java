@@ -19,7 +19,6 @@ package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.LogicManager;
 import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
@@ -38,13 +37,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
-public interface Root {
+public interface RootResolver {
 
     void submitAnswer(Top answer);
 
     void submitFail(int iteration);
 
-    class Conjunction extends ConjunctionResolver<Conjunction, Conjunction.RequestState> implements Root {
+    class Conjunction extends ConjunctionResolver<Conjunction, Conjunction.RequestState> implements RootResolver {
 
         private static final Logger LOG = LoggerFactory.getLogger(Conjunction.class);
 
@@ -56,12 +55,14 @@ public interface Root {
         private long skipped;
         private long answered;
 
-        public Conjunction(Actor<Conjunction> self, grakn.core.pattern.Conjunction conjunction,
+        public Conjunction(Driver<Conjunction> driver, grakn.core.pattern.Conjunction conjunction,
                            @Nullable Long offset, @Nullable Long limit, Consumer<Top> onAnswer,
-                           Consumer<Integer> onFail, Consumer<Throwable> onException, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
-                           TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr, Planner planner, boolean resolutionTracing) {
-            super(self, Conjunction.class.getSimpleName() + "(pattern:" + conjunction + ")", conjunction, resolutionRecorder,
-                  registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
+                           Consumer<Integer> onFail, Consumer<Throwable> onException,
+                           Driver<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
+                           TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
+                           Planner planner, boolean resolutionTracing) {
+            super(driver, Conjunction.class.getSimpleName() + "(pattern:" + conjunction + ")", conjunction,
+                  resolutionRecorder, registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
             this.offset = offset;
             this.limit = limit;
             this.onAnswer = onAnswer;
@@ -180,7 +181,7 @@ public interface Root {
         }
     }
 
-    class Disjunction extends DisjunctionResolver<Disjunction> implements Root {
+    class Disjunction extends DisjunctionResolver<Disjunction> implements RootResolver {
 
         private static final Logger LOG = LoggerFactory.getLogger(Disjunction.class);
         private final Long offset;
@@ -189,11 +190,12 @@ public interface Root {
         private final Consumer<Integer> onFail;
         private final Consumer<Throwable> onException;
 
-        public Disjunction(Actor<Disjunction> self, grakn.core.pattern.Disjunction disjunction,
+        public Disjunction(Driver<Disjunction> driver, grakn.core.pattern.Disjunction disjunction,
                            @Nullable Long offset, @Nullable Long limit, Consumer<Top> onAnswer,
-                           Consumer<Integer> onFail, Consumer<Throwable> onException, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
+                           Consumer<Integer> onFail, Consumer<Throwable> onException,
+                           Driver<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                            TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
-            super(self, Disjunction.class.getSimpleName() + "(pattern:" + disjunction + ")", disjunction,
+            super(driver, Disjunction.class.getSimpleName() + "(pattern:" + disjunction + ")", disjunction,
                   resolutionRecorder, registry, traversalEngine, conceptMgr, resolutionTracing);
             this.offset = offset;
             this.limit = limit;

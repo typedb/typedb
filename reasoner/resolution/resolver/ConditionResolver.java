@@ -18,7 +18,6 @@
 package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.concept.ConceptManager;
-import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
 import grakn.core.reasoner.resolution.Planner;
@@ -39,11 +38,11 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver, Co
 
     private final Rule rule;
 
-    public ConditionResolver(Actor<ConditionResolver> self, Rule rule, Actor<ResolutionRecorder> resolutionRecorder,
+    public ConditionResolver(Driver<ConditionResolver> driver, Rule rule, Driver<ResolutionRecorder> resolutionRecorder,
                              ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
                              LogicManager logicMgr, Planner planner, boolean resolutionTracing) {
-        super(self, ConditionResolver.class.getCanonicalName() + "(rule:" + rule.getLabel() + ")", rule.when(), resolutionRecorder,
-              registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
+        super(driver, ConditionResolver.class.getCanonicalName() + "(rule:" + rule.getLabel() + ")", rule.when(),
+              resolutionRecorder, registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
         this.rule = rule;
     }
 

@@ -22,7 +22,6 @@ import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.Rule;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
@@ -52,16 +51,16 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ConclusionResolver.class);
 
-    private final Actor<ResolutionRecorder> resolutionRecorder;
+    private final Driver<ResolutionRecorder> resolutionRecorder;
     private final Rule.Conclusion conclusion;
     private final Map<Request, RequestState> requestStates;
-    private Actor<ConditionResolver> ruleResolver;
+    private Driver<ConditionResolver> ruleResolver;
     private boolean isInitialised;
 
-    public ConclusionResolver(Actor<ConclusionResolver> self, Rule.Conclusion conclusion, ResolverRegistry registry,
-                              Actor<ResolutionRecorder> resolutionRecorder, TraversalEngine traversalEngine,
+    public ConclusionResolver(Driver<ConclusionResolver> driver, Rule.Conclusion conclusion, ResolverRegistry registry,
+                              Driver<ResolutionRecorder> resolutionRecorder, TraversalEngine traversalEngine,
                               ConceptManager conceptMgr, boolean resolutionTracing) {
-        super(self, ConclusionResolver.class.getSimpleName() + "(" + conclusion.rule().getLabel() + ")",
+        super(driver, ConclusionResolver.class.getSimpleName() + "(" + conclusion.rule().getLabel() + ")",
               registry, traversalEngine, conceptMgr, resolutionTracing);
         this.conclusion = conclusion;
         this.resolutionRecorder = resolutionRecorder;
@@ -183,12 +182,12 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         if (conclusion.generating().isPresent() && conclusion.retrievableIds().size() > partialAnswer.concepts().size() &&
                 partialAnswer.concepts().containsKey(conclusion.generating().get().id())) {
             FunctionalIterator<AnswerState.Partial.Filtered> completedAnswers = candidateAnswers(fromUpstream, partialAnswer);
-            completedAnswers.forEachRemaining(answer -> requestState.addDownstream(Request.create(self(), ruleResolver,
+            completedAnswers.forEachRemaining(answer -> requestState.addDownstream(Request.create(driver(), ruleResolver,
                                                                                                   answer)));
         } else {
             Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
             AnswerState.Partial.Filtered downstreamAnswer = fromUpstream.partialAnswer().filterToDownstream(named, ruleResolver);
-            requestState.addDownstream(Request.create(self(), ruleResolver, downstreamAnswer));
+            requestState.addDownstream(Request.create(driver(), ruleResolver, downstreamAnswer));
         }
 
         return requestState;

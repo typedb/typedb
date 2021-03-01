@@ -22,7 +22,6 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Unifier;
@@ -50,19 +49,19 @@ import java.util.Set;
 public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
 
-    private final LinkedHashMap<Actor<ConclusionResolver>, Set<Unifier>> applicableRules;
+    private final LinkedHashMap<Driver<ConclusionResolver>, Set<Unifier>> applicableRules;
     private final Concludable concludable;
     private final LogicManager logicMgr;
-    private final Map<Actor<? extends Resolver<?>>, RecursionState> recursionStates;
-    private final Actor<ResolutionRecorder> resolutionRecorder;
+    private final Map<Driver<? extends Resolver<?>>, RecursionState> recursionStates;
+    private final Driver<ResolutionRecorder> resolutionRecorder;
     private final Map<Request, RequestState> requestStates;
     private boolean isInitialised;
 
-    public ConcludableResolver(Actor<ConcludableResolver> self, Concludable concludable,
-                               Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
+    public ConcludableResolver(Driver<ConcludableResolver> driver, Concludable concludable,
+                               Driver<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
                                boolean resolutionTracing) {
-        super(self, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.pattern() + ")",
+        super(driver, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.pattern() + ")",
               registry, traversalEngine, conceptMgr, resolutionTracing);
         this.logicMgr = logicMgr;
         this.resolutionRecorder = resolutionRecorder;
@@ -144,9 +143,8 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         concludable.getApplicableRules(conceptMgr, logicMgr).forEachRemaining(rule -> concludable.getUnifiers(rule)
                 .forEachRemaining(unifier -> {
                     if (isTerminated()) return;
-                    Actor<ConclusionResolver> conclusionResolver = null;
                     try {
-                        conclusionResolver = registry.registerConclusion(rule.conclusion());
+                        Driver<ConclusionResolver> conclusionResolver = registry.registerConclusion(rule.conclusion());
                         applicableRules.putIfAbsent(conclusionResolver, new HashSet<>());
                         applicableRules.get(conclusionResolver).add(unifier);
                     } catch (GraknException e) {
@@ -188,7 +186,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     protected RequestState requestStateCreate(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating new Responses for iteration{}, request: {}", name(), iteration, fromUpstream);
-        Actor<? extends Resolver<?>> root = fromUpstream.partialAnswer().root();
+        Driver<? extends Resolver<?>> root = fromUpstream.partialAnswer().root();
         recursionStates.putIfAbsent(root, new RecursionState(iteration));
         RecursionState iterationState = recursionStates.get(root);
         if (iterationState.iteration() < iteration) {
@@ -209,12 +207,12 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         // loop termination: when receiving a new request, we check if we have seen it before from this root query
         // if we have, we do not allow rules to be registered as possible downstreams
         if (!recursionState.hasReceived(fromUpstream.partialAnswer().conceptMap())) {
-            for (Map.Entry<Actor<ConclusionResolver>, Set<Unifier>> entry : applicableRules.entrySet()) {
-                Actor<ConclusionResolver> conclusionResolver = entry.getKey();
+            for (Map.Entry<Driver<ConclusionResolver>, Set<Unifier>> entry : applicableRules.entrySet()) {
+                Driver<ConclusionResolver> conclusionResolver = entry.getKey();
                 for (Unifier unifier : entry.getValue()) {
                     Optional<Unified> unified = fromUpstream.partialAnswer().unifyToDownstream(unifier, conclusionResolver);
                     if (unified.isPresent()) {
-                        Request toDownstream = Request.create(self(), conclusionResolver, unified.get());
+                        Request toDownstream = Request.create(driver(), conclusionResolver, unified.get());
                         requestState.addDownstreamProducer(toDownstream);
                     }
                 }

@@ -25,20 +25,18 @@ import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import javax.annotation.Nullable;
 import java.util.Objects;
 
+// TODO: add compute mode: single vs all (for negation vs regular)
 public class Request {
 
-    // TODO: add compute mode: single vs all (for negation vs regular)
-
-    private final Actor<? extends Resolver<?>> sender;
-    private final Actor<? extends Resolver<?>> receiver;
+    private final Actor.Driver<? extends Resolver<?>> sender;
+    private final Actor.Driver<? extends Resolver<?>> receiver;
     private final Partial<?> partialAnswer;
     private final int planIndex;
 
     private final int hash;
 
-    private Request(@Nullable Actor<? extends Resolver<?>> sender,
-                    Actor<? extends Resolver<?>> receiver, Partial<?> partialAnswer,
-                    int planIndex) {
+    private Request(@Nullable Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
+                    Partial<?> partialAnswer, int planIndex) {
         this.sender = sender;
         this.receiver = receiver;
         this.partialAnswer = partialAnswer;
@@ -46,23 +44,23 @@ public class Request {
         this.hash = Objects.hash(this.sender, this.receiver, this.partialAnswer);
     }
 
-    public static Request create(Actor<? extends Resolver<?>> sender, Actor<? extends Resolver<?>> receiver, Partial<?> partialAnswer, int planIndex) {
+    public static Request create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, Partial<?> partialAnswer, int planIndex) {
         return new Request(sender, receiver, partialAnswer, planIndex);
     }
 
-    public static Request create(Actor<? extends Resolver<?>> sender, Actor<? extends Resolver<?>> receiver, Partial<?> partialAnswer) {
+    public static Request create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, Partial<?> partialAnswer) {
         return new Request(sender, receiver, partialAnswer, -1);
     }
 
-    public static Request create(Actor<? extends Resolver<?>> receiver, Partial<?> partialAnswer) {
+    public static Request create(Actor.Driver<? extends Resolver<?>> receiver, Partial<?> partialAnswer) {
         return new Request(null, receiver, partialAnswer, -1);
     }
 
-    public Actor<? extends Resolver<?>> receiver() {
+    public Actor.Driver<? extends Resolver<?>> receiver() {
         return receiver;
     }
 
-    public Actor<? extends Resolver<?>> sender() {
+    public Actor.Driver<? extends Resolver<?>> sender() {
         return sender;
     }
 

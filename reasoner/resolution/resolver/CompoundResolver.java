@@ -18,7 +18,6 @@
 package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.concept.ConceptManager;
-import grakn.core.concurrent.actor.Actor;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.framework.Request;
@@ -33,18 +32,21 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
 
-public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVER, REQ_STATE>, REQ_STATE extends CompoundResolver.RequestState>
-        extends Resolver<RESOLVER> {
+public abstract class CompoundResolver<
+        RESOLVER extends CompoundResolver<RESOLVER, REQ_STATE>,
+        REQ_STATE extends CompoundResolver.RequestState
+        > extends Resolver<RESOLVER> {
 
     private static final Logger LOG = LoggerFactory.getLogger(CompoundResolver.class);
 
-    final Actor<ResolutionRecorder> resolutionRecorder;
+    final Driver<ResolutionRecorder> resolutionRecorder;
     final Map<Request, REQ_STATE> requestStates;
     boolean isInitialised;
 
-    protected CompoundResolver(Actor<RESOLVER> self, String name, ResolverRegistry registry, TraversalEngine traversalEngine,
-                               ConceptManager conceptMgr, boolean resolutionTracing, Actor<ResolutionRecorder> resolutionRecorder) {
-        super(self, name, registry, traversalEngine, conceptMgr, resolutionTracing);
+    protected CompoundResolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry,
+                               TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing,
+                               Driver<ResolutionRecorder> resolutionRecorder) {
+        super(driver, name, registry, traversalEngine, conceptMgr, resolutionTracing);
         this.resolutionRecorder = resolutionRecorder;
         this.requestStates = new HashMap<>();
         this.isInitialised = false;

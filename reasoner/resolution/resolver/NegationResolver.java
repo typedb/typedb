@@ -19,10 +19,8 @@
 package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.exception.GraknException;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.resolvable.Negated;
 import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
@@ -46,16 +44,16 @@ public class NegationResolver extends Resolver<NegationResolver> {
 
     private static final Logger LOG = LoggerFactory.getLogger(NegationResolver.class);
 
-    private final Actor<ResolutionRecorder> resolutionRecorder;
+    private final Driver<ResolutionRecorder> resolutionRecorder;
     private final Negated negated;
     private final Map<ConceptMap, RequestState> requestStates;
     private boolean isInitialised;
-    private Actor<? extends Resolver<?>> downstream;
+    private Driver<? extends Resolver<?>> downstream;
 
-    public NegationResolver(Actor<NegationResolver> self, Negated negated, ResolverRegistry registry,
-                            TraversalEngine traversalEngine, ConceptManager conceptMgr, Actor<ResolutionRecorder> resolutionRecorder,
-                            boolean resolutionTracing) {
-        super(self, NegationResolver.class.getSimpleName() + "(pattern: " + negated.pattern() + ")",
+    public NegationResolver(Driver<NegationResolver> driver, Negated negated, ResolverRegistry registry,
+                            TraversalEngine traversalEngine, ConceptManager conceptMgr,
+                            Driver<ResolutionRecorder> resolutionRecorder, boolean resolutionTracing) {
+        super(driver, NegationResolver.class.getSimpleName() + "(pattern: " + negated.pattern() + ")",
               registry, traversalEngine, conceptMgr, resolutionTracing);
         this.negated = negated;
         this.resolutionRecorder = resolutionRecorder;
@@ -113,7 +111,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
               as a sort of new root!
         */
         Filtered downstreamPartial = fromUpstream.partialAnswer().filterToDownstream(negated.retrieves(), downstream);
-        Request request = Request.create(self(), this.downstream, downstreamPartial);
+        Request request = Request.create(driver(), this.downstream, downstreamPartial);
         requestFromDownstream(request, fromUpstream, 0);
         requestState.setRequested();
     }

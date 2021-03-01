@@ -34,14 +34,14 @@ import java.util.Objects;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.UNIMPLEMENTED;
 
-public class ResolutionRecorder extends Actor.State<ResolutionRecorder> {
+public class ResolutionRecorder extends Actor<ResolutionRecorder> {
     private static final Logger LOG = LoggerFactory.getLogger(ResolutionRecorder.class);
 
-    private final Map<Actor<? extends Resolver<?>>, Integer> actorIndices;
+    private final Map<Driver<? extends Resolver<?>>, Integer> actorIndices;
     private final Map<AnswerIndex, Partial<?>> answers;
 
-    public ResolutionRecorder(Actor<ResolutionRecorder> self) {
-        super(self, "ResolutionRecorder");
+    public ResolutionRecorder(Driver<ResolutionRecorder> driver) {
+        super(driver, "ResolutionRecorder");
         answers = new HashMap<>();
         actorIndices = new HashMap<>();
     }
@@ -65,10 +65,10 @@ public class ResolutionRecorder extends Actor.State<ResolutionRecorder> {
      */
     private Partial<?> merge(Partial<?> newAnswer) {
         Derivation newDerivation = newAnswer.derivation();
-        Map<Actor<? extends Resolver<?>>, Partial<?>> subAnswers = newDerivation.answers();
+        Map<Driver<? extends Resolver<?>>, Partial<?>> subAnswers = newDerivation.answers();
 
-        Map<Actor<? extends Resolver<?>>, Partial<?>> mergedSubAnswers = new HashMap<>();
-        for (Actor<? extends Resolver<?>> key : subAnswers.keySet()) {
+        Map<Driver<? extends Resolver<?>>, Partial<?>> mergedSubAnswers = new HashMap<>();
+        for (Driver<? extends Resolver<?>> key : subAnswers.keySet()) {
             Partial<?> subAnswer = subAnswers.get(key);
             Partial<?> mergedSubAnswer = merge(subAnswer);
             mergedSubAnswers.put(key, mergedSubAnswer);

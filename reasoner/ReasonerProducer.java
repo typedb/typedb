@@ -51,17 +51,17 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerProducer.class);
 
-    private final int computeSize;
-    private final Actor<? extends Resolver<?>> rootResolver;
-    private Queue<ConceptMap> queue;
-    private final Request resolveRequest;
+    private final Actor.Driver<? extends Resolver<?>> rootResolver;
     private final AtomicInteger required;
     private final AtomicInteger processing;
+    private final Options.Query options;
+    private final Request resolveRequest;
     private final boolean recordExplanations = false; // TODO: make settable
+    private final int computeSize;
     private boolean requiresReiteration;
     private boolean done;
     private int iteration;
-    private final Options.Query options;
+    private Queue<ConceptMap> queue;
 
     // TODO: this class
     public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers,

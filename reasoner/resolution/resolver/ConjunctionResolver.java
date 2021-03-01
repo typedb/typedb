@@ -21,7 +21,6 @@ package grakn.core.reasoner.resolution.resolver;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.ConceptManager;
-import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Negated;
@@ -51,8 +50,10 @@ import java.util.Set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.iterate;
 
-public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<RESOLVER, REQ_STATE>, REQ_STATE extends CompoundResolver.RequestState>
-        extends CompoundResolver<RESOLVER, REQ_STATE> {
+public abstract class ConjunctionResolver<
+        RESOLVER extends ConjunctionResolver<RESOLVER, REQ_STATE>,
+        REQ_STATE extends CompoundResolver.RequestState
+        > extends CompoundResolver<RESOLVER, REQ_STATE> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ConjunctionResolver.class);
 
@@ -64,11 +65,11 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
     final Plans plans;
     final Map<Resolvable<?>, ResolverRegistry.ResolverView> downstreamResolvers;
 
-    public ConjunctionResolver(Actor<RESOLVER> self, String name, grakn.core.pattern.Conjunction conjunction,
-                               Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
+    public ConjunctionResolver(Driver<RESOLVER> driver, String name, grakn.core.pattern.Conjunction conjunction,
+                               Driver<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
                                Planner planner, boolean resolutionTracing) {
-        super(self, name, registry, traversalEngine, conceptMgr, resolutionTracing, resolutionRecorder);
+        super(driver, name, registry, traversalEngine, conceptMgr, resolutionTracing, resolutionRecorder);
         this.logicMgr = logicMgr;
         this.planner = planner;
         this.conjunction = conjunction;
@@ -106,7 +107,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
             int nextResolverIndex = fromDownstream.planIndex() + 1;
             ResolverRegistry.ResolverView nextPlannedDownstream = downstreamResolvers.get(plan.get(nextResolverIndex));
             Partial<?> downstream = forDownstreamResolver(nextPlannedDownstream, fromDownstream.answer());
-            Request downstreamRequest = Request.create(self(), nextPlannedDownstream.resolver(), downstream, nextResolverIndex);
+            Request downstreamRequest = Request.create(driver(), nextPlannedDownstream.resolver(), downstream, nextResolverIndex);
             requestState.addDownstreamProducer(downstreamRequest);
             requestFromDownstream(downstreamRequest, fromUpstream, iteration);
         }
@@ -169,7 +170,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         REQ_STATE requestState = requestStateNew(iteration);
         ResolverRegistry.ResolverView childResolver = downstreamResolvers.get(plan.get(0));
         Partial<?> downstream = forDownstreamResolver(childResolver, fromUpstream.partialAnswer());
-        Request toDownstream = Request.create(self(), childResolver.resolver(), downstream, 0);
+        Request toDownstream = Request.create(driver(), childResolver.resolver(), downstream, 0);
         requestState.addDownstreamProducer(toDownstream);
         return requestState;
     }
@@ -185,7 +186,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         REQ_STATE requestStateNextIteration = requestStateForIteration(requestStatePrior, newIteration);
         ResolverRegistry.ResolverView childResolver = downstreamResolvers.get(plan.get(0));
         Partial<?> downstream = forDownstreamResolver(childResolver, fromUpstream.partialAnswer());
-        Request toDownstream = Request.create(self(), childResolver.resolver(), downstream, 0);
+        Request toDownstream = Request.create(driver(), childResolver.resolver(), downstream, 0);
         requestStateNextIteration.addDownstreamProducer(toDownstream);
         return requestStateNextIteration;
     }
@@ -248,10 +249,10 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
 
     public static class Nested extends ConjunctionResolver<Nested, RequestState> {
 
-        public Nested(Actor<Nested> self, Conjunction conjunction, Actor<ResolutionRecorder> resolutionRecorder,
+        public Nested(Driver<Nested> driver, Conjunction conjunction, Driver<ResolutionRecorder> resolutionRecorder,
                       ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
                       LogicManager logicMgr, Planner planner, boolean resolutionTracing) {
-            super(self, Nested.class.getSimpleName() + "(pattern: " + conjunction + ")", conjunction,
+            super(driver, Nested.class.getSimpleName() + "(pattern: " + conjunction + ")", conjunction,
                   resolutionRecorder, registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
         }
 
