@@ -20,11 +20,12 @@ package grakn.core.concurrent.actor;
 import grakn.common.concurrent.NamedThreadFactory;
 
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 public class EventLoopGroup {
     private final EventLoop[] eventLoops;
-    private int selectedIndex;
+    private final AtomicInteger selectedIndex;
 
     public EventLoopGroup(int threadCount) {
         this(threadCount, new NamedThreadFactory("grakn-core-elg"));
@@ -39,11 +40,11 @@ public class EventLoopGroup {
         for (int i = 0; i < threadCount; i++) {
             eventLoops[i] = new EventLoop(threadFactory, clock);
         }
-        selectedIndex = 0;
+        selectedIndex = new AtomicInteger(0);
     }
 
-    public synchronized EventLoop selectedEventLoop() {
-        EventLoop eventLoop = eventLoops[selectedIndex];
+    public EventLoop selectedEventLoop() {
+        EventLoop eventLoop = eventLoops[selectedIndex.get()];
         selectNextEventLoop();
         return eventLoop;
     }
@@ -61,6 +62,6 @@ public class EventLoopGroup {
     }
 
     private void selectNextEventLoop() {
-        selectedIndex = (selectedIndex + 1) % eventLoops.length;
+        selectedIndex.updateAndGet(current -> (current + 1) % eventLoops.length);
     }
 }
