@@ -116,6 +116,7 @@ public class EventLoop {
         }
     }
 
+    @ThreadSafe
     public class Cancellable {
         private final Job job;
         private final long scheduleMillis;

@@ -18,10 +18,12 @@
 package grakn.core.concurrent.actor;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.concurrent.ThreadSafe;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+@ThreadSafe
 public class Actor<STATE extends Actor.State<STATE>> {
     private static final String ERROR_ACTOR_SELF_IS_NULL = "self() must not be null.";
     private static final String ERROR_ACTOR_STATE_NOT_SETUP =
@@ -50,14 +52,6 @@ public class Actor<STATE extends Actor.State<STATE>> {
     }
 
     @CheckReturnValue
-    public CompletableFuture<Void> order(Consumer<STATE> job) {
-        return ask(state -> {
-            job.accept(state);
-            return null;
-        });
-    }
-
-    @CheckReturnValue
     public <ANSWER> CompletableFuture<ANSWER> ask(Function<STATE, ANSWER> job) {
         assert state != null : ERROR_ACTOR_STATE_NOT_SETUP;
         CompletableFuture<ANSWER> future = new CompletableFuture<>();
@@ -69,6 +63,14 @@ public class Actor<STATE extends Actor.State<STATE>> {
                 }
         );
         return future;
+    }
+
+    @CheckReturnValue
+    public CompletableFuture<Void> askVoid(Consumer<STATE> job) {
+        return ask(state -> {
+            job.accept(state);
+            return null;
+        });
     }
 
     public EventLoop.Cancellable schedule(Consumer<STATE> job, long scheduleMillis) {

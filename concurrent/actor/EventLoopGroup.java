@@ -18,11 +18,13 @@
 package grakn.core.concurrent.actor;
 
 import grakn.common.concurrent.NamedThreadFactory;
+import net.jcip.annotations.ThreadSafe;
 
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
+@ThreadSafe
 public class EventLoopGroup {
     private final EventLoop[] eventLoops;
     private final AtomicInteger selectedIndex;
