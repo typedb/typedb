@@ -108,7 +108,8 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
 
     public boolean parallel() {
         if (parallel != null) return parallel;
-        return DEFAULT_PARALLEL;
+        else if (parent != null) return parent.parallel();
+        else return DEFAULT_PARALLEL;
     }
 
     public SELF parallel(boolean parallel) {
