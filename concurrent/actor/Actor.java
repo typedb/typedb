@@ -76,23 +76,23 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
             return actor.name();
         }
 
-        public void execute(Consumer<ACTOR> job) {
+        public void execute(Consumer<ACTOR> consumer) {
             assert actor != null : ERROR_ACTOR_NOT_SETUP;
-            executor.submit(() -> job.accept(actor), actor::exception);
+            executor.submit(() -> consumer.accept(actor), actor::exception);
         }
 
-        public CompletableFuture<Void> complete(Consumer<ACTOR> job) {
+        public CompletableFuture<Void> complete(Consumer<ACTOR> consumer) {
             return compute(actor -> {
-                job.accept(actor);
+                consumer.accept(actor);
                 return null;
             });
         }
 
-        public <ANSWER> CompletableFuture<ANSWER> compute(Function<ACTOR, ANSWER> job) {
+        public <ANSWER> CompletableFuture<ANSWER> compute(Function<ACTOR, ANSWER> function) {
             assert actor != null : ERROR_ACTOR_NOT_SETUP;
             CompletableFuture<ANSWER> future = new CompletableFuture<>();
             executor.submit(
-                    () -> future.complete(job.apply(actor)),
+                    () -> future.complete(function.apply(actor)),
                     e -> {
                         actor.exception(e);
                         future.completeExceptionally(e);
@@ -101,10 +101,10 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
             return future;
         }
 
-    public ActorExecutor.FutureTask schedule(Consumer<ACTOR> job, long scheduleMillis) {
-        assert actor != null : ERROR_ACTOR_NOT_SETUP;
-        return executor.schedule(() -> job.accept(actor), scheduleMillis, actor::exception);
-    }
+        public ActorExecutor.FutureTask schedule(Consumer<ACTOR> consumer, long scheduleMillis) {
+            assert actor != null : ERROR_ACTOR_NOT_SETUP;
+            return executor.schedule(() -> consumer.accept(actor), scheduleMillis, actor::exception);
+        }
 
         public ActorExecutorService executorService() {
             return executorService;

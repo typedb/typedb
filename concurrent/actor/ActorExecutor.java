@@ -54,7 +54,8 @@ public class ActorExecutor {
     public ActorExecutor(ThreadFactory threadFactory, Supplier<Long> clock) {
         this.thread = threadFactory.newThread(this::run);
         this.clock = clock;
-        submittedTasks = new LinkedTransferQueue<>(); // TODO: Benchmark and verify that LinkedTransferQueue is actually most performant
+        // TODO: Benchmark and verify that LinkedTransferQueue is actually most performant
+        submittedTasks = new LinkedTransferQueue<>();
         scheduledTasks = new ScheduledTaskQueue();
         isStopped = new AtomicBoolean(false);
         state = State.READY;

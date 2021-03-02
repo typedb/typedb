@@ -35,6 +35,7 @@ host_compatible_java_test(
         "//concurrent:concurrent",
 
         # External dependencies from Grakn Labs
+        "@graknlabs_common//:common",
         "@graknlabs_graql//java:graql",
     ],
     resources = [

@@ -47,7 +47,6 @@ import grakn.core.traversal.common.Identifier.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -76,15 +75,15 @@ public class ResolverRegistry {
     private final Actor.Driver<ResolutionRecorder> resolutionRecorder;
     private final TraversalEngine traversalEngine;
     private final Planner planner;
-    private ActorExecutorService elg;
-    private boolean explanations;
     private final boolean resolutionTracing;
+    private ActorExecutorService executorService;
     private AtomicBoolean terminated;
+    private boolean explanations;
 
-    public ResolverRegistry(ActorExecutorService elg, Actor.Driver<ResolutionRecorder> resolutionRecorder,
+    public ResolverRegistry(ActorExecutorService executorService, Actor.Driver<ResolutionRecorder> resolutionRecorder,
                             TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
                             boolean resolutionTracing) {
-        this.elg = elg;
+        this.executorService = executorService;
         this.resolutionRecorder = resolutionRecorder;
         this.traversalEngine = traversalEngine;
         this.conceptMgr = conceptMgr;
@@ -112,7 +111,7 @@ public class ResolverRegistry {
         Actor.Driver<RootResolver.Conjunction> resolver = Actor.driver(driver -> new RootResolver.Conjunction(
                 driver, conjunction, onAnswer, onFail, onException, resolutionRecorder, this,
                 traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing
-        ), elg);
+        ), executorService);
         resolvers.add(resolver);
         if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
@@ -124,7 +123,7 @@ public class ResolverRegistry {
         Actor.Driver<RootResolver.Disjunction> resolver = Actor.driver(driver -> new RootResolver.Disjunction(
                 driver, disjunction, onAnswer, onExhausted, onException,
                 resolutionRecorder, this, traversalEngine, conceptMgr, resolutionTracing
-        ), elg);
+        ), executorService);
         resolvers.add(resolver);
         if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
@@ -134,7 +133,7 @@ public class ResolverRegistry {
         LOG.debug("Creating Negation resolver for : {}", negated);
         Actor.Driver<NegationResolver> negatedResolver = Actor.driver(driver -> new NegationResolver(
                 driver, negated, this, traversalEngine, conceptMgr, resolutionRecorder, resolutionTracing
-        ), elg);
+        ), executorService);
         resolvers.add(negatedResolver);
         if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         Set<Variable.Retrievable> filter = filter(upstream, negated);
@@ -152,7 +151,7 @@ public class ResolverRegistry {
         LOG.debug("Register retrieval for rule condition actor: '{}'", rule);
         Actor.Driver<ConditionResolver> resolver = ruleConditions.computeIfAbsent(rule, (r) -> Actor.driver(
                 driver -> new ConditionResolver(driver, r, resolutionRecorder, this, traversalEngine,
-                                                conceptMgr, logicMgr, planner, resolutionTracing), elg
+                                                conceptMgr, logicMgr, planner, resolutionTracing), executorService
         ));
         resolvers.add(resolver);
         if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
@@ -164,7 +163,7 @@ public class ResolverRegistry {
         LOG.debug("Register retrieval for rule conclusion actor: '{}'", conclusion);
         Actor.Driver<ConclusionResolver> resolver = ruleConclusions.computeIfAbsent(conclusion.rule(), r -> Actor.driver(
                 driver -> new ConclusionResolver(driver, conclusion, this, resolutionRecorder,
-                                                 traversalEngine, conceptMgr, resolutionTracing), elg
+                                                 traversalEngine, conceptMgr, resolutionTracing), executorService
         ));
         resolvers.add(resolver);
         if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
@@ -184,7 +183,7 @@ public class ResolverRegistry {
         LOG.debug("Register RetrievableResolver: '{}'", retrievable.pattern());
         Actor.Driver<RetrievableResolver> resolver = Actor.driver(driver -> new RetrievableResolver(
                 driver, retrievable, this, traversalEngine, conceptMgr, resolutionTracing
-        ), elg);
+        ), executorService);
         resolvers.add(resolver);
         if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return ResolverView.filtered(resolver, retrievable.retrieves());
@@ -203,7 +202,7 @@ public class ResolverRegistry {
         Actor.Driver<ConcludableResolver> resolver = Actor.driver(driver -> new ConcludableResolver(
                 driver, concludable, resolutionRecorder, this, traversalEngine,
                 conceptMgr, logicMgr, resolutionTracing
-        ), elg);
+        ), executorService);
         concludableResolvers.put(concludable, resolver);
         resolvers.add(resolver);
         if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
@@ -215,7 +214,7 @@ public class ResolverRegistry {
         Actor.Driver<ConjunctionResolver.Nested> resolver = Actor.driver(driver -> new ConjunctionResolver.Nested(
                 driver, conjunction, resolutionRecorder, this, traversalEngine,
                 conceptMgr, logicMgr, planner, resolutionTracing
-        ), elg);
+        ), executorService);
         resolvers.add(resolver);
         if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
@@ -225,17 +224,15 @@ public class ResolverRegistry {
         LOG.debug("Creating Disjunction resolver for : {}", disjunction);
         return Actor.driver(driver -> new DisjunctionResolver.Nested(
                 driver, disjunction, resolutionRecorder, this, traversalEngine, conceptMgr, resolutionTracing
-        ), elg);
+        ), executorService);
     }
 
     private Map<Variable.Retrievable, Variable.Retrievable> identity(Resolvable<Conjunction> conjunctionResolvable) {
         return conjunctionResolvable.retrieves().stream().collect(toMap(Function.identity(), Function.identity()));
     }
 
-    // for testing
-
-    public void setEventLoopGroup(ActorExecutorService eventLoopGroup) {
-        this.elg = eventLoopGroup;
+    public void setExecutorService(ActorExecutorService executorService) {
+        this.executorService = executorService;
     }
 
     public static abstract class ResolverView {

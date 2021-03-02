@@ -190,7 +190,8 @@ public class ReiterationTest {
 
     private RocksTransaction singleThreadElgTransaction(RocksSession session) {
         RocksTransaction transaction = session.transaction(Arguments.Transaction.Type.WRITE);
-        transaction.reasoner().resolverRegistry().setEventLoopGroup(new ActorExecutorService(1, new NamedThreadFactory("grakn-elg")));
+        ActorExecutorService service = new ActorExecutorService(1, new NamedThreadFactory("grakn-core-actor"));
+        transaction.reasoner().resolverRegistry().setExecutorService(service);
         return transaction;
     }
 }

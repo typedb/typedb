@@ -17,8 +17,6 @@
 
 package grakn.core.concurrent.actor;
 
-import grakn.common.concurrent.NamedThreadFactory;
-
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,10 +27,6 @@ public class ActorExecutorService {
 
     private final ActorExecutor[] executors;
     private final AtomicInteger nextIndex;
-
-    public ActorExecutorService(int size) {
-        this(size, new NamedThreadFactory("grakn-core-actor"));
-    }
 
     public ActorExecutorService(int size, ThreadFactory threadFactory) {
         this(size, threadFactory, System::currentTimeMillis);

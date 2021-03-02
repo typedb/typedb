@@ -17,6 +17,7 @@
 
 package grakn.core.reasoner.resolution;
 
+import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options.Database;
@@ -503,7 +504,8 @@ public class ResolutionTest {
 
     private RocksTransaction singleThreadElgTransaction(RocksSession session) {
         RocksTransaction transaction = session.transaction(Arguments.Transaction.Type.WRITE);
-        transaction.reasoner().resolverRegistry().setEventLoopGroup(new ActorExecutorService(1));
+        ActorExecutorService service = new ActorExecutorService(1, new NamedThreadFactory("grakn-core-actor"));
+        transaction.reasoner().resolverRegistry().setExecutorService(service);
         return transaction;
     }
 

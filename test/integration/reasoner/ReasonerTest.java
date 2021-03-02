@@ -17,6 +17,7 @@
 
 package grakn.core.reasoner;
 
+import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
@@ -57,7 +58,8 @@ public class ReasonerTest {
 
     private RocksTransaction singleThreadElgTransaction(RocksSession session, Arguments.Transaction.Type transactionType) {
         RocksTransaction transaction = session.transaction(transactionType, new Options.Transaction().infer(true));
-        transaction.reasoner().resolverRegistry().setEventLoopGroup(new ActorExecutorService(1));
+        ActorExecutorService service = new ActorExecutorService(1, new NamedThreadFactory("grakn-core-actor"));
+        transaction.reasoner().resolverRegistry().setExecutorService(service);
         return transaction;
     }
 
