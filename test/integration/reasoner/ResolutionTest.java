@@ -136,7 +136,7 @@ public class ResolutionTest {
                 LinkedBlockingQueue<Throwable> exceptions = new LinkedBlockingQueue<>();
                 Actor.Driver<RootResolver.Conjunction> root;
                 try {
-                    root = registry.root(conjunctionPattern, null, null, responses::add, iterDone -> doneReceived.incrementAndGet(), exceptions::add);
+                    root = registry.root(conjunctionPattern, responses::add, iterDone -> doneReceived.incrementAndGet(), exceptions::add);
                 } catch (GraknException e) {
                     fail();
                 }
@@ -474,7 +474,7 @@ public class ResolutionTest {
                         .filter(Identifier::isName).map(Identifier.Variable::asName).toSet();
                 Actor.Driver<RootResolver.Conjunction> root;
                 try {
-                    root = registry.root(conjunctionPattern, null, null, responses::add,
+                    root = registry.root(conjunctionPattern, responses::add,
                                          iterDone -> doneReceived.incrementAndGet(), (throwable) -> fail());
                 } catch (GraknException e) {
                     fail();
@@ -484,8 +484,8 @@ public class ResolutionTest {
                 for (int i = 0; i < answerCount; i++) {
                     Identity downstream = Top.initial(filter, false, root).toDownstream();
                     root.execute(actor ->
-                                      actor.receiveRequest(
-                                              Request.create(root, downstream), 0)
+                                         actor.receiveRequest(
+                                                 Request.create(root, downstream), 0)
                     );
                     Top answer = responses.take();
 
@@ -538,7 +538,7 @@ public class ResolutionTest {
         AtomicLong doneReceived = new AtomicLong(0L);
         Actor.Driver<RootResolver.Disjunction> root;
         try {
-            root = registry.root(disjunction, offset, limit, responses::add, iterDone -> doneReceived.incrementAndGet(), (throwable) -> fail());
+            root = registry.root(disjunction, responses::add, iterDone -> doneReceived.incrementAndGet(), (throwable) -> fail());
         } catch (GraknException e) {
             fail();
             return;
@@ -555,7 +555,7 @@ public class ResolutionTest {
                 .filter(Identifier::isName).map(Identifier.Variable::asName).toSet();
         Actor.Driver<RootResolver.Conjunction> root;
         try {
-            root = registry.root(conjunction, offset, limit, responses::add, iterDone -> doneReceived.incrementAndGet(), (throwable) -> fail());
+            root = registry.root(conjunction, responses::add, iterDone -> doneReceived.incrementAndGet(), (throwable) -> fail());
         } catch (GraknException e) {
             fail();
             return;

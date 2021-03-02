@@ -106,12 +106,11 @@ public class ResolverRegistry {
         }
     }
 
-    public Actor.Driver<RootResolver.Conjunction> root(Conjunction conjunction, @Nullable Long offset,
-                                                       @Nullable Long limit, Consumer<Top> onAnswer,
+    public Actor.Driver<RootResolver.Conjunction> root(Conjunction conjunction, Consumer<Top> onAnswer,
                                                        Consumer<Integer> onFail, Consumer<Throwable> onException) {
         LOG.debug("Creating Root.Conjunction for: '{}'", conjunction);
         Actor.Driver<RootResolver.Conjunction> resolver = Actor.driver(driver -> new RootResolver.Conjunction(
-                driver, conjunction, offset, limit, onAnswer, onFail, onException, resolutionRecorder, this,
+                driver, conjunction, onAnswer, onFail, onException, resolutionRecorder, this,
                 traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing
         ), elg);
         resolvers.add(resolver);
@@ -119,12 +118,11 @@ public class ResolverRegistry {
         return resolver;
     }
 
-    public Actor.Driver<RootResolver.Disjunction> root(Disjunction disjunction, @Nullable Long offset,
-                                                       @Nullable Long limit, Consumer<Top> onAnswer,
+    public Actor.Driver<RootResolver.Disjunction> root(Disjunction disjunction, Consumer<Top> onAnswer,
                                                        Consumer<Integer> onExhausted, Consumer<Throwable> onException) {
         LOG.debug("Creating Root.Disjunction for: '{}'", disjunction);
         Actor.Driver<RootResolver.Disjunction> resolver = Actor.driver(driver -> new RootResolver.Disjunction(
-                driver, disjunction, offset, limit, onAnswer, onExhausted, onException,
+                driver, disjunction, onAnswer, onExhausted, onException,
                 resolutionRecorder, this, traversalEngine, conceptMgr, resolutionTracing
         ), elg);
         resolvers.add(resolver);

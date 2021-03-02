@@ -127,7 +127,7 @@ public class ReiterationTest {
                 boolean[] receivedInferredAnswer = {false};
 
                 ResolutionTracer.get().start();
-                Actor.Driver<RootResolver.Conjunction> root = registry.root(conjunction, null, null, answer -> {
+                Actor.Driver<RootResolver.Conjunction> root = registry.root(conjunction, answer -> {
                     if (answer.requiresReiteration()) receivedInferredAnswer[0] = true;
                     responses.add(answer);
                 }, iterDone -> {
