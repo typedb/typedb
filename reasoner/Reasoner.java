@@ -126,6 +126,7 @@ public class Reasoner {
         assert !disjunction.isCoherent();
         Set<Conjunction> causes = new HashSet<>();
         for (Conjunction conj : disjunction.conjunctions()) {
+            // TODO: this logic can be more complete if it did not only assume the nested negation is to blame
             FunctionalIterator<Negation> incoherentNegs = iterate(conj.negations()).filter(n -> !n.isCoherent());
             if (!conj.isCoherent() && !incoherentNegs.hasNext()) causes.add(conj);
             else incoherentNegs.forEachRemaining(n -> causes.addAll(incoherentConjunctions(n.disjunction())));
