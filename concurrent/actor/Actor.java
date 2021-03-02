@@ -17,10 +17,12 @@
 
 package grakn.core.concurrent.actor;
 
+import javax.annotation.concurrent.ThreadSafe;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+@ThreadSafe
 public abstract class Actor<ACTOR extends Actor<ACTOR>> {
 
     private static final String ERROR_ACTOR_DRIVER_IS_NULL = "driver() must not be null.";
@@ -61,7 +63,7 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
 
         private Driver(EventLoopGroup eventLoopGroup) {
             this.eventLoopGroup = eventLoopGroup;
-            this.eventLoop = eventLoopGroup.assignEventLoop();
+            this.eventLoop = eventLoopGroup.nextEventLoop();
         }
 
         // TODO: do not use this method - any usages should be removed ASAP
@@ -75,7 +77,7 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
 
         public void execute(Consumer<ACTOR> job) {
             assert actor != null : ERROR_ACTOR_NOT_SETUP;
-            eventLoop.schedule(() -> job.accept(actor), actor::exception);
+            eventLoop.submit(() -> job.accept(actor), actor::exception);
         }
 
         public CompletableFuture<Void> complete(Consumer<ACTOR> job) {
@@ -88,7 +90,7 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
         public <ANSWER> CompletableFuture<ANSWER> compute(Function<ACTOR, ANSWER> job) {
             assert actor != null : ERROR_ACTOR_NOT_SETUP;
             CompletableFuture<ANSWER> future = new CompletableFuture<>();
-            eventLoop.schedule(
+            eventLoop.submit(
                     () -> future.complete(job.apply(actor)),
                     e -> {
                         actor.exception(e);
@@ -98,10 +100,10 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
             return future;
         }
 
-        public EventLoop.Cancellable schedule(long deadlineMs, Consumer<ACTOR> job) {
-            assert actor != null : ERROR_ACTOR_NOT_SETUP;
-            return eventLoop.schedule(deadlineMs, () -> job.accept(actor), actor::exception);
-        }
+    public EventLoop.FutureJob schedule(Consumer<ACTOR> job, long scheduleMillis) {
+        assert actor != null : ERROR_ACTOR_NOT_SETUP;
+        return eventLoop.schedule(() -> job.accept(actor), scheduleMillis, actor::exception);
+    }
 
         public EventLoopGroup eventLoopGroup() {
             return eventLoopGroup;
