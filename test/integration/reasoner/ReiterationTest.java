@@ -176,7 +176,7 @@ public class ReiterationTest {
 
     private void sendRootRequest(Actor.Driver<RootResolver.Conjunction> root, Set<Identifier.Variable.Name> filter, int iteration) {
         Identity downstream = Top.initial(filter, false, root).toDownstream();
-        root.tell(actor -> actor.receiveRequest(
+        root.execute(actor -> actor.receiveRequest(
                 Request.create(root, downstream), iteration)
         );
     }

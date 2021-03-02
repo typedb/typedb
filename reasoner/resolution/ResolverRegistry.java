@@ -101,7 +101,7 @@ public class ResolverRegistry {
     public void terminateResolvers(Throwable cause) {
         if (terminated.compareAndSet(false, true)) {
             resolvers.forEach(actor -> {
-                actor.tell(r -> r.terminate(cause));
+                actor.execute(r -> r.terminate(cause));
             });
         }
     }

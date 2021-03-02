@@ -83,7 +83,7 @@ public interface RootResolver {
             LOG.debug("Submitting answer: {}", answer);
             if (answer.recordExplanations()) {
                 LOG.trace("Recording root answer: {}", answer);
-                resolutionRecorder.tell(state -> state.record(answer));
+                resolutionRecorder.execute(state -> state.record(answer));
             }
             onAnswer.accept(answer);
         }
@@ -236,7 +236,7 @@ public interface RootResolver {
             LOG.debug("Submitting answer: {}", answer);
             if (answer.recordExplanations()) {
                 LOG.trace("Recording root answer: {}", answer);
-                resolutionRecorder.tell(state -> state.record(answer));
+                resolutionRecorder.execute(state -> state.record(answer));
             }
             answered++;
             onAnswer.accept(answer);

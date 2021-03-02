@@ -17,7 +17,6 @@
 
 package grakn.core.concurrent.actor;
 
-import javax.annotation.CheckReturnValue;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -74,21 +73,19 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
             return actor.name();
         }
 
-        public void tell(Consumer<ACTOR> job) {
+        public void execute(Consumer<ACTOR> job) {
             assert actor != null : ERROR_ACTOR_NOT_SETUP;
             eventLoop.schedule(() -> job.accept(actor), actor::exception);
         }
 
-        @CheckReturnValue
-        public CompletableFuture<Void> ask(Consumer<ACTOR> job) {
-            return ask(actor -> {
+        public CompletableFuture<Void> complete(Consumer<ACTOR> job) {
+            return compute(actor -> {
                 job.accept(actor);
                 return null;
             });
         }
 
-        @CheckReturnValue
-        public <ANSWER> CompletableFuture<ANSWER> ask(Function<ACTOR, ANSWER> job) {
+        public <ANSWER> CompletableFuture<ANSWER> compute(Function<ACTOR, ANSWER> job) {
             assert actor != null : ERROR_ACTOR_NOT_SETUP;
             CompletableFuture<ANSWER> future = new CompletableFuture<>();
             eventLoop.schedule(

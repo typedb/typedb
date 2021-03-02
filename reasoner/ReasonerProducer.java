@@ -181,6 +181,6 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private void requestAnswer() {
         if (options.traceInference()) ResolutionTracer.get().start();
-        rootResolver.tell(actor -> actor.receiveRequest(resolveRequest, iteration));
+        rootResolver.execute(actor -> actor.receiveRequest(resolveRequest, iteration));
     }
 }

@@ -105,7 +105,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         } else {
             if (fromDownstream.answer().recordExplanations()) {
                 LOG.trace("{}: Recording deduplicated answer derivation: {}", name(), upstreamAnswer);
-                resolutionRecorder.tell(actor -> actor.record(upstreamAnswer));
+                resolutionRecorder.execute(actor -> actor.record(upstreamAnswer));
             }
             nextAnswer(fromUpstream, requestState, iteration);
         }

@@ -111,7 +111,7 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
         // TODO: we may overwrite if multiple identical requests are sent, when to clean up?
         requestRouter.put(request, fromUpstream);
         Driver<? extends Resolver<?>> receiver = request.receiver();
-        receiver.tell(actor -> actor.receiveRequest(request, iteration));
+        receiver.execute(actor -> actor.receiveRequest(request, iteration));
     }
 
     protected void answerToUpstream(AnswerState answer, Request fromUpstream, int iteration) {
@@ -120,14 +120,14 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
         if (resolutionTracing) ResolutionTracer.get().responseAnswer(this.name(), fromUpstream.sender().name(), iteration,
                                                                      response.asAnswer().answer().conceptMap().concepts().keySet().toString());
-        fromUpstream.sender().tell(actor -> actor.receiveAnswer(response, iteration));
+        fromUpstream.sender().execute(actor -> actor.receiveAnswer(response, iteration));
     }
 
     protected void failToUpstream(Request fromUpstream, int iteration) {
         Response.Fail response = new Response.Fail(fromUpstream);
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
         if (resolutionTracing) ResolutionTracer.get().responseExhausted(this.name(), fromUpstream.sender().name(), iteration);
-        fromUpstream.sender().tell(actor -> actor.receiveFail(response, iteration));
+        fromUpstream.sender().execute(actor -> actor.receiveFail(response, iteration));
     }
 
     protected FunctionalIterator<ConceptMap> traversalIterator(Conjunction conjunction, ConceptMap bounds) {

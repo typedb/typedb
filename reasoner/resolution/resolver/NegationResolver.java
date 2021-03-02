@@ -152,7 +152,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
         Partial<?> upstreamAnswer = fromUpstream.partialAnswer().asFiltered().toUpstream();
 
         if (fromUpstream.partialAnswer().recordExplanations()) {
-            resolutionRecorder.tell(state -> state.record(fromUpstream.partialAnswer()));
+            resolutionRecorder.execute(state -> state.record(fromUpstream.partialAnswer()));
         }
         return upstreamAnswer;
     }
