@@ -27,8 +27,6 @@ import grakn.core.logic.LogicManager;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Resolvable;
 import grakn.core.logic.resolvable.Retrievable;
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.Disjunction;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
@@ -46,6 +44,7 @@ import java.util.Set;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
+import static grakn.core.reasoner.resolution.Util.resolvedConjunction;
 import static junit.framework.TestCase.assertEquals;
 
 public class PlannerTest {
@@ -82,17 +81,10 @@ public class PlannerTest {
         grakn.close();
     }
 
-    private Conjunction parse(String query) {
-        Conjunction conjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise())
-                .conjunctions().iterator().next();
-        logicMgr.typeResolver().resolvePositive(conjunction);
-        return conjunction;
-    }
-
     @Test
     public void test_planner_retrievable_dependent_upon_concludable() {
-        Concludable concludable = Concludable.create(parse("{ $a has $b; }")).iterator().next();
-        Retrievable retrievable = new Retrievable(parse("{ $c($b); }"));
+        Concludable concludable = Concludable.create(resolvedConjunction("{ $a has $b; }", logicMgr)).iterator().next();
+        Retrievable retrievable = new Retrievable(resolvedConjunction("{ $c($b); }", logicMgr));
 
         Set<Resolvable<?>> resolvables = set(concludable, retrievable);
         List<Resolvable<?>> plan = new Planner(conceptMgr, logicMgr).plan(resolvables, set());
@@ -104,8 +96,8 @@ public class PlannerTest {
         EntityType person = conceptMgr.putEntityType("person");
         person.setOwns(conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING));
 
-        Concludable concludable = Concludable.create(parse("{ $p has name $n; }")).iterator().next();
-        Retrievable retrievable = new Retrievable(parse("{ $p isa person; }"));
+        Concludable concludable = Concludable.create(resolvedConjunction("{ $p has name $n; }", logicMgr)).iterator().next();
+        Retrievable retrievable = new Retrievable(resolvedConjunction("{ $p isa person; }", logicMgr));
 
         Set<Resolvable<?>> resolvables = set(concludable, retrievable);
 
@@ -122,10 +114,10 @@ public class PlannerTest {
         EntityType company = conceptMgr.putEntityType("company");
         company.setOwns(conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING));
 
-        Retrievable retrievable = new Retrievable(parse("{ $p isa person, has age $a, has first-name $fn, has " +
-                                                                "surname $sn; }"));
-        Concludable concludable = Concludable.create(parse("{ ($p, $c); }")).iterator().next();
-        Retrievable retrievable2 = new Retrievable(parse("{ $c isa company, has name $cn; }"));
+        Retrievable retrievable = new Retrievable(resolvedConjunction("{ $p isa person, has age $a, has first-name $fn, has " +
+                                                                "surname $sn; }", logicMgr));
+        Concludable concludable = Concludable.create(resolvedConjunction("{ ($p, $c); }", logicMgr)).iterator().next();
+        Retrievable retrievable2 = new Retrievable(resolvedConjunction("{ $c isa company, has name $cn; }", logicMgr));
 
         Set<Resolvable<?>> resolvables = set(retrievable, retrievable2, concludable);
 
@@ -142,10 +134,10 @@ public class PlannerTest {
         EntityType company = conceptMgr.putEntityType("company");
         company.setOwns(conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING));
 
-        Retrievable retrievable = new Retrievable(parse("{ $p isa person, has age 30, has first-name " +
-                                                                "\"Alice\", has surname \"Bachelor\"; }"));
-        Concludable concludable = Concludable.create(parse("{ ($p, $c); }")).iterator().next();
-        Retrievable retrievable2 = new Retrievable(parse("{ $c isa company, has name $cn; }"));
+        Retrievable retrievable = new Retrievable(resolvedConjunction("{ $p isa person, has age 30, has first-name " +
+                                                                "\"Alice\", has surname \"Bachelor\"; }", logicMgr));
+        Concludable concludable = Concludable.create(resolvedConjunction("{ ($p, $c); }", logicMgr)).iterator().next();
+        Retrievable retrievable2 = new Retrievable(resolvedConjunction("{ $c isa company, has name $cn; }", logicMgr));
 
         Set<Resolvable<?>> resolvables = set(retrievable, retrievable2, concludable);
 
@@ -155,8 +147,8 @@ public class PlannerTest {
 
     @Test
     public void test_planner_starts_at_independent_concludable() {
-        Concludable concludable = Concludable.create(parse("{ $r($a, $b); }")).iterator().next();
-        Concludable concludable2 = Concludable.create(parse("{ $r has $c; }")).iterator().next();
+        Concludable concludable = Concludable.create(resolvedConjunction("{ $r($a, $b); }", logicMgr)).iterator().next();
+        Concludable concludable2 = Concludable.create(resolvedConjunction("{ $r has $c; }", logicMgr)).iterator().next();
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
 
@@ -173,10 +165,10 @@ public class PlannerTest {
         company.setOwns(name);
         conceptMgr.putRelationType("employment");
 
-        Retrievable retrievable = new Retrievable(parse("{ $p isa person; }"));
-        Concludable concludable = Concludable.create(parse("{ $p has name $n; }")).iterator().next();
-        Retrievable retrievable2 = new Retrievable(parse("{ $c isa company, has name $n; }"));
-        Concludable concludable2 = Concludable.create(parse("{ $e($c, $p2) isa employment; }")).iterator().next();
+        Retrievable retrievable = new Retrievable(resolvedConjunction("{ $p isa person; }", logicMgr));
+        Concludable concludable = Concludable.create(resolvedConjunction("{ $p has name $n; }", logicMgr)).iterator().next();
+        Retrievable retrievable2 = new Retrievable(resolvedConjunction("{ $c isa company, has name $n; }", logicMgr));
+        Concludable concludable2 = Concludable.create(resolvedConjunction("{ $e($c, $p2) isa employment; }", logicMgr)).iterator().next();
 
         Set<Resolvable<?>> resolvables = set(retrievable, retrievable2, concludable, concludable2);
         List<Resolvable<?>> plan = new Planner(conceptMgr, logicMgr).plan(resolvables, set());
@@ -186,8 +178,8 @@ public class PlannerTest {
 
     @Test
     public void test_planner_two_circular_has_dependencies() {
-        Concludable concludable = Concludable.create(parse("{ $a has $b; }")).iterator().next();
-        Concludable concludable2 = Concludable.create(parse("{ $b has $a; }")).iterator().next();
+        Concludable concludable = Concludable.create(resolvedConjunction("{ $a has $b; }", logicMgr)).iterator().next();
+        Concludable concludable2 = Concludable.create(resolvedConjunction("{ $b has $a; }", logicMgr)).iterator().next();
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
         List<Resolvable<?>> plan = new Planner(conceptMgr, logicMgr).plan(resolvables, set());
@@ -198,8 +190,8 @@ public class PlannerTest {
 
     @Test
     public void test_planner_two_circular_relates_dependencies() {
-        Concludable concludable = Concludable.create(parse("{ $a($b); }")).iterator().next();
-        Concludable concludable2 = Concludable.create(parse("{ $b($a); }")).iterator().next();
+        Concludable concludable = Concludable.create(resolvedConjunction("{ $a($b); }", logicMgr)).iterator().next();
+        Concludable concludable2 = Concludable.create(resolvedConjunction("{ $b($a); }", logicMgr)).iterator().next();
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
         List<Resolvable<?>> plan = new Planner(conceptMgr, logicMgr).plan(resolvables, set());
@@ -210,8 +202,8 @@ public class PlannerTest {
 
     @Test
     public void test_planner_disconnected_conjunction() {
-        Concludable concludable = Concludable.create(parse("{ $a($b); }")).iterator().next();
-        Concludable concludable2 = Concludable.create(parse("{ $c($d); }")).iterator().next();
+        Concludable concludable = Concludable.create(resolvedConjunction("{ $a($b); }", logicMgr)).iterator().next();
+        Concludable concludable2 = Concludable.create(resolvedConjunction("{ $c($d); }", logicMgr)).iterator().next();
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
         List<Resolvable<?>> plan = new Planner(conceptMgr, logicMgr).plan(resolvables, set());
@@ -237,8 +229,8 @@ public class PlannerTest {
         session.close();
         newTransaction(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
 
-        Concludable concludable = Concludable.create(parse("{ $b has $a; }")).iterator().next();
-        Concludable concludable2 = Concludable.create(parse("{ $c($b) isa friendship; }")).iterator().next();
+        Concludable concludable = Concludable.create(resolvedConjunction("{ $b has $a; }", logicMgr)).iterator().next();
+        Concludable concludable2 = Concludable.create(resolvedConjunction("{ $c($b) isa friendship; }", logicMgr)).iterator().next();
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
         List<Resolvable<?>> plan = new Planner(conceptMgr, logicMgr).plan(resolvables, set());

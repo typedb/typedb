@@ -121,7 +121,7 @@ public class TypeResolver {
 
     private void resolve(Disjunction disjunction, List<Conjunction> scopingConjunctions) {
         for (Conjunction conjunction : disjunction.conjunctions()) {
-            resolvePositive(conjunction, scopingConjunctions);
+            resolvePositive(conjunction, scopingConjunctions, false);
             for (Negation negation : conjunction.negations()) {
                 resolve(negation.disjunction(), list(scopingConjunctions, conjunction));
             }
@@ -134,10 +134,6 @@ public class TypeResolver {
 
     public void resolvePositive(Conjunction conjunction, boolean insertable) {
         resolvePositive(conjunction, list(), insertable);
-    }
-
-    public void resolvePositive(Conjunction conjunction, List<Conjunction> scopingConjunctions) {
-        resolvePositive(conjunction, scopingConjunctions, false);
     }
 
     public void resolvePositive(Conjunction conjunction, List<Conjunction> scopingConjunctions, boolean insertable) {

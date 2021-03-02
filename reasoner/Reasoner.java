@@ -78,10 +78,9 @@ public class Reasoner {
                                                      logicMgr, this.defaultContext.options().traceInference());
     }
 
-    ResolverRegistry resolverRegistry() {
+    public ResolverRegistry resolverRegistry() {
         return resolverRegistry;
     }
-
 
     private boolean mayReason(Disjunction disjunction, Context.Query context) {
         if (!context.options().infer() || context.transactionType().isWrite() || !logicMgr.rules().hasNext()) {
