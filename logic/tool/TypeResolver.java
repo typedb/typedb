@@ -98,7 +98,7 @@ public class TypeResolver {
         });
     }
 
-    public void resolveLabels(Conjunction conjunction) {
+    public void resolveVariableLabels(Conjunction conjunction) {
         iterate(conjunction.variables()).filter(v -> v.isType() && v.asType().label().isPresent())
                 .forEachRemaining(typeVar -> {
                     Label label = typeVar.asType().label().get().properLabel();
@@ -120,32 +120,36 @@ public class TypeResolver {
     }
 
     private void resolve(Disjunction disjunction, List<Conjunction> scopingConjunctions) {
-        for (Conjunction conjunction : disjunction.conjunctions()) {
-            resolvePositive(conjunction, scopingConjunctions, false);
-            for (Negation negation : conjunction.negations()) {
-                resolve(negation.disjunction(), list(scopingConjunctions, conjunction));
-            }
+        disjunction.conjunctions().forEach(conjunction -> resolve(conjunction, scopingConjunctions));
+    }
+
+    private void resolve(Conjunction conjunction, List<Conjunction> scopingConjunctions) {
+        resolveVariables(conjunction, scopingConjunctions, false);
+        for (Negation negation : conjunction.negations()) {
+            resolve(negation.disjunction(), list(scopingConjunctions, conjunction));
         }
     }
 
-    public void resolvePositive(Conjunction conjunction, boolean insertable) {
-        resolvePositive(conjunction, list(), insertable);
+    public void resolveVariables(Conjunction conjunction, boolean insertable) {
+        resolveVariables(conjunction, list(), insertable);
     }
 
-    private void resolvePositive(Conjunction conjunction, List<Conjunction> scopingConjunctions, boolean insertable) {
-        resolveLabels(conjunction);
-        if (!isSchemaQuery(conjunction)) {
-            Traversal resolverTraversal = new Traversal();
-            TraversalBuilder traversalBuilder = builder(resolverTraversal, conjunction, scopingConjunctions, insertable);
-            resolverTraversal.filter(traversalBuilder.retrievedResolvers());
-            Map<Identifier.Variable.Retrievable, Set<Label>> resolvedLabels = executeResolverTraversals(traversalBuilder);
-            if (resolvedLabels.isEmpty()) conjunction.setCoherent(false);
-            else {
-                resolvedLabels.forEach((id, labels) -> traversalBuilder.getVariable(id).ifPresent(variable -> {
-                    assert variable.resolvedTypes().isEmpty() || variable.resolvedTypes().containsAll(labels);
-                    variable.setResolvedTypes(labels);
-                }));
-            }
+    private void resolveVariables(Conjunction conjunction, List<Conjunction> scopingConjunctions, boolean insertable) {
+        resolveVariableLabels(conjunction);
+        if (!isSchemaQuery(conjunction)) resolveVariableTypes(conjunction, scopingConjunctions, insertable);
+    }
+
+    private void resolveVariableTypes(Conjunction conjunction, List<Conjunction> scopingConjunctions, boolean insertable) {
+        Traversal resolverTraversal = new Traversal();
+        TraversalBuilder traversalBuilder = builder(resolverTraversal, conjunction, scopingConjunctions, insertable);
+        resolverTraversal.filter(traversalBuilder.retrievedResolvers());
+        Map<Identifier.Variable.Retrievable, Set<Label>> resolvedLabels = executeResolverTraversals(traversalBuilder);
+        if (resolvedLabels.isEmpty()) conjunction.setCoherent(false);
+        else {
+            resolvedLabels.forEach((id, labels) -> traversalBuilder.getVariable(id).ifPresent(variable -> {
+                assert variable.resolvedTypes().isEmpty() || variable.resolvedTypes().containsAll(labels);
+                variable.setResolvedTypes(labels);
+            }));
         }
     }
 

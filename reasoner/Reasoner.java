@@ -110,7 +110,7 @@ public class Reasoner {
         logicMgr.typeResolver().resolve(disjunction);
 
         if (!disjunction.isCoherent()) {
-            Set<Conjunction> causes = notCoherentCauses(disjunction);
+            Set<Conjunction> causes = incoherentConjunctions(disjunction);
             throw GraknException.of(UNSATISFIABLE_PATTERN, disjunction, causes);
         }
 
@@ -122,16 +122,15 @@ public class Reasoner {
         return iterate(graqlVars).map(v -> v.reference().asName()).map(Identifier.Variable::of).toSet();
     }
 
-    private Set<Conjunction> notCoherentCauses(Disjunction disjunction) {
+    private Set<Conjunction> incoherentConjunctions(Disjunction disjunction) {
         assert !disjunction.isCoherent();
         Set<Conjunction> causes = new HashSet<>();
         for (Conjunction conjunction : disjunction.conjunctions()) {
-            boolean hasNonCoherentChildren = iterate(conjunction.negations()).anyMatch(n -> !n.isCoherent());
-            if (!conjunction.isCoherent() && !hasNonCoherentChildren) {
+            FunctionalIterator<Negation> incoherentChildren = iterate(conjunction.negations()).filter(negation -> !negation.isCoherent());
+            if (!conjunction.isCoherent() && !incoherentChildren.hasNext()) {
                 causes.add(conjunction);
             } else {
-                iterate(conjunction.negations()).filter(negation -> !negation.isCoherent())
-                        .forEachRemaining(negation -> causes.addAll(notCoherentCauses(negation.disjunction())));
+                incoherentChildren.forEachRemaining(negation -> causes.addAll(incoherentConjunctions(negation.disjunction())));
             }
         }
         return causes;

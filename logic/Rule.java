@@ -232,7 +232,7 @@ public class Rule {
 
     private Conjunction thenPattern(graql.lang.pattern.variable.ThingVariable<?> thenVariable, LogicManager logicMgr) {
         Conjunction conj = new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
-        logicMgr.typeResolver().resolvePositive(conj, true);
+        logicMgr.typeResolver().resolveVariables(conj, true);
         return conj;
     }
 

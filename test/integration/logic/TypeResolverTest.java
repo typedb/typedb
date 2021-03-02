@@ -1051,13 +1051,13 @@ public class TypeResolverTest {
         String queryString = "match (partner: $x);";
         Disjunction disjunction = createDisjunction(queryString);
         Conjunction conjunction = disjunction.conjunctions().get(0);
-        typeResolver.resolveLabels(conjunction);
+        typeResolver.resolveVariableLabels(conjunction);
 
         Set<String> expectedLabels = set("partnership:partner", "business:partner");
 
         assertEquals(expectedLabels, resolvedTypeMap(conjunction).get("$_relation:partner"));
 
-        typeResolver.resolvePositive(conjunction, false);
+        typeResolver.resolveVariables(conjunction, false);
         Set<String> expectedResolvedTypes = set("partnership:partner");
 
         assertEquals(expectedResolvedTypes, resolvedTypeMap(disjunction.conjunctions().get(0)).get("$_relation:partner"));
@@ -1080,7 +1080,7 @@ public class TypeResolverTest {
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
 
-//    TEST RULE INSERT
+//    TEST RULE INSERT TODO: should be moved to rule test
 
     @Test
     public void cannot_insert_unsatisfiable_rule() throws IOException {
