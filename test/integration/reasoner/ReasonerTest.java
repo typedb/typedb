@@ -48,6 +48,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 public class ReasonerTest {
+
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("query-test");
     private static final Path logDir = dataDir.resolve("logs");
     private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
