@@ -29,11 +29,8 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
     private final Driver<ACTOR> driver;
     private final String name;
 
-    public static <NEW_ACTOR extends Actor<NEW_ACTOR>> Driver<NEW_ACTOR> driver(
-            Function<Driver<NEW_ACTOR>, NEW_ACTOR> actorFn, ActorExecutorService executorService) {
-        Driver<NEW_ACTOR> actor = new Driver<>(executorService);
-        actor.actor = actorFn.apply(actor);
-        return actor;
+    public static <A extends Actor<A>> Driver<A> driver(Function<Driver<A>, A> actorFn, ActorExecutorService service) {
+        return new Driver<>(actorFn, service);
     }
 
     protected abstract void exception(Throwable e);
@@ -56,13 +53,14 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
 
         private static final String ERROR_ACTOR_NOT_SETUP =
                 "Attempting to access the Actor, but it is not yet setup. " +
-                "Are you trying to send a message to yourself within the constructor?";
+                        "Are you trying to send a message to yourself within the constructor?";
 
         private ACTOR actor;
         private final ActorExecutorService executorService;
         private final ActorExecutor executor;
 
-        private Driver(ActorExecutorService executorService) {
+        private Driver(Function<Driver<ACTOR>, ACTOR> actorFn, ActorExecutorService executorService) {
+            this.actor = actorFn.apply(this);
             this.executorService = executorService;
             this.executor = executorService.nextExecutor();
         }
