@@ -40,11 +40,13 @@ import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
+import graql.lang.pattern.variable.UnboundVariable;
 import graql.lang.query.GraqlMatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.set;
@@ -106,15 +108,18 @@ public class Reasoner {
 
     public FunctionalIterator<ConceptMap> execute(Disjunction disjunction, GraqlMatch.Modifiers modifiers, Context.Query context) {
         logicMgr.typeResolver().resolve(disjunction);
-        Set<Identifier.Variable.Name> filter = iterate(modifiers.filter()).map(v -> v.reference().asName())
-                .map(Identifier.Variable::of).toSet();
+
         if (!disjunction.isCoherent()) {
             Set<Conjunction> causes = notCoherentCauses(disjunction);
             throw GraknException.of(UNSATISFIABLE_PATTERN, disjunction, causes);
         }
 
         if (mayReason(disjunction, context)) return executeReasoner(disjunction, modifiers, context);
-        else return executeTraversal(disjunction, context, filter);
+        else return executeTraversal(disjunction, context, filter(modifiers.filter()));
+    }
+
+    private Set<Identifier.Variable.Name> filter(List<UnboundVariable> graqlVars) {
+        return iterate(graqlVars).map(v -> v.reference().asName()).map(Identifier.Variable::of).toSet();
     }
 
     private Set<Conjunction> notCoherentCauses(Disjunction disjunction) {

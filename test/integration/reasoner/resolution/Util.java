@@ -24,18 +24,15 @@ import graql.lang.Graql;
 
 public class Util {
 
-
-     public static Disjunction resolvedDisjunction(String query, LogicManager logicMgr) {
+    public static Disjunction resolvedDisjunction(String query, LogicManager logicMgr) {
         Disjunction disjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise());
         logicMgr.typeResolver().resolve(disjunction);
         return disjunction;
     }
 
-
     public static Conjunction resolvedConjunction(String query, LogicManager logicMgr) {
-        Disjunction disjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise());
+        Disjunction disjunction = resolvedDisjunction(query, logicMgr);
         assert disjunction.conjunctions().size() == 1;
-        logicMgr.typeResolver().resolve(disjunction);
         return disjunction.conjunctions().get(0);
     }
 

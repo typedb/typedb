@@ -1057,7 +1057,7 @@ public class TypeResolverTest {
 
         assertEquals(expectedLabels, resolvedTypeMap(conjunction).get("$_relation:partner"));
 
-        typeResolver.resolvePositive(conjunction);
+        typeResolver.resolvePositive(conjunction, false);
         Set<String> expectedResolvedTypes = set("partnership:partner");
 
         assertEquals(expectedResolvedTypes, resolvedTypeMap(disjunction.conjunctions().get(0)).get("$_relation:partner"));

@@ -128,15 +128,11 @@ public class TypeResolver {
         }
     }
 
-    public void resolvePositive(Conjunction conjunction) {
-        resolvePositive(conjunction, list(), false);
-    }
-
     public void resolvePositive(Conjunction conjunction, boolean insertable) {
         resolvePositive(conjunction, list(), insertable);
     }
 
-    public void resolvePositive(Conjunction conjunction, List<Conjunction> scopingConjunctions, boolean insertable) {
+    private void resolvePositive(Conjunction conjunction, List<Conjunction> scopingConjunctions, boolean insertable) {
         resolveLabels(conjunction);
         if (!isSchemaQuery(conjunction)) {
             Traversal resolverTraversal = new Traversal();
@@ -391,7 +387,7 @@ public class TypeResolver {
                 valueTypes.forEach(valueType -> traversal.valueType(resolver.id(), valueType));
                 resolverValueTypes.put(resolver.id(), valueTypes);
             } else if (!resolverValueTypes.get(resolver.id()).containsAll(valueTypes)) {
-                // TODO this is a bit odd - can we set UNSATISFIABLE here and short circuit?
+                // TODO this is a bit odd - can we set not coherent here and short circuit?
                 throw GraknException.of(UNSATISFIABLE_PATTERN, conjunction, constraint);
             }
             registerSubAttribute(resolver);
