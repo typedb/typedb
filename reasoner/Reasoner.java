@@ -189,4 +189,5 @@ public class Reasoner {
         newClone.bound(bounds.toMap(Type::getLabel, Thing::getIID));
         return newClone;
     }
+
 }

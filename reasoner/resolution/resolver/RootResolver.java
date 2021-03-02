@@ -50,26 +50,17 @@ public interface RootResolver {
         private final Consumer<Top> onAnswer;
         private final Consumer<Integer> onFail;
         private Consumer<Throwable> onException;
-        private final Long offset;
-        private final Long limit;
-        private long skipped;
-        private long answered;
 
         public Conjunction(Driver<Conjunction> driver, grakn.core.pattern.Conjunction conjunction,
-                           @Nullable Long offset, @Nullable Long limit, Consumer<Top> onAnswer,
-                           Consumer<Integer> onFail, Consumer<Throwable> onException,
+                           Consumer<Top> onAnswer, Consumer<Integer> onFail, Consumer<Throwable> onException,
                            Driver<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                            TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
                            Planner planner, boolean resolutionTracing) {
             super(driver, Conjunction.class.getSimpleName() + "(pattern:" + conjunction + ")", conjunction,
                   resolutionRecorder, registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
-            this.offset = offset;
-            this.limit = limit;
             this.onAnswer = onAnswer;
             this.onFail = onFail;
             this.onException = onException;
-            this.skipped = 0;
-            this.answered = 0;
         }
 
         @Override
@@ -95,12 +86,8 @@ public interface RootResolver {
 
         @Override
         protected void answerToUpstream(AnswerState answer, Request fromUpstream, int iteration) {
-            if ((limit == null) || (answered < limit)) {
-                submitAnswer(answer.asTop());
-                this.answered++;
-            } else {
-                submitFail(iteration);
-            }
+            assert answer.isTop();
+            submitAnswer(answer.asTop());
         }
 
         @Override
@@ -138,20 +125,11 @@ public interface RootResolver {
             RequestState requestState = requestStates.get(fromUpstream);
             if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
                 requestState.recordProduced(upstreamAnswer.conceptMap());
-                if (mustOffset()) {
-                    this.skipped++;
-                    return false;
-                } else {
-                    answerToUpstream(upstreamAnswer, fromUpstream, iteration);
-                    return true;
-                }
+                answerToUpstream(upstreamAnswer, fromUpstream, iteration);
+                return true;
             } else {
                 return false;
             }
-        }
-
-        private boolean mustOffset() {
-            return offset != null && skipped < offset;
         }
 
         static class RequestState extends CompoundResolver.RequestState {
@@ -184,21 +162,16 @@ public interface RootResolver {
     class Disjunction extends DisjunctionResolver<Disjunction> implements RootResolver {
 
         private static final Logger LOG = LoggerFactory.getLogger(Disjunction.class);
-        private final Long offset;
-        private final Long limit;
         private final Consumer<Top> onAnswer;
         private final Consumer<Integer> onFail;
         private final Consumer<Throwable> onException;
 
         public Disjunction(Driver<Disjunction> driver, grakn.core.pattern.Disjunction disjunction,
-                           @Nullable Long offset, @Nullable Long limit, Consumer<Top> onAnswer,
-                           Consumer<Integer> onFail, Consumer<Throwable> onException,
+                           Consumer<Top> onAnswer, Consumer<Integer> onFail, Consumer<Throwable> onException,
                            Driver<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                            TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
             super(driver, Disjunction.class.getSimpleName() + "(pattern:" + disjunction + ")", disjunction,
                   resolutionRecorder, registry, traversalEngine, conceptMgr, resolutionTracing);
-            this.offset = offset;
-            this.limit = limit;
             this.onAnswer = onAnswer;
             this.onFail = onFail;
             this.onException = onException;
@@ -223,12 +196,7 @@ public interface RootResolver {
         @Override
         protected void answerToUpstream(AnswerState answer, Request fromUpstream, int iteration) {
             assert answer.isTop();
-            if ((limit == null) || (answered < limit)) {
-                submitAnswer(answer.asTop());
-                this.answered++;
-            } else {
-                submitFail(iteration);
-            }
+            submitAnswer(answer.asTop());
         }
 
         @Override
@@ -247,22 +215,13 @@ public interface RootResolver {
             onFail.accept(iteration);
         }
 
-        public boolean mustOffset() {
-            return offset != null && skipped < offset;
-        }
-
         @Override
         protected boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
             RequestState requestState = requestStates.get(fromUpstream);
             if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
                 requestState.recordProduced(upstreamAnswer.conceptMap());
-                if (mustOffset()) {
-                    this.skipped++;
-                    return false;
-                } else {
-                    answerToUpstream(upstreamAnswer, fromUpstream, iteration);
-                    return true;
-                }
+                answerToUpstream(upstreamAnswer, fromUpstream, iteration);
+                return true;
             } else {
                 return false;
             }

@@ -63,12 +63,11 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private int iteration;
     private Queue<ConceptMap> queue;
 
-    // TODO: this class
+    // TODO: this class should be be a Producer implement a different async processing mechanism
     public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers,
                             Options.Query options) {
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
-        this.rootResolver = resolverRegistry.root(conjunction, modifiers.offset().orElse(null), modifiers.limit().orElse(null),
-                                                  this::requestAnswered, this::requestFailed, this::exception);
+        this.rootResolver = resolverRegistry.root(conjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.options = options;
         Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver).toDownstream();
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
@@ -84,8 +83,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     public ReasonerProducer(Disjunction disjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers,
                             Options.Query options) {
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
-        this.rootResolver = resolverRegistry.root(disjunction, modifiers.offset().orElse(null), modifiers.limit().orElse(null),
-                                                  this::requestAnswered, this::requestFailed, this::exception); ;
+        this.rootResolver = resolverRegistry.root(disjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.options = options;
         Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver).toDownstream();
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
@@ -102,8 +100,6 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     public synchronized void produce(Queue<ConceptMap> queue, int request, ExecutorService executor) {
         assert this.queue == null || this.queue == queue;
         this.queue = queue;
-        if (rootResolver == null) exception(GraknException.of(RESOLUTION_TERMINATED));
-
         this.required.addAndGet(request);
         int canRequest = computeSize - processing.get();
         int toRequest = Math.min(canRequest, request);
