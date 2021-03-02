@@ -65,6 +65,10 @@ public class Disjunction implements Pattern, Cloneable {
         return conjunctions;
     }
 
+    public boolean isCoherent() {
+        return iterate(conjunctions).allMatch(Conjunction::isCoherent);
+    }
+
     @Override
     public Disjunction clone() {
         return new Disjunction(iterate(conjunctions).map(Conjunction::clone).toList());

@@ -32,24 +32,24 @@ import java.util.stream.Collectors;
 
 public class Util {
 
-
     public static Conjunction resolvedConjunction(String query, LogicManager logicMgr) {
-        Conjunction conjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
-        logicMgr.typeResolver().resolve(conjunction);
-        return conjunction;
+        Disjunction disjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise());
+        assert disjunction.conjunctions().size() == 1;
+        logicMgr.typeResolver().resolve(disjunction);
+        return disjunction.conjunctions().get(0);
     }
 
-
-    public static Rule createRule(String label, String whenConjunctionPattern, String thenThingPattern, LogicManager logicMgr) {
+    public static Rule createRule(String label, String whenConjunctionPattern, String thenPattern, LogicManager logicMgr) {
         Rule rule = logicMgr.putRule(label, Graql.parsePattern(whenConjunctionPattern).asConjunction(),
-                                     Graql.parseVariable(thenThingPattern).asThing());
+                                     Graql.parseVariable(thenPattern).asThing());
         return rule;
     }
 
     public static Map<String, Set<String>> getStringMapping(Map<Identifier.Variable.Retrievable, Set<Identifier.Variable>> map) {
-        return map.entrySet().stream().collect(Collectors.toMap(v -> v.getKey().toString(),
-                                                                e -> e.getValue().stream().map(Identifier::toString).collect(Collectors.toSet()))
-        );
+        return map.entrySet().stream().collect(Collectors.toMap(
+                v -> v.getKey().toString(),
+                e -> e.getValue().stream().map(Identifier::toString).collect(Collectors.toSet())
+        ));
     }
 
 }

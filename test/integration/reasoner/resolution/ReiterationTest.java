@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner;
+package grakn.core.reasoner.resolution;
 
 import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.common.exception.GraknException;
@@ -23,9 +23,7 @@ import grakn.core.common.parameters.Arguments;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.actor.EventLoopGroup;
 import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.variable.Variable;
-import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Identity;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.framework.Request;
@@ -50,6 +48,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.parameters.Options.Database;
+import static grakn.core.reasoner.resolution.Util.resolvedConjunction;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
@@ -116,7 +115,7 @@ public class ReiterationTest {
 
         try (RocksSession session = dataSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                Conjunction conjunction = parseConjunction(transaction, "{ $y isa Y; }");
+                Conjunction conjunction = resolvedConjunction("{ $y isa Y; }", transaction.logic());
                 Set<Identifier.Variable.Name> filter = iterate(conjunction.variables()).map(Variable::id).filter(Identifier::isName)
                         .map(Identifier.Variable::asName).toSet();
                 ResolverRegistry registry = transaction.reasoner().resolverRegistry();
@@ -179,12 +178,6 @@ public class ReiterationTest {
         root.execute(actor -> actor.receiveRequest(
                 Request.create(root, downstream), iteration)
         );
-    }
-
-    private Conjunction parseConjunction(RocksTransaction transaction, String query) {
-        Conjunction conjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
-        transaction.logic().typeResolver().resolve(conjunction);
-        return conjunction;
     }
 
     private RocksSession schemaSession() {

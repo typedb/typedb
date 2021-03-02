@@ -73,7 +73,7 @@ public class Conjunction implements Pattern, Cloneable {
     private final Set<Negation> negations;
     private final int hash;
 
-    private boolean isSatisfiable;
+    private boolean isCoherent;
     private boolean isBounded;
 
     public Conjunction(Set<Variable> variables, Set<Negation> negations) {
@@ -81,7 +81,7 @@ public class Conjunction implements Pattern, Cloneable {
         this.variableMap = parseToMap(variables);
         this.negations = unmodifiableSet(negations);
         this.hash = Objects.hash(variables, negations);
-        this.isSatisfiable = true;
+        this.isCoherent = true;
         this.isBounded = false;
     }
 
@@ -124,7 +124,7 @@ public class Conjunction implements Pattern, Cloneable {
                     Optional<LabelConstraint> existingLabel = var.asType().label();
                     if (existingLabel.isPresent() && !existingLabel.get().properLabel().equals(boundVar.first())) {
                         var.setSatisfiable(false);
-                        this.setSatisfiable(false);
+                        this.setCoherent(false);
                     } else if (!existingLabel.isPresent()) {
                         var.asType().label(boundVar.first());
                         var.asType().setResolvedTypes(set(boundVar.first()));
@@ -133,7 +133,7 @@ public class Conjunction implements Pattern, Cloneable {
                     Optional<IIDConstraint> existingIID = var.asThing().iid();
                     if (existingIID.isPresent() && !Arrays.equals(existingIID.get().iid(), (boundVar.second()))) {
                         var.setSatisfiable(false);
-                        this.setSatisfiable(false);
+                        this.setCoherent(false);
                     } else {
                         var.asThing().iid(boundVar.second());
                     }
@@ -171,12 +171,12 @@ public class Conjunction implements Pattern, Cloneable {
         return traversal(new HashSet<>());
     }
 
-    public void setSatisfiable(boolean isSatisfiable) {
-        this.isSatisfiable = isSatisfiable;
+    public void setCoherent(boolean isCoherent) {
+        this.isCoherent = isCoherent;
     }
 
-    public boolean isSatisfiable() {
-        return isSatisfiable;
+    public boolean isCoherent() {
+        return isCoherent && iterate(negations).allMatch(Negation::isCoherent);
     }
 
     public boolean isBounded() {

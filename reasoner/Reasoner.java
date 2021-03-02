@@ -40,16 +40,17 @@ import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
+import graql.lang.pattern.variable.UnboundVariable;
 import graql.lang.query.GraqlMatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
-import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_CONJUNCTION;
+import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_PATTERN;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
 import static grakn.core.concurrent.common.Executors.PARALLELISATION_FACTOR;
@@ -79,22 +80,8 @@ public class Reasoner {
                                                      logicMgr, this.defaultContext.options().traceInference());
     }
 
-    ResolverRegistry resolverRegistry() {
+    public ResolverRegistry resolverRegistry() {
         return resolverRegistry;
-    }
-
-    private void resolveTypes(Disjunction disjunction, List<Conjunction> scopingConjunctions) {
-        for (Conjunction conjunction : disjunction.conjunctions()) {
-            logicMgr.typeResolver().resolve(conjunction, scopingConjunctions);
-            for (Negation negation : conjunction.negations()) {
-                resolveTypes(negation.disjunction(), list(scopingConjunctions, conjunction));
-            }
-        }
-    }
-
-    private boolean isSchemaQuery(Conjunction conjunction, Set<Identifier.Variable.Name> filter) {
-        return !filter.isEmpty() && iterate(filter).noneMatch(id -> conjunction.variable(id).isThing())
-                || iterate(conjunction.variables()).noneMatch(Variable::isThing);
     }
 
     private boolean mayReason(Disjunction disjunction, Context.Query context) {
@@ -120,15 +107,33 @@ public class Reasoner {
     }
 
     public FunctionalIterator<ConceptMap> execute(Disjunction disjunction, GraqlMatch.Modifiers modifiers, Context.Query context) {
-        resolveTypes(disjunction, list());
-        Set<Identifier.Variable.Name> filter =
-                iterate(modifiers.filter()).map(v -> v.reference().asName()).map(Identifier.Variable::of).toSet();
-        iterate(disjunction.conjunctions()).filter(c -> !c.isSatisfiable() && !isSchemaQuery(c, filter)).map(c -> {
-            throw GraknException.of(UNSATISFIABLE_CONJUNCTION, c);
-        });
+        logicMgr.typeResolver().resolve(disjunction);
+
+        if (!disjunction.isCoherent()) {
+            Set<Conjunction> causes = incoherentConjunctions(disjunction);
+            throw GraknException.of(UNSATISFIABLE_PATTERN, disjunction, causes);
+        }
 
         if (mayReason(disjunction, context)) return executeReasoner(disjunction, modifiers, context);
-        else return executeTraversal(disjunction, context, filter);
+        else return executeTraversal(disjunction, context, filter(modifiers.filter()));
+    }
+
+    private Set<Identifier.Variable.Name> filter(List<UnboundVariable> graqlVars) {
+        return iterate(graqlVars).map(v -> v.reference().asName()).map(Identifier.Variable::of).toSet();
+    }
+
+    private Set<Conjunction> incoherentConjunctions(Disjunction disjunction) {
+        assert !disjunction.isCoherent();
+        Set<Conjunction> causes = new HashSet<>();
+        for (Conjunction conjunction : disjunction.conjunctions()) {
+            FunctionalIterator<Negation> incoherentChildren = iterate(conjunction.negations()).filter(negation -> !negation.isCoherent());
+            if (!conjunction.isCoherent() && !incoherentChildren.hasNext()) {
+                causes.add(conjunction);
+            } else {
+                incoherentChildren.forEachRemaining(negation -> causes.addAll(incoherentConjunctions(negation.disjunction())));
+            }
+        }
+        return causes;
     }
 
     private FunctionalIterator<ConceptMap> executeReasoner(Disjunction disjunction, GraqlMatch.Modifiers modifiers,
@@ -174,7 +179,7 @@ public class Reasoner {
 
     private FunctionalIterator<ConceptMap> iterator(Conjunction conjunction, Set<Identifier.Variable.Name> filter,
                                                     Context.Query context) {
-        if (!conjunction.isSatisfiable()) return Iterators.empty();
+        if (!conjunction.isCoherent()) return Iterators.empty();
         if (conjunction.negations().isEmpty()) {
             return traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
         } else {

@@ -33,7 +33,7 @@ import grakn.core.concept.type.RoleType;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
 import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.Negation;
+import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
@@ -214,34 +214,25 @@ public class Rule {
     }
 
     private Conjunction whenPattern(graql.lang.pattern.Conjunction<? extends Pattern> conjunction, LogicManager logicMgr) {
-        Conjunction conj = Conjunction.create(conjunction.normalise().patterns().get(0));
+        Disjunction when = Disjunction.create(conjunction.normalise());
+        assert when.conjunctions().size() == 1;
 
         // TODO: remove this when we fully implement negation and don't have to ban it in rules
-        if (!conj.negations().isEmpty()) {
+        if (!when.conjunctions().get(0).negations().isEmpty()) {
             throw GraknException.of(INVALID_NEGATION, getLabel());
         }
 
-        if (iterate(conj.negations()).filter(neg -> neg.disjunction().conjunctions().size() != 1).hasNext()) {
+        if (iterate(when.conjunctions().get(0).negations()).filter(neg -> neg.disjunction().conjunctions().size() != 1).hasNext()) {
             throw GraknException.of(INVALID_NEGATION_CONTAINS_DISJUNCTION, getLabel());
         }
 
-        logicMgr.typeResolver().resolve(conj);
-        for (Negation negation : conj.negations()) {
-            assert negation.disjunction().conjunctions().size() == 1;
-            for (Conjunction c : negation.disjunction().conjunctions()) {
-                logicMgr.typeResolver().resolve(c, list(conj));
-                if (!c.isSatisfiable()) {
-                    LOG.warn("Rule {} contains unsatisfiable negated conjunction: {}", getLabel(), c);
-                }
-            }
-        }
-        return conj;
+        logicMgr.typeResolver().resolve(when);
+        return when.conjunctions().get(0);
     }
 
     private Conjunction thenPattern(graql.lang.pattern.variable.ThingVariable<?> thenVariable, LogicManager logicMgr) {
-        // TODO: when applying the type resolver, we should be using _insert semantics_ during the type resolution!!!
         Conjunction conj = new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
-        logicMgr.typeResolver().resolve(conj);
+        logicMgr.typeResolver().resolveVariables(conj, true);
         return conj;
     }
 
