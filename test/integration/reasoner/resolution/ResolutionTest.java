@@ -147,33 +147,6 @@ public class ResolutionTest {
     }
 
     @Test
-    public void test_conjunction_no_rules_limited_offset() throws InterruptedException {
-        try (RocksSession session = schemaSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                transaction.query().define(Graql.parseQuery(
-                        "define person sub entity, owns age, plays twins:twin1, plays twins:twin2;" +
-                                "age sub attribute, value long;" +
-                                "twins sub relation, relates twin1, relates twin2;"));
-                transaction.commit();
-            }
-        }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 24; $t(twin1: $p1, twin2: $p2) isa twins; $p2 isa person;"));
-                transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 24; $t(twin1: $p1, twin2: $p2) isa twins; $p2 isa person;"));
-                transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 24; $t(twin1: $p1, twin2: $p2) isa twins; $p2 isa person;"));
-                transaction.commit();
-            }
-        }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                Conjunction conjunctionPattern = resolvedConjunction("{ $t(twin1: $p1, twin2: $p2) isa twins; $p1 has age $a; }", transaction.logic());
-                createRootAndAssertResponses(transaction, conjunctionPattern, 1L, 1L, 1L);
-            }
-        }
-    }
-
-    @Test
     public void test_disjunction_no_rules() throws InterruptedException {
         try (RocksSession session = schemaSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
@@ -199,38 +172,6 @@ public class ResolutionTest {
                                                            Identifier.Variable.name("p2"));
                 Disjunction disjunction = resolvedDisjunction("{ $t(twin1: $p1, twin2: $p2) isa twins; { $p1 has age 24; } or { $p1 has age 26; }; }", transaction.logic());
                 createRootAndAssertResponses(transaction, disjunction, filter, 2L);
-            }
-        }
-    }
-
-    @Test
-    public void test_disjunction_no_rules_limit_offset() throws InterruptedException {
-        try (RocksSession session = schemaSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                transaction.query().define(Graql.parseQuery(
-                        "define person sub entity, owns age, plays twins:twin1, plays twins:twin2;" +
-                                "age sub attribute, value long;" +
-                                "twins sub relation, relates twin1, relates twin2;"));
-                transaction.commit();
-            }
-        }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 24; $t(twin1: $p1, twin2: $p2) isa twins; $p2 isa person;"));
-                transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 25; $t(twin1: $p1, twin2: $p2) isa twins; $p2 isa person;"));
-                transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 26; $t(twin1: $p1, twin2: $p2) isa twins; $p2 isa person;"));
-                transaction.query().insert(Graql.parseQuery("insert $p1 isa person, has age 27; $t(twin1: $p1, twin2: $p2) isa twins; $p2 isa person;"));
-                transaction.commit();
-            }
-        }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("t"),
-                                                           Identifier.Variable.name("p1"),
-                                                           Identifier.Variable.name("p2"));
-                Disjunction disjunction = resolvedDisjunction("{ $t(twin1: $p1, twin2: $p2) isa twins; " +
-                                                                      "{ $p1 has age 24; } or { $p1 has age 26; } or { $p1 has age 27;} ; }", transaction.logic());
-                createRootAndAssertResponses(transaction, disjunction, filter, 1L, 1L, 1L);
             }
         }
     }
