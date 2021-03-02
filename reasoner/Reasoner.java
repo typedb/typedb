@@ -125,13 +125,10 @@ public class Reasoner {
     private Set<Conjunction> incoherentConjunctions(Disjunction disjunction) {
         assert !disjunction.isCoherent();
         Set<Conjunction> causes = new HashSet<>();
-        for (Conjunction conjunction : disjunction.conjunctions()) {
-            FunctionalIterator<Negation> incoherentChildren = iterate(conjunction.negations()).filter(negation -> !negation.isCoherent());
-            if (!conjunction.isCoherent() && !incoherentChildren.hasNext()) {
-                causes.add(conjunction);
-            } else {
-                incoherentChildren.forEachRemaining(negation -> causes.addAll(incoherentConjunctions(negation.disjunction())));
-            }
+        for (Conjunction conj : disjunction.conjunctions()) {
+            FunctionalIterator<Negation> incoherentNegs = iterate(conj.negations()).filter(n -> !n.isCoherent());
+            if (!conj.isCoherent() && !incoherentNegs.hasNext()) causes.add(conj);
+            else incoherentNegs.forEachRemaining(n -> causes.addAll(incoherentConjunctions(n.disjunction())));
         }
         return causes;
     }
