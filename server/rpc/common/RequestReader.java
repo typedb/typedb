@@ -41,11 +41,11 @@ public class RequestReader {
         if (request.getExplainOptCase().equals(EXPLAIN)) {
             options.explain(request.getExplain());
         }
-        if (request.getBatchSizeOptCase().equals(BATCH_SIZE)) {
-            options.responseBatchSize(request.getBatchSize());
-        }
         if (request.getParallelOptCase().equals(PARALLEL)) {
             options.parallel(request.getParallel());
+        }
+        if (request.getBatchSizeOptCase().equals(BATCH_SIZE)) {
+            options.responseBatchSize(request.getBatchSize());
         }
         if (request.getSessionIdleTimeoutOptCase().equals(SESSION_IDLE_TIMEOUT_MILLIS)) {
             options.sessionIdleTimeoutMillis(request.getSessionIdleTimeoutMillis());
