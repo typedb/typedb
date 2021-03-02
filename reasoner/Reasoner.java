@@ -54,8 +54,8 @@ import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_PAT
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
 import static grakn.core.concurrent.common.Executors.PARALLELISATION_FACTOR;
-import static grakn.core.concurrent.common.Executors.asyncPool1;
-import static grakn.core.concurrent.common.Executors.eventLoopGroup;
+import static grakn.core.concurrent.common.Executors.async1;
+import static grakn.core.concurrent.common.Executors.actor;
 import static grakn.core.concurrent.producer.Producers.produce;
 
 public class Reasoner {
@@ -75,8 +75,8 @@ public class Reasoner {
         this.logicMgr = logicMgr;
         this.defaultContext = new Context.Query(context, new Options.Query());
         this.defaultContext.producer(Either.first(EXHAUSTIVE));
-        this.resolutionRecorder = Actor.driver(ResolutionRecorder::new, eventLoopGroup());
-        this.resolverRegistry = new ResolverRegistry(eventLoopGroup(), resolutionRecorder, traversalEng, conceptMgr,
+        this.resolutionRecorder = Actor.driver(ResolutionRecorder::new, actor());
+        this.resolverRegistry = new ResolverRegistry(actor(), resolutionRecorder, traversalEng, conceptMgr,
                                                      logicMgr, this.defaultContext.options().traceInference());
     }
 
@@ -141,7 +141,7 @@ public class Reasoner {
         ReasonerProducer producer = disjunction.conjunctions().size() == 1
                 ? new ReasonerProducer(disjunction.conjunctions().get(0), resolverRegistry, modifiers, context.options())
                 : new ReasonerProducer(disjunction, resolverRegistry, modifiers, context.options());
-        return produce(producer, context.producer(), asyncPool1());
+        return produce(producer, context.producer(), async1());
     }
 
     private FunctionalIterator<ConceptMap> executeTraversal(Disjunction disjunction, Context.Query context,
@@ -149,7 +149,7 @@ public class Reasoner {
         FunctionalIterator<ConceptMap> answers;
         FunctionalIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
         if (!context.options().parallel()) answers = conjs.flatMap(conj -> iterator(conj, filter, context));
-        else answers = produce(conjs.map(c -> producer(c, filter, context)).toList(), context.producer(), asyncPool1());
+        else answers = produce(conjs.map(c -> producer(c, filter, context)).toList(), context.producer(), async1());
         if (disjunction.conjunctions().size() > 1) answers = answers.distinct();
         return answers;
     }

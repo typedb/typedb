@@ -53,7 +53,7 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.cartesian;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
-import static grakn.core.concurrent.common.Executors.asyncPool2;
+import static grakn.core.concurrent.common.Executors.async2;
 import static grakn.core.concurrent.producer.Producers.async;
 import static grakn.core.concurrent.producer.Producers.produce;
 import static grakn.core.graph.common.Encoding.Edge.ISA;
@@ -134,7 +134,7 @@ public class Traversal {
             return async(cartesian(planners.parallelStream().map(planner -> {
                 planner.tryOptimise(graphMgr, extraPlanningTime);
                 return planner.procedure().producer(graphMgr, parameters, filter(), parallelisation);
-            }).map(producer -> produce(producer, nestedCtx, asyncPool2())).collect(toList())).map(partialAnswers -> {
+            }).map(producer -> produce(producer, nestedCtx, async2())).collect(toList())).map(partialAnswers -> {
                 Map<Retrievable, Vertex<?, ?>> combinedAnswers = new HashMap<>();
                 partialAnswers.forEach(p -> combinedAnswers.putAll(p.map()));
                 return VertexMap.of(combinedAnswers);

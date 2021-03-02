@@ -24,46 +24,45 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
-// TODO: Make this class extend java.util.concurrent.ExecutorService
 @ThreadSafe
-public class EventLoopGroup {
+public class ActorExecutorService {
 
-    private final EventLoop[] eventLoops;
+    private final ActorExecutor[] executors;
     private final AtomicInteger nextIndex;
 
-    public EventLoopGroup(int threadCount) {
-        this(threadCount, new NamedThreadFactory("grakn-core-elg"));
+    public ActorExecutorService(int size) {
+        this(size, new NamedThreadFactory("grakn-core-actor"));
     }
 
-    public EventLoopGroup(int threadCount, ThreadFactory threadFactory) {
-        this(threadCount, threadFactory, System::currentTimeMillis);
+    public ActorExecutorService(int size, ThreadFactory threadFactory) {
+        this(size, threadFactory, System::currentTimeMillis);
     }
 
-    public EventLoopGroup(int threadCount, ThreadFactory threadFactory, Supplier<Long> clock) {
-        eventLoops = new EventLoop[threadCount];
-        for (int i = 0; i < threadCount; i++) {
-            eventLoops[i] = new EventLoop(threadFactory, clock);
+    public ActorExecutorService(int size, ThreadFactory threadFactory, Supplier<Long> clock) {
+        executors = new ActorExecutor[size];
+        for (int i = 0; i < size; i++) {
+            executors[i] = new ActorExecutor(threadFactory, clock);
         }
         nextIndex = new AtomicInteger(0);
     }
 
-    public EventLoop nextEventLoop() {
-        return eventLoops[nextIndexAndIncrement()];
+    ActorExecutor nextExecutor() {
+        return executors[nextIndexAndIncrement()];
     }
 
     public void await() throws InterruptedException {
-        for (int i = 0; i < eventLoops.length; i++) {
-            eventLoops[i].await();
+        for (int i = 0; i < executors.length; i++) {
+            executors[i].await();
         }
     }
 
     public void stop() throws InterruptedException {
-        for (int i = 0; i < eventLoops.length; i++) {
-            eventLoops[i].stop();
+        for (int i = 0; i < executors.length; i++) {
+            executors[i].stop();
         }
     }
 
     private int nextIndexAndIncrement() {
-        return nextIndex.getAndUpdate(index -> (index + 1) % eventLoops.length);
+        return nextIndex.getAndUpdate(index -> (index + 1) % executors.length);
     }
 }

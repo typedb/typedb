@@ -21,7 +21,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options.Database;
 import grakn.core.concurrent.actor.Actor;
-import grakn.core.concurrent.actor.EventLoopGroup;
+import grakn.core.concurrent.actor.ActorExecutorService;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.variable.Variable;
@@ -503,7 +503,7 @@ public class ResolutionTest {
 
     private RocksTransaction singleThreadElgTransaction(RocksSession session) {
         RocksTransaction transaction = session.transaction(Arguments.Transaction.Type.WRITE);
-        transaction.reasoner().resolverRegistry().setEventLoopGroup(new EventLoopGroup(1));
+        transaction.reasoner().resolverRegistry().setEventLoopGroup(new ActorExecutorService(1));
         return transaction;
     }
 

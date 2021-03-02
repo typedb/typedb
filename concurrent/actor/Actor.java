@@ -30,8 +30,8 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
     private final String name;
 
     public static <NEW_ACTOR extends Actor<NEW_ACTOR>> Driver<NEW_ACTOR> driver(
-            Function<Driver<NEW_ACTOR>, NEW_ACTOR> actorFn, EventLoopGroup eventLoopGroup) {
-        Driver<NEW_ACTOR> actor = new Driver<>(eventLoopGroup);
+            Function<Driver<NEW_ACTOR>, NEW_ACTOR> actorFn, ActorExecutorService executorService) {
+        Driver<NEW_ACTOR> actor = new Driver<>(executorService);
         actor.actor = actorFn.apply(actor);
         return actor;
     }
@@ -55,15 +55,16 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
     public static class Driver<ACTOR extends Actor<ACTOR>> {
 
         private static final String ERROR_ACTOR_NOT_SETUP =
-                "Attempting to access the Actor, but it is not yet setup. Are you trying to send a message to yourself within the constructor?";
+                "Attempting to access the Actor, but it is not yet setup. " +
+                "Are you trying to send a message to yourself within the constructor?";
 
         private ACTOR actor;
-        private final EventLoopGroup eventLoopGroup;
-        private final EventLoop eventLoop;
+        private final ActorExecutorService executorService;
+        private final ActorExecutor executor;
 
-        private Driver(EventLoopGroup eventLoopGroup) {
-            this.eventLoopGroup = eventLoopGroup;
-            this.eventLoop = eventLoopGroup.nextEventLoop();
+        private Driver(ActorExecutorService executorService) {
+            this.executorService = executorService;
+            this.executor = executorService.nextExecutor();
         }
 
         // TODO: do not use this method - any usages should be removed ASAP
@@ -77,7 +78,7 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
 
         public void execute(Consumer<ACTOR> job) {
             assert actor != null : ERROR_ACTOR_NOT_SETUP;
-            eventLoop.submit(() -> job.accept(actor), actor::exception);
+            executor.submit(() -> job.accept(actor), actor::exception);
         }
 
         public CompletableFuture<Void> complete(Consumer<ACTOR> job) {
@@ -90,7 +91,7 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
         public <ANSWER> CompletableFuture<ANSWER> compute(Function<ACTOR, ANSWER> job) {
             assert actor != null : ERROR_ACTOR_NOT_SETUP;
             CompletableFuture<ANSWER> future = new CompletableFuture<>();
-            eventLoop.submit(
+            executor.submit(
                     () -> future.complete(job.apply(actor)),
                     e -> {
                         actor.exception(e);
@@ -100,17 +101,17 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
             return future;
         }
 
-    public EventLoop.FutureJob schedule(Consumer<ACTOR> job, long scheduleMillis) {
+    public ActorExecutor.FutureTask schedule(Consumer<ACTOR> job, long scheduleMillis) {
         assert actor != null : ERROR_ACTOR_NOT_SETUP;
-        return eventLoop.schedule(() -> job.accept(actor), scheduleMillis, actor::exception);
+        return executor.schedule(() -> job.accept(actor), scheduleMillis, actor::exception);
     }
 
-        public EventLoopGroup eventLoopGroup() {
-            return eventLoopGroup;
+        public ActorExecutorService executorService() {
+            return executorService;
         }
 
-        public EventLoop eventLoop() {
-            return eventLoop;
+        public ActorExecutor executor() {
+            return executor;
         }
     }
 }

@@ -26,9 +26,9 @@ import javax.annotation.concurrent.NotThreadSafe;
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.Optional;
 import java.util.PriorityQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TransferQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -38,40 +38,56 @@ import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTER
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @ThreadSafe
-public class EventLoop {
+public class ActorExecutor {
 
-    private static final Logger LOG = LoggerFactory.getLogger(EventLoop.class);
-    private static final Consumer<Throwable> DEFAULT_ERROR_HANDLER = e -> LOG.error("An unexpected error has occurred.", e);
+    private static final Logger LOG = LoggerFactory.getLogger(ActorExecutor.class);
 
-    private final TransferQueue<Job> submittedJobs;
-    private final ScheduledJobQueue scheduledJobs;
+    private final BlockingQueue<Task> submittedTasks;
+    private final ScheduledTaskQueue scheduledTasks;
+    private final AtomicBoolean isStopped;
     private final Supplier<Long> clock;
     private final Thread thread;
-    private final AtomicBoolean isStopped;
     private State state;
 
     private enum State {READY, RUNNING, STOPPED}
 
-    public EventLoop(ThreadFactory threadFactory, Supplier<Long> clock) {
-        this.thread = threadFactory.newThread(this::loop);
+    public ActorExecutor(ThreadFactory threadFactory, Supplier<Long> clock) {
+        this.thread = threadFactory.newThread(this::run);
         this.clock = clock;
-        submittedJobs = new LinkedTransferQueue<>();
-        scheduledJobs = new ScheduledJobQueue();
+        submittedTasks = new LinkedTransferQueue<>(); // TODO: Benchmark and verify that LinkedTransferQueue is actually most performant
+        scheduledTasks = new ScheduledTaskQueue();
         isStopped = new AtomicBoolean(false);
         state = State.READY;
         thread.start();
     }
 
-    public void submit(Runnable runnable, Consumer<Throwable> errorHandler) {
-        assert state != State.STOPPED : "unexpected state: " + state;
-        submittedJobs.offer(new Job(runnable, errorHandler));
+    private void run() {
+        state = State.RUNNING;
+        while (state == State.RUNNING) {
+            Task task = scheduledTasks.poll();
+            if (task != null) {
+                task.run();
+            } else {
+                try {
+                    task = submittedTasks.poll(scheduledTasks.timeToNext(), MILLISECONDS);
+                    if (task != null) task.run();
+                } catch (InterruptedException e) {
+                    throw GraknException.of(UNEXPECTED_INTERRUPTION);
+                }
+            }
+        }
     }
 
-    public FutureJob schedule(Runnable runnable, long scheduleMillis, Consumer<Throwable> errorHandler) {
+    public void submit(Runnable runnable, Consumer<Throwable> errorHandler) {
         assert state != State.STOPPED : "unexpected state: " + state;
-        FutureJob job = new FutureJob(runnable, scheduleMillis, errorHandler);
-        job.initialise();
-        return job;
+        submittedTasks.offer(new Task(runnable, errorHandler));
+    }
+
+    public FutureTask schedule(Runnable runnable, long scheduleMillis, Consumer<Throwable> errorHandler) {
+        assert state != State.STOPPED : "unexpected state: " + state;
+        FutureTask task = new FutureTask(runnable, scheduleMillis, errorHandler);
+        task.initialise();
+        return task;
     }
 
     public void await() throws InterruptedException {
@@ -80,30 +96,13 @@ public class EventLoop {
 
     public void stop() throws InterruptedException {
         if (isStopped.compareAndSet(false, true)) {
-            submit(() -> state = State.STOPPED, DEFAULT_ERROR_HANDLER);
+            submit(() -> state = State.STOPPED, e -> LOG.error("Unexpected error at stopping an ActorExecutor", e));
             await();
         }
     }
 
-    private void loop() {
-        state = State.RUNNING;
-        while (state == State.RUNNING) {
-            Job job = scheduledJobs.poll();
-            if (job != null) {
-                job.run();
-            } else {
-                try {
-                    job = submittedJobs.poll(scheduledJobs.timeToNext(), MILLISECONDS);
-                    if (job != null) job.run();
-                } catch (InterruptedException e) {
-                    throw GraknException.of(UNEXPECTED_INTERRUPTION);
-                }
-            }
-        }
-    }
-
     @NotThreadSafe
-    private static class Job implements Comparable<Job> {
+    private static class Task implements Comparable<Task> {
 
         private final Runnable runnable;
         private final Consumer<Throwable> errorHandler;
@@ -111,11 +110,11 @@ public class EventLoop {
         private boolean isCancelled;
         private boolean isRan;
 
-        private Job(Runnable runnable, Consumer<Throwable> errorHandler) {
+        private Task(Runnable runnable, Consumer<Throwable> errorHandler) {
             this(runnable, null, errorHandler);
         }
 
-        private Job(Runnable runnable, @Nullable Long scheduleMillis, Consumer<Throwable> errorHandler) {
+        private Task(Runnable runnable, @Nullable Long scheduleMillis, Consumer<Throwable> errorHandler) {
             this.runnable = runnable;
             this.scheduleMillis = scheduleMillis;
             this.errorHandler = errorHandler;
@@ -147,61 +146,61 @@ public class EventLoop {
         }
 
         @Override
-        public int compareTo(Job other) {
+        public int compareTo(Task other) {
             return Long.compare(scheduleMillis().orElse(0L), other.scheduleMillis().orElse(0L));
         }
     }
 
     @ThreadSafe
-    public class FutureJob {
+    public class FutureTask {
 
-        private final Job job;
+        private final Task task;
 
-        private FutureJob(Runnable runnable, long scheduleMillis, Consumer<Throwable> errorHandler) {
-            this.job = new Job(runnable, scheduleMillis, errorHandler);
+        private FutureTask(Runnable runnable, long scheduleMillis, Consumer<Throwable> errorHandler) {
+            this.task = new Task(runnable, scheduleMillis, errorHandler);
         }
 
         private void initialise() {
-            EventLoop.this.submit(() -> scheduledJobs.offer(job), job.errorHandler);
+            ActorExecutor.this.submit(() -> scheduledTasks.offer(task), task.errorHandler);
         }
 
         public void cancel() {
-            EventLoop.this.submit(job::cancel, job.errorHandler);
+            ActorExecutor.this.submit(task::cancel, task.errorHandler);
         }
     }
 
     @ThreadSafe
-    private class ScheduledJobQueue {
+    private class ScheduledTaskQueue {
 
-        private final PriorityQueue<Job> queue;
+        private final PriorityQueue<Task> queue;
 
-        private ScheduledJobQueue() {
+        private ScheduledTaskQueue() {
             queue = new PriorityQueue<>();
         }
 
         private long timeToNext() {
-            Job job = peek();
-            if (job == null) return Long.MAX_VALUE;
-            else return job.scheduleMillis().get() - clock.get();
+            Task task = peek();
+            if (task == null) return Long.MAX_VALUE;
+            else return task.scheduleMillis().get() - clock.get();
         }
 
-        private Job peek() {
-            Job job;
-            while ((job = queue.peek()) != null && job.isCancelled()) queue.poll();
-            return job;
+        private Task peek() {
+            Task task;
+            while ((task = queue.peek()) != null && task.isCancelled()) queue.poll();
+            return task;
         }
 
-        private Job poll() {
-            Job job = peek();
-            if (job == null) return null;
-            else if (job.scheduleMillis().get() > clock.get()) return null;
+        private Task poll() {
+            Task task = peek();
+            if (task == null) return null;
+            else if (task.scheduleMillis().get() > clock.get()) return null;
             else queue.poll();
-            return job;
+            return task;
         }
 
-        public void offer(Job job) {
-            assert job.scheduleMillis().isPresent();
-            queue.add(job);
+        public void offer(Task task) {
+            assert task.scheduleMillis().isPresent();
+            queue.add(task);
         }
     }
 }

@@ -21,7 +21,7 @@ package grakn.core.reasoner.resolution;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concurrent.actor.Actor;
-import grakn.core.concurrent.actor.EventLoopGroup;
+import grakn.core.concurrent.actor.ActorExecutorService;
 import grakn.core.concurrent.common.ConcurrentSet;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
@@ -76,12 +76,12 @@ public class ResolverRegistry {
     private final Actor.Driver<ResolutionRecorder> resolutionRecorder;
     private final TraversalEngine traversalEngine;
     private final Planner planner;
-    private EventLoopGroup elg;
+    private ActorExecutorService elg;
     private boolean explanations;
     private final boolean resolutionTracing;
     private AtomicBoolean terminated;
 
-    public ResolverRegistry(EventLoopGroup elg, Actor.Driver<ResolutionRecorder> resolutionRecorder,
+    public ResolverRegistry(ActorExecutorService elg, Actor.Driver<ResolutionRecorder> resolutionRecorder,
                             TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
                             boolean resolutionTracing) {
         this.elg = elg;
@@ -234,7 +234,7 @@ public class ResolverRegistry {
 
     // for testing
 
-    public void setEventLoopGroup(EventLoopGroup eventLoopGroup) {
+    public void setEventLoopGroup(ActorExecutorService eventLoopGroup) {
         this.elg = eventLoopGroup;
     }
 
