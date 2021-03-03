@@ -45,6 +45,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     private Boolean traceInference = null;
     private Boolean explain = null;
     private Integer batchSize = null;
+    private Boolean parallel = null;
     private Integer sessionIdlTimeoutMillis = null;
     private Integer schemaLockAcquireTimeoutMillis = null;
     private Boolean readAnyReplica = null;
@@ -102,6 +103,17 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
 
     public SELF responseBatchSize(int batchSize) {
         this.batchSize = batchSize;
+        return getThis();
+    }
+
+    public boolean parallel() {
+        if (parallel != null) return parallel;
+        else if (parent != null) return parent.parallel();
+        else return DEFAULT_PARALLEL;
+    }
+
+    public SELF parallel(boolean parallel) {
+        this.parallel = parallel;
         return getThis();
     }
 
@@ -201,7 +213,6 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
 
     public static class Query extends Options<Transaction, Query> {
 
-        private Boolean parallel = null;
         private GraqlQuery query = null;
 
         @Override
@@ -239,14 +250,5 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
             return this;
         }
 
-        public boolean parallel() {
-            if (parallel != null) return parallel;
-            return DEFAULT_PARALLEL;
-        }
-
-        public Query parallel(boolean parallel) {
-            this.parallel = parallel;
-            return this;
-        }
     }
 }

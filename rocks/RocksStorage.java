@@ -230,7 +230,7 @@ public abstract class RocksStorage implements Storage {
 
         @Override
         public void delete(byte[] key) {
-            if (!isOpen() || !transaction.isOpen()) throw GraknException.of(RESOURCE_CLOSED);
+            if (!isOpen() || (!transaction.isOpen() && transaction.isData())) throw GraknException.of(RESOURCE_CLOSED);
             if (isReadOnly) {
                 if (transaction.isSchema()) throw exception(TRANSACTION_SCHEMA_READ_VIOLATION);
                 else if (transaction.isData()) throw exception(TRANSACTION_DATA_READ_VIOLATION);

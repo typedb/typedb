@@ -70,7 +70,6 @@ import static grakn.core.server.util.ServerDefaults.PROPERTIES_FILE;
 public class GraknServer implements AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraknServer.class);
-    private static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
 
     private final Grakn grakn;
     private final Server server;

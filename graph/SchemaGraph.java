@@ -586,16 +586,16 @@ public class SchemaGraph implements Graph {
                     Set<RuleStructure> rules = concludesVertex.get(type);
                     if (rules != null && rules.contains(rule)) {
                         concludesVertex.get(type).remove(rule);
-                        storage.delete(Rule.Key.concludedVertex(type.iid(), rule.iid()).bytes());
                     }
+                    storage.delete(Rule.Key.concludedVertex(type.iid(), rule.iid()).bytes());
                 }
 
                 private void deleteConcludesEdgeTo(RuleStructure rule, TypeVertex type) {
                     Set<RuleStructure> rules = concludesEdgeTo.get(type);
                     if (rules != null && rules.contains(rule)) {
                         rules.remove(rule);
-                        storage.delete(Rule.Key.concludedEdgeTo(type.iid(), rule.iid()).bytes());
                     }
+                    storage.delete(Rule.Key.concludedEdgeTo(type.iid(), rule.iid()).bytes());
                 }
 
                 private Set<RuleStructure> loadConcludesVertex(TypeVertex type) {
