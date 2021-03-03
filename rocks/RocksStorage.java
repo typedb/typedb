@@ -165,24 +165,28 @@ public abstract class RocksStorage implements Storage {
 
     static class Cache extends RocksStorage {
 
+        protected final ReadWriteLock readWriteLock;
+
         public Cache(OptimisticTransactionDB rocksDB) {
             super(rocksDB, true);
+            readWriteLock = new StampedLock().asReadWriteLock();
         }
 
         @Override
         public byte[] get(byte[] key) {
-            assert isOpen();
             try {
+                readWriteLock.readLock().lock();
+                if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
                 return storageTransaction.get(readOptions, key);
             } catch (RocksDBException e) {
                 throw exception(e);
+            } finally {
+                readWriteLock.readLock().unlock();
             }
         }
 
         @Override
         public <G> FunctionalIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
-//            assert isOpen(); // TODO: verify why this was an assertion rather than an exception
-            if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
             RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
             iterators.add(iterator);
             if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED); //guard against close() race conditions
@@ -203,7 +207,6 @@ public abstract class RocksStorage implements Storage {
 
         @Override
         public byte[] get(byte[] key) {
-            if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
             try {
                 readWriteLock.readLock().lock();
                 if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
@@ -224,6 +227,7 @@ public abstract class RocksStorage implements Storage {
 
             try (org.rocksdb.RocksIterator iterator = getInternalRocksIterator()) {
                 readWriteLock.readLock().lock();
+                if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
                 iterator.seekForPrev(upperBound);
                 if (bytesHavePrefix(iterator.key(), prefix)) return iterator.key();
                 else return null;
@@ -234,7 +238,6 @@ public abstract class RocksStorage implements Storage {
 
         @Override
         public void delete(byte[] key) {
-            if (!isOpen() || (!transaction.isOpen() && transaction.isData())) throw GraknException.of(RESOURCE_CLOSED);
             if (isReadOnly) {
                 if (transaction.isSchema()) throw exception(TRANSACTION_SCHEMA_READ_VIOLATION);
                 else if (transaction.isData()) throw exception(TRANSACTION_DATA_READ_VIOLATION);
@@ -242,7 +245,7 @@ public abstract class RocksStorage implements Storage {
             }
             try {
                 readWriteLock.writeLock().lock();
-                if (!isOpen() || !transaction.isOpen()) throw GraknException.of(RESOURCE_CLOSED);
+                if (!isOpen() || (!transaction.isOpen() && transaction.isData())) throw GraknException.of(RESOURCE_CLOSED);
                 storageTransaction.delete(key);
             } catch (RocksDBException e) {
                 throw exception(e);
@@ -253,7 +256,6 @@ public abstract class RocksStorage implements Storage {
 
         @Override
         public <G> FunctionalIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
-            if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
             RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
             iterators.add(iterator);
             if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED); //guard against close() race conditions
