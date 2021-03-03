@@ -122,6 +122,7 @@ public class Unifier {
     public Requirements.Constraint requirements() {
         return requirements;
     }
+    public Requirements.Constraint unifiedRequirements(){ return unifiedRequirements;}
 
     private Map<Variable, Set<Retrievable>> reverse(Map<Retrievable, Set<Variable>> unifier) {
         Map<Variable, Set<Retrievable>> reverse = new HashMap<>();

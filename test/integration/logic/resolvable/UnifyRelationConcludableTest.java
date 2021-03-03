@@ -58,8 +58,10 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -250,7 +252,7 @@ public class UnifyRelationConcludableTest {
         assertEquals(
                 typeHierarchy("employment"),
                 unifier.requirements().isaExplicit().get(Identifier.Variable.name("r")));
-        assertEquals(2, unifier.requirements().isaExplicit().size());
+        assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(
                 roleHierarchy("employee", "employment"),
                 unifier.requirements().roleTypes().get(Identifier.Variable.label("employment:employee")));
@@ -361,7 +363,7 @@ public class UnifyRelationConcludableTest {
         assertEquals(
                 typeHierarchy("employment"),
                 unifier.requirements().isaExplicit().get(Identifier.Variable.anon(0)));
-        assertEquals(0, unifier.requirements().isaExplicit().size());
+        assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(0, unifier.requirements().predicates().size());
 
@@ -430,10 +432,10 @@ public class UnifyRelationConcludableTest {
         Set<Map<String, Set<String>>> expected = set(
                 new HashMap<String, Set<String>>() {{
                     put("$p", set("$x", "$y"));
-                    put("$_employment", set("$employment"));
-                    put("$_employment:employee", set("$employee"));
+                    put("$_0", set("$_0"));
                 }}
         );
+
         assertEquals(expected, result);
 
         Unifier unifier = unifiers.get(0);
@@ -441,11 +443,10 @@ public class UnifyRelationConcludableTest {
         assertEquals(
                 typeHierarchy("employment"),
                 unifier.requirements().isaExplicit().get(Identifier.Variable.anon(0)));
-        assertEquals(2, unifier.requirements().isaExplicit().size());
+        assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(
                 roleHierarchy("employee", "employment"),
                 unifier.requirements().roleTypes().get(Identifier.Variable.label("employment:employee")));
-        assertEquals(0, unifier.requirements().isaExplicit().size());
         assertEquals(0, unifier.requirements().predicates().size());
 
         // test filter allows a valid answer
@@ -462,7 +463,7 @@ public class UnifyRelationConcludableTest {
         );
         Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.isPresent());
-        assertEquals(1, unified.get().concepts().size());
+        assertEquals(2, unified.get().concepts().size());
         assertEquals(person, unified.get().get("p"));
 
         // filter out answers with differing role players that must be the same
@@ -1034,9 +1035,8 @@ public class UnifyRelationConcludableTest {
 
     @Test
     public void relationWithTypeSubstitution() {
-        String employment =Bytes.bytesToHexString(instanceOf("employment").getIID());
-        String ptEmployment =Bytes.bytesToHexString(instanceOf("part-time-employment").getIID());
-        //TODO is it possible to fetch type id?
+        String employment = Bytes.bytesToHexString(instanceOf("employment").getIID());
+        String ptEmployment = Bytes.bytesToHexString(instanceOf("part-time-employment").getIID());
         List<String> parents = Lists.newArrayList(
                 String.format("{$r (employer: $x, employee: $y); $r iid %s;}", employment),
                 String.format("{$r (employer: $x, employee: $y); $r iid %s;}", ptEmployment)
@@ -1130,35 +1130,40 @@ public class UnifyRelationConcludableTest {
         Unifier unifier = uniqueUnifier(parent, ruleConclusion, rulePremises);
         List<ConceptMap> childAnswers = rocksTransaction.query().match(Graql.match(Graql.parsePattern(ruleConclusion))).toList();
         List<ConceptMap> parentAnswers = rocksTransaction.query().match(Graql.match(Graql.parsePattern(parent))).toList();
+        assertFalse(childAnswers.isEmpty());
+        assertFalse(parentAnswers.isEmpty());
+
         List<ConceptMap> unifiedAnswers = childAnswers.stream()
-                .map(ans -> buildIdentifierMap(ans, unifier))
-                .map(imap -> unifier.unUnify(imap, new Unifier.Requirements.Instance(map())))
-                .filter(Optional::isPresent).map(Optional::get)
+                .map(ans -> {
+                    Map<Variable, Concept> enriched = enrichConcepts(ans, unifier);
+                    Map<Variable, Concept> completion = completeConcepts(ans, unifier);
+                    enriched.putAll(completion);
+                    ConceptMap unified = unifier.unUnify(enriched, new Unifier.Requirements.Instance(map())).orElse(null);
+                    if (unified == null) return null;
+                    Map<Variable.Retrievable, Concept> concepts = unified.concepts().entrySet().stream()
+                            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                    completion.forEach(concepts::remove);
+                    return new ConceptMap(concepts);
+                })
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
-        assertFalse(childAnswers.isEmpty());
         assertFalse(unifiedAnswers.isEmpty());
-        assertFalse(parentAnswers.isEmpty());
         assertTrue(parentAnswers.containsAll(unifiedAnswers));
     }
 
-    Map<Variable, Concept> buildIdentifierMap(ConceptMap ans, Unifier unifier){
-        Map<Variable, Concept> imap = ans.concepts().entrySet().stream()
-                .collect(Collectors.toMap(e -> Identifier.Variable.name(e.getKey().asName().toString()), Map.Entry::getValue));
-        Map<Variable, Set<Variable.Retrievable>> inverseMapping = unifier.inverseMapping();
-        inverseMapping.keySet().stream()
-                .filter(Identifier::isLabel)
-                .forEach(i -> {
-                    //lookup concepts corresponding to labels
-                    String label = i.asVariable().asLabel().reference().toString().replace("$_", "");
-                    //split role scope
-                    if (label.contains(":")) {
-                        String[] rolePair = label.split(":");
-                        imap.put(i, role(rolePair[1], rolePair[0]));
-                    } else {
-                        imap.put(i, conceptMgr.getThingType(label));
-                    }
-                });
+    Map<Variable, Concept> enrichConcepts(ConceptMap ans, Unifier unifier){
+        Map<Variable, Concept> imap = ans.concepts().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        unifier.unifiedRequirements().roleTypes()
+                .forEach((var, labels) -> labels.forEach(label -> imap.put(var, role(label.name(), label.scope().get()))));
         return imap;
+    }
+
+    Map<Variable, Concept> completeConcepts(ConceptMap ans, Unifier unifier){
+        //insert random concepts for any var in unifier that is not in conceptmap
+        Iterator<? extends Thing> instances = conceptMgr.getRootThingType().getInstances().iterator();
+        return unifier.inverseMapping().keySet().stream()
+                .filter(var -> !ans.contains(var.asRetrievable()))
+                .collect(Collectors.toMap(var -> var, var -> instances.next()));
     }
 }
