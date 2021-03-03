@@ -64,6 +64,10 @@ public class LogicManager {
         return graphMgr.schema().rules().all().map(this::fromStructure);
     }
 
+    public FunctionalIterator<Rule> rulesWithNegations() {
+        return rules().filter(rule -> !rule.when().negations().isEmpty());
+    }
+
     public FunctionalIterator<Rule> rulesConcluding(Label type) {
         return graphMgr.schema().rules().conclusions().concludesVertex(graphMgr.schema().getType(type)).map(this::fromStructure);
     }
@@ -92,7 +96,7 @@ public class LogicManager {
 
         // using the new index, validate new rules are stratifiable (eg. do not cause cycles through a negation)
         graphMgr.schema().rules().buffered().filter(structure -> structure.status().equals(Encoding.Status.BUFFERED))
-                .forEachRemaining(structure -> getRule(structure.label()).validateCycles());
+                .forEachRemaining(structure -> getRule(structure.label()).validateCycles(logicMgr));
     }
 
     public TypeResolver typeResolver() {

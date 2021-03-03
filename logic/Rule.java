@@ -32,8 +32,10 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
+import grakn.core.logic.resolvable.Concludable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
+import grakn.core.pattern.Negation;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
@@ -68,6 +70,7 @@ import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CAN_IMPLY_
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_CANNOT_BE_SATISFIED;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CANNOT_BE_SATISFIED;
 import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.common.iterator.Iterators.link;
 import static graql.lang.common.GraqlToken.Char.COLON;
 import static graql.lang.common.GraqlToken.Char.CURLY_CLOSE;
 import static graql.lang.common.GraqlToken.Char.CURLY_OPEN;
@@ -97,7 +100,7 @@ public class Rule {
         this.conclusion = Conclusion.create(this.then, this);
     }
 
-    private Rule(GraphManager graphMgr, LogicManager logicMgr, String label,
+    private Rule(GraphManager graphMgr, ConceptManager conceptMgr, LogicManager logicMgr, String label,
                  graql.lang.pattern.Conjunction<? extends Pattern> when, graql.lang.pattern.variable.ThingVariable<?> then) {
         this.structure = graphMgr.schema().rules().create(label, when, then);
         this.when = whenPattern(structure.when(), logicMgr);
@@ -106,17 +109,17 @@ public class Rule {
         validateSatisfiable();
         validateInsertable(logicMgr);
         this.conclusion = Conclusion.create(this.then, this);
-        validateCycles();
         this.conclusion.index();
+        validateCycles(conceptMgr, logicMgr);
     }
 
     public static Rule of(LogicManager logicMgr, RuleStructure structure) {
         return new Rule(logicMgr, structure);
     }
 
-    public static Rule of(GraphManager graphMgr, LogicManager logicMgr, String label,
+    public static Rule of(GraphManager graphMgr, ConceptManager conceptMgr, LogicManager logicMgr, String label,
                           graql.lang.pattern.Conjunction<? extends Pattern> when, graql.lang.pattern.variable.ThingVariable<?> then) {
-        return new Rule(graphMgr, logicMgr, label, when, then);
+        return new Rule(graphMgr, conceptMgr, logicMgr, label, when, then);
     }
 
     public Conclusion conclusion() {
@@ -185,7 +188,18 @@ public class Rule {
         });
     }
 
-    void validateCycles() {
+    void validateCycles(ConceptManager conceptMgr, LogicManager logicMgr) {
+        Set<Rule> rulesWithNegationsThatTriggerRules = logicMgr.rulesWithNegations()
+                .filter(rule -> rule.negatedApplicableRecursiveRules(conceptMgr, logicMgr).hasNext()).toSet();
+
+        for (Rule negationRule : rulesWithNegationsThatTriggerRules) {
+            Set<Rule> visited = new HashSet<>();
+
+            negationRule.negatedApplicableRecursiveRules(conceptMgr, logicMgr)
+
+        }
+
+
         // TODO: implement this when we have negation
         // TODO: detect negated cycles in the rule graph
         // TODO: use the new rule as a starting point
@@ -230,6 +244,25 @@ public class Rule {
     public void reindex() {
         conclusion().unindex();
         conclusion().index();
+    }
+
+    // TODO is this the best place to expose this API? expensive to recompute all the time, and only used during validation
+    public FunctionalIterator<Rule> applicableRecursiveRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+        return link(iterate(Concludable.create(when)).flatMap(c -> c.getApplicableRules(conceptMgr, logicMgr)),
+                    negatedApplicableRecursiveRules(conceptMgr, logicMgr));
+    }
+
+    public FunctionalIterator<Rule> negatedApplicableRecursiveRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+        return applicableRules(when.negations(), conceptMgr, logicMgr);
+    }
+
+    private FunctionalIterator<Rule> applicableRules(Set<Negation> negations, ConceptManager conceptMgr, LogicManager logicMgr) {
+        return iterate(negations)
+                .flatMap(neg -> iterate(neg.disjunction().conjunctions()))
+                .flatMap(conjunction -> link(
+                        iterate(Concludable.create(conjunction)).flatMap(concludable -> concludable.getApplicableRules(conceptMgr, logicMgr)),
+                        applicableRules(conjunction.negations(), conceptMgr, logicMgr)
+                ));
     }
 
     @Override
@@ -353,8 +386,8 @@ public class Rule {
             }
 
             public static Optional<Relation> of(Conjunction conjunction, Rule rule) {
-                return Iterators.iterate(conjunction.variables()).filter(Variable::isThing).map(Variable::asThing)
-                        .flatMap(variable -> Iterators.iterate(variable.constraints())
+                return iterate(conjunction.variables()).filter(Variable::isThing).map(Variable::asThing)
+                        .flatMap(variable -> iterate(variable.constraints())
                                 .filter(ThingConstraint::isRelation)
                                 .map(constraint -> {
                                     assert constraint.owner().isa().isPresent();
@@ -553,9 +586,9 @@ public class Rule {
                 }
 
                 public static Optional<Explicit> of(Conjunction conjunction, Rule rule) {
-                    return Iterators.iterate(conjunction.variables()).filter(grakn.core.pattern.variable.Variable::isThing)
+                    return iterate(conjunction.variables()).filter(grakn.core.pattern.variable.Variable::isThing)
                             .map(grakn.core.pattern.variable.Variable::asThing)
-                            .flatMap(variable -> Iterators.iterate(variable.constraints()).filter(ThingConstraint::isHas)
+                            .flatMap(variable -> iterate(variable.constraints()).filter(ThingConstraint::isHas)
                                     .filter(constraint -> constraint.asHas().attribute().id().reference().isAnonymous())
                                     .map(constraint -> {
                                         assert constraint.asHas().attribute().isa().isPresent();
@@ -679,9 +712,9 @@ public class Rule {
                 }
 
                 public static Optional<Variable> of(Conjunction conjunction, Rule rule) {
-                    return Iterators.iterate(conjunction.variables()).filter(grakn.core.pattern.variable.Variable::isThing)
+                    return iterate(conjunction.variables()).filter(grakn.core.pattern.variable.Variable::isThing)
                             .map(grakn.core.pattern.variable.Variable::asThing)
-                            .flatMap(variable -> Iterators.iterate(variable.constraints()).filter(ThingConstraint::isHas)
+                            .flatMap(variable -> iterate(variable.constraints()).filter(ThingConstraint::isHas)
                                     .filter(constraint -> constraint.asHas().attribute().id().isName())
                                     .map(constraint -> {
                                         assert !constraint.asHas().attribute().isa().isPresent();
