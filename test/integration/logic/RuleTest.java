@@ -661,11 +661,11 @@ public class RuleTest {
                     person.setOwns(name);
 
                     ThingVariable<?> then = Graql.parseVariable("$x has name 'fido'").asThing();
-                    assertThrowsWithMessage(() -> txn.logic().putRule(
+                    assertThrowsGraknException(() -> txn.logic().putRule(
                             "dogs-are-named-fido",
                             Graql.parsePattern("{$x isa dog;}").asConjunction(),
                             then
-                    ), GraknException.of(RULE_THEN_CANNOT_BE_SATISFIED, "dogs-are-named-fido", then).getMessage());
+                    ), RULE_THEN_CANNOT_BE_SATISFIED.code());
                 }
             }
         }

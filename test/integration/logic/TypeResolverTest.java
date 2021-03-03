@@ -47,6 +47,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.test.Util.assertThrows;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -1057,7 +1058,7 @@ public class TypeResolverTest {
 
         assertEquals(expectedLabels, resolvedTypeMap(conjunction).get("$_relation:partner"));
 
-        typeResolver.resolveVariables(conjunction, false);
+        typeResolver.resolveVariables(conjunction, list(), false);
         Set<String> expectedResolvedTypes = set("partnership:partner");
 
         assertEquals(expectedResolvedTypes, resolvedTypeMap(disjunction.conjunctions().get(0)).get("$_relation:partner"));

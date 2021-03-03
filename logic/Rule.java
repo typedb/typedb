@@ -198,17 +198,11 @@ public class Rule {
     private void pruneThenResolvedTypes() {
         // TODO: name is inconsistent with elsewhere
         then.variables().stream().filter(variable -> variable.id().isName())
-                .forEach(thenVar ->
-                                 when.variables().stream()
-                                         .filter(whenVar -> whenVar.id().equals(thenVar.id()))
-                                         .filter(whenVar -> !(whenVar.isSatisfiable() && whenVar.resolvedTypes().isEmpty()))
-                                         .findFirst().ifPresent(whenVar -> {
-                                     if (thenVar.resolvedTypes().isEmpty() && thenVar.isSatisfiable()) {
-                                         thenVar.addResolvedTypes(whenVar.resolvedTypes());
-                                     } else thenVar.retainResolvedTypes(whenVar.resolvedTypes());
-                                     if (thenVar.resolvedTypes().isEmpty()) then.setCoherent(false);
-                                 })
-                );
+                .forEach(thenVar -> {
+                    Variable whenVar = when.variable(thenVar.id());
+                    thenVar.retainResolvedTypes(whenVar.resolvedTypes());
+                    if (thenVar.resolvedTypes().isEmpty()) then.setCoherent(false);
+                });
     }
 
     private Conjunction whenPattern(graql.lang.pattern.Conjunction<? extends Pattern> conjunction, LogicManager logicMgr) {
