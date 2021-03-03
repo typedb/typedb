@@ -788,6 +788,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         private final Set<Concludable> concludables = new HashSet<>();
 
         Extractor(Conjunction conjunction) {
+            assert conjunction.isCoherent();
             Set<Constraint> constraints = conjunction.variables().stream().flatMap(variable -> variable.constraints().stream())
                     .collect(toSet());
             constraints.stream().filter(Constraint::isThing).map(Constraint::asThing).filter(ThingConstraint::isRelation)

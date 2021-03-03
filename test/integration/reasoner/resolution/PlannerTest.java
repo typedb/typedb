@@ -64,10 +64,10 @@ public class PlannerTest {
         Util.resetDirectory(dataDir);
         grakn = RocksGrakn.open(options);
         grakn.databases().create(database);
-        newTransaction(Arguments.Session.Type.SCHEMA, Arguments.Transaction.Type.WRITE);
+        initialise(Arguments.Session.Type.SCHEMA, Arguments.Transaction.Type.WRITE);
     }
 
-    private void newTransaction(Arguments.Session.Type schema, Arguments.Transaction.Type write) {
+    private void initialise(Arguments.Session.Type schema, Arguments.Transaction.Type write) {
         session = grakn.session(database, schema);
         rocksTransaction = session.transaction(write);
         conceptMgr = rocksTransaction.concepts();
@@ -81,8 +81,18 @@ public class PlannerTest {
         grakn.close();
     }
 
+    private void defineBasicSchema() {
+        rocksTransaction.query().define(Graql.parseQuery("define person sub entity, plays friendship:friend, owns name; " +
+                                                                 "friendship sub relation, relates friend;" +
+                                                                 "name sub attribute, value string;"));
+        rocksTransaction.commit();
+        session.close();
+        initialise(Arguments.Session.Type.SCHEMA, Arguments.Transaction.Type.WRITE);
+    }
+
     @Test
     public void test_planner_retrievable_dependent_upon_concludable() {
+        defineBasicSchema();
         Concludable concludable = Concludable.create(resolvedConjunction("{ $a has $b; }", logicMgr)).iterator().next();
         Retrievable retrievable = new Retrievable(resolvedConjunction("{ $c($b); }", logicMgr));
 
@@ -93,9 +103,7 @@ public class PlannerTest {
 
     @Test
     public void test_planner_prioritises_retrievable_without_dependencies() {
-        EntityType person = conceptMgr.putEntityType("person");
-        person.setOwns(conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING));
-
+        defineBasicSchema();
         Concludable concludable = Concludable.create(resolvedConjunction("{ $p has name $n; }", logicMgr)).iterator().next();
         Retrievable retrievable = new Retrievable(resolvedConjunction("{ $p isa person; }", logicMgr));
 
@@ -147,6 +155,7 @@ public class PlannerTest {
 
     @Test
     public void test_planner_starts_at_independent_concludable() {
+        defineBasicSchema();
         Concludable concludable = Concludable.create(resolvedConjunction("{ $r($a, $b); }", logicMgr)).iterator().next();
         Concludable concludable2 = Concludable.create(resolvedConjunction("{ $r has $c; }", logicMgr)).iterator().next();
 
@@ -178,6 +187,7 @@ public class PlannerTest {
 
     @Test
     public void test_planner_two_circular_has_dependencies() {
+        defineBasicSchema();
         Concludable concludable = Concludable.create(resolvedConjunction("{ $a has $b; }", logicMgr)).iterator().next();
         Concludable concludable2 = Concludable.create(resolvedConjunction("{ $b has $a; }", logicMgr)).iterator().next();
 
@@ -190,6 +200,7 @@ public class PlannerTest {
 
     @Test
     public void test_planner_two_circular_relates_dependencies() {
+        defineBasicSchema();
         Concludable concludable = Concludable.create(resolvedConjunction("{ $a($b); }", logicMgr)).iterator().next();
         Concludable concludable2 = Concludable.create(resolvedConjunction("{ $b($a); }", logicMgr)).iterator().next();
 
@@ -202,6 +213,7 @@ public class PlannerTest {
 
     @Test
     public void test_planner_disconnected_conjunction() {
+        defineBasicSchema();
         Concludable concludable = Concludable.create(resolvedConjunction("{ $a($b); }", logicMgr)).iterator().next();
         Concludable concludable2 = Concludable.create(resolvedConjunction("{ $c($d); }", logicMgr)).iterator().next();
 
@@ -221,13 +233,15 @@ public class PlannerTest {
         marriage.setRelates("spouse");
         person.setPlays(friendship.getRelates("friend"));
         person.setPlays(marriage.getRelates("spouse"));
+        AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
+        person.setOwns(name);
         logicMgr.putRule(
                 "marriage-is-friendship",
                 Graql.parsePattern("{$x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
                 Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
         rocksTransaction.commit();
         session.close();
-        newTransaction(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
+        initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
 
         Concludable concludable = Concludable.create(resolvedConjunction("{ $b has $a; }", logicMgr)).iterator().next();
         Concludable concludable2 = Concludable.create(resolvedConjunction("{ $c($b) isa friendship; }", logicMgr)).iterator().next();
