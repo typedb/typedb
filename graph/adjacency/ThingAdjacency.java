@@ -18,7 +18,7 @@
 
 package grakn.core.graph.adjacency;
 
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.graph.common.Encoding;
 import grakn.core.graph.edge.ThingEdge;
 import grakn.core.graph.iid.IID;
@@ -132,10 +132,10 @@ public interface ThingAdjacency {
 
     interface ThingIteratorBuilder {
 
-        ResourceIterator<ThingVertex> from();
+        FunctionalIterator<ThingVertex> from();
 
-        ResourceIterator<ThingVertex> to();
+        FunctionalIterator<ThingVertex> to();
 
-        ResourceIterator<ThingEdge> get();
+        FunctionalIterator<ThingEdge> get();
     }
 }

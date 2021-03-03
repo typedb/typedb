@@ -18,26 +18,26 @@
 
 package grakn.core.traversal;
 
+import grakn.common.collection.Either;
 import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
-import grakn.core.concurrent.producer.Producer;
+import grakn.core.concurrent.producer.FunctionalProducer;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.common.Encoding;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.common.Identifier;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import grakn.core.traversal.common.VertexMap;
-import grakn.core.traversal.graph.TraversalVertex;
 import grakn.core.traversal.planner.Planner;
 import grakn.core.traversal.predicate.Predicate;
 import grakn.core.traversal.predicate.PredicateArgument;
 import grakn.core.traversal.structure.Structure;
 import graql.lang.common.GraqlArg;
 import graql.lang.common.GraqlToken;
-import graql.lang.pattern.variable.Reference;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -52,7 +52,8 @@ import static grakn.common.collection.Collections.pair;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.cartesian;
 import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.concurrent.common.Executors.asyncPool2;
+import static grakn.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
+import static grakn.core.concurrent.common.Executors.async2;
 import static grakn.core.concurrent.producer.Producers.async;
 import static grakn.core.concurrent.producer.Producers.produce;
 import static grakn.core.graph.common.Encoding.Edge.ISA;
@@ -76,7 +77,7 @@ public class Traversal {
 
     private final Parameters parameters;
     private final Structure structure;
-    private final Set<Identifier.Variable.Name> filter;
+    private final Set<Retrievable> filter;
     private List<Planner> planners;
     private boolean modifiable;
 
@@ -90,23 +91,22 @@ public class Traversal {
     // TODO: We should not dynamically calculate properties like this, and then guard against 'modifiable'.
     //       We should introduce a "builder pattern" to Traversal, such that users of this library will build
     //       traversals with Traversal.Builder, and call .build() in the end to produce a final Object.
-    private Set<Identifier.Variable.Name> filter() {
+    private Set<Retrievable> filter() {
         if (filter.isEmpty()) {
             modifiable = false;
-            iterate(structure.vertices())
-                    .map(TraversalVertex::id).filter(Identifier::isName)
-                    .map(id -> id.asVariable().asName()).toSet(filter);
+            iterate(structure.vertices()).filter(v -> v.id().isRetrievable()).map(v -> v.id().asVariable().asRetrievable())
+                    .toSet(filter);
         }
         return filter;
     }
 
     void initialise(TraversalCache cache) {
         planners = iterate(structure.asGraphs()).filter(p -> iterate(p.vertices()).anyMatch(
-                v -> v.id().isName() && filter().contains(v.id().asVariable().asName())
+                v -> v.id().isRetrievable() && filter().contains(v.id().asVariable().asRetrievable())
         )).map(s -> cache.get(s, Planner::create)).toList();
     }
 
-    ResourceIterator<VertexMap> iterator(GraphManager graphMgr, boolean extraPlanningTime) {
+    FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, boolean extraPlanningTime) {
         assert !planners.isEmpty();
         if (planners.size() == 1) {
             planners.get(0).tryOptimise(graphMgr, extraPlanningTime);
@@ -116,25 +116,26 @@ public class Traversal {
                 planner.tryOptimise(graphMgr, extraPlanningTime);
                 return planner.procedure().iterator(graphMgr, parameters, filter());
             }).collect(toList())).map(partialAnswers -> {
-                Map<Reference, Vertex<?, ?>> combinedAnswers = new HashMap<>();
+                Map<Retrievable, Vertex<?, ?>> combinedAnswers = new HashMap<>();
                 partialAnswers.forEach(p -> combinedAnswers.putAll(p.map()));
                 return VertexMap.of(combinedAnswers);
             });
         }
     }
 
-    Producer<VertexMap> producer(GraphManager graphMgr, Arguments.Query.Producer mode,
-                                 int parallelisation, boolean extraPlanningTime) {
+    FunctionalProducer<VertexMap> producer(GraphManager graphMgr, Either<Arguments.Query.Producer, Long> context,
+                                           int parallelisation, boolean extraPlanningTime) {
         assert !planners.isEmpty();
         if (planners.size() == 1) {
             planners.get(0).tryOptimise(graphMgr, extraPlanningTime);
             return planners.get(0).procedure().producer(graphMgr, parameters, filter(), parallelisation);
         } else {
+            Either<Arguments.Query.Producer, Long> nestedCtx = context.isFirst() ? context : Either.first(INCREMENTAL);
             return async(cartesian(planners.parallelStream().map(planner -> {
                 planner.tryOptimise(graphMgr, extraPlanningTime);
                 return planner.procedure().producer(graphMgr, parameters, filter(), parallelisation);
-            }).map(producer -> produce(producer, mode, asyncPool2())).collect(toList())).map(partialAnswers -> {
-                Map<Reference, Vertex<?, ?>> combinedAnswers = new HashMap<>();
+            }).map(producer -> produce(producer, nestedCtx, async2())).collect(toList())).map(partialAnswers -> {
+                Map<Retrievable, Vertex<?, ?>> combinedAnswers = new HashMap<>();
                 partialAnswers.forEach(p -> combinedAnswers.putAll(p.map()));
                 return VertexMap.of(combinedAnswers);
             }));
@@ -296,8 +297,8 @@ public class Traversal {
         structure.predicateEdge(structure.thingVertex(att1), structure.thingVertex(att2), predicate);
     }
 
-    public void filter(Set<Identifier.Variable.Name> filter) {
-        assert modifiable;
+    public void filter(Set<? extends Retrievable> filter) {
+        assert modifiable && iterate(filter).noneMatch(Identifier::isLabel);
         this.filter.addAll(filter);
     }
 

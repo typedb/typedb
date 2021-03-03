@@ -18,7 +18,7 @@
 
 package grakn.core.graph.vertex.impl;
 
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.SchemaGraph;
 import grakn.core.graph.adjacency.TypeAdjacency;
@@ -496,7 +496,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         private void deleteVertexFromStorage() {
             graph.storage().delete(IndexIID.Type.Label.of(label, scope).bytes());
-            ResourceIterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
+            FunctionalIterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
             while (keys.hasNext()) graph.storage().delete(keys.next());
             graph.storage().delete(StatisticsBytes.vertexCountKey(iid));
         }

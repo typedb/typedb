@@ -17,85 +17,99 @@
 
 package grakn.core.concurrent.actor;
 
-import javax.annotation.CheckReturnValue;
+import javax.annotation.concurrent.ThreadSafe;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class Actor<STATE extends Actor.State<STATE>> {
-    private static final String ERROR_ACTOR_SELF_IS_NULL = "self() must not be null.";
-    private static final String ERROR_ACTOR_STATE_NOT_SETUP =
-            "Attempting to access the Actor state, but it is not yet setup. Are you trying to send a message to yourself within the constructor?";
+@ThreadSafe
+public abstract class Actor<ACTOR extends Actor<ACTOR>> {
 
-    public STATE state;
-    private final EventLoopGroup eventLoopGroup;
-    private final EventLoop eventLoop;
+    private static final String ERROR_ACTOR_DRIVER_IS_NULL = "driver() must not be null.";
+    private final Driver<ACTOR> driver;
+    private final String name;
 
-    public static <NEW_STATE extends State<NEW_STATE>>
-    Actor<NEW_STATE> create(EventLoopGroup eventLoopGroup, Function<Actor<NEW_STATE>, NEW_STATE> stateConstructor) {
-
-        Actor<NEW_STATE> actor = new Actor<>(eventLoopGroup);
-        actor.state = stateConstructor.apply(actor);
-        return actor;
+    public static <A extends Actor<A>> Driver<A> driver(Function<Driver<A>, A> actorFn, ActorExecutorService service) {
+        return new Driver<>(actorFn, service);
     }
 
-    private Actor(EventLoopGroup eventLoopGroup) {
-        this.eventLoopGroup = eventLoopGroup;
-        this.eventLoop = eventLoopGroup.assignEventLoop();
+    protected abstract void exception(Throwable e);
+
+    protected Actor(Driver<ACTOR> driver, String name) {
+        this.driver = driver;
+        this.name = name;
     }
 
-    public void tell(Consumer<STATE> job) {
-        assert state != null : ERROR_ACTOR_STATE_NOT_SETUP;
-        eventLoop.schedule(() -> job.accept(state), state::exception);
+    protected Driver<ACTOR> driver() {
+        assert this.driver != null : ERROR_ACTOR_DRIVER_IS_NULL;
+        return this.driver;
     }
 
-    @CheckReturnValue
-    public CompletableFuture<Void> order(Consumer<STATE> job) {
-        return ask(state -> {
-            job.accept(state);
-            return null;
-        });
+    public String name() {
+        return name;
     }
 
-    @CheckReturnValue
-    public <ANSWER> CompletableFuture<ANSWER> ask(Function<STATE, ANSWER> job) {
-        assert state != null : ERROR_ACTOR_STATE_NOT_SETUP;
-        CompletableFuture<ANSWER> future = new CompletableFuture<>();
-        eventLoop.schedule(
-                () -> future.complete(job.apply(state)),
-                e -> {
-                    state.exception(e);
-                    future.completeExceptionally(e);
-                }
-        );
-        return future;
-    }
+    public static class Driver<ACTOR extends Actor<ACTOR>> {
 
-    public EventLoop.Cancellable schedule(long deadlineMs, Consumer<STATE> job) {
-        assert state != null : ERROR_ACTOR_STATE_NOT_SETUP;
-        return eventLoop.schedule(deadlineMs, () -> job.accept(state), state::exception);
-    }
+        private static final String ERROR_ACTOR_NOT_SETUP =
+                "Attempting to access the Actor, but it is not yet setup. " +
+                        "Are you trying to send a message to yourself within the constructor?";
 
-    public EventLoopGroup eventLoopGroup() {
-        return eventLoopGroup;
-    }
+        private ACTOR actor;
+        private final ActorExecutorService executorService;
+        private final ActorExecutor executor;
 
-    public EventLoop eventLoop() {
-        return eventLoop;
-    }
-
-    public static abstract class State<STATE extends State<STATE>> {
-        private final Actor<STATE> self;
-
-        protected abstract void exception(Throwable e);
-
-        protected State(Actor<STATE> self) {
-            this.self = self;
+        private Driver(Function<Driver<ACTOR>, ACTOR> actorFn, ActorExecutorService executorService) {
+            this.actor = actorFn.apply(this);
+            this.executorService = executorService;
+            this.executor = executorService.nextExecutor();
         }
 
-        protected Actor<STATE> self() {
-            assert this.self != null : ERROR_ACTOR_SELF_IS_NULL;
-            return this.self;
+        // TODO: do not use this method - any usages should be removed ASAP
+        public ACTOR actor() {
+            return actor;
+        }
+
+        public String name() {
+            return actor.name();
+        }
+
+        public void execute(Consumer<ACTOR> consumer) {
+            assert actor != null : ERROR_ACTOR_NOT_SETUP;
+            executor.submit(() -> consumer.accept(actor), actor::exception);
+        }
+
+        public CompletableFuture<Void> complete(Consumer<ACTOR> consumer) {
+            return compute(actor -> {
+                consumer.accept(actor);
+                return null;
+            });
+        }
+
+        public <ANSWER> CompletableFuture<ANSWER> compute(Function<ACTOR, ANSWER> function) {
+            assert actor != null : ERROR_ACTOR_NOT_SETUP;
+            CompletableFuture<ANSWER> future = new CompletableFuture<>();
+            executor.submit(
+                    () -> future.complete(function.apply(actor)),
+                    e -> {
+                        actor.exception(e);
+                        future.completeExceptionally(e);
+                    }
+            );
+            return future;
+        }
+
+        public ActorExecutor.FutureTask schedule(Consumer<ACTOR> consumer, long scheduleMillis) {
+            assert actor != null : ERROR_ACTOR_NOT_SETUP;
+            return executor.schedule(() -> consumer.accept(actor), scheduleMillis, actor::exception);
+        }
+
+        public ActorExecutorService executorService() {
+            return executorService;
+        }
+
+        public ActorExecutor executor() {
+            return executor;
         }
     }
 }

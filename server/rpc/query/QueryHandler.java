@@ -18,7 +18,7 @@
 package grakn.core.server.rpc.query;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
 import grakn.core.concept.answer.ConceptMap;
@@ -101,7 +101,7 @@ public class QueryHandler {
     private void match(Transaction.Req request, QueryProto.Query.Match.Req req, Options.Query options) {
         GraqlMatch query = Graql.parseQuery(req.getQuery()).asMatch();
         Context.Query context = new Context.Query(transactionRPC.context(), options.query(query), query);
-        ResourceIterator<ConceptMap> answers = queryManager.match(query, context);
+        FunctionalIterator<ConceptMap> answers = queryManager.match(query, context);
         transactionRPC.respond(
                 request, answers, context,
                 as -> response(request, QueryProto.Query.Res.newBuilder().setMatchRes(
@@ -121,7 +121,7 @@ public class QueryHandler {
     private void match(Transaction.Req request, QueryProto.Query.MatchGroup.Req req, Options.Query options) {
         GraqlMatch.Group query = Graql.parseQuery(req.getQuery()).asMatchGroup();
         Context.Query context = new Context.Query(transactionRPC.context(), options.query(query), query);
-        ResourceIterator<ConceptMapGroup> answers = queryManager.match(query, context);
+        FunctionalIterator<ConceptMapGroup> answers = queryManager.match(query, context);
         transactionRPC.respond(
                 request, answers, context,
                 as -> response(request, QueryProto.Query.Res.newBuilder().setMatchGroupRes(
@@ -132,7 +132,7 @@ public class QueryHandler {
     private void match(Transaction.Req txReq, QueryProto.Query.MatchGroupAggregate.Req queryReq, Options.Query options) {
         GraqlMatch.Group.Aggregate query = Graql.parseQuery(queryReq.getQuery()).asMatchGroupAggregate();
         Context.Query context = new Context.Query(transactionRPC.context(), options.query(query), query);
-        ResourceIterator<NumericGroup> answers = queryManager.match(query, context);
+        FunctionalIterator<NumericGroup> answers = queryManager.match(query, context);
         transactionRPC.respond(
                 txReq, answers, context,
                 as -> response(txReq, QueryProto.Query.Res.newBuilder().setMatchGroupAggregateRes(
@@ -143,7 +143,7 @@ public class QueryHandler {
     private void insert(Transaction.Req txReq, QueryProto.Query.Insert.Req queryReq, Options.Query options) {
         GraqlInsert query = Graql.parseQuery(queryReq.getQuery()).asInsert();
         Context.Query context = new Context.Query(transactionRPC.context(), options.query(query), query);
-        ResourceIterator<ConceptMap> answers = queryManager.insert(query, context);
+        FunctionalIterator<ConceptMap> answers = queryManager.insert(query, context);
         transactionRPC.respond(
                 txReq, answers, context,
                 as -> response(txReq, QueryProto.Query.Res.newBuilder().setInsertRes(
@@ -162,7 +162,7 @@ public class QueryHandler {
     private void update(Transaction.Req txReq, QueryProto.Query.Update.Req queryReq, Options.Query options) {
         GraqlUpdate query = Graql.parseQuery(queryReq.getQuery()).asUpdate();
         Context.Query context = new Context.Query(transactionRPC.context(), options.query(query), query);
-        ResourceIterator<ConceptMap> answers = queryManager.update(query, context);
+        FunctionalIterator<ConceptMap> answers = queryManager.update(query, context);
         transactionRPC.respond(
                 txReq, answers, context,
                 as -> response(txReq, QueryProto.Query.Res.newBuilder().setUpdateRes(

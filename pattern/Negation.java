@@ -63,4 +63,8 @@ public class Negation implements Pattern, Cloneable {
     public String toString() {
         return "" + NOT + SPACE + disjunction.toString();
     }
+
+    public boolean isCoherent() {
+        return disjunction.isCoherent();
+    }
 }

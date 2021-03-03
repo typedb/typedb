@@ -18,9 +18,10 @@
 
 package grakn.core.concept;
 
+import grakn.common.collection.Either;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.thing.impl.ThingImpl;
@@ -39,8 +40,8 @@ import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 import grakn.core.graph.vertex.Vertex;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import grakn.core.traversal.common.VertexMap;
-import graql.lang.pattern.variable.Reference;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -53,14 +54,14 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
 import static grakn.core.concurrent.common.Executors.PARALLELISATION_FACTOR;
-import static grakn.core.concurrent.common.Executors.asyncPool1;
+import static grakn.core.concurrent.common.Executors.async1;
 import static grakn.core.concurrent.producer.Producers.async;
 import static grakn.core.concurrent.producer.Producers.produce;
 import static grakn.core.graph.common.Encoding.Vertex.Thing.ROLE;
 
 public final class ConceptManager {
 
-    private static final int PARALLELISATION_SPLIT_MINIMUM = 16;
+    private static final int PARALLELISATION_SPLIT_MINIMUM = 128;
 
     private final GraphManager graphMgr;
 
@@ -68,16 +69,15 @@ public final class ConceptManager {
         this.graphMgr = graphMgr;
     }
 
-    public ResourceIterator<ConceptMap> conceptMaps(ResourceIterator<VertexMap> vertexMap) {
+    public FunctionalIterator<ConceptMap> conceptMaps(FunctionalIterator<VertexMap> vertexMap) {
         return vertexMap.map(this::conceptMap);
     }
 
     public ConceptMap conceptMap(VertexMap vertexMap) {
-        Map<Reference.Name, Concept> map = new HashMap<>();
-        vertexMap.forEach((reference, vertex) -> {
-            if (!reference.isName()) throw exception(GraknException.of(ILLEGAL_STATE));
-            if (vertex.isThing()) map.put(reference.asName(), ThingImpl.of(vertex.asThing()));
-            else if (vertex.isType()) map.put(reference.asName(), TypeImpl.of(graphMgr, vertex.asType()));
+        Map<Retrievable, Concept> map = new HashMap<>();
+        vertexMap.forEach((id, vertex) -> {
+            if (vertex.isThing()) map.put(id, ThingImpl.of(vertex.asThing()));
+            else if (vertex.isType()) map.put(id, TypeImpl.of(graphMgr, vertex.asType()));
             else throw exception(GraknException.of(ILLEGAL_STATE));
         });
         return new ConceptMap(map);
@@ -196,7 +196,7 @@ public final class ConceptManager {
                         t.validate();
                         return (Void) null;
                     })
-            ), PARALLELISATION_FACTOR), EXHAUSTIVE, asyncPool1());
+            ), PARALLELISATION_FACTOR), Either.first(EXHAUSTIVE), async1());
             while (validationIterator.hasNext()) validationIterator.next();
         }
     }

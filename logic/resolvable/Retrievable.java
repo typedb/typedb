@@ -22,37 +22,39 @@ import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.constraint.Constraint;
 import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.type.TypeConstraint;
+import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.Variable;
+import grakn.core.traversal.common.Identifier;
 
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.iterate;
 
 public class Retrievable extends Resolvable<Conjunction> {
 
-    private final Set<Variable> namedVariables;
+    private final Set<Identifier.Variable.Retrievable> retrievableIds;
 
     public Retrievable(Conjunction conjunction) {
         super(conjunction);
-        this.namedVariables = iterate(pattern().variables()).filter(v -> v.reference().isName()).toSet();
+        this.retrievableIds = iterate(pattern().identifiers()).filter(Identifier::isRetrievable)
+                .map(Identifier.Variable::asRetrievable).toSet();
     }
 
     public static Set<Retrievable> extractFrom(Conjunction conjunction, Set<Concludable> toExclude) {
-        return Retrievable.Extractor.of(conjunction, toExclude).extract();
+        return grakn.core.logic.resolvable.Retrievable.Extractor.of(conjunction, toExclude).extract();
     }
 
     @Override
-    public Optional<Variable> generating() {
+    public Optional<ThingVariable> generating() {
         return Optional.empty();
     }
 
     @Override
-    public Set<Variable> namedVariables() {
-        return namedVariables;
+    public Set<Identifier.Variable.Retrievable> retrieves() {
+        return retrievableIds;
     }
 
     @Override
@@ -83,7 +85,7 @@ public class Retrievable extends Resolvable<Conjunction> {
 
         public Set<Retrievable> extract() {
             concludables.forEach(concludable -> extractedConstraints.addAll(concludable.concludableConstraints()));
-            iterate(conjunction.variables()).filter(var -> var.id().reference().isName()).forEachRemaining(var -> {
+            iterate(conjunction.variables()).filter(var -> var.id().isRetrievable()).forEachRemaining(var -> {
                 if (!extractedVariables.contains(var)) {
                     SubgraphRegistry subgraph = new SubgraphRegistry();
                     subgraph.registerVariable(var);

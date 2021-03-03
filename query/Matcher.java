@@ -18,8 +18,10 @@
 
 package grakn.core.query;
 
+import grakn.common.collection.Either;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
+import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Context;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ConceptMapGroup;
@@ -28,7 +30,6 @@ import grakn.core.concept.answer.NumericGroup;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.Reasoner;
-import grakn.core.traversal.common.Identifier;
 import graql.lang.common.GraqlArg;
 import graql.lang.common.GraqlToken;
 import graql.lang.pattern.variable.Reference;
@@ -82,8 +83,12 @@ public class Matcher {
         this.disjunction = Disjunction.create(query.conjunction().normalise());
         this.context = context;
         if (context != null) {
-            if (query.modifiers().sort().isPresent()) this.context.producer(EXHAUSTIVE); // TODO: remove this once sort is optimised
-            else this.context.producer(INCREMENTAL);
+            Either<Arguments.Query.Producer, Long> prodCtx;
+            GraqlMatch.Modifiers mods = query.modifiers();
+            if (mods.sort().isPresent()) prodCtx = Either.first(EXHAUSTIVE); // TODO: remove this once sort is optimised
+            else if (mods.limit().isPresent()) prodCtx = Either.second(mods.offset().orElse(0L) + mods.limit().get());
+            else prodCtx = Either.first(INCREMENTAL);
+            this.context.producer(prodCtx);
         }
     }
 
@@ -111,13 +116,13 @@ public class Matcher {
         return new Group.Aggregator(group, query);
     }
 
-    public ResourceIterator<ConceptMap> execute() {
+    public FunctionalIterator<ConceptMap> execute() {
         assert context != null;
         return execute(context);
     }
 
-    ResourceIterator<ConceptMap> execute(Context.Query context) {
-        ResourceIterator<ConceptMap> answers = reasoner.execute(disjunction, query.modifiers(), context);
+    FunctionalIterator<ConceptMap> execute(Context.Query context) {
+        FunctionalIterator<ConceptMap> answers = reasoner.execute(disjunction, query.modifiers(), context);
         // TODO: we should remove these and handle them in the traversal engine or reasoner ONLY. Currently in reasoner already
         if (query.modifiers().sort().isPresent()) answers = sort(answers, query.modifiers().sort().get());
         if (query.modifiers().offset().isPresent()) answers = answers.offset(query.modifiers().offset().get());
@@ -125,7 +130,7 @@ public class Matcher {
         return answers;
     }
 
-    private ResourceIterator<ConceptMap> sort(ResourceIterator<ConceptMap> answers, Sortable.Sorting sorting) {
+    private FunctionalIterator<ConceptMap> sort(FunctionalIterator<ConceptMap> answers, Sortable.Sorting sorting) {
         // TODO: Replace this temporary implementation of Graql Match Sort query with a native sorting traversal
         Reference.Name var = sorting.var().reference().asName();
         Comparator<ConceptMap> comparator = (answer1, answer2) -> {
@@ -174,17 +179,17 @@ public class Matcher {
             this.matcher = matcher;
             this.query = query;
             this.context = context;
-            this.context.producer(EXHAUSTIVE);
+            this.context.producer(Either.first(EXHAUSTIVE));
         }
 
         public Numeric execute() {
-            ResourceIterator<ConceptMap> answers = matcher.execute(context);
+            FunctionalIterator<ConceptMap> answers = matcher.execute(context);
             GraqlToken.Aggregate.Method method = query.method();
             UnboundVariable var = query.var();
             return aggregate(answers, method, var);
         }
 
-        static Numeric aggregate(ResourceIterator<ConceptMap> answers,
+        static Numeric aggregate(FunctionalIterator<ConceptMap> answers,
                                  GraqlToken.Aggregate.Method method, UnboundVariable var) {
             return answers.stream().collect(aggregator(method, var));
         }
@@ -591,10 +596,10 @@ public class Matcher {
             this.matcher = matcher;
             this.query = query;
             this.context = context;
-            this.context.producer(EXHAUSTIVE);
+            this.context.producer(Either.first(EXHAUSTIVE));
         }
 
-        public ResourceIterator<ConceptMapGroup> execute() {
+        public FunctionalIterator<ConceptMapGroup> execute() {
             // TODO: Replace this temporary implementation of Graql Match Group query with a native grouping traversal
             List<ConceptMapGroup> answerGroups = new ArrayList<>();
             matcher.execute(context).stream().collect(groupingBy(a -> a.get(query.var())))
@@ -612,7 +617,7 @@ public class Matcher {
                 this.query = query;
             }
 
-            public ResourceIterator<NumericGroup> execute() {
+            public FunctionalIterator<NumericGroup> execute() {
                 // TODO: Replace this temporary implementation of Graql Match Group query with a native grouping traversal
                 List<NumericGroup> numericGroups = new ArrayList<>();
                 group.matcher.execute(group.context).stream()

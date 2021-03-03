@@ -29,27 +29,27 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-public interface ResourceIterator<T> extends Iterator<T> {
+public interface FunctionalIterator<T> extends Iterator<T> {
 
-    ResourceIterator<T> distinct();
+    FunctionalIterator<T> distinct();
 
-    ResourceIterator<T> distinct(Set<T> duplicates);
+    FunctionalIterator<T> distinct(Set<T> duplicates);
 
-    <U> ResourceIterator<U> map(Function<T, U> mappingFn);
+    <U> FunctionalIterator<U> map(Function<T, U> mappingFn);
 
-    <U> ResourceIterator<U> flatMap(Function<T, ResourceIterator<U>> flatMappingFn);
+    <U> FunctionalIterator<U> flatMap(Function<T, FunctionalIterator<U>> flatMappingFn);
 
-    ResourceIterator<T> filter(Predicate<T> predicate);
+    FunctionalIterator<T> filter(Predicate<T> predicate);
 
-    ResourceIterator<T> offset(long offset);
+    FunctionalIterator<T> offset(long offset);
 
-    ResourceIterator<T> limit(long limit);
+    FunctionalIterator<T> limit(long limit);
 
-    ResourceIterator<T> link(ResourceIterator<T> iterator);
+    FunctionalIterator<T> link(FunctionalIterator<T> iterator);
 
-    ResourceIterator<T> link(Iterator<T> iterator);
+    FunctionalIterator<T> link(Iterator<T> iterator);
 
-    ResourceIterator<T> noNulls();
+    FunctionalIterator<T> noNulls();
 
     boolean allMatch(Predicate<T> predicate);
 
@@ -79,11 +79,11 @@ public interface ResourceIterator<T> extends Iterator<T> {
 
     long count();
 
-    ResourceIterator<T> onConsumed(Runnable function);
+    FunctionalIterator<T> onConsumed(Runnable function);
 
-    ResourceIterator<T> onError(Function<Exception, GraknException> exceptionFn);
+    FunctionalIterator<T> onError(Function<Exception, GraknException> exceptionFn);
 
-    ResourceIterator<T> onFinalise(Runnable function);
+    FunctionalIterator<T> onFinalise(Runnable function);
 
     void recycle();
 }

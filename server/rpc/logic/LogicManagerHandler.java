@@ -19,7 +19,7 @@ package grakn.core.server.rpc.logic;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
 import grakn.core.server.rpc.TransactionRPC;
@@ -85,7 +85,7 @@ public class LogicManagerHandler {
     }
 
     private void getRules(TransactionProto.Transaction.Req request) {
-        ResourceIterator<Rule> rules = logicManager.rules();
+        FunctionalIterator<Rule> rules = logicManager.rules();
         transactionRPC.respond(request, rules,
                                as -> response(request, LogicProto.LogicManager.Res.newBuilder().setGetRulesRes(
                                        LogicProto.LogicManager.GetRules.Res.newBuilder()

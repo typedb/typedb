@@ -15,16 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+try-import /opt/credentials/bazel-remote-cache.rc
+
 build --workspace_status_command bin/workspace_status.sh --incompatible_strict_action_env --javacopt='--release 8'
 run --incompatible_strict_action_env
-test --incompatible_strict_action_env
+test --incompatible_strict_action_env --test_env=PATH
 
-# what is defined in this section will be applied when bazel is invoked like this: bazel ... --config=rbe ...
-build:rbe --project_id=grakn-dev
-build:rbe --remote_cache=cloud.buildbuddy.io
-build:rbe --bes_backend=cloud.buildbuddy.io
-build:rbe --bes_results_url=https://app.buildbuddy.io/invocation/
-build:rbe --tls_client_certificate=/opt/credentials/buildbuddy-cert.pem
-build:rbe --tls_client_key=/opt/credentials/buildbuddy-key.pem
-build:rbe --remote_timeout=3600
-build:rbe --remote_download_minimal

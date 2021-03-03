@@ -19,7 +19,7 @@
 package grakn.core.traversal.common;
 
 import grakn.core.graph.vertex.Vertex;
-import graql.lang.pattern.variable.Reference;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 
 import java.util.Map;
 import java.util.Objects;
@@ -29,31 +29,31 @@ import static java.util.Collections.unmodifiableMap;
 
 public class VertexMap {
 
-    private final Map<Reference, Vertex<?, ?>> map;
+    private final Map<Retrievable, Vertex<?, ?>> map;
     private final int hash;
 
-    public VertexMap(Map<Reference, Vertex<?, ?>> map) {
+    public VertexMap(Map<Retrievable, Vertex<?, ?>> map) {
         this.map = unmodifiableMap(map);
         this.hash = Objects.hash(this.map);
     }
 
-    public static VertexMap of(Map<Reference, Vertex<?, ?>> map) {
+    public static VertexMap of(Map<Retrievable, Vertex<?, ?>> map) {
         return new VertexMap(map);
     }
 
-    public Map<Reference, Vertex<?, ?>> map() {
+    public Map<Retrievable, Vertex<?, ?>> map() {
         return map;
     }
 
-    public Vertex<?, ?> get(Reference reference) {
-        return map.get(reference);
+    public Vertex<?, ?> get(Retrievable id) {
+        return map.get(id);
     }
 
-    public boolean containsKey(Reference reference) {
-        return map.containsKey(reference);
+    public boolean containsKey(Retrievable id) {
+        return map.containsKey(id);
     }
 
-    public void forEach(BiConsumer<Reference, Vertex<?, ?>> action) {
+    public void forEach(BiConsumer<Retrievable, Vertex<?, ?>> action) {
         map.forEach(action);
     }
 

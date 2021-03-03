@@ -19,7 +19,7 @@
 package grakn.core.query;
 
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
 import grakn.core.concept.ConceptManager;
@@ -47,7 +47,7 @@ import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_S
 public class QueryManager {
 
     private static final Logger LOG = LoggerFactory.getLogger(QueryManager.class);
-    static final int PARALLELISATION_SPLIT_MIN = 2;
+    static final int PARALLELISATION_SPLIT_MIN = 8;
 
     private static final String TRACE_PREFIX = "query.";
     private final LogicManager logicMgr;
@@ -62,11 +62,11 @@ public class QueryManager {
         this.defaultContext = new Context.Query(context, new Options.Query());
     }
 
-    public ResourceIterator<ConceptMap> match(GraqlMatch query) {
+    public FunctionalIterator<ConceptMap> match(GraqlMatch query) {
         return match(query, defaultContext);
     }
 
-    public ResourceIterator<ConceptMap> match(GraqlMatch query, Context.Query context) {
+    public FunctionalIterator<ConceptMap> match(GraqlMatch query, Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match")) {
             return Matcher.create(reasoner, query, context).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
@@ -86,11 +86,11 @@ public class QueryManager {
         }
     }
 
-    public ResourceIterator<ConceptMapGroup> match(GraqlMatch.Group query) {
+    public FunctionalIterator<ConceptMapGroup> match(GraqlMatch.Group query) {
         return match(query, defaultContext);
     }
 
-    public ResourceIterator<ConceptMapGroup> match(GraqlMatch.Group query, Context.Query queryContext) {
+    public FunctionalIterator<ConceptMapGroup> match(GraqlMatch.Group query, Context.Query queryContext) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match_group")) {
             return Matcher.create(reasoner, query, queryContext).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
@@ -98,11 +98,11 @@ public class QueryManager {
         }
     }
 
-    public ResourceIterator<NumericGroup> match(GraqlMatch.Group.Aggregate query) {
+    public FunctionalIterator<NumericGroup> match(GraqlMatch.Group.Aggregate query) {
         return match(query, defaultContext);
     }
 
-    public ResourceIterator<NumericGroup> match(GraqlMatch.Group.Aggregate query, Context.Query queryContext) {
+    public FunctionalIterator<NumericGroup> match(GraqlMatch.Group.Aggregate query, Context.Query queryContext) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match_group_aggregate")) {
             return Matcher.create(reasoner, query, queryContext).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
@@ -110,11 +110,11 @@ public class QueryManager {
         }
     }
 
-    public ResourceIterator<ConceptMap> insert(GraqlInsert query) {
+    public FunctionalIterator<ConceptMap> insert(GraqlInsert query) {
         return insert(query, defaultContext);
     }
 
-    public ResourceIterator<ConceptMap> insert(GraqlInsert query, Context.Query context) {
+    public FunctionalIterator<ConceptMap> insert(GraqlInsert query, Context.Query context) {
         if (context.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION);
         if (context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_DATA_READ_VIOLATION);
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
@@ -142,7 +142,7 @@ public class QueryManager {
         update(query, defaultContext);
     }
 
-    public ResourceIterator<ConceptMap> update(GraqlUpdate query, Context.Query context) {
+    public FunctionalIterator<ConceptMap> update(GraqlUpdate query, Context.Query context) {
         if (context.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION);
         if (context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_DATA_READ_VIOLATION);
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "update")) {

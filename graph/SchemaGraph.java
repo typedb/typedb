@@ -20,7 +20,7 @@ package grakn.core.graph;
 
 import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.graph.common.Encoding;
 import grakn.core.graph.common.KeyGenerator;
@@ -178,27 +178,27 @@ public class SchemaGraph implements Graph {
         return getType(ROLE.label(), ROLE.scope());
     }
 
-    public ResourceIterator<TypeVertex> thingTypes() {
+    public FunctionalIterator<TypeVertex> thingTypes() {
         return tree(rootThingType(), v -> v.ins().edge(SUB).from());
     }
 
-    public ResourceIterator<TypeVertex> entityTypes() {
+    public FunctionalIterator<TypeVertex> entityTypes() {
         return tree(rootEntityType(), v -> v.ins().edge(SUB).from());
     }
 
-    public ResourceIterator<TypeVertex> attributeTypes() {
+    public FunctionalIterator<TypeVertex> attributeTypes() {
         return tree(rootAttributeType(), v -> v.ins().edge(SUB).from());
     }
 
-    public ResourceIterator<TypeVertex> attributeTypes(Encoding.ValueType vt) {
+    public FunctionalIterator<TypeVertex> attributeTypes(Encoding.ValueType vt) {
         return attributeTypes().filter(at -> at.valueType().equals(vt));
     }
 
-    public ResourceIterator<TypeVertex> relationTypes() {
+    public FunctionalIterator<TypeVertex> relationTypes() {
         return tree(rootRelationType(), v -> v.ins().edge(SUB).from());
     }
 
-    public ResourceIterator<TypeVertex> roleTypes() {
+    public FunctionalIterator<TypeVertex> roleTypes() {
         return tree(rootRoleType(), v -> v.ins().edge(SUB).from());
     }
 
@@ -242,7 +242,9 @@ public class SchemaGraph implements Graph {
     }
 
     public TypeVertex convert(VertexIID.Type iid) {
-        return typesByIID.computeIfAbsent(iid, i -> {
+        TypeVertex typeVertex = typesByIID.get(iid);
+        if (typeVertex != null) return typeVertex;
+        else return typesByIID.computeIfAbsent(iid, i -> {
             TypeVertex vertex = new TypeVertexImpl.Persisted(this, i);
             typesByLabel.putIfAbsent(vertex.scopedLabel(), vertex);
             return vertex;
@@ -405,19 +407,21 @@ public class SchemaGraph implements Graph {
             return referencesIndex;
         }
 
-        public ResourceIterator<RuleStructure> all() {
+        public FunctionalIterator<RuleStructure> all() {
             Encoding.Prefix index = IndexIID.Rule.prefix();
-            ResourceIterator<RuleStructure> persistedRules = storage.iterate(index.bytes(), (key, value) ->
+            FunctionalIterator<RuleStructure> persistedRules = storage.iterate(index.bytes(), (key, value) ->
                     convert(StructureIID.Rule.of(value)));
             return link(buffered(), persistedRules).distinct();
         }
 
-        public ResourceIterator<RuleStructure> buffered() {
+        public FunctionalIterator<RuleStructure> buffered() {
             return iterate(rulesByIID.values());
         }
 
         public RuleStructure convert(StructureIID.Rule iid) {
-            return rulesByIID.computeIfAbsent(iid, i -> {
+            RuleStructure ruleStructure = rulesByIID.get(iid);
+            if (ruleStructure != null) return ruleStructure;
+            else return rulesByIID.computeIfAbsent(iid, i -> {
                 RuleStructure structure = new RuleStructureImpl.Persisted(SchemaGraph.this, i);
                 rulesByLabel.putIfAbsent(structure.label(), structure);
                 return structure;
@@ -533,12 +537,12 @@ public class SchemaGraph implements Graph {
                 this.outdated = isOutdated;
             }
 
-            public ResourceIterator<RuleStructure> concludesVertex(TypeVertex type) {
+            public FunctionalIterator<RuleStructure> concludesVertex(TypeVertex type) {
                 assert !outdated;
                 return link(persisted.concludesVertex(type), buffered.concludesVertex(type));
             }
 
-            public ResourceIterator<RuleStructure> concludesEdgeTo(TypeVertex type) {
+            public FunctionalIterator<RuleStructure> concludesEdgeTo(TypeVertex type) {
                 assert !outdated;
                 return link(persisted.concludesEdgeTo(type), buffered.concludesEdgeTo(type));
             }
@@ -568,12 +572,12 @@ public class SchemaGraph implements Graph {
                     concludesEdgeTo = new ConcurrentHashMap<>();
                 }
 
-                private ResourceIterator<RuleStructure> concludesVertex(TypeVertex type) {
+                private FunctionalIterator<RuleStructure> concludesVertex(TypeVertex type) {
                     assert !outdated;
                     return iterate(concludesVertex.computeIfAbsent(type, this::loadConcludesVertex));
                 }
 
-                public ResourceIterator<RuleStructure> concludesEdgeTo(TypeVertex type) {
+                public FunctionalIterator<RuleStructure> concludesEdgeTo(TypeVertex type) {
                     assert !outdated;
                     return iterate(concludesEdgeTo.computeIfAbsent(type, this::loadConcludesEdgeTo));
                 }
@@ -656,11 +660,11 @@ public class SchemaGraph implements Graph {
                     });
                 }
 
-                private ResourceIterator<RuleStructure> concludesVertex(TypeVertex type) {
+                private FunctionalIterator<RuleStructure> concludesVertex(TypeVertex type) {
                     return iterate(concludesVertex.getOrDefault(type, set()));
                 }
 
-                private ResourceIterator<RuleStructure> concludesEdgeTo(TypeVertex type) {
+                private FunctionalIterator<RuleStructure> concludesEdgeTo(TypeVertex type) {
                     return iterate(concludesEdgeTo.getOrDefault(type, set()));
                 }
 
@@ -697,11 +701,11 @@ public class SchemaGraph implements Graph {
                 return buffered;
             }
 
-            public ResourceIterator<RuleStructure> get(TypeVertex type) {
+            public FunctionalIterator<RuleStructure> get(TypeVertex type) {
                 return link(persisted.get(type), buffered.get(type));
             }
 
-            public void delete(RuleStructure rule, ResourceIterator<TypeVertex> types) {
+            public void delete(RuleStructure rule, FunctionalIterator<TypeVertex> types) {
                 types.forEachRemaining(type -> {
                     persisted.delete(rule, type);
                     buffered.delete(rule, type);
@@ -721,7 +725,7 @@ public class SchemaGraph implements Graph {
                     references = new ConcurrentHashMap<>();
                 }
 
-                private ResourceIterator<RuleStructure> get(TypeVertex type) {
+                private FunctionalIterator<RuleStructure> get(TypeVertex type) {
                     return iterate(references.computeIfAbsent(type, this::loadIndex));
                 }
 
@@ -758,7 +762,7 @@ public class SchemaGraph implements Graph {
                     });
                 }
 
-                private ResourceIterator<RuleStructure> get(TypeVertex type) {
+                private FunctionalIterator<RuleStructure> get(TypeVertex type) {
                     return iterate(references.getOrDefault(type, set()));
                 }
 

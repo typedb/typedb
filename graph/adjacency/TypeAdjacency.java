@@ -18,7 +18,7 @@
 
 package grakn.core.graph.adjacency;
 
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.graph.common.Encoding;
 import grakn.core.graph.edge.TypeEdge;
 import grakn.core.graph.vertex.TypeVertex;
@@ -74,25 +74,25 @@ public interface TypeAdjacency {
      */
     class TypeIteratorBuilder {
 
-        private final ResourceIterator<TypeEdge> edgeIterator;
+        private final FunctionalIterator<TypeEdge> edgeIterator;
 
-        public TypeIteratorBuilder(ResourceIterator<TypeEdge> edgeIterator) {
+        public TypeIteratorBuilder(FunctionalIterator<TypeEdge> edgeIterator) {
             this.edgeIterator = edgeIterator;
         }
 
-        public ResourceIterator<TypeVertex> from() {
+        public FunctionalIterator<TypeVertex> from() {
             return edgeIterator.map(edge -> edge.from().asType());
         }
 
-        public ResourceIterator<TypeVertex> to() {
+        public FunctionalIterator<TypeVertex> to() {
             return edgeIterator.map(edge -> edge.to().asType());
         }
 
-        public ResourceIterator<TypeVertex> overridden() {
+        public FunctionalIterator<TypeVertex> overridden() {
             return edgeIterator.map(TypeEdge::overridden);
         }
 
-        public ResourceIterator<TypeEdge> edge() {
+        public FunctionalIterator<TypeEdge> edge() {
             return edgeIterator;
         }
     }

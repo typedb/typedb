@@ -21,6 +21,7 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
+import grakn.core.common.parameters.Options.Database;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
@@ -40,7 +41,6 @@ import grakn.core.rocks.RocksTransaction;
 import grakn.core.test.integration.util.Util;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.Graql;
-import graql.lang.pattern.variable.Reference;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -65,7 +65,9 @@ import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertFalse;
 
 public class RuleTest {
-    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("rule-test");
+    private static Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("rule-test");
+    private static final Path logDir = dataDir.resolve("logs");
+    private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
     private static String database = "rule-test";
 
     private Variable getVariable(Set<Variable> vars, Identifier identifier) {
@@ -74,9 +76,9 @@ public class RuleTest {
 
     @Test
     public void rule_relation_materialises_when_missing() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+        try (RocksGrakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -107,10 +109,10 @@ public class RuleTest {
                     assertEquals(2, people.size());
 
                     Rule rule = txn.logic().getRule("marriage-is-friendship");
-                    ConceptMap whenAnswer = new ConceptMap(map(pair(Reference.name("x"), people.get(0)),
-                                                               pair(Reference.name("y"), people.get(1))));
+                    ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.name("x"), people.get(0)),
+                                                               pair(Identifier.Variable.name("y"), people.get(1))));
 
-                    List<Map<Identifier, Concept>> materialisations = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr).toList();
+                    List<Map<Identifier.Variable, Concept>> materialisations = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr).toList();
                     assertEquals(1, materialisations.size());
                     assertEquals(5, materialisations.get(0).size());
 
@@ -125,9 +127,9 @@ public class RuleTest {
 
     @Test
     public void rule_relation_does_not_materialise_when_present() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+        try (RocksGrakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -163,10 +165,10 @@ public class RuleTest {
                     assertEquals(2, people.size());
 
                     Rule rule = txn.logic().getRule("marriage-is-friendship");
-                    ConceptMap whenAnswer = new ConceptMap(map(pair(Reference.name("x"), people.get(0)),
-                                                               pair(Reference.name("y"), people.get(1))));
+                    ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.name("x"), people.get(0)),
+                                                               pair(Identifier.Variable.name("y"), people.get(1))));
 
-                    List<Map<Identifier, Concept>> materialisations = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr).toList();
+                    List<Map<Identifier.Variable, Concept>> materialisations = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr).toList();
                     assertEquals(1, materialisations.size());
                     assertEquals(5, materialisations.get(0).size());
                     friendshipInstances = friendship.getInstances().collect(Collectors.toList());
@@ -180,9 +182,9 @@ public class RuleTest {
 
     @Test
     public void rule_has_variable_materialises_when_missing() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+        try (RocksGrakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -211,9 +213,9 @@ public class RuleTest {
                     Attribute.Long ageInDays10 = ageInDays.asLong().put(10L);
 
                     Rule rule = txn.logic().getRule("old-milk-is-not-good");
-                    ConceptMap whenAnswer = new ConceptMap(map(pair(Reference.name("x"), milkInst),
-                                                               pair(Reference.name("a"), ageInDays10)));
-                    List<Map<Identifier, Concept>> materialisations = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr).toList();
+                    ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.name("x"), milkInst),
+                                                               pair(Identifier.Variable.name("a"), ageInDays10)));
+                    List<Map<Identifier.Variable, Concept>> materialisations = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr).toList();
                     assertEquals(1, materialisations.size());
                     assertEquals(2, materialisations.get(0).size());
 
@@ -227,9 +229,9 @@ public class RuleTest {
 
     @Test
     public void rule_has_explicit_materialises_when_missing() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+        try (RocksGrakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -258,8 +260,8 @@ public class RuleTest {
                     milkInst.setHas(ageInDays.asLong().put(20L));
 
                     Rule rule = txn.logic().getRule("old-milk-is-not-good");
-                    ConceptMap whenAnswer = new ConceptMap(map(pair(Reference.name("x"), milkInst)));
-                    List<Map<Identifier, Concept>> materialisations = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr).toList();
+                    ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.name("x"), milkInst)));
+                    List<Map<Identifier.Variable, Concept>> materialisations = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr).toList();
                     assertEquals(1, materialisations.size());
                     assertEquals(3, materialisations.get(0).size());
 
@@ -276,9 +278,9 @@ public class RuleTest {
 
     @Test
     public void rule_indexes_created_and_readable() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+        try (RocksGrakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -357,9 +359,9 @@ public class RuleTest {
 
     @Test
     public void rule_indexes_update_on_rule_delete() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+        try (RocksGrakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -435,9 +437,9 @@ public class RuleTest {
 
     @Test
     public void new_type_updates_rule_conclusion_index() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+        try (RocksGrakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -493,9 +495,9 @@ public class RuleTest {
 
     @Test
     public void rule_contains_indexes_prevent_undefining_contained_types() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+        try (RocksGrakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -540,9 +542,9 @@ public class RuleTest {
 
     @Test
     public void rule_contains_indexes_allow_deleting_type_after_deleting_rule() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+        try (RocksGrakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -642,9 +644,9 @@ public class RuleTest {
 
     @Test
     public void rule_that_cannot_be_satisfied_throws_an_error() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+        try (RocksGrakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -667,9 +669,9 @@ public class RuleTest {
 
     @Test
     public void rule_that_cannot_be_inserted_throws_an_error() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+        try (RocksGrakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {

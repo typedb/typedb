@@ -19,7 +19,7 @@
 package grakn.core.concept.type.impl;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concept.thing.impl.AttributeImpl;
 import grakn.core.concept.thing.impl.EntityImpl;
 import grakn.core.concept.thing.impl.RelationImpl;
@@ -187,15 +187,18 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     private void ownsKey(AttributeTypeImpl attributeType) {
         validateIsNotDeleted();
-        if (!attributeType.isKeyable()) {
-            throw exception(GraknException.of(OWNS_KEY_VALUE_TYPE, attributeType.getLabel(), attributeType.getValueType().name()));
-        } else if (concat(getSupertype().getOwns(attributeType.getValueType(), true), getSupertype().overriddenOwns(false, true)).anyMatch(a -> a.equals(attributeType))) {
-            throw exception(GraknException.of(OWNS_KEY_NOT_AVAILABLE, attributeType.getLabel()));
-        }
 
         TypeVertex attVertex = attributeType.vertex;
-        TypeEdge ownsEdge;
-        TypeEdge ownsKeyEdge;
+        TypeEdge ownsEdge, ownsKeyEdge;
+
+        if (vertex.outs().edge(OWNS_KEY, attVertex) != null) return;
+
+        if (!attributeType.isKeyable()) {
+            throw exception(GraknException.of(OWNS_KEY_VALUE_TYPE, attributeType.getLabel(), attributeType.getValueType().name()));
+        } else if (concat(getSupertype().getOwns(attributeType.getValueType(), true),
+                          getSupertype().overriddenOwns(false, true)).anyMatch(a -> a.equals(attributeType))) {
+            throw exception(GraknException.of(OWNS_KEY_NOT_AVAILABLE, attributeType.getLabel()));
+        }
 
         if ((ownsEdge = vertex.outs().edge(OWNS, attVertex)) != null) {
             // TODO: These ownership and uniqueness checks should be parallelised to scale better
@@ -241,7 +244,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     private Stream<AttributeTypeImpl> declaredOwns(boolean onlyKey) {
         if (isRoot()) return Stream.of();
-        ResourceIterator<TypeVertex> iterator;
+        FunctionalIterator<TypeVertex> iterator;
         if (onlyKey) iterator = vertex.outs().edge(OWNS_KEY).to();
         else iterator = link(vertex.outs().edge(OWNS_KEY).to(), vertex.outs().edge(OWNS).to());
         return iterator.map(v -> AttributeTypeImpl.of(graphMgr, v)).stream();

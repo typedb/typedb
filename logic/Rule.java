@@ -19,8 +19,8 @@
 package grakn.core.logic;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.iterator.Iterators;
-import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
@@ -33,13 +33,13 @@ import grakn.core.concept.type.RoleType;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
 import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.Negation;
+import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
 import grakn.core.pattern.constraint.thing.ThingConstraint;
 import grakn.core.pattern.constraint.thing.ValueConstraint;
-import grakn.core.pattern.variable.SystemReference;
+import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.pattern.variable.VariableRegistry;
@@ -48,7 +48,6 @@ import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.Reference;
-import graql.lang.pattern.variable.ThingVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,20 +94,20 @@ public class Rule {
         this.when = whenPattern(structure.when(), logicMgr);
         this.then = thenPattern(structure.then(), logicMgr);
         pruneThenResolvedTypes();
-        this.conclusion = Conclusion.create(this.then);
+        this.conclusion = Conclusion.create(this.then, this);
     }
 
     private Rule(GraphManager graphMgr, LogicManager logicMgr, String label,
-                 graql.lang.pattern.Conjunction<? extends Pattern> when, ThingVariable<?> then) {
+                 graql.lang.pattern.Conjunction<? extends Pattern> when, graql.lang.pattern.variable.ThingVariable<?> then) {
         this.structure = graphMgr.schema().rules().create(label, when, then);
         this.when = whenPattern(structure.when(), logicMgr);
         this.then = thenPattern(structure.then(), logicMgr);
         pruneThenResolvedTypes();
         validateSatisfiable();
         validateInsertable(logicMgr);
-        this.conclusion = Conclusion.create(this.then);
+        this.conclusion = Conclusion.create(this.then, this);
         validateCycles();
-        this.conclusion.index(this);
+        this.conclusion.index();
     }
 
     public static Rule of(LogicManager logicMgr, RuleStructure structure) {
@@ -116,14 +115,13 @@ public class Rule {
     }
 
     public static Rule of(GraphManager graphMgr, LogicManager logicMgr, String label,
-                          graql.lang.pattern.Conjunction<? extends Pattern> when, ThingVariable<?> then) {
+                          graql.lang.pattern.Conjunction<? extends Pattern> when, graql.lang.pattern.variable.ThingVariable<?> then) {
         return new Rule(graphMgr, logicMgr, label, when, then);
     }
 
     public Conclusion conclusion() {
         return conclusion;
     }
-
 
     public Conjunction when() {
         return when;
@@ -146,11 +144,11 @@ public class Rule {
     }
 
     public void delete() {
-        conclusion().unindex(this);
+        conclusion().unindex();
         structure.delete();
     }
 
-    public ThingVariable<?> getThenPreNormalised() {
+    public graql.lang.pattern.variable.ThingVariable<?> getThenPreNormalised() {
         return structure.then();
     }
 
@@ -180,19 +178,13 @@ public class Rule {
     }
 
     public void validateInsertable(LogicManager logicMgr) {
-        ResourceIterator<Map<Reference.Name, Label>> possibleWhenPerms = logicMgr.typeResolver().combinations(when, false);
-        Set<Map<Reference.Name, Label>> possibleThenSet = logicMgr.typeResolver().combinations(then, true).toSet();
+        FunctionalIterator<Map<Identifier.Variable.Name, Label>> whenCombinations = logicMgr.typeResolver().namedCombinations(when, false);
+        Set<Map<Identifier.Variable.Name, Label>> allowedThenCombinations = logicMgr.typeResolver().namedCombinations(then, true).toSet();
 
-        possibleWhenPerms.forEachRemaining(nameLabelMap -> {
-            if (possibleThenSet.stream().noneMatch(thenMap -> nameLabelMap.entrySet().containsAll(thenMap.entrySet())))
+        whenCombinations.forEachRemaining(nameLabelMap -> {
+            if (allowedThenCombinations.stream().noneMatch(thenMap -> nameLabelMap.entrySet().containsAll(thenMap.entrySet())))
                 throw GraknException.of(RULE_CAN_IMPLY_UNINSERTABLE_RESULTS, structure.label(), nameLabelMap.toString());
         });
-    }
-
-    @Override
-    public String toString() {
-        return "" + RULE + SPACE + getLabel() + COLON + NEW_LINE + WHEN + SPACE + CURLY_OPEN + NEW_LINE + when + NEW_LINE +
-                CURLY_CLOSE + SPACE + THEN + SPACE + CURLY_OPEN + NEW_LINE + then + NEW_LINE + CURLY_CLOSE + SEMICOLON;
     }
 
     void validateCycles() {
@@ -222,52 +214,61 @@ public class Rule {
     }
 
     private Conjunction whenPattern(graql.lang.pattern.Conjunction<? extends Pattern> conjunction, LogicManager logicMgr) {
-        Conjunction conj = Conjunction.create(conjunction.normalise().patterns().get(0));
+        Disjunction when = Disjunction.create(conjunction.normalise());
+        assert when.conjunctions().size() == 1;
 
         // TODO: remove this when we fully implement negation and don't have to ban it in rules
-        if (!conj.negations().isEmpty()) {
+        if (!when.conjunctions().get(0).negations().isEmpty()) {
             throw GraknException.of(INVALID_NEGATION, getLabel());
         }
 
-        if (iterate(conj.negations()).filter(neg -> neg.disjunction().conjunctions().size() != 1).hasNext()) {
+        if (iterate(when.conjunctions().get(0).negations()).filter(neg -> neg.disjunction().conjunctions().size() != 1).hasNext()) {
             throw GraknException.of(INVALID_NEGATION_CONTAINS_DISJUNCTION, getLabel());
         }
 
-        logicMgr.typeResolver().resolve(conj);
-        for (Negation negation : conj.negations()) {
-            assert negation.disjunction().conjunctions().size() == 1;
-            for (Conjunction c : negation.disjunction().conjunctions()) {
-                logicMgr.typeResolver().resolve(c, list(conj));
-                if (!c.isSatisfiable()) {
-                    LOG.warn("Rule {} contains unsatisfiable negated conjunction: {}", getLabel(), c);
-                }
-            }
-        }
-        return conj;
+        logicMgr.typeResolver().resolve(when);
+        return when.conjunctions().get(0);
     }
 
-    private Conjunction thenPattern(ThingVariable<?> thenVariable, LogicManager logicMgr) {
-        // TODO: when applying the type resolver, we should be using _insert semantics_ during the type resolution!!!
+    private Conjunction thenPattern(graql.lang.pattern.variable.ThingVariable<?> thenVariable, LogicManager logicMgr) {
         Conjunction conj = new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
-        logicMgr.typeResolver().resolve(conj);
+        logicMgr.typeResolver().resolveVariables(conj, true);
         return conj;
     }
 
     public void reindex() {
-        conclusion().unindex(this);
-        conclusion().index(this);
+        conclusion().unindex();
+        conclusion().index();
+    }
+
+    @Override
+    public String toString() {
+        return "" + RULE + SPACE + getLabel() + COLON + NEW_LINE + WHEN + SPACE + CURLY_OPEN + NEW_LINE + when + NEW_LINE +
+                CURLY_CLOSE + SPACE + THEN + SPACE + CURLY_OPEN + NEW_LINE + then + NEW_LINE + CURLY_CLOSE + SEMICOLON;
     }
 
     public static abstract class Conclusion {
 
-        public static Conclusion create(Conjunction then) {
-            Optional<Relation> r = Relation.of(then);
+        private final Rule rule;
+        private final Set<Identifier.Variable.Retrievable> retrievableIds;
+
+        Conclusion(Rule rule, Set<Identifier.Variable.Retrievable> retrievableIds) {
+            this.rule = rule;
+            this.retrievableIds = retrievableIds;
+        }
+
+        public static Conclusion create(Conjunction then, Rule rule) {
+            Optional<Relation> r = Relation.of(then, rule);
             if ((r).isPresent()) return r.get();
-            Optional<Has.Explicit> e = Has.Explicit.of(then);
+            Optional<Has.Explicit> e = Has.Explicit.of(then, rule);
             if (e.isPresent()) return e.get();
-            Optional<Has.Variable> v = Has.Variable.of(then);
+            Optional<Has.Variable> v = Has.Variable.of(then, rule);
             if (v.isPresent()) return v.get();
             throw GraknException.of(ILLEGAL_STATE);
+        }
+
+        public Conjunction conjunction() {
+            return rule().then();
         }
 
         /**
@@ -278,12 +279,20 @@ public class Rule {
          * @param conceptMgr   - used to insert the conclusion if it doesn't already exist
          * @return - all possible conclusions: there may be multiple preexisting satisfactory conclusions, we return all
          */
-        public abstract ResourceIterator<Map<Identifier, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
-                                                                               ConceptManager conceptMgr);
+        public abstract FunctionalIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
+                                                                                          ConceptManager conceptMgr);
 
-        abstract void index(Rule rule);
+        public Rule rule() { return rule; }
 
-        abstract void unindex(Rule rule);
+        public abstract Optional<ThingVariable> generating();
+
+        public Set<Identifier.Variable.Retrievable> retrievableIds() {
+            return retrievableIds;
+        }
+
+        abstract void index();
+
+        abstract void unindex();
 
         public boolean isRelation() {
             return false;
@@ -346,35 +355,50 @@ public class Rule {
             private final RelationConstraint relation;
             private final IsaConstraint isa;
 
-            public static Optional<Relation> of(Conjunction conjunction) {
+            public Relation(RelationConstraint relation, IsaConstraint isa, Rule rule) {
+                super(rule, retrievableIds(relation, isa));
+                this.relation = relation;
+                this.isa = isa;
+            }
+
+            public static Optional<Relation> of(Conjunction conjunction, Rule rule) {
                 return Iterators.iterate(conjunction.variables()).filter(Variable::isThing).map(Variable::asThing)
                         .flatMap(variable -> Iterators.iterate(variable.constraints())
                                 .filter(ThingConstraint::isRelation)
                                 .map(constraint -> {
                                     assert constraint.owner().isa().isPresent();
-                                    return new Relation(constraint.asRelation(), variable.isa().get());
+                                    return new Relation(constraint.asRelation(), variable.isa().get(), rule);
                                 })).first();
             }
 
-            public Relation(RelationConstraint relation, IsaConstraint isa) {
-                this.relation = relation;
-                this.isa = isa;
+            private static Set<Identifier.Variable.Retrievable> retrievableIds(RelationConstraint relation, IsaConstraint isa) {
+                Set<Identifier.Variable.Retrievable> ids = new HashSet<>();
+                assert isa.owner().equals(relation.owner());
+                ids.add(relation.owner().id());
+                relation.players().forEach(rp -> {
+                    ids.add(rp.player().id());
+                    if (rp.roleType().isPresent() && rp.roleType().get().id().isRetrievable()) {
+                        ids.add(rp.roleType().get().id().asRetrievable());
+                    }
+                });
+                if (isa.type().id().isRetrievable()) ids.add(isa.type().id().asRetrievable());
+                return ids;
             }
 
             @Override
-            public ResourceIterator<Map<Identifier, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
-                                                                          ConceptManager conceptMgr) {
-                Identifier relationTypeIdentifier = isa().type().id();
+            public FunctionalIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
+                                                                                     ConceptManager conceptMgr) {
+                Identifier.Variable relationTypeIdentifier = isa().type().id();
                 RelationType relationType = relationType(whenConcepts, conceptMgr);
                 Set<RolePlayer> players = new HashSet<>();
                 relation().players().forEach(rp -> players.add(new RolePlayer(rp, relationType, whenConcepts)));
-                ResourceIterator<grakn.core.concept.thing.Relation> existingRelations = matchRelation(
+                FunctionalIterator<grakn.core.concept.thing.Relation> existingRelations = matchRelation(
                         relationType, players, traversalEng, conceptMgr
                 );
 
                 if (existingRelations.hasNext()) {
                     return existingRelations.map(rel -> {
-                        Map<Identifier, Concept> thenConcepts = new HashMap<>();
+                        Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
                         thenConcepts.put(relationTypeIdentifier, relationType);
                         thenConcepts.put(isa().owner().id(), rel);
                         players.forEach(rp -> {
@@ -384,7 +408,7 @@ public class Rule {
                         return thenConcepts;
                     });
                 } else {
-                    Map<Identifier, Concept> thenConcepts = new HashMap<>();
+                    Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
                     thenConcepts.put(relationTypeIdentifier, relationType);
                     grakn.core.concept.thing.Relation relation = insertRelation(relationType, players);
                     thenConcepts.put(isa().owner().id(), relation);
@@ -397,17 +421,22 @@ public class Rule {
             }
 
             @Override
-            void index(Rule rule) {
-                Variable relation = relation().owner();
-                Set<Label> possibleRelationTypes = relation.resolvedTypes();
-                possibleRelationTypes.forEach(rule.structure::indexConcludesVertex);
+            public Optional<ThingVariable> generating() {
+                return Optional.of(relation.owner());
             }
 
             @Override
-            void unindex(Rule rule) {
+            void index() {
                 Variable relation = relation().owner();
                 Set<Label> possibleRelationTypes = relation.resolvedTypes();
-                possibleRelationTypes.forEach(rule.structure::unindexConcludesVertex);
+                possibleRelationTypes.forEach(rule().structure::indexConcludesVertex);
+            }
+
+            @Override
+            void unindex() {
+                Variable relation = relation().owner();
+                Set<Label> possibleRelationTypes = relation.resolvedTypes();
+                possibleRelationTypes.forEach(rule().structure::unindexConcludesVertex);
             }
 
             public RelationConstraint relation() {
@@ -444,12 +473,11 @@ public class Rule {
                 return relation;
             }
 
-            private ResourceIterator<grakn.core.concept.thing.Relation> matchRelation(RelationType relationType, Set<RolePlayer> players,
-                                                                                      TraversalEngine traversalEng, ConceptManager conceptMgr) {
+            private FunctionalIterator<grakn.core.concept.thing.Relation> matchRelation(RelationType relationType, Set<RolePlayer> players,
+                                                                                        TraversalEngine traversalEng, ConceptManager conceptMgr) {
                 Traversal traversal = new Traversal();
-                SystemReference relationRef = SystemReference.of(0);
-                Identifier.Variable relationId = Identifier.Variable.of(relationRef);
-                traversal.isa(relationId, Identifier.Variable.label(relationType.getLabel().name()), false);
+                Identifier.Variable.Retrievable relationId = relation().owner().id();
+                traversal.types(relationId, set(relationType.getLabel()));
                 Set<Identifier.Variable> playersWithIds = new HashSet<>();
                 players.forEach(rp -> {
                     // note: NON-transitive role player types - we require an exact role being played
@@ -460,7 +488,7 @@ public class Rule {
                     }
                 });
                 return traversalEng.iterator(traversal).map(conceptMgr::conceptMap)
-                        .map(conceptMap -> conceptMap.get(relationRef).asRelation());
+                        .map(conceptMap -> conceptMap.get(relationId).asRelation());
             }
 
             private RelationType relationType(ConceptMap whenConcepts, ConceptManager conceptMgr) {
@@ -475,7 +503,7 @@ public class Rule {
             }
 
             private static class RolePlayer {
-                private final Identifier roleTypeIdentifier;
+                private final Identifier.Variable roleTypeIdentifier;
                 private final RoleType roleType;
                 private final Identifier.Variable playerIdentifier;
                 private final Thing player;
@@ -503,7 +531,8 @@ public class Rule {
 
             private final HasConstraint has;
 
-            Has(HasConstraint has) {
+            Has(HasConstraint has, Rule rule) {
+                super(rule, set(has.owner().id(), has.attribute().id()));
                 this.has = has;
             }
 
@@ -526,13 +555,13 @@ public class Rule {
                 private final IsaConstraint isa;
                 private final ValueConstraint<?> value;
 
-                private Explicit(HasConstraint has, IsaConstraint isa, ValueConstraint<?> value) {
-                    super(has);
+                private Explicit(HasConstraint has, IsaConstraint isa, ValueConstraint<?> value, Rule rule) {
+                    super(has, rule);
                     this.isa = isa;
                     this.value = value;
                 }
 
-                public static Optional<Explicit> of(Conjunction conjunction) {
+                public static Optional<Explicit> of(Conjunction conjunction, Rule rule) {
                     return Iterators.iterate(conjunction.variables()).filter(grakn.core.pattern.variable.Variable::isThing)
                             .map(grakn.core.pattern.variable.Variable::asThing)
                             .flatMap(variable -> Iterators.iterate(variable.constraints()).filter(ThingConstraint::isHas)
@@ -542,21 +571,22 @@ public class Rule {
                                         assert constraint.asHas().attribute().isa().get().type().label().isPresent();
                                         assert constraint.asHas().attribute().value().size() == 1;
                                         return new Has.Explicit(constraint.asHas(), constraint.asHas().attribute().isa().get(),
-                                                                constraint.asHas().attribute().value().iterator().next());
+                                                                constraint.asHas().attribute().value().iterator().next(),
+                                                                rule);
                                     })).first();
                 }
 
                 @Override
-                public ResourceIterator<Map<Identifier, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
-                                                                              ConceptManager conceptMgr) {
-                    Identifier.Variable ownerId = has().owner().id();
-                    assert whenConcepts.contains(ownerId.reference().asName()) && whenConcepts.get(ownerId.reference().asName()).isThing();
+                public FunctionalIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
+                                                                                         ConceptManager conceptMgr) {
+                    Identifier.Variable.Retrievable ownerId = has().owner().id();
+                    assert whenConcepts.contains(ownerId) && whenConcepts.get(ownerId).isThing();
+                    Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
                     Thing owner = whenConcepts.get(ownerId.reference().asName()).asThing();
-                    Map<Identifier, Concept> thenConcepts = new HashMap<>();
                     Attribute attribute = getOrCreateAttribute(conceptMgr);
                     owner.setHas(attribute, true);
                     TypeVariable declaredType = has().attribute().isa().get().type();
-                    Identifier declaredTypeIdentifier = declaredType.id();
+                    Identifier.Variable declaredTypeIdentifier = declaredType.id();
                     AttributeType attrType = conceptMgr.getAttributeType(declaredType.label().get().properLabel().name());
                     assert attrType.equals(attribute.getType());
                     thenConcepts.put(declaredTypeIdentifier, attrType);
@@ -566,22 +596,27 @@ public class Rule {
                 }
 
                 @Override
-                void index(Rule rule) {
+                public Optional<ThingVariable> generating() {
+                    return Optional.of(has().attribute());
+                }
+
+                @Override
+                void index() {
                     grakn.core.pattern.variable.Variable attribute = has().attribute();
                     Set<Label> possibleAttributeHas = attribute.resolvedTypes();
                     possibleAttributeHas.forEach(label -> {
-                        rule.structure.indexConcludesVertex(label);
-                        rule.structure.indexConcludesEdgeTo(label);
+                        rule().structure.indexConcludesVertex(label);
+                        rule().structure.indexConcludesEdgeTo(label);
                     });
                 }
 
                 @Override
-                void unindex(Rule rule) {
+                void unindex() {
                     grakn.core.pattern.variable.Variable attribute = has().attribute();
                     Set<Label> possibleAttributeHas = attribute.resolvedTypes();
                     possibleAttributeHas.forEach(label -> {
-                        rule.structure.unindexConcludesVertex(label);
-                        rule.structure.unindexConcludesEdgeTo(label);
+                        rule().structure.unindexConcludesVertex(label);
+                        rule().structure.unindexConcludesEdgeTo(label);
                     });
                 }
 
@@ -648,11 +683,11 @@ public class Rule {
 
             public static class Variable extends Has {
 
-                private Variable(HasConstraint hasConstraint) {
-                    super(hasConstraint);
+                private Variable(HasConstraint hasConstraint, Rule rule) {
+                    super(hasConstraint, rule);
                 }
 
-                public static Optional<Variable> of(Conjunction conjunction) {
+                public static Optional<Variable> of(Conjunction conjunction, Rule rule) {
                     return Iterators.iterate(conjunction.variables()).filter(grakn.core.pattern.variable.Variable::isThing)
                             .map(grakn.core.pattern.variable.Variable::asThing)
                             .flatMap(variable -> Iterators.iterate(variable.constraints()).filter(ThingConstraint::isHas)
@@ -660,21 +695,20 @@ public class Rule {
                                     .map(constraint -> {
                                         assert !constraint.asHas().attribute().isa().isPresent();
                                         assert constraint.asHas().attribute().value().size() == 0;
-                                        return new Has.Variable(constraint.asHas());
+                                        return new Has.Variable(constraint.asHas(), rule);
                                     })).first();
                 }
 
                 @Override
-                public ResourceIterator<Map<Identifier, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
-                                                                              ConceptManager conceptMgr) {
-                    Identifier.Variable ownerId = has().owner().id();
-                    assert whenConcepts.contains(ownerId.reference().asName())
-                            && whenConcepts.get(ownerId.reference().asName()).isThing();
-                    Thing owner = whenConcepts.get(ownerId.reference().asName()).asThing();
-                    Map<Identifier, Concept> thenConcepts = new HashMap<>();
-                    assert whenConcepts.contains(has().attribute().reference().asName())
-                            && whenConcepts.get(has().attribute().reference().asName()).isAttribute();
-                    Attribute attribute = whenConcepts.get(has().attribute().reference().asName()).asAttribute();
+                public FunctionalIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
+                                                                                         ConceptManager conceptMgr) {
+                    Identifier.Variable.Retrievable ownerId = has().owner().id();
+                    assert whenConcepts.contains(ownerId) && whenConcepts.get(ownerId).isThing();
+                    Thing owner = whenConcepts.get(ownerId).asThing();
+                    Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
+                    assert whenConcepts.contains(has().attribute().id())
+                            && whenConcepts.get(has().attribute().id()).isAttribute();
+                    Attribute attribute = whenConcepts.get(has().attribute().id()).asAttribute();
                     owner.setHas(attribute, true);
                     thenConcepts.put(has().attribute().id(), attribute);
                     thenConcepts.put(has().owner().id(), owner);
@@ -682,17 +716,22 @@ public class Rule {
                 }
 
                 @Override
-                void index(Rule rule) {
-                    grakn.core.pattern.variable.Variable attribute = has().attribute();
-                    Set<Label> possibleAttributeHas = attribute.resolvedTypes();
-                    possibleAttributeHas.forEach(rule.structure::indexConcludesEdgeTo);
+                public Optional<ThingVariable> generating() {
+                    return Optional.empty();
                 }
 
                 @Override
-                void unindex(Rule rule) {
+                void index() {
                     grakn.core.pattern.variable.Variable attribute = has().attribute();
                     Set<Label> possibleAttributeHas = attribute.resolvedTypes();
-                    possibleAttributeHas.forEach(rule.structure::unindexConcludesEdgeTo);
+                    possibleAttributeHas.forEach(rule().structure::indexConcludesEdgeTo);
+                }
+
+                @Override
+                void unindex() {
+                    grakn.core.pattern.variable.Variable attribute = has().attribute();
+                    Set<Label> possibleAttributeHas = attribute.resolvedTypes();
+                    possibleAttributeHas.forEach(rule().structure::unindexConcludesEdgeTo);
                 }
 
                 @Override

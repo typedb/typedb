@@ -19,28 +19,13 @@ package grakn.core.concurrent.producer;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
 @ThreadSafe
 public interface Producer<T> {
 
-    /**
-     * @param queue
-     * @param request
-     * @param executor
-     */
     void produce(Queue<T> queue, int request, ExecutorService executor);
 
     void recycle();
-
-    default <U> Producer<U> map(Function<T, U> mappingFn) {
-        return new MappedProducer<>(this, mappingFn);
-    }
-
-    default Producer<T> filter(Predicate<T> predicate) {
-        return new FilteredProducer<>(this, predicate);
-    }
 
     @ThreadSafe
     interface Queue<U> {

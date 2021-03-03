@@ -44,8 +44,9 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.StampedLock;
 
 import static com.google.ortools.linearsolver.MPSolver.ResultStatus.ABNORMAL;
 import static com.google.ortools.linearsolver.MPSolver.ResultStatus.FEASIBLE;
@@ -77,7 +78,7 @@ public class GraphPlanner implements Planner {
     private final Map<Identifier, PlannerVertex<?>> vertices;
     private final Set<PlannerEdge<?, ?>> edges;
     private final AtomicBoolean isOptimising;
-    private final CountDownLatch procedureLatch;
+    private final ReadWriteLock firstOptimisingLock;
 
     protected volatile GraphProcedure procedure;
     private volatile MPSolver.ResultStatus resultStatus;
@@ -98,8 +99,8 @@ public class GraphPlanner implements Planner {
         parameters.setIntegerParam(INCREMENTALITY, INCREMENTALITY_ON.swigValue());
         vertices = new HashMap<>();
         edges = new HashSet<>();
-        procedureLatch = new CountDownLatch(1);
         isOptimising = new AtomicBoolean(false);
+        firstOptimisingLock = new StampedLock().asReadWriteLock();
         resultStatus = MPSolver.ResultStatus.NOT_SOLVED;
         isUpToDate = false;
         totalDuration = 0L;
@@ -123,15 +124,7 @@ public class GraphPlanner implements Planner {
 
     @Override
     public GraphProcedure procedure() {
-        if (procedure == null) {
-            assert isOptimising.get();
-            try {
-                procedureLatch.await();
-                assert procedure != null;
-            } catch (InterruptedException e) {
-                throw GraknException.of(e);
-            }
-        }
+        assert procedure != null;
         return procedure;
     }
 
@@ -335,35 +328,51 @@ public class GraphPlanner implements Planner {
         solver.setHint(new MPVariable[]{}, new double[]{});
     }
 
-    @SuppressWarnings("NonAtomicOperationOnVolatileField")
-    void optimise(GraphManager graph, boolean extraTime) {
-        if (isOptimising.compareAndSet(false, true)) {
-            updateObjective(graph);
-            if (isUpToDate() && isOptimal()) {
-                if (LOG.isDebugEnabled()) LOG.debug("Optimisation still optimal and up-to-date");
-            } else {
-                // TODO: we should have a more clever logic to allocate extra time
-                long allocatedDuration = extraTime ? HIGHER_TIME_LIMIT_MILLIS : DEFAULT_TIME_LIMIT_MILLIS;
-                Instant start, endSolver, end;
-                totalDuration += allocatedDuration;
-                solver.setTimeLimit(totalDuration);
-
-                start = Instant.now();
-                resultStatus = solver.solve(parameters);
-                resetInitialValues();
-                endSolver = Instant.now();
-                if (isError()) throwPlanningError();
-                else assert isPlanned();
-
-                createProcedure();
-                end = Instant.now();
-
-                isUpToDate = true;
-                totalDuration -= allocatedDuration - between(start, endSolver).toMillis();
-                printDebug(start, endSolver, end);
+    void mayOptimise(GraphManager graph, boolean extraTime) {
+        if (procedure == null) {
+            try {
+                firstOptimisingLock.writeLock().lock();
+                if (procedure == null) optimise(graph, extraTime);
+                assert procedure != null;
+            } finally {
+                firstOptimisingLock.writeLock().unlock();
             }
-            isOptimising.set(false);
+        } else if (isOptimising.compareAndSet(false, true)) {
+            try {
+                optimise(graph, extraTime);
+            } finally {
+                isOptimising.set(false);
+            }
         }
+    }
+
+    @SuppressWarnings("NonAtomicOperationOnVolatileField")
+    private void optimise(GraphManager graph, boolean extraTime) {
+        updateObjective(graph);
+        if (isUpToDate() && isOptimal()) {
+            if (LOG.isDebugEnabled()) LOG.debug("GraphPlanner still optimal and up-to-date");
+            return;
+        }
+
+        // TODO: we should have a more clever logic to allocate extra time
+        long allocatedDuration = extraTime ? HIGHER_TIME_LIMIT_MILLIS : DEFAULT_TIME_LIMIT_MILLIS;
+        Instant start, endSolver, end;
+        totalDuration += allocatedDuration;
+        solver.setTimeLimit(totalDuration);
+
+        start = Instant.now();
+        resultStatus = solver.solve(parameters);
+        resetInitialValues();
+        endSolver = Instant.now();
+        if (isError()) throwPlanningError();
+        else assert isPlanned();
+
+        createProcedure();
+        end = Instant.now();
+
+        isUpToDate = true;
+        totalDuration -= allocatedDuration - between(start, endSolver).toMillis();
+        printDebug(start, endSolver, end);
     }
 
     private void throwPlanningError() {
@@ -385,7 +394,6 @@ public class GraphPlanner implements Planner {
         vertices.values().forEach(PlannerVertex::recordResults);
         edges.forEach(PlannerEdge::recordResults);
         procedure = GraphProcedure.create(this);
-        if (procedureLatch.getCount() > 0) procedureLatch.countDown();
     }
 
     @Override

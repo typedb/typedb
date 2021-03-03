@@ -21,6 +21,7 @@ package grakn.core.rocks;
 import grakn.core.Grakn;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
+import grakn.core.common.parameters.Options.Database;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.test.integration.util.Util;
@@ -40,13 +41,15 @@ import static junit.framework.TestCase.assertEquals;
 
 public class StatisticsTest {
 
-    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("statistics-test");
+    private static Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("statistics-test");
+    private static final Path logDir = dataDir.resolve("logs");
+    private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
     private static String database = "statistics-test";
 
     @Test
     public void test_statistics() throws IOException {
-        Util.resetDirectory(directory);
-        try (RocksGrakn grakn = RocksGrakn.open(directory)) {
+        Util.resetDirectory(dataDir);
+        try (RocksGrakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             setupSchema(grakn);
             int personCount = 1000;
@@ -107,10 +110,10 @@ public class StatisticsTest {
         try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
             try (Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 GraqlQuery query = Graql.parseQuery("" +
-                        "define " +
-                        "person sub entity, owns age; " +
-                        "age sub attribute, value long; " +
-                        "");
+                                                            "define " +
+                                                            "person sub entity, owns age; " +
+                                                            "age sub attribute, value long; " +
+                                                            "");
                 tx.query().define(query.asDefine());
                 tx.commit();
             }

@@ -20,7 +20,11 @@ package grakn.core.common.parameters;
 import grakn.core.common.exception.GraknException;
 import graql.lang.query.GraqlQuery;
 
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
+import java.nio.file.Path;
+
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_CANNOT_BE_TOGGLED_PER_QUERY;
 import static grakn.core.common.exception.ErrorMessage.Reasoner.REASONING_CANNOT_BE_TOGGLED_PER_QUERY;
 
 public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options<?, ?>> {
@@ -28,7 +32,8 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     public static final int DEFAULT_RESPONSE_BATCH_SIZE = 50;
     public static final int DEFAULT_SESSION_IDLE_TIMEOUT_MILLIS = 10_000;
     public static final int DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS = 10_000;
-    public static final boolean DEFAULT_INFER = false;
+    public static final boolean DEFAULT_INFER = true;
+    public static final boolean DEFAULT_TRACE_INFERENCE = false;
     public static final boolean DEFAULT_EXPLAIN = false;
     public static final boolean DEFAULT_PARALLEL = true;
     public static final boolean DEFAULT_QUERY_READ_PREFETCH = true;
@@ -37,12 +42,16 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
 
     private PARENT parent;
     private Boolean infer = null;
+    private Boolean traceInference = null;
     private Boolean explain = null;
     private Integer batchSize = null;
     private Integer sessionIdlTimeoutMillis = null;
     private Integer schemaLockAcquireTimeoutMillis = null;
     private Boolean readAnyReplica = null;
 
+    protected Path graknDir = null;
+    protected Path dataDir = null;
+    protected Path logsDir = null;
     protected Boolean prefetch = null;
 
     abstract SELF getThis();
@@ -60,6 +69,17 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
 
     public SELF infer(boolean infer) {
         this.infer = infer;
+        return getThis();
+    }
+
+    public boolean traceInference() {
+        if (traceInference != null) return traceInference;
+        else if (parent != null) return parent.traceInference();
+        else return DEFAULT_TRACE_INFERENCE;
+    }
+
+    public SELF traceInference(boolean traceInference) {
+        this.traceInference = traceInference;
         return getThis();
     }
 
@@ -118,6 +138,24 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         return getThis();
     }
 
+    public Path graknDir() {
+        if (graknDir != null) return graknDir;
+        else if (parent != null) return parent.graknDir();
+        else throw GraknException.of(ILLEGAL_STATE);
+    }
+
+    public Path dataDir() {
+        if (dataDir != null) return dataDir;
+        else if (parent != null) return parent.dataDir();
+        else throw GraknException.of(ILLEGAL_STATE);
+    }
+
+    public Path logsDir() {
+        if (logsDir != null) return logsDir;
+        else if (parent != null) return parent.logsDir();
+        else throw GraknException.of(ILLEGAL_STATE);
+    }
+
     public static class Database extends Options<Options<?, ?>, Database> {
 
         @Override
@@ -126,7 +164,22 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         }
 
         public Database parent(Options<?, ?> parent) {
-            throw GraknException.of(ILLEGAL_ARGUMENT);
+            throw GraknException.of(ILLEGAL_OPERATION);
+        }
+
+        public Database graknDir(Path graknDir) {
+            this.graknDir = graknDir;
+            return this;
+        }
+
+        public Database dataDir(Path dataDir) {
+            this.dataDir = dataDir;
+            return this;
+        }
+
+        public Database logsDir(Path logsDir) {
+            this.logsDir = logsDir;
+            return this;
         }
     }
 
@@ -174,6 +227,11 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         @Override
         public Query infer(boolean infer) {
             throw GraknException.of(REASONING_CANNOT_BE_TOGGLED_PER_QUERY);
+        }
+
+        @Override
+        public Query traceInference(boolean traceInference) {
+            throw GraknException.of(REASONER_TRACING_CANNOT_BE_TOGGLED_PER_QUERY);
         }
 
         public Query prefetch(boolean prefetch) {

@@ -19,13 +19,14 @@
 package grakn.core.traversal.iterator;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.AbstractResourceIterator;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.AbstractFunctionalIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.Identifier;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import grakn.core.traversal.common.VertexMap;
 import grakn.core.traversal.procedure.GraphProcedure;
 import grakn.core.traversal.procedure.ProcedureEdge;
@@ -41,17 +42,18 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static grakn.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 import static java.util.stream.Collectors.toMap;
 
-public class GraphIterator extends AbstractResourceIterator<VertexMap> {
+public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphIterator.class);
 
     private final GraphManager graphMgr;
     private final GraphProcedure procedure;
     private final Traversal.Parameters params;
-    private final Set<Identifier.Variable.Name> filter;
-    private final Map<Identifier, ResourceIterator<? extends Vertex<?, ?>>> iterators;
+    private final Set<Retrievable> filter;
+    private final Map<Identifier, FunctionalIterator<? extends Vertex<?, ?>>> iterators;
     private final Map<Identifier, Vertex<?, ?>> answer;
     private final Scopes scopes;
     private final SeekStack seekStack;
@@ -62,7 +64,7 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
     enum State {INIT, EMPTY, FETCHED, COMPLETED}
 
     public GraphIterator(GraphManager graphMgr, Vertex<?, ?> start, GraphProcedure procedure,
-                         Traversal.Parameters params, Set<Identifier.Variable.Name> filter) {
+                         Traversal.Parameters params, Set<Retrievable> filter) {
         assert procedure.edgesCount() > 0;
         this.graphMgr = graphMgr;
         this.procedure = procedure;
@@ -101,8 +103,14 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
             }
             return state == State.FETCHED;
         } catch (Throwable e) {
-            LOG.error("Parameters: " + params.toString());
-            LOG.error("GraphProcedure: " + procedure.toString());
+            // note: catching runtime exception until we can gracefully interrupt running queries on tx close
+            if (e instanceof GraknException && ((GraknException) e).code().isPresent() &&
+                    ((GraknException) e).code().get().equals(RESOURCE_CLOSED.code())) {
+                LOG.debug("Transaction was closed during graph iteration");
+            } else {
+                LOG.error("Parameters: " + params.toString());
+                LOG.error("GraphProcedure: " + procedure.toString());
+            }
             throw e;
         }
     }
@@ -116,7 +124,7 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
         ProcedureEdge<?, ?> edge = procedure.edge(pos);
         Identifier toID = edge.to().id();
         Identifier fromId = edge.from().id();
-        ResourceIterator<? extends Vertex<?, ?>> toIter = branch(answer.get(fromId), edge);
+        FunctionalIterator<? extends Vertex<?, ?>> toIter = branch(answer.get(fromId), edge);
 
         if (toIter.hasNext()) {
             iterators.put(toID, toIter);
@@ -198,7 +206,7 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
                 if (isClosure(edge, fromVertex, toVertex)) return true;
                 else return computeNextClosure(pos);
             } else {
-                ResourceIterator<? extends Vertex<?, ?>> toIter = branch(answer.get(edge.from().id()), edge);
+                FunctionalIterator<? extends Vertex<?, ?>> toIter = branch(answer.get(edge.from().id()), edge);
                 iterators.put(toID, toIter);
             }
         }
@@ -229,7 +237,7 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
 
     private boolean computeNextBranch(int pos) {
         ProcedureEdge<?, ?> edge = procedure.edge(pos);
-        ResourceIterator<? extends Vertex<?, ?>> newIter;
+        FunctionalIterator<? extends Vertex<?, ?>> newIter;
 
         do {
             if (backTrack(pos)) {
@@ -263,8 +271,8 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
         }
     }
 
-    private ResourceIterator<? extends Vertex<?, ?>> branch(Vertex<?, ?> fromVertex, ProcedureEdge<?, ?> edge) {
-        ResourceIterator<? extends Vertex<?, ?>> toIter;
+    private FunctionalIterator<? extends Vertex<?, ?>> branch(Vertex<?, ?> fromVertex, ProcedureEdge<?, ?> edge) {
+        FunctionalIterator<? extends Vertex<?, ?>> toIter;
         if (edge.to().id().isScoped()) {
             Identifier.Variable scope = edge.to().id().asScoped().scope();
             Scopes.Scoped scoped = scopes.getOrInitialise(scope);
@@ -318,14 +326,14 @@ public class GraphIterator extends AbstractResourceIterator<VertexMap> {
     public VertexMap next() {
         if (!hasNext()) throw new NoSuchElementException();
         state = State.EMPTY;
-        return toReferenceMap(answer);
+        return toVertexMap(answer);
     }
 
-    private VertexMap toReferenceMap(Map<Identifier, Vertex<?, ?>> answer) {
+    private VertexMap toVertexMap(Map<Identifier, Vertex<?, ?>> answer) {
         return VertexMap.of(
                 answer.entrySet().stream()
-                        .filter(e -> e.getKey().isName() && filter.contains(e.getKey().asVariable().asName()))
-                        .collect(toMap(k -> k.getKey().asVariable().reference(), Map.Entry::getValue))
+                        .filter(e -> e.getKey().isRetrievable() && filter.contains(e.getKey().asVariable().asRetrievable()))
+                        .collect(toMap(e -> e.getKey().asVariable().asRetrievable(), Map.Entry::getValue))
         );
     }
 

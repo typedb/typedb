@@ -19,7 +19,7 @@
 package grakn.core.concept.type.impl;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptImpl;
 import grakn.core.concept.type.Type;
@@ -145,7 +145,7 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
 
     void validateDelete() {
         TypeVertex type = graphMgr.schema().getType(getLabel());
-        ResourceIterator<RuleStructure> rules = graphMgr.schema().rules().references().get(type);
+        FunctionalIterator<RuleStructure> rules = graphMgr.schema().rules().references().get(type);
         if (rules.hasNext()) {
             throw exception(GraknException.of(TYPE_REFERENCED_IN_RULES, getLabel(), rules.toList()));
         }

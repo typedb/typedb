@@ -18,12 +18,12 @@
 
 package grakn.core.common.iterator;
 
-public class FinaliseHandledIterator<T> extends AbstractResourceIterator<T> implements ResourceIterator<T> {
+public class FinaliseHandledIterator<T> extends AbstractFunctionalIterator<T> implements FunctionalIterator<T> {
 
-    private final ResourceIterator<T> iterator;
+    private final FunctionalIterator<T> iterator;
     private final Runnable function;
 
-    public FinaliseHandledIterator(ResourceIterator<T> iterator, Runnable function) {
+    public FinaliseHandledIterator(FunctionalIterator<T> iterator, Runnable function) {
         this.iterator = iterator;
         this.function = function;
     }

@@ -31,7 +31,7 @@ public interface Planner {
     Procedure procedure();
 
     default void tryOptimise(GraphManager graphMgr, boolean extraTime) {
-        if (isGraph()) this.asGraph().optimise(graphMgr, extraTime);
+        if (isGraph()) this.asGraph().mayOptimise(graphMgr, extraTime);
     }
 
     static Planner create(Structure structure) {

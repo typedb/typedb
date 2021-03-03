@@ -18,6 +18,7 @@
 package grakn.core.query;
 
 import grabl.tracing.client.GrablTracingThreadStatic;
+import grakn.common.collection.Either;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Context;
@@ -27,6 +28,7 @@ import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.RoleType;
+import grakn.core.concept.type.ThingType;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.VariableRegistry;
@@ -51,10 +53,6 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_IID_NOT_INSERTABLE;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
-import static grakn.core.concurrent.common.Executors.PARALLELISATION_FACTOR;
-import static grakn.core.concurrent.common.Executors.asyncPool1;
-import static grakn.core.concurrent.producer.Producers.async;
-import static grakn.core.concurrent.producer.Producers.produce;
 import static grakn.core.query.common.Util.getRoleType;
 
 public class Deleter {
@@ -69,7 +67,7 @@ public class Deleter {
         this.matcher = matcher;
         this.variables = variables;
         this.context = context;
-        this.context.producer(EXHAUSTIVE);
+        this.context.producer(Either.first(EXHAUSTIVE));
     }
 
     public static Deleter create(Reasoner reasoner, GraqlDelete query, Context.Query context) {
@@ -87,27 +85,9 @@ public class Deleter {
 
     public void execute() {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
-            if (context.options().parallel()) executeParallel();
-            else executeSerial();
+            List<ConceptMap> matches = matcher.execute(context).toList();
+            matches.forEach(matched -> new Operation(matched, variables).execute());
         }
-    }
-
-    private void executeParallel() {
-        List<List<ConceptMap>> lists = matcher.execute(context).toLists(QueryManager.PARALLELISATION_SPLIT_MIN, PARALLELISATION_FACTOR);
-        assert !lists.isEmpty();
-        if (lists.size() == 1) {
-            iterate(lists.get(0)).forEachRemaining(matched -> new Operation(matched, variables).execute());
-        } else {
-            produce(async(iterate(lists).map(list -> iterate(list).map(matched -> {
-                new Operation(matched, variables).execute();
-                return (Void) null;
-            })), PARALLELISATION_FACTOR), EXHAUSTIVE, asyncPool1()).toList();
-        }
-    }
-
-    private void executeSerial() {
-        List<ConceptMap> matches = matcher.execute(context).toList();
-        matches.forEach(matched -> new Operation(matched, variables).execute());
     }
 
     static class Operation {
@@ -184,14 +164,14 @@ public class Deleter {
         private void deleteIsa(ThingVariable var) {
             try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete_isa")) {
                 Thing thing = detached.get(var);
+                ThingType type = thing.getType();
                 if (var.isa().isPresent() && !thing.isDeleted()) {
                     Label typeLabel = var.isa().get().type().label().get().properLabel();
                     if (var.isa().get().isExplicit()) {
-                        if (thing.getType().getLabel().equals(typeLabel)) thing.delete();
+                        if (type.getLabel().equals(typeLabel)) thing.delete();
                         else throw GraknException.of(INVALID_DELETE_THING_DIRECT, var.reference(), typeLabel);
                     } else {
-                        if (thing.getType().getSupertypes().anyMatch(t -> t.getLabel().equals(typeLabel)))
-                            thing.delete();
+                        if (type.getSupertypes().anyMatch(t -> t.getLabel().equals(typeLabel))) thing.delete();
                         else throw GraknException.of(INVALID_DELETE_THING, var.reference(), typeLabel);
                     }
                 }

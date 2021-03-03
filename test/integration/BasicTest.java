@@ -20,6 +20,7 @@ package grakn.core.test.integration;
 
 import grakn.core.Grakn;
 import grakn.core.common.parameters.Arguments;
+import grakn.core.common.parameters.Options;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.type.AttributeType;
@@ -57,8 +58,10 @@ import static org.junit.Assert.fail;
 
 public class BasicTest {
 
-    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("basic-test");
-    private static String database = "basic-test";
+    private static final String database = "basic-test";
+    private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
+    private static final Path logDir = dataDir.resolve("logs");
+    private static final Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logDir);
 
     private static void assert_transaction_read(Grakn.Transaction transaction) {
         assertTrue(transaction.isOpen());
@@ -136,9 +139,9 @@ public class BasicTest {
 
     @Test
     public void write_types_concurrently() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (Grakn grakn = RocksGrakn.open(directory)) {
+        try (Grakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
 
             assertTrue(grakn.isOpen());
@@ -250,7 +253,7 @@ public class BasicTest {
         }
 
 
-        try (Grakn grakn = RocksGrakn.open(directory)) {
+        try (Grakn grakn = RocksGrakn.open(options)) {
             assertTrue(grakn.isOpen());
             assertEquals(1, grakn.databases().all().size());
             assertEquals(database, grakn.databases().all().iterator().next().name());
@@ -290,9 +293,9 @@ public class BasicTest {
     }
 
     private void reset_directory_and_create_attribute_types() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (Grakn grakn = RocksGrakn.open(directory)) {
+        try (Grakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -310,9 +313,9 @@ public class BasicTest {
 
     @Test
     public void write_and_retrieve_attribute_ownership_rule() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (Grakn grakn = RocksGrakn.open(directory)) {
+        try (Grakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -346,9 +349,9 @@ public class BasicTest {
 
     @Test
     public void write_and_retrieve_relation_rule() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (Grakn grakn = RocksGrakn.open(directory)) {
+        try (Grakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -420,7 +423,7 @@ public class BasicTest {
         LocalDateTime date_1991_1_1_0_0 = LocalDateTime.of(1991, 1, 1, 0, 0);
         reset_directory_and_create_attribute_types();
 
-        try (Grakn grakn = RocksGrakn.open(directory)) {
+        try (Grakn grakn = RocksGrakn.open(options)) {
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA)) {
                 try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     isAlive(txn).put(true);
@@ -499,7 +502,7 @@ public class BasicTest {
 
         reset_directory_and_create_attribute_types();
 
-        try (Grakn grakn = RocksGrakn.open(directory)) {
+        try (Grakn grakn = RocksGrakn.open(options)) {
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA)) {
                 Grakn.Transaction txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
                 Grakn.Transaction txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
@@ -619,7 +622,7 @@ public class BasicTest {
 
         LocalDateTime date_1992_2_3_4_5 = LocalDateTime.of(1991, 2, 3, 4, 5);
 
-        try (Grakn grakn = RocksGrakn.open(directory)) {
+        try (Grakn grakn = RocksGrakn.open(options)) {
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA)) {
                 Grakn.Transaction txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
                 Grakn.Transaction txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
@@ -719,7 +722,7 @@ public class BasicTest {
     public void write_and_delete_attributes_concurrently() throws IOException {
         reset_directory_and_create_attribute_types();
 
-        try (Grakn grakn = RocksGrakn.open(directory)) {
+        try (Grakn grakn = RocksGrakn.open(options)) {
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA)) {
                 Grakn.Transaction txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
                 Grakn.Transaction txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
@@ -794,6 +797,33 @@ public class BasicTest {
                     assertEquals(0, name(txn).getInstances().count());
                 }
             }
+        }
+    }
+
+    @Test
+    public void test_query_cancelled_asynchronously() throws IOException {
+        Util.resetDirectory(dataDir);
+        try (Grakn grakn = RocksGrakn.open(options)) {
+            grakn.databases().create(database);
+            for (int i = 0; i < 50; i++) {
+                new Thread(() -> {
+                    Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA);
+                    Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE);
+                    new Thread(() -> {
+                        try {
+                            Thread.sleep(1);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        tx.close();
+                        session.close();
+                    }).start();
+                    tx.query().match(Graql.parseQuery("match $x isa thing;").asMatch());
+                }).start();
+            }
+            Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA);
+            Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE);
+            tx.query().match(Graql.parseQuery("match $x isa thing;").asMatch());
         }
     }
 }

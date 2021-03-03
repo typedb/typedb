@@ -20,32 +20,39 @@ package grakn.core.common.iterator;
 
 import java.util.NoSuchElementException;
 
-public class ConsumeHandledIterator<T> extends AbstractResourceIterator<T> implements ResourceIterator<T> {
+public class ConsumeHandledIterator<T> extends AbstractFunctionalIterator<T> implements FunctionalIterator<T> {
 
-    private final ResourceIterator<T> iterator;
+    private final FunctionalIterator<T> iterator;
     private final Runnable function;
     private boolean isConsumed;
 
-    public ConsumeHandledIterator(ResourceIterator<T> iterator, Runnable function) {
+    public ConsumeHandledIterator(FunctionalIterator<T> iterator, Runnable function) {
         this.iterator = iterator;
         this.function = function;
         this.isConsumed = false;
     }
 
-    @Override
-    public boolean hasNext() {
-        boolean hasNext;
-        if (!(hasNext = iterator.hasNext()) && !isConsumed) {
+    private void mayHandleConsume(boolean hasNext) {
+        if (!hasNext && !isConsumed) {
             isConsumed = true;
             function.run();
         }
+    }
+
+    @Override
+    public boolean hasNext() {
+        boolean hasNext;
+        hasNext = iterator.hasNext();
+        mayHandleConsume(hasNext);
         return hasNext;
     }
 
     @Override
     public T next() {
         if (!hasNext()) throw new NoSuchElementException();
-        return iterator.next();
+        T next = iterator.next();
+        mayHandleConsume(iterator.hasNext());
+        return next;
     }
 
     @Override

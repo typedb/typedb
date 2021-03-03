@@ -21,13 +21,13 @@ package grakn.core.common.iterator;
 import java.util.NoSuchElementException;
 import java.util.function.Predicate;
 
-class FilteredIterator<T> extends AbstractResourceIterator<T> {
+class FilteredIterator<T> extends AbstractFunctionalIterator<T> {
 
-    private final ResourceIterator<T> iterator;
+    private final FunctionalIterator<T> iterator;
     private final Predicate<T> predicate;
     private T next;
 
-    FilteredIterator(ResourceIterator<T> iterator, Predicate<T> predicate) {
+    FilteredIterator(FunctionalIterator<T> iterator, Predicate<T> predicate) {
         this.iterator = iterator;
         this.predicate = predicate;
     }

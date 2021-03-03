@@ -19,10 +19,10 @@
 package grakn.core.traversal.procedure;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concurrent.common.ConcurrentSet;
-import grakn.core.concurrent.producer.Producer;
+import grakn.core.concurrent.producer.FunctionalProducer;
 import grakn.core.graph.GraphManager;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.Identifier;
@@ -164,27 +164,27 @@ public class GraphProcedure implements Procedure {
         ).asType();
     }
 
-    private void assertWithinFilterBounds(Set<Identifier.Variable.Name> filter) {
-        assert iterate(vertices.keySet()).anyMatch(id -> id.isName() && filter.contains(id.asVariable().asName()));
+    private void assertWithinFilterBounds(Set<Identifier.Variable.Retrievable> filter) {
+        assert iterate(vertices.keySet()).anyMatch(filter::contains);
     }
 
     @Override
-    public Producer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
-                                        Set<Identifier.Variable.Name> filter, int parallelisation) {
+    public FunctionalProducer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
+                                                  Set<Identifier.Variable.Retrievable> filter, int parallelisation) {
         if (LOG.isDebugEnabled()) {
             LOG.debug(params.toString());
             LOG.debug(this.toString());
         }
         assertWithinFilterBounds(filter);
         ConcurrentSet<VertexMap> produced = new ConcurrentSet<>();
-        ResourceIterator<ResourceIterator<VertexMap>> iterators = startVertex().iterator(graphMgr, params)
+        FunctionalIterator<FunctionalIterator<VertexMap>> iterators = startVertex().iterator(graphMgr, params)
                 .map(v -> new GraphIterator(graphMgr, v, this, params, filter).distinct(produced));
         return async(iterators, parallelisation);
     }
 
     @Override
-    public ResourceIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
-                                                Set<Identifier.Variable.Name> filter) {
+    public FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
+                                                  Set<Identifier.Variable.Retrievable> filter) {
         if (LOG.isDebugEnabled()) {
             LOG.debug(params.toString());
             LOG.debug(this.toString());

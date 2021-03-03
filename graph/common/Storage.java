@@ -20,7 +20,7 @@ package grakn.core.graph.common;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 
 import java.util.function.BiFunction;
 
@@ -47,7 +47,7 @@ public interface Storage {
 
     void mergeUntracked(byte[] key, byte[] value);
 
-    <G> ResourceIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor);
+    <G> FunctionalIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor);
 
     GraknException exception(ErrorMessage error);
 

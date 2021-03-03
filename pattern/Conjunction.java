@@ -32,9 +32,9 @@ import grakn.core.pattern.variable.VariableCloner;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.Identifier;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import graql.lang.pattern.Conjunctable;
 import graql.lang.pattern.variable.BoundVariable;
-import graql.lang.pattern.variable.Reference;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -49,7 +49,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.common.collection.Collections.set;
@@ -74,7 +73,7 @@ public class Conjunction implements Pattern, Cloneable {
     private final Set<Negation> negations;
     private final int hash;
 
-    private boolean isSatisfiable;
+    private boolean isCoherent;
     private boolean isBounded;
 
     public Conjunction(Set<Variable> variables, Set<Negation> negations) {
@@ -82,7 +81,7 @@ public class Conjunction implements Pattern, Cloneable {
         this.variableMap = parseToMap(variables);
         this.negations = unmodifiableSet(negations);
         this.hash = Objects.hash(variables, negations);
-        this.isSatisfiable = true;
+        this.isCoherent = true;
         this.isBounded = false;
     }
 
@@ -116,16 +115,16 @@ public class Conjunction implements Pattern, Cloneable {
         }
     }
 
-    public void bound(Map<Reference.Name, Either<Label, byte[]>> bounds) {
+    public void bound(Map<Retrievable, Either<Label, byte[]>> bounds) {
         variableSet.forEach(var -> {
-            if (var.id().isName() && bounds.containsKey(var.id().reference().asName())) {
-                Either<Label, byte[]> boundVar = bounds.get(var.id().reference().asName());
+            if (var.id().isRetrievable() && bounds.containsKey(var.id().asRetrievable())) {
+                Either<Label, byte[]> boundVar = bounds.get(var.id().asRetrievable());
                 if (var.isType() != boundVar.isFirst()) throw GraknException.of(CONTRADICTORY_BOUND_VARIABLE, var);
                 else if (var.isType()) {
                     Optional<LabelConstraint> existingLabel = var.asType().label();
                     if (existingLabel.isPresent() && !existingLabel.get().properLabel().equals(boundVar.first())) {
                         var.setSatisfiable(false);
-                        this.setSatisfiable(false);
+                        this.setCoherent(false);
                     } else if (!existingLabel.isPresent()) {
                         var.asType().label(boundVar.first());
                         var.asType().setResolvedTypes(set(boundVar.first()));
@@ -134,7 +133,7 @@ public class Conjunction implements Pattern, Cloneable {
                     Optional<IIDConstraint> existingIID = var.asThing().iid();
                     if (existingIID.isPresent() && !Arrays.equals(existingIID.get().iid(), (boundVar.second()))) {
                         var.setSatisfiable(false);
-                        this.setSatisfiable(false);
+                        this.setCoherent(false);
                     } else {
                         var.asThing().iid(boundVar.second());
                     }
@@ -152,11 +151,15 @@ public class Conjunction implements Pattern, Cloneable {
         return variableSet;
     }
 
+    public Set<Identifier.Variable> identifiers() {
+        return variableMap.keySet();
+    }
+
     public Set<Negation> negations() {
         return negations;
     }
 
-    public Traversal traversal(Set<Identifier.Variable.Name> filter) {
+    public Traversal traversal(Set<? extends Retrievable> filter) {
         Traversal traversal = new Traversal();
         variableSet.forEach(variable -> variable.addTo(traversal));
         assert iterate(filter).allMatch(variableMap::containsKey);
@@ -168,23 +171,16 @@ public class Conjunction implements Pattern, Cloneable {
         return traversal(new HashSet<>());
     }
 
-    public void setSatisfiable(boolean isSatisfiable) {
-        this.isSatisfiable = isSatisfiable;
+    public void setCoherent(boolean isCoherent) {
+        this.isCoherent = isCoherent;
     }
 
-    public boolean isSatisfiable() {
-        return isSatisfiable;
+    public boolean isCoherent() {
+        return isCoherent && iterate(negations).allMatch(Negation::isCoherent);
     }
 
     public boolean isBounded() {
         return isBounded;
-    }
-
-    private boolean printable(Variable variable) {
-        if (variable.reference().isName() || !variable.reference().isLabel()) return !variable.constraints().isEmpty();
-        if (variable.isThing()) return !variable.asThing().relation().isEmpty() && !variable.asThing().has().isEmpty();
-        if (variable.isType() && variable.reference().isLabel()) return variable.constraints().size() > 1;
-        throw GraknException.of(ILLEGAL_STATE);
     }
 
     @Override
@@ -195,13 +191,16 @@ public class Conjunction implements Pattern, Cloneable {
 
     @Override
     public String toString() {
+        String negationsToString = negations.isEmpty() ? "" : negations.stream().map(Object::toString).collect(
+                Collectors.joining("" + SEMICOLON + SPACE, "", "" + SEMICOLON + SPACE));
         return variableSet.stream()
                 .map(variable -> variable.constraints().stream().map(Object::toString)
                         .collect(Collectors.joining("" + SEMICOLON + SPACE)))
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.joining("; " + NEW_LINE,
-                         "" + CURLY_OPEN + SPACE,
-                         "" + SEMICOLON + SPACE + CURLY_CLOSE));
+                                            "" + CURLY_OPEN + SPACE,
+                                            "" + SEMICOLON + SPACE + negationsToString + CURLY_CLOSE));
+
     }
 
     @Override

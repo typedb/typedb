@@ -134,10 +134,23 @@ public class Bytes {
     }
 
     public static long bytesToLong(byte[] bytes) {
-        ByteBuffer buf = ByteBuffer.allocate(Long.SIZE / Byte.SIZE).order(ByteOrder.nativeOrder());
+        ByteBuffer buf = ByteBuffer.allocate(LONG_SIZE).order(ByteOrder.nativeOrder());
         buf.put(bytes);
         buf.flip();
         return buf.getLong();
+    }
+
+    public static byte[] intToBytes(int num) {
+        ByteBuffer buf = ByteBuffer.allocate(INTEGER_SIZE).order(ByteOrder.nativeOrder());
+        buf.putInt(num);
+        return buf.array();
+    }
+
+    public static int bytesToInt(byte[] bytes) {
+        ByteBuffer buf = ByteBuffer.allocate(INTEGER_SIZE).order(ByteOrder.nativeOrder());
+        buf.put(bytes);
+        buf.flip();
+        return buf.getInt();
     }
 
     /**

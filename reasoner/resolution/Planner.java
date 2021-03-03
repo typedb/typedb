@@ -22,7 +22,8 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Resolvable;
-import grakn.core.pattern.variable.Variable;
+import grakn.core.pattern.variable.ThingVariable;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -48,20 +49,20 @@ public class Planner {
         this.logicMgr = logicMgr;
     }
 
-    public List<Resolvable<?>> plan(Set<Resolvable<?>> resolvables) {
-        return new Plan(resolvables).plan;
+    public List<Resolvable<?>> plan(Set<Resolvable<?>> resolvables, Set<Retrievable> bound) {
+        return new Plan(resolvables, bound).plan;
     }
 
     class Plan {
         private final List<Resolvable<?>> plan;
-        private final Map<Resolvable<?>, Set<Variable>> dependencies;
-        private final Set<Variable> varsAnswered;
+        private final Map<Resolvable<?>, Set<Retrievable>> dependencies;
+        private final Set<Retrievable> answered;
         private final Set<Resolvable<?>> remaining;
 
-        Plan(Set<Resolvable<?>> resolvables) {
+        Plan(Set<Resolvable<?>> resolvables, Set<Retrievable> boundVars) {
             assert resolvables.size() > 0;
             this.plan = new ArrayList<>();
-            this.varsAnswered = new HashSet<>();
+            this.answered = new HashSet<>(boundVars);
             this.dependencies = dependencies(resolvables);
             this.remaining = new HashSet<>(resolvables);
             computePlan();
@@ -71,19 +72,20 @@ public class Planner {
 
         private void add(Resolvable<?> resolvable) {
             plan.add(resolvable);
-            varsAnswered.addAll(resolvable.namedVariables());
+            iterate(resolvable.retrieves()).forEachRemaining(answered::add);
             remaining.remove(resolvable);
         }
 
         private void computePlan() {
             while (remaining.size() != 0) {
                 Optional<Concludable> concludable;
-                Optional<Resolvable<?>> retrievable;
+                Optional<grakn.core.logic.resolvable.Retrievable> retrievable;
 
                 // Retrievable where:
                 // all of it's dependencies are already satisfied,
                 // which will answer the most variables
-                retrievable = mostUnansweredVars(dependenciesSatisfied(connected(remaining.stream().filter(Resolvable::isRetrievable))));
+                retrievable = mostAnsweredVars(dependenciesSatisfied(hasAnsweredVar(remaining.stream().filter(Resolvable::isRetrievable))))
+                        .map(Resolvable::asRetrievable);
                 if (retrievable.isPresent()) {
                     add(retrievable.get());
                     continue;
@@ -93,7 +95,8 @@ public class Planner {
                 // all of it's dependencies are already satisfied,
                 // which has the least applicable rules,
                 // and of those the least unsatisfied variables
-                concludable = fewestRules(dependenciesSatisfied(connected(remaining.stream().filter(Resolvable::isConcludable))));
+                concludable = mostAnsweredVars(dependenciesSatisfied(hasAnsweredVar(remaining.stream().filter(Resolvable::isConcludable))))
+                        .map(Resolvable::asConcludable);
                 if (concludable.isPresent()) {
                     add(concludable.get());
                     continue;
@@ -103,7 +106,8 @@ public class Planner {
                 // all of it's dependencies are already satisfied (should be moot),
                 // it can be disconnected
                 // which will answer the most variables
-                retrievable = mostUnansweredVars(dependenciesSatisfied(remaining.stream().filter(Resolvable::isRetrievable)));
+                retrievable = mostUnansweredVars(dependenciesSatisfied(remaining.stream().filter(Resolvable::isRetrievable)))
+                        .map(Resolvable::asRetrievable);
                 if (retrievable.isPresent()) {
                     add(retrievable.get());
                     continue;
@@ -130,41 +134,47 @@ public class Planner {
                     add(concludable.get());
                     continue;
                 }
+
                 throw GraknException.of(ILLEGAL_STATE);
             }
         }
 
         private Stream<Resolvable<?>> dependenciesSatisfied(Stream<Resolvable<?>> resolvableStream) {
-            return resolvableStream.filter(c -> varsAnswered.containsAll(dependencies.get(c)));
+            return resolvableStream.filter(c -> answered.containsAll(dependencies.get(c)));
         }
 
-        private Stream<Resolvable<?>> connected(Stream<Resolvable<?>> resolvableStream) {
-            return resolvableStream.filter(r -> !Collections.disjoint(r.namedVariables(), varsAnswered));
+        private Stream<Resolvable<?>> hasAnsweredVar(Stream<Resolvable<?>> resolvableStream) {
+            return resolvableStream.filter(r -> !Collections.disjoint(r.retrieves(), answered));
         }
 
         private Optional<Concludable> fewestRules(Stream<Resolvable<?>> resolvableStream) {
             // TODO: Tie-break for Concludables with the same number of applicable rules
             return resolvableStream.map(Resolvable::asConcludable)
-                    .min(Comparator.comparingInt(c -> (int)c.getApplicableRules(conceptMgr, logicMgr).count()));
+                    .min(Comparator.comparingInt(c -> (int) c.getApplicableRules(conceptMgr, logicMgr).count()));
+        }
+
+        private Optional<Resolvable<?>> mostAnsweredVars(Stream<Resolvable<?>> resolvables) {
+            return resolvables.max(Comparator.comparingInt(r -> iterate(r.retrieves())
+                    .filter(answered::contains).toSet().size()));
         }
 
         private Optional<Resolvable<?>> mostUnansweredVars(Stream<Resolvable<?>> resolvableStream) {
-            return resolvableStream.max(Comparator.comparingInt(r -> iterate(r.namedVariables())
-                    .filter(var -> !varsAnswered.contains(var)).toSet().size()));
+            return resolvableStream.max(Comparator.comparingInt(r -> iterate(r.retrieves())
+                    .filter(id -> !answered.contains(id)).toSet().size()));
         }
 
         /**
          * Determine the resolvables that are dependent upon the generation of each variable
          */
-        private Map<Resolvable<?>, Set<Variable>> dependencies(Set<Resolvable<?>> resolvables) {
-            Map<Resolvable<?>, Set<Variable>> deps = new HashMap<>();
-            Set<Variable> generatedVars = iterate(resolvables).map(Resolvable::generating).filter(Optional::isPresent)
-                    .map(Optional::get).toSet();
+        private Map<Resolvable<?>, Set<Retrievable>> dependencies(Set<Resolvable<?>> resolvables) {
+            Map<Resolvable<?>, Set<Retrievable>> deps = new HashMap<>();
+            Set<Retrievable> generated = iterate(resolvables).map(Resolvable::generating).filter(Optional::isPresent)
+                    .map(Optional::get).map(ThingVariable::id).toSet();
             for (Resolvable<?> resolvable : resolvables) {
-                Optional<Variable> generating = resolvable.generating();
-                for (Variable v : resolvable.namedVariables()) {
-                    deps.putIfAbsent(resolvable, new HashSet<>());
-                    if (generatedVars.contains(v) && !(generating.isPresent() && generating.get().equals(v))) {
+                Optional<ThingVariable> generating = resolvable.generating();
+                deps.putIfAbsent(resolvable, new HashSet<>());
+                for (Retrievable v : resolvable.retrieves()) {
+                    if (generated.contains(v) && !(generating.isPresent() && generating.get().id().equals(v))) {
                         // TODO: Should this rule the Resolvable<?> out if generates it's own dependency?
                         deps.get(resolvable).add(v);
                     }

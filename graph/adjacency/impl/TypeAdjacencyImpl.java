@@ -18,7 +18,7 @@
 
 package grakn.core.graph.adjacency.impl;
 
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concurrent.common.ConcurrentSet;
 import grakn.core.graph.adjacency.TypeAdjacency;
 import grakn.core.graph.common.Encoding;
@@ -148,14 +148,14 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
             return new TypeEdgeImpl.Persisted(owner.graph(), EdgeIID.Type.of(key), overridden);
         }
 
-        private ResourceIterator<TypeEdge> edgeIterator(Encoding.Edge.Type encoding) {
+        private FunctionalIterator<TypeEdge> edgeIterator(Encoding.Edge.Type encoding) {
             ConcurrentSet<TypeEdge> bufferedEdges;
             if (isReadOnly && fetched.contains(encoding)) {
                 return (bufferedEdges = edges.get(encoding)) != null ? iterate(bufferedEdges) : empty();
             }
 
             byte[] iid = join(owner.iid().bytes(), direction.isOut() ? encoding.out().bytes() : encoding.in().bytes());
-            ResourceIterator<TypeEdge> storageIterator = owner.graph().storage()
+            FunctionalIterator<TypeEdge> storageIterator = owner.graph().storage()
                     .iterate(iid, (key, value) -> cache(newPersistedEdge(key, value)));
             if (isReadOnly) storageIterator = storageIterator.onConsumed(() -> fetched.add(encoding));
             if ((bufferedEdges = edges.get(encoding)) == null) return storageIterator;

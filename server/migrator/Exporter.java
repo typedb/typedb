@@ -105,11 +105,11 @@ public class Exporter implements Migrator {
                 workers.parallelStream().forEach(Runnable::run);
 
                 DataProto.Item checksums = DataProto.Item.newBuilder().setChecksums(DataProto.Item.Checksums.newBuilder()
-                                                                                                  .setEntityCount(entityCount.get())
-                                                                                                  .setAttributeCount(attributeCount.get())
-                                                                                                  .setRelationCount(relationCount.get())
-                                                                                                  .setRoleCount(playerCount.get())
-                                                                                                  .setOwnershipCount(ownershipCount.get()))
+                                                                                            .setEntityCount(entityCount.get())
+                                                                                            .setAttributeCount(attributeCount.get())
+                                                                                            .setRelationCount(relationCount.get())
+                                                                                            .setRoleCount(playerCount.get())
+                                                                                            .setOwnershipCount(ownershipCount.get()))
                         .build();
                 write(outputStream, checksums);
             }

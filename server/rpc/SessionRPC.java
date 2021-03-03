@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.protobuf.ByteString.copyFrom;
 import static grakn.core.common.collection.Bytes.uuidToBytes;
-import static grakn.core.concurrent.common.Executors.scheduledPool;
+import static grakn.core.concurrent.common.Executors.scheduled;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 class SessionRPC {
@@ -41,6 +41,7 @@ class SessionRPC {
     private final GraknRPCService graknRPCService;
     private final ConcurrentHashMap<Integer, TransactionRPC> transactionRPCs;
     private final AtomicBoolean isOpen;
+    private final Options.Session options;
     private final long idleTimeoutMillis;
     private ScheduledFuture<?> idleTimeoutTask;
 
@@ -49,6 +50,7 @@ class SessionRPC {
         this.session = session;
         transactionRPCs = new ConcurrentHashMap<>();
         isOpen = new AtomicBoolean(true);
+        this.options = options;
         idleTimeoutMillis = options.sessionIdleTimeoutMillis();
         setIdleTimeout();
     }
@@ -61,6 +63,10 @@ class SessionRPC {
 
     Grakn.Session session() {
         return session;
+    }
+
+    Options.Session options() {
+        return options;
     }
 
     ByteString uuidAsByteString() {
@@ -92,7 +98,7 @@ class SessionRPC {
 
     private void setIdleTimeout() {
         if (idleTimeoutTask != null) idleTimeoutTask.cancel(false);
-        this.idleTimeoutTask = scheduledPool().schedule(this::triggerIdleTimeout, idleTimeoutMillis, MILLISECONDS);
+        this.idleTimeoutTask = scheduled().schedule(this::triggerIdleTimeout, idleTimeoutMillis, MILLISECONDS);
     }
 
     private void triggerIdleTimeout() {

@@ -19,8 +19,9 @@
 package grakn.core.query;
 
 import grabl.tracing.client.GrablTracingThreadStatic;
+import grakn.common.collection.Either;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Context;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
@@ -42,7 +43,7 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_V
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
 import static grakn.core.concurrent.common.Executors.PARALLELISATION_FACTOR;
-import static grakn.core.concurrent.common.Executors.asyncPool1;
+import static grakn.core.concurrent.common.Executors.async1;
 import static grakn.core.concurrent.producer.Producers.async;
 import static grakn.core.concurrent.producer.Producers.produce;
 import static grakn.core.query.QueryManager.PARALLELISATION_SPLIT_MIN;
@@ -86,13 +87,13 @@ public class Updater {
         }
     }
 
-    public ResourceIterator<ConceptMap> execute() {
+    public FunctionalIterator<ConceptMap> execute() {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
             return context.options().parallel() ? executeParallel() : executeSerial();
         }
     }
 
-    private ResourceIterator<ConceptMap> executeParallel() {
+    private FunctionalIterator<ConceptMap> executeParallel() {
         List<List<ConceptMap>> lists = matcher.execute(context).toLists(PARALLELISATION_SPLIT_MIN, PARALLELISATION_FACTOR);
         assert !lists.isEmpty();
         List<ConceptMap> updates;
@@ -103,11 +104,11 @@ public class Updater {
         if (lists.size() == 1) updates = iterate(lists.get(0)).map(updateFn).toList();
         else updates = produce(async(
                 iterate(lists).map(list -> iterate(list).map(updateFn)), PARALLELISATION_FACTOR
-        ), EXHAUSTIVE, asyncPool1()).toList();
+        ), Either.first(EXHAUSTIVE), async1()).toList();
         return iterate(updates);
     }
 
-    private ResourceIterator<ConceptMap> executeSerial() {
+    private FunctionalIterator<ConceptMap> executeSerial() {
         List<ConceptMap> matches = matcher.execute(context).onError(conceptMgr::exception).toList();
         List<ConceptMap> answers = iterate(matches).map(matched -> {
             new Deleter.Operation(matched, deleteVariables).execute();

@@ -18,7 +18,7 @@
 
 package grakn.core.logic;
 
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
 import grakn.core.graph.GraphManager;
@@ -60,15 +60,15 @@ public class LogicManager {
         return null;
     }
 
-    public ResourceIterator<Rule> rules() {
+    public FunctionalIterator<Rule> rules() {
         return graphMgr.schema().rules().all().map(this::fromStructure);
     }
 
-    public ResourceIterator<Rule> rulesConcluding(Label type) {
+    public FunctionalIterator<Rule> rulesConcluding(Label type) {
         return graphMgr.schema().rules().conclusions().concludesVertex(graphMgr.schema().getType(type)).map(this::fromStructure);
     }
 
-    public ResourceIterator<Rule> rulesConcludingHas(Label attributeType) {
+    public FunctionalIterator<Rule> rulesConcludingHas(Label attributeType) {
         return graphMgr.schema().rules().conclusions().concludesEdgeTo(graphMgr.schema().getType(attributeType)).map(this::fromStructure);
     }
 

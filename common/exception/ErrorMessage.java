@@ -87,20 +87,22 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Internal(3, "Illegal internal operation! This method should not have been called.");
         public static final Internal ILLEGAL_ARGUMENT =
                 new Internal(4, "Illegal argument provided.");
+        public static final Internal RESOURCE_CLOSED =
+                new Internal(5, "Attempted to utilise a closed resource.");
         public static final Internal UNRECOGNISED_VALUE =
-                new Internal(5, "Unrecognised encoding value!");
+                new Internal(6, "Unrecognised encoding value!");
         public static final Internal DIRTY_INITIALISATION =
-                new Internal(6, "Invalid Database Initialisation.");
+                new Internal(7, "Invalid Database Initialisation.");
         public static final Internal GRAKN_CLOSED =
-                new Internal(7, "Attempted to open a session on a closed Grakn backend.");
+                new Internal(8, "Attempted to open a session on a closed Grakn backend.");
         public static final Internal OUT_OF_BOUNDS =
-                new Internal(8, "Resource out of bounds.");
+                new Internal(9, "Resource out of bounds.");
         public static final Internal UNEXPECTED_INTERRUPTION =
-                new Internal(9, "Unexpected thread interruption!");
+                new Internal(10, "Unexpected thread interruption!");
         public static final Internal UNEXPECTED_PLANNING_ERROR =
-                new Internal(10, "Unexpected error during traversal plan optimisation.");
+                new Internal(11, "Unexpected error during traversal plan optimisation.");
         public static final Internal UNIMPLEMENTED =
-                new Internal(11, "This functionality is not yet implemented.");
+                new Internal(12, "This functionality is not yet implemented.");
 
         private static final String codePrefix = "INT";
         private static final String messagePrefix = "Invalid Internal State";
@@ -210,10 +212,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Pattern(13, "Tye type variable '%s' has multiple 'value' constraints.");
         public static final Pattern MULTIPLE_TYPE_CONSTRAINT_REGEX =
                 new Pattern(14, "The type variable '%s' has multiple 'regex' constraints.");
-        public static final Pattern UNSATISFIABLE_CONJUNCTION =
-                new Pattern(15, "The conjunction %s can never be satisfied within the current schema.");
-        public static final Pattern UNSATISFIABLE_CONSTRAINT_VALUE_TYPE =
-                new Pattern(16, "The value type in this constraint %s can not be satisfied within the current conjunction.");
+        public static final Pattern UNSATISFIABLE_PATTERN =
+                new Pattern(15, "The pattern '%s' can never be satisfied the current schema, specifically due to '%s'.");
 
         private static final String codePrefix = "QRY";
         private static final String messagePrefix = "Invalid Query Pattern";
@@ -505,9 +505,19 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
 
     public static class Reasoner extends ErrorMessage {
         public static final Reasoner REASONING_CANNOT_BE_TOGGLED_PER_QUERY =
-                new Reasoner(1, "Reasoning cannot be enabled/disabled per query. Try using Transaction options instead");
+                new Reasoner(1, "Reasoning cannot be enabled/disabled per query. Try using Transaction options instead.");
         public static final Reasoner REVERSE_UNIFICATION_MISSING_CONCEPT =
-                new Reasoner(2, "Reverse unification failed because a concept for identifier '%s' was not found in the provided map '%s'");
+                new Reasoner(2, "Reverse unification failed because a concept for identifier '%s' was not found in the provided map '%s'.");
+        public static final Reasoner RESOLUTION_TERMINATED =
+                new Reasoner(3, "Resolution is terminated.");
+        public static final Reasoner REASONER_TRACING_CANNOT_BE_TOGGLED_PER_QUERY =
+                new Reasoner(4, "Reasoner tracing cannot be enabled/disabled per query. Try using Transaction options instead.");
+        public static final Reasoner REASONER_TRACING_HAS_NOT_BEEN_INITIALISED =
+                new Reasoner(5, "Attempted to get the resolution tracer before it has been initialised.");
+        public static final Reasoner REASONER_TRACING_CALL_TO_FINISH_BEFORE_START =
+                new Reasoner(6, "Reasoner tracing has been instructed to finish without being started. Start the tracer before any resolution takes place.");
+        public static final Reasoner REASONER_TRACING_CALL_TO_WRITE_BEFORE_START =
+                new Reasoner(7, "Reasoner tracing has been instructed to write without being started. Start the tracer before any resolution takes place.");
 
         private static final String codePrefix = "RSN";
         private static final String messagePrefix = "Reasoner Error";

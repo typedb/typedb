@@ -15,31 +15,28 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner;
+package grakn.core.reasoner.resolution;
 
 import grakn.common.concurrent.NamedThreadFactory;
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
-import grakn.core.concurrent.actor.EventLoopGroup;
+import grakn.core.concurrent.actor.ActorExecutorService;
 import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.variable.Variable;
-import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState;
-import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars.Initial;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Identity;
+import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.framework.Request;
-import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
-import grakn.core.reasoner.resolution.resolver.Root;
+import grakn.core.reasoner.resolution.framework.ResolutionTracer;
+import grakn.core.reasoner.resolution.resolver.RootResolver;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
 import grakn.core.test.integration.util.Util;
+import grakn.core.traversal.common.Identifier;
 import graql.lang.Graql;
-import graql.lang.pattern.variable.Reference;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -48,24 +45,29 @@ import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.common.parameters.Options.Database;
+import static grakn.core.reasoner.resolution.Util.resolvedConjunction;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static junit.framework.TestCase.fail;
 
 public class ReiterationTest {
 
-    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("resolution-test");
-    private static String database = "resolution-test";
+    private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("resolution-test");
+    private static final Path logDir = dataDir.resolve("logs");
+    private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
+    private static final String database = "resolution-test";
     private static RocksGrakn grakn;
 
     @Before
     public void setUp() throws IOException {
-        Util.resetDirectory(directory);
-        grakn = RocksGrakn.open(directory);
+        Util.resetDirectory(dataDir);
+        grakn = RocksGrakn.open(options);
         grakn.databases().create(database);
+        ResolutionTracer.initialise(logDir);
     }
 
     @After
@@ -73,7 +75,6 @@ public class ReiterationTest {
         grakn.close();
     }
 
-    @Ignore // TODO enable after inferred flag is set correctly
     @Test
     public void test_first_iteration_exhausts_and_second_iteration_recurses_infinitely() throws InterruptedException {
         try (RocksSession session = schemaSession()) {
@@ -114,42 +115,48 @@ public class ReiterationTest {
 
         try (RocksSession session = dataSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                Conjunction conjunction = parseConjunction(transaction, "{ $y isa Y; }");
-//                Conjunction conjunction = parseConjunction(transaction, "{ $y(item:$x) isa Y; }"); // TODO: This hangs
-                Set<Reference.Name> filter = iterate(conjunction.variables()).map(Variable::reference).filter(Reference::isName)
-                        .map(Reference::asName).toSet();
+                Conjunction conjunction = resolvedConjunction("{ $y isa Y; }", transaction.logic());
+                Set<Identifier.Variable.Name> filter = iterate(conjunction.variables()).map(Variable::id).filter(Identifier::isName)
+                        .map(Identifier.Variable::asName).toSet();
                 ResolverRegistry registry = transaction.reasoner().resolverRegistry();
-                LinkedBlockingQueue<ResolutionAnswer> responses = new LinkedBlockingQueue<>();
-                LinkedBlockingQueue<Integer> exhausted = new LinkedBlockingQueue<>();
+                LinkedBlockingQueue<Top> responses = new LinkedBlockingQueue<>();
+                LinkedBlockingQueue<Integer> failed = new LinkedBlockingQueue<>();
                 int[] iteration = {0};
                 int[] doneInIteration = {0};
                 boolean[] receivedInferredAnswer = {false};
 
-                Actor<Root.Conjunction> root = registry.rootConjunction(conjunction, filter, null, null, answer -> {
-                    if (answer.isInferred()) receivedInferredAnswer[0] = true;
+                ResolutionTracer.get().start();
+                Actor.Driver<RootResolver.Conjunction> root = registry.root(conjunction, answer -> {
+                    if (answer.requiresReiteration()) receivedInferredAnswer[0] = true;
                     responses.add(answer);
                 }, iterDone -> {
                     assert iteration[0] == iterDone;
                     doneInIteration[0]++;
-                    exhausted.add(iterDone);
-                });
+                    failed.add(iterDone);
+                }, throwable -> fail());
 
-                Set<ResolutionAnswer> answers = new HashSet<>();
+                Set<Top> answers = new HashSet<>();
                 // iteration 0
-                sendRootRequest(root, iteration[0]);
+                sendRootRequest(root, filter, iteration[0]);
                 answers.add(responses.take());
-                sendRootRequest(root, iteration[0]);
-                exhausted.take(); // Block and wait for an exhausted message
+                ResolutionTracer.get().finish();
+
+                ResolutionTracer.get().start();
+                sendRootRequest(root, filter, iteration[0]);
+                failed.take(); // Block and wait for an failed message
+                ResolutionTracer.get().finish();
                 assertTrue(receivedInferredAnswer[0]);
                 assertEquals(1, doneInIteration[0]);
 
                 // iteration 1 onwards
                 for (int j = 0; j <= 100; j++) {
-                    sendRootRequest(root, iteration[0]);
-                    ResolutionAnswer re = responses.poll(100, TimeUnit.MILLISECONDS);
+                    ResolutionTracer.get().start();
+                    sendRootRequest(root, filter, iteration[0]);
+                    Top re = responses.poll(100, MILLISECONDS);
                     if (re == null) {
-                        Integer ex = exhausted.poll(100, TimeUnit.MILLISECONDS);
+                        Integer ex = failed.poll(100, MILLISECONDS);
                         if (ex == null) {
+                            ResolutionTracer.get().finish();
                             fail();
                         }
                         // Reset the iteration
@@ -157,22 +164,20 @@ public class ReiterationTest {
                         receivedInferredAnswer[0] = false;
                         doneInIteration[0] = 0;
                     }
+                    ResolutionTracer.get().finish();
                 }
+            } catch (GraknException e) {
+                e.printStackTrace();
+                fail();
             }
         }
     }
 
-    private void sendRootRequest(Actor<Root.Conjunction> root, int iteration) {
-        AnswerState.DownstreamVars.Identity downstream = Initial.of(new ConceptMap()).toDownstreamVars();
-        root.tell(actor -> actor.receiveRequest(
-                Request.create(new Request.Path(root, downstream), downstream, null), iteration)
+    private void sendRootRequest(Actor.Driver<RootResolver.Conjunction> root, Set<Identifier.Variable.Name> filter, int iteration) {
+        Identity downstream = Top.initial(filter, false, root).toDownstream();
+        root.execute(actor -> actor.receiveRequest(
+                Request.create(root, downstream), iteration)
         );
-    }
-
-    private Conjunction parseConjunction(RocksTransaction transaction, String query) {
-        Conjunction conjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
-        transaction.logic().typeResolver().resolve(conjunction);
-        return conjunction;
     }
 
     private RocksSession schemaSession() {
@@ -185,7 +190,8 @@ public class ReiterationTest {
 
     private RocksTransaction singleThreadElgTransaction(RocksSession session) {
         RocksTransaction transaction = session.transaction(Arguments.Transaction.Type.WRITE);
-        transaction.reasoner().resolverRegistry().setEventLoopGroup(new EventLoopGroup(1, new NamedThreadFactory("grakn-elg")));
+        ActorExecutorService service = new ActorExecutorService(1, new NamedThreadFactory("grakn-core-actor"));
+        transaction.reasoner().resolverRegistry().setExecutorService(service);
         return transaction;
     }
 }

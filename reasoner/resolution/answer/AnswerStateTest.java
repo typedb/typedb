@@ -21,16 +21,19 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptImpl;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.reasoner.resolution.answer.AnswerState.DownstreamVars.Mapped;
-import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars.Derived;
-import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars.Initial;
-import graql.lang.pattern.variable.Reference;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Mapped;
+import grakn.core.reasoner.resolution.answer.AnswerState.Top;
+import grakn.core.traversal.common.Identifier;
 import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
+import static grakn.common.collection.Collections.set;
+import static grakn.core.reasoner.resolution.answer.AnswerState.Partial.Identity.identity;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 
@@ -38,79 +41,77 @@ public class AnswerStateTest {
 
     @Test
     public void test_initial_empty_mapped_to_downstream_and_back() {
-        Map<Reference.Name, Reference.Name> mapping = new HashMap<>();
-        mapping.put(Reference.name("a"), Reference.name("x"));
-        mapping.put(Reference.name("b"), Reference.name("y"));
-        Mapped mapped = Initial.of(new ConceptMap()).toDownstreamVars(Mapping.of(mapping));
+        Map<Identifier.Variable.Retrievable, Identifier.Variable.Retrievable> mapping = new HashMap<>();
+        mapping.put(Identifier.Variable.name("a"), Identifier.Variable.name("x"));
+        mapping.put(Identifier.Variable.name("b"), Identifier.Variable.name("y"));
+        Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
+        Mapped mapped = Top.initial(filter, false, null).toDownstream().mapToDownstream(Mapping.of(mapping), null);
         assertTrue(mapped.conceptMap().concepts().isEmpty());
 
-        Map<Reference.Name, Concept> concepts = new HashMap<>();
-        concepts.put(Reference.name("x"), new MockConcept(0));
-        concepts.put(Reference.name("y"), new MockConcept(1));
-        Derived derived = mapped.mapToUpstream(new ConceptMap(concepts));
-        Map<Reference.Name, Concept> expectedDerived = new HashMap<>();
-        expectedDerived.put(Reference.name("a"), new MockConcept(0));
-        expectedDerived.put(Reference.name("b"), new MockConcept(1));
-        assertEquals(new ConceptMap(expectedDerived), derived.conceptMap());
-        assertEquals(new ConceptMap(expectedDerived), derived.withInitialFiltered());
+        Map<Identifier.Variable.Retrievable, Concept> concepts = new HashMap<>();
+        concepts.put(Identifier.Variable.name("x"), new MockConcept(0));
+        concepts.put(Identifier.Variable.name("y"), new MockConcept(1));
+        Partial<?> partial = mapped.aggregateToUpstream(new ConceptMap(concepts));
+        Map<Identifier.Variable.Retrievable, Concept> expected = new HashMap<>();
+        expected.put(Identifier.Variable.name("a"), new MockConcept(0));
+        expected.put(Identifier.Variable.name("b"), new MockConcept(1));
+        assertEquals(new ConceptMap(expected), partial.conceptMap());
     }
 
     @Test
     public void test_initial_partially_mapped_to_downstream_and_back() {
-        Map<Reference.Name, Reference.Name>  mapping = new HashMap<>();
-        mapping.put(Reference.name("a"), Reference.name("x"));
-        mapping.put(Reference.name("b"), Reference.name("y"));
-        Map<Reference.Name, Concept> concepts = new HashMap<>();
-        concepts.put(Reference.name("a"), new MockConcept(0));
-        Mapped mapped = Initial.of(new ConceptMap(concepts)).toDownstreamVars(Mapping.of(mapping));
+        Map<Identifier.Variable.Retrievable, Identifier.Variable.Retrievable> mapping = new HashMap<>();
+        mapping.put(Identifier.Variable.name("a"), Identifier.Variable.name("x"));
+        mapping.put(Identifier.Variable.name("b"), Identifier.Variable.name("y"));
+        Map<Identifier.Variable.Retrievable, Concept> concepts = new HashMap<>();
+        concepts.put(Identifier.Variable.name("a"), new MockConcept(0));
+        Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
+        Top top = Top.initial(filter, false, null);
+        Mapped mapped = identity(new ConceptMap(concepts), top, null, null, false)
+                .mapToDownstream(Mapping.of(mapping), null);
 
-        Map<Reference.Name, Concept> expectedMapped = new HashMap<>();
-        expectedMapped.put(Reference.name("x"), new MockConcept(0));
+        Map<Identifier.Variable.Retrievable, Concept> expectedMapped = new HashMap<>();
+        expectedMapped.put(Identifier.Variable.name("x"), new MockConcept(0));
         assertEquals(new ConceptMap(expectedMapped), mapped.conceptMap());
 
-        Map<Reference.Name, Concept> downstreamConcepts = new HashMap<>();
-        downstreamConcepts.put(Reference.name("x"), new MockConcept(0));
-        downstreamConcepts.put(Reference.name("y"), new MockConcept(1));
-        Derived derived = mapped.mapToUpstream(new ConceptMap(downstreamConcepts));
-        Map<Reference.Name, Concept> expectedDerived = new HashMap<>();
-        expectedDerived.put(Reference.name("a"), new MockConcept(0));
-        expectedDerived.put(Reference.name("b"), new MockConcept(1));
-        assertEquals(new ConceptMap(expectedDerived), derived.conceptMap());
+        Map<Identifier.Variable.Retrievable, Concept> downstreamConcepts = new HashMap<>();
+        downstreamConcepts.put(Identifier.Variable.name("x"), new MockConcept(0));
+        downstreamConcepts.put(Identifier.Variable.name("y"), new MockConcept(1));
+        Partial<?> partial = mapped.aggregateToUpstream(new ConceptMap(downstreamConcepts));
 
-        Map<Reference.Name, Concept> expectedWithInitial = new HashMap<>();
-        expectedWithInitial.put(Reference.name("a"), new MockConcept(0));
-        expectedWithInitial.put(Reference.name("b"), new MockConcept(1));
-        assertEquals(new ConceptMap(expectedWithInitial), derived.withInitialFiltered());
+        Map<Identifier.Variable.Retrievable, Concept> expectedWithInitial = new HashMap<>();
+        expectedWithInitial.put(Identifier.Variable.name("a"), new MockConcept(0));
+        expectedWithInitial.put(Identifier.Variable.name("b"), new MockConcept(1));
+        assertEquals(new ConceptMap(expectedWithInitial), partial.conceptMap());
     }
 
     @Test
     public void test_initial_with_unmapped_elements() {
-        Map<Reference.Name, Reference.Name>  mapping = new HashMap<>();
-        mapping.put(Reference.name("a"), Reference.name("x"));
-        mapping.put(Reference.name("b"), Reference.name("y"));
-        Map<Reference.Name, Concept> concepts = new HashMap<>();
-        concepts.put(Reference.name("a"), new MockConcept(0));
-        concepts.put(Reference.name("c"), new MockConcept(2));
-        Mapped mapped = Initial.of(new ConceptMap(concepts)).toDownstreamVars(Mapping.of(mapping));
+        Map<Identifier.Variable.Retrievable, Identifier.Variable.Retrievable> mapping = new HashMap<>();
+        mapping.put(Identifier.Variable.name("a"), Identifier.Variable.name("x"));
+        mapping.put(Identifier.Variable.name("b"), Identifier.Variable.name("y"));
+        Map<Identifier.Variable.Retrievable, Concept> concepts = new HashMap<>();
+        concepts.put(Identifier.Variable.name("a"), new MockConcept(0));
+        concepts.put(Identifier.Variable.name("c"), new MockConcept(2));
+        Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
+        Top top = Top.initial(filter, false, null);
+        Mapped mapped = identity(new ConceptMap(concepts), top, null, null, false)
+                .mapToDownstream(Mapping.of(mapping), null);
 
-        Map<Reference.Name, Concept> expectedMapped = new HashMap<>();
-        expectedMapped.put(Reference.name("x"), new MockConcept(0));
+        Map<Identifier.Variable.Retrievable, Concept> expectedMapped = new HashMap<>();
+        expectedMapped.put(Identifier.Variable.name("x"), new MockConcept(0));
         assertEquals(new ConceptMap(expectedMapped), mapped.conceptMap());
 
-        Map<Reference.Name, Concept> downstreamConcepts = new HashMap<>();
-        downstreamConcepts.put(Reference.name("x"), new MockConcept(0));
-        downstreamConcepts.put(Reference.name("y"), new MockConcept(1));
-        Derived derived = mapped.mapToUpstream(new ConceptMap(downstreamConcepts));
-        Map<Reference.Name, Concept> expectedDerived = new HashMap<>();
-        expectedDerived.put(Reference.name("a"), new MockConcept(0));
-        expectedDerived.put(Reference.name("b"), new MockConcept(1));
-        assertEquals(new ConceptMap(expectedDerived), derived.conceptMap());
+        Map<Identifier.Variable.Retrievable, Concept> downstreamConcepts = new HashMap<>();
+        downstreamConcepts.put(Identifier.Variable.name("x"), new MockConcept(0));
+        downstreamConcepts.put(Identifier.Variable.name("y"), new MockConcept(1));
+        Partial<?> partial = mapped.aggregateToUpstream(new ConceptMap(downstreamConcepts));
 
-        Map<Reference.Name, Concept> expectedWithInitial = new HashMap<>();
-        expectedWithInitial.put(Reference.name("a"), new MockConcept(0));
-        expectedWithInitial.put(Reference.name("b"), new MockConcept(1));
-        expectedWithInitial.put(Reference.name("c"), new MockConcept(2));
-        assertEquals(new ConceptMap(expectedWithInitial), derived.withInitialFiltered());
+        Map<Identifier.Variable.Retrievable, Concept> expectedWithInitial = new HashMap<>();
+        expectedWithInitial.put(Identifier.Variable.name("a"), new MockConcept(0));
+        expectedWithInitial.put(Identifier.Variable.name("b"), new MockConcept(1));
+        expectedWithInitial.put(Identifier.Variable.name("c"), new MockConcept(2));
+        assertEquals(new ConceptMap(expectedWithInitial), partial.conceptMap());
     }
 
     public static class MockConcept extends ConceptImpl implements Concept {

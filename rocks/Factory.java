@@ -21,11 +21,9 @@ package grakn.core.rocks;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
 
-import java.nio.file.Path;
-
 public interface Factory {
 
-    RocksGrakn grakn(Path directory, Options.Database options);
+    RocksGrakn grakn(Options.Database options);
 
     interface DatabaseManager {
 

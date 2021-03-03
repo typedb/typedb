@@ -19,7 +19,10 @@
 package grakn.core.test.integration;
 
 import grakn.core.Grakn;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Arguments;
+import grakn.core.common.parameters.Options.Database;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.type.AttributeType;
@@ -30,7 +33,9 @@ import grakn.core.rocks.RocksGrakn;
 import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
+import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlInsert;
+import graql.lang.query.GraqlMatch;
 import graql.lang.query.GraqlUndefine;
 import org.junit.Test;
 
@@ -49,14 +54,16 @@ import static org.junit.Assert.assertTrue;
 
 public class QueryTest {
 
-    private static Path directory = Paths.get(System.getProperty("user.dir")).resolve("query-test");
+    private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("query-test");
+    private static final Path logDir = dataDir.resolve("logs");
+    private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
     private static String database = "query-test";
 
     @Test
     public void test_query_define() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (Grakn grakn = RocksGrakn.open(directory)) {
+        try (Grakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
 
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
@@ -119,9 +126,9 @@ public class QueryTest {
 
     @Test
     public void test_query_undefine() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (Grakn grakn = RocksGrakn.open(directory)) {
+        try (Grakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
 
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
@@ -202,9 +209,9 @@ public class QueryTest {
 
     @Test
     public void test_query_insert() throws IOException {
-        Util.resetDirectory(directory);
+        Util.resetDirectory(dataDir);
 
-        try (Grakn grakn = RocksGrakn.open(directory)) {
+        try (Grakn grakn = RocksGrakn.open(options)) {
             grakn.databases().create(database);
 
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
@@ -217,7 +224,7 @@ public class QueryTest {
 
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA)) {
                 try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    final String queryString = "insert " +
+                    String queryString = "insert " +
                             "$n 'graknlabs' isa name; " +
                             "$o isa organisation, has name $n; " +
                             "$t isa team, has name 'engineers', has symbol 'graknlabs/engineers'; " +
@@ -246,6 +253,52 @@ public class QueryTest {
                     assertEquals(organisation_graknlabs.getRelations("org-team:org").findAny().get().getPlayers("team").findAny().get(), team_engineers);
                     assertEquals(organisation_graknlabs.getRelations("org-member:org").findAny().get().getPlayers("member").findAny().get(), user_grabl);
                     assertEquals(team_engineers.getRelations("team-member:team").findAny().get().getPlayers("member").findAny().get(), user_grabl);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void test_query_delete() throws IOException {
+        Util.resetDirectory(dataDir);
+
+        try (Grakn grakn = RocksGrakn.open(options)) {
+            grakn.databases().create(database);
+
+            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    GraqlDefine query = Graql.parseQuery(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
+                    transaction.query().define(query);
+                    transaction.commit();
+                }
+            }
+
+            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA)) {
+                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    String insertString = "insert " +
+                            "$o isa organisation, has name 'graknlabs'; " +
+                            "$t isa team, has name 'engineers', has symbol 'graknlabs/engineers'; " +
+                            "$u isa user, has name 'grabl', has email 'grabl@grakn.ai'; " +
+                            "($o, $t) isa org-team; " +
+                            "($o, $u) isa org-member; " +
+                            "($t, $u) isa team-member;";
+                    GraqlInsert insertQuery = Graql.parseQuery(insertString);
+                    transaction.query().insert(insertQuery);
+                    transaction.commit();
+                }
+
+                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    String deleteString = "match $x isa thing; delete $x isa thing;";
+                    GraqlDelete deleteQuery = Graql.parseQuery(deleteString);
+                    transaction.query().delete(deleteQuery);
+                    transaction.commit();
+                }
+
+                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
+                    String matchString = "match $x isa thing;";
+                    GraqlMatch matchQuery = Graql.parseQuery(matchString);
+                    FunctionalIterator<ConceptMap> answers = transaction.query().match(matchQuery);
+                    assertFalse(answers.hasNext());
                 }
             }
         }

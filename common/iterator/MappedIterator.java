@@ -20,12 +20,12 @@ package grakn.core.common.iterator;
 
 import java.util.function.Function;
 
-class MappedIterator<T, U> extends AbstractResourceIterator<U> {
+class MappedIterator<T, U> extends AbstractFunctionalIterator<U> {
 
-    private final ResourceIterator<T> iterator;
+    private final FunctionalIterator<T> iterator;
     private final Function<T, U> function;
 
-    MappedIterator(ResourceIterator<T> iterator, Function<T, U> function) {
+    MappedIterator(FunctionalIterator<T> iterator, Function<T, U> function) {
         this.iterator = iterator;
         this.function = function;
     }

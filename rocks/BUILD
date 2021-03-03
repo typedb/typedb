@@ -40,8 +40,6 @@ native_java_libraries(
 
         # External dependencies from Maven
         "@maven//:com_google_code_findbugs_jsr305",
-        # "@maven//:org_rocksdb_rocksdbjni_dev", # Use this JAR for debugging RocksDB on Mac
-        "@maven//:org_rocksdb_rocksdbjni",
         "@maven//:org_slf4j_slf4j_api"
     ],
     native_libraries_deps = [
@@ -55,14 +53,17 @@ native_java_libraries(
     mac_deps = [
         "@maven//:com_google_ortools_ortools_darwin",
         "@maven//:com_google_ortools_ortools_darwin_java",
+        "@maven//:org_rocksdb_rocksdbjni_dev",
     ],
     linux_deps = [
         "@maven//:com_google_ortools_ortools_linux_x86_64",
-        "@maven//:com_google_ortools_ortools_linux_x86_64_java"
+        "@maven//:com_google_ortools_ortools_linux_x86_64_java",
+        "@maven//:org_rocksdb_rocksdbjni",
     ],
     windows_deps = [
         "@maven//:com_google_ortools_ortools_win32_x86_64",
-        "@maven//:com_google_ortools_ortools_win32_x86_64_java"
+        "@maven//:com_google_ortools_ortools_win32_x86_64_java",
+        "@maven//:org_rocksdb_rocksdbjni",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-rocks:{pom_version}"],
     visibility = [ "//visibility:public" ]

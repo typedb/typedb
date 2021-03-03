@@ -17,18 +17,21 @@
 
 package grakn.core.reasoner;
 
+import grakn.core.common.exception.GraknException;
+import grakn.core.common.parameters.Options;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
+import grakn.core.concurrent.common.Executors;
 import grakn.core.concurrent.producer.Producer;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState;
-import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars.Initial;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Identity;
+import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.framework.Request;
-import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
+import grakn.core.reasoner.resolution.framework.ResolutionTracer;
 import grakn.core.reasoner.resolution.framework.Resolver;
-import graql.lang.pattern.variable.Reference;
+import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.variable.UnboundVariable;
 import graql.lang.query.GraqlMatch;
 import org.slf4j.Logger;
@@ -38,85 +41,120 @@ import javax.annotation.concurrent.ThreadSafe;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import static grakn.core.common.exception.ErrorMessage.Reasoner.RESOLUTION_TERMINATED;
 import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.reasoner.resolution.framework.ResolutionAnswer.Derivation.EMPTY;
 
 @ThreadSafe
 public class ReasonerProducer implements Producer<ConceptMap> {
+
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerProducer.class);
 
-    private final Actor<? extends Resolver<?>> rootResolver;
-    private Queue<ConceptMap> queue;
-    private Request resolveRequest;
-    private boolean iterationInferredAnswer;
+    private final Actor.Driver<? extends Resolver<?>> rootResolver;
+    private final AtomicInteger required;
+    private final AtomicInteger processing;
+    private final Options.Query options;
+    private final Request resolveRequest;
+    private final boolean recordExplanations = false; // TODO: make settable
+    private final int computeSize;
+    private boolean requiresReiteration;
     private boolean done;
     private int iteration;
+    private Queue<ConceptMap> queue;
 
-    public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers) {
-        this.rootResolver = resolverRegistry.rootConjunction(conjunction,filter(modifiers.filter()), modifiers.offset().orElse(null),
-                                                             modifiers.limit().orElse(null), this::requestAnswered, this::requestFailed);
-        AnswerState.DownstreamVars.Identity downstream = Initial.of(new ConceptMap()).toDownstreamVars();
-        this.resolveRequest = Request.create(new Request.Path(rootResolver, downstream), downstream, EMPTY);
+    // TODO: this class should be be a Producer implement a different async processing mechanism
+    public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers,
+                            Options.Query options) {
+        if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
+        this.rootResolver = resolverRegistry.root(conjunction, this::requestAnswered, this::requestFailed, this::exception);
+        this.options = options;
+        Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver).toDownstream();
+        this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
+        assert computeSize > 0;
+        this.resolveRequest = Request.create(rootResolver, downstream);
         this.queue = null;
         this.iteration = 0;
         this.done = false;
+        this.required = new AtomicInteger();
+        this.processing = new AtomicInteger();
     }
 
-    public ReasonerProducer(Disjunction disjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers) {
-        this.rootResolver = resolverRegistry.rootDisjunction(disjunction, filter(modifiers.filter()), modifiers.offset().orElse(null),
-                                                             modifiers.limit().orElse(null), this::requestAnswered, this::requestFailed);
-        AnswerState.DownstreamVars.Identity downstream = Initial.of(new ConceptMap()).toDownstreamVars();
-        this.resolveRequest = Request.create(new Request.Path(rootResolver, downstream), downstream, EMPTY);
+    public ReasonerProducer(Disjunction disjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers,
+                            Options.Query options) {
+        if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
+        this.rootResolver = resolverRegistry.root(disjunction, this::requestAnswered, this::requestFailed, this::exception);
+        this.options = options;
+        Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver).toDownstream();
+        this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
+        assert computeSize > 0;
+        this.resolveRequest = Request.create(rootResolver, downstream);
         this.queue = null;
         this.iteration = 0;
         this.done = false;
+        this.required = new AtomicInteger();
+        this.processing = new AtomicInteger();
     }
 
     @Override
-    public void produce(Queue<ConceptMap> queue, int request, ExecutorService executor) {
+    public synchronized void produce(Queue<ConceptMap> queue, int request, ExecutorService executor) {
         assert this.queue == null || this.queue == queue;
         this.queue = queue;
-        for (int i = 0; i < request; i++) {
+        this.required.addAndGet(request);
+        int canRequest = computeSize - processing.get();
+        int toRequest = Math.min(canRequest, request);
+        for (int i = 0; i < toRequest; i++) {
             requestAnswer();
         }
+        processing.addAndGet(toRequest);
     }
 
     @Override
     public void recycle() {}
 
-    private Set<Reference.Name> filter(List<UnboundVariable> filter) {
-        return iterate(filter).map(v -> v.reference().asName()).toSet();
+    private Set<Identifier.Variable.Name> filter(List<UnboundVariable> filter) {
+        return iterate(filter).map(v -> Identifier.Variable.of(v.reference().asName())).toSet();
     }
 
-
-    private void requestAnswered(ResolutionAnswer resolutionAnswer) {
-        if (resolutionAnswer.isInferred()) iterationInferredAnswer = true;
-        queue.put(resolutionAnswer.derived().withInitialFiltered());
+    // note: root resolver calls this single-threaded, so is threads safe
+    private void requestAnswered(Top resolutionAnswer) {
+        if (options.traceInference()) ResolutionTracer.get().finish();
+        if (resolutionAnswer.requiresReiteration()) requiresReiteration = true;
+        queue.put(resolutionAnswer.conceptMap());
+        if (required.decrementAndGet() > 0) requestAnswer();
+        else processing.decrementAndGet();
     }
 
+    // note: root resolver calls this single-threaded, so is threads safe
     private void requestFailed(int iteration) {
         LOG.trace("Failed to find answer to request in iteration: " + iteration);
-
+        if (options.traceInference()) ResolutionTracer.get().finish();
         if (!done && iteration == this.iteration && !mustReiterate()) {
             // query is completely terminated
             done = true;
             queue.done();
+            required.set(0);
             return;
         }
 
         if (!done) {
-            if (iteration == this.iteration) {
-                prepareNextIteration();
-            }
+            if (iteration == this.iteration) prepareNextIteration();
             assert iteration < this.iteration;
             retryInNewIteration();
         }
     }
 
+    private void exception(Throwable e) {
+        if (!done) {
+            done = true;
+            required.set(0);
+            queue.done(e);
+        }
+    }
+
     private void prepareNextIteration() {
         iteration++;
-        iterationInferredAnswer = false;
+        requiresReiteration = false;
     }
 
     private boolean mustReiterate() {
@@ -130,7 +168,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         counter example: $x isa $type; -> unifies with then { (friend: $y) isa friendship; }
         Without reiteration we will miss $x = instance, $type = relation/thing
          */
-        return iterationInferredAnswer;
+        return requiresReiteration;
     }
 
     private void retryInNewIteration() {
@@ -138,6 +176,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     private void requestAnswer() {
-        rootResolver.tell(actor -> actor.receiveRequest(resolveRequest, iteration));
+        if (options.traceInference()) ResolutionTracer.get().start();
+        rootResolver.execute(actor -> actor.receiveRequest(resolveRequest, iteration));
     }
 }

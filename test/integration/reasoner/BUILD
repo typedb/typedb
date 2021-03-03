@@ -35,6 +35,7 @@ host_compatible_java_test(
         "//concurrent:concurrent",
 
         # External dependencies from Grakn Labs
+        "@graknlabs_common//:common",
         "@graknlabs_graql//java:graql",
     ],
     resources = [
@@ -45,14 +46,15 @@ host_compatible_java_test(
 
 host_compatible_java_test(
     name = "test-resolution",
-    srcs = ["ResolutionTest.java"],
-    test_class = "grakn.core.reasoner.ResolutionTest",
+    srcs = ["resolution/ResolutionTest.java", "resolution/Util.java"],
+    test_class = "grakn.core.reasoner.resolution.ResolutionTest",
     native_libraries_deps = [
         "//concept:concept",
         "//logic:logic",
         "//pattern:pattern",
         "//reasoner:reasoner",
         "//rocks:rocks",
+        "//traversal:traversal",
         "//:grakn",
     ],
     deps = [
@@ -62,7 +64,6 @@ host_compatible_java_test(
         "//test/integration/util",
 
         # External dependencies from Grakn Labs
-        "@graknlabs_graql//java/pattern:pattern",
         "@graknlabs_graql//java:graql",
         "@graknlabs_common//:common",
     ],
@@ -74,20 +75,17 @@ host_compatible_java_test(
 
 host_compatible_java_test(
     name = "test-reiteration",
-    srcs = ["ReiterationTest.java"],
+    srcs = ["resolution/ReiterationTest.java", "resolution/Util.java"],
+    test_class = "grakn.core.reasoner.resolution.ReiterationTest",
     native_libraries_deps = [
         "//concept:concept",
         "//logic:logic",
         "//pattern:pattern",
         "//reasoner:reasoner",
         "//rocks:rocks",
+        "//traversal:traversal",
         "//:grakn",
     ],
-    resource_strip_prefix = "common/test",
-    resources = [
-        "//common/test:logback",
-    ],
-    test_class = "grakn.core.reasoner.ReiterationTest",
     deps = [
         # Internal dependencies
         "//common:common",
@@ -95,16 +93,20 @@ host_compatible_java_test(
         "//test/integration/util",
 
         # External dependencies from Grakn Labs
-        "@graknlabs_graql//java/pattern",
         "@graknlabs_graql//java:graql",
         "@graknlabs_common//:common",
+    ],
+    resource_strip_prefix = "common/test",
+    resources = [
+        "//common/test:logback",
     ],
     size = "large"
 )
 
 host_compatible_java_test(
     name = "test-resolution-planner",
-    srcs = ["resolution/PlannerTest.java"],
+    srcs = ["resolution/PlannerTest.java", "resolution/Util.java"],
+    test_class = "grakn.core.reasoner.resolution.PlannerTest",
     native_libraries_deps = [
         "//rocks:rocks",
         "//:grakn",
@@ -113,7 +115,6 @@ host_compatible_java_test(
         "//logic:logic",
         "//reasoner:reasoner",
     ],
-    test_class = "grakn.core.reasoner.resolution.PlannerTest",
     deps = [
         # Internal dependencies
         "//test/integration/util",

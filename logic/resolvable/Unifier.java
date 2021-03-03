@@ -23,13 +23,15 @@ import grakn.core.common.parameters.Label;
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
-import grakn.core.traversal.common.Identifier;
-import graql.lang.pattern.variable.Reference;
+import grakn.core.concept.type.ThingType;
+import grakn.core.traversal.common.Identifier.Variable;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -40,14 +42,17 @@ import static grakn.core.common.exception.ErrorMessage.Reasoner.REVERSE_UNIFICAT
 
 public class Unifier {
 
-    private final Map<Identifier, Set<Identifier>> unifier;
-    private final Map<Identifier, Set<Identifier>> unUnifier;
+    private final Map<Retrievable, Set<Variable>> unifier;
+    private final Map<Variable, Set<Retrievable>> reverseUnifier;
     private final Requirements.Constraint requirements;
+    private final Requirements.Constraint unifiedRequirements;
 
-    private Unifier(Map<Identifier, Set<Identifier>> unifier, Requirements.Constraint requirements) {
+    private Unifier(Map<Retrievable, Set<Variable>> unifier, Requirements.Constraint requirements,
+                    Requirements.Constraint unifiedRequirements) {
         this.unifier = Collections.unmodifiableMap(unifier);
+        this.reverseUnifier = reverse(this.unifier);
         this.requirements = requirements;
-        this.unUnifier = Collections.unmodifiableMap(reverse(this.unifier));
+        this.unifiedRequirements = unifiedRequirements;
     }
 
     public static Unifier.Builder builder() {
@@ -63,224 +68,240 @@ public class Unifier {
 
     the latter will never be valid as it is a contradiction, the former empty map is the result of the unifier's filtering
      */
-
     public Optional<Pair<ConceptMap, Requirements.Instance>> unify(ConceptMap conceptMap) {
-        Map<Identifier, Concept> unifiedMap = new HashMap<>();
+        Map<Retrievable, Concept> unifiedMap = new HashMap<>();
+        if (requirements.contradicts(conceptMap)) return Optional.empty();
 
-        for (Map.Entry<Identifier, Set<Identifier>> entry : unifier.entrySet()) {
-            Identifier toUnify = entry.getKey();
-            Set<Identifier> unifieds = entry.getValue();
-            if (toUnify.isName() && conceptMap.contains(toUnify.asVariable().reference().asName())) {
-                Concept concept = conceptMap.get(toUnify.asVariable().reference().asName());
-                for (Identifier unified : unifieds) {
-                    if (!unifiedMap.containsKey(unified)) unifiedMap.put(unified, concept);
-                    if (!unifiedMap.get(unified).equals(concept)) return Optional.empty();
+        for (Map.Entry<Retrievable, Set<Variable>> entry : unifier.entrySet()) {
+            Retrievable toUnify = entry.getKey();
+            Concept concept = conceptMap.get(toUnify.asRetrievable());
+            if (concept == null) continue;
+            for (Variable unified : entry.getValue()) {
+                if (unified.isRetrievable()) {
+                    if (!unifiedMap.containsKey(unified.asRetrievable())) {
+                        unifiedMap.put(unified.asRetrievable(), concept);
+                    }
+                    if (!unifiedMap.get(unified.asRetrievable()).equals(concept)) return Optional.empty();
                 }
             }
         }
-        return Optional.of(new Pair<>(conceptMap(unifiedMap), new Requirements.Instance(conceptMap.concepts())));
+        return Optional.of(new Pair<>(new ConceptMap(unifiedMap), new Requirements.Instance(conceptMap.concepts())));
     }
 
     /**
      * Un-unify a map of concepts, with given identifiers. These must include anonymous and labelled concepts,
      * as they may be mapped to from a named variable, and may have requirements that need to be met.
      */
-    public Optional<ConceptMap> unUnify(Map<Identifier, Concept> concepts, Requirements.Instance instanceRequirements) {
-        Map<Identifier, Concept> reversedConcepts = new HashMap<>();
+    public Optional<ConceptMap> unUnify(Map<Variable, Concept> concepts, Requirements.Instance instanceRequirements) {
 
-        for (Map.Entry<Identifier, Set<Identifier>> entry : unUnifier.entrySet()) {
-            Identifier toReverse = entry.getKey();
-            Set<Identifier> reversed = entry.getValue();
+        if (!unifiedRequirements.exactlySatisfiedBy(concepts)) return Optional.empty();
+
+        Map<Retrievable, Concept> reversedConcepts = new HashMap<>();
+        for (Map.Entry<Variable, Set<Retrievable>> entry : reverseUnifier.entrySet()) {
+            Variable toReverse = entry.getKey();
+            Set<Retrievable> reversed = entry.getValue();
             if (!concepts.containsKey(toReverse)) {
                 throw GraknException.of(REVERSE_UNIFICATION_MISSING_CONCEPT, toReverse, concepts);
             }
             Concept concept = concepts.get(toReverse);
-            for (Identifier r : reversed) {
+            for (Retrievable r : reversed) {
                 if (!reversedConcepts.containsKey(r)) reversedConcepts.put(r, concept);
                 if (!reversedConcepts.get(r).equals(concept)) return Optional.empty();
             }
         }
 
-        if (instanceRequirements.satisfiedBy(reversedConcepts) && constraintRequirements().satisfiedBy(reversedConcepts)) {
-            return Optional.of(conceptMap(reversedConcepts));
-        } else {
-            return Optional.empty();
-        }
+        if (instanceRequirements.satisfiedBy(reversedConcepts)) return Optional.of(new ConceptMap(reversedConcepts));
+        else return Optional.empty();
     }
 
-    public Map<Identifier, Set<Identifier>> mapping() {
+    public Map<Retrievable, Set<Variable>> mapping() {
         return unifier;
     }
-    public Map<Identifier, Set<Identifier>> inverseMapping(){ return unUnifier; }
+    public Map<Variable, Set<Retrievable>> inverseMapping(){ return reverseUnifier; }
 
-    Requirements.Constraint constraintRequirements() {
+    public Requirements.Constraint requirements() {
         return requirements;
+    }
+
+    private Map<Variable, Set<Retrievable>> reverse(Map<Retrievable, Set<Variable>> unifier) {
+        Map<Variable, Set<Retrievable>> reverse = new HashMap<>();
+        unifier.forEach((unify, unifieds) -> {
+            for (Variable unified : unifieds) {
+                reverse.computeIfAbsent(unified, (u) -> new HashSet<>()).add(unify);
+            }
+        });
+        return reverse;
     }
 
     @Override
     public String toString() {
         return "Unifier{" +
                 "unifier=" + unifierString(unifier) +
-                ", unUnifier=" + unifierString(unUnifier) +
+                ", reverseUnifier=" + unifierString(reverseUnifier) +
                 ", requirements=" + requirements +
+                ", unifiedRequirements=" + unifiedRequirements +
                 '}';
     }
 
-    private String unifierString(Map<Identifier, Set<Identifier>> unifier) {
+    private String unifierString(Map<? extends Variable, ? extends Set<? extends Variable>> unifier) {
         return "{" + unifier.entrySet().stream().map(e -> e.getKey() + "->" + e.getValue()).collect(Collectors.joining(",")) + "}";
-    }
-
-    private Map<Identifier, Set<Identifier>> reverse(Map<Identifier, Set<Identifier>> unifier) {
-        Map<Identifier, Set<Identifier>> reverse = new HashMap<>();
-        unifier.forEach((unify, unifieds) -> {
-            for (Identifier unified : unifieds) {
-                reverse.putIfAbsent(unified, new HashSet<>());
-                reverse.get(unified).add(unify);
-            }
-        });
-        return reverse;
-    }
-
-    private ConceptMap conceptMap(Map<Identifier, Concept> identifiedConcepts) {
-        Map<Reference.Name, Concept> namedConcepts = new HashMap<>();
-        for (Map.Entry<Identifier, Concept> identifiedConcept : identifiedConcepts.entrySet()) {
-            if (identifiedConcept.getKey().isName()) {
-                assert identifiedConcept.getKey().asVariable().reference().isName();
-                namedConcepts.put(identifiedConcept.getKey().asVariable().reference().asName(), identifiedConcept.getValue());
-            }
-        }
-        return new ConceptMap(namedConcepts);
     }
 
     public static class Builder {
 
-        Map<Identifier, Set<Identifier>> unifier;
-        Requirements.Constraint requirements;
+        private Map<Retrievable, Set<Variable>> unifier;
+        private Requirements.Constraint requirements;
+        private Requirements.Constraint unifiedRequirements;
 
         public Builder() {
-            this(new HashMap<>(), new Requirements.Constraint());
+            this(new HashMap<>(), new Requirements.Constraint(), new Requirements.Constraint());
         }
 
-        private Builder(Map<Identifier, Set<Identifier>> unifier, Requirements.Constraint requirements) {
+        private Builder(Map<Retrievable, Set<Variable>> unifier, Requirements.Constraint requirements, Requirements.Constraint unifiedRequirements) {
             this.unifier = unifier;
             this.requirements = requirements;
+            this.unifiedRequirements = unifiedRequirements;
         }
 
-        public void add(Identifier source, Identifier target) {
-            unifier.putIfAbsent(source, new HashSet<>());
-            unifier.get(source).add(target);
+        public void add(Retrievable source, Variable target) {
+            unifier.computeIfAbsent(source, (s) -> new HashSet<>()).add(target);
         }
 
         public Requirements.Constraint requirements() {
             return requirements;
         }
 
-        public Unifier build() {
-            return new Unifier(unifier, requirements);
+        public Requirements.Constraint unifiedRequirements() {
+            return unifiedRequirements;
         }
 
-        public Builder duplicate() {
-            Map<Identifier, Set<Identifier>> unifierCopy = new HashMap<>();
+        public Unifier build() {
+            return new Unifier(unifier, requirements, unifiedRequirements);
+        }
+
+        public Builder clone() {
+            Map<Retrievable, Set<Variable>> unifierCopy = new HashMap<>();
             unifier.forEach(((identifier, unifieds) -> unifierCopy.put(identifier, set(unifieds))));
             Requirements.Constraint requirementsCopy = requirements.duplicate();
-            return new Builder(unifierCopy, requirementsCopy);
+            Requirements.Constraint unifiedRequirementsCopy = unifiedRequirements.duplicate();
+            return new Builder(unifierCopy, requirementsCopy, unifiedRequirementsCopy);
         }
     }
 
-    /*
-    Record requirements that may be used to fail a unification
-
-    Allowed requirements we may impose:
-    1. a type variable may be required to within a set of allowed types
-    2. a thing variable may be required to be an explicit instance of a set of allowed types
-    3. a thing variable may have to satisfy a specific predicate (ie when it's an attribute)
-
-    Note that in the future we may treat these (and variable equality constraints encoded in unifier)
-     as constraints we can use to rewrite queries that are unified with. This would be more efficient,
-     but query rewriting was designed _out_ of our architecture, and will have to be carefully re-added.
-     */
     public static abstract class Requirements {
 
+        /*
+        Record constraint-based requirements that may be used to fail a unification
+
+        Allowed requirements we may impose:
+        1. a type variable may be required to within a set of allowed types
+        2. a thing variable may be required to be an explicit instance of a set of allowed types
+        3. a thing variable may have to satisfy a specific predicate (ie when it's an attribute)
+
+        Note that in the future we may treat these (and variable equality constraints encoded in unifier)
+         as constraints we can use to rewrite queries that are unified with. This would be more efficient,
+         but query rewriting was designed _out_ of our architecture, and will have to be carefully re-added.
+         */
         public static class Constraint {
-            Map<Identifier, Set<Label>> types;
-            Map<Identifier, Set<Label>> isaExplicit;
-            Map<Identifier, Function<Attribute, Boolean>> predicates;
+
+            private final Map<Variable, Set<Label>> roleTypes;
+            private final Map<Retrievable, Set<Label>> isaExplicit;
+            private final Map<Retrievable, Function<Attribute, Boolean>> predicates;
 
             public Constraint() {
                 this(new HashMap<>(), new HashMap<>(), new HashMap<>());
             }
 
-            public Constraint(Map<Identifier, Set<Label>> types, Map<Identifier, Set<Label>> isaExplicit,
-                              Map<Identifier, Function<Attribute, Boolean>> predicates) {
-                this.types = types;
+            public Constraint(Map<Variable, Set<Label>> roleTypes, Map<Retrievable, Set<Label>> isaExplicit,
+                              Map<Retrievable, Function<Attribute, Boolean>> predicates) {
+                this.roleTypes = roleTypes;
                 this.isaExplicit = isaExplicit;
                 this.predicates = predicates;
             }
 
-            public boolean satisfiedBy(Map<Identifier, Concept> concepts) {
-                for (Map.Entry<Identifier, Concept> identifiedConcept : concepts.entrySet()) {
-                    Identifier id = identifiedConcept.getKey();
+            public boolean exactlySatisfiedBy(Map<Variable, Concept> concepts) {
+                if (!(concepts.keySet().containsAll(roleTypes.keySet()) && concepts.keySet().containsAll(isaExplicit.keySet())
+                        && concepts.keySet().containsAll(predicates.keySet()))) {
+                    return false;
+                }
+
+                for (Map.Entry<Variable, Concept> identifiedConcept : concepts.entrySet()) {
+                    Variable id = identifiedConcept.getKey();
                     Concept concept = identifiedConcept.getValue();
-                    if (!(typesSatisfied(id, concept) && isaXSatisfied(id, concept) && predicatesSatisfied(id, concept))) {
+                    if (!(typesSatisfied(id, concept) && isaExplicitSatisfied(id, concept) && predicatesSatisfied(id, concept))) {
                         return false;
                     }
                 }
                 return true;
             }
 
-            private boolean typesSatisfied(Identifier id, Concept concept) {
-                if (types.containsKey(id)) {
+            public boolean contradicts(ConceptMap conceptMap) {
+                boolean satisfies = true;
+                for (Map.Entry<Retrievable, ? extends Concept> identifiedConcept : conceptMap.concepts().entrySet()) {
+                    Retrievable id = identifiedConcept.getKey();
+                    Concept concept = identifiedConcept.getValue();
+                    if (!(typesSatisfied(id, concept) && isaExplicitSatisfied(id, concept) && predicatesSatisfied(id, concept))) {
+                        satisfies = false;
+                        break;
+                    }
+                }
+                return !satisfies;
+            }
+
+            private boolean typesSatisfied(Variable id, Concept concept) {
+                if (roleTypes.containsKey(id)) {
                     assert concept.isType();
-                    return types.get(id).contains(concept.asType().getLabel());
+                    return roleTypes.get(id).contains(concept.asType().getLabel());
                 } else {
                     return true;
                 }
             }
 
-            private boolean isaXSatisfied(Identifier id, Concept concept) {
-                if (isaExplicit.containsKey(id)) {
+            private boolean isaExplicitSatisfied(Variable id, Concept concept) {
+                if (id.isRetrievable() && isaExplicit.containsKey(id.asRetrievable())) {
                     assert concept.isThing();
-                    return isaExplicit.get(id).contains(concept.asThing().getType().getLabel());
+                    ThingType type = concept.asThing().getType();
+                    return isaExplicit.get(id.asRetrievable()).contains(type.getLabel());
                 } else {
                     return true;
                 }
             }
 
-            private boolean predicatesSatisfied(Identifier id, Concept concept) {
-                if (predicates.containsKey(id)) {
+            private boolean predicatesSatisfied(Variable id, Concept concept) {
+                if (id.isRetrievable() && predicates.containsKey(id.asRetrievable())) {
                     assert concept.isThing() && (concept.asThing() instanceof Attribute);
-                    return predicates.get(id).apply(concept.asAttribute());
+                    return predicates.get(id.asRetrievable()).apply(concept.asAttribute());
                 } else {
                     return true;
                 }
             }
 
-            public void types(Identifier identifier, Set<Label> labels) {
-                assert !types.containsKey(identifier) || types.get(identifier).equals(labels);
-                types.put(identifier, set(labels));
+            public void roleTypes(Variable unifiedId, Set<Label> labels) {
+                assert !roleTypes.containsKey(unifiedId) || roleTypes.get(unifiedId).equals(labels);
+                roleTypes.put(unifiedId, set(labels));
             }
 
-            public void isaExplicit(Identifier identifier, Set<Label> labels) {
-                assert !isaExplicit.containsKey(identifier) || isaExplicit.get(identifier).equals(labels);
-                isaExplicit.put(identifier, set(labels));
+            public void isaExplicit(Retrievable unifiedId, Set<Label> labels) {
+                assert (!isaExplicit.containsKey(unifiedId) || isaExplicit.get(unifiedId).equals(labels));
+                isaExplicit.put(unifiedId, set(labels));
             }
 
-            public void predicates(Identifier identifier, Function<Attribute, Boolean> predicateFn) {
-                assert !predicates.containsKey(identifier);
-                predicates.put(identifier, predicateFn);
+            public void predicates(Retrievable unifiedId, Function<Attribute, Boolean> predicateFn) {
+                assert !predicates.containsKey(unifiedId);
+                predicates.put(unifiedId, predicateFn);
             }
 
-            public Map<Identifier, Set<Label>> types() { return types; }
+            public Map<Variable, Set<Label>> roleTypes() { return roleTypes; }
 
-            public Map<Identifier, Set<Label>> isaExplicit() { return isaExplicit; }
+            public Map<Retrievable, Set<Label>> isaExplicit() { return isaExplicit; }
 
-            public Map<Identifier, Function<Attribute, Boolean>> predicates() { return predicates; }
+            public Map<Retrievable, Function<Attribute, Boolean>> predicates() { return predicates; }
 
             private Constraint duplicate() {
-                Map<Identifier, Set<Label>> typesCopy = new HashMap<>();
-                Map<Identifier, Set<Label>> isaExplicitCopy = new HashMap<>();
-                Map<Identifier, Function<Attribute, Boolean>> predicatesCopy = new HashMap<>();
-                types.forEach(((identifier, labels) -> typesCopy.put(identifier, set(labels))));
+                Map<Variable, Set<Label>> typesCopy = new HashMap<>();
+                Map<Retrievable, Set<Label>> isaExplicitCopy = new HashMap<>();
+                Map<Retrievable, Function<Attribute, Boolean>> predicatesCopy = new HashMap<>();
+                roleTypes.forEach(((identifier, labels) -> typesCopy.put(identifier, set(labels))));
                 isaExplicit.forEach(((identifier, labels) -> isaExplicitCopy.put(identifier, set(labels))));
                 predicates.forEach((predicatesCopy::put));
                 return new Constraint(typesCopy, isaExplicitCopy, predicatesCopy);
@@ -289,31 +310,44 @@ public class Unifier {
 
         public static class Instance {
 
-            Map<Reference.Name, ? extends Concept> requireCompatible;
+            Map<Retrievable, ? extends Concept> requireCompatible;
+            private final int hash;
 
-            public Instance(Map<Reference.Name, ? extends Concept> concepts) {
+            public Instance(Map<Retrievable, ? extends Concept> concepts) {
                 this.requireCompatible = concepts;
+                this.hash = Objects.hash(requireCompatible);
             }
 
-            public boolean satisfiedBy(Map<Identifier, Concept> toTest) {
-                for (Map.Entry<Identifier, ? extends Concept> entry : toTest.entrySet()) {
-                    Identifier id = entry.getKey();
-                    if (id.isName()) {
-                        Concept compatible = requireCompatible.get(id.asVariable().reference().asName());
-                        if (compatible != null) {
-                            Concept testConcept = entry.getValue();
-                            // things must be exactly equal
-                            if ((compatible.isThing() && !compatible.equals(testConcept)) ||
-                                    // if the required concept is a type, the test concept must also be a type
-                                    (compatible.isType() && !testConcept.isType()) ||
-                                    // types must be compatible (testConcept must be a subtype of required concept)
-                                    (compatible.isType() && testConcept.asType().getSupertypes().noneMatch(t -> t.equals(compatible)))) {
-                                return false;
-                            }
+            public boolean satisfiedBy(Map<Retrievable, Concept> toTest) {
+                for (Map.Entry<Retrievable, ? extends Concept> entry : toTest.entrySet()) {
+                    Retrievable id = entry.getKey().asRetrievable();
+                    Concept compatible = requireCompatible.get(id);
+                    if (compatible != null) {
+                        Concept testConcept = entry.getValue();
+                        // things must be exactly equal
+                        if ((compatible.isThing() && !compatible.equals(testConcept)) ||
+                                // if the required concept is a type, the test concept must also be a type
+                                (compatible.isType() && !testConcept.isType()) ||
+                                // types must be compatible (testConcept must be a subtype of required concept)
+                                (compatible.isType() && testConcept.asType().getSupertypes().noneMatch(t -> t.equals(compatible)))) {
+                            return false;
                         }
                     }
                 }
                 return true;
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+                Instance instance = (Instance) o;
+                return requireCompatible.equals(instance.requireCompatible);
+            }
+
+            @Override
+            public int hashCode() {
+                return hash;
             }
         }
     }

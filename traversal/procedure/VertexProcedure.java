@@ -18,15 +18,14 @@
 
 package grakn.core.traversal.procedure;
 
-import grakn.core.common.iterator.ResourceIterator;
-import grakn.core.concurrent.producer.Producer;
+import grakn.core.common.iterator.FunctionalIterator;
+import grakn.core.concurrent.producer.FunctionalProducer;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.vertex.Vertex;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.common.VertexMap;
 import grakn.core.traversal.planner.PlannerVertex;
-import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +48,6 @@ public class VertexProcedure implements Procedure {
     }
 
     public static VertexProcedure create(PlannerVertex<?> plannerVertex) {
-        assert plannerVertex.id().isName();
         return new VertexProcedure(toProcedure(plannerVertex));
     }
 
@@ -90,24 +88,25 @@ public class VertexProcedure implements Procedure {
     }
 
     @Override
-    public Producer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
-                                        Set<Identifier.Variable.Name> filter, int parallelisation) {
+    public FunctionalProducer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
+                                                  Set<Identifier.Variable.Retrievable> filter, int parallelisation) {
         LOG.debug(params.toString());
         LOG.debug(this.toString());
         return async(iterator(graphMgr, params, filter));
     }
 
     @Override
-    public ResourceIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
-                                                Set<Identifier.Variable.Name> filter) {
+    public FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
+                                                  Set<Identifier.Variable.Retrievable> filter) {
         LOG.debug(params.toString());
         LOG.debug(this.toString());
-        assert vertex.id().isName() && filter.contains(vertex.id().asVariable().asName());
-        Reference ref = vertex.id().asVariable().reference();
-        ResourceIterator<? extends Vertex<?, ?>> iterator = vertex.iterator(graphMgr, params);
+        assert vertex.id().isRetrievable() && filter.contains(vertex.id().asVariable().asRetrievable());
+        FunctionalIterator<? extends Vertex<?, ?>> iterator = vertex.iterator(graphMgr, params);
         for (ProcedureEdge<?, ?> e : vertex.outs()) {
             iterator = iterator.filter(v -> e.isClosure(graphMgr, v, v, params));
         }
-        return iterator.map(v -> VertexMap.of(map(pair(ref, v)))).distinct();
+
+        return iterator.map(v -> VertexMap.of(map(pair(vertex.id().asVariable().asRetrievable(), v)))).distinct();
     }
+
 }

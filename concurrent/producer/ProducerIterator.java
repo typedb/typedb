@@ -20,7 +20,7 @@ package grakn.core.concurrent.producer;
 
 import grakn.common.collection.Either;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.AbstractResourceIterator;
+import grakn.core.common.iterator.AbstractFunctionalIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,9 +32,8 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ProducerIterator<T> extends AbstractResourceIterator<T> {
+public class ProducerIterator<T> extends AbstractFunctionalIterator<T> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProducerIterator.class);
 
@@ -42,29 +41,39 @@ public class ProducerIterator<T> extends AbstractResourceIterator<T> {
     private final ConcurrentLinkedQueue<Producer<T>> producers;
     private final ExecutorService executor;
     private final Queue queue;
+    private final int batchSize;
+    private final long limit;
+    private long requested;
+    private long consumed;
 
     private T next;
     private State state;
 
-    public ProducerIterator(List<Producer<T>> producers, int batchSize, ExecutorService executor) {
-        this.executor = executor;
-        // TODO: Could we optimise IterableProducer by accepting ResourceIterator<Producer<T>> instead?
+    public ProducerIterator(List<Producer<T>> producers, int batchSize, long limit, ExecutorService executor) {
+        // TODO: Could we optimise IterableProducer by accepting FunctionalIterator<Producer<T>> instead?
         assert !producers.isEmpty() && batchSize < Integer.MAX_VALUE / 2;
         this.producers = new ConcurrentLinkedQueue<>(producers);
-        this.queue = new Queue(batchSize, batchSize * 2);
+        this.queue = new Queue();
+        this.batchSize = batchSize;
+        this.limit = limit;
+        this.executor = executor;
+        this.requested = 0;
+        this.consumed = 0;
         this.state = State.EMPTY;
     }
 
+    private void mayProduceBatch() {
+        if (consumed % batchSize == 0) mayProduce();
+    }
+
     private void mayProduce() {
+        if (requested == limit) return;
         synchronized (queue) {
             if (producers.isEmpty()) return;
-            int available = queue.max - queue.size() - queue.pending;
-            if (available > queue.max - queue.min) {
-                queue.pending += available;
-                assert !producers.isEmpty();
-                Producer<T> producer = producers.peek();
-                executor.submit(() -> producer.produce(queue, available, executor));
-            }
+            final int request = batchSize < (limit - requested) ? batchSize : (int) (limit - requested);
+            requested += request;
+            Producer<T> producer = producers.peek();
+            executor.submit(() -> producer.produce(queue, request, executor));
         }
     }
 
@@ -72,9 +81,9 @@ public class ProducerIterator<T> extends AbstractResourceIterator<T> {
 
     @Override
     public boolean hasNext() {
-        if (state == State.COMPLETED) return false;
+        if (state == State.COMPLETED || consumed == limit) return false;
         else if (state == State.FETCHED) return true;
-        else mayProduce();
+        else mayProduceBatch();
 
         Either<Result<T>, Done> result = queue.take();
 
@@ -97,6 +106,7 @@ public class ProducerIterator<T> extends AbstractResourceIterator<T> {
     public T next() {
         if (!hasNext()) throw new NoSuchElementException();
         state = State.EMPTY;
+        consumed++;
         return next;
     }
 
@@ -146,25 +156,15 @@ public class ProducerIterator<T> extends AbstractResourceIterator<T> {
     private class Queue implements Producer.Queue<T> {
 
         private final LinkedBlockingQueue<Either<Result<T>, Done>> blockingQueue;
-        private final AtomicBoolean isError;
-        private final int min;
-        private final int max;
-        private int pending;
 
-        private Queue(int min, int max) {
-            this.min = min;
-            this.max = max;
+        private Queue() {
             this.blockingQueue = new LinkedBlockingQueue<>();
-            this.isError = new AtomicBoolean(false);
-            this.pending = 0;
         }
 
         @Override
         public synchronized void put(T item) {
             try {
                 blockingQueue.put(Either.first(new Result<>(item)));
-                pending--;
-                assert pending >= 0 || isError.get();
             } catch (InterruptedException e) {
                 throw GraknException.of(e);
             }
@@ -179,7 +179,6 @@ public class ProducerIterator<T> extends AbstractResourceIterator<T> {
         public synchronized void done(@Nullable Throwable error) {
             assert !producers.isEmpty();
             producers.remove();
-            pending = 0;
             try {
                 if (error != null) blockingQueue.put(Either.second(Done.error(error)));
                 else if (producers.isEmpty()) blockingQueue.put(Either.second(Done.success()));

@@ -18,11 +18,9 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
-import grakn.core.common.iterator.ResourceIterator;
 import grakn.core.concept.ConceptManager;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Negated;
@@ -34,18 +32,15 @@ import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
-import grakn.core.reasoner.resolution.answer.AnswerState.UpstreamVars.Initial;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import grakn.core.reasoner.resolution.answer.Mapping;
 import grakn.core.reasoner.resolution.framework.Request;
-import grakn.core.reasoner.resolution.framework.ResolutionAnswer;
-import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
-import grakn.core.reasoner.resolution.framework.ResponseProducer;
 import grakn.core.traversal.TraversalEngine;
+import grakn.core.traversal.common.Identifier.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -53,254 +48,241 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.map;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.iterate;
 
-public abstract class ConjunctionResolver<T extends ConjunctionResolver<T>> extends Resolver<T> {
+public abstract class ConjunctionResolver<
+        RESOLVER extends ConjunctionResolver<RESOLVER, REQ_STATE>,
+        REQ_STATE extends CompoundResolver.RequestState
+        > extends CompoundResolver<RESOLVER, REQ_STATE> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Conjunction.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ConjunctionResolver.class);
 
     private final LogicManager logicMgr;
     private final Planner planner;
-    final ConceptManager conceptMgr;
-    final Actor<ResolutionRecorder> resolutionRecorder;
     final grakn.core.pattern.Conjunction conjunction;
-    final List<Resolvable<?>> plan;
-    final Map<Resolvable<?>, ResolverRegistry.MappedResolver> downstreamResolvers;
-    final Map<Request, ResponseProducer> responseProducers;
-    private boolean isInitialised;
+    final Set<Resolvable<?>> resolvables;
+    final Set<Negated> negateds;
+    final Plans plans;
+    final Map<Resolvable<?>, ResolverRegistry.ResolverView> downstreamResolvers;
 
-    public ConjunctionResolver(Actor<T> self, String name, grakn.core.pattern.Conjunction conjunction,
-                               Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
+    public ConjunctionResolver(Driver<RESOLVER> driver, String name, grakn.core.pattern.Conjunction conjunction,
+                               Driver<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
-                               Planner planner, boolean explanations) {
-        super(self, name, registry, traversalEngine, explanations);
-        this.conceptMgr = conceptMgr;
+                               Planner planner, boolean resolutionTracing) {
+        super(driver, name, registry, traversalEngine, conceptMgr, resolutionTracing, resolutionRecorder);
         this.logicMgr = logicMgr;
-        this.resolutionRecorder = resolutionRecorder;
         this.planner = planner;
         this.conjunction = conjunction;
-        this.plan = new ArrayList<>();
-        this.responseProducers = new HashMap<>();
-        this.isInitialised = false;
+        this.resolvables = new HashSet<>();
+        this.negateds = new HashSet<>();
+        this.plans = new Plans();
         this.downstreamResolvers = new HashMap<>();
     }
 
-    protected abstract void nextAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration);
+    protected abstract void nextAnswer(Request fromUpstream, REQ_STATE requestState, int iteration);
 
-    protected abstract ResourceIterator<AnswerState.UpstreamVars.Derived> toUpstreamAnswers(Request fromUpstream,
-                                                                                            ResourceIterator<ConceptMap> downstreamConceptMaps);
-
-    protected abstract Optional<AnswerState.UpstreamVars.Derived> toUpstreamAnswer(Request fromUpstream, ConceptMap downstreamConceptMap);
-
-    protected boolean mustOffset() { return false; }
-
-    protected void offsetOccurred() {}
-
-    @Override
-    public void receiveRequest(Request fromUpstream, int iteration) {
-        LOG.trace("{}: received Request: {}", name(), fromUpstream);
-
-        if (!isInitialised) {
-            initialiseDownstreamActors();
-            isInitialised = true;
-        }
-
-        ResponseProducer responseProducer = mayUpdateAndGetResponseProducer(fromUpstream, iteration);
-        if (iteration < responseProducer.iteration()) {
-            // short circuit if the request came from a prior iteration
-            respondToUpstream(new Response.Fail(fromUpstream), iteration);
-        } else {
-            assert iteration == responseProducer.iteration();
-            nextAnswer(fromUpstream, responseProducer, iteration);
-        }
-    }
+    abstract Optional<AnswerState> toUpstreamAnswer(Partial<?> fromDownstream);
 
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
         LOG.trace("{}: received Answer: {}", name(), fromDownstream);
+        if (isTerminated()) return;
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        ResponseProducer responseProducer = responseProducers.get(fromUpstream);
+        REQ_STATE requestState = requestStates.get(fromUpstream);
 
-        ResolutionAnswer.Derivation derivation;
-        if (explanations()) {
-            // TODO: revisit
-            derivation = fromDownstream.sourceRequest().partialResolutions();
-            if (fromDownstream.answer().isInferred()) {
-                derivation = derivation.withAnswer(fromDownstream.sourceRequest().receiver(), fromDownstream.answer());
-            }
-        } else {
-            derivation = null;
-        }
-
+        Plans.Plan plan = plans.get(fromUpstream.partialAnswer().conceptMap().concepts().keySet());
 
         // TODO: this is a bit of a hack, we want requests to a negation to be "single use", otherwise we can end up in an infinite loop
         // TODO: where the request to the negation never gets removed and we constantly re-request from it!
         // TODO: this could be either implemented with a different response type: FinalAnswer, or splitting Request into ReusableRequest vs SingleRequest
-        if (plan.get(toDownstream.planIndex()).isNegated()) responseProducer.removeDownstreamProducer(toDownstream);
+        if (plan.get(toDownstream.planIndex()).isNegated()) requestState.removeDownstreamProducer(toDownstream);
 
-        ConceptMap conceptMap = fromDownstream.answer().derived().withInitialFiltered();
-        if (fromDownstream.planIndex() == plan.size() - 1) {
-            Optional<AnswerState.UpstreamVars.Derived> answer = toUpstreamAnswer(fromUpstream, conceptMap);
-            if (answer.isPresent() && !responseProducer.hasProduced(answer.get().withInitialFiltered())) {
-                responseProducer.recordProduced(answer.get().withInitialFiltered());
-                if (mustOffset()) {
-                    offsetOccurred();
-                    nextAnswer(fromUpstream, responseProducer, iteration);
-                    return;
-                }
-                ResolutionAnswer resolutionAnswer = new ResolutionAnswer(answer.get(), conjunction.toString(), derivation, self(),
-                                                                         fromDownstream.answer().isInferred());
-                respondToUpstream(Response.Answer.create(fromUpstream, resolutionAnswer), iteration);
-            } else {
-                nextAnswer(fromUpstream, responseProducer, iteration);
-            }
+        if (plan.isLast(fromDownstream.planIndex())) {
+            Optional<AnswerState> upstreamAnswer = toUpstreamAnswer(fromDownstream.answer());
+            boolean answerAccepted = upstreamAnswer.isPresent() && tryAcceptUpstreamAnswer(upstreamAnswer.get(), fromUpstream, iteration);
+            if (!answerAccepted) nextAnswer(fromUpstream, requestState, iteration);
         } else {
-            int planIndex = fromDownstream.planIndex() + 1;
-            ResolverRegistry.MappedResolver nextPlannedDownstream = downstreamResolvers.get(plan.get(planIndex));
-            AnswerState.DownstreamVars.Mapped downstream = Initial.of(conceptMap).toDownstreamVars(Mapping.of(nextPlannedDownstream.mapping()));
-            Request downstreamRequest = Request.create(fromUpstream.path().append(nextPlannedDownstream.resolver(), downstream),
-                                                       downstream, derivation, planIndex);
-            responseProducer.addDownstreamProducer(downstreamRequest);
+            int nextResolverIndex = fromDownstream.planIndex() + 1;
+            ResolverRegistry.ResolverView nextPlannedDownstream = downstreamResolvers.get(plan.get(nextResolverIndex));
+            Partial<?> downstream = forDownstreamResolver(nextPlannedDownstream, fromDownstream.answer());
+            Request downstreamRequest = Request.create(driver(), nextPlannedDownstream.resolver(), downstream, nextResolverIndex);
+            requestState.addDownstreamProducer(downstreamRequest);
             requestFromDownstream(downstreamRequest, fromUpstream, iteration);
         }
     }
 
+    abstract boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration);
+
     @Override
-    protected void receiveExhausted(Response.Fail fromDownstream, int iteration) {
+    protected void receiveFail(Response.Fail fromDownstream, int iteration) {
         LOG.trace("{}: Receiving Exhausted: {}", name(), fromDownstream);
+        if (isTerminated()) return;
+
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        ResponseProducer responseProducer = responseProducers.get(fromUpstream);
+        REQ_STATE requestState = this.requestStates.get(fromUpstream);
 
-        if (iteration < responseProducer.iteration()) {
-            // short circuit old iteration exhausted messages to upstream
-            respondToUpstream(new Response.Fail(fromUpstream), iteration);
+        if (iteration < requestState.iteration()) {
+            // short circuit old iteration failed messages to upstream
+            failToUpstream(fromUpstream, iteration);
             return;
         }
 
-        responseProducer.removeDownstreamProducer(fromDownstream.sourceRequest());
-        nextAnswer(fromUpstream, responseProducer, iteration);
+        requestState.removeDownstreamProducer(fromDownstream.sourceRequest());
+        nextAnswer(fromUpstream, requestState, iteration);
     }
 
     @Override
-    protected void initialiseDownstreamActors() {
-        LOG.debug("{}: initialising downstream actors", name());
+    protected void initialiseDownstreamResolvers() {
+        LOG.debug("{}: initialising downstream resolvers", name());
         Set<Concludable> concludables = Iterators.iterate(Concludable.create(conjunction))
                 .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext()).toSet();
         Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction, concludables);
-        Set<Resolvable<?>> resolvables = new HashSet<>();
         resolvables.addAll(concludables);
         resolvables.addAll(retrievables);
-
-        plan.addAll(planner.plan(resolvables));
-        iterate(plan).forEachRemaining(resolvable -> {
-            downstreamResolvers.put(resolvable, registry.registerResolvable(resolvable));
+        iterate(resolvables).forEachRemaining(resolvable -> {
+            try {
+                downstreamResolvers.put(resolvable, registry.registerResolvable(resolvable));
+            } catch (GraknException e) {
+                terminate(e);
+            }
         });
-
-        // TODO: just adding negations at the end, but we will want to include them in the planner
         for (Negation negation : conjunction.negations()) {
             Negated negated = new Negated(negation);
-            plan.add(negated);
-            downstreamResolvers.put(negated, registry.negated(negated, conjunction));
+            try {
+                downstreamResolvers.put(negated, registry.negated(negated, conjunction));
+                negateds.add(negated);
+            } catch (GraknException e) {
+                terminate(e);
+            }
         }
+        if (!isTerminated()) isInitialised = true;
     }
 
-    private ResponseProducer mayUpdateAndGetResponseProducer(Request fromUpstream, int iteration) {
-        if (!responseProducers.containsKey(fromUpstream)) {
-            responseProducers.put(fromUpstream, responseProducerCreate(fromUpstream, iteration));
+    @Override
+    protected REQ_STATE requestStateCreate(Request fromUpstream, int iteration) {
+        LOG.debug("{}: Creating a new RequestState for request: {}", name(), fromUpstream);
+        Plans.Plan plan = plans.getOrCreate(fromUpstream.partialAnswer().conceptMap().concepts().keySet(), resolvables, negateds);
+        assert !plan.isEmpty();
+
+        REQ_STATE requestState = requestStateNew(iteration);
+        ResolverRegistry.ResolverView childResolver = downstreamResolvers.get(plan.get(0));
+        Partial<?> downstream = forDownstreamResolver(childResolver, fromUpstream.partialAnswer());
+        Request toDownstream = Request.create(driver(), childResolver.resolver(), downstream, 0);
+        requestState.addDownstreamProducer(toDownstream);
+        return requestState;
+    }
+
+    @Override
+    protected REQ_STATE requestStateReiterate(Request fromUpstream, REQ_STATE requestStatePrior,
+                                              int newIteration) {
+        assert newIteration > requestStatePrior.iteration();
+        LOG.debug("{}: Updating RequestState for iteration '{}'", name(), newIteration);
+        Plans.Plan plan = plans.getOrCreate(fromUpstream.partialAnswer().conceptMap().concepts().keySet(), resolvables, negateds);
+
+        assert !plan.isEmpty();
+        REQ_STATE requestStateNextIteration = requestStateForIteration(requestStatePrior, newIteration);
+        ResolverRegistry.ResolverView childResolver = downstreamResolvers.get(plan.get(0));
+        Partial<?> downstream = forDownstreamResolver(childResolver, fromUpstream.partialAnswer());
+        Request toDownstream = Request.create(driver(), childResolver.resolver(), downstream, 0);
+        requestStateNextIteration.addDownstreamProducer(toDownstream);
+        return requestStateNextIteration;
+    }
+
+    abstract REQ_STATE requestStateNew(int iteration);
+
+    abstract REQ_STATE requestStateForIteration(REQ_STATE requestStatePrior, int iteration);
+
+    Partial<?> forDownstreamResolver(ResolverRegistry.ResolverView resolver, Partial<?> partialAnswer) {
+        if (resolver.isMapped()) {
+            return partialAnswer.mapToDownstream(Mapping.of(resolver.asMapped().mapping()), resolver.resolver());
+        } else if (resolver.isFiltered()) {
+            return partialAnswer.filterToDownstream(resolver.asFiltered().filter(), resolver.resolver());
         } else {
-            ResponseProducer responseProducer = responseProducers.get(fromUpstream);
-            assert responseProducer.iteration() == iteration ||
-                    responseProducer.iteration() + 1 == iteration;
-
-            if (responseProducer.iteration() + 1 == iteration) {
-                // when the same request for the next iteration the first time, re-initialise required state
-                ResponseProducer responseProducerNextIter = responseProducerReiterate(fromUpstream, responseProducer, iteration);
-                responseProducers.put(fromUpstream, responseProducerNextIter);
-            }
+            throw GraknException.of(ILLEGAL_STATE);
         }
-        return responseProducers.get(fromUpstream);
     }
 
-    @Override
-    protected ResponseProducer responseProducerCreate(Request fromUpstream, int iteration) {
-        LOG.debug("{}: Creating a new ResponseProducer for request: {}", name(), fromUpstream);
+    class Plans {
 
-//        ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers = toUpstreamAnswers(
-//                fromUpstream, compatibleBoundAnswers(conceptMgr, conjunction, fromUpstream.partialAnswer().conceptMap()));
-//
-        ResponseProducer responseProducer = new ResponseProducer(Iterators.empty(), iteration);
-        assert !plan.isEmpty();
-        AnswerState.DownstreamVars.Mapped downstream = Initial.of(fromUpstream.partialAnswer().conceptMap())
-                .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping()));
-        Request toDownstream = Request.create(fromUpstream.path().append(downstreamResolvers.get(plan.get(0)).resolver(), downstream),
-                                              downstream, new ResolutionAnswer.Derivation(map()), 0);
-        responseProducer.addDownstreamProducer(toDownstream);
-        return responseProducer;
+        Map<Set<Variable.Retrievable>, Plan> plans;
+
+        public Plans() { this.plans = new HashMap<>(); }
+
+        public Plan getOrCreate(Set<Variable.Retrievable> boundVars, Set<Resolvable<?>> resolvable, Set<Negated> negations) {
+            return plans.computeIfAbsent(boundVars, (bound) -> {
+                List<Resolvable<?>> plan = planner.plan(resolvable, bound);
+                plan.addAll(negations);
+                return new Plan(plan);
+            });
+        }
+
+        public Plan get(Set<Variable.Retrievable> boundVars) {
+            assert plans.containsKey(boundVars);
+            return plans.get(boundVars);
+        }
+
+        public class Plan {
+            List<Resolvable<?>> plan;
+
+            private Plan(List<Resolvable<?>> plan) { this.plan = plan; }
+
+            public Resolvable<?> get(int index) {
+                return plan.get(index);
+            }
+
+            public Resolvable<?> next(int index) {
+                return plan.get(index + 1);
+            }
+
+            public boolean isLast(int index) {
+                return index == plan.size() - 1;
+            }
+
+            public boolean isEmpty() { return plan.isEmpty(); }
+        }
     }
 
-    @Override
-    protected ResponseProducer responseProducerReiterate(Request fromUpstream, ResponseProducer responseProducerPrevious,
-                                                         int newIteration) {
-        assert newIteration > responseProducerPrevious.iteration();
-        LOG.debug("{}: Updating ResponseProducer for iteration '{}'", name(), newIteration);
+    public static class Nested extends ConjunctionResolver<Nested, RequestState> {
 
-//        ResourceIterator<AnswerState.UpstreamVars.Derived> upstreamAnswers = toUpstreamAnswers(
-//                fromUpstream, compatibleBoundAnswers(conceptMgr, conjunction, fromUpstream.partialAnswer().conceptMap()));
-
-        ResponseProducer responseProducerNewIter = responseProducerPrevious.newIteration(Iterators.empty(), newIteration);
-        assert !plan.isEmpty();
-        AnswerState.DownstreamVars downstream = Initial.of(fromUpstream.partialAnswer().conceptMap())
-                .toDownstreamVars(Mapping.of(downstreamResolvers.get(plan.get(0)).mapping()));
-        Request toDownstream = Request.create(fromUpstream.path().append(downstreamResolvers.get(plan.get(0)).resolver(), fromUpstream.partialAnswer()),
-                                              downstream, new ResolutionAnswer.Derivation(map()), 0);
-        responseProducerNewIter.addDownstreamProducer(toDownstream);
-        return responseProducerNewIter;
-    }
-
-    public static class Nested extends ConjunctionResolver<Nested> {
-
-        public Nested(Actor<Nested> self, Conjunction conjunction, Actor<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr, Planner planner, boolean explanations) {
-            super(self, Nested.class.getSimpleName() + "(pattern: " + conjunction + ")", conjunction, resolutionRecorder,
-                  registry, traversalEngine, conceptMgr, logicMgr, planner, explanations);
+        public Nested(Driver<Nested> driver, Conjunction conjunction, Driver<ResolutionRecorder> resolutionRecorder,
+                      ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
+                      LogicManager logicMgr, Planner planner, boolean resolutionTracing) {
+            super(driver, Nested.class.getSimpleName() + "(pattern: " + conjunction + ")", conjunction,
+                  resolutionRecorder, registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
         }
 
         @Override
-        protected void nextAnswer(Request fromUpstream, ResponseProducer responseProducer, int iteration) {
-            if (responseProducer.hasUpstreamAnswer()) {
-                AnswerState.UpstreamVars.Derived upstreamAnswer = responseProducer.upstreamAnswers().next();
-                responseProducer.recordProduced(upstreamAnswer.withInitialFiltered());
-                ResolutionAnswer answer = new ResolutionAnswer(upstreamAnswer, conjunction.toString(),
-                                                               ResolutionAnswer.Derivation.EMPTY, self(), false);
-                respondToUpstream(Response.Answer.create(fromUpstream, answer), iteration);
+        protected void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
+            if (requestState.hasDownstreamProducer()) {
+                requestFromDownstream(requestState.nextDownstreamProducer(), fromUpstream, iteration);
             } else {
-                if (responseProducer.hasDownstreamProducer()) {
-                    requestFromDownstream(responseProducer.nextDownstreamProducer(), fromUpstream, iteration);
-                } else {
-                    respondToUpstream(new Response.Fail(fromUpstream), iteration);
-                }
+                failToUpstream(fromUpstream, iteration);
             }
         }
 
         @Override
-        protected ResourceIterator<AnswerState.UpstreamVars.Derived> toUpstreamAnswers(Request fromUpstream,
-                                                                                       ResourceIterator<ConceptMap> downstreamConceptMaps) {
-            return downstreamConceptMaps.map(conceptMap -> fromUpstream.partialAnswer().asIdentity()
-                    .aggregateToUpstream(conceptMap, null));
+        protected Optional<AnswerState> toUpstreamAnswer(Partial<?> fromDownstream) {
+            return Optional.of(fromDownstream.asFiltered().toUpstream());
         }
 
         @Override
-        protected Optional<AnswerState.UpstreamVars.Derived> toUpstreamAnswer(Request fromUpstream, ConceptMap downstreamConceptMap) {
-            return Optional.of(fromUpstream.partialAnswer().asIdentity().aggregateToUpstream(downstreamConceptMap, null));
+        boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
+            answerToUpstream(upstreamAnswer, fromUpstream, iteration);
+            return true;
         }
 
         @Override
-        protected void exception(Throwable e) {
-            LOG.error("Actor exception", e);
-            // TODO, once integrated into the larger flow of executing queries, kill the actors and report and exception to root
+        RequestState requestStateNew(int iteration) {
+            return new RequestState(iteration);
+        }
+
+        @Override
+        RequestState requestStateForIteration(RequestState requestStatePrior, int iteration) {
+            return new RequestState(iteration);
         }
     }
 }

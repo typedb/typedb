@@ -24,7 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-class PermutationIterator<T> extends AbstractResourceIterator<List<T>> {
+class PermutationIterator<T> extends AbstractFunctionalIterator<List<T>> {
 
     private final List<T> list;
     final int[] visitCounters;

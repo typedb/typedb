@@ -141,7 +141,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
     @Override
     public String toString() {
-        return String.format("(%s H[%s]T %s)", from.id(), symbol, to.id());
+        return String.format("(%s T[%s]H %s)", from.id(), symbol, to.id());
     }
 
     public static abstract class Directional<VERTEX_DIR_FROM extends PlannerVertex<?>, VERTEX_DIR_TO extends PlannerVertex<?>>

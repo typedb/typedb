@@ -19,8 +19,9 @@
 package grakn.core.query;
 
 import grabl.tracing.client.GrablTracingThreadStatic;
+import grakn.common.collection.Either;
 import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.ResourceIterator;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Context;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
@@ -40,7 +41,8 @@ import grakn.core.pattern.constraint.type.LabelConstraint;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.VariableRegistry;
 import grakn.core.reasoner.Reasoner;
-import graql.lang.pattern.variable.Reference;
+import grakn.core.traversal.common.Identifier;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import graql.lang.pattern.variable.UnboundVariable;
 import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlMatch;
@@ -68,7 +70,7 @@ import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.single;
 import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
 import static grakn.core.concurrent.common.Executors.PARALLELISATION_FACTOR;
-import static grakn.core.concurrent.common.Executors.asyncPool1;
+import static grakn.core.concurrent.common.Executors.async1;
 import static grakn.core.concurrent.producer.Producers.async;
 import static grakn.core.concurrent.producer.Producers.produce;
 import static grakn.core.query.QueryManager.PARALLELISATION_SPLIT_MIN;
@@ -89,7 +91,7 @@ public class Inserter {
         this.conceptMgr = conceptMgr;
         this.variables = variables;
         this.context = context;
-        this.context.producer(EXHAUSTIVE);
+        this.context.producer(Either.first(EXHAUSTIVE));
     }
 
     public static Inserter create(Reasoner reasoner, ConceptManager conceptMgr, GraqlInsert query, Context.Query context) {
@@ -112,14 +114,14 @@ public class Inserter {
         }
     }
 
-    public ResourceIterator<ConceptMap> execute() {
+    public FunctionalIterator<ConceptMap> execute() {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
             if (matcher != null) return context.options().parallel() ? executeParallel() : executeSerial();
             else return single(new Operation(conceptMgr, new ConceptMap(), variables).execute());
         }
     }
 
-    private ResourceIterator<ConceptMap> executeParallel() {
+    private FunctionalIterator<ConceptMap> executeParallel() {
         List<List<ConceptMap>> lists = matcher.execute(context).toLists(PARALLELISATION_SPLIT_MIN, PARALLELISATION_FACTOR);
         assert !lists.isEmpty();
         List<ConceptMap> inserts;
@@ -128,11 +130,11 @@ public class Inserter {
         ).toList();
         else inserts = produce(async(iterate(lists).map(list -> iterate(list).map(
                 matched -> new Operation(conceptMgr, matched, variables).execute()
-        )), PARALLELISATION_FACTOR), EXHAUSTIVE, asyncPool1()).toList();
+        )), PARALLELISATION_FACTOR), Either.first(EXHAUSTIVE), async1()).toList();
         return iterate(inserts);
     }
 
-    private ResourceIterator<ConceptMap> executeSerial() {
+    private FunctionalIterator<ConceptMap> executeSerial() {
         List<ConceptMap> matches = matcher.execute(context).toList();
         return iterate(iterate(matches).map(matched -> new Operation(conceptMgr, matched, variables).execute()).toList());
     }
@@ -144,7 +146,7 @@ public class Inserter {
         private final ConceptManager conceptMgr;
         private final ConceptMap matched;
         private final Set<ThingVariable> variables;
-        private final Map<Reference.Name, Thing> inserted;
+        private final Map<Retrievable, Thing> inserted;
 
         Operation(ConceptManager conceptMgr, ConceptMap matched, Set<ThingVariable> variables) {
             this.conceptMgr = conceptMgr;
@@ -156,7 +158,7 @@ public class Inserter {
         public ConceptMap execute() {
             try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
                 variables.forEach(this::insert);
-                matched.forEach((ref, concept) -> inserted.putIfAbsent(ref, concept.asThing()));
+                matched.forEach((id, concept) -> inserted.putIfAbsent(id, concept.asThing()));
                 return new ConceptMap(inserted);
             }
         }
@@ -171,23 +173,24 @@ public class Inserter {
 
         private Thing insert(ThingVariable var) {
             try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
+                assert var.id().isRetrievable(); // thing variables are always retrieved
                 Thing thing;
-                Reference ref = var.reference();
+                Retrievable id = var.id();
 
-                if (ref.isName() && (thing = inserted.get(ref.asName())) != null) return thing;
+                if (id.isName() && (thing = inserted.get(id)) != null) return thing;
                 else if (matchedContains(var) && var.constraints().isEmpty()) return matchedGet(var);
                 else validate(var);
 
                 if (matchedContains(var)) {
                     thing = matchedGet(var);
                     if (var.isa().isPresent() && !thing.getType().equals(getThingType(var.isa().get().type().label().get()))) {
-                        throw GraknException.of(THING_ISA_REINSERTION, ref, var.isa().get().type());
+                        throw GraknException.of(THING_ISA_REINSERTION, id, var.isa().get().type());
                     }
                 } else if (var.isa().isPresent()) thing = insertIsa(var.isa().get(), var);
-                else throw GraknException.of(THING_ISA_MISSING, ref);
+                else throw GraknException.of(THING_ISA_MISSING, id);
                 assert thing != null;
 
-                if (ref.isName()) inserted.put(ref.asName(), thing);
+                inserted.put(id, thing);
                 if (!var.relation().isEmpty()) insertRolePlayers(thing.asRelation(), var);
                 if (!var.has().isEmpty()) insertHas(thing, var.has());
                 return thing;
@@ -196,9 +199,9 @@ public class Inserter {
 
         private void validate(ThingVariable var) {
             try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "validate")) {
-                Reference ref = var.reference();
+                Identifier id = var.id();
                 if (var.iid().isPresent()) {
-                    throw GraknException.of(THING_IID_NOT_INSERTABLE, ref, var.iid().get());
+                    throw GraknException.of(THING_IID_NOT_INSERTABLE, id, var.iid().get());
                 } else if (!var.is().isEmpty()) {
                     throw GraknException.of(ILLEGAL_IS_CONSTRAINT, var, var.is().iterator().next());
                 }

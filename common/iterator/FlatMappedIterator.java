@@ -21,16 +21,16 @@ package grakn.core.common.iterator;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 
-class FlatMappedIterator<T, U> extends AbstractResourceIterator<U> {
+class FlatMappedIterator<T, U> extends AbstractFunctionalIterator<U> {
 
-    private final ResourceIterator<T> sourceIterator;
-    private ResourceIterator<U> currentIterator;
-    private final Function<T, ResourceIterator<U>> flatMappingFn;
+    private final FunctionalIterator<T> sourceIterator;
+    private FunctionalIterator<U> currentIterator;
+    private final Function<T, FunctionalIterator<U>> flatMappingFn;
     private State state;
 
     private enum State {INIT, ACTIVE, COMPLETED}
 
-    public FlatMappedIterator(ResourceIterator<T> iterator, Function<T, ResourceIterator<U>> flatMappingFn) {
+    public FlatMappedIterator(FunctionalIterator<T> iterator, Function<T, FunctionalIterator<U>> flatMappingFn) {
         this.sourceIterator = iterator;
         this.flatMappingFn = flatMappingFn;
         this.state = State.INIT;

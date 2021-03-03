@@ -22,12 +22,12 @@ import grakn.core.common.exception.GraknException;
 
 import java.util.function.Function;
 
-class ErrorHandledIterator<T> extends AbstractResourceIterator<T> {
+class ErrorHandledIterator<T> extends AbstractFunctionalIterator<T> {
 
-    private final ResourceIterator<T> iterator;
+    private final FunctionalIterator<T> iterator;
     private final Function<Exception, GraknException> exceptionFn;
 
-    public ErrorHandledIterator(ResourceIterator<T> iterator, Function<Exception, GraknException> exceptionFn) {
+    public ErrorHandledIterator(FunctionalIterator<T> iterator, Function<Exception, GraknException> exceptionFn) {
         this.iterator = iterator;
         this.exceptionFn = exceptionFn;
     }
