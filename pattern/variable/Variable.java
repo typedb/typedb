@@ -106,10 +106,6 @@ public abstract class Variable implements Pattern {
         return isSatisfiable;
     }
 
-    public void setSatisfiable(boolean isSatisfiable) {
-        this.isSatisfiable = isSatisfiable;
-    }
-
     @Override
     public String toString() {
         return reference().toString();

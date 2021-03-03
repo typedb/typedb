@@ -123,7 +123,6 @@ public class Conjunction implements Pattern, Cloneable {
                 else if (var.isType()) {
                     Optional<LabelConstraint> existingLabel = var.asType().label();
                     if (existingLabel.isPresent() && !existingLabel.get().properLabel().equals(boundVar.first())) {
-                        var.setSatisfiable(false);
                         this.setCoherent(false);
                     } else if (!existingLabel.isPresent()) {
                         var.asType().label(boundVar.first());
@@ -132,7 +131,6 @@ public class Conjunction implements Pattern, Cloneable {
                 } else if (var.isThing()) {
                     Optional<IIDConstraint> existingIID = var.asThing().iid();
                     if (existingIID.isPresent() && !Arrays.equals(existingIID.get().iid(), (boundVar.second()))) {
-                        var.setSatisfiable(false);
                         this.setCoherent(false);
                     } else {
                         var.asThing().iid(boundVar.second());
