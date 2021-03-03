@@ -490,10 +490,12 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new RuleWrite(4, "The rule '%'s contains a negation containing a disjunction, which is currently unsupported");
         public static final RuleWrite RULE_CAN_IMPLY_UNINSERTABLE_RESULTS =
                 new RuleWrite(5, "The rule '%s' when can imply the type combination '%s', which cannot be inserted into the rule's then.");
-        public static final RuleWrite RULE_CANNOT_BE_SATISFIED =
-                new RuleWrite(6, "The rule '%s' can never satisfy a type for the variable '%s' that can be inserted.");
+        public static final RuleWrite RULE_WHEN_CANNOT_BE_SATISFIED =
+                new RuleWrite(6, "The rule '%s' has a when clause '%s' that can never be satisfied in the current schema.");
+        public static final RuleWrite RULE_THEN_CANNOT_BE_SATISFIED =
+                new RuleWrite(7, "The rule '%s' has a then clause '%s' that can never be satisfied in the current schema.");
         public static final RuleWrite MAX_RULE_REACHED =
-                new RuleWrite(7, "The maximum number of rules has been reached: '%s'");
+                new RuleWrite(8, "The maximum number of rules has been reached: '%s'");
 
         private static final String codePrefix = "RUW";
         private static final String messagePrefix = "Invalid Rule Write";

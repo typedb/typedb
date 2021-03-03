@@ -417,8 +417,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
             assert generating().isPresent();
             Variable generatedRelation = generating().get();
             Set<Label> relationTypes = generatedRelation.resolvedTypes();
-            // may never be empty as its always known to be at least a relation
-            assert generatedRelation.isSatisfiable();
+            assert !relationTypes.isEmpty();
 
             Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
             relationTypes.forEach(type -> logicMgr.rulesConcluding(type)
@@ -557,8 +556,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
             assert generating().isPresent();
             Variable generatedAttribute = generating().get();
             Set<Label> attributeTypes = generatedAttribute.resolvedTypes();
-            // may never be empty as its always known to be at least an attribute
-            assert generatedAttribute.isSatisfiable();
+            assert !generatedAttribute.resolvedTypes().isEmpty();
 
             Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
             attributeTypes.forEach(type -> logicMgr.rulesConcludingHas(type)
@@ -664,24 +662,15 @@ public abstract class Concludable extends Resolvable<Conjunction> {
             assert generating().isPresent();
             Variable generated = generating().get();
             Set<Label> types = generated.resolvedTypes();
-            assert generated.isSatisfiable();
+            assert !types.isEmpty();
 
             Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
-            if (types.isEmpty()) {
-                logicMgr.rules()
-                        .forEachRemaining(rule -> unify(rule.conclusion(), conceptMgr)
-                                .forEachRemaining(unifier -> {
-                                    applicableRules.putIfAbsent(rule, new HashSet<>());
-                                    applicableRules.get(rule).add(unifier);
-                                }));
-            } else {
-                types.forEach(type -> logicMgr.rulesConcluding(type)
-                        .forEachRemaining(rule -> unify(rule.conclusion(), conceptMgr)
-                                .forEachRemaining(unifier -> {
-                                    applicableRules.putIfAbsent(rule, new HashSet<>());
-                                    applicableRules.get(rule).add(unifier);
-                                })));
-            }
+            types.forEach(type -> logicMgr.rulesConcluding(type)
+                    .forEachRemaining(rule -> unify(rule.conclusion(), conceptMgr)
+                            .forEachRemaining(unifier -> {
+                                applicableRules.putIfAbsent(rule, new HashSet<>());
+                                applicableRules.get(rule).add(unifier);
+                            })));
 
             return applicableRules;
         }
@@ -772,8 +761,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
             assert generating().isPresent();
             Variable generatedAttr = generating().get();
             Set<Label> attributeTypes = generatedAttr.resolvedTypes();
-            // may never be empty as its always known to be at least an attribute
-            assert generatedAttr.isSatisfiable();
+            assert !attributeTypes.isEmpty();
 
             Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
             attributeTypes.forEach(type -> logicMgr.rulesConcluding(type)
@@ -800,6 +788,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         private final Set<Concludable> concludables = new HashSet<>();
 
         Extractor(Conjunction conjunction) {
+            assert conjunction.isCoherent();
             Set<Constraint> constraints = conjunction.variables().stream().flatMap(variable -> variable.constraints().stream())
                     .collect(toSet());
             constraints.stream().filter(Constraint::isThing).map(Constraint::asThing).filter(ThingConstraint::isRelation)

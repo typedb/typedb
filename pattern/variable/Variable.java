@@ -37,14 +37,12 @@ public abstract class Variable implements Pattern {
 
     private final Set<Label> resolvedTypes;
     private final int hash;
-    private boolean isSatisfiable;
     final Identifier.Variable identifier;
 
     Variable(Identifier.Variable identifier) {
         this.identifier = identifier;
         this.hash = Objects.hash(identifier);
         this.resolvedTypes = new HashSet<>();
-        this.isSatisfiable = true;
     }
 
     public abstract Set<? extends Constraint> constraints();
@@ -81,10 +79,6 @@ public abstract class Variable implements Pattern {
         resolvedTypes.add(label);
     }
 
-    public void clearResolvedTypes() {
-        resolvedTypes.clear();
-    }
-
     public void addResolvedTypes(Set<Label> labels) {
         resolvedTypes.addAll(labels);
     }
@@ -100,14 +94,6 @@ public abstract class Variable implements Pattern {
 
     public Set<Label> resolvedTypes() {
         return resolvedTypes;
-    }
-
-    public boolean isSatisfiable() {
-        return isSatisfiable;
-    }
-
-    public void setSatisfiable(boolean isSatisfiable) {
-        this.isSatisfiable = isSatisfiable;
     }
 
     @Override

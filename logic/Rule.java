@@ -56,7 +56,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
@@ -65,8 +64,9 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.INVALID_NEGATION;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.INVALID_NEGATION_CONTAINS_DISJUNCTION;
-import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CANNOT_BE_SATISFIED;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CAN_IMPLY_UNINSERTABLE_RESULTS;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_CANNOT_BE_SATISFIED;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CANNOT_BE_SATISFIED;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static graql.lang.common.GraqlToken.Char.COLON;
 import static graql.lang.common.GraqlToken.Char.CURLY_CLOSE;
@@ -171,10 +171,8 @@ public class Rule {
     }
 
     public void validateSatisfiable() {
-        Stream.concat(then.variables().stream(), when.variables().stream()).forEach(variable -> {
-            if (!variable.isSatisfiable())
-                throw GraknException.of(RULE_CANNOT_BE_SATISFIED, structure.label(), variable.reference().toString());
-        });
+        if (!when.isCoherent()) throw GraknException.of(RULE_WHEN_CANNOT_BE_SATISFIED, structure.label(), when);
+        if (!then.isCoherent()) throw GraknException.of(RULE_THEN_CANNOT_BE_SATISFIED, structure.label(), then);
     }
 
     public void validateInsertable(LogicManager logicMgr) {
@@ -198,19 +196,12 @@ public class Rule {
      * Remove type hints in the `then` pattern that are not valid in the `when` pattern
      */
     private void pruneThenResolvedTypes() {
-        // TODO: name is inconsistent with elsewhere
         then.variables().stream().filter(variable -> variable.id().isName())
-                .forEach(thenVar ->
-                                 when.variables().stream()
-                                         .filter(whenVar -> whenVar.id().equals(thenVar.id()))
-                                         .filter(whenVar -> !(whenVar.isSatisfiable() && whenVar.resolvedTypes().isEmpty()))
-                                         .findFirst().ifPresent(whenVar -> {
-                                     if (thenVar.resolvedTypes().isEmpty() && thenVar.isSatisfiable()) {
-                                         thenVar.addResolvedTypes(whenVar.resolvedTypes());
-                                     } else thenVar.retainResolvedTypes(whenVar.resolvedTypes());
-                                     if (thenVar.resolvedTypes().isEmpty()) thenVar.setSatisfiable(false);
-                                 })
-                );
+                .forEach(thenVar -> {
+                    Variable whenVar = when.variable(thenVar.id());
+                    thenVar.retainResolvedTypes(whenVar.resolvedTypes());
+                    if (thenVar.resolvedTypes().isEmpty()) then.setCoherent(false);
+                });
     }
 
     private Conjunction whenPattern(graql.lang.pattern.Conjunction<? extends Pattern> conjunction, LogicManager logicMgr) {
