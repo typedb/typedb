@@ -203,8 +203,7 @@ public class QueryTest {
                     // check total count
                     assertEquals(15 - 5, tx.logic().rules().toList().size());
 
-                    // ensure that we can't trigger a rule
-
+                    // a query that used to trigger a rule should not cause an error
                     List<ConceptMap> answers = tx.query().match(Graql.parseQuery("match $x isa repo-fork;").asMatch()).toList();
                 }
             }
