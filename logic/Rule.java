@@ -196,7 +196,6 @@ public class Rule {
      * Remove type hints in the `then` pattern that are not valid in the `when` pattern
      */
     private void pruneThenResolvedTypes() {
-        // TODO: name is inconsistent with elsewhere
         then.variables().stream().filter(variable -> variable.id().isName())
                 .forEach(thenVar -> {
                     Variable whenVar = when.variable(thenVar.id());
