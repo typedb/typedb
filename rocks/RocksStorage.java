@@ -57,6 +57,7 @@ public abstract class RocksStorage implements Storage {
 
     protected final ConcurrentSet<RocksIterator<?>> iterators;
     protected final Transaction storageTransaction;
+    protected final ReadWriteLock readWriteLock;
     protected final ReadOptions readOptions;
     protected final boolean isReadOnly;
 
@@ -75,6 +76,7 @@ public abstract class RocksStorage implements Storage {
         storageTransaction = rocksDB.beginTransaction(writeOptions, transactionOptions);
         snapshot = storageTransaction.getSnapshot();
         readOptions = new ReadOptions().setSnapshot(snapshot);
+        readWriteLock = new StampedLock().asReadWriteLock();
         isOpen = new AtomicBoolean(true);
     }
 
@@ -152,24 +154,26 @@ public abstract class RocksStorage implements Storage {
 
     @Override
     public void close() {
-        if (isOpen.compareAndSet(true, false)) {
-            iterators.parallelStream().forEach(RocksIterator::close);
-            recycled.forEach(AbstractImmutableNativeReference::close);
-            snapshot.close();
-            storageTransaction.close();
-            transactionOptions.close();
-            readOptions.close();
-            writeOptions.close();
+        try {
+            readWriteLock.writeLock().lock();
+            if (isOpen.compareAndSet(true, false)) {
+                iterators.parallelStream().forEach(RocksIterator::close);
+                recycled.forEach(AbstractImmutableNativeReference::close);
+                snapshot.close();
+                storageTransaction.close();
+                transactionOptions.close();
+                readOptions.close();
+                writeOptions.close();
+            }
+        } finally {
+            readWriteLock.writeLock().unlock();
         }
     }
 
     static class Cache extends RocksStorage {
 
-        protected final ReadWriteLock readWriteLock;
-
         public Cache(OptimisticTransactionDB rocksDB) {
             super(rocksDB, true);
-            readWriteLock = new StampedLock().asReadWriteLock();
         }
 
         @Override
@@ -295,15 +299,6 @@ public abstract class RocksStorage implements Storage {
             storageTransaction.rollback();
         }
 
-        @Override
-        public void close() {
-            try {
-                readWriteLock.writeLock().lock();
-                super.close();
-            } finally {
-                readWriteLock.writeLock().unlock();
-            }
-        }
     }
 
     public static class Schema extends TransactionBounded implements Storage.Schema {
