@@ -43,6 +43,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 import static grakn.core.test.integration.util.Util.assertNotNulls;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -174,7 +175,6 @@ public class QueryTest {
                     query = Graql.parseQuery(queryString);
                     transaction.query().undefine(query);
 
-
                     transaction.commit();
                 }
 
@@ -202,6 +202,10 @@ public class QueryTest {
 
                     // check total count
                     assertEquals(15 - 5, tx.logic().rules().toList().size());
+
+                    // ensure that we can't trigger a rule
+
+                    List<ConceptMap> answers = tx.query().match(Graql.parseQuery("match $x isa repo-fork;").asMatch()).toList();
                 }
             }
         }
