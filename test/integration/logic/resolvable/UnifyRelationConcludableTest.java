@@ -104,6 +104,8 @@ public class UnifyRelationConcludableTest {
                                                        "part-time-employment sub employment," +
                                                        "    relates part-time-employee as employee," +
                                                        "    relates restriction;" +
+                                                       "restricted-entity sub entity, " +
+                                                       "    plays part-time-employment:restriction;" +
                                                        "friendship sub relation," +
                                                        "    relates friend;" +
                                                        "name sub attribute, value string, abstract;" +
