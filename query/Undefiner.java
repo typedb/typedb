@@ -160,7 +160,7 @@ public class Undefiner {
 
     private void undefineSub(ThingType thingType, SubConstraint subConstraint) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefine_sub")) {
-            if (thingType instanceof RoleType) {
+            if (thingType.isRoleType()) {
                 throw GraknException.of(ROLE_DEFINED_OUTSIDE_OF_RELATION, thingType.getLabel());
             }
             ThingType supertype = getThingType(subConstraint.type().label().get());
@@ -169,7 +169,7 @@ public class Undefiner {
             } else if (thingType.getSupertypes().noneMatch(t -> t.equals(supertype))) {
                 throw GraknException.of(INVALID_UNDEFINE_SUB, thingType.getLabel(), supertype.getLabel());
             }
-            if (thingType instanceof RelationType) {
+            if (thingType.isRelationType()) {
                 variables.stream().filter(v -> v.label().isPresent() && v.label().get().scope().isPresent() &&
                         v.label().get().scope().get().equals(thingType.getLabel().name())).forEach(undefined::add);
             }

@@ -87,7 +87,7 @@ public class SchemaExporter {
                                      attributeType.getSupertype().getLabel().name()))
                 .append(COMMA_NEWLINE_INDENT)
                 .append(String.format("value %s", getValueTypeString(attributeType.getValueType())));
-        if (attributeType instanceof AttributeType.String) {
+        if (attributeType.isString()) {
             java.util.regex.Pattern regex = attributeType.asString().getRegex();
             if (regex != null) {
                 builder.append(COMMA_NEWLINE_INDENT)

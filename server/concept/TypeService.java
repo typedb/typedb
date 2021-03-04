@@ -218,11 +218,11 @@ public class TypeService {
     private void setSupertype(Type type, ConceptProto.Type supertype, Transaction.Req request) {
         Type sup = getThingType(supertype);
 
-        if (type instanceof EntityType) {
+        if (type.isEntityType()) {
             type.asEntityType().setSupertype(sup.asEntityType());
-        } else if (type instanceof RelationType) {
+        } else if (type.isRelationType()) {
             type.asRelationType().setSupertype(sup.asRelationType());
-        } else if (type instanceof AttributeType) {
+        } else if (type.isAttributeType()) {
             type.asAttributeType().setSupertype(sup.asAttributeType());
         } else {
             throw GraknException.of(ILLEGAL_SUPERTYPE_ENCODING, className(type.getClass()));

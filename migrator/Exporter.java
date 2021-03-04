@@ -177,15 +177,15 @@ public class Exporter implements Migrator {
 
     private DataProto.ValueObject.Builder readValue(Attribute attribute) {
         DataProto.ValueObject.Builder valueObject = DataProto.ValueObject.newBuilder();
-        if (attribute instanceof Attribute.String) {
+        if (attribute.isString()) {
             valueObject.setString(attribute.asString().getValue());
-        } else if (attribute instanceof Attribute.Boolean) {
+        } else if (attribute.isBoolean()) {
             valueObject.setBoolean(attribute.asBoolean().getValue());
-        } else if (attribute instanceof Attribute.Long) {
+        } else if (attribute.isLong()) {
             valueObject.setLong(attribute.asLong().getValue());
-        } else if (attribute instanceof Attribute.Double) {
+        } else if (attribute.isDouble()) {
             valueObject.setDouble(attribute.asDouble().getValue());
-        } else if (attribute instanceof Attribute.DateTime) {
+        } else if (attribute.isDateTime()) {
             valueObject.setDatetime(attribute.asDateTime().getValue().atZone(ZoneId.of("Z")).toInstant().toEpochMilli());
         } else {
             throw GraknException.of(ILLEGAL_STATE);

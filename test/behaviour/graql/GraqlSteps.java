@@ -550,7 +550,7 @@ public class GraqlSteps {
 
         @Override
         public boolean check(Concept concept) {
-            if (concept instanceof Type) {
+            if (concept.isType()) {
                 return label.equals(concept.asType().getLabel().toString());
             }
 
@@ -580,7 +580,7 @@ public class GraqlSteps {
         }
 
         public boolean check(Concept concept) {
-            if (!(concept instanceof Attribute)) {
+            if (!concept.isAttribute()) {
                 return false;
             }
 
@@ -621,7 +621,7 @@ public class GraqlSteps {
 
         @Override
         public boolean check(Concept concept) {
-            if (!(concept instanceof Thing)) { return false; }
+            if (!concept.isThing()) { return false; }
 
             Set<Attribute> keys = concept.asThing().getHas(true).collect(Collectors.toSet());
 
