@@ -311,7 +311,8 @@ public abstract class RocksStorage implements Storage {
         public void put(byte[] key, byte[] value) {
             assert isOpen() && !isReadOnly;
             try {
-                if (transaction.isOpen()) readWriteLock.writeLock().lock();
+                readWriteLock.writeLock().lock();
+                if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
                 storageTransaction.put(key, value);
             } catch (RocksDBException e) {
                 throw exception(e);
@@ -324,7 +325,8 @@ public abstract class RocksStorage implements Storage {
         public void putUntracked(byte[] key, byte[] value) {
             assert isOpen() && !isReadOnly;
             try {
-                if (transaction.isOpen()) readWriteLock.writeLock().lock();
+                readWriteLock.writeLock().lock();
+                if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
                 storageTransaction.putUntracked(key, value);
             } catch (RocksDBException e) {
                 throw exception(e);
@@ -354,6 +356,7 @@ public abstract class RocksStorage implements Storage {
             assert isOpen() && !isReadOnly;
             try {
                 readWriteLock.readLock().lock();
+                if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
                 storageTransaction.put(key, value);
             } catch (RocksDBException e) {
                 throw exception(e);
@@ -367,6 +370,7 @@ public abstract class RocksStorage implements Storage {
             assert isOpen() && !isReadOnly;
             try {
                 readWriteLock.readLock().lock();
+                if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
                 storageTransaction.putUntracked(key, value);
             } catch (RocksDBException e) {
                 throw exception(e);
@@ -380,6 +384,7 @@ public abstract class RocksStorage implements Storage {
             assert isOpen() && !isReadOnly;
             try {
                 readWriteLock.readLock().lock();
+                if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
                 storageTransaction.mergeUntracked(key, value);
             } catch (RocksDBException e) {
                 throw exception(e);
