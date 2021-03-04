@@ -29,7 +29,7 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
     private final Driver<ACTOR> driver;
     private final String name;
 
-    public static <A extends Actor<A>> Driver<A> driver(Function<Driver<A>, A> actorFn, ActorExecutorService service) {
+    public static <A extends Actor<A>> Driver<A> driver(Function<Driver<A>, A> actorFn, ActorExecutorGroup service) {
         return new Driver<>(actorFn, service);
     }
 
@@ -56,10 +56,10 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
                         "Are you trying to send a message to yourself within the constructor?";
 
         private ACTOR actor;
-        private final ActorExecutorService executorService;
+        private final ActorExecutorGroup executorService;
         private final ActorExecutor executor;
 
-        private Driver(Function<Driver<ACTOR>, ACTOR> actorFn, ActorExecutorService executorService) {
+        private Driver(Function<Driver<ACTOR>, ACTOR> actorFn, ActorExecutorGroup executorService) {
             this.actor = actorFn.apply(this);
             this.executorService = executorService;
             this.executor = executorService.nextExecutor();
@@ -104,7 +104,7 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
             return executor.schedule(() -> consumer.accept(actor), scheduleMillis, actor::exception);
         }
 
-        public ActorExecutorService executorService() {
+        public ActorExecutorGroup executorService() {
             return executorService;
         }
 

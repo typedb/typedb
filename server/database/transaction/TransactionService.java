@@ -15,20 +15,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.rpc;
+package grakn.core.server.database.transaction;
 
-import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
-import grakn.core.server.rpc.concept.ConceptManagerHandler;
-import grakn.core.server.rpc.concept.ThingHandler;
-import grakn.core.server.rpc.concept.TypeHandler;
-import grakn.core.server.rpc.logic.LogicManagerHandler;
-import grakn.core.server.rpc.logic.RuleHandler;
-import grakn.core.server.rpc.query.QueryHandler;
+import grakn.core.server.database.concept.ConceptManagerService;
+import grakn.core.server.database.concept.ThingService;
+import grakn.core.server.database.concept.TypeService;
+import grakn.core.server.database.logic.LogicManagerService;
+import grakn.core.server.database.logic.RuleService;
+import grakn.core.server.database.query.QueryService;
+import grakn.core.server.database.session.SessionService;
 import grakn.protocol.TransactionProto;
 
 import java.time.Duration;
@@ -39,92 +39,170 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static grakn.core.common.exception.ErrorMessage.Server.DUPLICATE_REQUEST;
 import static grakn.core.common.exception.ErrorMessage.Server.ITERATION_WITH_UNKNOWN_ID;
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
 import static grakn.core.common.exception.ErrorMessage.Transaction.BAD_TRANSACTION_TYPE;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_ALREADY_OPENED;
-import static grakn.core.server.rpc.common.RequestReader.setDefaultOptions;
-import static grakn.core.server.rpc.common.ResponseBuilder.Transaction.continueRes;
-import static grakn.core.server.rpc.common.ResponseBuilder.Transaction.done;
+import static grakn.core.server.database.common.RequestReader.setDefaultOptions;
+import static grakn.core.server.database.common.ResponseBuilder.Transaction.continueRes;
+import static grakn.core.server.database.common.ResponseBuilder.Transaction.done;
 
-public class TransactionRPC {
+public class TransactionService {
 
     private final Grakn.Transaction transaction;
-    private final SessionRPC sessionRPC;
+    private final SessionService sessionSrv;
     private final TransactionStream stream;
     private final Iterators iterators;
-    private final RequestHandlers handlers;
+    private final Services services;
     private final AtomicBoolean isOpen;
+    private final AtomicBoolean commitRequested;
+    private final AtomicInteger ongoingRequests;
+    private volatile String commitRequestID;
 
-    TransactionRPC(SessionRPC sessionRPC, TransactionStream stream, TransactionProto.Transaction.Open.Req request) {
-        this.sessionRPC = sessionRPC;
+    public TransactionService(SessionService sessionSrv, TransactionStream stream, TransactionProto.Transaction.Open.Req request) {
+        this.sessionSrv = sessionSrv;
         this.stream = stream;
 
         Arguments.Transaction.Type transactionType = Arguments.Transaction.Type.of(request.getType().getNumber());
         if (transactionType == null) throw GraknException.of(BAD_TRANSACTION_TYPE, request.getType());
-        Options.Transaction options = setDefaultOptions(new Options.Transaction().parent(sessionRPC.options()), request.getOptions());
+        Options.Transaction options = setDefaultOptions(new Options.Transaction().parent(sessionSrv.options()), request.getOptions());
 
-        transaction = sessionRPC.session().transaction(transactionType, options);
+        transaction = sessionSrv.session().transaction(transactionType, options);
         isOpen = new AtomicBoolean(true);
         iterators = new Iterators();
-        handlers = new RequestHandlers();
+        services = new Services();
+        commitRequested = new AtomicBoolean(false);
+        ongoingRequests = new AtomicInteger(0);
     }
 
     public Context.Transaction context() {
         return transaction.context();
     }
 
-    SessionRPC sessionRPC() {
-        return sessionRPC;
+    Event event(TransactionProto.Transaction.Req request) {
+        register(request);
+        return new Event(this, request);
     }
 
-    void handleRequest(TransactionProto.Transaction.Req request) {
+    private void register(TransactionProto.Transaction.Req request) {
         try {
             switch (request.getReqCase()) {
-                case CONTINUE:
-                    iterators.continueIteration(request.getId());
-                    return;
                 case OPEN_REQ:
                     throw GraknException.of(TRANSACTION_ALREADY_OPENED);
                 case COMMIT_REQ:
-                    commit(request.getId());
-                    return;
+                    commitRequestID = request.getId();
+                    commitRequested.set(true);
+                    break;
+                case CONTINUE:
                 case ROLLBACK_REQ:
-                    rollback(request.getId());
-                    return;
                 case QUERY_REQ:
-                    try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread("query")) {
-                        handlers.query.handleRequest(request);
-                    }
-                    return;
                 case CONCEPT_MANAGER_REQ:
-                    handlers.conceptMgr.handleRequest(request);
-                    return;
                 case LOGIC_MANAGER_REQ:
-                    handlers.logicMgr.handleRequest(request);
-                    return;
                 case THING_REQ:
-                    handlers.thing.handleRequest(request);
-                    return;
                 case TYPE_REQ:
-                    handlers.type.handleRequest(request);
-                    return;
                 case RULE_REQ:
-                    handlers.rule.handleRequest(request);
-                    return;
-//            case EXPLANATION_REQ:
-//                explanation(request.getExplanationReq());
-//                return;
+                    ongoingRequests.incrementAndGet();
+                    break;
                 default:
                 case REQ_NOT_SET:
                     throw GraknException.of(UNKNOWN_REQUEST_TYPE);
             }
         } catch (Exception ex) {
-            closeWithError(ex);
+            close(ex);
+        }
+    }
+
+    void execute(TransactionProto.Transaction.Req request) {
+        try {
+            switch (request.getReqCase()) {
+                case REQ_NOT_SET:
+                    throw GraknException.of(UNKNOWN_REQUEST_TYPE);
+                case OPEN_REQ:
+                    throw GraknException.of(TRANSACTION_ALREADY_OPENED);
+                case COMMIT_REQ:
+                    mayExecuteCommit();
+                    break;
+                default:
+                    executeRequestAndMayCommit(request);
+            }
+        } catch (Exception ex) {
+            close(ex);
+        }
+    }
+
+    private void mayExecuteCommit() {
+        if (ongoingRequests.get() == 0 && commitRequested.compareAndSet(true, false)) commit();
+    }
+
+    private void executeRequestAndMayCommit(TransactionProto.Transaction.Req request) {
+        executeRequest(request);
+        if (ongoingRequests.decrementAndGet() == 0 && commitRequested.compareAndSet(true, false)) commit();
+    }
+
+    private void executeRequest(TransactionProto.Transaction.Req request) {
+        switch (request.getReqCase()) {
+            case CONTINUE:
+                iterators.continueIteration(request.getId());
+                break;
+            case ROLLBACK_REQ:
+                rollback(request.getId());
+                break;
+            case QUERY_REQ:
+                services.query.execute(request);
+                break;
+            case CONCEPT_MANAGER_REQ:
+                services.conceptMgr.execute(request);
+                break;
+            case LOGIC_MANAGER_REQ:
+                services.logicMgr.execute(request);
+                break;
+            case THING_REQ:
+                services.thing.execute(request);
+                break;
+            case TYPE_REQ:
+                services.type.execute(request);
+                break;
+            case RULE_REQ:
+                services.rule.execute(request);
+                break;
+            default:
+                throw GraknException.of(ILLEGAL_ARGUMENT);
+        }
+    }
+
+    private void commit() {
+        transaction.commit();
+        respond(TransactionProto.Transaction.Res.newBuilder().setId(commitRequestID).setCommitRes(
+                TransactionProto.Transaction.Commit.Res.getDefaultInstance()
+        ).build());
+        close();
+    }
+
+    private void rollback(String requestId) {
+        transaction.rollback();
+        respond(TransactionProto.Transaction.Res.newBuilder().setId(requestId).setRollbackRes(
+                TransactionProto.Transaction.Rollback.Res.getDefaultInstance()
+        ).build());
+    }
+
+    public void close() {
+        if (isOpen.compareAndSet(true, false)) {
+            transaction.close();
+            stream.close();
+            sessionSrv.remove(this);
+        }
+    }
+
+    public void close(Throwable error) {
+        if (isOpen.compareAndSet(true, false)) {
+            transaction.close();
+            stream.close(error);
+            sessionSrv.remove(this);
         }
     }
 
@@ -143,45 +221,46 @@ public class TransactionRPC {
                           context.options().responseBatchSize(), responseBuilderFn);
     }
 
-    private void commit(String requestId) {
-        transaction.commit();
-        respond(TransactionProto.Transaction.Res.newBuilder().setId(requestId).setCommitRes(
-                TransactionProto.Transaction.Commit.Res.getDefaultInstance()).build());
-        close();
-    }
+    private class Services {
 
-    private void rollback(String requestId) {
-        transaction.rollback();
-        respond(TransactionProto.Transaction.Res.newBuilder().setId(requestId).setRollbackRes(
-                TransactionProto.Transaction.Rollback.Res.getDefaultInstance()).build());
-    }
+        private final ConceptManagerService conceptMgr;
+        private final LogicManagerService logicMgr;
+        private final QueryService query;
+        private final ThingService thing;
+        private final TypeService type;
+        private final RuleService rule;
 
-    void close() {
-        if (isOpen.compareAndSet(true, false)) {
-            stream.close();
-            transaction.close();
-            sessionRPC.remove(this);
+        private Services() {
+            conceptMgr = new ConceptManagerService(TransactionService.this, transaction.concepts());
+            logicMgr = new LogicManagerService(TransactionService.this, transaction.logic());
+            query = new QueryService(TransactionService.this, transaction.query());
+            thing = new ThingService(TransactionService.this, transaction.concepts());
+            type = new TypeService(TransactionService.this, transaction.concepts());
+            rule = new RuleService(TransactionService.this, transaction.logic());
         }
     }
 
-    void closeWithError(Throwable error) {
-        if (isOpen.compareAndSet(true, false)) {
-            stream.closeWithError(error);
-            transaction.close();
-            sessionRPC.remove(this);
+    static class Event {
+
+        private final TransactionService transactionSrv;
+        private final TransactionProto.Transaction.Req request;
+
+        private Event(TransactionService transactionSrv, TransactionProto.Transaction.Req request) {
+            this.transactionSrv = transactionSrv;
+            this.request = request;
+        }
+
+        TransactionService transactionService() {
+            return transactionSrv;
+        }
+
+        TransactionProto.Transaction.Req request() {
+            return request;
         }
     }
-
-//    /**
-//     * Reconstruct local ConceptMap and return the explanation associated with the ConceptMap provided by the user
-//     */
-//    private void explanation(AnswerProto.Explanation.Req explanationReq) {
-//        responseSender.onError(Status.UNIMPLEMENTED.asException());
-//        // TODO: implement TransactionListener.explanation()
-//    }
 
     /**
-     * Contains a mutable map of iterators of TransactionProto.Transaction.Res for gRPC. These iterators are used for returning
+     * Contains a mutable map of iterators of TransactionProto.Transaction.Res for GRPC. These iterators are used for returning
      * lazy, streaming responses such as for Graql query results.
      *
      * The iterators operate by batching results to reduce total round-trips.
@@ -233,6 +312,7 @@ public class TransactionRPC {
         }
 
         private class BatchingIterator<T> {
+
             private static final int MAX_LATENCY_MILLIS = 3000;
 
             private final String id;
@@ -249,6 +329,7 @@ public class TransactionRPC {
                 this.latencyMillis = Math.min(latencyMillis, MAX_LATENCY_MILLIS);
             }
 
+            // TODO: this needs to broken into multiple functions
             synchronized void iterateBatch() {
                 List<T> answers = new ArrayList<>();
                 Instant startTime = Instant.now();
@@ -296,24 +377,6 @@ public class TransactionRPC {
                     respond(done(id));
                 }
             }
-        }
-    }
-
-    private class RequestHandlers {
-        private final ConceptManagerHandler conceptMgr;
-        private final LogicManagerHandler logicMgr;
-        private final QueryHandler query;
-        private final ThingHandler thing;
-        private final TypeHandler type;
-        private final RuleHandler rule;
-
-        private RequestHandlers() {
-            conceptMgr = new ConceptManagerHandler(TransactionRPC.this, transaction.concepts());
-            logicMgr = new LogicManagerHandler(TransactionRPC.this, transaction.logic());
-            query = new QueryHandler(TransactionRPC.this, transaction.query());
-            thing = new ThingHandler(TransactionRPC.this, transaction.concepts());
-            type = new TypeHandler(TransactionRPC.this, transaction.concepts());
-            rule = new RuleHandler(TransactionRPC.this, transaction.logic());
         }
     }
 }

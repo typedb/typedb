@@ -20,7 +20,7 @@ package grakn.core.concurrent.common;
 
 import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.common.exception.GraknException;
-import grakn.core.concurrent.actor.ActorExecutorService;
+import grakn.core.concurrent.actor.ActorExecutorGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,14 +50,14 @@ public class Executors {
     private final ExecutorService asyncExecutorService1;
     private final ExecutorService asyncExecutorService2;
     private final NioEventLoopGroup networkExecutorService;
-    private final ActorExecutorService actorExecutorService;
+    private final ActorExecutorGroup actorExecutorService;
     private final ScheduledThreadPoolExecutor scheduledThreadPool;
 
     private Executors(int parallelisation) {
         mainExecutorService = newFixedThreadPool(parallelisation, NamedThreadFactory.create(GRAKN_CORE_MAIN_THREAD_NAME));
         asyncExecutorService1 = newFixedThreadPool(parallelisation, NamedThreadFactory.create(GRAKN_CORE_ASYNC_THREAD_1_NAME));
         asyncExecutorService2 = newFixedThreadPool(parallelisation, NamedThreadFactory.create(GRAKN_CORE_ASYNC_THREAD_2_NAME));
-        actorExecutorService = new ActorExecutorService(parallelisation, NamedThreadFactory.create(GRAKN_CORE_ACTOR_THREAD_NAME));
+        actorExecutorService = new ActorExecutorGroup(parallelisation, NamedThreadFactory.create(GRAKN_CORE_ACTOR_THREAD_NAME));
         networkExecutorService = new NioEventLoopGroup(parallelisation, NamedThreadFactory.create(GRAKN_CORE_NETWORK_THREAD_NAME));
         scheduledThreadPool = new ScheduledThreadPoolExecutor(GRAKN_CORE_SCHEDULED_THREAD_SIZE,
                                                               NamedThreadFactory.create(GRAKN_CORE_SCHEDULED_THREAD_NAME));
@@ -99,7 +99,7 @@ public class Executors {
         return singleton.scheduledThreadPool;
     }
 
-    public static ActorExecutorService actor() {
+    public static ActorExecutorGroup actor() {
         assert isInitialised();
         return singleton.actorExecutorService;
     }

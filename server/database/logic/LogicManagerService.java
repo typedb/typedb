@@ -15,15 +15,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.rpc.logic;
+package grakn.core.server.database.logic;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
-import grakn.core.server.rpc.TransactionRPC;
-import grakn.core.server.rpc.common.ResponseBuilder;
+import grakn.core.server.database.common.ResponseBuilder;
+import grakn.core.server.database.transaction.TransactionService;
 import grakn.protocol.LogicProto;
 import grakn.protocol.TransactionProto;
 import graql.lang.Graql;
@@ -31,29 +31,28 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 
-import static grakn.core.server.rpc.common.ResponseBuilder.Logic.rule;
+import static grakn.core.server.database.common.ResponseBuilder.Logic.rule;
 import static java.util.stream.Collectors.toList;
 
 
-public class LogicManagerHandler {
+public class LogicManagerService {
 
-    private final TransactionRPC transactionRPC;
-    private final LogicManager logicManager;
+    private final TransactionService transactionSrv;
+    private final LogicManager logicMgr;
 
-    public LogicManagerHandler(TransactionRPC transactionRPC, LogicManager logicManager) {
-        this.transactionRPC = transactionRPC;
-        this.logicManager = logicManager;
+    public LogicManagerService(TransactionService transactionSrv, LogicManager logicMgr) {
+        this.transactionSrv = transactionSrv;
+        this.logicMgr = logicMgr;
     }
 
-
-    public void handleRequest(TransactionProto.Transaction.Req request) {
+    public void execute(TransactionProto.Transaction.Req request) {
         LogicProto.LogicManager.Req logicManagerReq = request.getLogicManagerReq();
         switch (logicManagerReq.getReqCase()) {
             case GET_RULE_REQ:
-                getRule(request, logicManagerReq.getGetRuleReq().getLabel());
+                getRule(logicManagerReq.getGetRuleReq().getLabel(), request);
                 return;
             case PUT_RULE_REQ:
-                putRule(request, logicManagerReq.getPutRuleReq());
+                putRule(logicManagerReq.getPutRuleReq(), request);
                 return;
             case GET_RULES_REQ:
                 getRules(request);
@@ -64,31 +63,33 @@ public class LogicManagerHandler {
         }
     }
 
-    private static TransactionProto.Transaction.Res response(TransactionProto.Transaction.Req request, LogicProto.LogicManager.Res.Builder res) {
+    private static TransactionProto.Transaction.Res response(TransactionProto.Transaction.Req request,
+                                                             LogicProto.LogicManager.Res.Builder res) {
         return TransactionProto.Transaction.Res.newBuilder().setId(request.getId()).setLogicManagerRes(res).build();
     }
 
-    private void getRule(TransactionProto.Transaction.Req request, String label) {
-        Rule rule = logicManager.getRule(label);
+    private void getRule(String label, TransactionProto.Transaction.Req request) {
+        Rule rule = logicMgr.getRule(label);
         LogicProto.LogicManager.GetRule.Res.Builder getRuleRes = LogicProto.LogicManager.GetRule.Res.newBuilder();
         if (rule != null) getRuleRes.setRule(rule(rule));
-        transactionRPC.respond(response(request, LogicProto.LogicManager.Res.newBuilder().setGetRuleRes(getRuleRes)));
+        transactionSrv.respond(response(request, LogicProto.LogicManager.Res.newBuilder().setGetRuleRes(getRuleRes)));
     }
 
-    private void putRule(TransactionProto.Transaction.Req request, LogicProto.LogicManager.PutRule.Req req) {
+    private void putRule(LogicProto.LogicManager.PutRule.Req req, TransactionProto.Transaction.Req request) {
         Conjunction<? extends Pattern> when = Graql.parsePattern(req.getWhen()).asConjunction();
         ThingVariable<?> then = Graql.parseVariable(req.getThen()).asThing();
-        Rule rule = logicManager.putRule(req.getLabel(), when, then);
+        Rule rule = logicMgr.putRule(req.getLabel(), when, then);
         LogicProto.LogicManager.Res.Builder res = LogicProto.LogicManager.Res.newBuilder()
                 .setPutRuleRes(LogicProto.LogicManager.PutRule.Res.newBuilder().setRule(rule(rule)));
-        transactionRPC.respond(response(request, res));
+        transactionSrv.respond(response(request, res));
     }
 
     private void getRules(TransactionProto.Transaction.Req request) {
-        FunctionalIterator<Rule> rules = logicManager.rules();
-        transactionRPC.respond(request, rules,
-                               as -> response(request, LogicProto.LogicManager.Res.newBuilder().setGetRulesRes(
-                                       LogicProto.LogicManager.GetRules.Res.newBuilder()
-                                               .addAllRules(as.stream().map(ResponseBuilder.Logic::rule).collect(toList())))));
+        FunctionalIterator<Rule> rules = logicMgr.rules();
+        transactionSrv.respond(request, rules, as -> response(
+                request, LogicProto.LogicManager.Res.newBuilder().setGetRulesRes(
+                        LogicProto.LogicManager.GetRules.Res.newBuilder().addAllRules(
+                                as.stream().map(ResponseBuilder.Logic::rule).collect(toList())))
+        ));
     }
 }

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.rpc.common;
+package grakn.core.server.database.common;
 
 import com.google.protobuf.ByteString;
 import grakn.core.common.exception.ErrorMessage;
