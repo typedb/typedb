@@ -38,6 +38,7 @@ public abstract class EventLoopExecutor<E> implements AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(EventLoopExecutor.class);
     private static final Shutdown SHUTDOWN_SIGNAL = new Shutdown();
+
     private final ArrayList<EventLoop> executors;
     private final BlockingQueue<Either<Event<E>, Shutdown>> queue;
     private final ReadWriteLock accessLock;
@@ -45,7 +46,7 @@ public abstract class EventLoopExecutor<E> implements AutoCloseable {
 
     protected EventLoopExecutor(int parallelisation, int queueSize, NamedThreadFactory threadFactory) {
         this.executors = new ArrayList<>(parallelisation);
-        this.queue = new LinkedBlockingQueue<>(queueSize); // TODO: benchmark against LinkTransferQueue
+        this.queue = new LinkedBlockingQueue<>(queueSize);
         this.accessLock = new StampedLock().asReadWriteLock();
         this.isOpen = true;
         for (int i = 0; i < parallelisation; i++) executors.add(new EventLoop(threadFactory));
