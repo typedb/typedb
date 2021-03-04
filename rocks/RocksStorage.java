@@ -57,7 +57,7 @@ public abstract class RocksStorage implements Storage {
 
     protected final ConcurrentSet<RocksIterator<?>> iterators;
     protected final Transaction storageTransaction;
-    protected final ReadWriteLock deleteOrCloseLock;
+    protected final ReadWriteLock deleteCloseSchemaWriteLock;
     protected final ReadOptions readOptions;
     protected final boolean isReadOnly;
 
@@ -76,7 +76,7 @@ public abstract class RocksStorage implements Storage {
         storageTransaction = rocksDB.beginTransaction(writeOptions, transactionOptions);
         snapshot = storageTransaction.getSnapshot();
         readOptions = new ReadOptions().setSnapshot(snapshot);
-        deleteOrCloseLock = new StampedLock().asReadWriteLock();
+        deleteCloseSchemaWriteLock = new StampedLock().asReadWriteLock();
         isOpen = new AtomicBoolean(true);
     }
 
@@ -155,7 +155,7 @@ public abstract class RocksStorage implements Storage {
     @Override
     public void close() {
         try {
-            deleteOrCloseLock.writeLock().lock();
+            deleteCloseSchemaWriteLock.writeLock().lock();
             if (isOpen.compareAndSet(true, false)) {
                 iterators.parallelStream().forEach(RocksIterator::close);
                 recycled.forEach(AbstractImmutableNativeReference::close);
@@ -166,7 +166,7 @@ public abstract class RocksStorage implements Storage {
                 writeOptions.close();
             }
         } finally {
-            deleteOrCloseLock.writeLock().unlock();
+            deleteCloseSchemaWriteLock.writeLock().unlock();
         }
     }
 
@@ -179,13 +179,13 @@ public abstract class RocksStorage implements Storage {
         @Override
         public byte[] get(byte[] key) {
             try {
-                deleteOrCloseLock.readLock().lock();
+                deleteCloseSchemaWriteLock.readLock().lock();
                 if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
                 return storageTransaction.get(readOptions, key);
             } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
-                deleteOrCloseLock.readLock().unlock();
+                deleteCloseSchemaWriteLock.readLock().unlock();
             }
         }
 
@@ -210,13 +210,13 @@ public abstract class RocksStorage implements Storage {
         @Override
         public byte[] get(byte[] key) {
             try {
-                deleteOrCloseLock.readLock().lock();
+                deleteCloseSchemaWriteLock.readLock().lock();
                 if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
                 return storageTransaction.get(readOptions, key);
             } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
-                deleteOrCloseLock.readLock().unlock();
+                deleteCloseSchemaWriteLock.readLock().unlock();
             }
         }
 
@@ -228,13 +228,13 @@ public abstract class RocksStorage implements Storage {
             assert upperBound[upperBound.length - 1] != Byte.MIN_VALUE;
 
             try (org.rocksdb.RocksIterator iterator = getInternalRocksIterator()) {
-                deleteOrCloseLock.readLock().lock();
+                deleteCloseSchemaWriteLock.readLock().lock();
                 if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
                 iterator.seekForPrev(upperBound);
                 if (bytesHavePrefix(iterator.key(), prefix)) return iterator.key();
                 else return null;
             } finally {
-                deleteOrCloseLock.readLock().unlock();
+                deleteCloseSchemaWriteLock.readLock().unlock();
             }
         }
 
@@ -246,7 +246,7 @@ public abstract class RocksStorage implements Storage {
                 else throw exception(ILLEGAL_STATE);
             }
             try {
-                deleteOrCloseLock.writeLock().lock();
+                deleteCloseSchemaWriteLock.writeLock().lock();
                 if (!isOpen() || (!transaction.isOpen() && transaction.isData())) {
                     throw GraknException.of(RESOURCE_CLOSED);
                 }
@@ -254,7 +254,7 @@ public abstract class RocksStorage implements Storage {
             } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
-                deleteOrCloseLock.writeLock().unlock();
+                deleteCloseSchemaWriteLock.writeLock().unlock();
             }
         }
 
@@ -311,7 +311,7 @@ public abstract class RocksStorage implements Storage {
             boolean obtainedWriteLock = false;
             try {
                 if (transaction.isOpen()) {
-                    deleteOrCloseLock.readLock().lock();
+                    deleteCloseSchemaWriteLock.writeLock().lock();
                     obtainedWriteLock = true;
                 }
                 if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
@@ -319,7 +319,7 @@ public abstract class RocksStorage implements Storage {
             } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
-                if (obtainedWriteLock) deleteOrCloseLock.readLock().unlock();
+                if (obtainedWriteLock) deleteCloseSchemaWriteLock.writeLock().unlock();
             }
         }
 
@@ -329,7 +329,7 @@ public abstract class RocksStorage implements Storage {
             boolean obtainedWriteLock = false;
             try {
                 if (transaction.isOpen()) {
-                    deleteOrCloseLock.readLock().lock();
+                    deleteCloseSchemaWriteLock.writeLock().lock();
                     obtainedWriteLock = true;
                 }
                 if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
@@ -337,7 +337,7 @@ public abstract class RocksStorage implements Storage {
             } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
-                if (obtainedWriteLock) deleteOrCloseLock.readLock().unlock();
+                if (obtainedWriteLock) deleteCloseSchemaWriteLock.writeLock().unlock();
             }
         }
     }
@@ -361,13 +361,13 @@ public abstract class RocksStorage implements Storage {
         public void put(byte[] key, byte[] value) {
             assert isOpen() && !isReadOnly;
             try {
-                deleteOrCloseLock.readLock().lock();
+                deleteCloseSchemaWriteLock.readLock().lock();
                 if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
                 storageTransaction.put(key, value);
             } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
-                deleteOrCloseLock.readLock().unlock();
+                deleteCloseSchemaWriteLock.readLock().unlock();
             }
         }
 
@@ -375,13 +375,13 @@ public abstract class RocksStorage implements Storage {
         public void putUntracked(byte[] key, byte[] value) {
             assert isOpen() && !isReadOnly;
             try {
-                deleteOrCloseLock.readLock().lock();
+                deleteCloseSchemaWriteLock.readLock().lock();
                 if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
                 storageTransaction.putUntracked(key, value);
             } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
-                deleteOrCloseLock.readLock().unlock();
+                deleteCloseSchemaWriteLock.readLock().unlock();
             }
         }
 
@@ -389,13 +389,13 @@ public abstract class RocksStorage implements Storage {
         public void mergeUntracked(byte[] key, byte[] value) {
             assert isOpen() && !isReadOnly;
             try {
-                deleteOrCloseLock.readLock().lock();
+                deleteCloseSchemaWriteLock.readLock().lock();
                 if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
                 storageTransaction.mergeUntracked(key, value);
             } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
-                deleteOrCloseLock.readLock().unlock();
+                deleteCloseSchemaWriteLock.readLock().unlock();
             }
         }
     }
