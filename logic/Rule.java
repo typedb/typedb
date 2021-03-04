@@ -64,7 +64,6 @@ import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
-import static grakn.core.common.exception.ErrorMessage.RuleWrite.INVALID_NEGATION;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.INVALID_NEGATION_CONTAINS_DISJUNCTION;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CAN_IMPLY_UNINSERTABLE_RESULTS;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_CANNOT_BE_SATISFIED;
@@ -101,7 +100,7 @@ public class Rule {
         this.condition = Condition.create(this);
     }
 
-    private Rule(GraphManager graphMgr, ConceptManager conceptMgr, LogicManager logicMgr, String label,
+    private Rule(GraphManager graphMgr, LogicManager logicMgr, String label,
                  graql.lang.pattern.Conjunction<? extends Pattern> when, graql.lang.pattern.variable.ThingVariable<?> then) {
         this.structure = graphMgr.schema().rules().create(label, when, then);
         this.when = whenPattern(structure.when(), logicMgr);
@@ -112,16 +111,15 @@ public class Rule {
         this.conclusion = Conclusion.create(this);
         this.conclusion.index();
         this.condition = Condition.create(this);
-        validateCycles(conceptMgr, logicMgr);
     }
 
     public static Rule of(LogicManager logicMgr, RuleStructure structure) {
         return new Rule(logicMgr, structure);
     }
 
-    public static Rule of(GraphManager graphMgr, ConceptManager conceptMgr, LogicManager logicMgr, String label,
+    public static Rule of(GraphManager graphMgr, LogicManager logicMgr, String label,
                           graql.lang.pattern.Conjunction<? extends Pattern> when, graql.lang.pattern.variable.ThingVariable<?> then) {
-        return new Rule(graphMgr, conceptMgr, logicMgr, label, when, then);
+        return new Rule(graphMgr, logicMgr, label, when, then);
     }
 
     public Conclusion conclusion() {
@@ -194,28 +192,6 @@ public class Rule {
         });
     }
 
-    void validateCycles(ConceptManager conceptMgr, LogicManager logicMgr) {
-
-        Set<Rule> rulesWithNegationsThatTriggerRules = logicMgr.rulesWithNegations()
-                .filter(rule -> !rule.condition().negatedConcludablesTriggeringRules(conceptMgr, logicMgr).isEmpty())
-                .toSet();
-
-        for (Rule negationRule : rulesWithNegationsThatTriggerRules) {
-            Set<Rule> visited = new HashSet<>();
-            boolean finished = false;
-            while (!finished) {
-                Set<Concludable> recursiveConcludables = negationRule.condition().concludablesTriggeringRules(conceptMgr, logicMgr);
-                Set<Rule>
-            }
-        }
-
-
-        // TODO: implement this when we have negation
-        // TODO: detect negated cycles in the rule graph
-        // TODO: use the new rule as a starting point
-        // throw GraknException.of(ErrorMessage.RuleWrite.RULES_IN_NEGATED_CYCLE_NOT_STRATIFIABLE.message(rule));
-    }
-
     /**
      * Remove type hints in the `then` pattern that are not valid in the `when` pattern
      */
@@ -231,11 +207,6 @@ public class Rule {
     private Conjunction whenPattern(graql.lang.pattern.Conjunction<? extends Pattern> conjunction, LogicManager logicMgr) {
         Disjunction when = Disjunction.create(conjunction.normalise());
         assert when.conjunctions().size() == 1;
-
-        // TODO: remove this when we fully implement negation and don't have to ban it in rules
-        if (!when.conjunctions().get(0).negations().isEmpty()) {
-            throw GraknException.of(INVALID_NEGATION, getLabel());
-        }
 
         if (iterate(when.conjunctions().get(0).negations()).filter(neg -> neg.disjunction().conjunctions().size() != 1).hasNext()) {
             throw GraknException.of(INVALID_NEGATION_CONTAINS_DISJUNCTION, getLabel());
