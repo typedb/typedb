@@ -15,15 +15,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.database.logic;
+package grakn.core.server.logic;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
-import grakn.core.server.database.common.ResponseBuilder;
-import grakn.core.server.database.transaction.TransactionService;
+import grakn.core.server.common.ResponseBuilder;
+import grakn.core.server.transaction.TransactionService;
 import grakn.protocol.LogicProto;
 import grakn.protocol.TransactionProto;
 import graql.lang.Graql;
@@ -31,16 +31,16 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 
-import static grakn.core.server.database.common.ResponseBuilder.Logic.rule;
+import static grakn.core.server.common.ResponseBuilder.Logic.rule;
 import static java.util.stream.Collectors.toList;
 
 
-public class LogicManagerService {
+public class LogicService {
 
     private final TransactionService transactionSrv;
     private final LogicManager logicMgr;
 
-    public LogicManagerService(TransactionService transactionSrv, LogicManager logicMgr) {
+    public LogicService(TransactionService transactionSrv, LogicManager logicMgr) {
         this.transactionSrv = transactionSrv;
         this.logicMgr = logicMgr;
     }

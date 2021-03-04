@@ -15,14 +15,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.database.transaction;
+package grakn.core.server.transaction;
 
 import grabl.tracing.client.GrablTracingThreadStatic;
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.exception.GraknException;
 import grakn.core.server.GraknService;
-import grakn.core.server.database.common.TracingData;
-import grakn.core.server.database.session.SessionService;
+import grakn.core.server.common.TracingData;
+import grakn.core.server.session.SessionService;
+import grakn.core.server.common.ResponseBuilder;
 import grakn.protocol.TransactionProto.Transaction;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
@@ -42,7 +43,7 @@ import static grakn.core.common.collection.Bytes.bytesToUUID;
 import static grakn.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_ALREADY_OPENED;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_NOT_OPENED;
-import static grakn.core.server.database.common.ResponseBuilder.exception;
+
 
 public class TransactionStream implements StreamObserver<Transaction.Req> {
 
@@ -131,7 +132,7 @@ public class TransactionStream implements StreamObserver<Transaction.Req> {
     void close(Throwable error) {
         if (isOpen.compareAndSet(true, false)) {
             LOG.error(error.getMessage(), error);
-            responder.onError(exception(error));
+            responder.onError(ResponseBuilder.exception(error));
         }
     }
 

@@ -15,20 +15,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.database.transaction;
+package grakn.core.server.transaction;
 
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
-import grakn.core.server.database.concept.ConceptManagerService;
-import grakn.core.server.database.concept.ThingService;
-import grakn.core.server.database.concept.TypeService;
-import grakn.core.server.database.logic.LogicManagerService;
-import grakn.core.server.database.logic.RuleService;
-import grakn.core.server.database.query.QueryService;
-import grakn.core.server.database.session.SessionService;
+import grakn.core.server.concept.ConceptService;
+import grakn.core.server.concept.ThingService;
+import grakn.core.server.concept.TypeService;
+import grakn.core.server.logic.LogicService;
+import grakn.core.server.logic.RuleService;
+import grakn.core.server.query.QueryService;
+import grakn.core.server.session.SessionService;
 import grakn.protocol.TransactionProto;
 
 import java.time.Duration;
@@ -48,9 +48,9 @@ import static grakn.core.common.exception.ErrorMessage.Server.ITERATION_WITH_UNK
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
 import static grakn.core.common.exception.ErrorMessage.Transaction.BAD_TRANSACTION_TYPE;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_ALREADY_OPENED;
-import static grakn.core.server.database.common.RequestReader.setDefaultOptions;
-import static grakn.core.server.database.common.ResponseBuilder.Transaction.continueRes;
-import static grakn.core.server.database.common.ResponseBuilder.Transaction.done;
+import static grakn.core.server.common.RequestReader.setDefaultOptions;
+import static grakn.core.server.common.ResponseBuilder.Transaction.continueRes;
+import static grakn.core.server.common.ResponseBuilder.Transaction.done;
 
 public class TransactionService {
 
@@ -156,10 +156,10 @@ public class TransactionService {
                 services.query.execute(request);
                 break;
             case CONCEPT_MANAGER_REQ:
-                services.conceptMgr.execute(request);
+                services.concept.execute(request);
                 break;
             case LOGIC_MANAGER_REQ:
-                services.logicMgr.execute(request);
+                services.logic.execute(request);
                 break;
             case THING_REQ:
                 services.thing.execute(request);
@@ -223,16 +223,16 @@ public class TransactionService {
 
     private class Services {
 
-        private final ConceptManagerService conceptMgr;
-        private final LogicManagerService logicMgr;
+        private final ConceptService concept;
+        private final LogicService logic;
         private final QueryService query;
         private final ThingService thing;
         private final TypeService type;
         private final RuleService rule;
 
         private Services() {
-            conceptMgr = new ConceptManagerService(TransactionService.this, transaction.concepts());
-            logicMgr = new LogicManagerService(TransactionService.this, transaction.logic());
+            concept = new ConceptService(TransactionService.this, transaction.concepts());
+            logic = new LogicService(TransactionService.this, transaction.logic());
             query = new QueryService(TransactionService.this, transaction.query());
             thing = new ThingService(TransactionService.this, transaction.concepts());
             type = new TypeService(TransactionService.this, transaction.concepts());

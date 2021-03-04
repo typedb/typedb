@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.database.concept;
+package grakn.core.server.concept;
 
 import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
@@ -28,8 +28,8 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
-import grakn.core.server.database.common.ResponseBuilder;
-import grakn.core.server.database.transaction.TransactionService;
+import grakn.core.server.common.ResponseBuilder;
+import grakn.core.server.transaction.TransactionService;
 import grakn.protocol.ConceptProto;
 import grakn.protocol.TransactionProto.Transaction;
 
@@ -41,8 +41,8 @@ import java.util.stream.Stream;
 import static grakn.common.collection.Collections.pair;
 import static grakn.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
-import static grakn.core.server.database.common.ResponseBuilder.Concept.thing;
-import static grakn.core.server.database.common.ResponseBuilder.Concept.type;
+import static grakn.core.server.common.ResponseBuilder.Concept.thing;
+import static grakn.core.server.common.ResponseBuilder.Concept.type;
 import static java.util.stream.Collectors.toList;
 
 public class ThingService {

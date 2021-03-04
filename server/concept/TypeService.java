@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.database.concept;
+package grakn.core.server.concept;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.ConceptManager;
@@ -28,8 +28,8 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
-import grakn.core.server.database.common.ResponseBuilder;
-import grakn.core.server.database.transaction.TransactionService;
+import grakn.core.server.common.ResponseBuilder;
+import grakn.core.server.transaction.TransactionService;
 import grakn.protocol.ConceptProto;
 import grakn.protocol.TransactionProto.Transaction;
 
@@ -43,9 +43,9 @@ import static grakn.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
 import static grakn.core.common.exception.ErrorMessage.Server.MISSING_FIELD;
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ILLEGAL_SUPERTYPE_ENCODING;
-import static grakn.core.server.database.common.ResponseBuilder.Concept.thing;
-import static grakn.core.server.database.common.ResponseBuilder.Concept.type;
-import static grakn.core.server.database.common.ResponseBuilder.Concept.valueType;
+import static grakn.core.server.common.ResponseBuilder.Concept.thing;
+import static grakn.core.server.common.ResponseBuilder.Concept.type;
+import static grakn.core.server.common.ResponseBuilder.Concept.valueType;
 import static grakn.protocol.ConceptProto.RelationType.SetRelates.Req.OverriddenCase.OVERRIDDEN_LABEL;
 import static grakn.protocol.ConceptProto.ThingType.GetOwns.Req.FilterCase.VALUE_TYPE;
 import static java.time.Instant.ofEpochMilli;

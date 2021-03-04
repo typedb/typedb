@@ -21,9 +21,9 @@ import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
-import grakn.core.server.database.session.SessionService;
-import grakn.core.server.database.transaction.TransactionExecutor;
-import grakn.core.server.database.transaction.TransactionStream;
+import grakn.core.server.session.SessionService;
+import grakn.core.server.transaction.TransactionExecutor;
+import grakn.core.server.transaction.TransactionStream;
 import grakn.protocol.DatabaseProto;
 import grakn.protocol.GraknGrpc;
 import grakn.protocol.SessionProto;
@@ -44,8 +44,8 @@ import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOU
 import static grakn.core.common.exception.ErrorMessage.Server.SERVER_SHUTDOWN;
 import static grakn.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
 import static grakn.core.concurrent.common.Executors.PARALLELISATION_FACTOR;
-import static grakn.core.server.database.common.RequestReader.setDefaultOptions;
-import static grakn.core.server.database.common.ResponseBuilder.exception;
+import static grakn.core.server.common.RequestReader.setDefaultOptions;
+import static grakn.core.server.common.ResponseBuilder.exception;
 import static java.util.stream.Collectors.toList;
 
 public class GraknService extends GraknGrpc.GraknImplBase {

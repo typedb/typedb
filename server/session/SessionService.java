@@ -15,14 +15,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.database.session;
+package grakn.core.server.session;
 
 import com.google.protobuf.ByteString;
 import grakn.core.Grakn;
 import grakn.core.common.parameters.Options;
 import grakn.core.server.GraknService;
-import grakn.core.server.database.transaction.TransactionService;
-import grakn.core.server.database.transaction.TransactionStream;
+import grakn.core.server.transaction.TransactionService;
+import grakn.core.server.transaction.TransactionStream;
 import grakn.protocol.TransactionProto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

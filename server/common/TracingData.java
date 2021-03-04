@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.server.database.common;
+package grakn.core.server.common;
 
 import java.util.UUID;
 

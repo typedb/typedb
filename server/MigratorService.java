@@ -34,7 +34,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
-import static grakn.core.server.database.common.ResponseBuilder.exception;
+import static grakn.core.server.common.ResponseBuilder.exception;
 
 public class MigratorService extends MigratorGrpc.MigratorImplBase {
 

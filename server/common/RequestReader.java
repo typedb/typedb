@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.database.common;
+package grakn.core.server.common;
 
 import grakn.core.common.parameters.Options;
 import grakn.protocol.OptionsProto;

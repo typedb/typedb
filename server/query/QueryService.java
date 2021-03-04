@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.database.query;
+package grakn.core.server.query;
 
 import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.core.common.exception.GraknException;
@@ -27,8 +27,8 @@ import grakn.core.concept.answer.ConceptMapGroup;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.NumericGroup;
 import grakn.core.query.QueryManager;
-import grakn.core.server.database.common.ResponseBuilder;
-import grakn.core.server.database.transaction.TransactionService;
+import grakn.core.server.common.ResponseBuilder;
+import grakn.core.server.transaction.TransactionService;
 import grakn.protocol.QueryProto;
 import grakn.protocol.TransactionProto;
 import grakn.protocol.TransactionProto.Transaction;
@@ -43,9 +43,9 @@ import graql.lang.query.GraqlUpdate;
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
 import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.server.database.common.RequestReader.setDefaultOptions;
-import static grakn.core.server.database.common.RequestReader.setQueryOptions;
-import static grakn.core.server.database.common.ResponseBuilder.Answer.numeric;
+import static grakn.core.server.common.RequestReader.setDefaultOptions;
+import static grakn.core.server.common.RequestReader.setQueryOptions;
+import static grakn.core.server.common.ResponseBuilder.Answer.numeric;
 
 public class QueryService {
 

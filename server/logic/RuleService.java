@@ -15,12 +15,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.database.logic;
+package grakn.core.server.logic;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
-import grakn.core.server.database.transaction.TransactionService;
+import grakn.core.server.transaction.TransactionService;
 import grakn.protocol.LogicProto;
 import grakn.protocol.TransactionProto;
 import grakn.protocol.TransactionProto.Transaction;

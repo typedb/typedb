@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.server.database.transaction;
+package grakn.core.server.transaction;
 
 import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.concurrent.eventloop.EventLoopExecutor;
