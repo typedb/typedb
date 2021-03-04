@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.server.util;
+package grakn.core.server.common;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.server.Version;

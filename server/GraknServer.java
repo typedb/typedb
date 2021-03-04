@@ -27,8 +27,8 @@ import grakn.core.common.parameters.Options;
 import grakn.core.concurrent.common.Executors;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.migrator.MigratorClient;
-import grakn.core.server.util.ServerCommand;
-import grakn.core.server.util.ServerDefaults;
+import grakn.core.server.common.ServerCommand;
+import grakn.core.server.common.ServerDefaults;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -61,8 +61,8 @@ import static grakn.core.common.exception.ErrorMessage.Server.FAILED_AT_STOPPING
 import static grakn.core.common.exception.ErrorMessage.Server.FAILED_PARSE_PROPERTIES;
 import static grakn.core.common.exception.ErrorMessage.Server.PROPERTIES_FILE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Server.UNCAUGHT_EXCEPTION;
-import static grakn.core.server.util.ServerDefaults.ASCII_LOGO_FILE;
-import static grakn.core.server.util.ServerDefaults.PROPERTIES_FILE;
+import static grakn.core.server.common.ServerDefaults.ASCII_LOGO_FILE;
+import static grakn.core.server.common.ServerDefaults.PROPERTIES_FILE;
 
 
 public class GraknServer implements AutoCloseable {

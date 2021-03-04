@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.server.util;
+package grakn.core.server.common;
 
 import java.io.File;
 import java.nio.file.Path;

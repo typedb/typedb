@@ -51,6 +51,7 @@ import static java.util.stream.Collectors.toList;
 public class GraknService extends GraknGrpc.GraknImplBase {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraknService.class);
+    private static final int BUFFER_FACTOR = 1024;
 
     private final Grakn grakn;
     private final ConcurrentMap<UUID, SessionService> sessionServices;
@@ -59,7 +60,7 @@ public class GraknService extends GraknGrpc.GraknImplBase {
     public GraknService(Grakn grakn) {
         this.grakn = grakn;
         sessionServices = new ConcurrentHashMap<>();
-        executor = new TransactionExecutor(PARALLELISATION_FACTOR, PARALLELISATION_FACTOR * 32);
+        executor = new TransactionExecutor(PARALLELISATION_FACTOR, PARALLELISATION_FACTOR * BUFFER_FACTOR);
     }
 
     @Override
