@@ -70,7 +70,6 @@ import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CAN_IMPLY_
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_CANNOT_BE_SATISFIED;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CANNOT_BE_SATISFIED;
 import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.iterator.Iterators.link;
 import static graql.lang.common.GraqlToken.Char.COLON;
 import static graql.lang.common.GraqlToken.Char.CURLY_CLOSE;
 import static graql.lang.common.GraqlToken.Char.CURLY_OPEN;
@@ -91,13 +90,15 @@ public class Rule {
     private final Conjunction when;
     private final Conjunction then;
     private final Conclusion conclusion;
+    private final Condition condition;
 
     private Rule(LogicManager logicMgr, RuleStructure structure) {
         this.structure = structure;
         this.when = whenPattern(structure.when(), logicMgr);
         this.then = thenPattern(structure.then(), logicMgr);
         pruneThenResolvedTypes();
-        this.conclusion = Conclusion.create(this.then, this);
+        this.conclusion = Conclusion.create(this);
+        this.condition = Condition.create(this);
     }
 
     private Rule(GraphManager graphMgr, ConceptManager conceptMgr, LogicManager logicMgr, String label,
@@ -108,8 +109,9 @@ public class Rule {
         pruneThenResolvedTypes();
         validateSatisfiable();
         validateInsertable(logicMgr);
-        this.conclusion = Conclusion.create(this.then, this);
+        this.conclusion = Conclusion.create(this);
         this.conclusion.index();
+        this.condition = Condition.create(this);
         validateCycles(conceptMgr, logicMgr);
     }
 
@@ -124,6 +126,10 @@ public class Rule {
 
     public Conclusion conclusion() {
         return conclusion;
+    }
+
+    public Condition condition() {
+        return condition;
     }
 
     public Conjunction when() {
@@ -189,14 +195,18 @@ public class Rule {
     }
 
     void validateCycles(ConceptManager conceptMgr, LogicManager logicMgr) {
+
         Set<Rule> rulesWithNegationsThatTriggerRules = logicMgr.rulesWithNegations()
-                .filter(rule -> rule.negatedApplicableRecursiveRules(conceptMgr, logicMgr).hasNext()).toSet();
+                .filter(rule -> !rule.condition().negatedConcludablesTriggeringRules(conceptMgr, logicMgr).isEmpty())
+                .toSet();
 
         for (Rule negationRule : rulesWithNegationsThatTriggerRules) {
             Set<Rule> visited = new HashSet<>();
-
-            negationRule.negatedApplicableRecursiveRules(conceptMgr, logicMgr)
-
+            boolean finished = false;
+            while (!finished) {
+                Set<Concludable> recursiveConcludables = negationRule.condition().concludablesTriggeringRules(conceptMgr, logicMgr);
+                Set<Rule>
+            }
         }
 
 
@@ -246,29 +256,67 @@ public class Rule {
         conclusion().index();
     }
 
-    // TODO is this the best place to expose this API? expensive to recompute all the time, and only used during validation
-    public FunctionalIterator<Rule> applicableRecursiveRules(ConceptManager conceptMgr, LogicManager logicMgr) {
-        return link(iterate(Concludable.create(when)).flatMap(c -> c.getApplicableRules(conceptMgr, logicMgr)),
-                    negatedApplicableRecursiveRules(conceptMgr, logicMgr));
-    }
-
-    public FunctionalIterator<Rule> negatedApplicableRecursiveRules(ConceptManager conceptMgr, LogicManager logicMgr) {
-        return applicableRules(when.negations(), conceptMgr, logicMgr);
-    }
-
-    private FunctionalIterator<Rule> applicableRules(Set<Negation> negations, ConceptManager conceptMgr, LogicManager logicMgr) {
-        return iterate(negations)
-                .flatMap(neg -> iterate(neg.disjunction().conjunctions()))
-                .flatMap(conjunction -> link(
-                        iterate(Concludable.create(conjunction)).flatMap(concludable -> concludable.getApplicableRules(conceptMgr, logicMgr)),
-                        applicableRules(conjunction.negations(), conceptMgr, logicMgr)
-                ));
-    }
 
     @Override
     public String toString() {
         return "" + RULE + SPACE + getLabel() + COLON + NEW_LINE + WHEN + SPACE + CURLY_OPEN + NEW_LINE + when + NEW_LINE +
                 CURLY_CLOSE + SPACE + THEN + SPACE + CURLY_OPEN + NEW_LINE + then + NEW_LINE + CURLY_CLOSE + SEMICOLON;
+    }
+
+    public static class Condition {
+
+        private final Rule rule;
+        private Set<Concludable> concludablesTriggeringRules;
+        private Set<Concludable> negatedConcludablesTriggeringRules;
+
+        Condition(Rule rule) {
+            this.rule = rule;
+            this.concludablesTriggeringRules = null;
+            this.negatedConcludablesTriggeringRules = null;
+        }
+
+        public static Condition create(Rule rule) {
+            return new Condition(rule);
+        }
+
+        public Rule rule() {
+            return rule;
+        }
+
+        public Set<Concludable> concludablesTriggeringRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+            if (concludablesTriggeringRules == null) { // only acquire lock if required
+                synchronized (this) { // only compute concludables once
+                    if (concludablesTriggeringRules == null) {
+                        concludablesTriggeringRules = iterate(Concludable.create(rule.when()))
+                                .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext()).toSet();
+                    }
+                }
+            }
+            return concludablesTriggeringRules;
+        }
+
+        Set<Concludable> negatedConcludablesTriggeringRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+            synchronized (this) { // can be more contentious as only used for validation
+                if (negatedConcludablesTriggeringRules == null) {
+                    negatedConcludablesTriggeringRules = concludables(rule.when().negations())
+                            .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext()).toSet();
+                    ;
+                }
+            }
+            return negatedConcludablesTriggeringRules;
+        }
+
+        private FunctionalIterator<Concludable> concludables(Set<Negation> negations) {
+            return iterate(negations)
+                    .flatMap(neg -> {
+                        assert neg.disjunction().conjunctions().size() == 1;
+                        return iterate(neg.disjunction().conjunctions());
+                    }).flatMap(conjunction -> {
+                        assert conjunction.negations().isEmpty();
+                        return iterate(Concludable.create(conjunction));
+                    });
+        }
+
     }
 
     public static abstract class Conclusion {
@@ -281,12 +329,12 @@ public class Rule {
             this.retrievableIds = retrievableIds;
         }
 
-        public static Conclusion create(Conjunction then, Rule rule) {
-            Optional<Relation> r = Relation.of(then, rule);
+        public static Conclusion create(Rule rule) {
+            Optional<Relation> r = Relation.of(rule.then(), rule);
             if ((r).isPresent()) return r.get();
-            Optional<Has.Explicit> e = Has.Explicit.of(then, rule);
+            Optional<Has.Explicit> e = Has.Explicit.of(rule.then(), rule);
             if (e.isPresent()) return e.get();
-            Optional<Has.Variable> v = Has.Variable.of(then, rule);
+            Optional<Has.Variable> v = Has.Variable.of(rule.then(), rule);
             if (v.isPresent()) return v.get();
             throw GraknException.of(ILLEGAL_STATE);
         }

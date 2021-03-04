@@ -33,11 +33,13 @@ import graql.lang.pattern.variable.ThingVariable;
 public class LogicManager {
 
     private final GraphManager graphMgr;
+    private final ConceptManager conceptMgr;
     private final TypeResolver typeResolver;
     private LogicCache logicCache;
 
     public LogicManager(GraphManager graphMgr, ConceptManager conceptMgr, TraversalEngine traversalEng, LogicCache logicCache) {
         this.graphMgr = graphMgr;
+        this.conceptMgr = conceptMgr;
         this.logicCache = logicCache;
         this.typeResolver = new TypeResolver(conceptMgr, traversalEng, logicCache);
     }
@@ -49,7 +51,7 @@ public class LogicManager {
             structure.delete();
             logicCache.rule().invalidate(label);
         }
-        return logicCache.rule().get(label, l -> Rule.of(graphMgr, this, label, when, then));
+        return logicCache.rule().get(label, l -> Rule.of(graphMgr, conceptMgr, this, label, when, then));
     }
 
     public Rule getRule(String label) {
@@ -96,7 +98,7 @@ public class LogicManager {
 
         // using the new index, validate new rules are stratifiable (eg. do not cause cycles through a negation)
         graphMgr.schema().rules().buffered().filter(structure -> structure.status().equals(Encoding.Status.BUFFERED))
-                .forEachRemaining(structure -> getRule(structure.label()).validateCycles(logicMgr));
+                .forEachRemaining(structure -> getRule(structure.label()).validateCycles(conceptMgr, this));
     }
 
     public TypeResolver typeResolver() {

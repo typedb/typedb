@@ -106,11 +106,14 @@ public abstract class Concludable extends Resolvable<Conjunction> {
     }
 
     public FunctionalIterator<Rule> getApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
-        synchronized (this) {
-            if (applicableRules == null) applicableRules = applicableRules(conceptMgr, logicMgr);
+        if (applicableRules == null) {
+            synchronized (this) {
+                if (applicableRules == null) applicableRules = applicableRules(conceptMgr, logicMgr);
+            }
         }
         // This gives a deterministic ordering to the applicable rules, which is important for testing.
-        return Iterators.iterate(applicableRules.keySet().stream().sorted(Comparator.comparing(Rule::getLabel)).collect(Collectors.toList()));
+        return Iterators.iterate(applicableRules.keySet().stream().sorted(Comparator.comparing(Rule::getLabel))
+                                         .collect(Collectors.toList()));
     }
 
     abstract Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr);

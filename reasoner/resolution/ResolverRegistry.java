@@ -147,10 +147,10 @@ public class ResolverRegistry {
                 .collect(Collectors.toSet());
     }
 
-    public Actor.Driver<ConditionResolver> registerCondition(Rule rule) {
-        LOG.debug("Register retrieval for rule condition actor: '{}'", rule);
-        Actor.Driver<ConditionResolver> resolver = ruleConditions.computeIfAbsent(rule, (r) -> Actor.driver(
-                driver -> new ConditionResolver(driver, r, resolutionRecorder, this, traversalEngine,
+    public Actor.Driver<ConditionResolver> registerCondition(Rule.Condition ruleCondition) {
+        LOG.debug("Register retrieval for rule condition actor: '{}'", ruleCondition);
+        Actor.Driver<ConditionResolver> resolver = ruleConditions.computeIfAbsent(ruleCondition.rule(), (r) -> Actor.driver(
+                driver -> new ConditionResolver(driver, ruleCondition, resolutionRecorder, this, traversalEngine,
                                                 conceptMgr, logicMgr, planner, resolutionTracing), executorService
         ));
         resolvers.add(resolver);

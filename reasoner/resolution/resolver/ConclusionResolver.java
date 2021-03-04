@@ -135,7 +135,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
     protected void initialiseDownstreamResolvers() {
         LOG.debug("{}: initialising downstream resolvers", name());
         try {
-            ruleResolver = registry.registerCondition(conclusion.rule());
+            ruleResolver = registry.registerCondition(conclusion.rule().condition());
             isInitialised = true;
         } catch (GraknException e) {
             terminate(e);

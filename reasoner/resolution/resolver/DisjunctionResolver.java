@@ -125,7 +125,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
 
     protected Set<Identifier.Variable.Retrievable> conjunctionRetrievedIds(Driver<ConjunctionResolver.Nested> conjunctionResolver) {
         // TODO use a map from resolvable to resolvers, then we don't have to reach into the state and use the conjunction
-        return iterate(conjunctionResolver.actor().conjunction.variables()).filter(v -> v.id().isRetrievable())
+        return iterate(conjunctionResolver.actor().conjunction().variables()).filter(v -> v.id().isRetrievable())
                 .map(v -> v.id().asRetrievable()).toSet();
     }
 
