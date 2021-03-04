@@ -25,6 +25,7 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.concept.thing.Thing;
 import grakn.core.graph.common.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
+import grakn.core.graph.vertex.Vertex;
 import grakn.core.logic.LogicCache;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
@@ -183,14 +184,19 @@ public class TypeResolver {
         return logicCache.resolver().get(traversalBuilder.traversal(), traversal -> {
             Map<Identifier.Variable.Retrievable, Set<Label>> mapping = new HashMap<>();
             traversalEng.iterator(traversal, true).forEachRemaining(
-                    result -> result.forEach((id, vertex) -> {
-                        mapping.putIfAbsent(id, new HashSet<>());
-                        assert vertex.isType();
+                    result -> {
                         // TODO: This filter should not be needed if we enforce traversal only to return non-abstract
-                        if (!traversalBuilder.getVariable(id).isPresent()) return;
-                        if (!(vertex.asType().isAbstract() && traversalBuilder.getVariable(id).get().isThing()))
-                            mapping.get(id).add(vertex.asType().properLabel());
-                    })
+                        assert iterate(result.map().values()).allMatch(Vertex::isType);
+                        if (iterate(result.map().values()).noneMatch(typeVertex -> typeVertex.asType().isAbstract())) {
+                            result.forEach((id, vertex) -> {
+                                mapping.putIfAbsent(id, new HashSet<>());
+                                if (!traversalBuilder.getVariable(id).isPresent()) return;
+                                if (traversalBuilder.getVariable(id).get().isThing()) {
+                                    mapping.get(id).add(vertex.asType().properLabel());
+                                }
+                            });
+                        }
+                    }
             );
             return mapping;
         });
