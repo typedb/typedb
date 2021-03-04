@@ -34,7 +34,6 @@ import grakn.core.concept.type.RoleType;
 import grakn.core.server.Version;
 import grakn.core.server.migrator.proto.DataProto;
 import grakn.core.server.migrator.proto.MigratorProto;
-import grakn.core.server.rpc.MigratorRPCService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +57,7 @@ import static grakn.core.common.exception.ErrorMessage.Migrator.TYPE_NOT_FOUND;
 
 public class Importer implements Migrator {
 
-    private static final Logger LOG = LoggerFactory.getLogger(MigratorRPCService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Importer.class);
     private static final Parser<DataProto.Item> ITEM_PARSER = DataProto.Item.parser();
     private static final int BATCH_SIZE = 20_000;
     private final Grakn.Session session;

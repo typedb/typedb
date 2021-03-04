@@ -20,7 +20,7 @@ package grakn.core.concurrent.common;
 
 import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.common.exception.GraknException;
-import grakn.core.concurrent.actor.ActorExecutorService;
+import grakn.core.concurrent.actor.ActorExecutorGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
+import static java.lang.Math.max;
 import static java.util.concurrent.Executors.newFixedThreadPool;
 
 public class Executors {
@@ -36,7 +37,7 @@ public class Executors {
     public static int PARALLELISATION_FACTOR = -1;
 
     private static final Logger LOG = LoggerFactory.getLogger(Executors.class);
-    private static final String GRAKN_CORE_MAIN_THREAD_NAME = "grakn-core-main";
+    private static final String GRAKN_CORE_SERVICE_THREAD_NAME = "grakn-core-service";
     private static final String GRAKN_CORE_ASYNC_THREAD_1_NAME = "grakn-core-async-1";
     private static final String GRAKN_CORE_ASYNC_THREAD_2_NAME = "grakn-core-async-2";
     private static final String GRAKN_CORE_NETWORK_THREAD_NAME = "grakn-core-network";
@@ -46,22 +47,26 @@ public class Executors {
 
     private static Executors singleton = null;
 
-    private final ExecutorService mainExecutorService;
+    private final ExecutorService serviceExecutorService;
     private final ExecutorService asyncExecutorService1;
     private final ExecutorService asyncExecutorService2;
+    private final ActorExecutorGroup actorExecutorService;
     private final NioEventLoopGroup networkExecutorService;
-    private final ActorExecutorService actorExecutorService;
     private final ScheduledThreadPoolExecutor scheduledThreadPool;
 
     private Executors(int parallelisation) {
-        mainExecutorService = newFixedThreadPool(parallelisation, NamedThreadFactory.create(GRAKN_CORE_MAIN_THREAD_NAME));
-        asyncExecutorService1 = newFixedThreadPool(parallelisation, NamedThreadFactory.create(GRAKN_CORE_ASYNC_THREAD_1_NAME));
-        asyncExecutorService2 = newFixedThreadPool(parallelisation, NamedThreadFactory.create(GRAKN_CORE_ASYNC_THREAD_2_NAME));
-        actorExecutorService = new ActorExecutorService(parallelisation, NamedThreadFactory.create(GRAKN_CORE_ACTOR_THREAD_NAME));
-        networkExecutorService = new NioEventLoopGroup(parallelisation, NamedThreadFactory.create(GRAKN_CORE_NETWORK_THREAD_NAME));
+        serviceExecutorService = newFixedThreadPool(max(1, parallelisation / 4), threadFactory(GRAKN_CORE_SERVICE_THREAD_NAME));
+        asyncExecutorService1 = newFixedThreadPool(parallelisation, threadFactory(GRAKN_CORE_ASYNC_THREAD_1_NAME));
+        asyncExecutorService2 = newFixedThreadPool(parallelisation, threadFactory(GRAKN_CORE_ASYNC_THREAD_2_NAME));
+        actorExecutorService = new ActorExecutorGroup(parallelisation, threadFactory(GRAKN_CORE_ACTOR_THREAD_NAME));
+        networkExecutorService = new NioEventLoopGroup(parallelisation, threadFactory(GRAKN_CORE_NETWORK_THREAD_NAME));
         scheduledThreadPool = new ScheduledThreadPoolExecutor(GRAKN_CORE_SCHEDULED_THREAD_SIZE,
-                                                              NamedThreadFactory.create(GRAKN_CORE_SCHEDULED_THREAD_NAME));
+                                                              threadFactory(GRAKN_CORE_SCHEDULED_THREAD_NAME));
         scheduledThreadPool.setRemoveOnCancelPolicy(true);
+    }
+
+    private NamedThreadFactory threadFactory(String threadNamePrefix) {
+        return NamedThreadFactory.create(threadNamePrefix);
     }
 
     public static synchronized void initialise(int parallelisationFactor) {
@@ -74,9 +79,9 @@ public class Executors {
         return singleton != null;
     }
 
-    public static ExecutorService main() {
+    public static ExecutorService service() {
         assert isInitialised();
-        return singleton.mainExecutorService;
+        return singleton.serviceExecutorService;
     }
 
     public static ExecutorService async1() {
@@ -89,6 +94,11 @@ public class Executors {
         return singleton.asyncExecutorService2;
     }
 
+    public static ActorExecutorGroup actor() {
+        assert isInitialised();
+        return singleton.actorExecutorService;
+    }
+
     public static NioEventLoopGroup network() {
         assert isInitialised();
         return singleton.networkExecutorService;
@@ -97,10 +107,5 @@ public class Executors {
     public static ScheduledThreadPoolExecutor scheduled() {
         assert isInitialised();
         return singleton.scheduledThreadPool;
-    }
-
-    public static ActorExecutorService actor() {
-        assert isInitialised();
-        return singleton.actorExecutorService;
     }
 }

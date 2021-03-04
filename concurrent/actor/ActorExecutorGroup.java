@@ -23,20 +23,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 @ThreadSafe
-public class ActorExecutorService {
+public class ActorExecutorGroup {
 
     private final ActorExecutor[] executors;
     private final AtomicInteger nextIndex;
 
-    public ActorExecutorService(int size, ThreadFactory threadFactory) {
+    public ActorExecutorGroup(int size, ThreadFactory threadFactory) {
         this(size, threadFactory, System::currentTimeMillis);
     }
 
-    public ActorExecutorService(int size, ThreadFactory threadFactory, Supplier<Long> clock) {
+    public ActorExecutorGroup(int size, ThreadFactory threadFactory, Supplier<Long> clock) {
         executors = new ActorExecutor[size];
-        for (int i = 0; i < size; i++) {
-            executors[i] = new ActorExecutor(threadFactory, clock);
-        }
+        for (int i = 0; i < size; i++) executors[i] = new ActorExecutor(threadFactory, clock);
         nextIndex = new AtomicInteger(0);
     }
 

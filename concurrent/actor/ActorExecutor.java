@@ -47,9 +47,7 @@ public class ActorExecutor {
     private final AtomicBoolean isStopped;
     private final Supplier<Long> clock;
     private final Thread thread;
-    private State state;
-
-    private enum State {READY, RUNNING, STOPPED}
+    private volatile boolean active;
 
     public ActorExecutor(ThreadFactory threadFactory, Supplier<Long> clock) {
         this.thread = threadFactory.newThread(this::run);
@@ -58,13 +56,12 @@ public class ActorExecutor {
         submittedTasks = new LinkedTransferQueue<>();
         scheduledTasks = new ScheduledTaskQueue();
         isStopped = new AtomicBoolean(false);
-        state = State.READY;
+        active = true;
         thread.start();
     }
 
     private void run() {
-        state = State.RUNNING;
-        while (state == State.RUNNING) {
+        while (active) {
             Task task = scheduledTasks.poll();
             if (task != null) {
                 task.run();
@@ -77,15 +74,16 @@ public class ActorExecutor {
                 }
             }
         }
+        System.out.println(thread.getName() + " DIED");
     }
 
     public void submit(Runnable runnable, Consumer<Throwable> errorHandler) {
-        assert state != State.STOPPED : "unexpected state: " + state;
+        assert active;
         submittedTasks.offer(new Task(runnable, errorHandler));
     }
 
     public FutureTask schedule(Runnable runnable, long scheduleMillis, Consumer<Throwable> errorHandler) {
-        assert state != State.STOPPED : "unexpected state: " + state;
+        assert active;
         FutureTask task = new FutureTask(runnable, scheduleMillis, errorHandler);
         task.initialise();
         return task;
@@ -97,7 +95,7 @@ public class ActorExecutor {
 
     public void stop() throws InterruptedException {
         if (isStopped.compareAndSet(false, true)) {
-            submit(() -> state = State.STOPPED, e -> LOG.error("Unexpected error at stopping an ActorExecutor", e));
+            submit(() -> active = false, e -> LOG.error("Unexpected error at stopping an ActorExecutor", e));
             await();
         }
     }

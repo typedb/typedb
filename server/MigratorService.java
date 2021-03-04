@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.rpc;
+package grakn.core.server;
 
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
@@ -34,14 +34,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
-import static grakn.core.server.rpc.common.ResponseBuilder.exception;
+import static grakn.core.server.database.common.ResponseBuilder.exception;
 
-public class MigratorRPCService extends MigratorGrpc.MigratorImplBase {
+public class MigratorService extends MigratorGrpc.MigratorImplBase {
 
-    private static final Logger LOG = LoggerFactory.getLogger(MigratorRPCService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MigratorService.class);
     private final Grakn grakn;
 
-    public MigratorRPCService(Grakn grakn) {
+    public MigratorService(Grakn grakn) {
         this.grakn = grakn;
     }
 

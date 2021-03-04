@@ -27,8 +27,6 @@ import grakn.core.common.parameters.Options;
 import grakn.core.concurrent.common.Executors;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.server.migrator.MigratorClient;
-import grakn.core.server.rpc.GraknRPCService;
-import grakn.core.server.rpc.MigratorRPCService;
 import grakn.core.server.util.ServerCommand;
 import grakn.core.server.util.ServerDefaults;
 import io.grpc.Server;
@@ -74,8 +72,8 @@ public class GraknServer implements AutoCloseable {
     private final Grakn grakn;
     private final Server server;
     private final ServerCommand.Start command;
-    private final GraknRPCService graknRPCService;
-    private final MigratorRPCService migratorRPCService;
+    private final GraknService graknService;
+    private final MigratorService migratorRPCService;
 
     private GraknServer(ServerCommand.Start command) throws IOException {
         this.command = command;
@@ -89,8 +87,8 @@ public class GraknServer implements AutoCloseable {
                 .dataDir(command.dataDir())
                 .logsDir(command.logsDir());
         grakn = RocksGrakn.open(options);
-        graknRPCService = new GraknRPCService(grakn);
-        migratorRPCService = new MigratorRPCService(grakn);
+        graknService = new GraknService(grakn);
+        migratorRPCService = new MigratorService(grakn);
 
         server = rpcServer();
         Thread.setDefaultUncaughtExceptionHandler(
@@ -106,12 +104,12 @@ public class GraknServer implements AutoCloseable {
     private Server rpcServer() {
         assert Executors.isInitialised();
         return NettyServerBuilder.forPort(command.port())
-                .executor(Executors.main())
+                .executor(Executors.service())
                 .workerEventLoopGroup(Executors.network())
                 .bossEventLoopGroup(Executors.network())
                 .maxConnectionIdle(1, TimeUnit.HOURS) // TODO: why 1 hour?
                 .channelType(NioServerSocketChannel.class)
-                .addService(graknRPCService)
+                .addService(graknService)
                 .addService(migratorRPCService)
                 .build();
     }
@@ -293,7 +291,7 @@ public class GraknServer implements AutoCloseable {
         LOG.info("");
         LOG.info("Shutting down Grakn Core Server...");
         try {
-            graknRPCService.close();
+            graknService.close();
             server.shutdown();
             server.awaitTermination();
             grakn.close();
