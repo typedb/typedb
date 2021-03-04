@@ -249,7 +249,9 @@ public abstract class RocksStorage implements Storage {
             }
             try {
                 readWriteLock.writeLock().lock();
-                if (!isOpen() || (!transaction.isOpen() && transaction.isData())) throw GraknException.of(RESOURCE_CLOSED);
+                if (!isOpen() || (!transaction.isOpen() && transaction.isData())) {
+                    throw GraknException.of(RESOURCE_CLOSED);
+                }
                 storageTransaction.delete(key);
             } catch (RocksDBException e) {
                 throw exception(e);
@@ -268,25 +270,13 @@ public abstract class RocksStorage implements Storage {
 
         @Override
         public GraknException exception(ErrorMessage errorMessage) {
-            try {
-                // TODO i think this will deadlock on transaction.close() since it's not a reentrant lock
-                readWriteLock.writeLock().lock();
-                transaction.close();
-            } finally {
-                readWriteLock.writeLock().unlock();
-            }
+            transaction.close();
             return super.exception(errorMessage);
         }
 
         @Override
         public GraknException exception(Exception exception) {
-            try {
-                // TODO i think this will deadlock on transaction.close() since it's not a reentrant lock
-                readWriteLock.writeLock().lock();
-                transaction.close();
-            } finally {
-                readWriteLock.writeLock().unlock();
-            }
+            transaction.close();
             return super.exception(exception);
         }
 
@@ -326,7 +316,7 @@ public abstract class RocksStorage implements Storage {
             } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
-                if (transaction.isOpen()) readWriteLock.writeLock().unlock();
+                readWriteLock.writeLock().unlock();
             }
         }
 
@@ -339,7 +329,7 @@ public abstract class RocksStorage implements Storage {
             } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
-                if (transaction.isOpen()) readWriteLock.writeLock().unlock();
+                readWriteLock.writeLock().unlock();
             }
         }
     }
@@ -363,9 +353,12 @@ public abstract class RocksStorage implements Storage {
         public void put(byte[] key, byte[] value) {
             assert isOpen() && !isReadOnly;
             try {
+                readWriteLock.readLock().lock();
                 storageTransaction.put(key, value);
             } catch (RocksDBException e) {
                 throw exception(e);
+            } finally {
+                readWriteLock.readLock().unlock();
             }
         }
 
@@ -373,9 +366,12 @@ public abstract class RocksStorage implements Storage {
         public void putUntracked(byte[] key, byte[] value) {
             assert isOpen() && !isReadOnly;
             try {
+                readWriteLock.readLock().lock();
                 storageTransaction.putUntracked(key, value);
             } catch (RocksDBException e) {
                 throw exception(e);
+            } finally {
+                readWriteLock.readLock().unlock();
             }
         }
 
@@ -383,9 +379,12 @@ public abstract class RocksStorage implements Storage {
         public void mergeUntracked(byte[] key, byte[] value) {
             assert isOpen() && !isReadOnly;
             try {
+                readWriteLock.readLock().lock();
                 storageTransaction.mergeUntracked(key, value);
             } catch (RocksDBException e) {
                 throw exception(e);
+            } finally {
+                readWriteLock.readLock().unlock();
             }
         }
     }
