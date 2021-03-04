@@ -269,6 +269,7 @@ public abstract class RocksStorage implements Storage {
         @Override
         public GraknException exception(ErrorMessage errorMessage) {
             try {
+                // TODO i think this will deadlock on transaction.close() since it's not a reentrant lock
                 readWriteLock.writeLock().lock();
                 transaction.close();
             } finally {
@@ -280,6 +281,7 @@ public abstract class RocksStorage implements Storage {
         @Override
         public GraknException exception(Exception exception) {
             try {
+                // TODO i think this will deadlock on transaction.close() since it's not a reentrant lock
                 readWriteLock.writeLock().lock();
                 transaction.close();
             } finally {
