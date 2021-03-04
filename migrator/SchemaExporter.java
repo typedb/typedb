@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.server.migrator;
+package grakn.core.migrator;
 
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
@@ -41,14 +41,14 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static graql.lang.common.util.Strings.escapeRegex;
 import static graql.lang.common.util.Strings.quoteString;
 
-public class Schema {
+public class SchemaExporter {
 
     private static String SEMICOLON_NEWLINE_X2 = ";\n\n";
     private static String COMMA_NEWLINE_INDENT = ",\n" + indent(1);
     private final Grakn grakn;
     private final String database;
 
-    public Schema(Grakn grakn, String database) {
+    public SchemaExporter(Grakn grakn, String database) {
         this.grakn = grakn;
         this.database = database;
     }

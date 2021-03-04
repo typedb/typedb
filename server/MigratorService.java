@@ -19,10 +19,10 @@ package grakn.core.server;
 
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
-import grakn.core.server.migrator.Exporter;
-import grakn.core.server.migrator.Importer;
-import grakn.core.server.migrator.Migrator;
-import grakn.core.server.migrator.Schema;
+import grakn.core.migrator.Exporter;
+import grakn.core.migrator.Importer;
+import grakn.core.migrator.Migrator;
+import grakn.core.migrator.SchemaExporter;
 import grakn.core.server.migrator.proto.MigratorGrpc;
 import grakn.core.server.migrator.proto.MigratorProto;
 import io.grpc.stub.StreamObserver;
@@ -47,20 +47,21 @@ public class MigratorService extends MigratorGrpc.MigratorImplBase {
 
     @Override
     public void exportData(MigratorProto.ExportData.Req request, StreamObserver<MigratorProto.Job.Res> responseObserver) {
-        Exporter exporter = new Exporter(grakn, request.getDatabase(), Paths.get(request.getFilename()));
+        Exporter exporter = new Exporter(grakn, request.getDatabase(), Paths.get(request.getFilename()), Version.VERSION);
         runMigrator(exporter, responseObserver);
     }
 
     @Override
     public void importData(MigratorProto.ImportData.Req request, StreamObserver<MigratorProto.Job.Res> responseObserver) {
-        Importer importer = new Importer(grakn, request.getDatabase(), Paths.get(request.getFilename()), request.getRemapLabelsMap());
+        Importer importer = new Importer(grakn, request.getDatabase(), Paths.get(request.getFilename()),
+                                         request.getRemapLabelsMap(), Version.VERSION);
         runMigrator(importer, responseObserver);
     }
 
     @Override
     public void getSchema(MigratorProto.GetSchema.Req request, StreamObserver<MigratorProto.GetSchema.Res> responseObserver) {
         try {
-            String schema = new Schema(grakn, request.getDatabase()).getSchema();
+            String schema = new SchemaExporter(grakn, request.getDatabase()).getSchema();
             MigratorProto.GetSchema.Res res = MigratorProto.GetSchema.Res.newBuilder().setSchema(schema).build();
             responseObserver.onNext(res);
             responseObserver.onCompleted();

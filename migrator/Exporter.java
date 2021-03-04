@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.server.migrator;
+package grakn.core.migrator;
 
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
@@ -26,7 +26,6 @@ import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.RoleType;
-import grakn.core.server.Version;
 import grakn.core.server.migrator.proto.DataProto;
 import grakn.core.server.migrator.proto.MigratorProto;
 import org.slf4j.Logger;
@@ -53,6 +52,7 @@ public class Exporter implements Migrator {
     private final Grakn grakn;
     private final String database;
     private final Path filename;
+    private final String version;
     private final AtomicLong entityCount = new AtomicLong(0);
     private final AtomicLong relationCount = new AtomicLong(0);
     private final AtomicLong attributeCount = new AtomicLong(0);
@@ -60,10 +60,11 @@ public class Exporter implements Migrator {
     private final AtomicLong playerCount = new AtomicLong(0);
     private long totalThingCount = 0;
 
-    public Exporter(Grakn grakn, String database, Path filename) {
+    public Exporter(Grakn grakn, String database, Path filename, String version) {
         this.grakn = grakn;
         this.database = database;
         this.filename = filename;
+        this.version = version;
     }
 
     @Override
@@ -77,16 +78,16 @@ public class Exporter implements Migrator {
 
     @Override
     public void run() {
-        LOG.info("Exporting {} from Grakn {}", database, Version.VERSION);
+        LOG.info("Exporting {} from Grakn {}", database, version);
         try (OutputStream outputStream = new BufferedOutputStream(Files.newOutputStream(filename))) {
             try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA);
                  Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 totalThingCount = tx.concepts().getRootThingType().getInstancesCount();
-                DataProto.Item header = DataProto.Item.newBuilder()
-                        .setHeader(DataProto.Item.Header.newBuilder()
-                                           .setGraknVersion(Version.VERSION)
-                                           .setOriginalDatabase(session.database().name()))
-                        .build();
+                DataProto.Item header = DataProto.Item.newBuilder().setHeader(
+                        DataProto.Item.Header.newBuilder()
+                                .setGraknVersion(version)
+                                .setOriginalDatabase(session.database().name())
+                ).build();
                 write(outputStream, header);
 
                 List<Runnable> workers = new ArrayList<>();
@@ -104,13 +105,14 @@ public class Exporter implements Migrator {
                 }));
                 workers.parallelStream().forEach(Runnable::run);
 
-                DataProto.Item checksums = DataProto.Item.newBuilder().setChecksums(DataProto.Item.Checksums.newBuilder()
-                                                                                            .setEntityCount(entityCount.get())
-                                                                                            .setAttributeCount(attributeCount.get())
-                                                                                            .setRelationCount(relationCount.get())
-                                                                                            .setRoleCount(playerCount.get())
-                                                                                            .setOwnershipCount(ownershipCount.get()))
-                        .build();
+                DataProto.Item checksums = DataProto.Item.newBuilder().setChecksums(
+                        DataProto.Item.Checksums.newBuilder()
+                                .setEntityCount(entityCount.get())
+                                .setAttributeCount(attributeCount.get())
+                                .setRelationCount(relationCount.get())
+                                .setRoleCount(playerCount.get())
+                                .setOwnershipCount(ownershipCount.get())
+                ).build();
                 write(outputStream, checksums);
             }
         } catch (IOException e) {

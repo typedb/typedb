@@ -26,7 +26,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Options;
 import grakn.core.concurrent.common.Executors;
 import grakn.core.rocks.RocksGrakn;
-import grakn.core.server.migrator.MigratorClient;
+import grakn.core.migrator.MigratorClient;
 import grakn.core.server.util.ServerCommand;
 import grakn.core.server.util.ServerDefaults;
 import io.grpc.Server;

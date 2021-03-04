@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.server.migrator;
+package grakn.core.migrator;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;

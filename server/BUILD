@@ -34,28 +34,18 @@ genrule(
     ],
     cmd = "VERSION=`cat $(location //:VERSION)`;sed -e \"s/{version}/$$VERSION/g\" $(location templates/Version.java) >> $@",
     outs = ["Version.java"],
-    visibility = ["//common:__subpackages__"],
 )
 
 java_library(
     name = "version",
     srcs = [":version-src"],
     tags = ["maven_coordinates=io.grakn.core:grakn-version:{pom_version}"],
-)
-
-proto_library(
-    name = "migrator-proto",
-    srcs = ["migrator/proto/data.proto", "migrator/proto/migrator.proto"],
-)
-
-java_grpc_compile(
-    name = "migrator-grpc-src",
-    deps = ["migrator-proto"],
+    visibility = ["//test:__subpackages__"],
 )
 
 native_java_libraries(
     name = "server",
-    srcs = [":migrator-grpc-src"] + glob(["*.java", "*/*.java", "*/*/*.java"], exclude=["templates/**", "test/**"]),
+    srcs = glob(["*.java", "*/*.java", "*/*/*.java"], exclude=["templates/**", "test/**"]),
     deps = [
         # Internal dependencies
         ":version",
@@ -73,15 +63,11 @@ native_java_libraries(
 
         # External dependencies from Maven
         "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_guava_guava",
         "@maven//:com_google_protobuf_protobuf_java",
         "@maven//:info_picocli_picocli",
-        "@maven//:io_grpc_grpc_core",
-        "@maven//:io_grpc_grpc_protobuf",
         "@maven//:io_grpc_grpc_api",
         "@maven//:io_grpc_grpc_netty",
         "@maven//:io_grpc_grpc_stub",
-        "@maven//:javax_annotation_javax_annotation_api", # gRPC needs this in order to compile in Java 11 and Java 14
         "@maven//:io_netty_netty_all",
         "@maven//:org_slf4j_slf4j_api",
     ],
@@ -91,6 +77,7 @@ native_java_libraries(
         "//logic:logic",
         "//query:query",
         "//rocks:rocks",
+        "//migrator:migrator",
     ],
     runtime_deps = [
         "@maven//:ch_qos_logback_logback_classic",

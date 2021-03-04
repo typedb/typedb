@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.server.migrator;
+package grakn.core.migrator;
 
 import com.google.protobuf.Parser;
 import grakn.common.collection.Pair;
@@ -31,7 +31,6 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
-import grakn.core.server.Version;
 import grakn.core.server.migrator.proto.DataProto;
 import grakn.core.server.migrator.proto.MigratorProto;
 import org.slf4j.Logger;
@@ -67,6 +66,7 @@ public class Importer implements Migrator {
     private final Map<String, byte[]> idMap = new HashMap<>();
     private final List<Pair<byte[], List<String>>> missingOwnerships = new ArrayList<>();
     private final List<Pair<byte[], List<Pair<String, List<String>>>>> missingRolePlayers = new ArrayList<>();
+    private final String version;
     private long totalThingCount = 0;
     private long entityCount = 0;
     private long relationCount = 0;
@@ -76,10 +76,11 @@ public class Importer implements Migrator {
     private int txWriteCount = 0;
     private Grakn.Transaction tx;
 
-    public Importer(Grakn grakn, String database, Path filename, Map<String, String> remapLabels) {
+    public Importer(Grakn grakn, String database, Path filename, Map<String, String> remapLabels, String version) {
         this.session = grakn.session(database, Arguments.Session.Type.DATA);
         this.filename = filename;
         this.remapLabels = remapLabels;
+        this.version = version;
     }
 
     @Override
@@ -120,7 +121,7 @@ public class Importer implements Migrator {
                                  header.getOriginalDatabase(),
                                  header.getGraknVersion(),
                                  session.database().name(),
-                                 Version.VERSION);
+                                 version);
                         break;
                     case ENTITY:
                         insertEntity(item.getEntity());
