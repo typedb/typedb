@@ -108,14 +108,8 @@ public class ResponseBuilder {
         public static ConceptProto.Thing thing(Thing thing) {
             ConceptProto.Thing.Builder builder = ConceptProto.Thing.newBuilder()
                     .setIid(ByteString.copyFrom(thing.getIID()))
-                    .setEncoding(getEncoding(thing));
-
-            if (thing instanceof Attribute) {
-                Attribute attribute = thing.asAttribute();
-                builder.setValueType(valueType(attribute))
-                        .setValue(attributeValue(attribute));
-            }
-
+                    .setType(type(thing.getType()));
+            if (thing.isAttribute()) builder.setValue(attributeValue(thing.asAttribute()));
             return builder.build();
         }
 
@@ -123,47 +117,10 @@ public class ResponseBuilder {
             ConceptProto.Type.Builder builder = ConceptProto.Type.newBuilder()
                     .setLabel(type.getLabel().name())
                     .setEncoding(getEncoding(type));
-            if (type instanceof AttributeType) builder.setValueType(valueType(type.asAttributeType()));
-            if (type instanceof RoleType) builder.setScope(type.asRoleType().getLabel().scope().get());
+            if (type.isAttributeType()) builder.setValueType(valueType(type.asAttributeType()));
+            if (type.isRoleType()) builder.setScope(type.asRoleType().getLabel().scope().get());
             if (type.isRoot()) builder.setRoot(true);
             return builder.build();
-        }
-
-        /* public static ConceptProto.Concept conceptPrefilled(grakn.core.concept.Concept concept) {
-            ConceptProto.Concept.Builder builder = ConceptProto.Concept.newBuilder()
-                    .setIid(ByteString.copyFrom(concept.getIID()))
-                    .setBaseType(getSchema(concept));
-
-            if (concept instanceof Type) {
-                builder.setLabelRes(ConceptProto.Type.GetLabel.Res.newBuilder()
-                                            .setLabel(concept.asType().getLabel()));
-            } else if (concept instanceof Thing) {
-                builder.setTypeRes(ConceptProto.Thing.GetType.Res.newBuilder()
-                                           .setThingType(conceptPrefilled(concept.asThing().getType())));
-                builder.setInferredRes(ConceptProto.Thing.IsInferred.Res.newBuilder()
-                                               .setInferred(concept.asThing().isInferred()));
-
-                if (concept instanceof Attribute) {
-                    builder.setValueRes(ConceptProto.Attribute.GetValue.Res.newBuilder()
-                                                .setValue(attributeValue((Attribute) concept)));
-                    builder.setValueTypeRes(ConceptProto.AttributeType.GetValueType.Res.newBuilder()
-                                                    .setValueType(valueType((Attribute) concept)));
-                }
-            }
-
-            return builder.build();
-        } */
-
-        private static ConceptProto.Thing.Encoding getEncoding(Thing thing) {
-            if (thing instanceof Entity) {
-                return ConceptProto.Thing.Encoding.ENTITY;
-            } else if (thing instanceof Relation) {
-                return ConceptProto.Thing.Encoding.RELATION;
-            } else if (thing instanceof Attribute) {
-                return ConceptProto.Thing.Encoding.ATTRIBUTE;
-            } else {
-                throw GraknException.of(ILLEGAL_STATE);
-            }
         }
 
         private static ConceptProto.Type.Encoding getEncoding(Type type) {
