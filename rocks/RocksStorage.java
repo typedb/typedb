@@ -311,7 +311,7 @@ public abstract class RocksStorage implements Storage {
             boolean obtainedWriteLock = false;
             try {
                 if (transaction.isOpen()) {
-                    deleteOrCloseLock.writeLock().lock(); //note: schema puts always obtain write lock due to rule index
+                    deleteOrCloseLock.readLock().lock();
                     obtainedWriteLock = true;
                 }
                 if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
@@ -319,7 +319,7 @@ public abstract class RocksStorage implements Storage {
             } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
-                if (obtainedWriteLock) deleteOrCloseLock.writeLock().unlock();
+                if (obtainedWriteLock) deleteOrCloseLock.readLock().unlock();
             }
         }
 
@@ -329,7 +329,7 @@ public abstract class RocksStorage implements Storage {
             boolean obtainedWriteLock = false;
             try {
                 if (transaction.isOpen()) {
-                    deleteOrCloseLock.writeLock().lock(); //note: schema puts always obtain write lock
+                    deleteOrCloseLock.readLock().lock();
                     obtainedWriteLock = true;
                 }
                 if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
@@ -337,7 +337,7 @@ public abstract class RocksStorage implements Storage {
             } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
-                if (obtainedWriteLock) deleteOrCloseLock.writeLock().unlock();
+                if (obtainedWriteLock) deleteOrCloseLock.readLock().unlock();
             }
         }
     }
