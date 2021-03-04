@@ -32,7 +32,6 @@ import graql.lang.pattern.variable.ThingVariable;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -44,11 +43,6 @@ import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.CONTRADICTORY_RULE_CYCLE;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
-import static graql.lang.common.GraqlToken.Char.CURLY_CLOSE;
-import static graql.lang.common.GraqlToken.Char.CURLY_OPEN;
-import static graql.lang.common.GraqlToken.Char.NEW_LINE;
-import static graql.lang.common.GraqlToken.Char.SEMICOLON;
-import static graql.lang.common.GraqlToken.Char.SPACE;
 
 public class LogicManager {
 
@@ -120,6 +114,9 @@ public class LogicManager {
         validateCycles(conceptMgr, this);
     }
 
+    private Rule fromStructure(RuleStructure ruleStructure) {
+        return logicCache.rule().get(ruleStructure.label(), l -> Rule.of(this, ruleStructure));
+    }
 
     private void validateCycles(ConceptManager conceptMgr, LogicManager logicMgr) {
         Set<Rule> negationRulesTriggeringRules = logicMgr.rulesWithNegations()
@@ -133,8 +130,8 @@ public class LogicManager {
             RuleDependency visiting;
             while (!frontier.isEmpty()) {
                 visiting = frontier.remove(0);
-                if (visitedRecursiveRules.containsKey(visiting.rule)) {
-                    List<Rule> cycle = buildCycle(visiting, visitedRecursiveRules);
+                if (negationRule.equals(visiting.rule)) {
+                    List<Rule> cycle = findCycle(visiting, visitedRecursiveRules);
                     String readableCycle = cycle.stream().map(Rule::getLabel).collect(Collectors.joining(" -> \n"));
                     throw GraknException.of(CONTRADICTORY_RULE_CYCLE, "\n" + readableCycle);
                 } else {
@@ -147,7 +144,7 @@ public class LogicManager {
         }
     }
 
-    private List<Rule> buildCycle(RuleDependency dependency, Map<Rule, RuleDependency> visitedRecursiveRules) {
+    private List<Rule> findCycle(RuleDependency dependency, Map<Rule, RuleDependency> visitedRecursiveRules) {
         List<Rule> cycle = new LinkedList<>();
         cycle.add(dependency.rule);
         Rule triggeringRule = dependency.triggeringRule;
@@ -192,11 +189,6 @@ public class LogicManager {
             return Objects.hash(rule, triggeringRule);
         }
     }
-
-    private Rule fromStructure(RuleStructure ruleStructure) {
-        return logicCache.rule().get(ruleStructure.label(), l -> Rule.of(this, ruleStructure));
-    }
-
 
     public TypeResolver typeResolver() {
         return typeResolver;
