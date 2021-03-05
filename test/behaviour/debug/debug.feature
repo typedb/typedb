@@ -17,91 +17,10 @@
 
 Feature: Debugging Space
 
-  Background: Set up databases for resolution testing
+  Background:
     Given connection has been opened
+    Given connection delete all databases
     Given connection does not have any database
-    Given connection create database: reasoned
-    Given connection create database: materialised
-    Given connection open schema sessions for databases:
-      | reasoned     |
-      | materialised |
-    Given for each session, open transactions of type: write
-    Given for each session, graql define
-      """
-      define
 
-      person sub entity,
-        owns name,
-        plays friendship:friend,
-        plays employment:employee;
-
-      company sub entity,
-        owns name,
-        plays employment:employer;
-
-      place sub entity,
-        owns name,
-        plays location-hierarchy:subordinate,
-        plays location-hierarchy:superior;
-
-      friendship sub relation,
-        relates friend;
-
-      employment sub relation,
-        relates employee,
-        relates employer;
-
-      location-hierarchy sub relation,
-        relates subordinate,
-        relates superior;
-
-      name sub attribute, value string;
-      """
-    Given for each session, transaction commits
-    # each scenario specialises the schema further
-    Given for each session, open transactions of type: write
-
-
-  Scenario: a rule can infer a relation based on ownership of any instance of a specific attribute type
-    Given for each session, graql define
-      """
-      define
-      year sub attribute, value long, plays employment:favourite-year;
-      employment relates favourite-year;
-      rule kronenbourg-employs-anyone-with-a-name: when {
-        $x isa company, has name "Kronenbourg";
-        $p isa person, has name $n;
-        $y 1664 isa year;
-      } then {
-        (employee: $p, employer: $x, favourite-year: $y) isa employment;
-      };
-      """
-    Given for each session, transaction commits
-    Given connection close all sessions
-    Given connection open data sessions for databases:
-      | reasoned     |
-      | materialised |
-    Given for each session, open transactions of type: write
-    Given for each session, graql insert
-      """
-      insert
-      $x isa company, has name "Kronenbourg";
-      $p isa person, has name "Ronald";
-      $p2 isa person, has name "Prasanth";
-      $y 1664 isa year;
-      """
-    Given for each session, transaction commits
-    Given for each session, open transactions of type: write
-    Then materialised database is completed
-    Given for each session, transaction commits
-    Given for each session, open transactions of type: read
-    Then for graql query
-      """
-      match
-        $x 1664 isa year;
-        ($x, employee: $p, employer: $y) isa employment;
-      """
-    Then all answers are correct in reasoned database
-    Then answer size in reasoned database is: 2
-    Then materialised and reasoned databases are the same size
-
+  # Paste any scenarios below for debugging.
+  # Do not commit any changes to this file.

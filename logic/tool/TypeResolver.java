@@ -79,7 +79,7 @@ public class TypeResolver {
     private final TraversalEngine traversalEng;
     private final LogicCache logicCache;
 
-    public TypeResolver(ConceptManager conceptMgr, TraversalEngine traversalEng, LogicCache logicCache) {
+    public TypeResolver(LogicCache logicCache, TraversalEngine traversalEng, ConceptManager conceptMgr) {
         this.conceptMgr = conceptMgr;
         this.traversalEng = traversalEng;
         this.logicCache = logicCache;
@@ -184,21 +184,21 @@ public class TypeResolver {
     private Map<Identifier.Variable.Retrievable, Set<Label>> executeResolverTraversals(TraversalBuilder traversalBuilder) {
         return logicCache.resolver().get(traversalBuilder.traversal(), traversal -> {
             Map<Identifier.Variable.Retrievable, Set<Label>> mapping = new HashMap<>();
-            traversalEng.iterator(traversal, true).forEachRemaining(
-                    result -> {
-                        // TODO: This filter should not be needed if we enforce traversal only to return non-abstract
-                        assert iterate(result.map().values()).allMatch(Vertex::isType);
-                        if (!containsAbstractThing(result, traversalBuilder)) {
-                            result.forEach((id, vertex) -> {
-                                Optional<Variable> originalVar = traversalBuilder.getOriginalVariable(id);
-                                if (originalVar.isPresent()) {
-                                    Set<Label> labels = mapping.computeIfAbsent(id, (i) -> new HashSet<>());
-                                    labels.add(vertex.asType().properLabel());
-                                }
-                            });
-                        }
-                    }
-            );
+            traversalEng.iterator(traversal, true)
+                    // TODO: This filter should not be needed if we enforce traversal only to return non-abstract
+                    .filter(result -> !containsAbstractThing(result, traversalBuilder))
+                    .forEachRemaining(
+                            result -> {
+                                assert iterate(result.map().values()).allMatch(Vertex::isType);
+                                result.forEach((id, vertex) -> {
+                                    Optional<Variable> originalVar = traversalBuilder.getOriginalVariable(id);
+                                    if (originalVar.isPresent()) {
+                                        Set<Label> labels = mapping.computeIfAbsent(id, (i) -> new HashSet<>());
+                                        labels.add(vertex.asType().properLabel());
+                                    }
+                                });
+                            }
+                    );
             return mapping;
         });
     }
@@ -206,10 +206,8 @@ public class TypeResolver {
     private boolean containsAbstractThing(VertexMap resolvedTypes, TraversalBuilder traversalBuilder) {
         for (Map.Entry<Identifier.Variable.Retrievable, Vertex<?, ?>> entry : resolvedTypes.map().entrySet()) {
             Identifier.Variable.Retrievable id = entry.getKey();
-            Optional<Variable> variable = traversalBuilder.getOriginalVariable(id);
-            if (entry.getValue().asType().isAbstract() && variable.isPresent() && variable.get().isThing()) {
-                return true;
-            }
+            Optional<Variable> var = traversalBuilder.getOriginalVariable(id);
+            if (entry.getValue().asType().isAbstract() && var.isPresent() && var.get().isThing()) return true;
         }
         return false;
     }

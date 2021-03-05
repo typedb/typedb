@@ -55,7 +55,7 @@ public class LogicManager {
         this.graphMgr = graphMgr;
         this.conceptMgr = conceptMgr;
         this.logicCache = logicCache;
-        this.typeResolver = new TypeResolver(conceptMgr, traversalEng, logicCache);
+        this.typeResolver = new TypeResolver(logicCache, traversalEng, conceptMgr);
     }
 
     public Rule putRule(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
@@ -111,65 +111,66 @@ public class LogicManager {
         }
 
         // using the new index, validate new rules are stratifiable (eg. do not cause cycles through a negation)
-        validateCycles(conceptMgr, this);
+        validateCyclesThroughNegations(conceptMgr, this);
     }
 
     private Rule fromStructure(RuleStructure ruleStructure) {
         return logicCache.rule().get(ruleStructure.label(), l -> Rule.of(this, ruleStructure));
     }
 
-    private void validateCycles(ConceptManager conceptMgr, LogicManager logicMgr) {
+    private void validateCyclesThroughNegations(ConceptManager conceptMgr, LogicManager logicMgr) {
         Set<Rule> negationRulesTriggeringRules = logicMgr.rulesWithNegations()
                 .filter(rule -> !rule.condition().negatedConcludablesTriggeringRules(conceptMgr, logicMgr).isEmpty())
                 .toSet();
 
         for (Rule negationRule : negationRulesTriggeringRules) {
-            Map<Rule, RuleDependency> visitedRecursiveRules = new HashMap<>();
-            visitedRecursiveRules.put(negationRule, RuleDependency.of(negationRule, null));
-            List<RuleDependency> frontier = new LinkedList<>(recursiveRules(negationRule, conceptMgr, logicMgr));
-            RuleDependency visiting;
+            Map<Rule, RuleDependency> visitedDependentRules = new HashMap<>();
+            visitedDependentRules.put(negationRule, RuleDependency.of(negationRule, null));
+            List<RuleDependency> frontier = new LinkedList<>(ruleDependencies(negationRule, conceptMgr, logicMgr));
+            RuleDependency dependency;
             while (!frontier.isEmpty()) {
-                visiting = frontier.remove(0);
-                if (negationRule.equals(visiting.rule)) {
-                    List<Rule> cycle = findCycle(visiting, visitedRecursiveRules);
-                    String readableCycle = cycle.stream().map(Rule::getLabel).collect(Collectors.joining(" -> \n"));
-                    throw GraknException.of(CONTRADICTORY_RULE_CYCLE, "\n" + readableCycle);
+                dependency = frontier.remove(0);
+                if (negationRule.equals(dependency.recursiveRule)) {
+                    List<Rule> cycle = findCycle(dependency, visitedDependentRules);
+                    String readableCycle = cycle.stream().map(Rule::getLabel).collect(Collectors.joining(" -> \n", "\n", "\n"));
+                    throw GraknException.of(CONTRADICTORY_RULE_CYCLE, readableCycle);
                 } else {
-                    visitedRecursiveRules.put(visiting.rule, visiting);
-                    Set<RuleDependency> recursive = recursiveRules(visiting.rule, conceptMgr, logicMgr);
-                    recursive.removeAll(visitedRecursiveRules.values());
+                    visitedDependentRules.put(dependency.recursiveRule, dependency);
+                    Set<RuleDependency> recursive = ruleDependencies(dependency.recursiveRule, conceptMgr, logicMgr);
+                    recursive.removeAll(visitedDependentRules.values());
                     frontier.addAll(recursive);
                 }
             }
         }
     }
 
-    private List<Rule> findCycle(RuleDependency dependency, Map<Rule, RuleDependency> visitedRecursiveRules) {
-        List<Rule> cycle = new LinkedList<>();
-        cycle.add(dependency.rule);
-        Rule triggeringRule = dependency.triggeringRule;
-        while (!cycle.contains(triggeringRule)) {
-            cycle.add(triggeringRule);
-            triggeringRule = visitedRecursiveRules.get(triggeringRule).triggeringRule;
-        }
-        cycle.add(triggeringRule);
-        return cycle;
-    }
-
-    private Set<RuleDependency> recursiveRules(Rule rule, ConceptManager conceptMgr, LogicManager logicMgr) {
+    private Set<RuleDependency> ruleDependencies(Rule rule, ConceptManager conceptMgr, LogicManager logicMgr) {
         return link(iterate(rule.condition().concludablesTriggeringRules(conceptMgr, logicMgr)),
                     iterate(rule.condition().negatedConcludablesTriggeringRules(conceptMgr, logicMgr)))
                 .flatMap(concludable -> concludable.getApplicableRules(conceptMgr, logicMgr))
                 .map(recursiveRule -> RuleDependency.of(recursiveRule, rule)).toSet();
     }
 
+    private List<Rule> findCycle(RuleDependency dependency, Map<Rule, RuleDependency> visitedDependentRules) {
+        List<Rule> cycle = new LinkedList<>();
+        cycle.add(dependency.recursiveRule);
+        Rule triggeringRule = dependency.triggeringRule;
+        while (!cycle.contains(triggeringRule)) {
+            cycle.add(triggeringRule);
+            triggeringRule = visitedDependentRules.get(triggeringRule).triggeringRule;
+        }
+        cycle.add(triggeringRule);
+        return cycle;
+    }
+
     private static class RuleDependency {
-        final Rule rule;
+
+        final Rule recursiveRule;
         final Rule triggeringRule;
 
-        private RuleDependency(Rule rule, @Nullable Rule triggeredFrom) {
-            this.rule = rule;
-            this.triggeringRule = triggeredFrom;
+        private RuleDependency(Rule recursiveRule, @Nullable Rule triggeringRule) {
+            this.recursiveRule = recursiveRule;
+            this.triggeringRule = triggeringRule;
         }
 
         public static RuleDependency of(Rule rule, Rule triggeredFrom) {
@@ -181,12 +182,12 @@ public class LogicManager {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             final RuleDependency that = (RuleDependency) o;
-            return Objects.equals(rule, that.rule) && Objects.equals(triggeringRule, that.triggeringRule);
+            return Objects.equals(recursiveRule, that.recursiveRule) && Objects.equals(triggeringRule, that.triggeringRule);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(rule, triggeringRule);
+            return Objects.hash(recursiveRule, triggeringRule);
         }
     }
 
