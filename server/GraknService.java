@@ -201,7 +201,7 @@ public class GraknService extends GraknGrpc.GraknImplBase {
     }
 
     public void close() {
-        executor.close();
+//         executor.close();
         sessionServices.values().parallelStream().forEach(s -> s.close(GraknException.of(SERVER_SHUTDOWN)));
         sessionServices.clear();
     }
