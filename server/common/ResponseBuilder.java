@@ -98,7 +98,7 @@ public class ResponseBuilder {
 
         public static ConceptProto.Concept concept(grakn.core.concept.Concept concept) {
             if (concept == null) return null;
-            if (concept instanceof Thing) {
+            if (concept.isThing()) {
                 return ConceptProto.Concept.newBuilder().setThing(thing(concept.asThing())).build();
             } else {
                 return ConceptProto.Concept.newBuilder().setType(type(concept.asType())).build();
@@ -124,15 +124,15 @@ public class ResponseBuilder {
         }
 
         private static ConceptProto.Type.Encoding getEncoding(Type type) {
-            if (type instanceof EntityType) {
+            if (type.isEntityType()) {
                 return ConceptProto.Type.Encoding.ENTITY_TYPE;
-            } else if (type instanceof RelationType) {
+            } else if (type.isRelationType()) {
                 return ConceptProto.Type.Encoding.RELATION_TYPE;
-            } else if (type instanceof AttributeType) {
+            } else if (type.isAttributeType()) {
                 return ConceptProto.Type.Encoding.ATTRIBUTE_TYPE;
-            } else if (type instanceof ThingType) {
+            } else if (type.isThingType()) {
                 return ConceptProto.Type.Encoding.THING_TYPE;
-            } else if (type instanceof RoleType) {
+            } else if (type.isRoleType()) {
                 return ConceptProto.Type.Encoding.ROLE_TYPE;
             } else {
                 throw GraknException.of(ILLEGAL_STATE);
@@ -142,15 +142,15 @@ public class ResponseBuilder {
         public static ConceptProto.Attribute.Value attributeValue(Attribute attribute) {
             ConceptProto.Attribute.Value.Builder builder = ConceptProto.Attribute.Value.newBuilder();
 
-            if (attribute instanceof Attribute.String) {
+            if (attribute.isString()) {
                 builder.setString(attribute.asString().getValue());
-            } else if (attribute instanceof Attribute.Long) {
+            } else if (attribute.isLong()) {
                 builder.setLong(attribute.asLong().getValue());
-            } else if (attribute instanceof Attribute.Boolean) {
+            } else if (attribute.isBoolean()) {
                 builder.setBoolean(attribute.asBoolean().getValue());
-            } else if (attribute instanceof Attribute.DateTime) {
+            } else if (attribute.isDateTime()) {
                 builder.setDateTime(attribute.asDateTime().getValue().toInstant(ZoneOffset.UTC).toEpochMilli());
-            } else if (attribute instanceof Attribute.Double) {
+            } else if (attribute.isDouble()) {
                 builder.setDouble(attribute.asDouble().getValue());
             } else {
                 throw GraknException.of(ErrorMessage.Server.BAD_VALUE_TYPE);
@@ -184,15 +184,15 @@ public class ResponseBuilder {
         }
 
         public static ConceptProto.AttributeType.ValueType valueType(AttributeType attributeType) {
-            if (attributeType instanceof AttributeType.String) {
+            if (attributeType.isString()) {
                 return ConceptProto.AttributeType.ValueType.STRING;
-            } else if (attributeType instanceof AttributeType.Boolean) {
+            } else if (attributeType.isBoolean()) {
                 return ConceptProto.AttributeType.ValueType.BOOLEAN;
-            } else if (attributeType instanceof AttributeType.Long) {
+            } else if (attributeType.isLong()) {
                 return ConceptProto.AttributeType.ValueType.LONG;
-            } else if (attributeType instanceof AttributeType.Double) {
+            } else if (attributeType.isDouble()) {
                 return ConceptProto.AttributeType.ValueType.DOUBLE;
-            } else if (attributeType instanceof AttributeType.DateTime) {
+            } else if (attributeType.isDateTime()) {
                 return ConceptProto.AttributeType.ValueType.DATETIME;
             } else if (attributeType.isRoot()) {
                 return ConceptProto.AttributeType.ValueType.OBJECT;

@@ -221,14 +221,14 @@ public class Inserter {
                 assert isaConstraint.type().label().isPresent();
                 ThingType thingType = getThingType(isaConstraint.type().label().get());
 
-                if (thingType instanceof EntityType) {
+                if (thingType.isEntityType()) {
                     return thingType.asEntityType().create();
-                } else if (thingType instanceof RelationType) {
+                } else if (thingType.isRelationType()) {
                     if (!var.relation().isEmpty()) return thingType.asRelationType().create();
                     else throw GraknException.of(RELATION_CONSTRAINT_MISSING, var.reference());
-                } else if (thingType instanceof AttributeType) {
+                } else if (thingType.isAttributeType()) {
                     return insertAttribute(thingType.asAttributeType(), var);
-                } else if (thingType instanceof ThingTypeImpl.Root) {
+                } else if (thingType.isThingType() && thingType.isRoot()) {
                     throw GraknException.of(ILLEGAL_ABSTRACT_WRITE, Thing.class.getSimpleName(), thingType.getLabel());
                 } else {
                     assert false;

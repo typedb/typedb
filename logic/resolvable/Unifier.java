@@ -268,7 +268,7 @@ public class Unifier {
 
             private boolean predicatesSatisfied(Variable id, Concept concept) {
                 if (id.isRetrievable() && predicates.containsKey(id.asRetrievable())) {
-                    assert concept.isThing() && (concept.asThing() instanceof Attribute);
+                    assert concept.isAttribute();
                     return predicates.get(id.asRetrievable()).apply(concept.asAttribute());
                 } else {
                     return true;
