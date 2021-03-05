@@ -60,7 +60,9 @@ public class GraknService extends GraknGrpc.GraknImplBase {
     public GraknService(Grakn grakn) {
         this.grakn = grakn;
         sessionServices = new ConcurrentHashMap<>();
-        executor = new TransactionExecutor(PARALLELISATION_FACTOR, TRANSACTION_EXECUTOR_QUEUE_FACTOR);
+        // TODO: this is temporarily not used until we enable TransactionExecutor
+        //executor = new TransactionExecutor(PARALLELISATION_FACTOR, TRANSACTION_EXECUTOR_QUEUE_FACTOR);
+        executor = null;
     }
 
     @Override

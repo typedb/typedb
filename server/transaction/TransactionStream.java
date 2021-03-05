@@ -70,7 +70,7 @@ public class TransactionStream implements StreamObserver<Transaction.Req> {
     public void onNext(Transaction.Req request) {
         if (request.getReqCase() == Transaction.Req.ReqCase.OPEN_REQ) open(request);
         else if (transactionSrv.get() == null) throw GraknException.of(TRANSACTION_NOT_OPENED);
-        else graknService.executor().submit(transactionSrv.get().event(request));
+        else transactionSrv.get().executeSerial(request);
     }
 
     @Override

@@ -117,6 +117,26 @@ public class TransactionService {
         }
     }
 
+    // TODO: This is a temporary implementation to use until we enable TransactionExecutor
+    void executeSerial(TransactionProto.Transaction.Req request) {
+        try {
+            switch (request.getReqCase()) {
+                case REQ_NOT_SET:
+                    throw GraknException.of(UNKNOWN_REQUEST_TYPE);
+                case OPEN_REQ:
+                    throw GraknException.of(TRANSACTION_ALREADY_OPENED);
+                case COMMIT_REQ:
+                    commitRequestID = request.getId();
+                    commit();
+                    break;
+                default:
+                    executeRequest(request);
+            }
+        } catch (Exception ex) {
+            close(ex);
+        }
+    }
+
     void execute(TransactionProto.Transaction.Req request) {
         try {
             switch (request.getReqCase()) {

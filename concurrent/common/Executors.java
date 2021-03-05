@@ -56,7 +56,9 @@ public class Executors {
 
     private Executors(int parallelisation) {
         if (parallelisation <= 0) throw GraknException.of(ILLEGAL_ARGUMENT);
-        serviceExecutorService = newFixedThreadPool(serviceThreadCount(parallelisation), threadFactory(GRAKN_CORE_SERVICE_THREAD_NAME));
+        // TODO: this is temporarily not used until we enable TransactionExecutor
+        // serviceExecutorService = newFixedThreadPool(serviceThreadCount(parallelisation), threadFactory(GRAKN_CORE_SERVICE_THREAD_NAME));
+        serviceExecutorService = newFixedThreadPool(parallelisation, threadFactory(GRAKN_CORE_SERVICE_THREAD_NAME));
         asyncExecutorService1 = newFixedThreadPool(parallelisation, threadFactory(GRAKN_CORE_ASYNC_THREAD_1_NAME));
         asyncExecutorService2 = newFixedThreadPool(parallelisation, threadFactory(GRAKN_CORE_ASYNC_THREAD_2_NAME));
         actorExecutorService = new ActorExecutorGroup(parallelisation, threadFactory(GRAKN_CORE_ACTOR_THREAD_NAME));
@@ -66,6 +68,7 @@ public class Executors {
         scheduledThreadPool.setRemoveOnCancelPolicy(true);
     }
 
+    // TODO: this is temporarily not used until we enable TransactionExecutor
     private int serviceThreadCount(int parallelisation) {
         assert parallelisation > 0;
         if (parallelisation <= 2) return 1;
