@@ -28,6 +28,7 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.StampedLock;
 
@@ -40,16 +41,22 @@ public abstract class EventLoopExecutor<E> implements AutoCloseable {
     private static final Shutdown SHUTDOWN_SIGNAL = new Shutdown();
 
     private final ArrayList<EventLoop> executors;
-    private final BlockingQueue<Either<Event<E>, Shutdown>> queue;
+    private final AtomicInteger executorIndex;
     private final ReadWriteLock accessLock;
     private volatile boolean isOpen;
 
-    protected EventLoopExecutor(int parallelisation, int queueSize, NamedThreadFactory threadFactory) {
-        this.executors = new ArrayList<>(parallelisation);
-        this.queue = new LinkedBlockingQueue<>(queueSize);
+    protected EventLoopExecutor(int executors, int queuePerExecutor, NamedThreadFactory threadFactory) {
+        this.executors = new ArrayList<>(executors);
+        this.executorIndex = new AtomicInteger(0);
         this.accessLock = new StampedLock().asReadWriteLock();
         this.isOpen = true;
-        for (int i = 0; i < parallelisation; i++) executors.add(new EventLoop(threadFactory));
+        for (int i = 0; i < executors; i++) this.executors.add(new EventLoop(queuePerExecutor, threadFactory));
+    }
+
+    private EventLoop next() {
+        return executors.get(executorIndex.getAndUpdate(i -> {
+            i++; if (i % executors.size() == 0) i = 0; return i;
+        }));
     }
 
     public abstract void onEvent(E event);
@@ -60,9 +67,7 @@ public abstract class EventLoopExecutor<E> implements AutoCloseable {
         try {
             accessLock.readLock().lock();
             if (!isOpen) throw GraknException.of(SERVER_SHUTDOWN);
-            queue.put(Either.first(new Event<>(event)));
-        } catch (InterruptedException e) {
-            throw GraknException.of(UNEXPECTED_INTERRUPTION);
+            next().submit(event);
         } finally {
             accessLock.readLock().unlock();
         }
@@ -74,13 +79,9 @@ public abstract class EventLoopExecutor<E> implements AutoCloseable {
             accessLock.writeLock().lock();
             if (isOpen) {
                 isOpen = false;
-                queue.clear();
-                for (int i = 0; i < executors.size(); i++) {
-                    queue.put(Either.second(SHUTDOWN_SIGNAL));
-                }
+                executors.forEach(executor -> executor.queue.clear());
+                executors.forEach(EventLoop::shutdown);
             }
-        } catch (InterruptedException e) {
-            throw GraknException.of(UNEXPECTED_INTERRUPTION);
         } finally {
             accessLock.writeLock().unlock();
         }
@@ -105,11 +106,29 @@ public abstract class EventLoopExecutor<E> implements AutoCloseable {
 
     private class EventLoop {
 
-        private final Thread thread;
+        private final BlockingQueue<Either<Event<E>, Shutdown>> queue;
+        private long counter;
 
-        private EventLoop(NamedThreadFactory threadFactory) {
-            this.thread = threadFactory.newThread(this::run);
-            thread.start();
+        private EventLoop(int queueSize, NamedThreadFactory threadFactory) {
+            this.queue = new LinkedBlockingQueue<>(queueSize);
+            this.counter = 0;
+            threadFactory.newThread(this::run).start();
+        }
+
+        private void submit(E event) {
+            try {
+                queue.put(Either.first(new Event<>(event)));
+            } catch (InterruptedException e) {
+                throw GraknException.of(UNEXPECTED_INTERRUPTION);
+            }
+        }
+
+        public void shutdown() {
+            try {
+                queue.put(Either.second(SHUTDOWN_SIGNAL));
+            } catch (InterruptedException e) {
+                throw GraknException.of(UNEXPECTED_INTERRUPTION);
+            }
         }
 
         private void run() {

@@ -28,8 +28,8 @@ public class TransactionExecutor extends EventLoopExecutor<TransactionService.Ev
     private static final Logger LOG = LoggerFactory.getLogger(TransactionExecutor.class);
     private static final String GRAKN_CORE_TRANSACTION_THREAD_NAME = "grakn-core-transaction";
 
-    public TransactionExecutor(int parallelisation, int queueSize) {
-        super(parallelisation, queueSize, NamedThreadFactory.create(GRAKN_CORE_TRANSACTION_THREAD_NAME));
+    public TransactionExecutor(int executors, int queuePerExecutor) {
+        super(executors, queuePerExecutor, NamedThreadFactory.create(GRAKN_CORE_TRANSACTION_THREAD_NAME));
     }
 
     @Override
