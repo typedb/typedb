@@ -28,6 +28,7 @@ import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.traversal.TraversalEngine;
+import grakn.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +43,7 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(ConditionResolver.class);
 
     private final Rule.Condition condition;
+    private final Set<Identifier.Variable.Retrievable> missingBounds;
 
     public ConditionResolver(Driver<ConditionResolver> driver, Rule.Condition condition, Driver<ResolutionRecorder> resolutionRecorder,
                              ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
@@ -49,11 +51,17 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
         super(driver, ConditionResolver.class.getCanonicalName() + "(rule:" + condition.rule().getLabel() + ")",
               resolutionRecorder, registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
         this.condition = condition;
+        this.missingBounds = missingBounds(conjunction());
     }
 
     @Override
     public Conjunction conjunction() {
         return condition.rule().when();
+    }
+
+    @Override
+    Set<Identifier.Variable.Retrievable> missingBounds() {
+        return missingBounds;
     }
 
     @Override
@@ -82,8 +90,13 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
     }
 
     @Override
-    ConjunctionResolver.RequestState requestStateForIteration(ConjunctionResolver.RequestState requestStatePrior, int iteration) {
-        return new ConjunctionResolver.RequestState(iteration);
+    ConjunctionResolver.RequestState requestStateNew(int iteration, boolean singleAnswerRequired) {
+        return new RequestState(iteration);
+    }
+
+    @Override
+    ConjunctionResolver.RequestState requestStateForIteration(RequestState requestStatePrior, int iteration, boolean singleAnswerRequired) {
+        return new RequestState(iteration);
     }
 
     @Override

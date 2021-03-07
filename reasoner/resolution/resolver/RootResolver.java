@@ -21,8 +21,6 @@ import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.ConceptManager;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.resolvable.Concludable;
-import grakn.core.logic.resolvable.Concludable;
-import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
@@ -31,6 +29,7 @@ import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.traversal.TraversalEngine;
+import grakn.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,10 +46,11 @@ public interface RootResolver {
 
         private static final Logger LOG = LoggerFactory.getLogger(Conjunction.class);
 
-        private grakn.core.pattern.Conjunction conjunction;
+        private final grakn.core.pattern.Conjunction conjunction;
+        private final Set<Identifier.Variable.Retrievable> missingBounds;
         private final Consumer<Top> onAnswer;
         private final Consumer<Integer> onFail;
-        private Consumer<Throwable> onException;
+        private final Consumer<Throwable> onException;
 
         public Conjunction(Driver<Conjunction> driver, grakn.core.pattern.Conjunction conjunction,
                            Consumer<Top> onAnswer, Consumer<Integer> onFail, Consumer<Throwable> onException,
@@ -60,6 +60,7 @@ public interface RootResolver {
             super(driver, Conjunction.class.getSimpleName() + "(pattern:" + conjunction + ")",
                   resolutionRecorder, registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
             this.conjunction = conjunction;
+            this.missingBounds = missingBounds(this.conjunction);
             this.onAnswer = onAnswer;
             this.onFail = onFail;
             this.onException = onException;
@@ -68,6 +69,11 @@ public interface RootResolver {
         @Override
         public grakn.core.pattern.Conjunction conjunction() {
             return conjunction;
+        }
+
+        @Override
+        Set<Identifier.Variable.Retrievable> missingBounds() {
+            return missingBounds;
         }
 
         @Override
@@ -125,12 +131,12 @@ public interface RootResolver {
         }
 
         @Override
-        RequestState requestStateNew(int iteration) {
+        RequestState requestStateNew(int iteration, boolean singleAnswerRequired) {
             return new RequestState(iteration);
         }
 
         @Override
-        RequestState requestStateForIteration(RequestState requestStatePrior, int iteration) {
+        RequestState requestStateForIteration(RequestState requestStatePrior, int iteration, boolean singleAnswerRequired) {
             return new RequestState(iteration, requestStatePrior.produced());
         }
 

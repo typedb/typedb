@@ -18,7 +18,6 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
-import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.ConceptManager;
@@ -39,6 +38,7 @@ import grakn.core.reasoner.resolution.answer.Mapping;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.traversal.TraversalEngine;
+import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.common.Identifier.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +52,7 @@ import java.util.Set;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.common.iterator.Iterators.single;
 
 public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<RESOLVER>>
         extends CompoundResolver<RESOLVER, ConjunctionResolver.RequestState> {
@@ -149,7 +150,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
 
     abstract Conjunction conjunction();
 
-    abstract ConceptMap bounds();
+    abstract Set<Identifier.Variable.Retrievable> missingBounds();
 
     @Override
     protected void initialiseDownstreamResolvers() {
@@ -183,7 +184,8 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         Plans.Plan plan = plans.getOrCreate(fromUpstream.partialAnswer().conceptMap().concepts().keySet(), resolvables, negateds);
         assert !plan.isEmpty();
 
-        RequestState requestState = requestStateNew(iteration);
+        boolean singleAnswerRequired = fromUpstream.partialAnswer().conceptMap().concepts().keySet().containsAll(missingBounds());
+        RequestState requestState = requestStateNew(iteration, singleAnswerRequired);
         ResolverRegistry.ResolverView childResolver = downstreamResolvers.get(plan.get(0));
         Partial<?> downstream = forDownstreamResolver(childResolver, fromUpstream.partialAnswer());
         Request toDownstream = Request.create(driver(), childResolver.resolver(), downstream, 0);
@@ -198,8 +200,9 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         LOG.debug("{}: Updating RequestState for iteration '{}'", name(), newIteration);
         Plans.Plan plan = plans.getOrCreate(fromUpstream.partialAnswer().conceptMap().concepts().keySet(), resolvables, negateds);
 
+        boolean singleAnswerRequired = fromUpstream.partialAnswer().conceptMap().concepts().keySet().containsAll(missingBounds());
         assert !plan.isEmpty();
-        RequestState requestStateNextIteration = requestStateForIteration(requestStatePrior, newIteration);
+        RequestState requestStateNextIteration = requestStateForIteration(requestStatePrior, newIteration, singleAnswerRequired);
         ResolverRegistry.ResolverView childResolver = downstreamResolvers.get(plan.get(0));
         Partial<?> downstream = forDownstreamResolver(childResolver, fromUpstream.partialAnswer());
         Request toDownstream = Request.create(driver(), childResolver.resolver(), downstream, 0);
@@ -207,9 +210,9 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         return requestStateNextIteration;
     }
 
-    abstract RequestState requestStateNew(int iteration);
+    abstract RequestState requestStateNew(int iteration, boolean singleAnswerRequired);
 
-    abstract RequestState requestStateForIteration(RequestState requestStatePrior, int iteration);
+    abstract RequestState requestStateForIteration(RequestState requestStatePrior, int iteration, boolean singleAnswerRequired);
 
     Partial<?> forDownstreamResolver(ResolverRegistry.ResolverView resolver, Partial<?> partialAnswer) {
         if (resolver.isMapped()) {
@@ -221,6 +224,15 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         }
     }
 
+    Set<Identifier.Variable.Retrievable> missingBounds(Conjunction conjunction) {
+        Set<Identifier.Variable.Retrievable> missingBounds = new HashSet<>();
+        iterate(conjunction.variables()).filter(var -> var.id().isRetrievable()).forEachRemaining(var -> {
+            if (var.isType() && !var.asType().label().isPresent()) missingBounds.add(var.asType().id().asRetrievable());
+            else if (var.isThing() && !var.asThing().iid().isPresent())
+                missingBounds.add(var.asThing().id().asRetrievable());
+        });
+        return missingBounds;
+    }
 
     public static class RequestState extends CompoundResolver.RequestState {
 
@@ -291,6 +303,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
     public static class Nested extends ConjunctionResolver<Nested> {
 
         private final Conjunction conjunction;
+        private final Set<Variable.Retrievable> missingBounds;
 
         public Nested(Driver<Nested> driver, Conjunction conjunction, Driver<ResolutionRecorder> resolutionRecorder,
                       ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
@@ -298,11 +311,17 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
             super(driver, Nested.class.getSimpleName() + "(pattern: " + conjunction + ")",
                   resolutionRecorder, registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
             this.conjunction = conjunction;
+            this.missingBounds = missingBounds(this.conjunction);
         }
 
         @Override
         public Conjunction conjunction() {
             return conjunction;
+        }
+
+        @Override
+        Set<Variable.Retrievable> missingBounds() {
+            return missingBounds;
         }
 
         @Override
@@ -327,12 +346,12 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         }
 
         @Override
-        ConjunctionResolver.RequestState requestStateNew(int iteration) {
+        ConjunctionResolver.RequestState requestStateNew(int iteration, boolean singleAnswerRequired) {
             return new ConjunctionResolver.RequestState(iteration);
         }
 
         @Override
-        ConjunctionResolver.RequestState requestStateForIteration(ConjunctionResolver.RequestState requestStatePrior, int iteration) {
+        ConjunctionResolver.RequestState requestStateForIteration(ConjunctionResolver.RequestState requestStatePrior, int iteration, boolean singleAnswerRequired) {
             return new ConjunctionResolver.RequestState(iteration);
         }
     }
