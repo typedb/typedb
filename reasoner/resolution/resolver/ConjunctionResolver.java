@@ -18,6 +18,7 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
+import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.ConceptManager;
@@ -147,6 +148,8 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
     abstract Set<Concludable> concludablesTriggeringRules();
 
     abstract Conjunction conjunction();
+
+    abstract ConceptMap bounds();
 
     @Override
     protected void initialiseDownstreamResolvers() {
