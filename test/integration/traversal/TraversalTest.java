@@ -93,7 +93,7 @@ public class TraversalTest {
     }
 
     @Test
-    public void test_traversal_procedure() {
+    public void test_closure_backtrack_clears_scopes() {
         session = grakn.session(database, Arguments.Session.Type.SCHEMA);
         try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
             GraqlDefine query = Graql.parseQuery("define " +
