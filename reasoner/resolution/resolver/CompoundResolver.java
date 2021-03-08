@@ -112,11 +112,13 @@ public abstract class CompoundResolver<
     static class RequestState {
 
         private final int iteration;
+        private final boolean singleAnswerRequired;
         private final LinkedHashSet<Request> downstreamProducer;
         private Iterator<Request> downstreamProducerSelector;
 
-        public RequestState(int iteration) {
+        public RequestState(int iteration, boolean singleAnswerRequired) {
             this.iteration = iteration;
+            this.singleAnswerRequired = singleAnswerRequired;
             downstreamProducer = new LinkedHashSet<>();
             downstreamProducerSelector = downstreamProducer.iterator();
         }

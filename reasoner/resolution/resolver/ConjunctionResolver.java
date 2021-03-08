@@ -347,12 +347,12 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
 
         @Override
         ConjunctionResolver.RequestState requestStateNew(int iteration, boolean singleAnswerRequired) {
-            return new ConjunctionResolver.RequestState(iteration);
+            return new ConjunctionResolver.RequestState(iteration, singleAnswerRequired);
         }
 
         @Override
         ConjunctionResolver.RequestState requestStateForIteration(ConjunctionResolver.RequestState requestStatePrior, int iteration, boolean singleAnswerRequired) {
-            return new ConjunctionResolver.RequestState(iteration);
+            return new ConjunctionResolver.RequestState(iteration, singleAnswerRequired);
         }
     }
 }
