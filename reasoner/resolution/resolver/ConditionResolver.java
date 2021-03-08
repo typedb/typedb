@@ -43,7 +43,6 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(ConditionResolver.class);
 
     private final Rule.Condition condition;
-    private final Set<Identifier.Variable.Retrievable> missingBounds;
 
     public ConditionResolver(Driver<ConditionResolver> driver, Rule.Condition condition, Driver<ResolutionRecorder> resolutionRecorder,
                              ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
@@ -51,17 +50,11 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
         super(driver, ConditionResolver.class.getCanonicalName() + "(rule:" + condition.rule().getLabel() + ")",
               resolutionRecorder, registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
         this.condition = condition;
-        this.missingBounds = missingBounds(conjunction());
     }
 
     @Override
     public Conjunction conjunction() {
         return condition.rule().when();
-    }
-
-    @Override
-    Set<Identifier.Variable.Retrievable> missingBounds() {
-        return missingBounds;
     }
 
     @Override

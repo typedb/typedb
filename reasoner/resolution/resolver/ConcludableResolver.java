@@ -20,11 +20,13 @@ package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.FunctionalIterator;
+import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Unifier;
+import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
@@ -34,6 +36,7 @@ import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.reasoner.resolution.framework.Response.Answer;
 import grakn.core.traversal.TraversalEngine;
+import grakn.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +49,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static grakn.core.common.iterator.Iterators.iterate;
+
 public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
 
@@ -55,6 +60,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private final Map<Driver<? extends Resolver<?>>, RecursionState> recursionStates;
     private final Driver<ResolutionRecorder> resolutionRecorder;
     private final Map<Request, RequestState> requestStates;
+    private final Set<Identifier.Variable.Retrievable> missingBounds;
     private boolean isInitialised;
 
     public ConcludableResolver(Driver<ConcludableResolver> driver, Concludable concludable,
@@ -69,6 +75,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         this.applicableRules = new LinkedHashMap<>();
         this.recursionStates = new HashMap<>();
         this.requestStates = new HashMap<>();
+        this.missingBounds = missingBounds(concludable.pattern());
         this.isInitialised = false;
     }
 
@@ -101,7 +108,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
         if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
             requestState.recordProduced(upstreamAnswer.conceptMap());
-            answerToUpstream(upstreamAnswer, fromUpstream, iteration);
+            answerFound(upstreamAnswer, fromUpstream, iteration);
         } else {
             if (fromDownstream.answer().recordExplanations()) {
                 LOG.trace("{}: Recording deduplicated answer derivation: {}", name(), upstreamAnswer);
@@ -109,6 +116,22 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             }
             nextAnswer(fromUpstream, requestState, iteration);
         }
+    }
+
+    /*
+    When we only require 1 answer (eg. when the conjunction is already fully bound), we can short circuit
+    and prevent exploration of further rules.
+
+    One latency optimisation we could do here, is keep track of how many N repeated requests are received,
+    forward them downstream (to parallelise searching for the single answer), and when the first one finds an answer,
+    we respond for all N ahead of time. Then, when the rules actually return an answer to this concludable, we do nothing.
+     */
+    private void answerFound(Partial<?> upstreamAnswer, Request fromUpstream, int iteration) {
+        RequestState requestState = this.requestStates.get(fromUpstream);
+        if (requestState.singleAnswerRequired()) {
+            requestState.clearDownstreamProducers();
+        }
+        answerToUpstream(upstreamAnswer, fromUpstream, iteration);
     }
 
     @Override
@@ -158,7 +181,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         if (requestState.hasUpstreamAnswer()) {
             Partial<?> upstreamAnswer = requestState.upstreamAnswers().next();
             requestState.recordProduced(upstreamAnswer.conceptMap());
-            answerToUpstream(upstreamAnswer, fromUpstream, iteration);
+            answerFound(upstreamAnswer, fromUpstream, iteration);
         } else {
             if (requestState.hasDownstreamProducer()) {
                 requestFromDownstream(requestState.nextDownstreamProducer(), fromUpstream, iteration);
@@ -193,12 +216,14 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             iterationState.nextIteration(iteration);
         }
 
+        boolean singleAnswerRequired = fromUpstream.partialAnswer().conceptMap().concepts().keySet().containsAll(missingBounds());
+
         assert fromUpstream.partialAnswer().isMapped();
         FunctionalIterator<Partial<?>> upstreamAnswers =
                 traversalIterator(concludable.pattern(), fromUpstream.partialAnswer().conceptMap())
                         .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap));
 
-        RequestState requestState = new RequestState(upstreamAnswers, iteration);
+        RequestState requestState = new RequestState(upstreamAnswers, iteration, singleAnswerRequired);
         mayRegisterRules(fromUpstream, iterationState, requestState);
         return requestState;
     }
@@ -221,21 +246,38 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         }
     }
 
+    private Set<Identifier.Variable.Retrievable> missingBounds() {
+        return missingBounds;
+    }
+
+    Set<Identifier.Variable.Retrievable> missingBounds(Conjunction conjunction) {
+        Set<Identifier.Variable.Retrievable> missingBounds = new HashSet<>();
+        iterate(conjunction.variables()).filter(var -> var.id().isRetrievable()).forEachRemaining(var -> {
+            if (var.isType() && !var.asType().label().isPresent()) missingBounds.add(var.asType().id().asRetrievable());
+            else if (var.isThing() && !var.asThing().iid().isPresent())
+                missingBounds.add(var.asThing().id().asRetrievable());
+        });
+        return missingBounds;
+    }
+
     private static class RequestState {
         private final Set<ConceptMap> produced;
         private final FunctionalIterator<Partial<?>> newUpstreamAnswers;
         private final LinkedHashSet<Request> downstreamProducer;
         private final int iteration;
+        private final boolean singleAnswerRequired;
         private Iterator<Request> downstreamProducerSelector;
 
-        public RequestState(FunctionalIterator<Partial<?>> upstreamAnswers, int iteration) {
-            this(upstreamAnswers, iteration, new HashSet<>());
+        public RequestState(FunctionalIterator<Partial<?>> upstreamAnswers, int iteration, boolean singleAnswerRequired) {
+            this(upstreamAnswers, iteration, singleAnswerRequired, new HashSet<>());
         }
 
-        private RequestState(FunctionalIterator<Partial<?>> upstreamAnswers, int iteration, Set<ConceptMap> produced) {
+        private RequestState(FunctionalIterator<Partial<?>> upstreamAnswers, int iteration, boolean singleAnswerRequired,
+                             Set<ConceptMap> produced) {
             this.newUpstreamAnswers = upstreamAnswers.filter(partial -> !hasProduced(partial.conceptMap()));
             this.iteration = iteration;
             this.produced = produced;
+            this.singleAnswerRequired = singleAnswerRequired;
             downstreamProducer = new LinkedHashSet<>();
             downstreamProducerSelector = downstreamProducer.iterator();
         }
@@ -279,10 +321,18 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             if (removed) downstreamProducerSelector = downstreamProducer.iterator();
         }
 
+        public void clearDownstreamProducers() {
+            downstreamProducer.clear();
+            downstreamProducerSelector = Iterators.empty();
+        }
+
+        public boolean singleAnswerRequired() {
+            return singleAnswerRequired;
+        }
+
         public int iteration() {
             return iteration;
         }
-
     }
 
     /**

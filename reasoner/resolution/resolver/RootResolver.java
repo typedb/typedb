@@ -47,7 +47,6 @@ public interface RootResolver {
         private static final Logger LOG = LoggerFactory.getLogger(Conjunction.class);
 
         private final grakn.core.pattern.Conjunction conjunction;
-        private final Set<Identifier.Variable.Retrievable> missingBounds;
         private final Consumer<Top> onAnswer;
         private final Consumer<Integer> onFail;
         private final Consumer<Throwable> onException;
@@ -60,7 +59,6 @@ public interface RootResolver {
             super(driver, Conjunction.class.getSimpleName() + "(pattern:" + conjunction + ")",
                   resolutionRecorder, registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
             this.conjunction = conjunction;
-            this.missingBounds = missingBounds(this.conjunction);
             this.onAnswer = onAnswer;
             this.onFail = onFail;
             this.onException = onException;
@@ -69,11 +67,6 @@ public interface RootResolver {
         @Override
         public grakn.core.pattern.Conjunction conjunction() {
             return conjunction;
-        }
-
-        @Override
-        Set<Identifier.Variable.Retrievable> missingBounds() {
-            return missingBounds;
         }
 
         @Override

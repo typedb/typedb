@@ -150,8 +150,6 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
 
     abstract Conjunction conjunction();
 
-    abstract Set<Identifier.Variable.Retrievable> missingBounds();
-
     @Override
     protected void initialiseDownstreamResolvers() {
         LOG.debug("{}: initialising downstream resolvers", name());
@@ -222,15 +220,6 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         }
     }
 
-    Set<Identifier.Variable.Retrievable> missingBounds(Conjunction conjunction) {
-        Set<Identifier.Variable.Retrievable> missingBounds = new HashSet<>();
-        iterate(conjunction.variables()).filter(var -> var.id().isRetrievable()).forEachRemaining(var -> {
-            if (var.isType() && !var.asType().label().isPresent()) missingBounds.add(var.asType().id().asRetrievable());
-            else if (var.isThing() && !var.asThing().iid().isPresent())
-                missingBounds.add(var.asThing().id().asRetrievable());
-        });
-        return missingBounds;
-    }
 
     public static class RequestState extends CompoundResolver.RequestState {
 
@@ -301,7 +290,6 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
     public static class Nested extends ConjunctionResolver<Nested> {
 
         private final Conjunction conjunction;
-        private final Set<Variable.Retrievable> missingBounds;
 
         public Nested(Driver<Nested> driver, Conjunction conjunction, Driver<ResolutionRecorder> resolutionRecorder,
                       ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
@@ -309,17 +297,11 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
             super(driver, Nested.class.getSimpleName() + "(pattern: " + conjunction + ")",
                   resolutionRecorder, registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
             this.conjunction = conjunction;
-            this.missingBounds = missingBounds(this.conjunction);
         }
 
         @Override
         public Conjunction conjunction() {
             return conjunction;
-        }
-
-        @Override
-        Set<Variable.Retrievable> missingBounds() {
-            return missingBounds;
         }
 
         @Override
