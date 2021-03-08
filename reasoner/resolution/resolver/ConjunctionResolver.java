@@ -184,8 +184,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         Plans.Plan plan = plans.getOrCreate(fromUpstream.partialAnswer().conceptMap().concepts().keySet(), resolvables, negateds);
         assert !plan.isEmpty();
 
-        boolean singleAnswerRequired = fromUpstream.partialAnswer().conceptMap().concepts().keySet().containsAll(missingBounds());
-        RequestState requestState = requestStateNew(iteration, singleAnswerRequired);
+        RequestState requestState = requestStateNew(iteration);
         ResolverRegistry.ResolverView childResolver = downstreamResolvers.get(plan.get(0));
         Partial<?> downstream = forDownstreamResolver(childResolver, fromUpstream.partialAnswer());
         Request toDownstream = Request.create(driver(), childResolver.resolver(), downstream, 0);
@@ -200,9 +199,8 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         LOG.debug("{}: Updating RequestState for iteration '{}'", name(), newIteration);
         Plans.Plan plan = plans.getOrCreate(fromUpstream.partialAnswer().conceptMap().concepts().keySet(), resolvables, negateds);
 
-        boolean singleAnswerRequired = fromUpstream.partialAnswer().conceptMap().concepts().keySet().containsAll(missingBounds());
         assert !plan.isEmpty();
-        RequestState requestStateNextIteration = requestStateForIteration(requestStatePrior, newIteration, singleAnswerRequired);
+        RequestState requestStateNextIteration = requestStateForIteration(requestStatePrior, newIteration);
         ResolverRegistry.ResolverView childResolver = downstreamResolvers.get(plan.get(0));
         Partial<?> downstream = forDownstreamResolver(childResolver, fromUpstream.partialAnswer());
         Request toDownstream = Request.create(driver(), childResolver.resolver(), downstream, 0);
@@ -210,9 +208,9 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         return requestStateNextIteration;
     }
 
-    abstract RequestState requestStateNew(int iteration, boolean singleAnswerRequired);
+    abstract RequestState requestStateNew(int iteration);
 
-    abstract RequestState requestStateForIteration(RequestState requestStatePrior, int iteration, boolean singleAnswerRequired);
+    abstract RequestState requestStateForIteration(RequestState requestStatePrior, int iteration);
 
     Partial<?> forDownstreamResolver(ResolverRegistry.ResolverView resolver, Partial<?> partialAnswer) {
         if (resolver.isMapped()) {
@@ -346,13 +344,13 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         }
 
         @Override
-        ConjunctionResolver.RequestState requestStateNew(int iteration, boolean singleAnswerRequired) {
-            return new ConjunctionResolver.RequestState(iteration, singleAnswerRequired);
+        ConjunctionResolver.RequestState requestStateNew(int iteration) {
+            return new ConjunctionResolver.RequestState(iteration);
         }
 
         @Override
-        ConjunctionResolver.RequestState requestStateForIteration(ConjunctionResolver.RequestState requestStatePrior, int iteration, boolean singleAnswerRequired) {
-            return new ConjunctionResolver.RequestState(iteration, singleAnswerRequired);
+        ConjunctionResolver.RequestState requestStateForIteration(ConjunctionResolver.RequestState requestStatePrior, int iteration) {
+            return new ConjunctionResolver.RequestState(iteration);
         }
     }
 }

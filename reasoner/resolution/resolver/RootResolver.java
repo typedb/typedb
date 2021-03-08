@@ -131,13 +131,13 @@ public interface RootResolver {
         }
 
         @Override
-        RequestState requestStateNew(int iteration, boolean singleAnswerRequired) {
-            return new RequestState(iteration, singleAnswerRequired);
+        RequestState requestStateNew(int iteration) {
+            return new RequestState(iteration);
         }
 
         @Override
-        RequestState requestStateForIteration(RequestState requestStatePrior, int iteration, boolean singleAnswerRequired) {
-            return new RequestState(iteration, singleAnswerRequired, requestStatePrior.produced());
+        RequestState requestStateForIteration(RequestState requestStatePrior, int iteration) {
+            return new RequestState(iteration, requestStatePrior.produced());
         }
 
 

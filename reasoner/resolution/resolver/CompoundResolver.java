@@ -112,13 +112,11 @@ public abstract class CompoundResolver<
     static class RequestState {
 
         private final int iteration;
-        private final boolean singleAnswerRequired;
         private final LinkedHashSet<Request> downstreamProducer;
         private Iterator<Request> downstreamProducerSelector;
 
-        public RequestState(int iteration, boolean singleAnswerRequired) {
+        public RequestState(int iteration) {
             this.iteration = iteration;
-            this.singleAnswerRequired = singleAnswerRequired;
             downstreamProducer = new LinkedHashSet<>();
             downstreamProducerSelector = downstreamProducer.iterator();
         }
@@ -144,10 +142,6 @@ public abstract class CompoundResolver<
             // only update the iterator when removing an element, to avoid resetting and reusing first request too often
             // note: this is a large performance win when processing large batches of requests
             if (removed) downstreamProducerSelector = downstreamProducer.iterator();
-        }
-
-        public boolean singleAnswerRequired() {
-            return singleAnswerRequired;
         }
 
         public int iteration() {

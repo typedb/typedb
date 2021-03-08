@@ -90,14 +90,14 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
     }
 
     @Override
-    ConjunctionResolver.RequestState requestStateNew(int iteration, boolean singleAnswerRequired) {
-        return new RequestState(iteration, singleAnswerRequired);
+    ConjunctionResolver.RequestState requestStateNew(int iteration) {
+        return new RequestState(iteration);
     }
     }
 
     @Override
-    ConjunctionResolver.RequestState requestStateForIteration(RequestState requestStatePrior, int iteration, boolean singleAnswerRequired) {
-        return new RequestState(iteration, singleAnswerRequired);
+    ConjunctionResolver.RequestState requestStateForIteration(RequestState requestStatePrior, int iteration) {
+        return new RequestState(iteration);
     }
 
     @Override

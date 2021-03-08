@@ -138,7 +138,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         }
 
         public RequestState(int iteration, Set<ConceptMap> produced) {
-            super(iteration, singleAnswerRequired);
+            super(iteration);
             this.produced = produced;
         }
 
