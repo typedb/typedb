@@ -127,15 +127,15 @@ public class TraversalTest {
             GraphProcedure.Builder proc = GraphProcedure.builder(10);
             /*
             vertices:
-		    $_0 [thing] { hasIID: false, types: [name], predicates: [= <STRING>] } (end) // Alex
-		    $_1 [thing] { hasIID: false, types: [name], predicates: [= <STRING>] } (end) // John
-		    $f1 [thing] { hasIID: false, types: [friendship], predicates: [] }
-		    $n [thing] { hasIID: false, types: [lastname], predicates: [] } (start)
-		    $r1 [thing] { hasIID: false, types: [ref], predicates: [= <LONG>] } (end) // 3
-		    $r2 [thing] { hasIID: false, types: [ref], predicates: [= <LONG>] } (end) // 1
-		    $refl [thing] { hasIID: false, types: [friendship], predicates: [] }
-		    $x [thing] { hasIID: false, types: [person], predicates: [] }
-		    $y [thing] { hasIID: false, types: [person], predicates: [] }
+            $_0 [thing] { hasIID: false, types: [name], predicates: [= <STRING>] } (end) // Alex
+            $_1 [thing] { hasIID: false, types: [name], predicates: [= <STRING>] } (end) // John
+            $f1 [thing] { hasIID: false, types: [friendship], predicates: [] }
+            $n [thing] { hasIID: false, types: [lastname], predicates: [] } (start)
+            $r1 [thing] { hasIID: false, types: [ref], predicates: [= <LONG>] } (end) // 3
+            $r2 [thing] { hasIID: false, types: [ref], predicates: [= <LONG>] } (end) // 1
+            $refl [thing] { hasIID: false, types: [friendship], predicates: [] }
+            $x [thing] { hasIID: false, types: [person], predicates: [] }
+            $y [thing] { hasIID: false, types: [person], predicates: [] }
 
              */
 
@@ -182,16 +182,16 @@ public class TraversalTest {
 
             /*
             edges:
-		    1: ($n <--[HAS]--* $x)
-		    2: ($n <--[HAS]--* $y)
-		    3: ($x *--[HAS]--> $_0)
-		    4: ($x <--[ROLEPLAYER]--* $refl) { roleTypes: [friendship:friend] }
-		    5: ($x <--[ROLEPLAYER]--* $refl) { roleTypes: [friendship:friend] }
-		    6: ($x <--[ROLEPLAYER]--* $f1) { roleTypes: [friendship:friend] }
-		    7: ($y *--[HAS]--> $_1)
-		    8: ($y <--[ROLEPLAYER]--* $f1) { roleTypes: [friendship:friend] }
-		    9: ($refl *--[HAS]--> $r1)
-		    10: ($f1 *--[HAS]--> $r2)
+            1: ($n <--[HAS]--* $x)
+            2: ($n <--[HAS]--* $y)
+            3: ($x *--[HAS]--> $_0)
+            4: ($x <--[ROLEPLAYER]--* $refl) { roleTypes: [friendship:friend] }
+            5: ($x <--[ROLEPLAYER]--* $refl) { roleTypes: [friendship:friend] }
+            6: ($x <--[ROLEPLAYER]--* $f1) { roleTypes: [friendship:friend] }
+            7: ($y *--[HAS]--> $_1)
+            8: ($y <--[ROLEPLAYER]--* $f1) { roleTypes: [friendship:friend] }
+            9: ($refl *--[HAS]--> $r1)
+            10: ($f1 *--[HAS]--> $r2)
              */
             proc.backwardHas(1, n, x);
             proc.backwardHas(2, n, y);
