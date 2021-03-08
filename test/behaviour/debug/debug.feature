@@ -73,17 +73,12 @@ Feature: Debugging Space
     Given transaction commits
 
     When session opens transaction of type: write
-    When graql delete
+    When get answers of graql match
       """
       match
         $x isa person, has name "Alex", has lastname $n;
         $y isa person, has name "John", has lastname $n;
         $refl (friend: $x, friend: $x) isa friendship, has ref $r1; $r1 3;
         $f1 (friend: $x, friend: $y) isa friendship, has ref $r2; $r2 1;
-      delete
-        $x isa person, has $n;
-        $y isa person, has $n;
-        $refl (friend: $x, friend: $x) isa friendship, has $r1;
-        $f1 (friend: $x, friend: $y) isa friendship, has $r2;
       """
     Then transaction commits
