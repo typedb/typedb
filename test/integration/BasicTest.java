@@ -818,12 +818,12 @@ public class BasicTest {
                         tx.close();
                         session.close();
                     }).start();
-                    tx.query().match(Graql.parseQuery("match $x sub thing;").asMatch());
+                    tx.query().match(Graql.parseQuery("match $x isa thing;").asMatch());
                 }).start();
             }
             Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA);
             Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE);
-            tx.query().match(Graql.parseQuery("match $x sub thing;").asMatch());
+            tx.query().match(Graql.parseQuery("match $x isa thing;").asMatch());
         }
     }
 }
