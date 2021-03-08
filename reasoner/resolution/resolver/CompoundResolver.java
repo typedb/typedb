@@ -146,6 +146,10 @@ public abstract class CompoundResolver<
             if (removed) downstreamProducerSelector = downstreamProducer.iterator();
         }
 
+        public boolean singleAnswerRequired() {
+            return singleAnswerRequired;
+        }
+
         public int iteration() {
             return iteration;
         }
