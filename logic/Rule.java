@@ -271,7 +271,6 @@ public class Rule {
                 if (negatedConcludablesTriggeringRules == null) {
                     negatedConcludablesTriggeringRules = concludables(rule.when().negations())
                             .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext()).toSet();
-                    ;
                 }
             }
             return negatedConcludablesTriggeringRules;
