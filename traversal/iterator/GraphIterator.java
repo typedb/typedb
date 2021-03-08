@@ -158,12 +158,10 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         ProcedureEdge<?, ?> edge = procedure.edge(pos);
         if (isClosure(edge, answer.get(edge.from().id()), answer.get(edge.to().id()))) {
             if (pos == edgeCount) return true;
+            else if (computeFirst(pos + 1)) return true;
             else {
-                if (computeFirst(pos + 1)) return true;
-                else {
-                    popScope(pos);
-                    return false;
-                }
+                popScope(pos);
+                return false;
             }
         } else {
             closureFailure(edge);
