@@ -31,6 +31,7 @@ import grakn.core.traversal.common.Identifier;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -117,7 +118,7 @@ public abstract class AnswerState {
                 return Partial.Identity.identity(conceptMap(), this, root(), root());
             }
 
-            Finished finish(ConceptMap conceptMap, Conjunction conjunctionAnswered, Map<Conjunction, Boolean> explainables,
+            Finished finish(ConceptMap conceptMap, Conjunction conjunctionAnswered, Set<Conjunction> explainables,
                             boolean requiresReiteration) {
                 return new Finished(conceptMap, getFilter, root(), conjunctionAnswered, explainables, requiresReiteration);
             }
@@ -149,16 +150,14 @@ public abstract class AnswerState {
 
         public static class Finished extends Top {
 
-            private final Conjunction conjunctionAnswered;
-            private final Map<Conjunction, Boolean> explainables;
+            private final ExplainableAnswer explainableAnswer;
             private final int hash;
 
             Finished(ConceptMap conceptMap, @Nullable Set<Identifier.Variable.Name> getFilter, Actor.Driver<? extends Resolver<?>> root,
-                     Conjunction conjunctionAnswered, Map<Conjunction, Boolean> explainables, boolean requiresReiteration) {
+                     Conjunction conjunctionAnswered, Set<Conjunction> explainables, boolean requiresReiteration) {
                 super(conceptMap, getFilter, root, requiresReiteration);
-                this.conjunctionAnswered = conjunctionAnswered;
-                this.explainables = explainables;
-                this.hash = Objects.hash(root, conceptMap, getFilter, this.conjunctionAnswered, explainables);
+                this.explainableAnswer = new ExplainableAnswer(conceptMap(), conjunctionAnswered, explainables);
+                this.hash = Objects.hash(root, conceptMap, getFilter, explainableAnswer);
             }
 
             @Override
@@ -167,9 +166,8 @@ public abstract class AnswerState {
                         "root=" + root() +
                         ", conceptMap=" + conceptMap +
                         ", filter=" + getFilter +
-                        ", conjunction=" + conjunctionAnswered +
-                        ", explainables=" + explainables +
                         ", requiresReiteration=" + requiresReiteration +
+                        ", explainableAnswer=" + explainableAnswer +
                         '}';
             }
 
@@ -181,9 +179,8 @@ public abstract class AnswerState {
                 return Objects.equals(root(), top.root()) &&
                         Objects.equals(conceptMap, top.conceptMap) &&
                         Objects.equals(getFilter, top.getFilter) &&
-                        Objects.equals(conjunctionAnswered, top.conjunctionAnswered) &&
-                        Objects.equals(explainables, top.explainables) &&
-                        requiresReiteration == top.requiresReiteration;
+                        requiresReiteration == top.requiresReiteration &&
+                        Objects.equals(explainableAnswer, top.explainableAnswer);
             }
 
             @Override
@@ -274,10 +271,10 @@ public abstract class AnswerState {
         public static class Identity extends Partial<Top.Initial> {
 
             private final int hash;
-            private final Map<Conjunction, Boolean> explainables;
+            private final Set<Conjunction> explainables;
 
             private Identity(ConceptMap partialAnswer, Top.Initial parent, Actor.Driver<? extends Resolver<?>> resolver, Actor.Driver<? extends Resolver<?>> root,
-                             boolean requiresReiteration, Map<Conjunction, Boolean> explainables) {
+                             boolean requiresReiteration, Set<Conjunction> explainables) {
                 super(partialAnswer, parent, resolver, root, requiresReiteration);
                 this.explainables = explainables;
                 this.hash = Objects.hash(root, resolver, conceptMap, parent);
@@ -285,16 +282,16 @@ public abstract class AnswerState {
 
             static Identity identity(ConceptMap conceptMap, Top.Initial parent, Actor.Driver<? extends Resolver<?>> resolver,
                                      Actor.Driver<? extends Resolver<?>> root) {
-                return new Identity(conceptMap, parent, resolver, root, false, new HashMap<>());
+                return new Identity(conceptMap, parent, resolver, root, false, new HashSet<>());
             }
 
             Partial<?> with(ConceptMap extension, boolean requiresReiteration) {
                 return new Identity(extendAnswer(extension), parent(), resolvedBy(), root(), requiresReiteration, explainables);
             }
 
-            Partial<?> with(ConceptMap extension, boolean requiresReiteration, Conjunction source, boolean explainable) {
-                Map<Conjunction, Boolean> explainablesClone = new HashMap<>(explainables);
-                explainablesClone.put(source, explainable);
+            Partial<?> with(ConceptMap extension, boolean requiresReiteration, Conjunction source) {
+                Set<Conjunction> explainablesClone = new HashSet<>(explainables);
+                explainablesClone.add(source);
                 return new Identity(extendAnswer(extension), parent(), resolvedBy(), root(), requiresReiteration, explainablesClone);
             }
 
