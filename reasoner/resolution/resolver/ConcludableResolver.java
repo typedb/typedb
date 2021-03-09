@@ -60,7 +60,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private final Map<Driver<? extends Resolver<?>>, RecursionState> recursionStates;
     private final Driver<ResolutionRecorder> resolutionRecorder;
     private final Map<Request, RequestState> requestStates;
-    private final Set<Identifier.Variable.Retrievable> missingBounds;
+    private final Set<Identifier.Variable.Retrievable> unboundVars;
     private boolean isInitialised;
 
     public ConcludableResolver(Driver<ConcludableResolver> driver, Concludable concludable,
@@ -75,7 +75,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         this.applicableRules = new LinkedHashMap<>();
         this.recursionStates = new HashMap<>();
         this.requestStates = new HashMap<>();
-        this.missingBounds = missingBounds(concludable.pattern());
+        this.unboundVars = unboundVars(concludable.pattern());
         this.isInitialised = false;
     }
 
@@ -221,7 +221,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
                 traversalIterator(concludable.pattern(), fromUpstream.partialAnswer().conceptMap())
                         .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap));
 
-        boolean singleAnswerRequired = fromUpstream.partialAnswer().conceptMap().concepts().keySet().containsAll(missingBounds());
+        boolean singleAnswerRequired = fromUpstream.partialAnswer().conceptMap().concepts().keySet().containsAll(unboundVars());
         RequestState requestState = new RequestState(upstreamAnswers, iteration, singleAnswerRequired);
         mayRegisterRules(fromUpstream, iterationState, requestState);
         return requestState;
@@ -245,11 +245,11 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         }
     }
 
-    private Set<Identifier.Variable.Retrievable> missingBounds() {
-        return missingBounds;
+    private Set<Identifier.Variable.Retrievable> unboundVars() {
+        return unboundVars;
     }
 
-    Set<Identifier.Variable.Retrievable> missingBounds(Conjunction conjunction) {
+    Set<Identifier.Variable.Retrievable> unboundVars(Conjunction conjunction) {
         Set<Identifier.Variable.Retrievable> missingBounds = new HashSet<>();
         iterate(conjunction.variables()).filter(var -> var.id().isRetrievable()).forEachRemaining(var -> {
             if (var.isType() && !var.asType().label().isPresent()) missingBounds.add(var.asType().id().asRetrievable());
