@@ -65,14 +65,15 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         Request fromUpstream = fromUpstream(toDownstream);
         RequestState requestState = requestStates.get(fromUpstream);
 
-        AnswerState answer = toUpstreamAnswer(fromDownstream.answer(), fromDownstream);
+        assert fromDownstream.answer().isFiltered();
+        AnswerState answer = toUpstreamAnswer(fromDownstream.answer().asFiltered(), fromDownstream);
         boolean acceptedAnswer = tryAcceptUpstreamAnswer(answer, fromUpstream, iteration);
         if (!acceptedAnswer) nextAnswer(fromUpstream, requestState, iteration);
     }
 
     protected abstract boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration);
 
-    protected abstract AnswerState toUpstreamAnswer(Partial<?> answer, Response.Answer fromDownstream);
+    protected abstract AnswerState toUpstreamAnswer(Partial.Filtered<?> answer, Response.Answer fromDownstream);
 
     @Override
     protected void initialiseDownstreamResolvers() {
@@ -91,10 +92,10 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
     @Override
     protected RequestState requestStateCreate(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new RequestState for request: {}", name(), fromUpstream);
-        assert fromUpstream.partialAnswer().isFiltered() || fromUpstream.partialAnswer().isIdentity();
+        assert fromUpstream.partialAnswer().isFiltered();
         RequestState requestState = new RequestState(iteration);
         for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers.keySet()) {
-            Filtered downstream = fromUpstream.partialAnswer()
+            Filtered.Subset downstream = fromUpstream.partialAnswer()
                     .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver), conjunctionResolver);
             Request request = Request.create(driver(), conjunctionResolver, downstream);
             requestState.addDownstreamProducer(request);
@@ -107,11 +108,11 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
                                                  int newIteration) {
         LOG.debug("{}: Updating RequestState for iteration '{}'", name(), newIteration);
 
-        assert newIteration > requestStatePrior.iteration();
+        assert newIteration > requestStatePrior.iteration() && fromUpstream.partialAnswer().isFiltered();
 
         RequestState requestStateNextIteration = requestStateForIteration(requestStatePrior, newIteration);
         for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers.keySet()) {
-            Filtered downstream = fromUpstream.partialAnswer()
+            Filtered.Subset downstream = fromUpstream.partialAnswer()
                     .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver), conjunctionResolver);
             Request request = Request.create(driver(), conjunctionResolver, downstream);
             requestStateNextIteration.addDownstreamProducer(request);
@@ -178,9 +179,9 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         }
 
         @Override
-        protected AnswerState toUpstreamAnswer(Partial<?> answer, Response.Answer fromDownstream) {
-            assert answer.isFiltered();
-            return answer.asFiltered().toUpstream();
+        protected AnswerState toUpstreamAnswer(Partial.Filtered<?> answer, Response.Answer fromDownstream) {
+            assert answer.isSubset();
+            return answer.asSubset().toUpstream();
         }
 
         @Override

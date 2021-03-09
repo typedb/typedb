@@ -99,10 +99,10 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
 
     protected RequestStates createRequestState(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new ResponseProducer for iteration:{}, request: {}", name(), iteration, fromUpstream);
-        assert fromUpstream.partialAnswer().isFiltered();
+        assert fromUpstream.partialAnswer().isFiltered() && fromUpstream.partialAnswer().asFiltered().isSubset();
         FunctionalIterator<Partial<?>> upstreamAnswers =
                 traversalIterator(retrievable.pattern(), fromUpstream.partialAnswer().conceptMap())
-                        .map(conceptMap -> fromUpstream.partialAnswer().asFiltered().aggregateToUpstream(conceptMap));
+                        .map(conceptMap -> fromUpstream.partialAnswer().asFiltered().asSubset().aggregateToUpstream(conceptMap));
         return new RequestStates(upstreamAnswers, iteration);
     }
 

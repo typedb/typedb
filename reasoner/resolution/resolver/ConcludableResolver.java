@@ -29,7 +29,7 @@ import grakn.core.logic.resolvable.Unifier;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Unified;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial.UnifiedConclusion;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
@@ -226,7 +226,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             for (Map.Entry<Driver<ConclusionResolver>, Set<Unifier>> entry : applicableRules.entrySet()) {
                 Driver<ConclusionResolver> conclusionResolver = entry.getKey();
                 for (Unifier unifier : entry.getValue()) {
-                    Optional<Unified> unified = fromUpstream.partialAnswer().unifyToDownstream(unifier, conclusionResolver);
+                    Optional<UnifiedConclusion> unified = fromUpstream.partialAnswer().unifyToDownstream(unifier, conclusionResolver);
                     if (unified.isPresent()) {
                         Request toDownstream = Request.create(driver(), conclusionResolver, unified.get());
                         requestState.addDownstreamProducer(toDownstream);

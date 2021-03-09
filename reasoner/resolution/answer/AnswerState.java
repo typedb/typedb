@@ -37,10 +37,16 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
+/*
+TODO this class needs cleanup in terms of the Parent generic and introduction of a THIS generic, because we aren't using PARENT consistent for return types
+TODO as well as aligning internal terminologies
+ */
 public abstract class AnswerState {
     final ConceptMap conceptMap;
     private final Actor.Driver<? extends Resolver<?>> root;
@@ -58,16 +64,16 @@ public abstract class AnswerState {
         return requiresReiteration;
     }
 
-    public boolean isIdentity() { return false; }
-
-    public Partial.Identity asIdentity() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Partial.Identity.class));
-    }
+//    public boolean isIdentity() { return false; }
+//
+//    public Partial.Filtered.Identity asIdentity() {
+//        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Partial.Identity.class));
+//    }
 
     public boolean isTop() { return false; }
 
     public Top asTop() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Partial.Identity.class));
+        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Top.class));
     }
 
     public boolean isPartial() { return false; }
@@ -114,8 +120,8 @@ public abstract class AnswerState {
                 return new Initial(new ConceptMap(), getFilter, root);
             }
 
-            public Partial.Identity toDownstream() {
-                return Partial.Identity.identity(conceptMap(), this, root(), root());
+            public Partial.Filtered.Identity toDownstream() {
+                return Partial.Filtered.Identity.create(conceptMap(), this, root(), root());
             }
 
             Finished finish(ConceptMap conceptMap, Conjunction conjunctionAnswered, Set<Conjunction> explainables,
@@ -188,7 +194,6 @@ public abstract class AnswerState {
                 return hash;
             }
         }
-
     }
 
     public static abstract class Partial<Parent extends AnswerState> extends AnswerState {
@@ -206,16 +211,17 @@ public abstract class AnswerState {
         abstract Partial<?> with(ConceptMap conceptMap, boolean requiresReiteration);
 
         // note: can be any of retrievable, negation, nested disjunction/conjunction...
-        public Partial.Filtered filterToDownstream(Set<Identifier.Variable.Retrievable> filter, Actor.Driver<? extends Resolver<?>> nextResolver) {
-            return Filtered.filter(this, filter, nextResolver, root());
+        public Partial.Filtered.Subset filterToDownstream(Set<Identifier.Variable.Retrievable> filter, Actor.Driver<? extends Resolver<?>> nextResolver) {
+            return Filtered.Subset.create(this, filter, nextResolver, root());
         }
 
-        public MappedConcludable mapToDownstream(Mapping mapping, Actor.Driver<? extends Resolver<?>> nextResolver) {
-            return MappedConcludable.map(this, mapping, nextResolver, root());
+        public MappedConcludable mapToDownstream(Mapping mapping, Actor.Driver<? extends Resolver<?>> nextResolver, Conjunction nextResolverConjunction) {
+            assert this.isFiltered();
+            return MappedConcludable.map(this.asFiltered(), mapping, nextResolver, root(), nextResolverConjunction);
         }
 
-        public Optional<Partial.Unified> unifyToDownstream(Unifier unifier, Actor.Driver<ConclusionResolver> nextResolver) {
-            return Unified.unify(this, unifier, nextResolver, root());
+        public Optional<UnifiedConclusion> unifyToDownstream(Unifier unifier, Actor.Driver<ConclusionResolver> nextResolver) {
+            return UnifiedConclusion.unify(this, unifier, nextResolver, root());
         }
 
         public ConceptMap conceptMap() {
@@ -244,7 +250,7 @@ public abstract class AnswerState {
 
         public boolean isUnified() { return false; }
 
-        public Filtered asFiltered() {
+        public Filtered<?> asFiltered() {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Filtered.class));
         }
 
@@ -252,8 +258,8 @@ public abstract class AnswerState {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(MappedConcludable.class));
         }
 
-        public Partial.Unified asUnified() {
-            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Partial.Unified.class));
+        public UnifiedConclusion asUnified() {
+            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(UnifiedConclusion.class));
         }
 
         protected ConceptMap extendAnswer(ConceptMap extension) {
@@ -268,144 +274,200 @@ public abstract class AnswerState {
             return new ConceptMap(concepts);
         }
 
-        public static class Identity extends Partial<Top.Initial> {
-
-            private final int hash;
-            private final Set<Conjunction> explainables;
-
-            private Identity(ConceptMap partialAnswer, Top.Initial parent, Actor.Driver<? extends Resolver<?>> resolver, Actor.Driver<? extends Resolver<?>> root,
-                             boolean requiresReiteration, Set<Conjunction> explainables) {
-                super(partialAnswer, parent, resolver, root, requiresReiteration);
-                this.explainables = explainables;
-                this.hash = Objects.hash(root, resolver, conceptMap, parent);
-            }
-
-            static Identity identity(ConceptMap conceptMap, Top.Initial parent, Actor.Driver<? extends Resolver<?>> resolver,
-                                     Actor.Driver<? extends Resolver<?>> root) {
-                return new Identity(conceptMap, parent, resolver, root, false, new HashSet<>());
-            }
-
-            Partial<?> with(ConceptMap extension, boolean requiresReiteration) {
-                return new Identity(extendAnswer(extension), parent(), resolvedBy(), root(), requiresReiteration, explainables);
-            }
-
-            Partial<?> with(ConceptMap extension, boolean requiresReiteration, Conjunction source) {
-                Set<Conjunction> explainablesClone = new HashSet<>(explainables);
-                explainablesClone.add(source);
-                return new Identity(extendAnswer(extension), parent(), resolvedBy(), root(), requiresReiteration, explainablesClone);
-            }
-
-            public Top.Finished toFinishedTop(Conjunction conjunctionAnswered) {
-                return parent().finish(conceptMap(), conjunctionAnswered, explainables, requiresReiteration || parent().requiresReiteration());
-            }
-
-            public boolean isIdentity() { return true; }
-
-            public Identity asIdentity() {
-                return this;
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-                Identity identity = (Identity) o;
-                return Objects.equals(root(), identity.root()) &&
-                        Objects.equals(resolvedBy(), identity.resolvedBy()) &&
-                        Objects.equals(conceptMap, identity.conceptMap) &&
-                        Objects.equals(parent, identity.parent);
-            }
-
-            @Override
-            public int hashCode() {
-                return hash;
-            }
+        interface ConcludableParent {
         }
 
-        public static class Filtered extends Partial<Partial<?>> {
+        public static abstract class Filtered<P extends AnswerState> extends Partial<P> {
 
-            private final Set<Identifier.Variable.Retrievable> filter;
-            private final int hash;
+            final Set<Conjunction> explainables;
 
-            private Filtered(ConceptMap filteredConceptMap, Partial<?> parent, Set<Identifier.Variable.Retrievable> filter,
-                             Actor.Driver<? extends Resolver<?>> resolver, Actor.Driver<? extends Resolver<?>> root,
-                             boolean requiresReiteration) {
-                super(filteredConceptMap, parent, resolver, root, requiresReiteration);
-                this.filter = filter;
-                this.hash = Objects.hash(root, resolver, conceptMap, parent, filter);
+            public Filtered(ConceptMap partialAnswer, P parent, Actor.Driver<? extends Resolver<?>> resolver,
+                            Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration, Set<Conjunction> explainables) {
+                super(partialAnswer, parent, resolver, root, requiresReiteration);
+                this.explainables = explainables;
             }
 
-            static Filtered filter(Partial<?> parent, Set<Identifier.Variable.Retrievable> filter, Actor.Driver<? extends Resolver<?>> resolver,
-                                   Actor.Driver<? extends Resolver<?>> root) {
-                return new Filtered(parent.conceptMap().filter(filter), parent, filter, resolver, root, false);
-            }
-
-            public Partial<?> toUpstream() {
-                if (conceptMap().concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
-                return parent().with(conceptMap().filter(filter), requiresReiteration || parent().requiresReiteration());
-            }
-
-            public Partial<?> aggregateToUpstream(ConceptMap conceptMap) {
-                if (conceptMap.concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
-                return parent().with(conceptMap.filter(filter), requiresReiteration || parent().requiresReiteration());
-            }
-
-            @Override
-            Filtered with(ConceptMap extension, boolean requiresReiteration) {
-                return new Filtered(extendAnswer(extension), parent(), filter, resolvedBy(), root(), requiresReiteration);
-            }
+            abstract Partial<?> with(ConceptMap extension, boolean requiresReiteration, Conjunction source);
 
             @Override
             public boolean isFiltered() { return true; }
 
             @Override
-            public Filtered asFiltered() { return this; }
+            public Filtered<?> asFiltered() { return this; }
 
-            @Override
-            public String toString() {
-                return "AnswerState.Partial.Filtered{" +
-                        "root=" + root() +
-                        ", resolver=" + resolvedBy() +
-                        ", conceptMap=" + conceptMap() +
-                        ", filter=" + filter +
-                        '}';
+            public boolean isIdentity() { return false; }
+
+            public Identity asIdentity() {
+                throw GraknException.of(ILLEGAL_CAST, this.getClass(), Identity.class);
             }
 
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-                Filtered filtered = (Filtered) o;
-                return Objects.equals(root(), filtered.root()) &&
-                        Objects.equals(resolvedBy(), filtered.resolvedBy()) &&
-                        Objects.equals(conceptMap, filtered.conceptMap) &&
-                        Objects.equals(parent, filtered.parent) &&
-                        Objects.equals(filter, filtered.filter);
+            public boolean isSubset() { return false; }
+
+            public Subset asSubset() {
+                throw GraknException.of(ILLEGAL_CAST, this.getClass(), Subset.class);
             }
 
-            @Override
-            public int hashCode() {
-                return hash;
+            public static class Identity extends Filtered<Top.Initial> {
+
+                private final int hash;
+
+                public Identity(ConceptMap partialAnswer, Top.Initial parent, Actor.Driver<? extends Resolver<?>> resolver,
+                                Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration, Set<Conjunction> explainables) {
+                    super(partialAnswer, parent, resolver, root, requiresReiteration, explainables);
+                    this.hash = Objects.hash(root, resolver, conceptMap, parent);
+                }
+
+                static Identity create(ConceptMap conceptMap, Top.Initial parent, Actor.Driver<? extends Resolver<?>> resolver,
+                                       Actor.Driver<? extends Resolver<?>> root) {
+                    return new Identity(conceptMap, parent, resolver, root, false, new HashSet<>());
+                }
+
+                @Override
+                public boolean isIdentity() { return true; }
+
+                @Override
+                public Identity asIdentity() { return this; }
+
+                @Override
+                Identity with(ConceptMap extension, boolean requiresReiteration) {
+                    return new Identity(extendAnswer(extension), parent(), resolvedBy(), root(), requiresReiteration, explainables);
+                }
+
+
+                @Override
+                public Identity with(ConceptMap extension, boolean requiresReiteration, Conjunction source) {
+                    Set<Conjunction> explainablesClone = new HashSet<>(explainables);
+                    explainablesClone.add(source);
+                    return new Identity(extendAnswer(extension), parent(), resolvedBy(), root(), requiresReiteration, explainablesClone);
+                }
+
+                public Top.Finished toFinishedTop(Conjunction conjunctionAnswered) {
+                    return parent().finish(conceptMap(), conjunctionAnswered, explainables, requiresReiteration || parent().requiresReiteration());
+                }
+
+                @Override
+                public String toString() {
+                    return "AnswerState.Partial.Filtered{" +
+                            "root=" + root() +
+                            ", resolver=" + resolvedBy() +
+                            ", conceptMap=" + conceptMap() +
+                            ", explainables=" + explainables +
+                            '}';
+                }
+
+                @Override
+                public boolean equals(Object o) {
+                    if (this == o) return true;
+                    if (o == null || getClass() != o.getClass()) return false;
+                    Identity identity = (Identity) o;
+                    return Objects.equals(root(), identity.root()) &&
+                            Objects.equals(resolvedBy(), identity.resolvedBy()) &&
+                            Objects.equals(conceptMap, identity.conceptMap) &&
+                            Objects.equals(parent, identity.parent);
+                }
+
+                @Override
+                public int hashCode() {
+                    return hash;
+                }
+
+            }
+
+            public static class Subset extends Filtered<Partial<?>> {
+
+                private final Set<Identifier.Variable.Retrievable> filter;
+                private final int hash;
+
+                private Subset(ConceptMap filteredConceptMap, Partial<?> parent, Set<Identifier.Variable.Retrievable> filter,
+                               Actor.Driver<? extends Resolver<?>> resolver, Actor.Driver<? extends Resolver<?>> root,
+                               boolean requiresReiteration, Set<Conjunction> explainables) {
+                    super(filteredConceptMap, parent, resolver, root, requiresReiteration, explainables);
+                    this.filter = filter;
+                    this.hash = Objects.hash(root, resolver, conceptMap, parent, filter);
+                }
+
+                static Subset create(Partial<?> parent, Set<Identifier.Variable.Retrievable> filter, Actor.Driver<? extends Resolver<?>> resolver,
+                                     Actor.Driver<? extends Resolver<?>> root) {
+                    return new Subset(parent.conceptMap().filter(filter), parent, filter, resolver, root, false, set());
+                }
+
+                @Override
+                public boolean isSubset() { return true; }
+
+                @Override
+                public Subset asSubset() { return this; }
+
+                public Partial<?> toUpstream() {
+                    if (conceptMap().concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
+                    return parent().with(conceptMap().filter(filter), requiresReiteration || parent().requiresReiteration());
+                }
+
+                public Partial<?> aggregateToUpstream(ConceptMap conceptMap) {
+                    if (conceptMap.concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
+                    return parent().with(conceptMap.filter(filter), requiresReiteration || parent().requiresReiteration());
+                }
+
+                @Override
+                Subset with(ConceptMap extension, boolean requiresReiteration) {
+                    return new Subset(extendAnswer(extension), parent(), filter, resolvedBy(), root(), requiresReiteration, explainables);
+                }
+
+                @Override
+                public Subset with(ConceptMap extension, boolean requiresReiteration, Conjunction source) {
+                    Set<Conjunction> explainablesClone = new HashSet<>(explainables);
+                    explainablesClone.add(source);
+                    return new Subset(extendAnswer(extension), parent(), filter, resolvedBy(), root(), requiresReiteration, explainablesClone);
+                }
+
+                @Override
+                public String toString() {
+                    return "AnswerState.Partial.Filtered{" +
+                            "root=" + root() +
+                            ", resolver=" + resolvedBy() +
+                            ", conceptMap=" + conceptMap() +
+                            ", filter=" + filter +
+                            ", explainables=" + explainables +
+                            '}';
+                }
+
+                @Override
+                public boolean equals(Object o) {
+                    if (this == o) return true;
+                    if (o == null || getClass() != o.getClass()) return false;
+                    Filtered.Subset filtered = (Filtered.Subset) o;
+                    return Objects.equals(root(), filtered.root()) &&
+                            Objects.equals(resolvedBy(), filtered.resolvedBy()) &&
+                            Objects.equals(conceptMap, filtered.conceptMap) &&
+                            Objects.equals(parent, filtered.parent) &&
+                            Objects.equals(filter, filtered.filter);
+                }
+
+                @Override
+                public int hashCode() {
+                    return hash;
+                }
             }
         }
 
-        public static class MappedConcludable extends Partial<Partial<?>> {
+        public static class MappedConcludable extends Partial<Partial.Filtered<?>> {
 
+            private final Conjunction sourceConjunction;
             private final Mapping mapping;
             private final int hash;
 
-            private MappedConcludable(ConceptMap mappedConceptMap, Partial<?> parent, Mapping mapping,
+            private MappedConcludable(ConceptMap mappedConceptMap, Partial.Filtered<?> parent, Conjunction sourceConjunction, Mapping mapping,
                                       Actor.Driver<? extends Resolver<?>> resolver, Actor.Driver<? extends Resolver<?>> root,
                                       boolean requiresReiteration) {
                 super(mappedConceptMap, parent, resolver, root, requiresReiteration);
+                this.sourceConjunction = sourceConjunction;
                 this.mapping = mapping;
                 this.hash = Objects.hash(root, resolver, conceptMap, mapping, parent);
             }
 
-            static MappedConcludable map(Partial<?> parent, Mapping mapping, Actor.Driver<? extends Resolver<?>> resolver,
-                                         Actor.Driver<? extends Resolver<?>> root) {
+            static MappedConcludable map(Partial.Filtered<?> parent, Mapping mapping, Actor.Driver<? extends Resolver<?>> resolver,
+                                         Actor.Driver<? extends Resolver<?>> root, Conjunction sourceConjunction) {
                 ConceptMap mappedConceptMap = mapping.transform(parent.conceptMap());
-                return new MappedConcludable(mappedConceptMap, parent, mapping, resolver, root, false);
+                return new MappedConcludable(mappedConceptMap, parent, sourceConjunction, mapping, resolver, root, false);
             }
 
             public Partial<?> aggregateToUpstream(ConceptMap additionalConcepts) {
@@ -413,12 +475,12 @@ public abstract class AnswerState {
             }
 
             public Partial<?> toUpstream() {
-                return parent().with(mapping.unTransform(this.conceptMap()), requiresReiteration || parent().requiresReiteration());
+                return parent().with(mapping.unTransform(this.conceptMap()), requiresReiteration || parent().requiresReiteration(), sourceConjunction);
             }
 
             @Override
             protected MappedConcludable with(ConceptMap extension, boolean requiresReiteration) {
-                return new MappedConcludable(extendAnswer(extension), parent(), mapping, resolvedBy(), root(), requiresReiteration);
+                return new MappedConcludable(extendAnswer(extension), parent(), sourceConjunction, mapping, resolvedBy(), root(), requiresReiteration);
 
             }
 
@@ -456,25 +518,25 @@ public abstract class AnswerState {
             }
         }
 
-        public static class Unified extends Partial<Partial<?>> {
+        public static class UnifiedConclusion extends Partial<Partial<?>> {
 
             private final Unifier unifier;
             private final Instance instanceRequirements;
             private final int hash;
 
-            private Unified(ConceptMap unifiedConceptMap, Partial<?> parent, Unifier unifier,
-                            Instance instanceRequirements, Actor.Driver<? extends Resolver<?>> resolver,
-                            Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
+            private UnifiedConclusion(ConceptMap unifiedConceptMap, Partial<?> parent, Unifier unifier,
+                                      Instance instanceRequirements, Actor.Driver<? extends Resolver<?>> resolver,
+                                      Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
                 super(unifiedConceptMap, parent, resolver, root, requiresReiteration);
                 this.unifier = unifier;
                 this.instanceRequirements = instanceRequirements;
                 this.hash = Objects.hash(root, resolver, conceptMap, unifier, instanceRequirements, parent);
             }
 
-            static Optional<Partial.Unified> unify(Partial<?> parent, Unifier unifier, Actor.Driver<ConclusionResolver> resolver,
-                                                   Actor.Driver<? extends Resolver<?>> root) {
+            static Optional<UnifiedConclusion> unify(Partial<?> parent, Unifier unifier, Actor.Driver<ConclusionResolver> resolver,
+                                                     Actor.Driver<? extends Resolver<?>> root) {
                 Optional<Pair<ConceptMap, Instance>> unified = unifier.unify(parent.conceptMap());
-                return unified.map(unification -> new Partial.Unified(
+                return unified.map(unification -> new UnifiedConclusion(
                         unification.first(), parent, unifier, unification.second(), resolver, root, false
                 ));
 
@@ -489,19 +551,19 @@ public abstract class AnswerState {
             public boolean isUnified() { return true; }
 
             @Override
-            public Unified asUnified() { return this; }
+            public UnifiedConclusion asUnified() { return this; }
 
             @Override
-            Unified with(ConceptMap extension, boolean requiresReiteration ) {
-                return new Unified(extendAnswer(extension), parent(), unifier, instanceRequirements, resolvedBy(), root(), requiresReiteration);
+            UnifiedConclusion with(ConceptMap extension, boolean requiresReiteration) {
+                return new UnifiedConclusion(extendAnswer(extension), parent(), unifier, instanceRequirements, resolvedBy(), root(), requiresReiteration);
             }
 
-            public Unified extend(ConceptMap ans) {
+            public UnifiedConclusion extend(ConceptMap ans) {
                 Map<Identifier.Variable.Retrievable, Concept> extended = new HashMap<>();
                 extended.putAll(ans.concepts());
                 extended.putAll(conceptMap.concepts());
-                return new Unified(new ConceptMap(extended), parent(), unifier, instanceRequirements, resolvedBy(), root(),
-                                   requiresReiteration);
+                return new UnifiedConclusion(new ConceptMap(extended), parent(), unifier, instanceRequirements, resolvedBy(), root(),
+                                             requiresReiteration);
             }
 
             @Override
@@ -519,7 +581,7 @@ public abstract class AnswerState {
             public boolean equals(Object o) {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
-                Unified unified = (Unified) o;
+                UnifiedConclusion unified = (UnifiedConclusion) o;
                 return Objects.equals(root(), unified.root()) &&
                         Objects.equals(resolvedBy(), unified.resolvedBy()) &&
                         Objects.equals(conceptMap, unified.conceptMap) &&

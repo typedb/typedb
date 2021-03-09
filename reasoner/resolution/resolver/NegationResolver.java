@@ -23,7 +23,6 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.resolvable.Negated;
 import grakn.core.pattern.Disjunction;
-import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Filtered;
@@ -146,8 +145,8 @@ public class NegationResolver extends Resolver<NegationResolver> {
     }
 
     private Partial<?> upstreamAnswer(Request fromUpstream) {
-        assert fromUpstream.partialAnswer().isFiltered();
-        return fromUpstream.partialAnswer().asFiltered().toUpstream();
+        assert fromUpstream.partialAnswer().isFiltered() && fromUpstream.partialAnswer().asFiltered().isSubset();
+        return fromUpstream.partialAnswer().asFiltered().asSubset().toUpstream();
     }
 
     private static class BoundsState {
