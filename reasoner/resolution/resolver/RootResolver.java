@@ -18,7 +18,6 @@
 package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.concept.ConceptManager;
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.LogicManager;
 import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
@@ -31,10 +30,7 @@ import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
-import java.util.HashSet;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
 
 public interface RootResolver {
@@ -43,7 +39,7 @@ public interface RootResolver {
 
     void submitFail(int iteration);
 
-    class Conjunction extends ConjunctionResolver<Conjunction, Conjunction.RequestState> implements RootResolver {
+    class Conjunction extends ConjunctionResolver<Conjunction> implements RootResolver {
 
         private static final Logger LOG = LoggerFactory.getLogger(Conjunction.class);
 
@@ -120,43 +116,7 @@ public interface RootResolver {
             return new RequestState(iteration, requestStatePrior.produced());
         }
 
-        @Override
-        boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
-            RequestState requestState = requestStates.get(fromUpstream);
-            if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
-                requestState.recordProduced(upstreamAnswer.conceptMap());
-                answerToUpstream(upstreamAnswer, fromUpstream, iteration);
-                return true;
-            } else {
-                return false;
-            }
-        }
 
-        static class RequestState extends CompoundResolver.RequestState {
-
-            private final Set<ConceptMap> produced;
-
-            public RequestState(int iteration) {
-                this(iteration, new HashSet<>());
-            }
-
-            public RequestState(int iteration, Set<ConceptMap> produced) {
-                super(iteration);
-                this.produced = produced;
-            }
-
-            public void recordProduced(ConceptMap conceptMap) {
-                produced.add(conceptMap);
-            }
-
-            public boolean hasProduced(ConceptMap conceptMap) {
-                return produced.contains(conceptMap);
-            }
-
-            public Set<ConceptMap> produced() {
-                return produced;
-            }
-        }
     }
 
     class Disjunction extends DisjunctionResolver<Disjunction> implements RootResolver {

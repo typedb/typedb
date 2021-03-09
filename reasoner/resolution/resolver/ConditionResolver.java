@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Optional;
 
 // note: in the future, we may introduce query rewriting here
-public class ConditionResolver extends ConjunctionResolver<ConditionResolver, CompoundResolver.RequestState> {
+public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ConditionResolver.class);
 
@@ -60,20 +60,15 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver, Co
         return Optional.of(fromDownstream.asFiltered().toUpstream());
     }
 
+
     @Override
-    boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
-        answerToUpstream(upstreamAnswer, fromUpstream, iteration);
-        return true;
+    ConjunctionResolver.RequestState requestStateNew(int iteration) {
+        return new ConjunctionResolver.RequestState(iteration);
     }
 
     @Override
-    RequestState requestStateNew(int iteration) {
-        return new RequestState(iteration);
-    }
-
-    @Override
-    RequestState requestStateForIteration(RequestState requestStatePrior, int iteration) {
-        return new RequestState(iteration);
+    ConjunctionResolver.RequestState requestStateForIteration(ConjunctionResolver.RequestState requestStatePrior, int iteration) {
+        return new ConjunctionResolver.RequestState(iteration);
     }
 
     @Override
