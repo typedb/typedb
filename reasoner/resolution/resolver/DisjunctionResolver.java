@@ -63,8 +63,8 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         Request fromUpstream = fromUpstream(toDownstream);
         RequestState requestState = requestStates.get(fromUpstream);
 
-        assert fromDownstream.answer().isConjunction();
-        AnswerState answer = toUpstreamAnswer(fromDownstream.answer().asConjunction(), fromDownstream);
+        assert fromDownstream.answer().isCompound();
+        AnswerState answer = toUpstreamAnswer(fromDownstream.answer().asCompound(), fromDownstream);
         boolean acceptedAnswer = tryAcceptUpstreamAnswer(answer, fromUpstream, iteration);
         if (!acceptedAnswer) nextAnswer(fromUpstream, requestState, iteration);
     }
@@ -90,10 +90,10 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
     @Override
     protected RequestState requestStateCreate(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new RequestState for request: {}", name(), fromUpstream);
-        assert fromUpstream.partialAnswer().isConjunction();
+        assert fromUpstream.partialAnswer().isCompound();
         RequestState requestState = new RequestState(iteration);
         for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers.keySet()) {
-            Compound.NonRoot downstream = fromUpstream.partialAnswer()
+            Compound.NonRoot downstream = fromUpstream.partialAnswer().asCompound()
                     .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver), conjunctionResolver);
             Request request = Request.create(driver(), conjunctionResolver, downstream);
             requestState.addDownstreamProducer(request);
@@ -106,11 +106,11 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
                                                  int newIteration) {
         LOG.debug("{}: Updating RequestState for iteration '{}'", name(), newIteration);
 
-        assert newIteration > requestStatePrior.iteration() && fromUpstream.partialAnswer().isConjunction();
+        assert newIteration > requestStatePrior.iteration() && fromUpstream.partialAnswer().isCompound();
 
         RequestState requestStateNextIteration = requestStateForIteration(requestStatePrior, newIteration);
         for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers.keySet()) {
-            Compound.NonRoot downstream = fromUpstream.partialAnswer()
+            Compound.NonRoot downstream = fromUpstream.partialAnswer().asCompound()
                     .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver), conjunctionResolver);
             Request request = Request.create(driver(), conjunctionResolver, downstream);
             requestStateNextIteration.addDownstreamProducer(request);

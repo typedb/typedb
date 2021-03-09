@@ -29,13 +29,13 @@ public class Request {
 
     private final Actor.Driver<? extends Resolver<?>> sender;
     private final Actor.Driver<? extends Resolver<?>> receiver;
-    private final Partial<?> partialAnswer;
+    private final Partial<?, ?> partialAnswer;
     private final int planIndex;
 
     private final int hash;
 
     private Request(@Nullable Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
-                    Partial<?> partialAnswer, int planIndex) {
+                    Partial<?, ?> partialAnswer, int planIndex) {
         this.sender = sender;
         this.receiver = receiver;
         this.partialAnswer = partialAnswer;
@@ -43,15 +43,15 @@ public class Request {
         this.hash = Objects.hash(this.sender, this.receiver, this.partialAnswer);
     }
 
-    public static Request create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, Partial<?> partialAnswer, int planIndex) {
+    public static Request create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, Partial<?, ?> partialAnswer, int planIndex) {
         return new Request(sender, receiver, partialAnswer, planIndex);
     }
 
-    public static Request create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, Partial<?> partialAnswer) {
+    public static Request create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, Partial<?, ?> partialAnswer) {
         return new Request(sender, receiver, partialAnswer, -1);
     }
 
-    public static Request create(Actor.Driver<? extends Resolver<?>> receiver, Partial<?> partialAnswer) {
+    public static Request create(Actor.Driver<? extends Resolver<?>> receiver, Partial<?, ?> partialAnswer) {
         return new Request(null, receiver, partialAnswer, -1);
     }
 
@@ -63,7 +63,7 @@ public class Request {
         return sender;
     }
 
-    public Partial<?> partialAnswer() {
+    public Partial<?, ?> partialAnswer() {
         return partialAnswer;
     }
 

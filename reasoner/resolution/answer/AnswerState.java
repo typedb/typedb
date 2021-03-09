@@ -73,7 +73,7 @@ public abstract class AnswerState {
 
     public boolean isPartial() { return false; }
 
-    public Partial<?> asPartial() {
+    public Partial<?, ?> asPartial() {
         throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Partial.Compound.class));
     }
 
@@ -191,12 +191,12 @@ public abstract class AnswerState {
         }
     }
 
-    public static abstract class Partial<Parent extends AnswerState> extends AnswerState {
+    public static abstract class Partial<SELF extends Partial<SELF, PARENT>, PARENT extends AnswerState> extends AnswerState {
 
-        protected final Parent parent;
+        protected final PARENT parent;
         private final Actor.Driver<? extends Resolver<?>> resolver; // resolver extending this answer state (eg the receiver)
 
-        public Partial(ConceptMap partialAnswer, Parent parent, Actor.Driver<? extends Resolver<?>> resolver,
+        public Partial(ConceptMap partialAnswer, PARENT parent, Actor.Driver<? extends Resolver<?>> resolver,
                        Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
             super(partialAnswer, root, requiresReiteration);
             this.parent = parent;
@@ -205,15 +205,15 @@ public abstract class AnswerState {
 
 
         public Concludable mapToDownstream(Mapping mapping, Actor.Driver<? extends Resolver<?>> nextResolver, grakn.core.pattern.Conjunction nextResolverConjunction) {
-            assert this.isConjunction();
-            return Concludable.map(this.asConjunction(), mapping, nextResolver, root(), nextResolverConjunction);
+            assert this.isCompound();
+            return Concludable.map(this.asCompound(), mapping, nextResolver, root(), nextResolverConjunction);
         }
 
         public ConceptMap conceptMap() {
             return conceptMap;
         }
 
-        protected Parent parent() {
+        protected PARENT parent() {
             return parent;
         }
 
@@ -225,17 +225,17 @@ public abstract class AnswerState {
         public boolean isPartial() { return true; }
 
         @Override
-        public Partial<?> asPartial() {
+        public Partial<?, ?> asPartial() {
             return this;
         }
 
-        public boolean isConjunction() { return false; }
+        public boolean isCompound() { return false; }
 
         public boolean isConcludable() { return false; }
 
         public boolean isConclusion() { return false; }
 
-        public Compound<?> asConjunction() {
+        public Compound<?> asCompound() {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Compound.class));
         }
 
@@ -259,7 +259,13 @@ public abstract class AnswerState {
             return new ConceptMap(concepts);
         }
 
-        public static abstract class Compound<PRNT extends AnswerState> extends Partial<PRNT> {
+        abstract SELF with(ConceptMap extension, boolean requiresReiteration);
+
+        public Compound.NonRoot filterToDownstream(Set<Identifier.Variable.Retrievable> filter, Actor.Driver<? extends Resolver<?>> nextResolver) {
+            return Compound.NonRoot.create(this, filter, nextResolver, root());
+        }
+
+        public static abstract class Compound<PRNT extends AnswerState> extends Partial<Compound<PRNT>, PRNT> {
 
             final Set<grakn.core.pattern.Conjunction> explainables;
 
@@ -269,20 +275,14 @@ public abstract class AnswerState {
                 this.explainables = explainables;
             }
 
-            public NonRoot filterToDownstream(Set<Identifier.Variable.Retrievable> filter, Actor.Driver<? extends Resolver<?>> nextResolver) {
-                return NonRoot.create(this, filter, nextResolver, root());
-            }
-
-            abstract Compound<PRNT> with(ConceptMap extension, boolean requiresReiteration);
-
             // TODO some types of Filtered states will consume Explanation, and some will throw away. Design smell?
             abstract Compound<PRNT> with(ConceptMap extension, boolean requiresReiteration, grakn.core.pattern.Conjunction source, Explanation explanation);
 
             @Override
-            public boolean isConjunction() { return true; }
+            public boolean isCompound() { return true; }
 
             @Override
-            public Compound<?> asConjunction() { return this; }
+            public Compound<?> asCompound() { return this; }
 
             public boolean isRoot() { return false; }
 
@@ -361,12 +361,12 @@ public abstract class AnswerState {
 
             }
 
-            public static class NonRoot extends Compound<Compound<?>> {
+            public static class NonRoot extends Compound<Partial<?, ?>> {
 
                 private final Set<Identifier.Variable.Retrievable> filter;
                 private final int hash;
 
-                private NonRoot(ConceptMap filteredConceptMap, Compound<?> parent, Set<Identifier.Variable.Retrievable> filter,
+                private NonRoot(ConceptMap filteredConceptMap, Partial<?, ?> parent, Set<Identifier.Variable.Retrievable> filter,
                                 Actor.Driver<? extends Resolver<?>> resolver, Actor.Driver<? extends Resolver<?>> root,
                                 boolean requiresReiteration, Set<grakn.core.pattern.Conjunction> explainables) {
                     super(filteredConceptMap, parent, resolver, root, requiresReiteration, explainables);
@@ -374,7 +374,7 @@ public abstract class AnswerState {
                     this.hash = Objects.hash(root, resolver, conceptMap, parent, filter);
                 }
 
-                static NonRoot create(Compound<?> parent, Set<Identifier.Variable.Retrievable> filter, Actor.Driver<? extends Resolver<?>> resolver,
+                static NonRoot create(Partial<?, ?> parent, Set<Identifier.Variable.Retrievable> filter, Actor.Driver<? extends Resolver<?>> resolver,
                                       Actor.Driver<? extends Resolver<?>> root) {
                     return new NonRoot(parent.conceptMap().filter(filter), parent, filter, resolver, root, false, set());
                 }
@@ -385,12 +385,12 @@ public abstract class AnswerState {
                 @Override
                 public NonRoot asSubset() { return this; }
 
-                public Compound<?> toUpstream() {
+                public Partial<?, ?> toUpstream() {
                     if (conceptMap().concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
                     return parent().with(conceptMap().filter(filter), requiresReiteration || parent().requiresReiteration());
                 }
 
-                public Compound<?> aggregateToUpstream(ConceptMap conceptMap) {
+                public Partial<?, ?> aggregateToUpstream(ConceptMap conceptMap) {
                     if (conceptMap.concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
                     return parent().with(conceptMap.filter(filter), requiresReiteration || parent().requiresReiteration());
                 }
@@ -437,7 +437,7 @@ public abstract class AnswerState {
             }
         }
 
-        public static class Concludable extends Partial<Compound<?>> {
+        public static class Concludable extends Partial<Concludable, Compound<?>> {
 
             private final grakn.core.pattern.Conjunction sourceConjunction;
             private final Mapping mapping;
@@ -464,17 +464,24 @@ public abstract class AnswerState {
                 return Conclusion.unify(this, unifier, rule, nextResolver, root());
             }
 
-            public Partial<?> aggregateToUpstream(ConceptMap additionalConcepts) {
+            public Compound<?> aggregateToUpstream(ConceptMap additionalConcepts) {
                 return parent().with(mapping.unTransform(additionalConcepts), requiresReiteration || parent().requiresReiteration());
             }
 
-            public Partial<?> toUpstream() {
-                Explanation explanation = new Explanation();
+            public Compound<?> toUpstream() {
+                // TODO should we carry the condition answer inside conclusion answer or outside?
+                Explanation explanation = new Explanation(conclusionAnswer.rule().getLabel(), null, conclusionAnswer, conclusionAnswer.conditionAnswer());
                 return parent().with(mapping.unTransform(this.conceptMap()), requiresReiteration || parent().requiresReiteration(),
                                      sourceConjunction, explanation);
             }
 
-            protected Concludable with(ConceptMap extension, boolean requiresReiteration, ConclusionAnswer conclusionAnswer) {
+            @Override
+            Concludable with(ConceptMap extension, boolean requiresReiteration) {
+                // if we decide to keep an "explain" flag, we would use this endpoint
+                throw GraknException.of(ILLEGAL_STATE);
+            }
+
+            Concludable with(ConceptMap extension, boolean requiresReiteration, ConclusionAnswer conclusionAnswer) {
                 return new Concludable(extendAnswer(extension), parent(), sourceConjunction, mapping, resolvedBy(), root(), requiresReiteration, conclusionAnswer);
 
             }
@@ -513,7 +520,7 @@ public abstract class AnswerState {
             }
         }
 
-        public static class Conclusion extends Partial<Concludable> {
+        public static class Conclusion extends Partial<Conclusion, Concludable> {
 
             private final Unifier unifier;
             private final Instance instanceRequirements;
@@ -536,14 +543,13 @@ public abstract class AnswerState {
                 return unified.map(unification -> new Conclusion(
                         unification.first(), parent, unifier, unification.second(), rule, resolver, root, false
                 ));
-
             }
 
-            public Optional<Partial<?>> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts) {
+            public Optional<Concludable> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts) {
                 Optional<ConceptMap> unUnified = unifier.unUnify(concepts, instanceRequirements);
                 return unUnified.map(ans -> {
                     // TODO we could make this "free" (object creation only) and skip the toConceptMap if we just store the raw map
-                    ConclusionAnswer conclusionAnswer = new ConclusionAnswer(rule.conclusion().conjunction(), toConceptMap(concepts), unifier);
+                    ConclusionAnswer conclusionAnswer = new ConclusionAnswer(rule, toConceptMap(concepts), unifier);
                     return parent().with(ans, true, conclusionAnswer);
                 });
             }

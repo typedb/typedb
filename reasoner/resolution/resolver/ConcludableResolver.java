@@ -102,7 +102,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         Request fromUpstream = fromUpstream(toDownstream);
         RequestState requestState = this.requestStates.get(fromUpstream);
 
-        Partial<?> upstreamAnswer = fromDownstream.answer().asConcludable().toUpstream();
+        Partial.Compound<?> upstreamAnswer = fromDownstream.answer().asConcludable().toUpstream();
 
         if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
             requestState.recordProduced(upstreamAnswer.conceptMap());
@@ -120,7 +120,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     forward them downstream (to parallelise searching for the single answer), and when the first one finds an answer,
     we respond for all N ahead of time. Then, when the rules actually return an answer to this concludable, we do nothing.
      */
-    private void answerFound(Partial<?> upstreamAnswer, Request fromUpstream, int iteration) {
+    private void answerFound(Partial.Compound<?> upstreamAnswer, Request fromUpstream, int iteration) {
         RequestState requestState = this.requestStates.get(fromUpstream);
         if (requestState.singleAnswerRequired()) {
             requestState.clearDownstreamProducers();
@@ -174,7 +174,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     private void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
         if (requestState.hasUpstreamAnswer()) {
-            Partial<?> upstreamAnswer = requestState.upstreamAnswers().next();
+            Partial.Compound<?> upstreamAnswer = requestState.upstreamAnswers().next();
             requestState.recordProduced(upstreamAnswer.conceptMap());
             answerFound(upstreamAnswer, fromUpstream, iteration);
         } else {
@@ -212,7 +212,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         }
 
         assert fromUpstream.partialAnswer().isConcludable();
-        FunctionalIterator<Partial<?>> upstreamAnswers =
+        FunctionalIterator<Partial.Compound<?>> upstreamAnswers =
                 traversalIterator(concludable.pattern(), fromUpstream.partialAnswer().conceptMap())
                         .map(conceptMap -> fromUpstream.partialAnswer().asConcludable().aggregateToUpstream(conceptMap));
         // TODO, take each concept map, if it is an inferred lookup, include that information
@@ -259,17 +259,17 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     private static class RequestState {
         private final Set<ConceptMap> produced;
-        private final FunctionalIterator<Partial<?>> newUpstreamAnswers;
+        private final FunctionalIterator<Partial.Compound<?>> newUpstreamAnswers;
         private final LinkedHashSet<Request> downstreamProducer;
         private final int iteration;
         private final boolean singleAnswerRequired;
         private Iterator<Request> downstreamProducerSelector;
 
-        public RequestState(FunctionalIterator<Partial<?>> upstreamAnswers, int iteration, boolean singleAnswerRequired) {
+        public RequestState(FunctionalIterator<Partial.Compound<?>> upstreamAnswers, int iteration, boolean singleAnswerRequired) {
             this(upstreamAnswers, iteration, singleAnswerRequired, new HashSet<>());
         }
 
-        private RequestState(FunctionalIterator<Partial<?>> upstreamAnswers, int iteration, boolean singleAnswerRequired,
+        private RequestState(FunctionalIterator<Partial.Compound<?>> upstreamAnswers, int iteration, boolean singleAnswerRequired,
                              Set<ConceptMap> produced) {
             this.newUpstreamAnswers = upstreamAnswers.filter(partial -> !hasProduced(partial.conceptMap()));
             this.iteration = iteration;
@@ -291,7 +291,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             return newUpstreamAnswers.hasNext();
         }
 
-        public FunctionalIterator<Partial<?>> upstreamAnswers() {
+        public FunctionalIterator<Partial.Compound<?>> upstreamAnswers() {
             return newUpstreamAnswers;
         }
 

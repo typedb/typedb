@@ -99,16 +99,17 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
 
     protected RequestStates createRequestState(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new ResponseProducer for iteration:{}, request: {}", name(), iteration, fromUpstream);
-        assert fromUpstream.partialAnswer().isConjunction() && fromUpstream.partialAnswer().asConjunction().isSubset();
-        FunctionalIterator<Partial<?>> upstreamAnswers =
+        assert fromUpstream.partialAnswer().isCompound() && fromUpstream.partialAnswer().asCompound().isSubset();
+        FunctionalIterator<Partial.Compound<?>> upstreamAnswers =
                 traversalIterator(retrievable.pattern(), fromUpstream.partialAnswer().conceptMap())
-                        .map(conceptMap -> fromUpstream.partialAnswer().asConjunction().asSubset().aggregateToUpstream(conceptMap));
+                        // TODO introduce more types of filtered to avoid the asCompound cast
+                        .map(conceptMap -> fromUpstream.partialAnswer().asCompound().asSubset().aggregateToUpstream(conceptMap).asCompound());
         return new RequestStates(upstreamAnswers, iteration);
     }
 
     private void nextAnswer(Request fromUpstream, RequestStates responseProducer, int iteration) {
         if (responseProducer.hasUpstreamAnswer()) {
-            Partial<?> upstreamAnswer = responseProducer.upstreamAnswers().next();
+            Partial.Compound<?> upstreamAnswer = responseProducer.upstreamAnswers().next();
             answerToUpstream(upstreamAnswer, fromUpstream, iteration);
         } else {
             failToUpstream(fromUpstream, iteration);
@@ -117,10 +118,10 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
 
     private static class RequestStates {
 
-        private final FunctionalIterator<Partial<?>> newUpstreamAnswers;
+        private final FunctionalIterator<Partial.Compound<?>> newUpstreamAnswers;
         private final int iteration;
 
-        public RequestStates(FunctionalIterator<Partial<?>> upstreamAnswers, int iteration) {
+        public RequestStates(FunctionalIterator<Partial.Compound<?>> upstreamAnswers, int iteration) {
             this.newUpstreamAnswers = upstreamAnswers;
             this.iteration = iteration;
         }
@@ -129,7 +130,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
             return newUpstreamAnswers.hasNext();
         }
 
-        public FunctionalIterator<Partial<?>> upstreamAnswers() {
+        public FunctionalIterator<Partial.Compound<?>> upstreamAnswers() {
             return newUpstreamAnswers;
         }
 

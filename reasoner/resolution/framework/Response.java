@@ -41,14 +41,14 @@ public interface Response {
 
     class Answer implements Response {
         private final Request sourceRequest;
-        private final Partial<?> answer;
+        private final Partial<?, ?> answer;
 
-        private Answer(Request sourceRequest, Partial<?> answer) {
+        private Answer(Request sourceRequest, Partial<?, ?> answer) {
             this.sourceRequest = sourceRequest;
             this.answer = answer;
         }
 
-        public static Answer create(Request sourceRequest, Partial<?> answer) {
+        public static Answer create(Request sourceRequest, Partial<?, ?> answer) {
             return new Answer(sourceRequest, answer);
         }
 
@@ -57,7 +57,7 @@ public interface Response {
             return sourceRequest;
         }
 
-        public Partial<?> answer() {
+        public Partial<?, ?> answer() {
             return answer;
         }
 

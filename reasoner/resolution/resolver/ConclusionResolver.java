@@ -94,7 +94,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
                 .materialise(fromDownstream.answer().conceptMap(), traversalEngine, conceptMgr);
         if (!materialisations.hasNext()) throw GraknException.of(ILLEGAL_STATE);
 
-        FunctionalIterator<AnswerState.Partial<?>> materialisedAnswers = materialisations
+        FunctionalIterator<AnswerState.Partial.Concludable> materialisedAnswers = materialisations
                 .map(concepts -> fromUpstream.partialAnswer().asConclusion().aggregateToUpstream(concepts))
                 .filter(Optional::isPresent)
                 .map(Optional::get);
@@ -139,7 +139,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
     }
 
     private void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
-        Optional<AnswerState.Partial<?>> answer = requestState.nextResponse();
+        Optional<AnswerState.Partial.Concludable> answer = requestState.nextResponse();
         if (answer.isPresent()) {
             answerToUpstream(answer.get(), fromUpstream, iteration);
         } else if (requestState.hasDownstream()) {
@@ -177,19 +177,19 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         assert conclusion.retrievableIds().containsAll(partialAnswer.concepts().keySet());
         if (conclusion.generating().isPresent() && conclusion.retrievableIds().size() > partialAnswer.concepts().size() &&
                 partialAnswer.concepts().containsKey(conclusion.generating().get().id())) {
-            FunctionalIterator<AnswerState.Partial.Compound> completedAnswers = candidateAnswers(fromUpstream, partialAnswer);
+            FunctionalIterator<AnswerState.Partial.Compound.NonRoot> completedAnswers = candidateAnswers(fromUpstream, partialAnswer);
             completedAnswers.forEachRemaining(answer -> requestState.addDownstream(Request.create(driver(), ruleResolver,
                                                                                                   answer)));
         } else {
             Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
-            AnswerState.Partial.Compound downstreamAnswer = fromUpstream.partialAnswer().filterToDownstream(named, ruleResolver);
+            AnswerState.Partial.Compound<?> downstreamAnswer = fromUpstream.partialAnswer().filterToDownstream(named, ruleResolver);
             requestState.addDownstream(Request.create(driver(), ruleResolver, downstreamAnswer));
         }
 
         return requestState;
     }
 
-    private FunctionalIterator<AnswerState.Partial.Compound> candidateAnswers(Request fromUpstream, ConceptMap answer) {
+    private FunctionalIterator<AnswerState.Partial.Compound.NonRoot> candidateAnswers(Request fromUpstream, ConceptMap answer) {
         Traversal traversal1 = boundTraversal(conclusion.conjunction().traversal(), answer);
         FunctionalIterator<ConceptMap> traversal = traversalEngine.iterator(traversal1).map(conceptMgr::conceptMap);
         Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
@@ -203,7 +203,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
 
     private static class RequestState {
 
-        private final List<FunctionalIterator<AnswerState.Partial<?>>> materialisedAnswers;
+        private final List<FunctionalIterator<AnswerState.Partial.Concludable>> materialisedAnswers;
         private final LinkedHashSet<Request> downstreams;
         private Iterator<Request> downstreamProducerSelector;
         private final int iteration;
@@ -219,11 +219,11 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
             return iteration;
         }
 
-        public void addResponses(FunctionalIterator<AnswerState.Partial<?>> materialisations) {
+        public void addResponses(FunctionalIterator<AnswerState.Partial.Concludable> materialisations) {
             materialisedAnswers.add(materialisations);
         }
 
-        public Optional<AnswerState.Partial<?>> nextResponse() {
+        public Optional<AnswerState.Partial.Concludable> nextResponse() {
             if (hasResponse()) return Optional.of(materialisedAnswers.get(0).next());
             else return Optional.empty();
         }
