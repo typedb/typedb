@@ -24,12 +24,12 @@ import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.LogicManager;
-import grakn.core.logic.resolvable.Concludable;
+import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Unifier;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial.UnifiedConclusion;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Conclusion;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
@@ -54,14 +54,15 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
 
     private final LinkedHashMap<Driver<ConclusionResolver>, Set<Unifier>> applicableRules;
-    private final Concludable concludable;
+    private final Map<Driver<ConclusionResolver>, Rule> resolverRules;
+    private final grakn.core.logic.resolvable.Concludable concludable;
     private final LogicManager logicMgr;
     private final Map<Driver<? extends Resolver<?>>, RecursionState> recursionStates;
     private final Map<Request, RequestState> requestStates;
     private final Set<Identifier.Variable.Retrievable> unboundVars;
     private boolean isInitialised;
 
-    public ConcludableResolver(Driver<ConcludableResolver> driver, Concludable concludable,
+    public ConcludableResolver(Driver<ConcludableResolver> driver, grakn.core.logic.resolvable.Concludable concludable,
                                ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
                                LogicManager logicMgr, boolean resolutionTracing) {
         super(driver, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.pattern() + ")",
@@ -69,6 +70,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         this.logicMgr = logicMgr;
         this.concludable = concludable;
         this.applicableRules = new LinkedHashMap<>();
+        this.resolverRules = new HashMap<>();
         this.recursionStates = new HashMap<>();
         this.requestStates = new HashMap<>();
         this.unboundVars = unboundVars(concludable.pattern());
@@ -100,7 +102,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         Request fromUpstream = fromUpstream(toDownstream);
         RequestState requestState = this.requestStates.get(fromUpstream);
 
-        Partial<?> upstreamAnswer = fromDownstream.answer().asMapped().toUpstream();
+        Partial<?> upstreamAnswer = fromDownstream.answer().asConcludable().toUpstream();
 
         if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
             requestState.recordProduced(upstreamAnswer.conceptMap());
@@ -162,6 +164,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
                         Driver<ConclusionResolver> conclusionResolver = registry.registerConclusion(rule.conclusion());
                         applicableRules.putIfAbsent(conclusionResolver, new HashSet<>());
                         applicableRules.get(conclusionResolver).add(unifier);
+                        resolverRules.put(conclusionResolver, rule);
                     } catch (GraknException e) {
                         terminate(e);
                     }
@@ -208,10 +211,10 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             iterationState.nextIteration(iteration);
         }
 
-        assert fromUpstream.partialAnswer().isMapped();
+        assert fromUpstream.partialAnswer().isConcludable();
         FunctionalIterator<Partial<?>> upstreamAnswers =
                 traversalIterator(concludable.pattern(), fromUpstream.partialAnswer().conceptMap())
-                        .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap));
+                        .map(conceptMap -> fromUpstream.partialAnswer().asConcludable().aggregateToUpstream(conceptMap));
         // TODO, take each concept map, if it is an inferred lookup, include that information
 
         boolean singleAnswerRequired = fromUpstream.partialAnswer().conceptMap().concepts().keySet().containsAll(unboundVars());
@@ -224,11 +227,12 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         // loop termination: when receiving a new request, we check if we have seen it before from this root query
         // if we have, we do not allow rules to be registered as possible downstreams
         if (!recursionState.hasReceived(fromUpstream.partialAnswer().conceptMap())) {
-            Partial.MappedConcludable partialAnswer = fromUpstream.partialAnswer().asMapped();
+            Partial.Concludable partialAnswer = fromUpstream.partialAnswer().asConcludable();
             for (Map.Entry<Driver<ConclusionResolver>, Set<Unifier>> entry : applicableRules.entrySet()) {
                 Driver<ConclusionResolver> conclusionResolver = entry.getKey();
                 for (Unifier unifier : entry.getValue()) {
-                    Optional<UnifiedConclusion> unified = partialAnswer.unifyToDownstream(unifier, conclusionResolver);
+                    Optional<Conclusion> unified = partialAnswer.unifyToDownstream(unifier, resolverRules.get(conclusionResolver),
+                                                                                   conclusionResolver);
                     if (unified.isPresent()) {
                         Request toDownstream = Request.create(driver(), conclusionResolver, unified.get());
                         requestState.addDownstreamProducer(toDownstream);

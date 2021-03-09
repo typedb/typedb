@@ -25,7 +25,7 @@ import grakn.core.logic.resolvable.Negated;
 import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Filtered;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Compound;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.traversal.TraversalEngine;
@@ -107,7 +107,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
               the toplevel root with the negation iterations, which we cannot allow. So, we must use THIS resolver
               as a sort of new root!
         */
-        Filtered downstreamPartial = fromUpstream.partialAnswer().filterToDownstream(negated.retrieves(), downstream);
+        Compound downstreamPartial = fromUpstream.partialAnswer().filterToDownstream(negated.retrieves(), downstream);
         Request request = Request.create(driver(), this.downstream, downstreamPartial);
         requestFromDownstream(request, fromUpstream, 0);
         boundsState.setRequested();
@@ -145,8 +145,8 @@ public class NegationResolver extends Resolver<NegationResolver> {
     }
 
     private Partial<?> upstreamAnswer(Request fromUpstream) {
-        assert fromUpstream.partialAnswer().isFiltered() && fromUpstream.partialAnswer().asFiltered().isSubset();
-        return fromUpstream.partialAnswer().asFiltered().asSubset().toUpstream();
+        assert fromUpstream.partialAnswer().isConjunction() && fromUpstream.partialAnswer().asConjunction().isSubset();
+        return fromUpstream.partialAnswer().asConjunction().asSubset().toUpstream();
     }
 
     private static class BoundsState {

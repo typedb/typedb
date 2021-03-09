@@ -21,7 +21,6 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Concludable;
-import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
@@ -49,7 +48,7 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
     }
 
     @Override
-    public Conjunction conjunction() {
+    public grakn.core.pattern.Conjunction conjunction() {
         return condition.rule().when();
     }
 
@@ -68,7 +67,7 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
     }
 
     @Override
-    protected Optional<AnswerState> toUpstreamAnswer(AnswerState.Partial.Filtered<?> partialAnswer) {
+    protected Optional<AnswerState> toUpstreamAnswer(AnswerState.Partial.Compound<?> partialAnswer) {
         return Optional.of(partialAnswer.asSubset().toUpstream());
     }
 

@@ -115,8 +115,8 @@ public interface RootResolver {
         }
 
         @Override
-        protected Optional<AnswerState> toUpstreamAnswer(Partial.Filtered<?> partialAnswer) {
-            return Optional.of(partialAnswer.asIdentity().toFinishedTop(conjunction));
+        protected Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?> partialAnswer) {
+            return Optional.of(partialAnswer.asRoot().toFinishedTop(conjunction));
         }
 
         @Override
@@ -196,11 +196,11 @@ public interface RootResolver {
         }
 
         @Override
-        protected AnswerState toUpstreamAnswer(Partial.Filtered<?> answer, Response.Answer fromDownstream) {
-            assert answer.isIdentity();
+        protected AnswerState toUpstreamAnswer(Partial.Compound<?> answer, Response.Answer fromDownstream) {
+            assert answer.isRoot();
             Driver<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
             grakn.core.pattern.Conjunction patternAnswered = downstreamResolvers.get(sender);
-            return answer.asIdentity().toFinishedTop(patternAnswered);
+            return answer.asRoot().toFinishedTop(patternAnswered);
         }
 
         @Override

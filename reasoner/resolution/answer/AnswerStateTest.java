@@ -22,7 +22,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptImpl;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial.MappedConcludable;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Concludable;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.traversal.common.Identifier;
 import org.junit.Test;
@@ -45,7 +45,7 @@ public class AnswerStateTest {
         mapping.put(Identifier.Variable.name("a"), Identifier.Variable.name("x"));
         mapping.put(Identifier.Variable.name("b"), Identifier.Variable.name("y"));
         Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
-        MappedConcludable mapped = Top.initial(filter, false, null).toDownstream().mapToDownstream(Mapping.of(mapping), null);
+        Concludable mapped = Top.initial(filter, false, null).toDownstream().mapToDownstream(Mapping.of(mapping), null);
         assertTrue(mapped.conceptMap().concepts().isEmpty());
 
         Map<Identifier.Variable.Retrievable, Concept> concepts = new HashMap<>();
@@ -67,7 +67,7 @@ public class AnswerStateTest {
         concepts.put(Identifier.Variable.name("a"), new MockConcept(0));
         Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
         Top top = Top.initial(filter, false, null);
-        MappedConcludable mapped = identity(new ConceptMap(concepts), top, null, null, false)
+        Concludable mapped = identity(new ConceptMap(concepts), top, null, null, false)
                 .mapToDownstream(Mapping.of(mapping), null);
 
         Map<Identifier.Variable.Retrievable, Concept> expectedMapped = new HashMap<>();
@@ -95,7 +95,7 @@ public class AnswerStateTest {
         concepts.put(Identifier.Variable.name("c"), new MockConcept(2));
         Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
         Top top = Top.initial(filter, false, null);
-        MappedConcludable mapped = identity(new ConceptMap(concepts), top, null, null, false)
+        Concludable mapped = identity(new ConceptMap(concepts), top, null, null, false)
                 .mapToDownstream(Mapping.of(mapping), null);
 
         Map<Identifier.Variable.Retrievable, Concept> expectedMapped = new HashMap<>();

@@ -25,8 +25,7 @@ import grakn.core.concurrent.producer.Producer;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Filtered.Identity;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Compound.Root;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionTracer;
@@ -68,7 +67,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
         this.rootResolver = resolverRegistry.root(conjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.options = options;
-        Identity downstream = Top.Initial.create(filter(modifiers.filter()), this.rootResolver).toDownstream();
+        Root downstream = Top.Initial.create(filter(modifiers.filter()), this.rootResolver).toDownstream();
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
         this.resolveRequest = Request.create(rootResolver, downstream);
@@ -84,7 +83,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
         this.rootResolver = resolverRegistry.root(disjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.options = options;
-        Identity downstream = Top.Initial.create(filter(modifiers.filter()), this.rootResolver).toDownstream();
+        Root downstream = Top.Initial.create(filter(modifiers.filter()), this.rootResolver).toDownstream();
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
         this.resolveRequest = Request.create(rootResolver, downstream);

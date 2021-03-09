@@ -95,7 +95,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         if (!materialisations.hasNext()) throw GraknException.of(ILLEGAL_STATE);
 
         FunctionalIterator<AnswerState.Partial<?>> materialisedAnswers = materialisations
-                .map(concepts -> fromUpstream.partialAnswer().asUnified().aggregateToUpstream(concepts))
+                .map(concepts -> fromUpstream.partialAnswer().asConclusion().aggregateToUpstream(concepts))
                 .filter(Optional::isPresent)
                 .map(Optional::get);
         requestState.addResponses(materialisedAnswers);
@@ -177,23 +177,23 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         assert conclusion.retrievableIds().containsAll(partialAnswer.concepts().keySet());
         if (conclusion.generating().isPresent() && conclusion.retrievableIds().size() > partialAnswer.concepts().size() &&
                 partialAnswer.concepts().containsKey(conclusion.generating().get().id())) {
-            FunctionalIterator<AnswerState.Partial.Filtered> completedAnswers = candidateAnswers(fromUpstream, partialAnswer);
+            FunctionalIterator<AnswerState.Partial.Compound> completedAnswers = candidateAnswers(fromUpstream, partialAnswer);
             completedAnswers.forEachRemaining(answer -> requestState.addDownstream(Request.create(driver(), ruleResolver,
                                                                                                   answer)));
         } else {
             Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
-            AnswerState.Partial.Filtered downstreamAnswer = fromUpstream.partialAnswer().filterToDownstream(named, ruleResolver);
+            AnswerState.Partial.Compound downstreamAnswer = fromUpstream.partialAnswer().filterToDownstream(named, ruleResolver);
             requestState.addDownstream(Request.create(driver(), ruleResolver, downstreamAnswer));
         }
 
         return requestState;
     }
 
-    private FunctionalIterator<AnswerState.Partial.Filtered> candidateAnswers(Request fromUpstream, ConceptMap answer) {
+    private FunctionalIterator<AnswerState.Partial.Compound> candidateAnswers(Request fromUpstream, ConceptMap answer) {
         Traversal traversal1 = boundTraversal(conclusion.conjunction().traversal(), answer);
         FunctionalIterator<ConceptMap> traversal = traversalEngine.iterator(traversal1).map(conceptMgr::conceptMap);
         Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
-        return traversal.map(ans -> fromUpstream.partialAnswer().asUnified().extend(ans).filterToDownstream(named, ruleResolver));
+        return traversal.map(ans -> fromUpstream.partialAnswer().asConclusion().extend(ans).filterToDownstream(named, ruleResolver));
     }
 
     @Override
