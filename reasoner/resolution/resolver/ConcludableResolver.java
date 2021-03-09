@@ -212,6 +212,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         FunctionalIterator<Partial<?>> upstreamAnswers =
                 traversalIterator(concludable.pattern(), fromUpstream.partialAnswer().conceptMap())
                         .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap));
+        // TODO, take each concept map, if it is an inferred lookup, include that information
 
         boolean singleAnswerRequired = fromUpstream.partialAnswer().conceptMap().concepts().keySet().containsAll(unboundVars());
         RequestState requestState = new RequestState(upstreamAnswers, iteration, singleAnswerRequired);
@@ -223,10 +224,11 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         // loop termination: when receiving a new request, we check if we have seen it before from this root query
         // if we have, we do not allow rules to be registered as possible downstreams
         if (!recursionState.hasReceived(fromUpstream.partialAnswer().conceptMap())) {
+            Partial.MappedConcludable partialAnswer = fromUpstream.partialAnswer().asMapped();
             for (Map.Entry<Driver<ConclusionResolver>, Set<Unifier>> entry : applicableRules.entrySet()) {
                 Driver<ConclusionResolver> conclusionResolver = entry.getKey();
                 for (Unifier unifier : entry.getValue()) {
-                    Optional<UnifiedConclusion> unified = fromUpstream.partialAnswer().unifyToDownstream(unifier, conclusionResolver);
+                    Optional<UnifiedConclusion> unified = partialAnswer.unifyToDownstream(unifier, conclusionResolver);
                     if (unified.isPresent()) {
                         Request toDownstream = Request.create(driver(), conclusionResolver, unified.get());
                         requestState.addDownstreamProducer(toDownstream);
