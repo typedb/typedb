@@ -75,7 +75,7 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
 
     @Override
     ConjunctionResolver.RequestState requestStateNew(int iteration) {
-        return new ConjunctionResolver.RequestState(iteration);
+        return new RequestState(iteration);
     }
 
     @Override
