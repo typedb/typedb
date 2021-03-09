@@ -22,12 +22,13 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.reasoner.resolution.Planner;
-import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.framework.Request;
+import grakn.core.reasoner.resolution.framework.Resolver;
+import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,11 +54,11 @@ public interface RootResolver {
 
         public Conjunction(Driver<Conjunction> driver, grakn.core.pattern.Conjunction conjunction,
                            Consumer<Top> onAnswer, Consumer<Integer> onFail, Consumer<Throwable> onException,
-                           Driver<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
+                           ResolverRegistry registry,
                            TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
                            Planner planner, boolean resolutionTracing) {
             super(driver, Conjunction.class.getSimpleName() + "(pattern:" + conjunction + ")",
-                  resolutionRecorder, registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
+                  registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
             this.conjunction = conjunction;
             this.onAnswer = onAnswer;
             this.onFail = onFail;
@@ -85,10 +86,6 @@ public interface RootResolver {
         @Override
         public void submitAnswer(Top answer) {
             LOG.debug("Submitting answer: {}", answer);
-            if (answer.recordExplanations()) {
-                LOG.trace("Recording root answer: {}", answer);
-                resolutionRecorder.execute(state -> state.record(answer));
-            }
             onAnswer.accept(answer);
         }
 
@@ -120,7 +117,7 @@ public interface RootResolver {
         @Override
         protected Optional<AnswerState> toUpstreamAnswer(Partial<?> fromDownstream) {
             assert fromDownstream.isIdentity();
-            return Optional.of(fromDownstream.asIdentity().toTop());
+            return Optional.of(fromDownstream.asIdentity().toFinishedTop(conjunction));
         }
 
         @Override
@@ -145,10 +142,10 @@ public interface RootResolver {
 
         public Disjunction(Driver<Disjunction> driver, grakn.core.pattern.Disjunction disjunction,
                            Consumer<Top> onAnswer, Consumer<Integer> onFail, Consumer<Throwable> onException,
-                           Driver<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
+                           ResolverRegistry registry,
                            TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
             super(driver, Disjunction.class.getSimpleName() + "(pattern:" + disjunction + ")", disjunction,
-                  resolutionRecorder, registry, traversalEngine, conceptMgr, resolutionTracing);
+                  registry, traversalEngine, conceptMgr, resolutionTracing);
             this.onAnswer = onAnswer;
             this.onFail = onFail;
             this.onException = onException;
@@ -179,11 +176,6 @@ public interface RootResolver {
         @Override
         public void submitAnswer(Top answer) {
             LOG.debug("Submitting answer: {}", answer);
-            if (answer.recordExplanations()) {
-                LOG.trace("Recording root answer: {}", answer);
-                resolutionRecorder.execute(state -> state.record(answer));
-            }
-            answered++;
             onAnswer.accept(answer);
         }
 
@@ -205,9 +197,11 @@ public interface RootResolver {
         }
 
         @Override
-        protected AnswerState toUpstreamAnswer(Partial<?> answer) {
+        protected AnswerState toUpstreamAnswer(Partial<?> answer, Response.Answer fromDownstream) {
             assert answer.isIdentity();
-            return answer.asIdentity().toTop();
+            Driver<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
+            grakn.core.pattern.Conjunction patternAnswered = downstreamResolvers.get(sender);
+            return answer.asIdentity().toFinishedTop(patternAnswered);
         }
 
         @Override

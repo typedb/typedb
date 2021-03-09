@@ -18,7 +18,6 @@
 package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.concept.ConceptManager;
-import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
@@ -39,15 +38,12 @@ public abstract class CompoundResolver<
 
     private static final Logger LOG = LoggerFactory.getLogger(CompoundResolver.class);
 
-    final Driver<ResolutionRecorder> resolutionRecorder;
     final Map<Request, REQ_STATE> requestStates;
     boolean isInitialised;
 
     protected CompoundResolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry,
-                               TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing,
-                               Driver<ResolutionRecorder> resolutionRecorder) {
+                               TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing ) {
         super(driver, name, registry, traversalEngine, conceptMgr, resolutionTracing);
-        this.resolutionRecorder = resolutionRecorder;
         this.requestStates = new HashMap<>();
         this.isInitialised = false;
     }

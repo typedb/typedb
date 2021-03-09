@@ -44,9 +44,9 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     private final Map<Request, RequestStates> requestStates;
 
     public RetrievableResolver(Driver<RetrievableResolver> driver, Retrievable retrievable, ResolverRegistry registry,
-                               TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean explanations) {
+                               TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
         super(driver, RetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable.pattern() + ")",
-              registry, traversalEngine, conceptMgr, explanations);
+              registry, traversalEngine, conceptMgr, resolutionTracing);
         this.retrievable = retrievable;
         this.requestStates = new HashMap<>();
     }

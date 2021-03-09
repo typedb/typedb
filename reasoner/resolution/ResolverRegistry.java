@@ -72,7 +72,6 @@ public class ResolverRegistry {
     private final ConcurrentMap<Rule, Actor.Driver<ConditionResolver>> ruleConditions;
     private final ConcurrentMap<Rule, Actor.Driver<ConclusionResolver>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
     private final Set<Actor.Driver<? extends Resolver<?>>> resolvers;
-    private final Actor.Driver<ResolutionRecorder> resolutionRecorder;
     private final TraversalEngine traversalEngine;
     private final Planner planner;
     private final boolean resolutionTracing;
@@ -80,11 +79,9 @@ public class ResolverRegistry {
     private AtomicBoolean terminated;
     private boolean explanations;
 
-    public ResolverRegistry(ActorExecutorGroup executorService, Actor.Driver<ResolutionRecorder> resolutionRecorder,
-                            TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
-                            boolean resolutionTracing) {
+    public ResolverRegistry(ActorExecutorGroup executorService, TraversalEngine traversalEngine, ConceptManager conceptMgr,
+                            LogicManager logicMgr, boolean resolutionTracing) {
         this.executorService = executorService;
-        this.resolutionRecorder = resolutionRecorder;
         this.traversalEngine = traversalEngine;
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
@@ -109,7 +106,7 @@ public class ResolverRegistry {
                                                        Consumer<Integer> onFail, Consumer<Throwable> onException) {
         LOG.debug("Creating Root.Conjunction for: '{}'", conjunction);
         Actor.Driver<RootResolver.Conjunction> resolver = Actor.driver(driver -> new RootResolver.Conjunction(
-                driver, conjunction, onAnswer, onFail, onException, resolutionRecorder, this,
+                driver, conjunction, onAnswer, onFail, onException, this,
                 traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing
         ), executorService);
         resolvers.add(resolver);
@@ -122,7 +119,7 @@ public class ResolverRegistry {
         LOG.debug("Creating Root.Disjunction for: '{}'", disjunction);
         Actor.Driver<RootResolver.Disjunction> resolver = Actor.driver(driver -> new RootResolver.Disjunction(
                 driver, disjunction, onAnswer, onExhausted, onException,
-                resolutionRecorder, this, traversalEngine, conceptMgr, resolutionTracing
+                this, traversalEngine, conceptMgr, resolutionTracing
         ), executorService);
         resolvers.add(resolver);
         if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
@@ -132,7 +129,7 @@ public class ResolverRegistry {
     public ResolverView.Filtered negated(Negated negated, Conjunction upstream) {
         LOG.debug("Creating Negation resolver for : {}", negated);
         Actor.Driver<NegationResolver> negatedResolver = Actor.driver(driver -> new NegationResolver(
-                driver, negated, this, traversalEngine, conceptMgr, resolutionRecorder, resolutionTracing
+                driver, negated, this, traversalEngine, conceptMgr, resolutionTracing
         ), executorService);
         resolvers.add(negatedResolver);
         if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
@@ -150,7 +147,7 @@ public class ResolverRegistry {
     public Actor.Driver<ConditionResolver> registerCondition(Rule.Condition ruleCondition) {
         LOG.debug("Register retrieval for rule condition actor: '{}'", ruleCondition);
         Actor.Driver<ConditionResolver> resolver = ruleConditions.computeIfAbsent(ruleCondition.rule(), (r) -> Actor.driver(
-                driver -> new ConditionResolver(driver, ruleCondition, resolutionRecorder, this, traversalEngine,
+                driver -> new ConditionResolver(driver, ruleCondition, this, traversalEngine,
                                                 conceptMgr, logicMgr, planner, resolutionTracing), executorService
         ));
         resolvers.add(resolver);
@@ -162,7 +159,7 @@ public class ResolverRegistry {
     public Actor.Driver<ConclusionResolver> registerConclusion(Rule.Conclusion conclusion) {
         LOG.debug("Register retrieval for rule conclusion actor: '{}'", conclusion);
         Actor.Driver<ConclusionResolver> resolver = ruleConclusions.computeIfAbsent(conclusion.rule(), r -> Actor.driver(
-                driver -> new ConclusionResolver(driver, conclusion, this, resolutionRecorder,
+                driver -> new ConclusionResolver(driver, conclusion, this,
                                                  traversalEngine, conceptMgr, resolutionTracing), executorService
         ));
         resolvers.add(resolver);
@@ -200,7 +197,7 @@ public class ResolverRegistry {
             }
         }
         Actor.Driver<ConcludableResolver> resolver = Actor.driver(driver -> new ConcludableResolver(
-                driver, concludable, resolutionRecorder, this, traversalEngine,
+                driver, concludable, this, traversalEngine,
                 conceptMgr, logicMgr, resolutionTracing
         ), executorService);
         concludableResolvers.put(concludable, resolver);
@@ -212,7 +209,7 @@ public class ResolverRegistry {
     public Actor.Driver<ConjunctionResolver.Nested> nested(Conjunction conjunction) {
         LOG.debug("Creating Conjunction resolver for : {}", conjunction);
         Actor.Driver<ConjunctionResolver.Nested> resolver = Actor.driver(driver -> new ConjunctionResolver.Nested(
-                driver, conjunction, resolutionRecorder, this, traversalEngine,
+                driver, conjunction, this, traversalEngine,
                 conceptMgr, logicMgr, planner, resolutionTracing
         ), executorService);
         resolvers.add(resolver);
@@ -223,7 +220,7 @@ public class ResolverRegistry {
     public Actor.Driver<DisjunctionResolver.Nested> nested(Disjunction disjunction) {
         LOG.debug("Creating Disjunction resolver for : {}", disjunction);
         return Actor.driver(driver -> new DisjunctionResolver.Nested(
-                driver, disjunction, resolutionRecorder, this, traversalEngine, conceptMgr, resolutionTracing
+                driver, disjunction, this, traversalEngine, conceptMgr, resolutionTracing
         ), executorService);
     }
 

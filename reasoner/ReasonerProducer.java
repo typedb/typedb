@@ -67,7 +67,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
         this.rootResolver = resolverRegistry.root(conjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.options = options;
-        Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver).toDownstream();
+        Identity downstream = Top.Initial.create(filter(modifiers.filter()), this.rootResolver).toDownstream();
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
         this.resolveRequest = Request.create(rootResolver, downstream);
@@ -83,7 +83,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
         this.rootResolver = resolverRegistry.root(disjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.options = options;
-        Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver).toDownstream();
+        Identity downstream = Top.Initial.create(filter(modifiers.filter()), this.rootResolver).toDownstream();
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
         this.resolveRequest = Request.create(rootResolver, downstream);
@@ -115,10 +115,12 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     // note: root resolver calls this single-threaded, so is threads safe
-    private void requestAnswered(Top resolutionAnswer) {
+    private void requestAnswered(Top answer) {
         if (options.traceInference()) ResolutionTracer.get().finish();
-        if (resolutionAnswer.requiresReiteration()) requiresReiteration = true;
-        queue.put(resolutionAnswer.conceptMap());
+        if (answer.requiresReiteration()) requiresReiteration = true;
+        // TODO create a new type of answer, say ExplainableConceptMap, which contains data to retreive one layer of explanations.
+        // TODO we will probably want to include the fully concept map incl. anonymous vars so we can retrieve explanations
+        queue.put(answer.conceptMap());
         if (required.decrementAndGet() > 0) requestAnswer();
         else processing.decrementAndGet();
     }

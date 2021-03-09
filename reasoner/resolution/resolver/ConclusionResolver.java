@@ -23,7 +23,6 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.Rule;
-import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.framework.Request;
@@ -51,19 +50,16 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ConclusionResolver.class);
 
-    private final Driver<ResolutionRecorder> resolutionRecorder;
     private final Rule.Conclusion conclusion;
     private final Map<Request, RequestState> requestStates;
     private Driver<ConditionResolver> ruleResolver;
     private boolean isInitialised;
 
     public ConclusionResolver(Driver<ConclusionResolver> driver, Rule.Conclusion conclusion, ResolverRegistry registry,
-                              Driver<ResolutionRecorder> resolutionRecorder, TraversalEngine traversalEngine,
-                              ConceptManager conceptMgr, boolean resolutionTracing) {
+                              TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
         super(driver, ConclusionResolver.class.getSimpleName() + "(" + conclusion.rule().getLabel() + ")",
               registry, traversalEngine, conceptMgr, resolutionTracing);
         this.conclusion = conclusion;
-        this.resolutionRecorder = resolutionRecorder;
         this.requestStates = new HashMap<>();
         this.isInitialised = false;
     }

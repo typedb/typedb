@@ -59,17 +59,19 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
 
     private final Planner planner;
     final LogicManager logicMgr;
+    final grakn.core.pattern.Conjunction conjunction;
     final Set<Resolvable<?>> resolvables;
     final Set<Negated> negateds;
     final Plans plans;
     final Map<Resolvable<?>, ResolverRegistry.ResolverView> downstreamResolvers;
 
-    public ConjunctionResolver(Driver<RESOLVER> driver, String name, Driver<ResolutionRecorder> resolutionRecorder,
+    public ConjunctionResolver(Driver<RESOLVER> driver, String name, grakn.core.pattern.Conjunction conjunction, Driver<ResolutionRecorder> resolutionRecorder,
                                ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
                                LogicManager logicMgr, Planner planner, boolean resolutionTracing) {
         super(driver, name, registry, traversalEngine, conceptMgr, resolutionTracing, resolutionRecorder);
         this.logicMgr = logicMgr;
         this.planner = planner;
+        this.conjunction = conjunction;
         this.resolvables = new HashSet<>();
         this.negateds = new HashSet<>();
         this.plans = new Plans();
@@ -286,19 +288,11 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
 
     public static class Nested extends ConjunctionResolver<Nested> {
 
-        private final Conjunction conjunction;
-
-        public Nested(Driver<Nested> driver, Conjunction conjunction, Driver<ResolutionRecorder> resolutionRecorder,
+        public Nested(Driver<Nested> driver, Conjunction conjunction,
                       ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
                       LogicManager logicMgr, Planner planner, boolean resolutionTracing) {
             super(driver, Nested.class.getSimpleName() + "(pattern: " + conjunction + ")",
-                  resolutionRecorder, registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
-            this.conjunction = conjunction;
-        }
-
-        @Override
-        public Conjunction conjunction() {
-            return conjunction;
+                   registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
         }
 
         @Override

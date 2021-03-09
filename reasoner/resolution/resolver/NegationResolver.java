@@ -44,7 +44,6 @@ public class NegationResolver extends Resolver<NegationResolver> {
 
     private static final Logger LOG = LoggerFactory.getLogger(NegationResolver.class);
 
-    private final Driver<ResolutionRecorder> resolutionRecorder;
     private final Negated negated;
     private final Map<ConceptMap, BoundsState> boundsStates;
     private boolean isInitialised;
@@ -52,11 +51,10 @@ public class NegationResolver extends Resolver<NegationResolver> {
 
     public NegationResolver(Driver<NegationResolver> driver, Negated negated, ResolverRegistry registry,
                             TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                            Driver<ResolutionRecorder> resolutionRecorder, boolean resolutionTracing) {
+                            boolean resolutionTracing) {
         super(driver, NegationResolver.class.getSimpleName() + "(pattern: " + negated.pattern() + ")",
               registry, traversalEngine, conceptMgr, resolutionTracing);
         this.negated = negated;
-        this.resolutionRecorder = resolutionRecorder;
         this.boundsStates = new HashMap<>();
         this.isInitialised = false;
     }
@@ -149,12 +147,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
 
     private Partial<?> upstreamAnswer(Request fromUpstream) {
         assert fromUpstream.partialAnswer().isFiltered();
-        Partial<?> upstreamAnswer = fromUpstream.partialAnswer().asFiltered().toUpstream();
-
-        if (fromUpstream.partialAnswer().recordExplanations()) {
-            resolutionRecorder.execute(state -> state.record(fromUpstream.partialAnswer()));
-        }
-        return upstreamAnswer;
+        return fromUpstream.partialAnswer().asFiltered().toUpstream();
     }
 
     private static class BoundsState {

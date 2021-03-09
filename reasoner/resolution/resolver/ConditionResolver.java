@@ -23,7 +23,6 @@ import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.Planner;
-import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.framework.Request;
@@ -41,11 +40,11 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
 
     private final Rule.Condition condition;
 
-    public ConditionResolver(Driver<ConditionResolver> driver, Rule.Condition condition, Driver<ResolutionRecorder> resolutionRecorder,
+    public ConditionResolver(Driver<ConditionResolver> driver, Rule.Condition condition,
                              ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
                              LogicManager logicMgr, Planner planner, boolean resolutionTracing) {
         super(driver, ConditionResolver.class.getCanonicalName() + "(rule:" + condition.rule().getLabel() + ")",
-              resolutionRecorder, registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
+               registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
         this.condition = condition;
     }
 

@@ -27,7 +27,6 @@ import grakn.core.logic.LogicManager;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Unifier;
 import grakn.core.pattern.Conjunction;
-import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Unified;
@@ -58,19 +57,16 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private final Concludable concludable;
     private final LogicManager logicMgr;
     private final Map<Driver<? extends Resolver<?>>, RecursionState> recursionStates;
-    private final Driver<ResolutionRecorder> resolutionRecorder;
     private final Map<Request, RequestState> requestStates;
     private final Set<Identifier.Variable.Retrievable> unboundVars;
     private boolean isInitialised;
 
     public ConcludableResolver(Driver<ConcludableResolver> driver, Concludable concludable,
-                               Driver<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
-                               TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
-                               boolean resolutionTracing) {
+                               ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
+                               LogicManager logicMgr, boolean resolutionTracing) {
         super(driver, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.pattern() + ")",
               registry, traversalEngine, conceptMgr, resolutionTracing);
         this.logicMgr = logicMgr;
-        this.resolutionRecorder = resolutionRecorder;
         this.concludable = concludable;
         this.applicableRules = new LinkedHashMap<>();
         this.recursionStates = new HashMap<>();
@@ -110,10 +106,6 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             requestState.recordProduced(upstreamAnswer.conceptMap());
             answerFound(upstreamAnswer, fromUpstream, iteration);
         } else {
-            if (fromDownstream.answer().recordExplanations()) {
-                LOG.trace("{}: Recording deduplicated answer derivation: {}", name(), upstreamAnswer);
-                resolutionRecorder.execute(actor -> actor.record(upstreamAnswer));
-            }
             nextAnswer(fromUpstream, requestState, iteration);
         }
     }

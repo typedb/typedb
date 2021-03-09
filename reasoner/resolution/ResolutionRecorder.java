@@ -22,7 +22,6 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.reasoner.resolution.answer.AnswerState;
-import grakn.core.reasoner.resolution.answer.AnswerState.Derivation;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import org.slf4j.Logger;
@@ -35,89 +34,97 @@ import java.util.Objects;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNIMPLEMENTED;
 
 public class ResolutionRecorder extends Actor<ResolutionRecorder> {
-    private static final Logger LOG = LoggerFactory.getLogger(ResolutionRecorder.class);
-
-    private final Map<Driver<? extends Resolver<?>>, Integer> actorIndices;
-    private final Map<AnswerIndex, Partial<?>> answers;
-
-    public ResolutionRecorder(Driver<ResolutionRecorder> driver) {
-        super(driver, "ResolutionRecorder");
-        answers = new HashMap<>();
-        actorIndices = new HashMap<>();
+    protected ResolutionRecorder(Driver<ResolutionRecorder> driver, String name) {
+        super(driver, name);
     }
 
     @Override
     protected void exception(Throwable e) {
-        LOG.error("Actor exception", e);
+
     }
-
-    public void record(AnswerState answer) {
-        throw GraknException.of(UNIMPLEMENTED);
-//        merge(answer);
-    }
-
-    /**
-     * Recursively merge derivation tree nodes into the existing derivation nodes that are recorded in the
-     * answer index. Always keep the pre-existing derivation node, and merge the new ones into the existing node.
-     *
-     * @param newAnswer
-     * @return
-     */
-    private Partial<?> merge(Partial<?> newAnswer) {
-        Derivation newDerivation = newAnswer.derivation();
-        Map<Driver<? extends Resolver<?>>, Partial<?>> subAnswers = newDerivation.answers();
-
-        Map<Driver<? extends Resolver<?>>, Partial<?>> mergedSubAnswers = new HashMap<>();
-        for (Driver<? extends Resolver<?>> key : subAnswers.keySet()) {
-            Partial<?> subAnswer = subAnswers.get(key);
-            Partial<?> mergedSubAnswer = merge(subAnswer);
-            mergedSubAnswers.put(key, mergedSubAnswer);
-        }
-        newDerivation.replace(mergedSubAnswers);
-
-        int actorIndex = actorIndices.computeIfAbsent(newAnswer.resolvedBy(), key -> actorIndices.size());
-        LOG.debug("actor index for " + newAnswer.resolvedBy() + ": " + actorIndex);
-        AnswerIndex newAnswerIndex = new AnswerIndex(actorIndex, newAnswer.conceptMap());
-        if (answers.containsKey(newAnswerIndex)) {
-            Partial<?> existingAnswer = answers.get(newAnswerIndex);
-            Derivation existingDerivation = existingAnswer.derivation();
-            existingDerivation.update(newDerivation.answers());
-            return existingAnswer;
-        } else {
-            answers.put(newAnswerIndex, newAnswer);
-            return newAnswer;
-        }
-    }
-
-    static class AnswerIndex {
-        private final int actorIndex;
-        private final ConceptMap conceptMap;
-
-        public AnswerIndex(int actorIndex, ConceptMap conceptMap) {
-            this.actorIndex = actorIndex;
-            this.conceptMap = conceptMap;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            AnswerIndex that = (AnswerIndex) o;
-            return actorIndex == that.actorIndex &&
-                    Objects.equals(conceptMap, that.conceptMap);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(actorIndex, conceptMap);
-        }
-
-        @Override
-        public String toString() {
-            return "AnswerIndex{" +
-                    "actorIndex=" + actorIndex +
-                    ", conceptMap=" + conceptMap +
-                    '}';
-        }
-    }
+//    private static final Logger LOG = LoggerFactory.getLogger(ResolutionRecorder.class);
+//
+//    private final Map<Driver<? extends Resolver<?>>, Integer> actorIndices;
+//    private final Map<AnswerIndex, Partial<?>> answers;
+//
+//    public ResolutionRecorder(Driver<ResolutionRecorder> driver) {
+//        super(driver, "ResolutionRecorder");
+//        answers = new HashMap<>();
+//        actorIndices = new HashMap<>();
+//    }
+//
+//    @Override
+//    protected void exception(Throwable e) {
+//        LOG.error("Actor exception", e);
+//    }
+//
+//    public void record(AnswerState answer) {
+//        throw GraknException.of(UNIMPLEMENTED);
+////        merge(answer);
+//    }
+//
+//    /**
+//     * Recursively merge derivation tree nodes into the existing derivation nodes that are recorded in the
+//     * answer index. Always keep the pre-existing derivation node, and merge the new ones into the existing node.
+//     *
+//     * @param newAnswer
+//     * @return
+//     */
+//    private Partial<?> merge(Partial<?> newAnswer) {
+//        Derivation newDerivation = newAnswer.derivation();
+//        Map<Driver<? extends Resolver<?>>, Partial<?>> subAnswers = newDerivation.answers();
+//
+//        Map<Driver<? extends Resolver<?>>, Partial<?>> mergedSubAnswers = new HashMap<>();
+//        for (Driver<? extends Resolver<?>> key : subAnswers.keySet()) {
+//            Partial<?> subAnswer = subAnswers.get(key);
+//            Partial<?> mergedSubAnswer = merge(subAnswer);
+//            mergedSubAnswers.put(key, mergedSubAnswer);
+//        }
+//        newDerivation.replace(mergedSubAnswers);
+//
+//        int actorIndex = actorIndices.computeIfAbsent(newAnswer.resolvedBy(), key -> actorIndices.size());
+//        LOG.debug("actor index for " + newAnswer.resolvedBy() + ": " + actorIndex);
+//        AnswerIndex newAnswerIndex = new AnswerIndex(actorIndex, newAnswer.conceptMap());
+//        if (answers.containsKey(newAnswerIndex)) {
+//            Partial<?> existingAnswer = answers.get(newAnswerIndex);
+//            Derivation existingDerivation = existingAnswer.derivation();
+//            existingDerivation.update(newDerivation.answers());
+//            return existingAnswer;
+//        } else {
+//            answers.put(newAnswerIndex, newAnswer);
+//            return newAnswer;
+//        }
+//    }
+//
+//    static class AnswerIndex {
+//        private final int actorIndex;
+//        private final ConceptMap conceptMap;
+//
+//        public AnswerIndex(int actorIndex, ConceptMap conceptMap) {
+//            this.actorIndex = actorIndex;
+//            this.conceptMap = conceptMap;
+//        }
+//
+//        @Override
+//        public boolean equals(Object o) {
+//            if (this == o) return true;
+//            if (o == null || getClass() != o.getClass()) return false;
+//            AnswerIndex that = (AnswerIndex) o;
+//            return actorIndex == that.actorIndex &&
+//                    Objects.equals(conceptMap, that.conceptMap);
+//        }
+//
+//        @Override
+//        public int hashCode() {
+//            return Objects.hash(actorIndex, conceptMap);
+//        }
+//
+//        @Override
+//        public String toString() {
+//            return "AnswerIndex{" +
+//                    "actorIndex=" + actorIndex +
+//                    ", conceptMap=" + conceptMap +
+//                    '}';
+//        }
+//    }
 }

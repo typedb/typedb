@@ -20,8 +20,8 @@ package grakn.core.reasoner.resolution.resolver;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
-import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
@@ -33,9 +33,9 @@ import grakn.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static grakn.core.common.iterator.Iterators.iterate;
@@ -45,17 +45,15 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
 
     private static final Logger LOG = LoggerFactory.getLogger(Disjunction.class);
 
-    protected final List<Driver<ConjunctionResolver.Nested>> downstreamResolvers;
-    private final grakn.core.pattern.Disjunction disjunction;
-    protected long skipped;
-    protected long answered;
+    final Map<Driver<ConjunctionResolver.Nested>, Conjunction> downstreamResolvers;
+    final grakn.core.pattern.Disjunction disjunction;
 
     public DisjunctionResolver(Driver<RESOLVER> driver, String name, grakn.core.pattern.Disjunction disjunction,
-                               Driver<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
-                               TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean explanations) {
-        super(driver, name, registry, traversalEngine, conceptMgr, explanations, resolutionRecorder);
+                               ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
+                               boolean resolutionTracing) {
+        super(driver, name, registry, traversalEngine, conceptMgr, resolutionTracing);
         this.disjunction = disjunction;
-        this.downstreamResolvers = new ArrayList<>();
+        this.downstreamResolvers = new HashMap<>();
     }
 
     @Override
@@ -67,21 +65,21 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         Request fromUpstream = fromUpstream(toDownstream);
         RequestState requestState = requestStates.get(fromUpstream);
 
-        AnswerState answer = toUpstreamAnswer(fromDownstream.answer());
+        AnswerState answer = toUpstreamAnswer(fromDownstream.answer(), fromDownstream);
         boolean acceptedAnswer = tryAcceptUpstreamAnswer(answer, fromUpstream, iteration);
         if (!acceptedAnswer) nextAnswer(fromUpstream, requestState, iteration);
     }
 
     protected abstract boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration);
 
-    protected abstract AnswerState toUpstreamAnswer(Partial<?> answer);
+    protected abstract AnswerState toUpstreamAnswer(Partial<?> answer, Response.Answer fromDownstream);
 
     @Override
     protected void initialiseDownstreamResolvers() {
         LOG.debug("{}: initialising downstream resolvers", name());
         for (grakn.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
             try {
-                downstreamResolvers.add(registry.nested(conjunction));
+                downstreamResolvers.put(registry.nested(conjunction), conjunction);
             } catch (GraknException e) {
                 terminate(e);
                 return;
@@ -95,7 +93,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         LOG.debug("{}: Creating a new RequestState for request: {}", name(), fromUpstream);
         assert fromUpstream.partialAnswer().isFiltered() || fromUpstream.partialAnswer().isIdentity();
         RequestState requestState = new RequestState(iteration);
-        for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers) {
+        for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers.keySet()) {
             Filtered downstream = fromUpstream.partialAnswer()
                     .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver), conjunctionResolver);
             Request request = Request.create(driver(), conjunctionResolver, downstream);
@@ -112,7 +110,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         assert newIteration > requestStatePrior.iteration();
 
         RequestState requestStateNextIteration = requestStateForIteration(requestStatePrior, newIteration);
-        for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers) {
+        for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers.keySet()) {
             Filtered downstream = fromUpstream.partialAnswer()
                     .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver), conjunctionResolver);
             Request request = Request.create(driver(), conjunctionResolver, downstream);
@@ -157,11 +155,11 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
 
     public static class Nested extends DisjunctionResolver<Nested> {
 
-        public Nested(Driver<Nested> driver, grakn.core.pattern.Disjunction disjunction,
-                      Driver<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
+        public Nested(Driver<Nested> driver, Disjunction disjunction,
+                      ResolverRegistry registry,
                       TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean explanations) {
             super(driver, Nested.class.getSimpleName() + "(pattern: " + disjunction + ")", disjunction,
-                  resolutionRecorder, registry, traversalEngine, conceptMgr, explanations);
+                  registry, traversalEngine, conceptMgr, explanations);
         }
 
         @Override
@@ -180,7 +178,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         }
 
         @Override
-        protected AnswerState toUpstreamAnswer(Partial<?> answer) {
+        protected AnswerState toUpstreamAnswer(Partial<?> answer, Response.Answer fromDownstream) {
             assert answer.isFiltered();
             return answer.asFiltered().toUpstream();
         }
