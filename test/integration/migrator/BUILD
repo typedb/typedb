@@ -42,7 +42,7 @@ host_compatible_java_test(
         "@maven//:com_google_protobuf_protobuf_java",
     ],
     resources = [
-        "//common/test:logback"
+        "//common/test:logback-test"
     ],
     resource_strip_prefix = "common/test",
     data = [":schema.gql", "data.grakn"],

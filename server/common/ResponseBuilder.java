@@ -64,12 +64,10 @@ public class ResponseBuilder {
 
     public static class Transaction {
 
-        public static TransactionProto.Transaction.Res done(String id) {
-            return TransactionProto.Transaction.Res.newBuilder().setId(id).setDone(true).build();
-        }
-
-        public static TransactionProto.Transaction.Res continueRes(String id) {
-            return TransactionProto.Transaction.Res.newBuilder().setId(id).setContinue(true).build();
+        public static TransactionProto.Transaction.Res iterate(String id, boolean hasNext) {
+            return TransactionProto.Transaction.Res.newBuilder().setId(id).setIterateRes(
+                    TransactionProto.Transaction.Iterate.Res.newBuilder().setHasNext(hasNext)
+            ).build();
         }
     }
 

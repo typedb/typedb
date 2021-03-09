@@ -19,7 +19,7 @@
 package grakn.core.graph.adjacency.impl;
 
 import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.concurrent.common.ConcurrentSet;
+import grakn.common.collection.ConcurrentSet;
 import grakn.core.graph.adjacency.TypeAdjacency;
 import grakn.core.graph.common.Encoding;
 import grakn.core.graph.edge.Edge;

@@ -21,17 +21,15 @@ import grabl.tracing.client.GrablTracingThreadStatic;
 import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
 import grakn.core.common.exception.GraknException;
 import grakn.core.server.GraknService;
+import grakn.core.server.common.ResponseBuilder;
 import grakn.core.server.common.TracingData;
 import grakn.core.server.session.SessionService;
-import grakn.core.server.common.ResponseBuilder;
 import grakn.protocol.TransactionProto.Transaction;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -40,12 +38,13 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.continueTraceOnThread;
 import static grakn.core.common.collection.Bytes.bytesToUUID;
+import static grakn.core.common.exception.ErrorMessage.Server.EMPTY_TRANSACTION_REQUEST;
 import static grakn.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_ALREADY_OPENED;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_NOT_OPENED;
 
 
-public class TransactionStream implements StreamObserver<Transaction.Req> {
+public class TransactionStream implements StreamObserver<Transaction.Reqs> {
 
     private static final Logger LOG = LoggerFactory.getLogger(TransactionStream.class);
     private static final String TRACE_PREFIX = "transaction_stream.";
@@ -67,10 +66,10 @@ public class TransactionStream implements StreamObserver<Transaction.Req> {
     }
 
     @Override
-    public void onNext(Transaction.Req request) {
-        if (request.getReqCase() == Transaction.Req.ReqCase.OPEN_REQ) open(request);
-        else if (transactionSrv.get() == null) throw GraknException.of(TRANSACTION_NOT_OPENED);
-        else transactionSrv.get().executeSerial(request);
+    public void onNext(Transaction.Reqs requests) {
+        if (requests.getTransactionReqsList().isEmpty()) throw GraknException.of(EMPTY_TRANSACTION_REQUEST);
+        else if (transactionSrv.get() == null) init(requests);
+        else transactionSrv.get().execute(requests);
     }
 
     @Override
@@ -97,9 +96,17 @@ public class TransactionStream implements StreamObserver<Transaction.Req> {
         }
     }
 
+    void init(Transaction.Reqs requests) {
+        if (requests.getTransactionReqsList().size() == 1 &&
+                requests.getTransactionReqs(0).getReqCase() == Transaction.Req.ReqCase.OPEN_REQ) {
+            open(requests.getTransactionReqs(0));
+        } else {
+            throw GraknException.of(TRANSACTION_NOT_OPENED);
+        }
+    }
+
     private void open(Transaction.Req request) {
         ThreadTrace trace = mayStartTrace(request, TRACE_PREFIX + "open");
-        Instant startTime = Instant.now();
         Transaction.Open.Req openReq = request.getOpenReq();
         UUID sessionID = bytesToUUID(openReq.getSessionId().toByteArray());
         SessionService sessionSrv = graknService.session(sessionID);
@@ -109,10 +116,8 @@ public class TransactionStream implements StreamObserver<Transaction.Req> {
             newTransactionSrv.close();
             throw GraknException.of(TRANSACTION_ALREADY_OPENED);
         }
-
-        int processingTimeMillis = (int) Duration.between(startTime, Instant.now()).toMillis();
         responder.onNext(Transaction.Res.newBuilder().setId(request.getId()).setOpenRes(
-                Transaction.Open.Res.newBuilder().setProcessingTimeMillis(processingTimeMillis)
+                Transaction.Open.Res.getDefaultInstance()
         ).build());
         mayCloseTrace(trace);
     }

@@ -21,7 +21,7 @@ package grakn.core.traversal.procedure;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Label;
-import grakn.core.concurrent.common.ConcurrentSet;
+import grakn.common.collection.ConcurrentSet;
 import grakn.core.concurrent.producer.FunctionalProducer;
 import grakn.core.graph.GraphManager;
 import grakn.core.traversal.Traversal;

@@ -22,6 +22,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Options;
+import grakn.core.server.common.ResponseBuilder;
 import grakn.core.server.concept.ConceptService;
 import grakn.core.server.concept.ThingService;
 import grakn.core.server.concept.TypeService;
@@ -49,8 +50,6 @@ import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TY
 import static grakn.core.common.exception.ErrorMessage.Transaction.BAD_TRANSACTION_TYPE;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_ALREADY_OPENED;
 import static grakn.core.server.common.RequestReader.setDefaultOptions;
-import static grakn.core.server.common.ResponseBuilder.Transaction.continueRes;
-import static grakn.core.server.common.ResponseBuilder.Transaction.done;
 
 public class TransactionService {
 
@@ -62,11 +61,13 @@ public class TransactionService {
     private final AtomicBoolean isOpen;
     private final AtomicBoolean commitRequested;
     private final AtomicInteger ongoingRequests;
+    private final int latencyMillis;
     private volatile String commitRequestID;
 
     public TransactionService(SessionService sessionSrv, TransactionStream stream, TransactionProto.Transaction.Open.Req request) {
         this.sessionSrv = sessionSrv;
         this.stream = stream;
+        this.latencyMillis = request.getLatencyMillis();
 
         Arguments.Transaction.Type transactionType = Arguments.Transaction.Type.of(request.getType().getNumber());
         if (transactionType == null) throw GraknException.of(BAD_TRANSACTION_TYPE, request.getType());
@@ -98,7 +99,7 @@ public class TransactionService {
                     commitRequestID = request.getId();
                     commitRequested.set(true);
                     break;
-                case CONTINUE:
+                case ITERATE_REQ:
                 case ROLLBACK_REQ:
                 case QUERY_REQ:
                 case CONCEPT_MANAGER_REQ:
@@ -117,8 +118,11 @@ public class TransactionService {
         }
     }
 
-    // TODO: This is a temporary implementation to use until we enable TransactionExecutor
-    void executeSerial(TransactionProto.Transaction.Req request) {
+    void execute(TransactionProto.Transaction.Reqs requests) {
+        requests.getTransactionReqsList().forEach(this::execute);
+    }
+
+    void execute(TransactionProto.Transaction.Req request) {
         try {
             switch (request.getReqCase()) {
                 case REQ_NOT_SET:
@@ -137,7 +141,8 @@ public class TransactionService {
         }
     }
 
-    void execute(TransactionProto.Transaction.Req request) {
+    // TODO: Enable this along with AsyncTransactionExecutor
+    void executeAsync(TransactionProto.Transaction.Req request) {
         try {
             switch (request.getReqCase()) {
                 case REQ_NOT_SET:
@@ -166,7 +171,7 @@ public class TransactionService {
 
     private void executeRequest(TransactionProto.Transaction.Req request) {
         switch (request.getReqCase()) {
-            case CONTINUE:
+            case ITERATE_REQ:
                 iterators.continueIteration(request.getId());
                 break;
             case ROLLBACK_REQ:
@@ -311,7 +316,6 @@ public class TransactionService {
         <T> void iterate(TransactionProto.Transaction.Req request, Iterator<T> iterator, boolean prefetch, int batchSize,
                          Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
             String requestId = request.getId();
-            int latencyMillis = request.getLatencyMillis();
             BatchingIterator<T> batchingIterator =
                     new BatchingIterator<>(requestId, iterator, responseBuilderFn, batchSize, latencyMillis);
             iterators.compute(requestId, (key, oldValue) -> {
@@ -319,7 +323,7 @@ public class TransactionService {
                 else throw GraknException.of(DUPLICATE_REQUEST, requestId);
             });
             if (prefetch) batchingIterator.iterateBatch();
-            else respond(continueRes(requestId));
+            else respond(ResponseBuilder.Transaction.iterate(requestId, true));
         }
 
         /**
@@ -354,6 +358,7 @@ public class TransactionService {
                 List<T> answers = new ArrayList<>();
                 Instant startTime = Instant.now();
                 for (int i = 0; i < batchSize && iterator.hasNext(); i++) {
+                    // TODO: what if the next answer comes long after 1ms? We would wait inefficiently while holding onto answers we can already send sooner
                     answers.add(iterator.next());
                     Instant currTime = Instant.now();
                     if (Duration.between(currTime, startTime).toMillis() >= 1) {
@@ -369,11 +374,11 @@ public class TransactionService {
                 }
 
                 if (!iterator.hasNext()) {
-                    respond(done(id));
+                    respond(ResponseBuilder.Transaction.iterate(id, false));
                     return;
                 }
 
-                respond(continueRes(id));
+                respond(ResponseBuilder.Transaction.iterate(id, true));
 
                 // Compensate for network latency
                 answers.clear();
@@ -394,7 +399,7 @@ public class TransactionService {
                 }
 
                 if (!iterator.hasNext()) {
-                    respond(done(id));
+                    respond(ResponseBuilder.Transaction.iterate(id, false));
                 }
             }
         }

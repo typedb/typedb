@@ -91,7 +91,7 @@ java_binary(
     main_class = "grakn.core.server.GraknServer",
     runtime_deps = [":server-mac"],
     tags = ["maven_coordinates=io.grakn.core:grakn-server-bin:{pom_version}"],
-    resources = [ "//server/conf:logback-debug.xml" ],
+    resources = [ "//server/conf:logback.xml" ],
     data = [ "//server/conf:grakn-properties" ],
     resource_strip_prefix = "server/conf/"
 )
@@ -162,7 +162,7 @@ assemble_deps_common = [
 ]
 
 assemble_files = {
-    "//server/conf:logback": "server/conf/logback.xml",
+    "//server/conf:logback": "server/conf/logback-test.xml",
     "//server/conf:logback-debug": "server/conf/logback-debug.xml",
     "//server/conf:grakn-properties": "server/conf/grakn.properties",
     "//server/resources:logo": "server/resources/grakn-core-ascii.txt",
@@ -171,7 +171,7 @@ assemble_files = {
 
 permissions = {
     "server/conf/grakn.properties": "0755",
-    "server/conf/logback.xml": "0755",
+    "server/conf/logback-test.xml": "0755",
     "server/conf/logback-debug.xml": "0755",
 }
 

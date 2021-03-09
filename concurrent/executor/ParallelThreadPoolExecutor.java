@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.concurrent.eventloop;
+package grakn.core.concurrent.executor;
 
 import grakn.common.collection.Either;
 import grakn.common.concurrent.NamedThreadFactory;
@@ -24,9 +24,10 @@ import grakn.core.common.exception.GraknException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -35,39 +36,36 @@ import java.util.concurrent.locks.StampedLock;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
 import static grakn.core.common.exception.ErrorMessage.Server.SERVER_SHUTDOWN;
 
-public abstract class EventLoopExecutor<E> implements AutoCloseable {
+public class ParallelThreadPoolExecutor implements Executor, AutoCloseable {
 
-    private static final Logger LOG = LoggerFactory.getLogger(EventLoopExecutor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ParallelThreadPoolExecutor.class);
     private static final Shutdown SHUTDOWN_SIGNAL = new Shutdown();
 
-    private final ArrayList<EventLoop> executors;
+    private final ArrayList<RunnableExecutor> executors;
     private final AtomicInteger executorIndex;
     private final ReadWriteLock accessLock;
     private volatile boolean isOpen;
 
-    protected EventLoopExecutor(int executors, int queuePerExecutor, NamedThreadFactory threadFactory) {
+    public ParallelThreadPoolExecutor(int executors, NamedThreadFactory threadFactory) {
         this.executors = new ArrayList<>(executors);
         this.executorIndex = new AtomicInteger(0);
         this.accessLock = new StampedLock().asReadWriteLock();
         this.isOpen = true;
-        for (int i = 0; i < executors; i++) this.executors.add(new EventLoop(queuePerExecutor, threadFactory));
+        for (int i = 0; i < executors; i++) this.executors.add(new RunnableExecutor(threadFactory));
     }
 
-    private EventLoop next() {
+    private RunnableExecutor next() {
         return executors.get(executorIndex.getAndUpdate(i -> {
             i++; if (i % executors.size() == 0) i = 0; return i;
         }));
     }
 
-    public abstract void onEvent(E event);
-
-    public abstract void onException(E event, Throwable exception);
-
-    public void submit(E event) {
+    @Override
+    public void execute(@Nonnull Runnable runnable) {
         try {
             accessLock.readLock().lock();
             if (!isOpen) throw GraknException.of(SERVER_SHUTDOWN);
-            next().submit(event);
+            next().execute(runnable);
         } finally {
             accessLock.readLock().unlock();
         }
@@ -79,8 +77,8 @@ public abstract class EventLoopExecutor<E> implements AutoCloseable {
             accessLock.writeLock().lock();
             if (isOpen) {
                 isOpen = false;
-                executors.forEach(executor -> executor.queue.clear());
-                executors.forEach(EventLoop::shutdown);
+                executors.forEach(RunnableExecutor::clear);
+                executors.forEach(RunnableExecutor::shutdown);
             }
         } finally {
             accessLock.writeLock().unlock();
@@ -89,35 +87,19 @@ public abstract class EventLoopExecutor<E> implements AutoCloseable {
 
     private static class Shutdown {}
 
-    private static class Event<T> {
+    private static class RunnableExecutor implements Executor {
 
-        @Nullable
-        private final T value;
+        private final BlockingQueue<Either<Runnable, Shutdown>> queue;
 
-        private Event(@Nullable T value) {
-            this.value = value;
-        }
-
-        @Nullable
-        private T value() {
-            return value;
-        }
-    }
-
-    private class EventLoop {
-
-        private final BlockingQueue<Either<Event<E>, Shutdown>> queue;
-        private long counter;
-
-        private EventLoop(int queueSize, NamedThreadFactory threadFactory) {
-            this.queue = new LinkedBlockingQueue<>(queueSize);
-            this.counter = 0;
+        private RunnableExecutor(NamedThreadFactory threadFactory) {
+            this.queue = new LinkedBlockingQueue<>();
             threadFactory.newThread(this::run).start();
         }
 
-        private void submit(E event) {
+        @Override
+        public void execute(@Nonnull Runnable runnable) {
             try {
-                queue.put(Either.first(new Event<>(event)));
+                queue.put(Either.first(runnable));
             } catch (InterruptedException e) {
                 throw GraknException.of(UNEXPECTED_INTERRUPTION);
             }
@@ -133,20 +115,20 @@ public abstract class EventLoopExecutor<E> implements AutoCloseable {
 
         private void run() {
             while (true) {
-                Either<Event<E>, Shutdown> event;
+                Either<Runnable, Shutdown> runnable;
                 try {
-                    event = queue.take();
+                    runnable = queue.take();
                 } catch (InterruptedException e) {
                     throw GraknException.of(UNEXPECTED_INTERRUPTION);
                 }
-                if (event.isFirst()) {
-                    try {
-                        onEvent(event.first().value());
-                    } catch (Throwable e) {
-                        onException(event.first().value(), e);
-                    }
+                if (runnable.isFirst()) {
+                    runnable.first().run();
                 } else break;
             }
+        }
+
+        public void clear() {
+            queue.clear();
         }
     }
 }

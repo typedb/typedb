@@ -19,22 +19,22 @@
 package grakn.core.server.transaction;
 
 import grakn.common.concurrent.NamedThreadFactory;
-import grakn.core.concurrent.eventloop.EventLoopExecutor;
+import grakn.core.concurrent.executor.EventLoopExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TransactionExecutor extends EventLoopExecutor<TransactionService.Event> {
+public class AsyncTransactionExecutor extends EventLoopExecutor<TransactionService.Event> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(TransactionExecutor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AsyncTransactionExecutor.class);
     private static final String GRAKN_CORE_TRANSACTION_THREAD_NAME = "grakn-core-transaction";
 
-    public TransactionExecutor(int executors, int queuePerExecutor) {
+    public AsyncTransactionExecutor(int executors, int queuePerExecutor) {
         super(executors, queuePerExecutor, NamedThreadFactory.create(GRAKN_CORE_TRANSACTION_THREAD_NAME));
     }
 
     @Override
     public void onEvent(TransactionService.Event event) {
-        event.transactionService().execute(event.request());
+        event.transactionService().executeAsync(event.request());
     }
 
     @Override

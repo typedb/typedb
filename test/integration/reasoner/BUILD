@@ -39,7 +39,7 @@ host_compatible_java_test(
         "@graknlabs_graql//java:graql",
     ],
     resources = [
-        "//common/test:logback"
+        "//common/test:logback-test"
     ],
     resource_strip_prefix = "common/test",
 )
@@ -69,7 +69,7 @@ host_compatible_java_test(
     ],
     resource_strip_prefix = "common/test",
     resources = [
-        "//common/test:logback",
+        "//common/test:logback-test",
     ],
 )
 
@@ -98,7 +98,7 @@ host_compatible_java_test(
     ],
     resource_strip_prefix = "common/test",
     resources = [
-        "//common/test:logback",
+        "//common/test:logback-test",
     ],
     size = "large"
 )

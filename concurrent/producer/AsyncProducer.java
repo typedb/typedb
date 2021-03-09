@@ -20,7 +20,7 @@ package grakn.core.concurrent.producer;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.concurrent.common.ConcurrentSet;
+import grakn.common.collection.ConcurrentSet;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.concurrent.CompletableFuture;

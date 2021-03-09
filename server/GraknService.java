@@ -22,7 +22,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
 import grakn.core.server.session.SessionService;
-import grakn.core.server.transaction.TransactionExecutor;
+import grakn.core.server.transaction.AsyncTransactionExecutor;
 import grakn.core.server.transaction.TransactionStream;
 import grakn.protocol.DatabaseProto;
 import grakn.protocol.GraknGrpc;
@@ -32,6 +32,8 @@ import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,7 +45,6 @@ import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
 import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Server.SERVER_SHUTDOWN;
 import static grakn.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
-import static grakn.core.concurrent.common.Executors.PARALLELISATION_FACTOR;
 import static grakn.core.server.common.RequestReader.setDefaultOptions;
 import static grakn.core.server.common.ResponseBuilder.exception;
 import static java.util.stream.Collectors.toList;
@@ -55,13 +56,13 @@ public class GraknService extends GraknGrpc.GraknImplBase {
 
     private final Grakn grakn;
     private final ConcurrentMap<UUID, SessionService> sessionServices;
-    private final TransactionExecutor executor;
+    private final AsyncTransactionExecutor executor;
 
     public GraknService(Grakn grakn) {
         this.grakn = grakn;
         sessionServices = new ConcurrentHashMap<>();
-        // TODO: this is temporarily not used until we enable TransactionExecutor
-        //executor = new TransactionExecutor(PARALLELISATION_FACTOR, TRANSACTION_EXECUTOR_QUEUE_FACTOR);
+        // TODO: Enable this along with AsyncTransactionExecutor
+        //executor = new AsyncTransactionExecutor(PARALLELISATION_FACTOR, TRANSACTION_EXECUTOR_QUEUE_FACTOR);
         executor = null;
     }
 
@@ -137,12 +138,16 @@ public class GraknService extends GraknGrpc.GraknImplBase {
     public void sessionOpen(SessionProto.Session.Open.Req request,
                             StreamObserver<SessionProto.Session.Open.Res> responder) {
         try {
+            Instant start = Instant.now();
             Arguments.Session.Type sessionType = Arguments.Session.Type.of(request.getType().getNumber());
             Options.Session options = setDefaultOptions(new Options.Session(), request.getOptions());
             Grakn.Session session = grakn.session(request.getDatabase(), sessionType, options);
             SessionService sessionSrv = new SessionService(this, session, options);
             sessionServices.put(sessionSrv.session().uuid(), sessionSrv);
-            responder.onNext(SessionProto.Session.Open.Res.newBuilder().setSessionId(sessionSrv.UUIDAsByteString()).build());
+            responder.onNext(SessionProto.Session.Open.Res.newBuilder()
+                                     .setSessionId(sessionSrv.UUIDAsByteString())
+                                     .setProcessingTimeMillis((int) Duration.between(start, Instant.now()).toMillis())
+                                     .build());
             responder.onCompleted();
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
@@ -183,12 +188,12 @@ public class GraknService extends GraknGrpc.GraknImplBase {
     }
 
     @Override
-    public StreamObserver<TransactionProto.Transaction.Req> transaction(
+    public StreamObserver<TransactionProto.Transaction.Reqs> transaction(
             StreamObserver<TransactionProto.Transaction.Res> responder) {
         return new TransactionStream(this, responder);
     }
 
-    public TransactionExecutor executor() {
+    public AsyncTransactionExecutor executor() {
         return executor;
     }
 
@@ -201,7 +206,8 @@ public class GraknService extends GraknGrpc.GraknImplBase {
     }
 
     public void close() {
-//         executor.close();
+        // TODO: Enable this along with AsyncTransactionExecutor
+        // executor.close();
         sessionServices.values().parallelStream().forEach(s -> s.close(GraknException.of(SERVER_SHUTDOWN)));
         sessionServices.clear();
     }
