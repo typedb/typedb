@@ -32,8 +32,10 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
+import grakn.core.logic.resolvable.Concludable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
+import grakn.core.pattern.Negation;
 import grakn.core.pattern.constraint.thing.HasConstraint;
 import grakn.core.pattern.constraint.thing.IsaConstraint;
 import grakn.core.pattern.constraint.thing.RelationConstraint;
@@ -62,7 +64,6 @@ import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
-import static grakn.core.common.exception.ErrorMessage.RuleWrite.INVALID_NEGATION;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.INVALID_NEGATION_CONTAINS_DISJUNCTION;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CAN_IMPLY_UNINSERTABLE_RESULTS;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_CANNOT_BE_SATISFIED;
@@ -88,13 +89,15 @@ public class Rule {
     private final Conjunction when;
     private final Conjunction then;
     private final Conclusion conclusion;
+    private final Condition condition;
 
     private Rule(LogicManager logicMgr, RuleStructure structure) {
         this.structure = structure;
         this.when = whenPattern(structure.when(), logicMgr);
         this.then = thenPattern(structure.then(), logicMgr);
         pruneThenResolvedTypes();
-        this.conclusion = Conclusion.create(this.then, this);
+        this.conclusion = Conclusion.create(this);
+        this.condition = Condition.create(this);
     }
 
     private Rule(GraphManager graphMgr, LogicManager logicMgr, String label,
@@ -105,9 +108,9 @@ public class Rule {
         pruneThenResolvedTypes();
         validateSatisfiable();
         validateInsertable(logicMgr);
-        this.conclusion = Conclusion.create(this.then, this);
-        validateCycles();
+        this.conclusion = Conclusion.create(this);
         this.conclusion.index();
+        this.condition = Condition.create(this);
     }
 
     public static Rule of(LogicManager logicMgr, RuleStructure structure) {
@@ -121,6 +124,10 @@ public class Rule {
 
     public Conclusion conclusion() {
         return conclusion;
+    }
+
+    public Condition condition() {
+        return condition;
     }
 
     public Conjunction when() {
@@ -185,13 +192,6 @@ public class Rule {
         });
     }
 
-    void validateCycles() {
-        // TODO: implement this when we have negation
-        // TODO: detect negated cycles in the rule graph
-        // TODO: use the new rule as a starting point
-        // throw GraknException.of(ErrorMessage.RuleWrite.RULES_IN_NEGATED_CYCLE_NOT_STRATIFIABLE.message(rule));
-    }
-
     /**
      * Remove type hints in the `then` pattern that are not valid in the `when` pattern
      */
@@ -207,11 +207,6 @@ public class Rule {
     private Conjunction whenPattern(graql.lang.pattern.Conjunction<? extends Pattern> conjunction, LogicManager logicMgr) {
         Disjunction when = Disjunction.create(conjunction.normalise());
         assert when.conjunctions().size() == 1;
-
-        // TODO: remove this when we fully implement negation and don't have to ban it in rules
-        if (!when.conjunctions().get(0).negations().isEmpty()) {
-            throw GraknException.of(INVALID_NEGATION, getLabel());
-        }
 
         if (iterate(when.conjunctions().get(0).negations()).filter(neg -> neg.disjunction().conjunctions().size() != 1).hasNext()) {
             throw GraknException.of(INVALID_NEGATION_CONTAINS_DISJUNCTION, getLabel());
@@ -232,10 +227,66 @@ public class Rule {
         conclusion().index();
     }
 
+
     @Override
     public String toString() {
         return "" + RULE + SPACE + getLabel() + COLON + NEW_LINE + WHEN + SPACE + CURLY_OPEN + NEW_LINE + when + NEW_LINE +
                 CURLY_CLOSE + SPACE + THEN + SPACE + CURLY_OPEN + NEW_LINE + then + NEW_LINE + CURLY_CLOSE + SEMICOLON;
+    }
+
+    public static class Condition {
+
+        private final Rule rule;
+        private Set<Concludable> concludablesTriggeringRules;
+        private Set<Concludable> negatedConcludablesTriggeringRules;
+
+        Condition(Rule rule) {
+            this.rule = rule;
+            this.concludablesTriggeringRules = null;
+            this.negatedConcludablesTriggeringRules = null;
+        }
+
+        public static Condition create(Rule rule) {
+            return new Condition(rule);
+        }
+
+        public Rule rule() {
+            return rule;
+        }
+
+        public Set<Concludable> concludablesTriggeringRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+            if (concludablesTriggeringRules == null) { // only acquire lock if required
+                synchronized (this) { // only compute concludables once
+                    if (concludablesTriggeringRules == null) {
+                        concludablesTriggeringRules = iterate(Concludable.create(rule.when()))
+                                .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext()).toSet();
+                    }
+                }
+            }
+            return concludablesTriggeringRules;
+        }
+
+        Set<Concludable> negatedConcludablesTriggeringRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+            synchronized (this) { // can be more contentious as only used for validation
+                if (negatedConcludablesTriggeringRules == null) {
+                    negatedConcludablesTriggeringRules = concludables(rule.when().negations())
+                            .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext()).toSet();
+                }
+            }
+            return negatedConcludablesTriggeringRules;
+        }
+
+        private FunctionalIterator<Concludable> concludables(Set<Negation> negations) {
+            return iterate(negations)
+                    .flatMap(neg -> {
+                        assert neg.disjunction().conjunctions().size() == 1;
+                        return iterate(neg.disjunction().conjunctions());
+                    }).flatMap(conjunction -> {
+                        assert conjunction.negations().isEmpty();
+                        return iterate(Concludable.create(conjunction));
+                    });
+        }
+
     }
 
     public static abstract class Conclusion {
@@ -248,12 +299,12 @@ public class Rule {
             this.retrievableIds = retrievableIds;
         }
 
-        public static Conclusion create(Conjunction then, Rule rule) {
-            Optional<Relation> r = Relation.of(then, rule);
+        public static Conclusion create(Rule rule) {
+            Optional<Relation> r = Relation.of(rule.then(), rule);
             if ((r).isPresent()) return r.get();
-            Optional<Has.Explicit> e = Has.Explicit.of(then, rule);
+            Optional<Has.Explicit> e = Has.Explicit.of(rule.then(), rule);
             if (e.isPresent()) return e.get();
-            Optional<Has.Variable> v = Has.Variable.of(then, rule);
+            Optional<Has.Variable> v = Has.Variable.of(rule.then(), rule);
             if (v.isPresent()) return v.get();
             throw GraknException.of(ILLEGAL_STATE);
         }
@@ -353,8 +404,8 @@ public class Rule {
             }
 
             public static Optional<Relation> of(Conjunction conjunction, Rule rule) {
-                return Iterators.iterate(conjunction.variables()).filter(Variable::isThing).map(Variable::asThing)
-                        .flatMap(variable -> Iterators.iterate(variable.constraints())
+                return iterate(conjunction.variables()).filter(Variable::isThing).map(Variable::asThing)
+                        .flatMap(variable -> iterate(variable.constraints())
                                 .filter(ThingConstraint::isRelation)
                                 .map(constraint -> {
                                     assert constraint.owner().isa().isPresent();
@@ -553,9 +604,9 @@ public class Rule {
                 }
 
                 public static Optional<Explicit> of(Conjunction conjunction, Rule rule) {
-                    return Iterators.iterate(conjunction.variables()).filter(grakn.core.pattern.variable.Variable::isThing)
+                    return iterate(conjunction.variables()).filter(grakn.core.pattern.variable.Variable::isThing)
                             .map(grakn.core.pattern.variable.Variable::asThing)
-                            .flatMap(variable -> Iterators.iterate(variable.constraints()).filter(ThingConstraint::isHas)
+                            .flatMap(variable -> iterate(variable.constraints()).filter(ThingConstraint::isHas)
                                     .filter(constraint -> constraint.asHas().attribute().id().reference().isAnonymous())
                                     .map(constraint -> {
                                         assert constraint.asHas().attribute().isa().isPresent();
@@ -679,9 +730,9 @@ public class Rule {
                 }
 
                 public static Optional<Variable> of(Conjunction conjunction, Rule rule) {
-                    return Iterators.iterate(conjunction.variables()).filter(grakn.core.pattern.variable.Variable::isThing)
+                    return iterate(conjunction.variables()).filter(grakn.core.pattern.variable.Variable::isThing)
                             .map(grakn.core.pattern.variable.Variable::asThing)
-                            .flatMap(variable -> Iterators.iterate(variable.constraints()).filter(ThingConstraint::isHas)
+                            .flatMap(variable -> iterate(variable.constraints()).filter(ThingConstraint::isHas)
                                     .filter(constraint -> constraint.asHas().attribute().id().isName())
                                     .map(constraint -> {
                                         assert !constraint.asHas().attribute().isa().isPresent();

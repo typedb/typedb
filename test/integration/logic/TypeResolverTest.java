@@ -627,8 +627,8 @@ public class TypeResolverTest {
     public void has_hierarchy() {
         define_custom_schema(
                 "define" +
-                        "  animal sub entity, owns weight;" +
-                        "  person sub animal, owns leg-weight;" +
+                        "  animal sub entity, abstract, owns weight;" +
+                        "  person sub animal, owns leg-weight as weight;" +
                         "  chair sub entity, owns leg-weight;" +
                         "  dog sub animal;" +
                         "  weight sub attribute, value long, abstract;" +
@@ -644,10 +644,10 @@ public class TypeResolverTest {
         typeResolver.resolve(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$a", set("animal", "dog", "person", "chair"));
+            put("$a", set("person", "chair"));
             put("$b", set("person", "chair"));
             put("$c", set("leg-weight"));
-            put("$p", set("animal", "person", "dog", "chair"));
+            put("$p", set("person", "chair"));
             put("$_0", set("leg-weight"));
             put("$_weight", set("weight"));
             put("$_leg-weight", set("leg-weight"));
@@ -1157,29 +1157,28 @@ public class TypeResolverTest {
     @Test
     public void nested_negation_outer_scope_correctly_reduces_resolved_types() {
         define_custom_schema("define " +
-                                     " person sub entity, owns name;" +
-                                     " woman sub person, owns maiden-name as name;" +
-                                     " name sub attribute, value string, abstract;" +
-                                     " maiden-name sub name, value string;");
+                                     "person sub entity, plays marriage:spouse;" +
+                                     "woman sub person;" +
+                                     "marriage sub relation, relates spouse;");
 
-        String minimallyRestricted = "match $x isa person; not { $x has name $a; };";
+        String minimallyRestricted = "match $x isa person; not { ($x) isa marriage; };";
         Disjunction disjunction = createDisjunction(minimallyRestricted);
         transaction.logic().typeResolver().resolve(disjunction);
         HashMap<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
             put("$x", set("person", "woman"));
-            put("$a", set("maiden-name"));
-            put("$_name", set("name"));
+            put("$_0", set("marriage"));
+            put("$_marriage", set("marriage"));
         }};
         // test the inner negation
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0).negations().iterator().next().disjunction().conjunctions().get(0)));
 
-        String restricted = "match $x isa woman; not { $x has name $a; };";
+        String restricted = "match $x isa woman; not { ($x) isa marriage; };";
         Disjunction restrictedDisjunction = createDisjunction(restricted);
         transaction.logic().typeResolver().resolve(restrictedDisjunction);
         expected = new HashMap<String, Set<String>>() {{
             put("$x", set("woman"));
-            put("$a", set("maiden-name"));
-            put("$_name", set("name"));
+            put("$_0", set("marriage"));
+            put("$_marriage", set("marriage"));
         }};
         // test the inner negation
         assertEquals(expected, resolvedTypeMap(restrictedDisjunction.conjunctions().get(0).negations().iterator().next().disjunction().conjunctions().get(0)));

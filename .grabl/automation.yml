@@ -95,6 +95,7 @@ build:
       command: |
         bazel test //test/behaviour/graql/language/define/... --test_output=streamed
         bazel test //test/behaviour/graql/language/undefine/... --test_output=streamed
+        bazel test //test/behaviour/graql/language/rule_validation/... --test_output=streamed
     test-behaviour-reasoner:
       image: graknlabs-ubuntu-20.04
       command: |
@@ -105,11 +106,11 @@ build:
         bazel test //test/behaviour/resolution/tests/type_hierarchy:test --test_output=streamed
         bazel test //test/behaviour/resolution/tests/value_predicate:test --test_output=streamed
         bazel test //test/behaviour/resolution/tests/resolution_test_framework:test --test_output=streamed
+        bazel test //test/behaviour/resolution/tests/negation:test --test_output=streamed
+        bazel test //test/behaviour/resolution/tests/recursion:test --test_output=streamed
+        bazel test //test/behaviour/resolution/tests/schema_queries:test --test_output=streamed
       # bazel test //test/behaviour/resolution/tests/variable_roles:test --test_output=streamed
       # bazel test //test/behaviour/resolution/tests/concept_inequality:test --test_output=streamed
-      # bazel test //test/behaviour/resolution/tests/negation:test --test_output=streamed
-      # bazel test //test/behaviour/resolution/tests/recursion:test --test_output=streamed
-      # bazel test //test/behaviour/resolution/tests/schema_queries:test --test_output=streamed
     test-assembly-linux-targz:
       image: graknlabs-ubuntu-20.04
       filter:

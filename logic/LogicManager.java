@@ -18,11 +18,11 @@
 
 package grakn.core.logic;
 
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
 import grakn.core.graph.GraphManager;
-import grakn.core.graph.common.Encoding;
 import grakn.core.graph.structure.RuleStructure;
 import grakn.core.logic.tool.TypeResolver;
 import grakn.core.traversal.TraversalEngine;
@@ -30,16 +30,32 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 
+import javax.annotation.Nullable;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static grakn.common.collection.Collections.set;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.CONTRADICTORY_RULE_CYCLE;
+import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.common.iterator.Iterators.link;
+
 public class LogicManager {
 
     private final GraphManager graphMgr;
+    private final ConceptManager conceptMgr;
     private final TypeResolver typeResolver;
     private LogicCache logicCache;
 
     public LogicManager(GraphManager graphMgr, ConceptManager conceptMgr, TraversalEngine traversalEng, LogicCache logicCache) {
         this.graphMgr = graphMgr;
+        this.conceptMgr = conceptMgr;
         this.logicCache = logicCache;
-        this.typeResolver = new TypeResolver(conceptMgr, traversalEng, logicCache);
+        this.typeResolver = new TypeResolver(logicCache, traversalEng, conceptMgr);
     }
 
     public Rule putRule(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
@@ -72,6 +88,9 @@ public class LogicManager {
         return graphMgr.schema().rules().conclusions().concludesEdgeTo(graphMgr.schema().getType(attributeType)).map(this::fromStructure);
     }
 
+    private FunctionalIterator<Rule> rulesWithNegations() {
+        return rules().filter(rule -> !rule.when().negations().isEmpty());
+    }
 
     /**
      * On commit we must clear the rule cache and revalidate rules - this will force re-running type resolution
@@ -88,11 +107,88 @@ public class LogicManager {
         // re-index if rules are valid and satisfiable
         if (graphMgr.schema().rules().conclusions().isOutdated()) {
             graphMgr.schema().rules().all().forEachRemaining(s -> fromStructure(s).reindex());
+            graphMgr.schema().rules().conclusions().outdated(false);
         }
 
         // using the new index, validate new rules are stratifiable (eg. do not cause cycles through a negation)
-        graphMgr.schema().rules().buffered().filter(structure -> structure.status().equals(Encoding.Status.BUFFERED))
-                .forEachRemaining(structure -> getRule(structure.label()).validateCycles());
+        validateCyclesThroughNegations(conceptMgr, this);
+    }
+
+    private Rule fromStructure(RuleStructure ruleStructure) {
+        return logicCache.rule().get(ruleStructure.label(), l -> Rule.of(this, ruleStructure));
+    }
+
+    private void validateCyclesThroughNegations(ConceptManager conceptMgr, LogicManager logicMgr) {
+        Set<Rule> negationRulesTriggeringRules = logicMgr.rulesWithNegations()
+                .filter(rule -> !rule.condition().negatedConcludablesTriggeringRules(conceptMgr, logicMgr).isEmpty())
+                .toSet();
+
+        for (Rule negationRule : negationRulesTriggeringRules) {
+            Map<Rule, RuleDependency> visitedDependentRules = new HashMap<>();
+            visitedDependentRules.put(negationRule, RuleDependency.of(negationRule, null));
+            List<RuleDependency> frontier = new LinkedList<>(ruleDependencies(negationRule, conceptMgr, logicMgr));
+            RuleDependency dependency;
+            while (!frontier.isEmpty()) {
+                dependency = frontier.remove(0);
+                if (negationRule.equals(dependency.recursiveRule)) {
+                    List<Rule> cycle = findCycle(dependency, visitedDependentRules);
+                    String readableCycle = cycle.stream().map(Rule::getLabel).collect(Collectors.joining(" -> \n", "\n", "\n"));
+                    throw GraknException.of(CONTRADICTORY_RULE_CYCLE, readableCycle);
+                } else {
+                    visitedDependentRules.put(dependency.recursiveRule, dependency);
+                    Set<RuleDependency> recursive = ruleDependencies(dependency.recursiveRule, conceptMgr, logicMgr);
+                    recursive.removeAll(visitedDependentRules.values());
+                    frontier.addAll(recursive);
+                }
+            }
+        }
+    }
+
+    private Set<RuleDependency> ruleDependencies(Rule rule, ConceptManager conceptMgr, LogicManager logicMgr) {
+        return link(iterate(rule.condition().concludablesTriggeringRules(conceptMgr, logicMgr)),
+                    iterate(rule.condition().negatedConcludablesTriggeringRules(conceptMgr, logicMgr)))
+                .flatMap(concludable -> concludable.getApplicableRules(conceptMgr, logicMgr))
+                .map(recursiveRule -> RuleDependency.of(recursiveRule, rule)).toSet();
+    }
+
+    private List<Rule> findCycle(RuleDependency dependency, Map<Rule, RuleDependency> visitedDependentRules) {
+        List<Rule> cycle = new LinkedList<>();
+        cycle.add(dependency.recursiveRule);
+        Rule triggeringRule = dependency.triggeringRule;
+        while (!cycle.contains(triggeringRule)) {
+            cycle.add(triggeringRule);
+            triggeringRule = visitedDependentRules.get(triggeringRule).triggeringRule;
+        }
+        cycle.add(triggeringRule);
+        return cycle;
+    }
+
+    private static class RuleDependency {
+
+        final Rule recursiveRule;
+        final Rule triggeringRule;
+
+        private RuleDependency(Rule recursiveRule, @Nullable Rule triggeringRule) {
+            this.recursiveRule = recursiveRule;
+            this.triggeringRule = triggeringRule;
+        }
+
+        public static RuleDependency of(Rule rule, Rule triggeredFrom) {
+            return new RuleDependency(rule, triggeredFrom);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            final RuleDependency that = (RuleDependency) o;
+            return Objects.equals(recursiveRule, that.recursiveRule) && Objects.equals(triggeringRule, that.triggeringRule);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(recursiveRule, triggeringRule);
+        }
     }
 
     public TypeResolver typeResolver() {
@@ -100,9 +196,5 @@ public class LogicManager {
     }
 
     GraphManager graph() { return graphMgr; }
-
-    private Rule fromStructure(RuleStructure ruleStructure) {
-        return logicCache.rule().get(ruleStructure.label(), l -> Rule.of(this, ruleStructure));
-    }
 
 }

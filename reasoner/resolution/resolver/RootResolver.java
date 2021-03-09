@@ -17,9 +17,12 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
+import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.LogicManager;
+import grakn.core.logic.resolvable.Concludable;
+import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
@@ -47,6 +50,7 @@ public interface RootResolver {
 
         private static final Logger LOG = LoggerFactory.getLogger(Conjunction.class);
 
+        private grakn.core.pattern.Conjunction conjunction;
         private final Consumer<Top> onAnswer;
         private final Consumer<Integer> onFail;
         private Consumer<Throwable> onException;
@@ -56,11 +60,24 @@ public interface RootResolver {
                            Driver<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                            TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
                            Planner planner, boolean resolutionTracing) {
-            super(driver, Conjunction.class.getSimpleName() + "(pattern:" + conjunction + ")", conjunction,
+            super(driver, Conjunction.class.getSimpleName() + "(pattern:" + conjunction + ")",
                   resolutionRecorder, registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
+            this.conjunction = conjunction;
             this.onAnswer = onAnswer;
             this.onFail = onFail;
             this.onException = onException;
+        }
+
+        @Override
+        public grakn.core.pattern.Conjunction conjunction() {
+            return conjunction;
+        }
+
+        @Override
+        Set<Concludable> concludablesTriggeringRules() {
+            return Iterators.iterate(Concludable.create(conjunction))
+                    .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext())
+                    .toSet();
         }
 
         @Override

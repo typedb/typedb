@@ -58,22 +58,19 @@ public abstract class ConjunctionResolver<
 
     private static final Logger LOG = LoggerFactory.getLogger(ConjunctionResolver.class);
 
-    private final LogicManager logicMgr;
     private final Planner planner;
-    final grakn.core.pattern.Conjunction conjunction;
+    final LogicManager logicMgr;
     final Set<Resolvable<?>> resolvables;
     final Set<Negated> negateds;
     final Plans plans;
     final Map<Resolvable<?>, ResolverRegistry.ResolverView> downstreamResolvers;
 
-    public ConjunctionResolver(Driver<RESOLVER> driver, String name, grakn.core.pattern.Conjunction conjunction,
-                               Driver<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
-                               TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
-                               Planner planner, boolean resolutionTracing) {
+    public ConjunctionResolver(Driver<RESOLVER> driver, String name, Driver<ResolutionRecorder> resolutionRecorder,
+                               ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
+                               LogicManager logicMgr, Planner planner, boolean resolutionTracing) {
         super(driver, name, registry, traversalEngine, conceptMgr, resolutionTracing, resolutionRecorder);
         this.logicMgr = logicMgr;
         this.planner = planner;
-        this.conjunction = conjunction;
         this.resolvables = new HashSet<>();
         this.negateds = new HashSet<>();
         this.plans = new Plans();
@@ -135,12 +132,15 @@ public abstract class ConjunctionResolver<
         nextAnswer(fromUpstream, requestState, iteration);
     }
 
+    abstract Set<Concludable> concludablesTriggeringRules();
+
+    abstract Conjunction conjunction();
+
     @Override
     protected void initialiseDownstreamResolvers() {
         LOG.debug("{}: initialising downstream resolvers", name());
-        Set<Concludable> concludables = Iterators.iterate(Concludable.create(conjunction))
-                .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext()).toSet();
-        Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction, concludables);
+        Set<Concludable> concludables = concludablesTriggeringRules();
+        Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction(), concludables);
         resolvables.addAll(concludables);
         resolvables.addAll(retrievables);
         iterate(resolvables).forEachRemaining(resolvable -> {
@@ -150,10 +150,10 @@ public abstract class ConjunctionResolver<
                 terminate(e);
             }
         });
-        for (Negation negation : conjunction.negations()) {
+        for (Negation negation : conjunction().negations()) {
             Negated negated = new Negated(negation);
             try {
-                downstreamResolvers.put(negated, registry.negated(negated, conjunction));
+                downstreamResolvers.put(negated, registry.negated(negated, conjunction()));
                 negateds.add(negated);
             } catch (GraknException e) {
                 terminate(e);
@@ -248,11 +248,26 @@ public abstract class ConjunctionResolver<
 
     public static class Nested extends ConjunctionResolver<Nested, RequestState> {
 
+        private final Conjunction conjunction;
+
         public Nested(Driver<Nested> driver, Conjunction conjunction, Driver<ResolutionRecorder> resolutionRecorder,
                       ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
                       LogicManager logicMgr, Planner planner, boolean resolutionTracing) {
-            super(driver, Nested.class.getSimpleName() + "(pattern: " + conjunction + ")", conjunction,
+            super(driver, Nested.class.getSimpleName() + "(pattern: " + conjunction + ")",
                   resolutionRecorder, registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
+            this.conjunction = conjunction;
+        }
+
+        @Override
+        public Conjunction conjunction() {
+            return conjunction;
+        }
+
+        @Override
+        Set<Concludable> concludablesTriggeringRules() {
+            return Iterators.iterate(Concludable.create(conjunction))
+                    .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext())
+                    .toSet();
         }
 
         @Override
