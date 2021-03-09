@@ -73,16 +73,9 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
         return Optional.of(fromDownstream.asFiltered().toUpstream());
     }
 
-
     @Override
     ConjunctionResolver.RequestState requestStateNew(int iteration) {
         return new ConjunctionResolver.RequestState(iteration);
-    }
-
-    @Override
-    ConjunctionResolver.RequestState requestStateNew(int iteration) {
-        return new RequestState(iteration);
-    }
     }
 
     @Override

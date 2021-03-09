@@ -77,6 +77,10 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         this.downstreamResolvers = new HashMap<>();
     }
 
+    abstract Set<Concludable> concludablesTriggeringRules();
+
+    abstract Conjunction conjunction();
+
     protected abstract void nextAnswer(Request fromUpstream, RequestState requestState, int iteration);
 
     abstract Optional<AnswerState> toUpstreamAnswer(Partial<?> fromDownstream);
@@ -144,10 +148,6 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         requestState.removeDownstreamProducer(fromDownstream.sourceRequest());
         nextAnswer(fromUpstream, requestState, iteration);
     }
-
-    abstract Set<Concludable> concludablesTriggeringRules();
-
-    abstract Conjunction conjunction();
 
     @Override
     protected void initialiseDownstreamResolvers() {
@@ -218,7 +218,6 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
             throw GraknException.of(ILLEGAL_STATE);
         }
     }
-
 
     public static class RequestState extends CompoundResolver.RequestState {
 

@@ -216,13 +216,12 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             iterationState.nextIteration(iteration);
         }
 
-        boolean singleAnswerRequired = fromUpstream.partialAnswer().conceptMap().concepts().keySet().containsAll(missingBounds());
-
         assert fromUpstream.partialAnswer().isMapped();
         FunctionalIterator<Partial<?>> upstreamAnswers =
                 traversalIterator(concludable.pattern(), fromUpstream.partialAnswer().conceptMap())
                         .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap));
 
+        boolean singleAnswerRequired = fromUpstream.partialAnswer().conceptMap().concepts().keySet().containsAll(missingBounds());
         RequestState requestState = new RequestState(upstreamAnswers, iteration, singleAnswerRequired);
         mayRegisterRules(fromUpstream, iterationState, requestState);
         return requestState;
