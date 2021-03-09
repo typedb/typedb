@@ -28,14 +28,11 @@ import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.traversal.TraversalEngine;
-import grakn.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 import java.util.Set;
-
-import static grakn.core.common.iterator.Iterators.iterate;
 
 // note: in the future, we may introduce query rewriting here
 public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {

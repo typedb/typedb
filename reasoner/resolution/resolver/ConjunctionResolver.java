@@ -38,7 +38,6 @@ import grakn.core.reasoner.resolution.answer.Mapping;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.traversal.TraversalEngine;
-import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.common.Identifier.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
