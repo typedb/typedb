@@ -34,8 +34,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.core.common.iterator.Iterators.iterate;
-
 // note: in the future, we may introduce query rewriting here
 public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
 
@@ -75,15 +73,14 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
         return Optional.of(fromDownstream.asFiltered().toUpstream());
     }
 
-
     @Override
     ConjunctionResolver.RequestState requestStateNew(int iteration) {
-        return new ConjunctionResolver.RequestState(iteration);
+        return new RequestState(iteration);
     }
 
     @Override
-    ConjunctionResolver.RequestState requestStateForIteration(ConjunctionResolver.RequestState requestStatePrior, int iteration) {
-        return new ConjunctionResolver.RequestState(iteration);
+    ConjunctionResolver.RequestState requestStateForIteration(RequestState requestStatePrior, int iteration) {
+        return new RequestState(iteration);
     }
 
     @Override

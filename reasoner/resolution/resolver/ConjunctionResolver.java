@@ -51,6 +51,7 @@ import java.util.Set;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.common.iterator.Iterators.single;
 
 public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<RESOLVER>>
         extends CompoundResolver<RESOLVER, ConjunctionResolver.RequestState> {
@@ -75,6 +76,10 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         this.plans = new Plans();
         this.downstreamResolvers = new HashMap<>();
     }
+
+    abstract Set<Concludable> concludablesTriggeringRules();
+
+    abstract Conjunction conjunction();
 
     protected abstract void nextAnswer(Request fromUpstream, RequestState requestState, int iteration);
 
@@ -143,10 +148,6 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         requestState.removeDownstreamProducer(fromDownstream.sourceRequest());
         nextAnswer(fromUpstream, requestState, iteration);
     }
-
-    abstract Set<Concludable> concludablesTriggeringRules();
-
-    abstract Conjunction conjunction();
 
     @Override
     protected void initialiseDownstreamResolvers() {
@@ -217,7 +218,6 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
             throw GraknException.of(ILLEGAL_STATE);
         }
     }
-
 
     public static class RequestState extends CompoundResolver.RequestState {
 

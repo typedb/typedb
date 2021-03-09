@@ -46,7 +46,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
 
     private final Driver<ResolutionRecorder> resolutionRecorder;
     private final Negated negated;
-    private final Map<ConceptMap, RequestState> requestStates;
+    private final Map<ConceptMap, BoundsState> boundsStates;
     private boolean isInitialised;
     private Driver<? extends Resolver<?>> downstream;
 
@@ -57,7 +57,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
               registry, traversalEngine, conceptMgr, resolutionTracing);
         this.negated = negated;
         this.resolutionRecorder = resolutionRecorder;
-        this.requestStates = new HashMap<>();
+        this.boundsStates = new HashMap<>();
         this.isInitialised = false;
     }
 
@@ -67,16 +67,16 @@ public class NegationResolver extends Resolver<NegationResolver> {
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
 
-        RequestState requestState = requestStates.computeIfAbsent(fromUpstream.partialAnswer().conceptMap(),
-                                                                  (cm) -> new RequestState());
-        if (requestState.status.isEmpty()) {
-            requestState.addAwaiting(fromUpstream, iteration);
-            tryAnswer(fromUpstream, requestState);
-        } else if (requestState.status.isRequested()) {
-            requestState.addAwaiting(fromUpstream, iteration);
-        } else if (requestState.status.isSatisfied()) {
+        BoundsState boundsState = this.boundsStates.computeIfAbsent(fromUpstream.partialAnswer().conceptMap(),
+                                                                    (cm) -> new BoundsState());
+        if (boundsState.status.isEmpty()) {
+            boundsState.addAwaiting(fromUpstream, iteration);
+            tryAnswer(fromUpstream, boundsState);
+        } else if (boundsState.status.isRequested()) {
+            boundsState.addAwaiting(fromUpstream, iteration);
+        } else if (boundsState.status.isSatisfied()) {
             answerToUpstream(upstreamAnswer(fromUpstream), fromUpstream, iteration);
-        } else if (requestState.status.isFailed()) {
+        } else if (boundsState.status.isFailed()) {
             failToUpstream(fromUpstream, iteration);
         } else {
             throw GraknException.of(ILLEGAL_STATE);
@@ -100,7 +100,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
         isInitialised = true;
     }
 
-    private void tryAnswer(Request fromUpstream, RequestState requestState) {
+    private void tryAnswer(Request fromUpstream, BoundsState boundsState) {
         // TODO: if we wanted to accelerate the searching of a negation counter example,
         // TODO: we could send multiple requests into the sub system at once!
 
@@ -113,7 +113,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
         Filtered downstreamPartial = fromUpstream.partialAnswer().filterToDownstream(negated.retrieves(), downstream);
         Request request = Request.create(driver(), this.downstream, downstreamPartial);
         requestFromDownstream(request, fromUpstream, 0);
-        requestState.setRequested();
+        boundsState.setRequested();
     }
 
     @Override
@@ -123,12 +123,12 @@ public class NegationResolver extends Resolver<NegationResolver> {
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        RequestState requestState = this.requestStates.get(fromUpstream.partialAnswer().conceptMap());
-        requestState.setFailed();
-        for (RequestState.Awaiting awaiting : requestState.awaiting) {
+        BoundsState boundsState = this.boundsStates.get(fromUpstream.partialAnswer().conceptMap());
+        boundsState.setFailed();
+        for (BoundsState.Awaiting awaiting : boundsState.awaiting) {
             failToUpstream(awaiting.request, awaiting.iterationRequested);
         }
-        requestState.clearAwaiting();
+        boundsState.clearAwaiting();
     }
 
     @Override
@@ -138,13 +138,13 @@ public class NegationResolver extends Resolver<NegationResolver> {
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        RequestState requestState = this.requestStates.get(fromUpstream.partialAnswer().conceptMap());
+        BoundsState boundsState = this.boundsStates.get(fromUpstream.partialAnswer().conceptMap());
 
-        requestState.setSatisfied();
-        for (RequestState.Awaiting awaiting : requestState.awaiting) {
+        boundsState.setSatisfied();
+        for (BoundsState.Awaiting awaiting : boundsState.awaiting) {
             answerToUpstream(upstreamAnswer(awaiting.request), awaiting.request, awaiting.iterationRequested);
         }
-        requestState.clearAwaiting();
+        boundsState.clearAwaiting();
     }
 
     private Partial<?> upstreamAnswer(Request fromUpstream) {
@@ -157,12 +157,12 @@ public class NegationResolver extends Resolver<NegationResolver> {
         return upstreamAnswer;
     }
 
-    private static class RequestState {
+    private static class BoundsState {
 
         List<Awaiting> awaiting;
         Status status;
 
-        public RequestState() {
+        public BoundsState() {
             this.awaiting = new LinkedList<>();
             this.status = Status.EMPTY;
         }

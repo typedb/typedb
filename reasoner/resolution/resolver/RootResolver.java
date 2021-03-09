@@ -21,7 +21,6 @@ import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.ConceptManager;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.resolvable.Concludable;
-import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
@@ -34,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public interface RootResolver {
@@ -46,10 +46,10 @@ public interface RootResolver {
 
         private static final Logger LOG = LoggerFactory.getLogger(Conjunction.class);
 
-        private grakn.core.pattern.Conjunction conjunction;
+        private final grakn.core.pattern.Conjunction conjunction;
         private final Consumer<Top> onAnswer;
         private final Consumer<Integer> onFail;
-        private Consumer<Throwable> onException;
+        private final Consumer<Throwable> onException;
 
         public Conjunction(Driver<Conjunction> driver, grakn.core.pattern.Conjunction conjunction,
                            Consumer<Top> onAnswer, Consumer<Integer> onFail, Consumer<Throwable> onException,
