@@ -129,7 +129,6 @@ public interface RootResolver {
             return new RequestState(iteration, requestStatePrior.produced());
         }
 
-
     }
 
     class Disjunction extends DisjunctionResolver<Disjunction> implements RootResolver {

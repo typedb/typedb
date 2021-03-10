@@ -51,6 +51,7 @@ import java.util.Set;
 import static grakn.core.common.iterator.Iterators.iterate;
 
 public class ConcludableResolver extends Resolver<ConcludableResolver> {
+
     private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
 
     private final LinkedHashMap<Driver<ConclusionResolver>, Set<Unifier>> applicableRules;

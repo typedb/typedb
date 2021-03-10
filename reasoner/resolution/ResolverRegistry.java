@@ -21,6 +21,7 @@ package grakn.core.reasoner.resolution;
 import grakn.common.collection.ConcurrentSet;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.ConceptManager;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.actor.ActorExecutorGroup;
 import grakn.core.logic.LogicManager;
@@ -33,12 +34,14 @@ import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top;
+import grakn.core.reasoner.resolution.answer.Explanation;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.resolver.ConcludableResolver;
 import grakn.core.reasoner.resolution.resolver.ConclusionResolver;
 import grakn.core.reasoner.resolution.resolver.ConditionResolver;
 import grakn.core.reasoner.resolution.resolver.ConjunctionResolver;
 import grakn.core.reasoner.resolution.resolver.DisjunctionResolver;
+import grakn.core.reasoner.resolution.resolver.Explainer;
 import grakn.core.reasoner.resolution.resolver.NegationResolver;
 import grakn.core.reasoner.resolution.resolver.RetrievableResolver;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
@@ -226,6 +229,12 @@ public class ResolverRegistry {
 
     private Map<Variable.Retrievable, Variable.Retrievable> identity(Resolvable<Conjunction> conjunctionResolvable) {
         return conjunctionResolvable.retrieves().stream().collect(toMap(Function.identity(), Function.identity()));
+    }
+
+    public Actor.Driver<Explainer> explainer(Conjunction conjunction, ConceptMap bounds, Consumer<Explanation> requestAnswered,
+                                             Consumer<Integer> requestFailed, Consumer<Throwable> exception) {
+        return Actor.driver(driver -> new Explainer(driver, conjunction, bounds, requestAnswered, requestFailed, exception,
+                                                    this, traversalEngine, conceptMgr, resolutionTracing), executorService);
     }
 
     public void setExecutorService(ActorExecutorGroup executorService) {

@@ -22,6 +22,7 @@ import grakn.common.collection.Either;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.iterator.Iterators;
+import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Label;
 import grakn.core.common.parameters.Options;
@@ -29,16 +30,19 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.Type;
-import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.producer.Producer;
+import grakn.core.concurrent.producer.Producers;
 import grakn.core.logic.LogicManager;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.Negation;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.reasoner.resolution.ResolverRegistry;
+import grakn.core.reasoner.resolution.answer.Explanation;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
+import graql.lang.Graql;
+import graql.lang.pattern.Conjunctable;
 import graql.lang.pattern.variable.UnboundVariable;
 import graql.lang.query.GraqlMatch;
 import org.slf4j.Logger;
@@ -48,6 +52,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_PATTERN;
 import static grakn.core.common.iterator.Iterators.iterate;
@@ -190,4 +195,14 @@ public class Reasoner {
         return newClone;
     }
 
+    public FunctionalIterator<Explanation> explain(String conjunctionPattern, ConceptMap bounds) {
+        graql.lang.pattern.Conjunction<Conjunctable> conj = Graql.parsePattern(conjunctionPattern).asConjunction().normalise().patterns().get(0);
+        Conjunction conjunction = Conjunction.create(conj);
+        logicMgr.typeResolver().resolveVariables(conjunction, false);
+        return Producers.produce(
+                list(new ExplanationProducer(conjunction, bounds, resolverRegistry)),
+                Either.first(Arguments.Query.Producer.INCREMENTAL),
+                async1()
+        );
+    }
 }

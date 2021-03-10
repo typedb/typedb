@@ -207,7 +207,6 @@ public abstract class AnswerState {
             this.parent = parent;
         }
 
-
         public Concludable mapToDownstream(Mapping mapping, Conjunction nextResolverConjunction) {
             assert this.isCompound();
             return Concludable.map(this.asCompound(), mapping, root(), nextResolverConjunction);
@@ -263,12 +262,10 @@ public abstract class AnswerState {
 
         public static abstract class Compound<PRNT extends AnswerState> extends Partial<Compound<PRNT>, PRNT> {
 
-            final Set<Conjunction> explainables;
 
             public Compound(ConceptMap partialAnswer, PRNT parent, Actor.Driver<? extends Resolver<?>> root,
-                            boolean requiresReiteration, Set<Conjunction> explainables) {
+                            boolean requiresReiteration) {
                 super(partialAnswer, parent, root, requiresReiteration);
-                this.explainables = explainables;
             }
 
             public Compound.NonRoot filterToDownstream(Set<Identifier.Variable.Retrievable> filter) {
@@ -304,11 +301,13 @@ public abstract class AnswerState {
 
             public static class Root extends Compound<Top.Initial> {
 
+                private final Set<Conjunction> explainables;
                 private final int hash;
 
                 public Root(ConceptMap partialAnswer, Top.Initial parent, Actor.Driver<? extends Resolver<?>> root,
                             boolean requiresReiteration, Set<Conjunction> explainables) {
-                    super(partialAnswer, parent, root, requiresReiteration, explainables);
+                    super(partialAnswer, parent, root, requiresReiteration);
+                    this.explainables = explainables;
                     this.hash = Objects.hash(root, conceptMap, parent);
                 }
 
@@ -366,12 +365,14 @@ public abstract class AnswerState {
 
             public static class Condition extends Compound<Conclusion> {
 
+                private final Set<Conjunction> explainables;
                 private final Set<Identifier.Variable.Retrievable> filter;
                 private final int hash;
 
                 private Condition(ConceptMap filteredConceptMap, Conclusion parent, Set<Identifier.Variable.Retrievable> filter,
                                   Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration, Set<Conjunction> explainables) {
-                    super(filteredConceptMap, parent, root, requiresReiteration, explainables);
+                    super(filteredConceptMap, parent, root, requiresReiteration);
+                    this.explainables = explainables;
                     this.filter = filter;
                     this.hash = Objects.hash(root, conceptMap, parent, filter);
                 }
@@ -443,15 +444,15 @@ public abstract class AnswerState {
                 private final int hash;
 
                 private NonRoot(ConceptMap filteredConceptMap, Compound<?> parent, Set<Identifier.Variable.Retrievable> filter,
-                                Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration, Set<Conjunction> explainables) {
-                    super(filteredConceptMap, parent, root, requiresReiteration, explainables);
+                                Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
+                    super(filteredConceptMap, parent, root, requiresReiteration);
                     this.filter = filter;
                     this.hash = Objects.hash(root, conceptMap, parent, filter);
                 }
 
                 static NonRoot create(Compound<?> parent, Set<Identifier.Variable.Retrievable> filter,
                                       Actor.Driver<? extends Resolver<?>> root) {
-                    return new NonRoot(parent.conceptMap().filter(filter), parent, filter, root, false, set());
+                    return new NonRoot(parent.conceptMap().filter(filter), parent, filter, root, false);
                 }
 
                 @Override
@@ -472,14 +473,12 @@ public abstract class AnswerState {
 
                 @Override
                 NonRoot with(ConceptMap extension, boolean requiresReiteration) {
-                    return new NonRoot(extendAnswer(extension), parent(), filter, root(), requiresReiteration, explainables);
+                    return new NonRoot(extendAnswer(extension), parent(), filter, root(), requiresReiteration);
                 }
 
                 @Override
                 public NonRoot with(ConceptMap extension, boolean requiresReiteration, Conjunction source, Explanation explanation) {
-                    Set<Conjunction> explainablesClone = new HashSet<>(explainables);
-                    explainablesClone.add(source);
-                    return new NonRoot(extendAnswer(extension), parent(), filter, root(), requiresReiteration, explainablesClone);
+                    return new NonRoot(extendAnswer(extension), parent(), filter, root(), requiresReiteration);
                 }
 
                 @Override
@@ -488,7 +487,6 @@ public abstract class AnswerState {
                             "root=" + root() +
                             ", conceptMap=" + conceptMap() +
                             ", filter=" + filter +
-                            ", explainables=" + explainables +
                             '}';
                 }
 

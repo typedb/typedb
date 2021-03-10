@@ -34,6 +34,7 @@ import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -99,6 +100,10 @@ public class ConceptMap implements Answer {
 
     public Map<Retrievable, ? extends Concept> concepts() { return concepts; }
 
+    public Optional<ExplainableAnswer> explainableAnswer() {
+        return Optional.ofNullable(explainableAnswer);
+    }
+
     public ConceptMap filter(Set<? extends Retrievable> vars) {
         Map<Retrievable, ? extends Concept> filtered = concepts.entrySet().stream()
                 .filter(e -> vars.contains(e.getKey()))
@@ -141,6 +146,5 @@ public class ConceptMap implements Answer {
     public int hashCode() {
         return hash;
     }
-
 
 }

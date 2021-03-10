@@ -44,7 +44,7 @@ public class AnswerStateTest {
         mapping.put(Identifier.Variable.name("a"), Identifier.Variable.name("x"));
         mapping.put(Identifier.Variable.name("b"), Identifier.Variable.name("y"));
         Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
-        Concludable mapped = Top.Initial.create(filter, null).toDownstream().mapToDownstream(Mapping.of(mapping), null, null);
+        Concludable mapped = Top.Initial.create(filter, null).toDownstream().mapToDownstream(Mapping.of(mapping), null);
         assertTrue(mapped.conceptMap().concepts().isEmpty());
 
         Map<Identifier.Variable.Retrievable, Concept> concepts = new HashMap<>();
@@ -66,7 +66,7 @@ public class AnswerStateTest {
         concepts.put(Identifier.Variable.name("a"), new MockConcept(0));
         Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
         Concludable mapped = Top.Initial.create(filter, null).toDownstream().with(new ConceptMap(concepts), false)
-                .mapToDownstream(Mapping.of(mapping), null, null);
+                .mapToDownstream(Mapping.of(mapping), null);
 
         Map<Identifier.Variable.Retrievable, Concept> expectedMapped = new HashMap<>();
         expectedMapped.put(Identifier.Variable.name("x"), new MockConcept(0));
@@ -93,7 +93,7 @@ public class AnswerStateTest {
         concepts.put(Identifier.Variable.name("c"), new MockConcept(2));
         Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
         Concludable mapped = Top.Initial.create(filter, null).toDownstream().with(new ConceptMap(concepts), false)
-                .mapToDownstream(Mapping.of(mapping), null, null);
+                .mapToDownstream(Mapping.of(mapping), null);
 
         Map<Identifier.Variable.Retrievable, Concept> expectedMapped = new HashMap<>();
         expectedMapped.put(Identifier.Variable.name("x"), new MockConcept(0));
