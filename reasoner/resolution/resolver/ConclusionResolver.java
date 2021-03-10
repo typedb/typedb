@@ -25,6 +25,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.Rule;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
@@ -94,7 +95,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
                 .materialise(fromDownstream.answer().conceptMap(), traversalEngine, conceptMgr);
         if (!materialisations.hasNext()) throw GraknException.of(ILLEGAL_STATE);
 
-        FunctionalIterator<AnswerState.Partial.Concludable> materialisedAnswers = materialisations
+        FunctionalIterator<Partial.Concludable> materialisedAnswers = materialisations
                 .map(concepts -> fromUpstream.partialAnswer().asConclusion().aggregateToUpstream(concepts))
                 .filter(Optional::isPresent)
                 .map(Optional::get);
@@ -139,9 +140,9 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
     }
 
     private void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
-        Optional<AnswerState.Partial.Concludable> answer = requestState.nextResponse();
-        if (answer.isPresent()) {
-            answerToUpstream(answer.get(), fromUpstream, iteration);
+        Optional<Partial.Concludable> upstreamAnswer = requestState.nextResponse();
+        if (upstreamAnswer.isPresent()) {
+            answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
         } else if (requestState.hasDownstream()) {
             requestFromDownstream(requestState.nextDownstream(), fromUpstream, iteration);
         } else {
@@ -171,29 +172,30 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
 
         RequestState requestState = new RequestState(iteration);
 
-        ConceptMap partialAnswer = fromUpstream.partialAnswer().conceptMap();
+        assert fromUpstream.partialAnswer().isConclusion();
+        Partial.Conclusion partialAnswer = fromUpstream.partialAnswer().asConclusion();
         // we do a extra traversal to expand the partial answer if we already have the concept that is meant to be generated
         // and if there's extra variables to be populated
-        assert conclusion.retrievableIds().containsAll(partialAnswer.concepts().keySet());
-        if (conclusion.generating().isPresent() && conclusion.retrievableIds().size() > partialAnswer.concepts().size() &&
-                partialAnswer.concepts().containsKey(conclusion.generating().get().id())) {
-            FunctionalIterator<AnswerState.Partial.Compound.NonRoot> completedAnswers = candidateAnswers(fromUpstream, partialAnswer);
-            completedAnswers.forEachRemaining(answer -> requestState.addDownstream(Request.create(driver(), ruleResolver,
-                                                                                                  answer)));
+        assert conclusion.retrievableIds().containsAll(partialAnswer.conceptMap().concepts().keySet());
+        if (conclusion.generating().isPresent() && conclusion.retrievableIds().size() > partialAnswer.conceptMap().concepts().size() &&
+                partialAnswer.conceptMap().concepts().containsKey(conclusion.generating().get().id())) {
+            FunctionalIterator<Partial.Compound.Condition> completedDownstreamAnswers = candidateAnswers(partialAnswer);
+            completedDownstreamAnswers.forEachRemaining(answer -> requestState.addDownstream(Request.create(driver(), ruleResolver,
+                                                                                                            answer)));
         } else {
             Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
-            AnswerState.Partial.Compound<?> downstreamAnswer = fromUpstream.partialAnswer().filterToDownstream(named, ruleResolver);
+            Partial.Compound.Condition downstreamAnswer = partialAnswer.filterToDownstream(named, ruleResolver);
             requestState.addDownstream(Request.create(driver(), ruleResolver, downstreamAnswer));
         }
 
         return requestState;
     }
 
-    private FunctionalIterator<AnswerState.Partial.Compound.NonRoot> candidateAnswers(Request fromUpstream, ConceptMap answer) {
-        Traversal traversal1 = boundTraversal(conclusion.conjunction().traversal(), answer);
-        FunctionalIterator<ConceptMap> traversal = traversalEngine.iterator(traversal1).map(conceptMgr::conceptMap);
+    private FunctionalIterator<Partial.Compound.Condition> candidateAnswers(Partial.Conclusion partialAnswer) {
+        Traversal traversal = boundTraversal(conclusion.conjunction().traversal(), partialAnswer.conceptMap());
+        FunctionalIterator<ConceptMap> answers = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
         Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
-        return traversal.map(ans -> fromUpstream.partialAnswer().asConclusion().extend(ans).filterToDownstream(named, ruleResolver));
+        return answers.map(ans -> partialAnswer.extend(ans).filterToDownstream(named, ruleResolver));
     }
 
     @Override
@@ -203,7 +205,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
 
     private static class RequestState {
 
-        private final List<FunctionalIterator<AnswerState.Partial.Concludable>> materialisedAnswers;
+        private final List<FunctionalIterator<Partial.Concludable>> materialisedAnswers;
         private final LinkedHashSet<Request> downstreams;
         private Iterator<Request> downstreamProducerSelector;
         private final int iteration;
@@ -219,11 +221,11 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
             return iteration;
         }
 
-        public void addResponses(FunctionalIterator<AnswerState.Partial.Concludable> materialisations) {
+        public void addResponses(FunctionalIterator<Partial.Concludable> materialisations) {
             materialisedAnswers.add(materialisations);
         }
 
-        public Optional<AnswerState.Partial.Concludable> nextResponse() {
+        public Optional<Partial.Concludable> nextResponse() {
             if (hasResponse()) return Optional.of(materialisedAnswers.get(0).next());
             else return Optional.empty();
         }

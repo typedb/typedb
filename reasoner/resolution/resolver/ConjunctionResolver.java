@@ -317,7 +317,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
 
         @Override
         protected Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?> partialAnswer) {
-            return Optional.of(partialAnswer.asSubset().toUpstream());
+            return Optional.of(partialAnswer.asNonRoot().toUpstream());
         }
 
         @Override

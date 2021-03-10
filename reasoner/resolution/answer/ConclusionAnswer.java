@@ -20,18 +20,19 @@ package grakn.core.reasoner.resolution.answer;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Unifier;
-import grakn.core.pattern.Conjunction;
 
 public class ConclusionAnswer {
 
     private final Rule rule;
     private final ConceptMap conceptMap;
     private final Unifier unifier;
+    private final ExplainableAnswer conditionAnswer;
 
-    public ConclusionAnswer(Rule rule, ConceptMap conceptMap, Unifier unifier) {
+    public ConclusionAnswer(Rule rule, ConceptMap conceptMap, Unifier unifier, ExplainableAnswer conditionAnswer) {
         this.rule = rule;
         this.conceptMap = conceptMap;
         this.unifier = unifier;
+        this.conditionAnswer = conditionAnswer;
     }
 
     public Rule rule() {
@@ -39,6 +40,6 @@ public class ConclusionAnswer {
     }
 
     public ExplainableAnswer conditionAnswer() {
-        return null;
+        return conditionAnswer;
     }
 }

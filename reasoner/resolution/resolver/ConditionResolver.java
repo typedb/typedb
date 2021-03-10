@@ -68,7 +68,8 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
 
     @Override
     protected Optional<AnswerState> toUpstreamAnswer(AnswerState.Partial.Compound<?> partialAnswer) {
-        return Optional.of(partialAnswer.asSubset().toUpstream());
+        assert partialAnswer.isCondition();
+        return Optional.of(partialAnswer.asCondition().toUpstream(conjunction()));
     }
 
     @Override

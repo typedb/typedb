@@ -25,6 +25,7 @@ import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Unifier;
 import grakn.core.logic.resolvable.Unifier.Requirements.Instance;
+import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.resolver.ConclusionResolver;
 import grakn.core.traversal.common.Identifier;
@@ -119,7 +120,7 @@ public abstract class AnswerState {
                 return Partial.Compound.Root.create(conceptMap(), this, root(), root());
             }
 
-            Finished finish(ConceptMap conceptMap, grakn.core.pattern.Conjunction conjunctionAnswered, Set<grakn.core.pattern.Conjunction> explainables,
+            Finished finish(ConceptMap conceptMap, Conjunction conjunctionAnswered, Set<Conjunction> explainables,
                             boolean requiresReiteration) {
                 return new Finished(conceptMap, getFilter, root(), conjunctionAnswered, explainables, requiresReiteration);
             }
@@ -155,7 +156,7 @@ public abstract class AnswerState {
             private final int hash;
 
             Finished(ConceptMap conceptMap, @Nullable Set<Identifier.Variable.Name> getFilter, Actor.Driver<? extends Resolver<?>> root,
-                     grakn.core.pattern.Conjunction conjunctionAnswered, Set<grakn.core.pattern.Conjunction> explainables, boolean requiresReiteration) {
+                     Conjunction conjunctionAnswered, Set<Conjunction> explainables, boolean requiresReiteration) {
                 super(conceptMap, getFilter, root, requiresReiteration);
                 this.explainableAnswer = new ExplainableAnswer(conceptMap(), conjunctionAnswered, explainables);
                 this.hash = Objects.hash(root, conceptMap, getFilter, explainableAnswer);
@@ -204,7 +205,7 @@ public abstract class AnswerState {
         }
 
 
-        public Concludable mapToDownstream(Mapping mapping, Actor.Driver<? extends Resolver<?>> nextResolver, grakn.core.pattern.Conjunction nextResolverConjunction) {
+        public Concludable mapToDownstream(Mapping mapping, Actor.Driver<? extends Resolver<?>> nextResolver, Conjunction nextResolverConjunction) {
             assert this.isCompound();
             return Concludable.map(this.asCompound(), mapping, nextResolver, root(), nextResolverConjunction);
         }
@@ -261,22 +262,22 @@ public abstract class AnswerState {
 
         abstract SELF with(ConceptMap extension, boolean requiresReiteration);
 
-        public Compound.NonRoot filterToDownstream(Set<Identifier.Variable.Retrievable> filter, Actor.Driver<? extends Resolver<?>> nextResolver) {
-            return Compound.NonRoot.create(this, filter, nextResolver, root());
-        }
-
         public static abstract class Compound<PRNT extends AnswerState> extends Partial<Compound<PRNT>, PRNT> {
 
-            final Set<grakn.core.pattern.Conjunction> explainables;
+            final Set<Conjunction> explainables;
 
             public Compound(ConceptMap partialAnswer, PRNT parent, Actor.Driver<? extends Resolver<?>> resolver,
-                            Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration, Set<grakn.core.pattern.Conjunction> explainables) {
+                            Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration, Set<Conjunction> explainables) {
                 super(partialAnswer, parent, resolver, root, requiresReiteration);
                 this.explainables = explainables;
             }
 
+            public Compound.NonRoot filterToDownstream(Set<Identifier.Variable.Retrievable> filter, Actor.Driver<? extends Resolver<?>> nextResolver) {
+                return Compound.NonRoot.create(this, filter, nextResolver, root());
+            }
+
             // TODO some types of Filtered states will consume Explanation, and some will throw away. Design smell?
-            abstract Compound<PRNT> with(ConceptMap extension, boolean requiresReiteration, grakn.core.pattern.Conjunction source, Explanation explanation);
+            abstract Compound<PRNT> with(ConceptMap extension, boolean requiresReiteration, Conjunction source, Explanation explanation);
 
             @Override
             public boolean isCompound() { return true; }
@@ -290,9 +291,15 @@ public abstract class AnswerState {
                 throw GraknException.of(ILLEGAL_CAST, this.getClass(), Root.class);
             }
 
-            public boolean isSubset() { return false; }
+            public boolean isCondition() { return false; }
 
-            public NonRoot asSubset() {
+            public Condition asCondition() {
+                throw GraknException.of(ILLEGAL_CAST, this.getClass(), Condition.class);
+            }
+
+            public boolean isNonRoot() { return false; }
+
+            public NonRoot asNonRoot() {
                 throw GraknException.of(ILLEGAL_CAST, this.getClass(), NonRoot.class);
             }
 
@@ -301,7 +308,7 @@ public abstract class AnswerState {
                 private final int hash;
 
                 public Root(ConceptMap partialAnswer, Top.Initial parent, Actor.Driver<? extends Resolver<?>> resolver,
-                            Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration, Set<grakn.core.pattern.Conjunction> explainables) {
+                            Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration, Set<Conjunction> explainables) {
                     super(partialAnswer, parent, resolver, root, requiresReiteration, explainables);
                     this.hash = Objects.hash(root, resolver, conceptMap, parent);
                 }
@@ -323,19 +330,19 @@ public abstract class AnswerState {
                 }
 
                 @Override
-                public Root with(ConceptMap extension, boolean requiresReiteration, grakn.core.pattern.Conjunction source, Explanation explanation) {
-                    Set<grakn.core.pattern.Conjunction> explainablesClone = new HashSet<>(explainables);
+                public Root with(ConceptMap extension, boolean requiresReiteration, Conjunction source, Explanation explanation) {
+                    Set<Conjunction> explainablesClone = new HashSet<>(explainables);
                     explainablesClone.add(source);
                     return new Root(extendAnswer(extension), parent(), resolvedBy(), root(), requiresReiteration, explainablesClone);
                 }
 
-                public Top.Finished toFinishedTop(grakn.core.pattern.Conjunction conjunctionAnswered) {
+                public Top.Finished toFinishedTop(Conjunction conjunctionAnswered) {
                     return parent().finish(conceptMap(), conjunctionAnswered, explainables, requiresReiteration || parent().requiresReiteration());
                 }
 
                 @Override
                 public String toString() {
-                    return "AnswerState.Partial.Filtered{" +
+                    return "AnswerState.Partial.Compound.Root{" +
                             "root=" + root() +
                             ", resolver=" + resolvedBy() +
                             ", conceptMap=" + conceptMap() +
@@ -361,36 +368,117 @@ public abstract class AnswerState {
 
             }
 
-            public static class NonRoot extends Compound<Partial<?, ?>> {
+            public static class Condition extends Compound<Conclusion> {
 
                 private final Set<Identifier.Variable.Retrievable> filter;
                 private final int hash;
 
-                private NonRoot(ConceptMap filteredConceptMap, Partial<?, ?> parent, Set<Identifier.Variable.Retrievable> filter,
-                                Actor.Driver<? extends Resolver<?>> resolver, Actor.Driver<? extends Resolver<?>> root,
-                                boolean requiresReiteration, Set<grakn.core.pattern.Conjunction> explainables) {
+                private Condition(ConceptMap filteredConceptMap, Conclusion parent, Set<Identifier.Variable.Retrievable> filter,
+                                  Actor.Driver<? extends Resolver<?>> resolver, Actor.Driver<? extends Resolver<?>> root,
+                                  boolean requiresReiteration, Set<Conjunction> explainables) {
                     super(filteredConceptMap, parent, resolver, root, requiresReiteration, explainables);
                     this.filter = filter;
                     this.hash = Objects.hash(root, resolver, conceptMap, parent, filter);
                 }
 
-                static NonRoot create(Partial<?, ?> parent, Set<Identifier.Variable.Retrievable> filter, Actor.Driver<? extends Resolver<?>> resolver,
+                static Condition create(Conclusion parent, Set<Identifier.Variable.Retrievable> filter, Actor.Driver<? extends Resolver<?>> resolver,
+                                        Actor.Driver<? extends Resolver<?>> root) {
+                    return new Condition(parent.conceptMap().filter(filter), parent, filter, resolver, root, false, set());
+                }
+
+                @Override
+                public boolean isCondition() {
+                    return true;
+                }
+
+                @Override
+                public Condition asCondition() {
+                    return this;
+                }
+
+                public Conclusion toUpstream(Conjunction conditionConjunction) {
+                    if (conceptMap().concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
+                    ExplainableAnswer conditionAnswer = explainables.isEmpty() ? null :
+                            new ExplainableAnswer(conceptMap, conditionConjunction, explainables);
+                    return parent().with(conceptMap().filter(filter), requiresReiteration || parent().requiresReiteration(), conditionAnswer);
+                }
+
+                public Conclusion aggregateToUpstream(ConceptMap conceptMap) {
+                    if (conceptMap.concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
+                    return parent().with(conceptMap.filter(filter), requiresReiteration || parent().requiresReiteration(), null);
+                }
+
+                @Override
+                Condition with(ConceptMap extension, boolean requiresReiteration) {
+                    return new Condition(extendAnswer(extension), parent(), filter, resolvedBy(), root(), requiresReiteration, explainables);
+                }
+
+                @Override
+                public Condition with(ConceptMap extension, boolean requiresReiteration, Conjunction source, Explanation explanation) {
+                    Set<Conjunction> explainablesClone = new HashSet<>(explainables);
+                    explainablesClone.add(source);
+                    return new Condition(extendAnswer(extension), parent(), filter, resolvedBy(), root(), requiresReiteration, explainablesClone);
+                }
+
+                @Override
+                public String toString() {
+                    return "AnswerState.Partial.Compound.Condition{" +
+                            "root=" + root() +
+                            ", resolver=" + resolvedBy() +
+                            ", conceptMap=" + conceptMap() +
+                            ", filter=" + filter +
+                            ", explainables=" + explainables +
+                            '}';
+                }
+
+                @Override
+                public boolean equals(Object o) {
+                    if (this == o) return true;
+                    if (o == null || getClass() != o.getClass()) return false;
+                    Condition filtered = (Condition) o;
+                    return Objects.equals(root(), filtered.root()) &&
+                            Objects.equals(resolvedBy(), filtered.resolvedBy()) &&
+                            Objects.equals(conceptMap, filtered.conceptMap) &&
+                            Objects.equals(parent, filtered.parent) &&
+                            Objects.equals(filter, filtered.filter);
+                }
+
+                @Override
+                public int hashCode() {
+                    return hash;
+                }
+            }
+
+            public static class NonRoot extends Compound<Compound<?>> {
+
+                private final Set<Identifier.Variable.Retrievable> filter;
+                private final int hash;
+
+                private NonRoot(ConceptMap filteredConceptMap, Compound<?> parent, Set<Identifier.Variable.Retrievable> filter,
+                                Actor.Driver<? extends Resolver<?>> resolver, Actor.Driver<? extends Resolver<?>> root,
+                                boolean requiresReiteration, Set<Conjunction> explainables) {
+                    super(filteredConceptMap, parent, resolver, root, requiresReiteration, explainables);
+                    this.filter = filter;
+                    this.hash = Objects.hash(root, resolver, conceptMap, parent, filter);
+                }
+
+                static NonRoot create(Compound<?> parent, Set<Identifier.Variable.Retrievable> filter, Actor.Driver<? extends Resolver<?>> resolver,
                                       Actor.Driver<? extends Resolver<?>> root) {
                     return new NonRoot(parent.conceptMap().filter(filter), parent, filter, resolver, root, false, set());
                 }
 
                 @Override
-                public boolean isSubset() { return true; }
+                public boolean isNonRoot() { return true; }
 
                 @Override
-                public NonRoot asSubset() { return this; }
+                public NonRoot asNonRoot() { return this; }
 
-                public Partial<?, ?> toUpstream() {
+                public Compound<?> toUpstream() {
                     if (conceptMap().concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
                     return parent().with(conceptMap().filter(filter), requiresReiteration || parent().requiresReiteration());
                 }
 
-                public Partial<?, ?> aggregateToUpstream(ConceptMap conceptMap) {
+                public Compound<?> aggregateToUpstream(ConceptMap conceptMap) {
                     if (conceptMap.concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
                     return parent().with(conceptMap.filter(filter), requiresReiteration || parent().requiresReiteration());
                 }
@@ -401,15 +489,15 @@ public abstract class AnswerState {
                 }
 
                 @Override
-                public NonRoot with(ConceptMap extension, boolean requiresReiteration, grakn.core.pattern.Conjunction source, Explanation explanation) {
-                    Set<grakn.core.pattern.Conjunction> explainablesClone = new HashSet<>(explainables);
+                public NonRoot with(ConceptMap extension, boolean requiresReiteration, Conjunction source, Explanation explanation) {
+                    Set<Conjunction> explainablesClone = new HashSet<>(explainables);
                     explainablesClone.add(source);
                     return new NonRoot(extendAnswer(extension), parent(), filter, resolvedBy(), root(), requiresReiteration, explainablesClone);
                 }
 
                 @Override
                 public String toString() {
-                    return "AnswerState.Partial.Filtered{" +
+                    return "AnswerState.Compound.NonRoot{" +
                             "root=" + root() +
                             ", resolver=" + resolvedBy() +
                             ", conceptMap=" + conceptMap() +
@@ -437,14 +525,15 @@ public abstract class AnswerState {
             }
         }
 
+        // TODO we should create Concludable.Initial and Concludable.Final/Finished
         public static class Concludable extends Partial<Concludable, Compound<?>> {
 
-            private final grakn.core.pattern.Conjunction sourceConjunction;
+            private final Conjunction sourceConjunction;
             private final Mapping mapping;
             private final ConclusionAnswer conclusionAnswer;
             private final int hash;
 
-            private Concludable(ConceptMap mappedConceptMap, Compound<?> parent, grakn.core.pattern.Conjunction sourceConjunction, Mapping mapping,
+            private Concludable(ConceptMap mappedConceptMap, Compound<?> parent, Conjunction sourceConjunction, Mapping mapping,
                                 Actor.Driver<? extends Resolver<?>> resolver, Actor.Driver<? extends Resolver<?>> root,
                                 boolean requiresReiteration, @Nullable ConclusionAnswer conclusionAnswer) {
                 super(mappedConceptMap, parent, resolver, root, requiresReiteration);
@@ -455,7 +544,7 @@ public abstract class AnswerState {
             }
 
             static Concludable map(Compound<?> parent, Mapping mapping, Actor.Driver<? extends Resolver<?>> resolver,
-                                   Actor.Driver<? extends Resolver<?>> root, grakn.core.pattern.Conjunction sourceConjunction) {
+                                   Actor.Driver<? extends Resolver<?>> root, Conjunction sourceConjunction) {
                 ConceptMap mappedConceptMap = mapping.transform(parent.conceptMap());
                 return new Concludable(mappedConceptMap, parent, sourceConjunction, mapping, resolver, root, false, null);
             }
@@ -470,7 +559,8 @@ public abstract class AnswerState {
 
             public Compound<?> toUpstream() {
                 // TODO should we carry the condition answer inside conclusion answer or outside?
-                Explanation explanation = new Explanation(conclusionAnswer.rule().getLabel(), null, conclusionAnswer, conclusionAnswer.conditionAnswer());
+                // TODO compute variable mapping
+                Explanation explanation = new Explanation(conclusionAnswer.rule().getLabel(), mapping, conclusionAnswer, conclusionAnswer.conditionAnswer());
                 return parent().with(mapping.unTransform(this.conceptMap()), requiresReiteration || parent().requiresReiteration(),
                                      sourceConjunction, explanation);
             }
@@ -483,7 +573,6 @@ public abstract class AnswerState {
 
             Concludable with(ConceptMap extension, boolean requiresReiteration, ConclusionAnswer conclusionAnswer) {
                 return new Concludable(extendAnswer(extension), parent(), sourceConjunction, mapping, resolvedBy(), root(), requiresReiteration, conclusionAnswer);
-
             }
 
             @Override
@@ -494,7 +583,7 @@ public abstract class AnswerState {
 
             @Override
             public String toString() {
-                return "AnswerState.Partial.Mapped{" +
+                return "AnswerState.Partial.Concludable{" +
                         "root=" + root() +
                         ", resolver=" + resolvedBy() +
                         ", conceptMap=" + conceptMap() +
@@ -520,20 +609,27 @@ public abstract class AnswerState {
             }
         }
 
+        /*
+        TODO we should create Conclusion.Initial and Conclusion.Final/Finished
+         */
         public static class Conclusion extends Partial<Conclusion, Concludable> {
 
             private final Unifier unifier;
             private final Instance instanceRequirements;
             private final Rule rule;
+            private final ExplainableAnswer conditionAnswer;
+
             private final int hash;
 
             private Conclusion(ConceptMap unifiedConceptMap, Concludable parent, Unifier unifier,
                                Instance instanceRequirements, Rule rule, Actor.Driver<? extends Resolver<?>> resolver,
-                               Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
+                               Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration,
+                               @Nullable ExplainableAnswer conditionAnswer) {
                 super(unifiedConceptMap, parent, resolver, root, requiresReiteration);
                 this.unifier = unifier;
                 this.instanceRequirements = instanceRequirements;
                 this.rule = rule;
+                this.conditionAnswer = conditionAnswer;
                 this.hash = Objects.hash(root, resolver, conceptMap, unifier, instanceRequirements, parent);
             }
 
@@ -541,24 +637,28 @@ public abstract class AnswerState {
                                               Actor.Driver<? extends Resolver<?>> root) {
                 Optional<Pair<ConceptMap, Instance>> unified = unifier.unify(parent.conceptMap());
                 return unified.map(unification -> new Conclusion(
-                        unification.first(), parent, unifier, unification.second(), rule, resolver, root, false
+                        unification.first(), parent, unifier, unification.second(), rule, resolver, root, false, null
                 ));
+            }
+
+            public Compound.Condition filterToDownstream(Set<Identifier.Variable.Retrievable> filter, Actor.Driver<? extends Resolver<?>> nextResolver) {
+                return Compound.Condition.create(this, filter, nextResolver, root());
             }
 
             public Optional<Concludable> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts) {
                 Optional<ConceptMap> unUnified = unifier.unUnify(concepts, instanceRequirements);
                 return unUnified.map(ans -> {
                     // TODO we could make this "free" (object creation only) and skip the toConceptMap if we just store the raw map
-                    ConclusionAnswer conclusionAnswer = new ConclusionAnswer(rule, toConceptMap(concepts), unifier);
+                    ConclusionAnswer conclusionAnswer = new ConclusionAnswer(rule, toConceptMap(concepts), unifier, conditionAnswer);
                     return parent().with(ans, true, conclusionAnswer);
                 });
             }
 
             private ConceptMap toConceptMap(Map<Identifier.Variable, Concept> concepts) {
                 Map<Identifier.Variable.Retrievable, Concept> filteredMap = new HashMap<>();
-                iterate(concepts.entrySet()).filter(entry -> entry.getKey().isRetrievable()).forEachRemaining(entry -> {
-                    filteredMap.put(entry.getKey().asRetrievable(), entry.getValue());
-                });
+                iterate(concepts.entrySet()).filter(entry -> entry.getKey().isRetrievable()).forEachRemaining(entry ->
+                    filteredMap.put(entry.getKey().asRetrievable(), entry.getValue())
+                );
                 return new ConceptMap(filteredMap);
             }
 
@@ -569,7 +669,11 @@ public abstract class AnswerState {
             public Conclusion asConclusion() { return this; }
 
             Conclusion with(ConceptMap extension, boolean requiresReiteration) {
-                return new Conclusion(extendAnswer(extension), parent(), unifier, instanceRequirements, rule, resolvedBy(), root(), requiresReiteration);
+                throw GraknException.of(ILLEGAL_STATE);
+            }
+
+            Conclusion with(ConceptMap extension, boolean requiresReiteration, ExplainableAnswer conditionAnswer) {
+                return new Conclusion(extendAnswer(extension), parent(), unifier, instanceRequirements, rule, resolvedBy(), root(), requiresReiteration, conditionAnswer);
             }
 
             public Conclusion extend(ConceptMap ans) {
@@ -577,12 +681,12 @@ public abstract class AnswerState {
                 extended.putAll(ans.concepts());
                 extended.putAll(conceptMap.concepts());
                 return new Conclusion(new ConceptMap(extended), parent(), unifier, instanceRequirements, rule, resolvedBy(), root(),
-                                      requiresReiteration);
+                                      requiresReiteration, conditionAnswer);
             }
 
             @Override
             public String toString() {
-                return "AnswerState.Partial.Unified{" +
+                return "AnswerState.Partial.Conclusion{" +
                         "root=" + root() +
                         ", resolver=" + resolvedBy() +
                         ", conceptMap=" + conceptMap() +

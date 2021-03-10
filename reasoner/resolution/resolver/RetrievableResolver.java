@@ -99,11 +99,11 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
 
     protected RequestStates createRequestState(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new ResponseProducer for iteration:{}, request: {}", name(), iteration, fromUpstream);
-        assert fromUpstream.partialAnswer().isCompound() && fromUpstream.partialAnswer().asCompound().isSubset();
+        assert fromUpstream.partialAnswer().isCompound() && fromUpstream.partialAnswer().asCompound().isNonRoot();
         FunctionalIterator<Partial.Compound<?>> upstreamAnswers =
                 traversalIterator(retrievable.pattern(), fromUpstream.partialAnswer().conceptMap())
                         // TODO introduce more types of filtered to avoid the asCompound cast
-                        .map(conceptMap -> fromUpstream.partialAnswer().asCompound().asSubset().aggregateToUpstream(conceptMap).asCompound());
+                        .map(conceptMap -> fromUpstream.partialAnswer().asCompound().asNonRoot().aggregateToUpstream(conceptMap).asCompound());
         return new RequestStates(upstreamAnswers, iteration);
     }
 

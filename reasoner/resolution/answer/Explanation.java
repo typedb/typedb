@@ -25,15 +25,20 @@ import java.util.Set;
 public class Explanation {
 
     private final String rule;
-    private final Map<Identifier.Variable.Retrievable, Set<Identifier.Variable.Retrievable>> variableMapping;
+    private final Mapping intermediateMapping;
     private final ConclusionAnswer conclusionAnswer;
     private final ExplainableAnswer conditionAnswer;
 
-    public Explanation(String rule, Map<Identifier.Variable.Retrievable, Set<Identifier.Variable.Retrievable>> variableMapping,
-                       ConclusionAnswer conclusionAnswer, ExplainableAnswer conditionAnswer) {
+    public Explanation(String rule, Mapping intermediateMapping, ConclusionAnswer conclusionAnswer, ExplainableAnswer conditionAnswer) {
         this.rule = rule;
-        this.variableMapping = variableMapping;
+        this.intermediateMapping = intermediateMapping;
         this.conclusionAnswer = conclusionAnswer;
         this.conditionAnswer = conditionAnswer;
     }
+
+    public Map<Identifier.Variable.Retrievable, Set<Identifier.Variable.Retrievable>> variableMapping() {
+        // TODO merge mapping and conclusionAnswer.unifier
+        return null;
+    }
+
 }

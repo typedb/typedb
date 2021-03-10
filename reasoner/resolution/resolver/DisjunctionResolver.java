@@ -178,8 +178,8 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
 
         @Override
         protected AnswerState toUpstreamAnswer(Compound<?> answer, Response.Answer fromDownstream) {
-            assert answer.isSubset();
-            return answer.asSubset().toUpstream();
+            assert answer.isNonRoot();
+            return answer.asNonRoot().toUpstream();
         }
 
         @Override

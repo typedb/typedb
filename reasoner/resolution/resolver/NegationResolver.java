@@ -107,7 +107,8 @@ public class NegationResolver extends Resolver<NegationResolver> {
               the toplevel root with the negation iterations, which we cannot allow. So, we must use THIS resolver
               as a sort of new root!
         */
-        Compound<?> downstreamPartial = fromUpstream.partialAnswer().filterToDownstream(negated.retrieves(), downstream);
+        assert fromUpstream.partialAnswer().isCompound();
+        Compound<?> downstreamPartial = fromUpstream.partialAnswer().asCompound().filterToDownstream(negated.retrieves(), downstream);
         Request request = Request.create(driver(), this.downstream, downstreamPartial);
         requestFromDownstream(request, fromUpstream, 0);
         boundsState.setRequested();
@@ -145,8 +146,8 @@ public class NegationResolver extends Resolver<NegationResolver> {
     }
 
     private Partial<?, ?> upstreamAnswer(Request fromUpstream) {
-        assert fromUpstream.partialAnswer().isCompound() && fromUpstream.partialAnswer().asCompound().isSubset();
-        return fromUpstream.partialAnswer().asCompound().asSubset().toUpstream();
+        assert fromUpstream.partialAnswer().isCompound() && fromUpstream.partialAnswer().asCompound().isNonRoot();
+        return fromUpstream.partialAnswer().asCompound().asNonRoot().toUpstream();
     }
 
     private static class BoundsState {
