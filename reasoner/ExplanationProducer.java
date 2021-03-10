@@ -51,7 +51,6 @@ public class ExplanationProducer implements Producer<Explanation> {
     private int iteration;
     private boolean requiresReiteration;
     private boolean done;
-
     private Queue<Explanation> queue;
 
     public ExplanationProducer(Conjunction conjunction, ConceptMap bounds, Options.Query options,

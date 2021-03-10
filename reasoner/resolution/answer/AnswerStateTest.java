@@ -50,7 +50,7 @@ public class AnswerStateTest {
         Map<Identifier.Variable.Retrievable, Concept> concepts = new HashMap<>();
         concepts.put(Identifier.Variable.name("x"), new MockConcept(0));
         concepts.put(Identifier.Variable.name("y"), new MockConcept(1));
-        Partial.Compound<?, ?> partial = mapped.toUpstreamLookup(new ConceptMap(concepts), false);
+        Partial.Compound<?, ?> partial = mapped.toUpstreamLookup(new ConceptMap(concepts), false, false);
         Map<Identifier.Variable.Retrievable, Concept> expected = new HashMap<>();
         expected.put(Identifier.Variable.name("a"), new MockConcept(0));
         expected.put(Identifier.Variable.name("b"), new MockConcept(1));
@@ -76,7 +76,7 @@ public class AnswerStateTest {
         Map<Identifier.Variable.Retrievable, Concept> downstreamConcepts = new HashMap<>();
         downstreamConcepts.put(Identifier.Variable.name("x"), new MockConcept(0));
         downstreamConcepts.put(Identifier.Variable.name("y"), new MockConcept(1));
-        Partial.Compound<?, ?> partial = mapped.toUpstreamLookup(new ConceptMap(downstreamConcepts), false);
+        Partial.Compound<?, ?> partial = mapped.toUpstreamLookup(new ConceptMap(downstreamConcepts), false, false);
 
         Map<Identifier.Variable.Retrievable, Concept> expectedWithInitial = new HashMap<>();
         expectedWithInitial.put(Identifier.Variable.name("a"), new MockConcept(0));
@@ -104,7 +104,7 @@ public class AnswerStateTest {
         Map<Identifier.Variable.Retrievable, Concept> downstreamConcepts = new HashMap<>();
         downstreamConcepts.put(Identifier.Variable.name("x"), new MockConcept(0));
         downstreamConcepts.put(Identifier.Variable.name("y"), new MockConcept(1));
-        Partial.Compound<?, ?> partial = mapped.toUpstreamLookup(new ConceptMap(downstreamConcepts), false);
+        Partial.Compound<?, ?> partial = mapped.toUpstreamLookup(new ConceptMap(downstreamConcepts), false, false);
 
         Map<Identifier.Variable.Retrievable, Concept> expectedWithInitial = new HashMap<>();
         expectedWithInitial.put(Identifier.Variable.name("a"), new MockConcept(0));

@@ -38,6 +38,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
@@ -92,7 +93,7 @@ public class PlannerTest {
         Retrievable retrievable = new Retrievable(resolvedConjunction("{ $c($b); }", logicMgr));
 
         Set<Resolvable<?>> resolvables = set(concludable, retrievable);
-        List<Resolvable<?>> plan = new Planner(conceptMgr, logicMgr).plan(resolvables, set());
+        List<Resolvable<?>> plan = Planner.plan(resolvables, new HashMap<>(), set());
         assertEquals(list(concludable, retrievable), plan);
     }
 
@@ -103,58 +104,8 @@ public class PlannerTest {
 
         Set<Resolvable<?>> resolvables = set(concludable, retrievable);
 
-        List<Resolvable<?>> plan = new Planner(conceptMgr, logicMgr).plan(resolvables, set());
+        List<Resolvable<?>> plan = Planner.plan(resolvables, new HashMap<>(), set());
         assertEquals(list(retrievable, concludable), plan);
-    }
-
-    @Test
-    public void test_planner_prioritises_largest_retrievable_without_dependencies() {
-        rocksTransaction.query().undefine(TypeQL.parseQuery("undefine person owns name;"));
-        rocksTransaction.query().define(TypeQL.parseQuery("define company sub entity, owns company-name;" +
-                                                                  "name sub attribute, value string, abstract;" +
-                                                                  "first-name sub name;" +
-                                                                  "surname sub name;" +
-                                                                  "company-name sub name;" +
-                                                                  "age sub attribute, value long;" +
-                                                                  "person owns first-name, owns surname;"));
-        rocksTransaction.commit();
-        session.close();
-        initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-
-        Retrievable retrievable = new Retrievable(resolvedConjunction("{ $p isa person, has age $a, has first-name $fn, has " +
-                                                                              "surname $sn; }", logicMgr));
-        Concludable concludable = Concludable.create(resolvedConjunction("{ ($p, $c); }", logicMgr)).iterator().next();
-        Retrievable retrievable2 = new Retrievable(resolvedConjunction("{ $c isa company, has name $cn; }", logicMgr));
-
-        Set<Resolvable<?>> resolvables = set(retrievable, retrievable2, concludable);
-
-        List<Resolvable<?>> plan = new Planner(conceptMgr, logicMgr).plan(resolvables, set());
-        assertEquals(list(retrievable, concludable, retrievable2), plan);
-    }
-
-    @Test
-    public void test_planner_prioritises_largest_named_variables_retrievable_without_dependencies() {
-        rocksTransaction.query().undefine(TypeQL.parseQuery("undefine person owns name;"));
-        rocksTransaction.query().define(TypeQL.parseQuery("define company sub entity, owns company-name;" +
-                                                                  "name sub attribute, value string, abstract;" +
-                                                                  "first-name sub name;" +
-                                                                  "surname sub name;" +
-                                                                  "company-name sub name;" +
-                                                                  "age sub attribute, value long;" +
-                                                                  "person owns first-name, owns surname, owns age;"));
-        rocksTransaction.commit();
-        session.close();
-        initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-
-        Retrievable retrievable = new Retrievable(resolvedConjunction("{ $p isa person, has age 30, has first-name " +
-                                                                              "\"Alice\", has surname \"Bachelor\"; }", logicMgr));
-        Concludable concludable = Concludable.create(resolvedConjunction("{ ($p, $c); }", logicMgr)).iterator().next();
-        Retrievable retrievable2 = new Retrievable(resolvedConjunction("{ $c isa company, has name $cn; }", logicMgr));
-
-        Set<Resolvable<?>> resolvables = set(retrievable, retrievable2, concludable);
-
-        List<Resolvable<?>> plan = new Planner(conceptMgr, logicMgr).plan(resolvables, set());
-        assertEquals(list(retrievable2, concludable, retrievable), plan);
     }
 
     @Test
@@ -164,7 +115,7 @@ public class PlannerTest {
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
 
-        List<Resolvable<?>> plan = new Planner(conceptMgr, logicMgr).plan(resolvables, set());
+        List<Resolvable<?>> plan = Planner.plan(resolvables, new HashMap<>(), set());
         assertEquals(list(concludable, concludable2), plan);
     }
 
@@ -190,7 +141,7 @@ public class PlannerTest {
         Concludable concludable2 = Concludable.create(resolvedConjunction("{ $e($c, $p2) isa employment; }", logicMgr)).iterator().next();
 
         Set<Resolvable<?>> resolvables = set(retrievable, retrievable2, concludable, concludable2);
-        List<Resolvable<?>> plan = new Planner(conceptMgr, logicMgr).plan(resolvables, set());
+        List<Resolvable<?>> plan = Planner.plan(resolvables, new HashMap<>(), set());
 
         assertEquals(list(retrievable, concludable, retrievable2, concludable2), plan);
     }
@@ -201,7 +152,7 @@ public class PlannerTest {
         Concludable concludable2 = Concludable.create(resolvedConjunction("{ $b has $a; }", logicMgr)).iterator().next();
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
-        List<Resolvable<?>> plan = new Planner(conceptMgr, logicMgr).plan(resolvables, set());
+        List<Resolvable<?>> plan = Planner.plan(resolvables, new HashMap<>(), set());
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
@@ -213,7 +164,7 @@ public class PlannerTest {
         Concludable concludable2 = Concludable.create(resolvedConjunction("{ $b($a); }", logicMgr)).iterator().next();
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
-        List<Resolvable<?>> plan = new Planner(conceptMgr, logicMgr).plan(resolvables, set());
+        List<Resolvable<?>> plan = Planner.plan(resolvables, new HashMap<>(), set());
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
@@ -225,35 +176,10 @@ public class PlannerTest {
         Concludable concludable2 = Concludable.create(resolvedConjunction("{ $c($d); }", logicMgr)).iterator().next();
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
-        List<Resolvable<?>> plan = new Planner(conceptMgr, logicMgr).plan(resolvables, set());
+        List<Resolvable<?>> plan = Planner.plan(resolvables, new HashMap<>(), set());
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
     }
 
-    @Test
-    public void test_planner_prioritises_concludable_with_least_applicable_rules() {
-        rocksTransaction.query().define(TypeQL.parseQuery("define  " +
-                                                                  "marriage sub relation, relates spouse;" +
-                                                                  "person plays marriage:spouse, owns age;" +
-                                                                  "age sub attribute, value long;" +
-                                                                  "rule marriage-is-friendship: when {" +
-                                                                  "$x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; " +
-                                                                  "} then {" +
-                                                                  "(friend: $x, friend: $y) isa friendship;" +
-                                                                  "};"));
-        rocksTransaction.commit();
-        session.close();
-        initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-
-        Concludable concludable = Concludable.create(resolvedConjunction("{ $b has $a; }", logicMgr)).iterator().next();
-        Concludable concludable2 = Concludable.create(resolvedConjunction("{ $c($b) isa friendship; }", logicMgr)).iterator().next();
-
-        Set<Resolvable<?>> resolvables = set(concludable, concludable2);
-        List<Resolvable<?>> plan = new Planner(conceptMgr, logicMgr).plan(resolvables, set());
-
-        assertEquals(0, concludable.getApplicableRules(conceptMgr, logicMgr).toList().size());
-        assertEquals(1, concludable2.getApplicableRules(conceptMgr, logicMgr).toList().size());
-        assertEquals(list(concludable, concludable2), plan);
-    }
 }

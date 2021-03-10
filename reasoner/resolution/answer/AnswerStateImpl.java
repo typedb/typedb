@@ -19,6 +19,7 @@ package com.vaticle.typedb.core.reasoner.resolution.answer;
 
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
@@ -648,21 +649,23 @@ public abstract class AnswerStateImpl implements AnswerState {
                 }
 
                 @Override
-                public P toUpstreamInferred() {
+                public P toUpstreamInferred(boolean requiresReiteration) {
                     ConceptMap upstreamAnswer = mapping().unTransform(conceptMap());
                     if (explainable()) upstreamAnswer = withExplainable(upstreamAnswer);
-                    return parent().with(upstreamAnswer, requiresReiteration() || parent().requiresReiteration());
+                    return parent().with(upstreamAnswer, requiresReiteration() ||
+                            parent().requiresReiteration() || requiresReiteration);
                 }
 
                 @Override
-                public P toUpstreamLookup(ConceptMap additionalConcepts, boolean isInferredConclusion) {
-                    boolean requiresReiteration = requiresReiteration() || parent().requiresReiteration();
+                public P toUpstreamLookup(ConceptMap additionalConcepts, boolean isInferredConclusion,
+                                          boolean requiresReiteration) {
+                    boolean reiterate = requiresReiteration() || parent().requiresReiteration() || requiresReiteration;
                     ConceptMap upstreamAnswer = mapping().unTransform(additionalConcepts);
                     if (isInferredConclusion) {
                         if (explainable()) upstreamAnswer = withExplainable(upstreamAnswer);
-                        return parent().with(upstreamAnswer, requiresReiteration);
+                        return parent().with(upstreamAnswer, reiterate);
                     } else {
-                        return parent().with(upstreamAnswer, requiresReiteration);
+                        return parent().with(upstreamAnswer, reiterate);
                     }
                 }
 
@@ -685,7 +688,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                 public boolean equals(Object o) {
                     if (this == o) return true;
                     if (o == null || getClass() != o.getClass()) return false;
-                    MatchImpl that = (MatchImpl) o;
+                    MatchImpl<?> that = (MatchImpl<?>) o;
                     return Objects.equals(root(), that.root()) &&
                             Objects.equals(conceptMap(), that.conceptMap()) &&
                             Objects.equals(parent(), that.parent()) &&
@@ -737,9 +740,9 @@ public abstract class AnswerStateImpl implements AnswerState {
                 }
 
                 @Override
-                public Compound.Root.Explain toUpstreamInferred() {
-                    boolean requiresReiteration = requiresReiteration() || parent().requiresReiteration();
-                    return parent().with(mapping().unTransform(this.conceptMap()), requiresReiteration, explanation);
+                public Compound.Root.Explain toUpstreamInferred(boolean requiresReiteration) {
+                    boolean reiterate = requiresReiteration() || parent().requiresReiteration() || requiresReiteration;
+                    return parent().with(mapping().unTransform(this.conceptMap()), reiterate, explanation);
                 }
 
                 @Override
@@ -763,7 +766,6 @@ public abstract class AnswerStateImpl implements AnswerState {
                 @Override
                 public int hashCode() {
                     return hash;
-
                 }
             }
         }
@@ -834,9 +836,9 @@ public abstract class AnswerStateImpl implements AnswerState {
                 }
 
                 @Override
-                public Optional<Concludable.Match<?>> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts) {
-                    Optional<ConceptMap> unUnified = unifier().unUnify(concepts, instanceRequirements());
-                    return unUnified.map(ans -> parent().with(ans, true));
+                public FunctionalIterator<Concludable.Match<?>> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts) {
+                    FunctionalIterator<ConceptMap> unUnified = unifier().unUnify(concepts, instanceRequirements());
+                    return unUnified.map(ans -> parent().with(ans, requiresReiteration()));
                 }
 
                 @Override
@@ -896,18 +898,17 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                 @Override
                 public Explain with(ConceptMap conditionAnswer, boolean requiresReiteration) {
-                    assert this.conditionAnswer() == null;
+                    assert this.conditionAnswer() == null && conditionAnswer != null;
                     // note: we add more concepts to the conclusion answer than there are variables to preserve uniqueness of multiple explanations
                     return new ExplainImpl(conditionAnswer, rule(), unifier(), instanceRequirements(), extendAnswer(conditionAnswer), parent(), root(), requiresReiteration);
                 }
 
                 @Override
-                public Optional<Concludable.Explain> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts) {
-                    Optional<ConceptMap> unUnified = unifier().unUnify(concepts, instanceRequirements());
-                    return unUnified.map(ans -> {
-                        ConclusionAnswer conclusionAnswer = new ConclusionAnswer(rule(), toConceptMap(concepts), unifier(), conditionAnswer());
-                        return parent().with(ans, true, rule(), toConceptMap(concepts), unifier(), conditionAnswer());
-                    });
+                public FunctionalIterator<Concludable.Explain> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts) {
+                    FunctionalIterator<ConceptMap> unUnified = unifier().unUnify(concepts, instanceRequirements());
+                    return unUnified.map(ans ->
+                         parent().with(ans, requiresReiteration(), rule(), toConceptMap(concepts), unifier(), conditionAnswer())
+                    );
                 }
 
                 private ConceptMap toConceptMap(Map<Identifier.Variable, Concept> concepts) {
@@ -1000,7 +1001,8 @@ public abstract class AnswerStateImpl implements AnswerState {
             private final Set<Identifier.Variable.Retrievable> filter;
             private final int hash;
 
-            private RetrievableImpl(Set<Identifier.Variable.Retrievable> filter, P parent, ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
+            private RetrievableImpl(Set<Identifier.Variable.Retrievable> filter, P parent, ConceptMap conceptMap,
+                                    Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
                 super(parent, conceptMap, root, requiresReiteration);
                 this.filter = filter;
                 this.hash = Objects.hash(root(), parent(), conceptMap(), requiresReiteration(), filter);
@@ -1011,10 +1013,11 @@ public abstract class AnswerStateImpl implements AnswerState {
             }
 
             @Override
-            public P aggregateToUpstream(ConceptMap concepts) {
-                assert concepts.concepts().keySet().containsAll(conceptMap().concepts().keySet()) && filter.containsAll(concepts.concepts().keySet());
+            public P aggregateToUpstream(ConceptMap concepts, boolean requiresReiteration) {
+                assert concepts.concepts().keySet().containsAll(conceptMap().concepts().keySet()) &&
+                        filter.containsAll(concepts.concepts().keySet());
                 if (concepts.concepts().isEmpty()) throw TypeDBException.of(ILLEGAL_STATE);
-                return parent().with(concepts, parent().requiresReiteration());
+                return parent().with(concepts, parent().requiresReiteration() || requiresReiteration);
             }
 
             @Override

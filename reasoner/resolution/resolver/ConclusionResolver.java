@@ -19,6 +19,7 @@ package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
@@ -26,6 +27,7 @@ import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
+import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
 import com.vaticle.typedb.core.traversal.Traversal;
@@ -35,10 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -51,7 +50,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(ConclusionResolver.class);
 
     private final Rule.Conclusion conclusion;
-    private final Map<Request, RequestState> requestStates;
+    private final Map<Request, ConclusionRequestState<?>> requestStates;
     private Driver<ConditionResolver> ruleResolver;
     private boolean isInitialised;
 
@@ -70,7 +69,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
 
-        RequestState requestState = getOrUpdateRequestState(fromUpstream, iteration);
+        ConclusionRequestState<?> requestState = getOrReplaceRequestState(fromUpstream, iteration);
 
         if (iteration < requestState.iteration()) {
             // short circuit if the request came from a prior iteration
@@ -88,17 +87,13 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        RequestState requestState = this.requestStates.get(fromUpstream);
-
-        FunctionalIterator<Map<Identifier.Variable, Concept>> materialisations = conclusion
-                .materialise(fromDownstream.answer().conceptMap(), traversalEngine, conceptMgr);
-        if (!materialisations.hasNext()) throw TypeDBException.of(ILLEGAL_STATE);
-
-        FunctionalIterator<Partial.Concludable<?>> materialisedAnswers = materialisations
-                .map(concepts -> fromDownstream.answer().asConclusion().aggregateToUpstream(concepts))
-                .filter(Optional::isPresent)
-                .map(Optional::get);
-        requestState.addResponses(materialisedAnswers);
+        ConclusionRequestState<? extends Partial.Concludable<?>> requestState = this.requestStates.get(fromUpstream);
+        if (!requestState.isComplete()) {
+            FunctionalIterator<Map<Identifier.Variable, Concept>> materialisations = conclusion
+                    .materialise(fromDownstream.answer().conceptMap(), traversalEngine, conceptMgr);
+            if (!materialisations.hasNext()) throw TypeDBException.of(ILLEGAL_STATE);
+            requestState.newMaterialisedAnswers(fromDownstream.answer(), materialisations);
+        }
         nextAnswer(fromUpstream, requestState, iteration);
     }
 
@@ -109,7 +104,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        RequestState requestState = this.requestStates.get(fromUpstream);
+        ConclusionRequestState<?> requestState = this.requestStates.get(fromUpstream);
 
         if (iteration < requestState.iteration()) {
             // short circuit old iteration fail messages to upstream
@@ -117,7 +112,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
             return;
         }
 
-        requestState.removeDownstream(fromDownstream.sourceRequest());
+        requestState.downstreamManager().removeDownstream(fromDownstream.sourceRequest());
         nextAnswer(fromUpstream, requestState, iteration);
     }
 
@@ -138,53 +133,62 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         }
     }
 
-    private void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
-        Optional<Partial.Concludable<?>> upstreamAnswer = requestState.nextResponse();
+    private void nextAnswer(Request fromUpstream, ConclusionRequestState<?> requestState, int iteration) {
+        Optional<? extends Partial<?>> upstreamAnswer = requestState.nextAnswer();
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
-        } else if (requestState.hasDownstream()) {
-            requestFromDownstream(requestState.nextDownstream(), fromUpstream, iteration);
+        } else if (!requestState.isComplete() && requestState.downstreamManager().hasDownstream()) {
+            requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
         } else {
+            requestState.setComplete();
             failToUpstream(fromUpstream, iteration);
         }
     }
 
-    private RequestState getOrUpdateRequestState(Request fromUpstream, int iteration) {
+    private ConclusionRequestState<?> getOrReplaceRequestState(Request fromUpstream, int iteration) {
         if (!requestStates.containsKey(fromUpstream)) {
             requestStates.put(fromUpstream, createRequestState(fromUpstream, iteration));
         } else {
-            RequestState requestState = this.requestStates.get(fromUpstream);
+            ConclusionRequestState<?> requestState = this.requestStates.get(fromUpstream);
 
             if (requestState.iteration() < iteration) {
                 // when the same request for the next iteration the first time, re-initialise required state
-                RequestState requestStateNextIter = createRequestState(fromUpstream, iteration);
+                ConclusionRequestState<?> requestStateNextIter = createRequestState(fromUpstream, iteration);
                 this.requestStates.put(fromUpstream, requestStateNextIter);
             }
         }
         return requestStates.get(fromUpstream);
     }
 
-    private RequestState createRequestState(Request fromUpstream, int iteration) {
+    private ConclusionRequestState<?> createRequestState(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new ConclusionResponse for request: {}", name(), fromUpstream);
 
-        RequestState requestState = new RequestState(iteration);
+        ConclusionRequestState<?> requestState;
+        if (fromUpstream.partialAnswer().asConclusion().isExplain()) {
+            requestState = new ConclusionRequestState.Explaining(fromUpstream, iteration);
+        } else if (fromUpstream.partialAnswer().asConclusion().isMatch()) {
+            requestState = new ConclusionRequestState.Rule(fromUpstream, iteration);
+        } else {
+            throw TypeDBException.of(ILLEGAL_STATE);
+        }
 
         assert fromUpstream.partialAnswer().isConclusion();
         Partial.Conclusion<?, ?> partialAnswer = fromUpstream.partialAnswer().asConclusion();
         // we do a extra traversal to expand the partial answer if we already have the concept that is meant to be generated
         // and if there's extra variables to be populated
-        assert conclusion.retrievableIds().containsAll(partialAnswer.conceptMap().concepts().keySet());
-        if (conclusion.generating().isPresent() && conclusion.retrievableIds().size() > partialAnswer.conceptMap().concepts().size() &&
-                partialAnswer.conceptMap().concepts().containsKey(conclusion.generating().get().id())) {
-            FunctionalIterator<Partial.Compound<?, ?>> completedDownstreamAnswers = candidateAnswers(partialAnswer);
-            completedDownstreamAnswers.forEachRemaining(answer -> requestState.addDownstream(Request.create(driver(), ruleResolver,
-                                                                                                            answer)));
-        } else {
-            Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
-            Partial.Compound<?, ?> downstreamAnswer = partialAnswer.toDownstream(named);
-            requestState.addDownstream(Request.create(driver(), ruleResolver, downstreamAnswer));
+        if (!requestState.isComplete()) {
+            assert conclusion.retrievableIds().containsAll(partialAnswer.conceptMap().concepts().keySet());
+            if (conclusion.generating().isPresent() && conclusion.retrievableIds().size() > partialAnswer.conceptMap().concepts().size() &&
+                    partialAnswer.conceptMap().concepts().containsKey(conclusion.generating().get().id())) {
+                FunctionalIterator<Partial.Compound<?, ?>> completedDownstreamAnswers = candidateAnswers(partialAnswer);
+                completedDownstreamAnswers.forEachRemaining(answer -> requestState.downstreamManager()
+                        .addDownstream(Request.create(driver(), ruleResolver, answer)));
+            } else {
+                Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
+                Partial.Compound<?, ?> downstreamAnswer = partialAnswer.toDownstream(named);
+                requestState.downstreamManager().addDownstream(Request.create(driver(), ruleResolver, downstreamAnswer));
+            }
         }
-
         return requestState;
     }
 
@@ -200,60 +204,91 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         return name();
     }
 
-    private static class RequestState {
+    private static abstract class ConclusionRequestState<CONCLUDABLE extends Partial.Concludable<?>> extends RequestState {
 
-        private final List<FunctionalIterator<Partial.Concludable<?>>> materialisedAnswers;
-        private final LinkedHashSet<Request> downstreams;
-        private Iterator<Request> downstreamProducerSelector;
-        private final int iteration;
+        private final DownstreamManager downstreamManager;
+        protected FunctionalIterator<CONCLUDABLE> answerIterator;
+        private boolean complete;
 
-        public RequestState(int iteration) {
-            this.materialisedAnswers = new LinkedList<>();
-            this.downstreams = new LinkedHashSet<>();
-            this.iteration = iteration;
-            downstreamProducerSelector = downstreams.iterator();
+        protected ConclusionRequestState(Request fromUpstream, int iteration) {
+            super(fromUpstream, iteration);
+            this.downstreamManager = new DownstreamManager();
+            this.answerIterator = Iterators.empty();
+            this.complete = false;
         }
 
-        public int iteration() {
-            return iteration;
+        public DownstreamManager downstreamManager() {
+            return downstreamManager;
         }
 
-        public void addResponses(FunctionalIterator<Partial.Concludable<?>> materialisations) {
-            materialisedAnswers.add(materialisations);
+        public boolean isComplete() {
+            // TODO: Placeholder for re-introducing caching
+            return complete;
         }
 
-        public Optional<Partial.Concludable<?>> nextResponse() {
-            if (hasResponse()) return Optional.of(materialisedAnswers.get(0).next());
-            else return Optional.empty();
+        public void setComplete() {
+            // TODO: Placeholder for re-introducing caching. Should only be used once Conclusion caching works in
+            //  recursive settings
+            complete = true;
         }
 
-        private boolean hasResponse() {
-            while (!materialisedAnswers.isEmpty() && !materialisedAnswers.get(0).hasNext()) {
-                materialisedAnswers.remove(0);
+        protected abstract FunctionalIterator<CONCLUDABLE> toUpstream(Partial<?> fromDownstream,
+                                                                      Map<Identifier.Variable, Concept> answer);
+
+        public void newMaterialisedAnswers(Partial<?> fromDownstream,
+                                           FunctionalIterator<Map<Identifier.Variable, Concept>> materialisations) {
+            this.answerIterator = this.answerIterator
+                    .link(materialisations.flatMap(m -> toUpstream(fromDownstream, m)));
+        }
+
+        private static class Rule extends ConclusionRequestState<Partial.Concludable.Match<?>> {
+
+            private final Set<ConceptMap> deduplicationSet;
+
+            public Rule(Request fromUpstream, int iteration) {
+                super(fromUpstream, iteration);
+                this.deduplicationSet = new HashSet<>();
             }
-            return !materialisedAnswers.isEmpty();
+
+            @Override
+            protected FunctionalIterator<Partial.Concludable.Match<?>> toUpstream(Partial<?> fromDownstream,
+                                                                                  Map<Identifier.Variable, Concept> answer) {
+                return fromDownstream.asConclusion().asMatch().aggregateToUpstream(answer);
+            }
+
+            @Override
+            public Optional<Partial.Concludable.Match<?>> nextAnswer() {
+                if (!answerIterator.hasNext()) return Optional.empty();
+                while (answerIterator.hasNext()) {
+                    Partial.Concludable.Match<?> ans = answerIterator.next();
+                    if (!deduplicationSet.contains(ans.conceptMap())) {
+                        deduplicationSet.add(ans.conceptMap());
+                        return Optional.of(ans);
+                    }
+                }
+                return Optional.empty();
+            }
+
         }
 
-        public boolean hasDownstream() {
-            return !downstreams.isEmpty();
-        }
+        private static class Explaining extends ConclusionRequestState<Partial.Concludable.Explain> {
 
-        public Request nextDownstream() {
-            if (!downstreamProducerSelector.hasNext()) downstreamProducerSelector = downstreams.iterator();
-            return downstreamProducerSelector.next();
-        }
+            public Explaining(Request fromUpstream, int iteration) {
+                super(fromUpstream, iteration);
+            }
 
-        public void removeDownstream(Request request) {
-            boolean removed = downstreams.remove(request);
-            // only update the iterator when removing an element, to avoid resetting and reusing first request too often
-            // note: this is a large performance win when processing large batches of requests
-            if (removed) downstreamProducerSelector = downstreams.iterator();
-        }
+            @Override
+            protected FunctionalIterator<Partial.Concludable.Explain> toUpstream(Partial<?> fromDownstream,
+                                                                                 Map<Identifier.Variable, Concept> answer) {
+                return fromDownstream.asConclusion().asExplain().aggregateToUpstream(answer);
+            }
 
-        public void addDownstream(Request request) {
-            assert !(downstreams.contains(request)) : "downstream answer producer already contains this request";
-            downstreams.add(request);
-            downstreamProducerSelector = downstreams.iterator();
+            @Override
+            public Optional<Partial.Concludable.Explain> nextAnswer() {
+                if (!answerIterator.hasNext()) return Optional.empty();
+                return Optional.of(answerIterator.next());
+            }
         }
     }
+
 }

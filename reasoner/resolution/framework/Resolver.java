@@ -41,6 +41,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
 
@@ -92,7 +94,7 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
     protected abstract void receiveFail(Response.Fail fromDownstream, int iteration);
 
     public void terminate(Throwable cause) {
-        LOG.error("error", cause);
+        LOG.debug("Resolver terminated. ", cause);
         this.terminated = true;
     }
 
@@ -182,5 +184,47 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
             }
         });
         return traversal;
+    }
+
+    public static class DownstreamManager {
+        private final LinkedHashSet<Request> downstreams;
+        private Iterator<Request> downstreamSelector;
+
+        public DownstreamManager() {
+            this.downstreams = new LinkedHashSet<>();
+            this.downstreamSelector = downstreams.iterator();
+        }
+
+        public boolean hasDownstream() {
+            return !downstreams.isEmpty();
+        }
+
+        public Request nextDownstream() {
+            if (!downstreamSelector.hasNext()) downstreamSelector = downstreams.iterator();
+            return downstreamSelector.next();
+        }
+
+        public void addDownstream(Request request) {
+            assert !(downstreams.contains(request)) : "downstream answer producer already contains this request";
+
+            downstreams.add(request);
+            downstreamSelector = downstreams.iterator();
+        }
+
+        public void removeDownstream(Request request) {
+            boolean removed = downstreams.remove(request);
+            // only update the iterator when removing an element, to avoid resetting and reusing first request too often
+            // note: this is a large performance win when processing large batches of requests
+            if (removed) downstreamSelector = downstreams.iterator();
+        }
+
+        public void clearDownstreams() {
+            downstreams.clear();
+            downstreamSelector = Iterators.empty();
+        }
+
+        public boolean contains(Request downstreamRequest) {
+            return downstreams.contains(downstreamRequest);
+        }
     }
 }
