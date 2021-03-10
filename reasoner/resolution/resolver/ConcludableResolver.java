@@ -231,8 +231,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             for (Map.Entry<Driver<ConclusionResolver>, Set<Unifier>> entry : applicableRules.entrySet()) {
                 Driver<ConclusionResolver> conclusionResolver = entry.getKey();
                 for (Unifier unifier : entry.getValue()) {
-                    Optional<Conclusion> unified = partialAnswer.unifyToDownstream(unifier, resolverRules.get(conclusionResolver),
-                                                                                   conclusionResolver);
+                    Optional<Conclusion> unified = partialAnswer.unifyToDownstream(unifier, resolverRules.get(conclusionResolver));
                     if (unified.isPresent()) {
                         Request toDownstream = Request.create(driver(), conclusionResolver, unified.get());
                         requestState.addDownstreamProducer(toDownstream);

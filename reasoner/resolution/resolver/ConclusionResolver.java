@@ -24,7 +24,6 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.Rule;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
@@ -184,7 +183,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
                                                                                                             answer)));
         } else {
             Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
-            Partial.Compound.Condition downstreamAnswer = partialAnswer.filterToDownstream(named, ruleResolver);
+            Partial.Compound.Condition downstreamAnswer = partialAnswer.filterToDownstream(named);
             requestState.addDownstream(Request.create(driver(), ruleResolver, downstreamAnswer));
         }
 
@@ -195,7 +194,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         Traversal traversal = boundTraversal(conclusion.conjunction().traversal(), partialAnswer.conceptMap());
         FunctionalIterator<ConceptMap> answers = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
         Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
-        return answers.map(ans -> partialAnswer.extend(ans).filterToDownstream(named, ruleResolver));
+        return answers.map(ans -> partialAnswer.extend(ans).filterToDownstream(named));
     }
 
     @Override

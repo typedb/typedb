@@ -108,7 +108,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
               as a sort of new root!
         */
         assert fromUpstream.partialAnswer().isCompound();
-        Compound<?> downstreamPartial = fromUpstream.partialAnswer().asCompound().filterToDownstream(negated.retrieves(), downstream);
+        Compound<?> downstreamPartial = fromUpstream.partialAnswer().asCompound().filterToDownstream(negated.retrieves());
         Request request = Request.create(driver(), this.downstream, downstreamPartial);
         requestFromDownstream(request, fromUpstream, 0);
         boundsState.setRequested();
