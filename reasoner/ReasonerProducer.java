@@ -54,14 +54,13 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private final AtomicInteger processing;
     private final Options.Query options;
     private final Request resolveRequest;
-    private final boolean recordExplanations = false; // TODO: make settable
     private final int computeSize;
     private boolean requiresReiteration;
     private boolean done;
     private int iteration;
     private Queue<ConceptMap> queue;
 
-    // TODO: this class should be be a Producer implement a different async processing mechanism
+    // TODO: this class should not be a Producer, it implements a different async processing mechanism
     public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers,
                             Options.Query options) {
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
@@ -118,8 +117,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private void requestAnswered(Top answer) {
         if (options.traceInference()) ResolutionTracer.get().finish();
         if (answer.requiresReiteration()) requiresReiteration = true;
-        // TODO create a new type of answer, say ExplainableConceptMap, which contains data to retreive one layer of explanations.
-        // TODO we will probably want to include the fully concept map incl. anonymous vars so we can retrieve explanations
+
         queue.put(answer.conceptMap());
         if (required.decrementAndGet() > 0) requestAnswer();
         else processing.decrementAndGet();

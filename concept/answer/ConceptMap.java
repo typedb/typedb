@@ -30,6 +30,7 @@ import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import graql.lang.pattern.variable.Reference;
 import graql.lang.pattern.variable.UnboundVariable;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -45,6 +46,8 @@ import static grakn.core.common.iterator.Iterators.iterate;
 public class ConceptMap implements Answer {
 
     private final Map<Retrievable, ? extends Concept> concepts;
+    @Nullable
+    private ExplainableAnswer explainableAnswer;
     private final int hash;
 
     public ConceptMap() {
@@ -52,7 +55,12 @@ public class ConceptMap implements Answer {
     }
 
     public ConceptMap(Map<Retrievable, ? extends Concept> concepts) {
+        this(concepts, null);
+    }
+
+    public ConceptMap(Map<Retrievable, ? extends Concept> concepts, @Nullable ExplainableAnswer explainableAnswer) {
         this.concepts = concepts;
+        this.explainableAnswer = explainableAnswer;
         this.hash = Objects.hash(this.concepts);
     }
 
@@ -95,7 +103,7 @@ public class ConceptMap implements Answer {
         Map<Retrievable, ? extends Concept> filtered = concepts.entrySet().stream()
                 .filter(e -> vars.contains(e.getKey()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        return new ConceptMap(filtered);
+        return new ConceptMap(filtered, explainableAnswer);
     }
 
     public void forEach(BiConsumer<Retrievable, Concept> consumer) {
@@ -133,4 +141,6 @@ public class ConceptMap implements Answer {
     public int hashCode() {
         return hash;
     }
+
+
 }

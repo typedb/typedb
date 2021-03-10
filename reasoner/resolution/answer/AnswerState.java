@@ -21,6 +21,7 @@ import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.ExplainableAnswer;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Unifier;
@@ -116,6 +117,10 @@ public abstract class AnswerState {
                 return new Initial(new ConceptMap(), getFilter, root);
             }
 
+            public static Initial create(ConceptMap initialBounds, Set<Identifier.Variable.Name> getFilter, Actor.Driver<? extends Resolver<?>> root) {
+                return new Initial(initialBounds, getFilter, root);
+            }
+
             public Partial.Compound.Root toDownstream() {
                 return Partial.Compound.Root.create(conceptMap(), this, root(), root());
             }
@@ -152,14 +157,18 @@ public abstract class AnswerState {
 
         public static class Finished extends Top {
 
-            private final ExplainableAnswer explainableAnswer;
             private final int hash;
 
             Finished(ConceptMap conceptMap, @Nullable Set<Identifier.Variable.Name> getFilter, Actor.Driver<? extends Resolver<?>> root,
                      Conjunction conjunctionAnswered, Set<Conjunction> explainables, boolean requiresReiteration) {
-                super(conceptMap, getFilter, root, requiresReiteration);
-                this.explainableAnswer = new ExplainableAnswer(conceptMap(), conjunctionAnswered, explainables);
-                this.hash = Objects.hash(root, conceptMap, getFilter, explainableAnswer);
+                super(
+                        new ConceptMap(
+                                conceptMap.concepts(),
+                                explainables.isEmpty() ? null : new ExplainableAnswer(conceptMap, conjunctionAnswered, explainables)
+                        ),
+                        getFilter, root, requiresReiteration
+                );
+                this.hash = Objects.hash(root, conceptMap, getFilter);
             }
 
             @Override
@@ -169,7 +178,6 @@ public abstract class AnswerState {
                         ", conceptMap=" + conceptMap +
                         ", filter=" + getFilter +
                         ", requiresReiteration=" + requiresReiteration +
-                        ", explainableAnswer=" + explainableAnswer +
                         '}';
             }
 
@@ -181,8 +189,7 @@ public abstract class AnswerState {
                 return Objects.equals(root(), top.root()) &&
                         Objects.equals(conceptMap, top.conceptMap) &&
                         Objects.equals(getFilter, top.getFilter) &&
-                        requiresReiteration == top.requiresReiteration &&
-                        Objects.equals(explainableAnswer, top.explainableAnswer);
+                        requiresReiteration == top.requiresReiteration;
             }
 
             @Override
@@ -560,7 +567,7 @@ public abstract class AnswerState {
             public Compound<?> toUpstream() {
                 // TODO should we carry the condition answer inside conclusion answer or outside?
                 // TODO compute variable mapping
-                Explanation explanation = new Explanation(conclusionAnswer.rule().getLabel(), mapping, conclusionAnswer, conclusionAnswer.conditionAnswer());
+                Explanation explanation = new Explanation(conclusionAnswer.rule(), mapping, conclusionAnswer, conclusionAnswer.conditionAnswer());
                 return parent().with(mapping.unTransform(this.conceptMap()), requiresReiteration || parent().requiresReiteration(),
                                      sourceConjunction, explanation);
             }
@@ -657,7 +664,7 @@ public abstract class AnswerState {
             private ConceptMap toConceptMap(Map<Identifier.Variable, Concept> concepts) {
                 Map<Identifier.Variable.Retrievable, Concept> filteredMap = new HashMap<>();
                 iterate(concepts.entrySet()).filter(entry -> entry.getKey().isRetrievable()).forEachRemaining(entry ->
-                    filteredMap.put(entry.getKey().asRetrievable(), entry.getValue())
+                                                                                                                      filteredMap.put(entry.getKey().asRetrievable(), entry.getValue())
                 );
                 return new ConceptMap(filteredMap);
             }

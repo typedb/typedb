@@ -17,6 +17,8 @@
 
 package grakn.core.reasoner.resolution.answer;
 
+import grakn.core.concept.answer.ExplainableAnswer;
+import grakn.core.logic.Rule;
 import grakn.core.traversal.common.Identifier;
 
 import java.util.Map;
@@ -24,12 +26,12 @@ import java.util.Set;
 
 public class Explanation {
 
-    private final String rule;
+    private final Rule rule;
     private final Mapping intermediateMapping;
     private final ConclusionAnswer conclusionAnswer;
     private final ExplainableAnswer conditionAnswer;
 
-    public Explanation(String rule, Mapping intermediateMapping, ConclusionAnswer conclusionAnswer, ExplainableAnswer conditionAnswer) {
+    public Explanation(Rule rule, Mapping intermediateMapping, ConclusionAnswer conclusionAnswer, ExplainableAnswer conditionAnswer) {
         this.rule = rule;
         this.intermediateMapping = intermediateMapping;
         this.conclusionAnswer = conclusionAnswer;

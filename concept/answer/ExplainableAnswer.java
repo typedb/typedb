@@ -15,9 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner.resolution.answer;
+package grakn.core.concept.answer;
 
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.Conjunction;
 
 import java.util.Objects;
@@ -25,14 +24,17 @@ import java.util.Set;
 
 public class ExplainableAnswer {
 
-    private final ConceptMap conceptMap;
+    private final ConceptMap completeMap;
     private final Conjunction conjunctionAnswered;
     private final Set<Conjunction> explainables;
 
-    public ExplainableAnswer(ConceptMap conceptMap, Conjunction conjunctionAnswered, Set<Conjunction> explainables) {
-        this.conceptMap = conceptMap;
+    private final int hash;
+
+    public ExplainableAnswer(ConceptMap completeMap, Conjunction conjunctionAnswered, Set<Conjunction> explainables) {
+        this.completeMap = completeMap;
         this.conjunctionAnswered = conjunctionAnswered;
         this.explainables = explainables;
+        this.hash = Objects.hash(completeMap, conjunctionAnswered, explainables);
     }
 
     @Override
@@ -40,13 +42,13 @@ public class ExplainableAnswer {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final ExplainableAnswer that = (ExplainableAnswer) o;
-        return Objects.equals(conceptMap, that.conceptMap) &&
+        return Objects.equals(completeMap, that.completeMap) &&
                 Objects.equals(conjunctionAnswered, that.conjunctionAnswered) &&
                 Objects.equals(explainables, that.explainables);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(conceptMap, conjunctionAnswered, explainables);
+        return hash;
     }
 }

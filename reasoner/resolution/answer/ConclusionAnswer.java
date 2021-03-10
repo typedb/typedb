@@ -18,6 +18,7 @@
 package grakn.core.reasoner.resolution.answer;
 
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.ExplainableAnswer;
 import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Unifier;
 

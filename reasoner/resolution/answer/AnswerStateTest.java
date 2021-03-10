@@ -33,25 +33,24 @@ import java.util.Objects;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.set;
-import static grakn.core.reasoner.resolution.answer.AnswerState.Partial.Identity.identity;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 
 public class AnswerStateTest {
 
     @Test
-    public void test_initial_empty_mapped_to_downstream_and_back() {
+    public void test_root_empty_mapped_to_downstream_and_back() {
         Map<Identifier.Variable.Retrievable, Identifier.Variable.Retrievable> mapping = new HashMap<>();
         mapping.put(Identifier.Variable.name("a"), Identifier.Variable.name("x"));
         mapping.put(Identifier.Variable.name("b"), Identifier.Variable.name("y"));
         Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
-        Concludable mapped = Top.initial(filter, false, null).toDownstream().mapToDownstream(Mapping.of(mapping), null);
+        Concludable mapped = Top.Initial.create(filter, null).toDownstream().mapToDownstream(Mapping.of(mapping), null, null);
         assertTrue(mapped.conceptMap().concepts().isEmpty());
 
         Map<Identifier.Variable.Retrievable, Concept> concepts = new HashMap<>();
         concepts.put(Identifier.Variable.name("x"), new MockConcept(0));
         concepts.put(Identifier.Variable.name("y"), new MockConcept(1));
-        Partial<?> partial = mapped.aggregateToUpstream(new ConceptMap(concepts));
+        Partial.Compound<?> partial = mapped.aggregateToUpstream(new ConceptMap(concepts));
         Map<Identifier.Variable.Retrievable, Concept> expected = new HashMap<>();
         expected.put(Identifier.Variable.name("a"), new MockConcept(0));
         expected.put(Identifier.Variable.name("b"), new MockConcept(1));
@@ -59,16 +58,15 @@ public class AnswerStateTest {
     }
 
     @Test
-    public void test_initial_partially_mapped_to_downstream_and_back() {
+    public void test_root_partially_mapped_to_downstream_and_back() {
         Map<Identifier.Variable.Retrievable, Identifier.Variable.Retrievable> mapping = new HashMap<>();
         mapping.put(Identifier.Variable.name("a"), Identifier.Variable.name("x"));
         mapping.put(Identifier.Variable.name("b"), Identifier.Variable.name("y"));
         Map<Identifier.Variable.Retrievable, Concept> concepts = new HashMap<>();
         concepts.put(Identifier.Variable.name("a"), new MockConcept(0));
         Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
-        Top top = Top.initial(filter, false, null);
-        Concludable mapped = identity(new ConceptMap(concepts), top, null, null, false)
-                .mapToDownstream(Mapping.of(mapping), null);
+        Concludable mapped = Top.Initial.create(filter, null).toDownstream().with(new ConceptMap(concepts), false)
+                .mapToDownstream(Mapping.of(mapping), null, null);
 
         Map<Identifier.Variable.Retrievable, Concept> expectedMapped = new HashMap<>();
         expectedMapped.put(Identifier.Variable.name("x"), new MockConcept(0));
@@ -77,7 +75,7 @@ public class AnswerStateTest {
         Map<Identifier.Variable.Retrievable, Concept> downstreamConcepts = new HashMap<>();
         downstreamConcepts.put(Identifier.Variable.name("x"), new MockConcept(0));
         downstreamConcepts.put(Identifier.Variable.name("y"), new MockConcept(1));
-        Partial<?> partial = mapped.aggregateToUpstream(new ConceptMap(downstreamConcepts));
+        Partial.Compound<?> partial = mapped.aggregateToUpstream(new ConceptMap(downstreamConcepts));
 
         Map<Identifier.Variable.Retrievable, Concept> expectedWithInitial = new HashMap<>();
         expectedWithInitial.put(Identifier.Variable.name("a"), new MockConcept(0));
@@ -86,7 +84,7 @@ public class AnswerStateTest {
     }
 
     @Test
-    public void test_initial_with_unmapped_elements() {
+    public void test_root_with_unmapped_elements() {
         Map<Identifier.Variable.Retrievable, Identifier.Variable.Retrievable> mapping = new HashMap<>();
         mapping.put(Identifier.Variable.name("a"), Identifier.Variable.name("x"));
         mapping.put(Identifier.Variable.name("b"), Identifier.Variable.name("y"));
@@ -94,9 +92,8 @@ public class AnswerStateTest {
         concepts.put(Identifier.Variable.name("a"), new MockConcept(0));
         concepts.put(Identifier.Variable.name("c"), new MockConcept(2));
         Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
-        Top top = Top.initial(filter, false, null);
-        Concludable mapped = identity(new ConceptMap(concepts), top, null, null, false)
-                .mapToDownstream(Mapping.of(mapping), null);
+        Concludable mapped = Top.Initial.create(filter, null).toDownstream().with(new ConceptMap(concepts), false)
+                .mapToDownstream(Mapping.of(mapping), null, null);
 
         Map<Identifier.Variable.Retrievable, Concept> expectedMapped = new HashMap<>();
         expectedMapped.put(Identifier.Variable.name("x"), new MockConcept(0));
@@ -105,7 +102,7 @@ public class AnswerStateTest {
         Map<Identifier.Variable.Retrievable, Concept> downstreamConcepts = new HashMap<>();
         downstreamConcepts.put(Identifier.Variable.name("x"), new MockConcept(0));
         downstreamConcepts.put(Identifier.Variable.name("y"), new MockConcept(1));
-        Partial<?> partial = mapped.aggregateToUpstream(new ConceptMap(downstreamConcepts));
+        Partial.Compound<?> partial = mapped.aggregateToUpstream(new ConceptMap(downstreamConcepts));
 
         Map<Identifier.Variable.Retrievable, Concept> expectedWithInitial = new HashMap<>();
         expectedWithInitial.put(Identifier.Variable.name("a"), new MockConcept(0));

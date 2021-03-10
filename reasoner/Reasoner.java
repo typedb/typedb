@@ -36,7 +36,6 @@ import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.Negation;
 import grakn.core.pattern.variable.Variable;
-import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
@@ -59,6 +58,7 @@ import static grakn.core.concurrent.executor.Executors.async1;
 import static grakn.core.concurrent.producer.Producers.produce;
 
 public class Reasoner {
+
     private static final Logger LOG = LoggerFactory.getLogger(Reasoner.class);
 
     private final TraversalEngine traversalEng;
