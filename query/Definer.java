@@ -119,7 +119,7 @@ public class Definer {
                 throw GraknException.of(TYPE_NOT_FOUND, labelConstraint.label());
             }
 
-            if (variable.valueType().isPresent() && !(type instanceof AttributeType)) {
+            if (variable.valueType().isPresent() && !(type.isAttributeType())) {
                 throw GraknException.of(ATTRIBUTE_VALUE_TYPE_DEFINED_NOT_ON_ATTRIBUTE_TYPE, labelConstraint.label());
             }
 
@@ -184,13 +184,13 @@ public class Definer {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "define_sub")) {
             LabelConstraint labelConstraint = var.label().get();
             ThingType supertype = define(subConstraint.type()).asThingType();
-            if (supertype instanceof EntityType) {
+            if (supertype.isEntityType()) {
                 if (thingType == null) thingType = conceptMgr.putEntityType(labelConstraint.label());
                 thingType.asEntityType().setSupertype(supertype.asEntityType());
-            } else if (supertype instanceof RelationType) {
+            } else if (supertype.isRelationType()) {
                 if (thingType == null) thingType = conceptMgr.putRelationType(labelConstraint.label());
                 thingType.asRelationType().setSupertype(supertype.asRelationType());
-            } else if (supertype instanceof AttributeType) {
+            } else if (supertype.isAttributeType()) {
                 ValueType valueType;
                 if (var.valueType().isPresent()) valueType = ValueType.of(var.valueType().get().valueType());
                 else if (!supertype.isRoot()) valueType = supertype.asAttributeType().getValueType();

@@ -309,7 +309,7 @@ public class SchemaGraph implements Graph {
         } finally {
             singleLabelLocks.get(scopedLabel).writeLock().unlock();
             multiLabelLock.readLock().unlock();
-            rules().conclusions().isOutdated(true);
+            rules().conclusions().outdated(true);
         }
     }
 
@@ -533,7 +533,7 @@ public class SchemaGraph implements Graph {
                 return outdated;
             }
 
-            public void isOutdated(boolean isOutdated) {
+            public void outdated(boolean isOutdated) {
                 this.outdated = isOutdated;
             }
 

@@ -33,6 +33,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
+
 public class ProducerIterator<T> extends AbstractFunctionalIterator<T> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProducerIterator.class);
@@ -122,10 +124,11 @@ public class ProducerIterator<T> extends AbstractFunctionalIterator<T> {
         @Nullable
         private final T value;
 
-        private Result(T value) {
+        private Result(@Nullable T value) {
             this.value = value;
         }
 
+        @Nullable
         private T value() {
             return value;
         }
@@ -166,7 +169,7 @@ public class ProducerIterator<T> extends AbstractFunctionalIterator<T> {
             try {
                 blockingQueue.put(Either.first(new Result<>(item)));
             } catch (InterruptedException e) {
-                throw GraknException.of(e);
+                throw GraknException.of(UNEXPECTED_INTERRUPTION);
             }
         }
 
@@ -184,7 +187,7 @@ public class ProducerIterator<T> extends AbstractFunctionalIterator<T> {
                 else if (producers.isEmpty()) blockingQueue.put(Either.second(Done.success()));
                 else mayProduce();
             } catch (InterruptedException e) {
-                throw GraknException.of(e);
+                throw GraknException.of(UNEXPECTED_INTERRUPTION);
             }
         }
 
@@ -192,7 +195,7 @@ public class ProducerIterator<T> extends AbstractFunctionalIterator<T> {
             try {
                 return blockingQueue.take();
             } catch (InterruptedException e) {
-                throw GraknException.of(e);
+                throw GraknException.of(UNEXPECTED_INTERRUPTION);
             }
         }
 

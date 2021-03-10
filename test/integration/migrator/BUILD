@@ -25,12 +25,14 @@ host_compatible_java_test(
     native_libraries_deps = [
         "//server:server",
         "//rocks:rocks",
+        "//migrator:migrator",
         "//:grakn",
     ],
     deps = [
         # Internal dependencies
         "//test/integration/util:util",
         "//common:common",
+        "//server:version",
 
         # External dependencies from Grakn Labs
         "@graknlabs_graql//java:graql",

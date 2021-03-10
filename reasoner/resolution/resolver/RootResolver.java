@@ -17,9 +17,10 @@
 
 package grakn.core.reasoner.resolution.resolver;
 
+import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.ConceptManager;
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.LogicManager;
+import grakn.core.logic.resolvable.Concludable;
 import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
@@ -31,8 +32,6 @@ import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -43,24 +42,38 @@ public interface RootResolver {
 
     void submitFail(int iteration);
 
-    class Conjunction extends ConjunctionResolver<Conjunction, Conjunction.RequestState> implements RootResolver {
+    class Conjunction extends ConjunctionResolver<Conjunction> implements RootResolver {
 
         private static final Logger LOG = LoggerFactory.getLogger(Conjunction.class);
 
+        private final grakn.core.pattern.Conjunction conjunction;
         private final Consumer<Top> onAnswer;
         private final Consumer<Integer> onFail;
-        private Consumer<Throwable> onException;
+        private final Consumer<Throwable> onException;
 
         public Conjunction(Driver<Conjunction> driver, grakn.core.pattern.Conjunction conjunction,
                            Consumer<Top> onAnswer, Consumer<Integer> onFail, Consumer<Throwable> onException,
                            Driver<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
                            TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
                            Planner planner, boolean resolutionTracing) {
-            super(driver, Conjunction.class.getSimpleName() + "(pattern:" + conjunction + ")", conjunction,
+            super(driver, Conjunction.class.getSimpleName() + "(pattern:" + conjunction + ")",
                   resolutionRecorder, registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
+            this.conjunction = conjunction;
             this.onAnswer = onAnswer;
             this.onFail = onFail;
             this.onException = onException;
+        }
+
+        @Override
+        public grakn.core.pattern.Conjunction conjunction() {
+            return conjunction;
+        }
+
+        @Override
+        Set<Concludable> concludablesTriggeringRules() {
+            return Iterators.iterate(Concludable.create(conjunction))
+                    .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext())
+                    .toSet();
         }
 
         @Override
@@ -120,43 +133,7 @@ public interface RootResolver {
             return new RequestState(iteration, requestStatePrior.produced());
         }
 
-        @Override
-        boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
-            RequestState requestState = requestStates.get(fromUpstream);
-            if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
-                requestState.recordProduced(upstreamAnswer.conceptMap());
-                answerToUpstream(upstreamAnswer, fromUpstream, iteration);
-                return true;
-            } else {
-                return false;
-            }
-        }
 
-        static class RequestState extends CompoundResolver.RequestState {
-
-            private final Set<ConceptMap> produced;
-
-            public RequestState(int iteration) {
-                this(iteration, new HashSet<>());
-            }
-
-            public RequestState(int iteration, Set<ConceptMap> produced) {
-                super(iteration);
-                this.produced = produced;
-            }
-
-            public void recordProduced(ConceptMap conceptMap) {
-                produced.add(conceptMap);
-            }
-
-            public boolean hasProduced(ConceptMap conceptMap) {
-                return produced.contains(conceptMap);
-            }
-
-            public Set<ConceptMap> produced() {
-                return produced;
-            }
-        }
     }
 
     class Disjunction extends DisjunctionResolver<Disjunction> implements RootResolver {

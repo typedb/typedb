@@ -22,7 +22,11 @@ import com.google.protobuf.Parser;
 import grakn.core.Grakn;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options.Database;
+import grakn.core.migrator.Exporter;
+import grakn.core.migrator.Importer;
+import grakn.core.migrator.SchemaExporter;
 import grakn.core.rocks.RocksGrakn;
+import grakn.core.server.Version;
 import grakn.core.server.migrator.proto.DataProto;
 import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
@@ -58,7 +62,7 @@ public class MigratorTest {
             grakn.databases().create(database);
             String savedSchema = new String(Files.readAllBytes(schemaPath), UTF_8);
             runSchema(grakn, savedSchema);
-            String exportedSchema = new Schema(grakn, database).getSchema();
+            String exportedSchema = new SchemaExporter(grakn, database).getSchema();
             assertEquals(trimSchema(savedSchema), trimSchema(exportedSchema));
         }
     }
@@ -70,9 +74,9 @@ public class MigratorTest {
             grakn.databases().create(database);
             String schema = new String(Files.readAllBytes(schemaPath), UTF_8);
             runSchema(grakn, schema);
-            Importer importer = new Importer(grakn, database, dataPath, new HashMap<>());
+            Importer importer = new Importer(grakn, database, dataPath, new HashMap<>(), Version.VERSION);
             importer.run();
-            Exporter exporter = new Exporter(grakn, database, exportDataPath);
+            Exporter exporter = new Exporter(grakn, database, exportDataPath, Version.VERSION);
             exporter.run();
             assertEquals(getChecksums(dataPath), getChecksums(exportDataPath));
         }

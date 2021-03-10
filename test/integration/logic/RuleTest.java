@@ -41,6 +41,8 @@ import grakn.core.rocks.RocksTransaction;
 import grakn.core.test.integration.util.Util;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.Graql;
+import graql.lang.pattern.Pattern;
+import graql.lang.pattern.variable.ThingVariable;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -54,7 +56,9 @@ import java.util.stream.Collectors;
 import static grakn.common.collection.Collections.map;
 import static grakn.common.collection.Collections.pair;
 import static grakn.common.collection.Collections.set;
-import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CANNOT_BE_SATISFIED;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.CONTRADICTORY_RULE_CYCLE;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_CANNOT_BE_SATISFIED;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CANNOT_BE_SATISFIED;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.test.Util.assertNotThrows;
 import static grakn.core.common.test.Util.assertThrows;
@@ -643,7 +647,7 @@ public class RuleTest {
     }
 
     @Test
-    public void rule_that_cannot_be_satisfied_throws_an_error() throws IOException {
+    public void rule_then_that_cannot_be_satisfied_throws_an_error() throws IOException {
         Util.resetDirectory(dataDir);
 
         try (RocksGrakn grakn = RocksGrakn.open(options)) {
@@ -657,11 +661,38 @@ public class RuleTest {
                     final AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
                     person.setOwns(name);
 
-                    assertThrowsWithMessage(() -> txn.logic().putRule(
+                    ThingVariable<?> then = Graql.parseVariable("$x has name 'fido'").asThing();
+                    assertThrowsGraknException(() -> txn.logic().putRule(
                             "dogs-are-named-fido",
                             Graql.parsePattern("{$x isa dog;}").asConjunction(),
-                            Graql.parseVariable("$x has name 'fido'").asThing()),
-                                            GraknException.of(RULE_CANNOT_BE_SATISFIED, "dogs-are-named-fido", "$x").getMessage());
+                            then
+                    ), RULE_THEN_CANNOT_BE_SATISFIED.code());
+                }
+            }
+        }
+    }
+
+    @Test
+    public void rule_when_that_cannot_be_satisfied_throws_an_error() throws IOException {
+        Util.resetDirectory(dataDir);
+
+        try (RocksGrakn grakn = RocksGrakn.open(options)) {
+            grakn.databases().create(database);
+            try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    final ConceptManager conceptMgr = txn.concepts();
+
+                    final EntityType person = conceptMgr.putEntityType("person");
+                    final EntityType dog = conceptMgr.putEntityType("dog");
+                    final AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
+                    person.setOwns(name);
+
+                    // a when using an illegal comparator
+                    assertThrowsGraknException(() -> txn.logic().putRule(
+                            "two-unique-dogs-exist-called-fido",
+                            Graql.parsePattern("{$x isa dog; $y isa dog; $x != $y;}").asConjunction(),
+                            Graql.parseVariable("$x has name 'fido'").asThing()
+                    ), RULE_WHEN_CANNOT_BE_SATISFIED.code());
                 }
             }
         }
@@ -689,6 +720,37 @@ public class RuleTest {
                             "animals-are-named-fido",
                             Graql.parsePattern("{$x isa animal;}").asConjunction(),
                             Graql.parseVariable("$x has name 'fido'").asThing()));
+                }
+            }
+        }
+    }
+
+    @Test
+    public void rule_with_negated_cycle_throws_an_error() throws IOException {
+        Util.resetDirectory(dataDir);
+
+        try (RocksGrakn grakn = RocksGrakn.open(options)) {
+            grakn.databases().create(database);
+            try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+
+                    txn.query().define(Graql.parseQuery("define " +
+                                                                "person sub entity, owns is-starting-school, owns grade;" +
+                                                                "is-starting-school sub attribute, value boolean;" +
+                                                                "grade sub attribute, value long;" +
+                                                                "rule person-starting-school: when {" +
+                                                                "  $x isa person;" +
+                                                                "  not { $x has is-starting-school true; };" +
+                                                                "} then {" +
+                                                                "  $x has grade 1;" +
+                                                                "};" +
+                                                                "" +
+                                                                "rule person-with-grade-is-in-school: when {" +
+                                                                "  $x isa person, has grade 1;" +
+                                                                "} then {" +
+                                                                "  $x has is-starting-school true;" +
+                                                                "};").asDefine());
+                    assertThrowsGraknException(txn::commit, CONTRADICTORY_RULE_CYCLE.code());
                 }
             }
         }

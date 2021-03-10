@@ -57,6 +57,7 @@ public abstract class RocksStorage implements Storage {
 
     protected final ConcurrentSet<RocksIterator<?>> iterators;
     protected final Transaction storageTransaction;
+    protected final ReadWriteLock deleteCloseSchemaWriteLock;
     protected final ReadOptions readOptions;
     protected final boolean isReadOnly;
 
@@ -75,6 +76,7 @@ public abstract class RocksStorage implements Storage {
         storageTransaction = rocksDB.beginTransaction(writeOptions, transactionOptions);
         snapshot = storageTransaction.getSnapshot();
         readOptions = new ReadOptions().setSnapshot(snapshot);
+        deleteCloseSchemaWriteLock = new StampedLock().asReadWriteLock();
         isOpen = new AtomicBoolean(true);
     }
 
@@ -152,14 +154,19 @@ public abstract class RocksStorage implements Storage {
 
     @Override
     public void close() {
-        if (isOpen.compareAndSet(true, false)) {
-            iterators.parallelStream().forEach(RocksIterator::close);
-            recycled.forEach(AbstractImmutableNativeReference::close);
-            snapshot.close();
-            storageTransaction.close();
-            transactionOptions.close();
-            readOptions.close();
-            writeOptions.close();
+        try {
+            deleteCloseSchemaWriteLock.writeLock().lock();
+            if (isOpen.compareAndSet(true, false)) {
+                iterators.parallelStream().forEach(RocksIterator::close);
+                recycled.forEach(AbstractImmutableNativeReference::close);
+                snapshot.close();
+                storageTransaction.close();
+                transactionOptions.close();
+                readOptions.close();
+                writeOptions.close();
+            }
+        } finally {
+            deleteCloseSchemaWriteLock.writeLock().unlock();
         }
     }
 
@@ -171,18 +178,19 @@ public abstract class RocksStorage implements Storage {
 
         @Override
         public byte[] get(byte[] key) {
-            assert isOpen();
             try {
+                deleteCloseSchemaWriteLock.readLock().lock();
+                if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
                 return storageTransaction.get(readOptions, key);
             } catch (RocksDBException e) {
                 throw exception(e);
+            } finally {
+                deleteCloseSchemaWriteLock.readLock().unlock();
             }
         }
 
         @Override
         public <G> FunctionalIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
-//            assert isOpen(); // TODO: verify why this was an assertion rather than an exception
-            if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
             RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
             iterators.add(iterator);
             if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED); //guard against close() race conditions
@@ -192,25 +200,23 @@ public abstract class RocksStorage implements Storage {
 
     static abstract class TransactionBounded extends RocksStorage {
 
-        protected final ReadWriteLock readWriteLock;
         protected final RocksTransaction transaction;
 
         TransactionBounded(OptimisticTransactionDB rocksDB, RocksTransaction transaction) {
             super(rocksDB, transaction.type().isRead());
             this.transaction = transaction;
-            readWriteLock = new StampedLock().asReadWriteLock();
         }
 
         @Override
         public byte[] get(byte[] key) {
-            if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
             try {
-                if (!isReadOnly) readWriteLock.readLock().lock();
+                deleteCloseSchemaWriteLock.readLock().lock();
+                if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
                 return storageTransaction.get(readOptions, key);
             } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
-                if (!isReadOnly) readWriteLock.readLock().unlock();
+                deleteCloseSchemaWriteLock.readLock().unlock();
             }
         }
 
@@ -222,33 +228,38 @@ public abstract class RocksStorage implements Storage {
             assert upperBound[upperBound.length - 1] != Byte.MIN_VALUE;
 
             try (org.rocksdb.RocksIterator iterator = getInternalRocksIterator()) {
+                deleteCloseSchemaWriteLock.readLock().lock();
+                if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
                 iterator.seekForPrev(upperBound);
                 if (bytesHavePrefix(iterator.key(), prefix)) return iterator.key();
                 else return null;
+            } finally {
+                deleteCloseSchemaWriteLock.readLock().unlock();
             }
         }
 
         @Override
         public void delete(byte[] key) {
-            if (!isOpen() || (!transaction.isOpen() && transaction.isData())) throw GraknException.of(RESOURCE_CLOSED);
             if (isReadOnly) {
                 if (transaction.isSchema()) throw exception(TRANSACTION_SCHEMA_READ_VIOLATION);
                 else if (transaction.isData()) throw exception(TRANSACTION_DATA_READ_VIOLATION);
                 else throw exception(ILLEGAL_STATE);
             }
             try {
-                readWriteLock.writeLock().lock();
+                deleteCloseSchemaWriteLock.writeLock().lock();
+                if (!isOpen() || (!transaction.isOpen() && transaction.isData())) {
+                    throw GraknException.of(RESOURCE_CLOSED);
+                }
                 storageTransaction.delete(key);
             } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
-                readWriteLock.writeLock().unlock();
+                deleteCloseSchemaWriteLock.writeLock().unlock();
             }
         }
 
         @Override
         public <G> FunctionalIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
-            if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
             RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
             iterators.add(iterator);
             if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED); //guard against close() race conditions
@@ -277,6 +288,7 @@ public abstract class RocksStorage implements Storage {
         public void rollback() throws RocksDBException {
             storageTransaction.rollback();
         }
+
     }
 
     public static class Schema extends TransactionBounded implements Storage.Schema {
@@ -296,26 +308,36 @@ public abstract class RocksStorage implements Storage {
         @Override
         public void put(byte[] key, byte[] value) {
             assert isOpen() && !isReadOnly;
+            boolean obtainedWriteLock = false;
             try {
-                if (transaction.isOpen()) readWriteLock.writeLock().lock();
+                if (transaction.isOpen()) {
+                    deleteCloseSchemaWriteLock.writeLock().lock();
+                    obtainedWriteLock = true;
+                }
+                if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
                 storageTransaction.put(key, value);
             } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
-                if (transaction.isOpen()) readWriteLock.writeLock().unlock();
+                if (obtainedWriteLock) deleteCloseSchemaWriteLock.writeLock().unlock();
             }
         }
 
         @Override
         public void putUntracked(byte[] key, byte[] value) {
             assert isOpen() && !isReadOnly;
+            boolean obtainedWriteLock = false;
             try {
-                if (transaction.isOpen()) readWriteLock.writeLock().lock();
+                if (transaction.isOpen()) {
+                    deleteCloseSchemaWriteLock.writeLock().lock();
+                    obtainedWriteLock = true;
+                }
+                if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
                 storageTransaction.putUntracked(key, value);
             } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
-                if (transaction.isOpen()) readWriteLock.writeLock().unlock();
+                if (obtainedWriteLock) deleteCloseSchemaWriteLock.writeLock().unlock();
             }
         }
     }
@@ -339,9 +361,13 @@ public abstract class RocksStorage implements Storage {
         public void put(byte[] key, byte[] value) {
             assert isOpen() && !isReadOnly;
             try {
+                deleteCloseSchemaWriteLock.readLock().lock();
+                if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
                 storageTransaction.put(key, value);
             } catch (RocksDBException e) {
                 throw exception(e);
+            } finally {
+                deleteCloseSchemaWriteLock.readLock().unlock();
             }
         }
 
@@ -349,9 +375,13 @@ public abstract class RocksStorage implements Storage {
         public void putUntracked(byte[] key, byte[] value) {
             assert isOpen() && !isReadOnly;
             try {
+                deleteCloseSchemaWriteLock.readLock().lock();
+                if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
                 storageTransaction.putUntracked(key, value);
             } catch (RocksDBException e) {
                 throw exception(e);
+            } finally {
+                deleteCloseSchemaWriteLock.readLock().unlock();
             }
         }
 
@@ -359,9 +389,13 @@ public abstract class RocksStorage implements Storage {
         public void mergeUntracked(byte[] key, byte[] value) {
             assert isOpen() && !isReadOnly;
             try {
+                deleteCloseSchemaWriteLock.readLock().lock();
+                if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
                 storageTransaction.mergeUntracked(key, value);
             } catch (RocksDBException e) {
                 throw exception(e);
+            } finally {
+                deleteCloseSchemaWriteLock.readLock().unlock();
             }
         }
     }

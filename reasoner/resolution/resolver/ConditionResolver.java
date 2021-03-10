@@ -20,6 +20,8 @@ package grakn.core.reasoner.resolution.resolver;
 import grakn.core.concept.ConceptManager;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
+import grakn.core.logic.resolvable.Concludable;
+import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
@@ -30,20 +32,31 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
+import java.util.Set;
 
 // note: in the future, we may introduce query rewriting here
-public class ConditionResolver extends ConjunctionResolver<ConditionResolver, CompoundResolver.RequestState> {
+public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ConditionResolver.class);
 
-    private final Rule rule;
+    private final Rule.Condition condition;
 
-    public ConditionResolver(Driver<ConditionResolver> driver, Rule rule, Driver<ResolutionRecorder> resolutionRecorder,
+    public ConditionResolver(Driver<ConditionResolver> driver, Rule.Condition condition, Driver<ResolutionRecorder> resolutionRecorder,
                              ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
                              LogicManager logicMgr, Planner planner, boolean resolutionTracing) {
-        super(driver, ConditionResolver.class.getCanonicalName() + "(rule:" + rule.getLabel() + ")", rule.when(),
+        super(driver, ConditionResolver.class.getCanonicalName() + "(rule:" + condition.rule().getLabel() + ")",
               resolutionRecorder, registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
-        this.rule = rule;
+        this.condition = condition;
+    }
+
+    @Override
+    public Conjunction conjunction() {
+        return condition.rule().when();
+    }
+
+    @Override
+    Set<Concludable> concludablesTriggeringRules() {
+        return condition.concludablesTriggeringRules(conceptMgr, logicMgr);
     }
 
     @Override
@@ -61,24 +74,18 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver, Co
     }
 
     @Override
-    boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
-        answerToUpstream(upstreamAnswer, fromUpstream, iteration);
-        return true;
-    }
-
-    @Override
-    RequestState requestStateNew(int iteration) {
+    ConjunctionResolver.RequestState requestStateNew(int iteration) {
         return new RequestState(iteration);
     }
 
     @Override
-    RequestState requestStateForIteration(RequestState requestStatePrior, int iteration) {
+    ConjunctionResolver.RequestState requestStateForIteration(RequestState requestStatePrior, int iteration) {
         return new RequestState(iteration);
     }
 
     @Override
     public String toString() {
-        return name() + ": " + rule.when();
+        return name() + ": " + condition.rule().when();
     }
 
 }

@@ -27,7 +27,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
-import grakn.core.concurrent.actor.ActorExecutorService;
+import grakn.core.concurrent.actor.ActorExecutorGroup;
 import grakn.core.logic.LogicManager;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
@@ -58,7 +58,7 @@ public class ReasonerTest {
 
     private RocksTransaction singleThreadElgTransaction(RocksSession session, Arguments.Transaction.Type transactionType) {
         RocksTransaction transaction = session.transaction(transactionType, new Options.Transaction().infer(true));
-        ActorExecutorService service = new ActorExecutorService(1, new NamedThreadFactory("grakn-core-actor"));
+        ActorExecutorGroup service = new ActorExecutorGroup(1, new NamedThreadFactory("grakn-core-actor"));
         transaction.reasoner().resolverRegistry().setExecutorService(service);
         return transaction;
     }

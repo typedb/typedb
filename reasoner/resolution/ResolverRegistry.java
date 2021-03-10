@@ -21,7 +21,7 @@ package grakn.core.reasoner.resolution;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concurrent.actor.Actor;
-import grakn.core.concurrent.actor.ActorExecutorService;
+import grakn.core.concurrent.actor.ActorExecutorGroup;
 import grakn.core.concurrent.common.ConcurrentSet;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
@@ -76,11 +76,11 @@ public class ResolverRegistry {
     private final TraversalEngine traversalEngine;
     private final Planner planner;
     private final boolean resolutionTracing;
-    private ActorExecutorService executorService;
+    private ActorExecutorGroup executorService;
     private AtomicBoolean terminated;
     private boolean explanations;
 
-    public ResolverRegistry(ActorExecutorService executorService, Actor.Driver<ResolutionRecorder> resolutionRecorder,
+    public ResolverRegistry(ActorExecutorGroup executorService, Actor.Driver<ResolutionRecorder> resolutionRecorder,
                             TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
                             boolean resolutionTracing) {
         this.executorService = executorService;
@@ -147,10 +147,10 @@ public class ResolverRegistry {
                 .collect(Collectors.toSet());
     }
 
-    public Actor.Driver<ConditionResolver> registerCondition(Rule rule) {
-        LOG.debug("Register retrieval for rule condition actor: '{}'", rule);
-        Actor.Driver<ConditionResolver> resolver = ruleConditions.computeIfAbsent(rule, (r) -> Actor.driver(
-                driver -> new ConditionResolver(driver, r, resolutionRecorder, this, traversalEngine,
+    public Actor.Driver<ConditionResolver> registerCondition(Rule.Condition ruleCondition) {
+        LOG.debug("Register retrieval for rule condition actor: '{}'", ruleCondition);
+        Actor.Driver<ConditionResolver> resolver = ruleConditions.computeIfAbsent(ruleCondition.rule(), (r) -> Actor.driver(
+                driver -> new ConditionResolver(driver, ruleCondition, resolutionRecorder, this, traversalEngine,
                                                 conceptMgr, logicMgr, planner, resolutionTracing), executorService
         ));
         resolvers.add(resolver);
@@ -231,7 +231,7 @@ public class ResolverRegistry {
         return conjunctionResolvable.retrieves().stream().collect(toMap(Function.identity(), Function.identity()));
     }
 
-    public void setExecutorService(ActorExecutorService executorService) {
+    public void setExecutorService(ActorExecutorGroup executorService) {
         this.executorService = executorService;
     }
 

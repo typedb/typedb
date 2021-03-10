@@ -25,6 +25,7 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.concept.thing.Thing;
 import grakn.core.graph.common.Encoding;
 import grakn.core.graph.vertex.TypeVertex;
+import grakn.core.graph.vertex.Vertex;
 import grakn.core.logic.LogicCache;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
@@ -50,6 +51,7 @@ import grakn.core.pattern.variable.Variable;
 import grakn.core.traversal.Traversal;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
+import grakn.core.traversal.common.VertexMap;
 import graql.lang.common.GraqlArg.ValueType;
 import graql.lang.pattern.variable.Reference;
 
@@ -77,7 +79,7 @@ public class TypeResolver {
     private final TraversalEngine traversalEng;
     private final LogicCache logicCache;
 
-    public TypeResolver(ConceptManager conceptMgr, TraversalEngine traversalEng, LogicCache logicCache) {
+    public TypeResolver(LogicCache logicCache, TraversalEngine traversalEng, ConceptManager conceptMgr) {
         this.conceptMgr = conceptMgr;
         this.traversalEng = traversalEng;
         this.logicCache = logicCache;
@@ -91,7 +93,7 @@ public class TypeResolver {
             Map<Identifier.Variable.Name, Label> mapping = new HashMap<>();
             vertexMap.forEach((id, vertex) -> {
                 assert vertex.isType();
-                traversalBuilder.getVariable(id).map(Variable::id).filter(Identifier::isName)
+                traversalBuilder.getOriginalVariable(id).map(Variable::id).filter(Identifier::isName)
                         .ifPresent(originalRef -> mapping.put(originalRef.asName(), vertex.asType().properLabel()));
             });
             return mapping;
@@ -143,10 +145,10 @@ public class TypeResolver {
         Traversal resolverTraversal = new Traversal();
         TraversalBuilder traversalBuilder = builder(resolverTraversal, conjunction, scopingConjunctions, insertable);
         resolverTraversal.filter(traversalBuilder.retrievedResolvers());
-        Map<Identifier.Variable.Retrievable, Set<Label>> resolvedLabels = executeResolverTraversals(traversalBuilder);
+        Map<Identifier.Variable.Retrievable, Set<Label>> resolvedLabels = executeTypeResolvers(traversalBuilder);
         if (resolvedLabels.isEmpty()) conjunction.setCoherent(false);
         else {
-            resolvedLabels.forEach((id, labels) -> traversalBuilder.getVariable(id).ifPresent(variable -> {
+            resolvedLabels.forEach((id, labels) -> traversalBuilder.getOriginalVariable(id).ifPresent(variable -> {
                 assert variable.resolvedTypes().isEmpty() || variable.resolvedTypes().containsAll(labels);
                 variable.setResolvedTypes(labels);
             }));
@@ -179,21 +181,35 @@ public class TypeResolver {
         return currentBuilder;
     }
 
-    private Map<Identifier.Variable.Retrievable, Set<Label>> executeResolverTraversals(TraversalBuilder traversalBuilder) {
+    private Map<Identifier.Variable.Retrievable, Set<Label>> executeTypeResolvers(TraversalBuilder traversalBuilder) {
         return logicCache.resolver().get(traversalBuilder.traversal(), traversal -> {
             Map<Identifier.Variable.Retrievable, Set<Label>> mapping = new HashMap<>();
-            traversalEng.iterator(traversal, true).forEachRemaining(
-                    result -> result.forEach((id, vertex) -> {
-                        mapping.putIfAbsent(id, new HashSet<>());
-                        assert vertex.isType();
-                        // TODO: This filter should not be needed if we enforce traversal only to return non-abstract
-                        if (!traversalBuilder.getVariable(id).isPresent()) return;
-                        if (!(vertex.asType().isAbstract() && traversalBuilder.getVariable(id).get().isThing()))
-                            mapping.get(id).add(vertex.asType().properLabel());
-                    })
-            );
+            traversalEng.iterator(traversal, true)
+                    // TODO: This filter should not be needed if we enforce traversal only to return non-abstract
+                    .filter(result -> !containsAbstractThing(result, traversalBuilder))
+                    .forEachRemaining(
+                            result -> {
+                                assert iterate(result.map().values()).allMatch(Vertex::isType);
+                                result.forEach((id, vertex) -> {
+                                    Optional<Variable> originalVar = traversalBuilder.getOriginalVariable(id);
+                                    if (originalVar.isPresent()) {
+                                        Set<Label> labels = mapping.computeIfAbsent(id, (i) -> new HashSet<>());
+                                        labels.add(vertex.asType().properLabel());
+                                    }
+                                });
+                            }
+                    );
             return mapping;
         });
+    }
+
+    private boolean containsAbstractThing(VertexMap resolvedTypes, TraversalBuilder traversalBuilder) {
+        for (Map.Entry<Identifier.Variable.Retrievable, Vertex<?, ?>> entry : resolvedTypes.map().entrySet()) {
+            Identifier.Variable.Retrievable id = entry.getKey();
+            Optional<Variable> var = traversalBuilder.getOriginalVariable(id);
+            if (entry.getValue().asType().isAbstract() && var.isPresent() && var.get().isThing()) return true;
+        }
+        return false;
     }
 
     private static class TraversalBuilder {
@@ -201,9 +217,9 @@ public class TypeResolver {
         private static final Identifier.Variable ROOT_ATTRIBUTE_ID = Identifier.Variable.of(Reference.label(ATTRIBUTE.toString()));
         private static final Label ROOT_ATTRIBUTE_LABEL = Label.of(ATTRIBUTE.toString());
         private static final Label ROOT_THING_LABEL = Label.of(THING.toString());
-        private final Map<Identifier.Variable, Variable> resolvers;
         private final Map<Identifier.Variable, Set<ValueType>> resolverValueTypes;
         private final Map<Identifier.Variable, TypeVariable> originalToResolver;
+        private final Map<Identifier.Variable, Variable> resolverToOriginal;
         private final ConceptManager conceptMgr;
         private final Conjunction conjunction;
         private final Traversal traversal;
@@ -216,7 +232,7 @@ public class TypeResolver {
             this.conceptMgr = conceptMgr;
             this.conjunction = conjunction;
             this.traversal = initialTraversal;
-            this.resolvers = new HashMap<>();
+            this.resolverToOriginal = new HashMap<>();
             this.originalToResolver = new HashMap<>();
             this.resolverValueTypes = new HashMap<>();
             this.sysVarCounter = initialAnonymousVarCounter;
@@ -226,7 +242,7 @@ public class TypeResolver {
         }
 
         public Set<Identifier.Variable.Retrievable> retrievedResolvers() {
-            return iterate(resolvers.keySet()).filter(Identifier::isRetrievable).map(Identifier.Variable::asRetrievable).toSet();
+            return iterate(resolverToOriginal.keySet()).filter(Identifier::isRetrievable).map(Identifier.Variable::asRetrievable).toSet();
         }
 
         public int sysVarCounter() {
@@ -237,8 +253,8 @@ public class TypeResolver {
             return traversal;
         }
 
-        Optional<Variable> getVariable(Identifier.Variable id) {
-            return Optional.ofNullable(resolvers.get(id));
+        Optional<Variable> getOriginalVariable(Identifier.Variable id) {
+            return Optional.ofNullable(resolverToOriginal.get(id));
         }
 
         private void register(Variable variable) {
@@ -257,7 +273,7 @@ public class TypeResolver {
                 resolver = var;
             }
             originalToResolver.put(var.id(), resolver);
-            resolvers.putIfAbsent(resolver.id(), var);
+            resolverToOriginal.putIfAbsent(resolver.id(), var);
             if (!var.resolvedTypes().isEmpty()) traversal.labels(resolver.id(), var.resolvedTypes());
 
             for (TypeConstraint constraint : var.constraints()) {
@@ -312,7 +328,7 @@ public class TypeResolver {
 
             TypeVariable resolver = new TypeVariable(var.id());
             originalToResolver.put(var.id(), resolver);
-            resolvers.putIfAbsent(resolver.id(), var);
+            resolverToOriginal.putIfAbsent(resolver.id(), var);
             resolverValueTypes.putIfAbsent(resolver.id(), set());
 
             // Note: order is important! convertValue assumes that any other Variable encountered from that edge will
@@ -398,8 +414,8 @@ public class TypeResolver {
         }
 
         private void registerSubAttribute(Variable resolver) {
-            assert resolvers.get(resolver.id()).isThing();
-            Optional<IsaConstraint> isa = resolvers.get(resolver.id()).asThing().isa();
+            assert resolverToOriginal.get(resolver.id()).isThing();
+            Optional<IsaConstraint> isa = resolverToOriginal.get(resolver.id()).asThing().isa();
             if (!isa.isPresent()) {
                 registerRootAttribute();
                 traversal.sub(resolver.id(), ROOT_ATTRIBUTE_ID, true);
