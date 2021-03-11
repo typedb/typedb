@@ -24,7 +24,7 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.ThingType;
-import grakn.core.server.transaction.TransactionService;
+import grakn.core.server.TransactionService;
 import grakn.protocol.ConceptProto;
 import grakn.protocol.TransactionProto;
 import grakn.protocol.TransactionProto.Transaction;

@@ -15,16 +15,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server;
+package grakn.core.migrator;
 
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
-import grakn.core.migrator.Exporter;
-import grakn.core.migrator.Importer;
-import grakn.core.migrator.Migrator;
-import grakn.core.migrator.SchemaExporter;
-import grakn.core.server.migrator.proto.MigratorGrpc;
-import grakn.core.server.migrator.proto.MigratorProto;
+import grakn.core.migrator.proto.MigratorGrpc;
+import grakn.core.migrator.proto.MigratorProto;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,27 +32,28 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
-import static grakn.core.server.common.ResponseBuilder.exception;
 
 public class MigratorService extends MigratorGrpc.MigratorImplBase {
 
     private static final Logger LOG = LoggerFactory.getLogger(MigratorService.class);
     private final Grakn grakn;
+    private final String version;
 
-    public MigratorService(Grakn grakn) {
+    public MigratorService(Grakn grakn, String version) {
         this.grakn = grakn;
+        this.version = version;
     }
 
     @Override
     public void exportData(MigratorProto.ExportData.Req request, StreamObserver<MigratorProto.Job.Res> responseObserver) {
-        Exporter exporter = new Exporter(grakn, request.getDatabase(), Paths.get(request.getFilename()), Version.VERSION);
+        Exporter exporter = new Exporter(grakn, request.getDatabase(), Paths.get(request.getFilename()), version);
         runMigrator(exporter, responseObserver);
     }
 
     @Override
     public void importData(MigratorProto.ImportData.Req request, StreamObserver<MigratorProto.Job.Res> responseObserver) {
         Importer importer = new Importer(grakn, request.getDatabase(), Paths.get(request.getFilename()),
-                                         request.getRemapLabelsMap(), Version.VERSION);
+                                         request.getRemapLabelsMap(), version);
         runMigrator(importer, responseObserver);
     }
 
@@ -89,6 +88,14 @@ public class MigratorService extends MigratorGrpc.MigratorImplBase {
         } catch (Throwable e) {
             LOG.error(e.getMessage(), e);
             responseObserver.onError(exception(e));
+        }
+    }
+
+    public static StatusRuntimeException exception(Throwable e) {
+        if (e instanceof StatusRuntimeException) {
+            return (StatusRuntimeException) e;
+        } else {
+            return Status.INTERNAL.withDescription(e.getMessage() + " Please check server logs for the stack trace.").asRuntimeException();
         }
     }
 }

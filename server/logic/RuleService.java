@@ -20,7 +20,7 @@ package grakn.core.server.logic;
 import grakn.core.common.exception.GraknException;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
-import grakn.core.server.transaction.TransactionService;
+import grakn.core.server.TransactionService;
 import grakn.protocol.LogicProto;
 import grakn.protocol.TransactionProto;
 import grakn.protocol.TransactionProto.Transaction;

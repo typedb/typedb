@@ -18,7 +18,7 @@
 
 package grakn.core.migrator;
 
-import grakn.core.server.migrator.proto.MigratorProto;
+import grakn.core.migrator.proto.MigratorProto;
 
 public interface Migrator {
 

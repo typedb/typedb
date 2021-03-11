@@ -25,24 +25,22 @@ import grakn.core.concept.answer.ConceptMapGroup;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.NumericGroup;
 import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Entity;
-import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.RoleType;
-import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.Type;
 import grakn.core.logic.Rule;
+import grakn.core.server.SessionService;
 import grakn.protocol.AnswerProto;
 import grakn.protocol.ConceptProto;
+import grakn.protocol.DatabaseProto;
 import grakn.protocol.LogicProto;
+import grakn.protocol.SessionProto;
 import grakn.protocol.TransactionProto;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 
 import java.time.ZoneOffset;
+import java.util.List;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
@@ -54,19 +52,70 @@ public class ResponseBuilder {
         if (e instanceof StatusRuntimeException) {
             return (StatusRuntimeException) e;
         } else {
-            return exception(Status.INTERNAL, e.getMessage());
+            return Status.INTERNAL.withDescription(
+                    e.getMessage() + " Please check server logs for the stack trace."
+            ).asRuntimeException();
         }
     }
 
-    private static StatusRuntimeException exception(Status status, String message) {
-        return status.withDescription(message + " Please check server logs for the stack trace.").asRuntimeException();
+    public static class Database {
+
+        public static DatabaseProto.Database.Contains.Res contains(boolean contains) {
+            return DatabaseProto.Database.Contains.Res.newBuilder().setContains(contains).build();
+        }
+
+        public static DatabaseProto.Database.Create.Res create() {
+            return DatabaseProto.Database.Create.Res.getDefaultInstance();
+        }
+
+        public static DatabaseProto.Database.All.Res all(List<String> names) {
+            return DatabaseProto.Database.All.Res.newBuilder().addAllNames(names).build();
+        }
+
+        public static DatabaseProto.Database.Delete.Res delete() {
+            return DatabaseProto.Database.Delete.Res.getDefaultInstance();
+        }
+    }
+
+    public static class Session {
+
+        public static SessionProto.Session.Open.Res open(SessionService sessionSrv, int durationMillis) {
+            return SessionProto.Session.Open.Res.newBuilder().setSessionId(sessionSrv.UUIDAsByteString())
+                    .setProcessingTimeMillis(durationMillis).build();
+        }
+
+        public static SessionProto.Session.Pulse.Res pulse(boolean isAlive) {
+            return SessionProto.Session.Pulse.Res.newBuilder().setAlive(isAlive).build();
+        }
+
+        public static SessionProto.Session.Close.Res close() {
+            return SessionProto.Session.Close.Res.newBuilder().build();
+        }
     }
 
     public static class Transaction {
 
-        public static TransactionProto.Transaction.Res iterate(String id, boolean hasNext) {
-            return TransactionProto.Transaction.Res.newBuilder().setId(id).setIterateRes(
+        public static TransactionProto.Transaction.Res open(String requestID) {
+            return TransactionProto.Transaction.Res.newBuilder().setId(requestID).setOpenRes(
+                    TransactionProto.Transaction.Open.Res.getDefaultInstance()
+            ).build();
+        }
+
+        public static TransactionProto.Transaction.Res iterate(String requestID, boolean hasNext) {
+            return TransactionProto.Transaction.Res.newBuilder().setId(requestID).setIterateRes(
                     TransactionProto.Transaction.Iterate.Res.newBuilder().setHasNext(hasNext)
+            ).build();
+        }
+
+        public static TransactionProto.Transaction.Res commit(String requestID) {
+            return TransactionProto.Transaction.Res.newBuilder().setId(requestID).setCommitRes(
+                    TransactionProto.Transaction.Commit.Res.getDefaultInstance()
+            ).build();
+        }
+
+        public static TransactionProto.Transaction.Res rollback(String requestID) {
+            return TransactionProto.Transaction.Res.newBuilder().setId(requestID).setRollbackRes(
+                    TransactionProto.Transaction.Rollback.Res.getDefaultInstance()
             ).build();
         }
     }

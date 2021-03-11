@@ -15,36 +15,37 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.session;
+package grakn.core.server;
 
 import com.google.protobuf.ByteString;
+import grakn.common.collection.ConcurrentSet;
 import grakn.core.Grakn;
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Options;
-import grakn.core.server.GraknService;
-import grakn.core.server.transaction.TransactionService;
-import grakn.core.server.transaction.TransactionStream;
-import grakn.protocol.TransactionProto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.StampedLock;
 
 import static com.google.protobuf.ByteString.copyFrom;
 import static grakn.core.common.collection.Bytes.uuidToBytes;
+import static grakn.core.common.exception.ErrorMessage.Session.SESSION_CLOSED;
 import static grakn.core.concurrent.common.Executors.scheduled;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class SessionService {
+public class SessionService implements AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(SessionService.class);
 
-    private final ConcurrentHashMap<Integer, TransactionService> transactionServices;
+    private final ConcurrentSet<TransactionService> transactionServices;
     private final GraknService graknSrv;
     private final Options.Session options;
     private final Grakn.Session session;
+    private final ReadWriteLock accessLock;
     private final AtomicBoolean isOpen;
     private final long idleTimeoutMillis;
     private ScheduledFuture<?> idleTimeoutTask;
@@ -53,25 +54,38 @@ public class SessionService {
         this.graknSrv = graknSrv;
         this.session = session;
         this.options = options;
+        this.accessLock = new StampedLock().asReadWriteLock();
         this.isOpen = new AtomicBoolean(true);
-        this.transactionServices = new ConcurrentHashMap<>();
+        this.transactionServices = new ConcurrentSet<>();
         this.idleTimeoutMillis = options.sessionIdleTimeoutMillis();
         setIdleTimeout();
     }
 
-    public TransactionService transaction(TransactionStream transactionStream,
-                                          TransactionProto.Transaction.Open.Req request) {
-        TransactionService transactionSrv = new TransactionService(this, transactionStream, request);
-        transactionServices.put(transactionSrv.hashCode(), transactionSrv);
-        return transactionSrv;
+    void register(TransactionService transactionSrv) {
+        try {
+            accessLock.readLock().lock();
+            if (isOpen.get()) transactionServices.add(transactionSrv);
+            else throw GraknException.of(SESSION_CLOSED);
+        } finally {
+            accessLock.readLock().unlock();
+        }
     }
 
-    public UUID UUID() {
-        return session.uuid();
+    void remove(TransactionService transactionSrv) {
+        try {
+            accessLock.readLock().lock();
+            transactionServices.remove(transactionSrv);
+        } finally {
+            accessLock.readLock().unlock();
+        }
     }
 
     public boolean isOpen() {
         return isOpen.get();
+    }
+
+    public UUID UUID() {
+        return session.uuid();
     }
 
     public Grakn.Session session() {
@@ -104,26 +118,31 @@ public class SessionService {
         setIdleTimeout();
     }
 
-    public void remove(TransactionService transactionSrv) {
-        transactionServices.remove(transactionSrv.hashCode());
-    }
-
+    @Override
     public void close() {
-        if (idleTimeoutTask != null) idleTimeoutTask.cancel(false);
-        if (isOpen.compareAndSet(true, false)) {
-            ConcurrentHashMap<Integer, TransactionService> copy = new ConcurrentHashMap<>(this.transactionServices);
-            copy.values().parallelStream().forEach(TransactionService::close);
-            session.close();
-            graknSrv.remove(this);
+        try {
+            accessLock.writeLock().lock();
+            if (idleTimeoutTask != null) idleTimeoutTask.cancel(false);
+            if (isOpen.compareAndSet(true, false)) {
+                transactionServices.forEach(TransactionService::close);
+                session.close();
+                graknSrv.remove(this);
+            }
+        } finally {
+            accessLock.writeLock().unlock();
         }
     }
 
     public void close(Throwable error) {
-        if (isOpen.compareAndSet(true, false)) {
-            ConcurrentHashMap<Integer, TransactionService> copy = new ConcurrentHashMap<>(this.transactionServices);
-            copy.values().parallelStream().forEach(tr -> tr.close(error));
-            session.close();
-            graknSrv.remove(this);
+        try {
+            accessLock.writeLock().lock();
+            if (isOpen.compareAndSet(true, false)) {
+                transactionServices.forEach(tr -> tr.close(error));
+                session.close();
+                graknSrv.remove(this);
+            }
+        } finally {
+            accessLock.writeLock().unlock();
         }
     }
 }

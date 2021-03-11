@@ -57,8 +57,6 @@ public class Executors {
 
     private Executors(int parallelisation) {
         if (parallelisation <= 0) throw GraknException.of(ILLEGAL_ARGUMENT);
-        // TODO: this is temporarily not used until we enable TransactionExecutor
-        // serviceExecutorService = newFixedThreadPool(serviceThreadCount(parallelisation), threadFactory(GRAKN_CORE_SERVICE_THREAD_NAME));
         serviceExecutorService = new ParallelThreadPoolExecutor(parallelisation, threadFactory(GRAKN_CORE_SERVICE_THREAD_NAME));
         asyncExecutorService1 = newFixedThreadPool(parallelisation, threadFactory(GRAKN_CORE_ASYNC_THREAD_1_NAME));
         asyncExecutorService2 = newFixedThreadPool(parallelisation, threadFactory(GRAKN_CORE_ASYNC_THREAD_2_NAME));
@@ -67,20 +65,6 @@ public class Executors {
         scheduledThreadPool = new ScheduledThreadPoolExecutor(GRAKN_CORE_SCHEDULED_THREAD_SIZE,
                                                               threadFactory(GRAKN_CORE_SCHEDULED_THREAD_NAME));
         scheduledThreadPool.setRemoveOnCancelPolicy(true);
-    }
-
-    // TODO: this is temporarily not used until we enable TransactionExecutor
-    private int serviceThreadCount(int parallelisation) {
-        assert parallelisation > 0;
-        if (parallelisation <= 2) return 1;
-        else if (parallelisation <= 8) return 2;
-        else if (parallelisation <= 16) return 3;
-        else if (parallelisation <= 32) return 4;
-        else if (parallelisation <= 48) return 5;
-        else if (parallelisation <= 64) return 6;
-        else if (parallelisation <= 96) return 7;
-        else if (parallelisation <= 128) return 8;
-        else return 8 + ((parallelisation - 128) / 16);
     }
 
     private NamedThreadFactory threadFactory(String threadNamePrefix) {
