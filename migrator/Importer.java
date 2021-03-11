@@ -31,8 +31,8 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
-import grakn.core.server.migrator.proto.DataProto;
-import grakn.core.server.migrator.proto.MigratorProto;
+import grakn.core.migrator.proto.DataProto;
+import grakn.core.migrator.proto.MigratorProto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,7 +76,7 @@ public class Importer implements Migrator {
     private int txWriteCount = 0;
     private Grakn.Transaction tx;
 
-    public Importer(Grakn grakn, String database, Path filename, Map<String, String> remapLabels, String version) {
+    Importer(Grakn grakn, String database, Path filename, Map<String, String> remapLabels, String version) {
         this.session = grakn.session(database, Arguments.Session.Type.DATA);
         this.filename = filename;
         this.remapLabels = remapLabels;

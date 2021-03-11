@@ -27,8 +27,8 @@ import grakn.core.concept.answer.ConceptMapGroup;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.NumericGroup;
 import grakn.core.query.QueryManager;
+import grakn.core.server.TransactionService;
 import grakn.core.server.common.ResponseBuilder;
-import grakn.core.server.transaction.TransactionService;
 import grakn.protocol.QueryProto;
 import grakn.protocol.TransactionProto;
 import grakn.protocol.TransactionProto.Transaction;
@@ -43,8 +43,8 @@ import graql.lang.query.GraqlUpdate;
 import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
 import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.server.common.RequestReader.setDefaultOptions;
-import static grakn.core.server.common.RequestReader.setQueryOptions;
+import static grakn.core.server.common.RequestReader.applyDefaultOptions;
+import static grakn.core.server.common.RequestReader.applyQueryOptions;
 import static grakn.core.server.common.ResponseBuilder.Answer.numeric;
 
 public class QueryService {
@@ -61,8 +61,8 @@ public class QueryService {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread("query")) {
             QueryProto.Query.Req queryReq = request.getQueryReq();
             Options.Query options = new Options.Query();
-            setDefaultOptions(options, queryReq.getOptions());
-            setQueryOptions(options, queryReq.getOptions());
+            applyDefaultOptions(options, queryReq.getOptions());
+            applyQueryOptions(options, queryReq.getOptions());
             switch (queryReq.getReqCase()) {
                 case DEFINE_REQ:
                     this.define(queryReq.getDefineReq().getQuery(), options, request);
@@ -122,11 +122,11 @@ public class QueryService {
         GraqlMatch query = Graql.parseQuery(queryStr).asMatch();
         Context.Query context = new Context.Query(transactionSrv.context(), options.query(query), query);
         FunctionalIterator<ConceptMap> answers = queryMgr.match(query, context);
-        transactionSrv.respond(
-                request, answers, context,
-                as -> response(request, QueryProto.Query.Res.newBuilder().setMatchRes(
+        transactionSrv.stream(answers, request.getId(), context.options(), as -> response(
+                request, QueryProto.Query.Res.newBuilder().setMatchRes(
                         QueryProto.Query.Match.Res.newBuilder().addAllAnswers(
-                                iterate(as).map(ResponseBuilder.Answer::conceptMap).toList()))));
+                                iterate(as).map(ResponseBuilder.Answer::conceptMap).toList()))
+        ));
     }
 
     private void matchAggregate(String queryStr, Options.Query options, Transaction.Req request) {
@@ -142,33 +142,33 @@ public class QueryService {
         GraqlMatch.Group query = Graql.parseQuery(queryStr).asMatchGroup();
         Context.Query context = new Context.Query(transactionSrv.context(), options.query(query), query);
         FunctionalIterator<ConceptMapGroup> answers = queryMgr.match(query, context);
-        transactionSrv.respond(
-                request, answers, context,
-                as -> response(request, QueryProto.Query.Res.newBuilder().setMatchGroupRes(
+        transactionSrv.stream(answers, request.getId(), context.options(), as -> response(
+                request, QueryProto.Query.Res.newBuilder().setMatchGroupRes(
                         QueryProto.Query.MatchGroup.Res.newBuilder().addAllAnswers(
-                                iterate(as).map(ResponseBuilder.Answer::conceptMapGroup).toList()))));
+                                iterate(as).map(ResponseBuilder.Answer::conceptMapGroup).toList()))
+        ));
     }
 
     private void matchGroupAggregate(String queryStr, Options.Query options, Transaction.Req request) {
         GraqlMatch.Group.Aggregate query = Graql.parseQuery(queryStr).asMatchGroupAggregate();
         Context.Query context = new Context.Query(transactionSrv.context(), options.query(query), query);
         FunctionalIterator<NumericGroup> answers = queryMgr.match(query, context);
-        transactionSrv.respond(
-                request, answers, context,
-                as -> response(request, QueryProto.Query.Res.newBuilder().setMatchGroupAggregateRes(
+        transactionSrv.stream(answers, request.getId(), context.options(), as -> response(
+                request, QueryProto.Query.Res.newBuilder().setMatchGroupAggregateRes(
                         QueryProto.Query.MatchGroupAggregate.Res.newBuilder().addAllAnswers(
-                                iterate(as).map(ResponseBuilder.Answer::numericGroup).toList()))));
+                                iterate(as).map(ResponseBuilder.Answer::numericGroup).toList()))
+        ));
     }
 
     private void insert(String queryStr, Options.Query options, Transaction.Req request) {
         GraqlInsert query = Graql.parseQuery(queryStr).asInsert();
         Context.Query context = new Context.Query(transactionSrv.context(), options.query(query), query);
         FunctionalIterator<ConceptMap> answers = queryMgr.insert(query, context);
-        transactionSrv.respond(
-                request, answers, context,
-                as -> response(request, QueryProto.Query.Res.newBuilder().setInsertRes(
+        transactionSrv.stream(answers, request.getId(), context.options(), as -> response(
+                request, QueryProto.Query.Res.newBuilder().setInsertRes(
                         QueryProto.Query.Insert.Res.newBuilder().addAllAnswers(
-                                iterate(as).map(ResponseBuilder.Answer::conceptMap).toList()))));
+                                iterate(as).map(ResponseBuilder.Answer::conceptMap).toList()))
+        ));
     }
 
     private void delete(String queryStr, Options.Query options, Transaction.Req request) {
@@ -183,10 +183,10 @@ public class QueryService {
         GraqlUpdate query = Graql.parseQuery(queryStr).asUpdate();
         Context.Query context = new Context.Query(transactionSrv.context(), options.query(query), query);
         FunctionalIterator<ConceptMap> answers = queryMgr.update(query, context);
-        transactionSrv.respond(
-                request, answers, context,
-                as -> response(request, QueryProto.Query.Res.newBuilder().setUpdateRes(
+        transactionSrv.stream(answers, request.getId(), context.options(), as -> response(
+                request, QueryProto.Query.Res.newBuilder().setUpdateRes(
                         QueryProto.Query.Update.Res.newBuilder().addAllAnswers(
-                                iterate(as).map(ResponseBuilder.Answer::conceptMap).toList()))));
+                                iterate(as).map(ResponseBuilder.Answer::conceptMap).toList()))
+        ));
     }
 }

@@ -26,6 +26,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Options;
 import grakn.core.concurrent.common.Executors;
 import grakn.core.migrator.MigratorClient;
+import grakn.core.migrator.MigratorService;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.server.common.ServerCommand;
 import grakn.core.server.common.ServerDefaults;
@@ -73,7 +74,7 @@ public class GraknServer implements AutoCloseable {
     private final Server server;
     private final ServerCommand.Start command;
     private final GraknService graknService;
-    private final MigratorService migratorRPCService;
+    private final MigratorService migratorService;
 
     private GraknServer(ServerCommand.Start command) throws IOException {
         this.command = command;
@@ -88,7 +89,7 @@ public class GraknServer implements AutoCloseable {
                 .logsDir(command.logsDir());
         grakn = RocksGrakn.open(options);
         graknService = new GraknService(grakn);
-        migratorRPCService = new MigratorService(grakn);
+        migratorService = new MigratorService(grakn, Version.VERSION);
 
         server = rpcServer();
         Thread.setDefaultUncaughtExceptionHandler(
@@ -110,7 +111,7 @@ public class GraknServer implements AutoCloseable {
                 .maxConnectionIdle(1, TimeUnit.HOURS) // TODO: why 1 hour?
                 .channelType(NioServerSocketChannel.class)
                 .addService(graknService)
-                .addService(migratorRPCService)
+                .addService(migratorService)
                 .build();
     }
 

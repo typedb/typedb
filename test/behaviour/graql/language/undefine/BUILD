@@ -42,7 +42,7 @@ java_test(
     size = "medium",
     visibility = ["//visibility:public"],
     resources = [
-        "//common/test:logback"
+        "//common/test:logback-test"
     ],
     resource_strip_prefix = "common/test",
 )

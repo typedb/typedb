@@ -59,8 +59,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Server(11, "Concept does not exist.");
         public static final Server BAD_VALUE_TYPE =
                 new Server(12, "The value type '%s' was not recognised.");
-        public static final Server UNKNOWN_ANSWER_TYPE =
-                new Server(13, "The answer type '%s' was not recognised.");
+        public static final Server EMPTY_TRANSACTION_REQUEST =
+                new Server(13, "Empty transaction request.");
         public static final Server UNKNOWN_REQUEST_TYPE =
                 new Server(14, "The request message was not recognised.");
         public static final Server ITERATION_WITH_UNKNOWN_ID =

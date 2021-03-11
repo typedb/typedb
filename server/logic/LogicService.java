@@ -23,7 +23,7 @@ import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
 import grakn.core.server.common.ResponseBuilder;
-import grakn.core.server.transaction.TransactionService;
+import grakn.core.server.TransactionService;
 import grakn.protocol.LogicProto;
 import grakn.protocol.TransactionProto;
 import graql.lang.Graql;
@@ -86,7 +86,7 @@ public class LogicService {
 
     private void getRules(TransactionProto.Transaction.Req request) {
         FunctionalIterator<Rule> rules = logicMgr.rules();
-        transactionSrv.respond(request, rules, as -> response(
+        transactionSrv.stream(rules, request.getId(), as -> response(
                 request, LogicProto.LogicManager.Res.newBuilder().setGetRulesRes(
                         LogicProto.LogicManager.GetRules.Res.newBuilder().addAllRules(
                                 as.stream().map(ResponseBuilder.Logic::rule).collect(toList())))

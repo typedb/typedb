@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.concurrent.eventloop;
+package grakn.core.concurrent.executor;
 
 import grakn.common.collection.Either;
 import grakn.common.concurrent.NamedThreadFactory;
@@ -107,11 +107,9 @@ public abstract class EventLoopExecutor<E> implements AutoCloseable {
     private class EventLoop {
 
         private final BlockingQueue<Either<Event<E>, Shutdown>> queue;
-        private long counter;
 
         private EventLoop(int queueSize, NamedThreadFactory threadFactory) {
             this.queue = new LinkedBlockingQueue<>(queueSize);
-            this.counter = 0;
             threadFactory.newThread(this::run).start();
         }
 

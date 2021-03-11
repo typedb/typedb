@@ -20,8 +20,8 @@ package grakn.core.migrator;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.server.migrator.proto.MigratorGrpc;
-import grakn.core.server.migrator.proto.MigratorProto;
+import grakn.core.migrator.proto.MigratorGrpc;
+import grakn.core.migrator.proto.MigratorProto;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;

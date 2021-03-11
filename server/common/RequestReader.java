@@ -17,8 +17,13 @@
 
 package grakn.core.server.common;
 
+import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.core.common.parameters.Options;
 import grakn.protocol.OptionsProto;
+import grakn.protocol.TransactionProto;
+
+import java.util.Map;
+import java.util.Optional;
 
 import static grakn.protocol.OptionsProto.Options.BatchSizeOptCase.BATCH_SIZE;
 import static grakn.protocol.OptionsProto.Options.ExplainOptCase.EXPLAIN;
@@ -31,7 +36,7 @@ import static grakn.protocol.OptionsProto.Options.TraceInferenceOptCase.TRACE_IN
 
 public class RequestReader {
 
-    public static <T extends Options<?, ?>> T setDefaultOptions(T options, OptionsProto.Options request) {
+    public static <T extends Options<?, ?>> T applyDefaultOptions(T options, OptionsProto.Options request) {
         if (request.getInferOptCase().equals(INFER)) {
             options.infer(request.getInfer());
         }
@@ -59,10 +64,21 @@ public class RequestReader {
         return options;
     }
 
-    public static Options.Query setQueryOptions(Options.Query options, OptionsProto.Options request) {
+    public static void applyQueryOptions(Options.Query options, OptionsProto.Options request) {
         if (request.getPrefetchOptCase().equals(PREFETCH)) {
             options.prefetch(request.getPrefetch());
         }
-        return options;
+    }
+
+    public static Optional<TracingData> getTracingData(TransactionProto.Transaction.Req request) {
+        if (GrablTracingThreadStatic.isTracingEnabled()) {
+            Map<String, String> metadata = request.getMetadataMap();
+            String rootID = metadata.get("traceRootId");
+            String parentID = metadata.get("traceParentId");
+            if (rootID != null && parentID != null) {
+                return Optional.of(new TracingData(rootID, parentID));
+            }
+        }
+        return Optional.empty();
     }
 }
