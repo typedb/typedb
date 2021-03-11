@@ -21,7 +21,7 @@ load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_te
 host_compatible_java_test(
     name = "test-migrator",
     srcs = ["MigratorTest.java"],
-    test_class = "grakn.core.server.migrator.MigratorTest",
+    test_class = "grakn.core.migrator.MigratorTest",
     native_libraries_deps = [
         "//server:server",
         "//rocks:rocks",

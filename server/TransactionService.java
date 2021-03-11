@@ -83,30 +83,20 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     private volatile Services services;
     private volatile int networkLatencyMillis;
 
+    private class Services {
+        private final ConceptService concept = new ConceptService(TransactionService.this, transaction.concepts());
+        private final LogicService logic = new LogicService(TransactionService.this, transaction.logic());
+        private final QueryService query = new QueryService(TransactionService.this, transaction.query());
+        private final ThingService thing = new ThingService(TransactionService.this, transaction.concepts());
+        private final TypeService type = new TypeService(TransactionService.this, transaction.concepts());
+        private final RuleService rule = new RuleService(TransactionService.this, transaction.logic());
+    }
+
     public TransactionService(GraknService graknSrv, StreamObserver<TransactionProto.Transaction.Res> responder) {
         this.responder = SynchronizedStreamObserver.of(responder);
         this.streams = new ConcurrentHashMap<>();
         this.graknSrv = graknSrv;
         this.isOpen = new AtomicBoolean(false);
-    }
-
-    private class Services {
-
-        private final ConceptService concept;
-        private final LogicService logic;
-        private final QueryService query;
-        private final ThingService thing;
-        private final TypeService type;
-        private final RuleService rule;
-
-        private Services() {
-            concept = new ConceptService(TransactionService.this, transaction.concepts());
-            logic = new LogicService(TransactionService.this, transaction.logic());
-            query = new QueryService(TransactionService.this, transaction.query());
-            thing = new ThingService(TransactionService.this, transaction.concepts());
-            type = new TypeService(TransactionService.this, transaction.concepts());
-            rule = new RuleService(TransactionService.this, transaction.logic());
-        }
     }
 
     public Context.Transaction context() {
