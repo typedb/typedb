@@ -39,7 +39,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.CONTRADICTORY_RULE_CYCLE;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;

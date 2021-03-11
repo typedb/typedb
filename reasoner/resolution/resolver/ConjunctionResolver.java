@@ -51,7 +51,6 @@ import java.util.Set;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.iterator.Iterators.single;
 
 public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<RESOLVER>>
         extends CompoundResolver<RESOLVER, ConjunctionResolver.RequestState> {

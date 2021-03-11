@@ -22,8 +22,8 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
-import grakn.core.server.common.ResponseBuilder;
 import grakn.core.server.TransactionService;
+import grakn.core.server.common.ResponseBuilder;
 import grakn.protocol.LogicProto;
 import grakn.protocol.TransactionProto;
 import graql.lang.Graql;
@@ -33,7 +33,6 @@ import graql.lang.pattern.variable.ThingVariable;
 
 import static grakn.core.server.common.ResponseBuilder.Logic.rule;
 import static java.util.stream.Collectors.toList;
-
 
 public class LogicService {
 

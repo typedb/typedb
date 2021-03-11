@@ -23,12 +23,10 @@ import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
 import grakn.core.common.parameters.Options;
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
 import grakn.core.test.integration.util.Util;
-import grakn.core.traversal.Traversal;
 import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.common.VertexMap;
 import grakn.core.traversal.predicate.Predicate;
@@ -46,13 +44,10 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
 
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.parameters.Arguments.Transaction.Type.READ;
-import static org.junit.Assert.assertTrue;
 
 public class TraversalTest {
 

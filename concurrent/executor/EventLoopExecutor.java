@@ -55,7 +55,9 @@ public abstract class EventLoopExecutor<E> implements AutoCloseable {
 
     private EventLoop next() {
         return executors.get(executorIndex.getAndUpdate(i -> {
-            i++; if (i % executors.size() == 0) i = 0; return i;
+            i++;
+            if (i % executors.size() == 0) i = 0;
+            return i;
         }));
     }
 

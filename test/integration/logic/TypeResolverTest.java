@@ -47,7 +47,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.test.Util.assertThrows;
 import static java.nio.charset.StandardCharsets.UTF_8;
