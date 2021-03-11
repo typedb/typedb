@@ -71,7 +71,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
 
     protected abstract boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration);
 
-    protected abstract AnswerState toUpstreamAnswer(Compound<?> answer, Response.Answer fromDownstream);
+    protected abstract AnswerState toUpstreamAnswer(Compound<?, ?> answer, Response.Answer fromDownstream);
 
     @Override
     protected void initialiseDownstreamResolvers() {
@@ -177,7 +177,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         }
 
         @Override
-        protected AnswerState toUpstreamAnswer(Compound<?> answer, Response.Answer fromDownstream) {
+        protected AnswerState toUpstreamAnswer(Compound<?, ?> answer, Response.Answer fromDownstream) {
             assert answer.isNonRoot();
             return answer.asNonRoot().toUpstream();
         }

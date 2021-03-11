@@ -50,7 +50,7 @@ public class AnswerStateTest {
         Map<Identifier.Variable.Retrievable, Concept> concepts = new HashMap<>();
         concepts.put(Identifier.Variable.name("x"), new MockConcept(0));
         concepts.put(Identifier.Variable.name("y"), new MockConcept(1));
-        Partial.Compound<?> partial = mapped.aggregateToUpstream(new ConceptMap(concepts));
+        Partial.Compound<?, ?> partial = mapped.toUpstreamLookup(new ConceptMap(concepts));
         Map<Identifier.Variable.Retrievable, Concept> expected = new HashMap<>();
         expected.put(Identifier.Variable.name("a"), new MockConcept(0));
         expected.put(Identifier.Variable.name("b"), new MockConcept(1));
@@ -75,7 +75,7 @@ public class AnswerStateTest {
         Map<Identifier.Variable.Retrievable, Concept> downstreamConcepts = new HashMap<>();
         downstreamConcepts.put(Identifier.Variable.name("x"), new MockConcept(0));
         downstreamConcepts.put(Identifier.Variable.name("y"), new MockConcept(1));
-        Partial.Compound<?> partial = mapped.aggregateToUpstream(new ConceptMap(downstreamConcepts));
+        Partial.Compound<?, ?> partial = mapped.toUpstreamLookup(new ConceptMap(downstreamConcepts));
 
         Map<Identifier.Variable.Retrievable, Concept> expectedWithInitial = new HashMap<>();
         expectedWithInitial.put(Identifier.Variable.name("a"), new MockConcept(0));
@@ -92,7 +92,7 @@ public class AnswerStateTest {
         concepts.put(Identifier.Variable.name("a"), new MockConcept(0));
         concepts.put(Identifier.Variable.name("c"), new MockConcept(2));
         Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
-        Concludable mapped = Top.Match.initial(filter, null).toDownstream().with(new ConceptMap(concepts), false)
+        Concludable<?, ?> mapped = Top.Match.initial(filter, null).toDownstream().with(new ConceptMap(concepts), false)
                 .mapToDownstream(Mapping.of(mapping), null);
 
         Map<Identifier.Variable.Retrievable, Concept> expectedMapped = new HashMap<>();
@@ -102,7 +102,7 @@ public class AnswerStateTest {
         Map<Identifier.Variable.Retrievable, Concept> downstreamConcepts = new HashMap<>();
         downstreamConcepts.put(Identifier.Variable.name("x"), new MockConcept(0));
         downstreamConcepts.put(Identifier.Variable.name("y"), new MockConcept(1));
-        Partial.Compound<?> partial = mapped.aggregateToUpstream(new ConceptMap(downstreamConcepts));
+        Partial.Compound<?, ?> partial = mapped.toUpstreamLookup(new ConceptMap(downstreamConcepts));
 
         Map<Identifier.Variable.Retrievable, Concept> expectedWithInitial = new HashMap<>();
         expectedWithInitial.put(Identifier.Variable.name("a"), new MockConcept(0));

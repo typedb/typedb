@@ -513,7 +513,7 @@ public class ResolutionTest {
                                               Set<Identifier.Variable.Name> filter, long answerCount,
                                               long explainableAnswers) throws InterruptedException {
         ResolverRegistry registry = transaction.reasoner().resolverRegistry();
-        LinkedBlockingQueue<Top> responses = new LinkedBlockingQueue<>();
+        LinkedBlockingQueue<Top.Match.Finished> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
         Actor.Driver<RootResolver.Disjunction> root;
         try {
@@ -528,7 +528,7 @@ public class ResolutionTest {
     private void createRootAndAssertResponses(RocksTransaction transaction, Conjunction conjunction, long answerCount, long explainableAnswers)
             throws InterruptedException {
         ResolverRegistry registry = transaction.reasoner().resolverRegistry();
-        LinkedBlockingQueue<Top> responses = new LinkedBlockingQueue<>();
+        LinkedBlockingQueue<Top.Match.Finished> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
         Set<Identifier.Variable.Name> filter = iterate(conjunction.variables()).map(Variable::id)
                 .filter(Identifier::isName).map(Identifier.Variable::asName).toSet();
@@ -542,9 +542,9 @@ public class ResolutionTest {
         assertResponses(root, filter, responses, doneReceived, answerCount, explainableAnswers);
     }
 
-    private void assertResponses(Actor.Driver<? extends Resolver<?>> root, Set<Identifier.Variable.Name> filter, LinkedBlockingQueue<Top> responses,
-                                 AtomicLong doneReceived, long answerCount, long explainableAnswers)
-            throws InterruptedException {
+    private void assertResponses(Actor.Driver<? extends Resolver<?>> root, Set<Identifier.Variable.Name> filter,
+                                 LinkedBlockingQueue<Top.Match.Finished> responses, AtomicLong doneReceived,
+                                 long answerCount, long explainableAnswers) throws InterruptedException {
         long startTime = System.currentTimeMillis();
         long n = answerCount + 1; //total number of traversal answers, plus one expected Exhausted (-1 answer)
         for (int i = 0; i < n; i++) {
@@ -555,8 +555,10 @@ public class ResolutionTest {
         int explainableAnswersFound = 0;
         for (int i = 0; i < n - 1; i++) {
             Top answer = responses.poll(1000, TimeUnit.MILLISECONDS); // polling prevents the test hanging
-            if (answer != null) answersFound += 1;
-            if (answer.conceptMap().explainableAnswer().isPresent()) explainableAnswersFound++;
+            if (answer != null) {
+                answersFound += 1;
+                if (answer.conceptMap().explainableAnswer().isPresent()) explainableAnswersFound++;
+            }
         }
         Thread.sleep(1000);
         assertEquals(answerCount, answersFound);

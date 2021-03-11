@@ -115,7 +115,7 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        protected Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?> partialAnswer) {
+        protected Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?, ?> partialAnswer) {
             assert partialAnswer.isRoot();
             return Optional.of(partialAnswer.asRoot().toFinishedTop(conjunction));
         }
@@ -196,7 +196,7 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        protected AnswerState toUpstreamAnswer(Partial.Compound<?> answer, Response.Answer fromDownstream) {
+        protected AnswerState toUpstreamAnswer(Partial.Compound<?, ?> answer, Response.Answer fromDownstream) {
             assert answer.isRoot();
             Driver<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
             grakn.core.pattern.Conjunction patternAnswered = downstreamResolvers.get(sender);
@@ -265,7 +265,7 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?> partialAnswer) {
+        Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?, ?> partialAnswer) {
             assert partialAnswer.isExplainRoot();
             return Optional.of(partialAnswer.asExplainRoot().toFinishedTop());
         }
