@@ -101,9 +101,9 @@ public class ResponseBuilder {
             ).build();
         }
 
-        public static TransactionProto.Transaction.Res iterate(String requestID, boolean hasNext) {
-            return TransactionProto.Transaction.Res.newBuilder().setId(requestID).setIterateRes(
-                    TransactionProto.Transaction.Iterate.Res.newBuilder().setHasNext(hasNext)
+        public static TransactionProto.Transaction.Res stream(String requestID, boolean isDone) {
+            return TransactionProto.Transaction.Res.newBuilder().setId(requestID).setStreamRes(
+                    TransactionProto.Transaction.Stream.Res.newBuilder().setIsDone(isDone)
             ).build();
         }
 

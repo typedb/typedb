@@ -120,7 +120,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     private synchronized void execute(TransactionProto.Transaction.Req request) {
         GrablTracingThreadStatic.ThreadTrace trace = null;
         try {
-            trace = mayStartTrace(request, TRACE_PREFIX + request.getReqCase().name());
+            trace = mayStartTrace(request, TRACE_PREFIX + request.getReqCase().name().toLowerCase());
             switch (request.getReqCase()) {
                 case REQ_NOT_SET:
                     throw GraknException.of(UNKNOWN_REQUEST_TYPE);
@@ -149,7 +149,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
             case COMMIT_REQ:
                 commit(request.getId());
                 break;
-            case ITERATE_REQ:
+            case STREAM_REQ:
                 stream(request.getId());
                 break;
             case QUERY_REQ:
@@ -238,7 +238,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
             else throw GraknException.of(DUPLICATE_REQUEST, requestID);
         });
         if (prefetch) batchingIterator.streamBatches();
-        else respond(ResponseBuilder.Transaction.iterate(requestID, true));
+        else respond(ResponseBuilder.Transaction.stream(requestID, false));
     }
 
     private void stream(String requestId) {
@@ -306,7 +306,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         private void streamBatches() {
             streamBatchesUntil(i -> i < batchSize && iterator.hasNext());
             if (mayClose()) return;
-            else respond(ResponseBuilder.Transaction.iterate(requestID, true));
+            else respond(ResponseBuilder.Transaction.stream(requestID, false));
             Instant compensationTime = Instant.now().plusMillis(latencyMillis);
             streamBatchesUntil(i -> iterator.hasNext() && Instant.now().isBefore(compensationTime));
             mayClose();
@@ -329,7 +329,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         }
 
         private boolean mayClose() {
-            if (!iterator.hasNext()) respond(ResponseBuilder.Transaction.iterate(requestID, false));
+            if (!iterator.hasNext()) respond(ResponseBuilder.Transaction.stream(requestID, true));
             return !iterator.hasNext();
         }
     }
