@@ -51,6 +51,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -77,6 +79,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     private final GraknService graknSrv;
     private final StreamObserver<TransactionProto.Transaction.Res> responder;
     private final ConcurrentMap<String, BatchedStream<?>> streams;
+    private final ReadWriteLock accessLock;
     private final AtomicBoolean isRPCAlive;
     private final AtomicBoolean isTransactionOpen;
 
@@ -98,6 +101,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         this.graknSrv = graknSrv;
         this.responder = SynchronizedStreamObserver.of(responder);
         this.streams = new ConcurrentHashMap<>();
+        this.accessLock = new StampedLock().asReadWriteLock();
         this.isRPCAlive = new AtomicBoolean(true);
         this.isTransactionOpen = new AtomicBoolean(false);
     }
@@ -120,10 +124,11 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     @Override
     public void onError(Throwable error) { close(error); }
 
-    private synchronized void execute(TransactionProto.Transaction.Req request) {
+    private void execute(TransactionProto.Transaction.Req request) {
         GrablTracingThreadStatic.ThreadTrace trace = null;
         try {
             trace = mayStartTrace(request, TRACE_PREFIX + request.getReqCase().name().toLowerCase());
+            accessLock.readLock().lock();
             switch (request.getReqCase()) {
                 case REQ_NOT_SET:
                     throw GraknException.of(UNKNOWN_REQUEST_TYPE);
@@ -136,6 +141,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         } catch (Throwable error) {
             close(error);
         } finally {
+            accessLock.readLock().unlock();
             mayCloseTrace(trace);
         }
     }
@@ -264,30 +270,41 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     }
 
     @Override
-    public synchronized void close() {
-        if (isRPCAlive.compareAndSet(true, false)) {
-            if (isTransactionOpen.compareAndSet(true, false)) {
-                transaction.close();
-                sessionSrv.remove(this);
+    public void close() {
+        try {
+            accessLock.writeLock().lock();
+            if (isRPCAlive.compareAndSet(true, false)) {
+                if (isTransactionOpen.compareAndSet(true, false)) {
+                    transaction.close();
+                    sessionSrv.remove(this);
+                }
+                responder.onCompleted();
             }
-            responder.onCompleted();
+        } finally {
+            accessLock.writeLock().unlock();
         }
     }
 
-    public synchronized void close(Throwable error) {
-        if (isRPCAlive.compareAndSet(true, false)) {
-            if (isTransactionOpen.compareAndSet(true, false)) {
-                transaction.close();
-                sessionSrv.remove(this);
+    public void close(Throwable error) {
+        try {
+            accessLock.writeLock().lock();
+            if (isRPCAlive.compareAndSet(true, false)) {
+                if (isTransactionOpen.compareAndSet(true, false)) {
+                    transaction.close();
+                    sessionSrv.remove(this);
+                }
+                responder.onError(ResponseBuilder.exception(error));
+                if (isClientCancelled(error)) LOG.debug(error.getMessage(), error);
+                else LOG.error(error.getMessage(), error);
             }
-            responder.onError(ResponseBuilder.exception(error));
-            if (error instanceof StatusRuntimeException &&
-                    ((StatusRuntimeException) error).getStatus() == Status.CANCELLED) {
-                LOG.debug(error.getMessage(), error);
-            } else {
-                LOG.error(error.getMessage(), error);
-            }
+        } finally {
+            accessLock.writeLock().unlock();
         }
+    }
+
+    private boolean isClientCancelled(Throwable error) {
+        return error instanceof StatusRuntimeException &&
+                ((StatusRuntimeException) error).getStatus().getCode().equals(Status.CANCELLED.getCode());
     }
 
     private class BatchedStream<T> {
