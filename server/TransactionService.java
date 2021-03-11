@@ -77,7 +77,8 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     private final GraknService graknSrv;
     private final StreamObserver<TransactionProto.Transaction.Res> responder;
     private final ConcurrentMap<String, BatchedStream<?>> streams;
-    private final AtomicBoolean isOpen;
+    private final AtomicBoolean isRPCAlive;
+    private final AtomicBoolean isTransactionOpen;
 
     private volatile SessionService sessionSrv;
     private volatile Grakn.Transaction transaction;
@@ -97,7 +98,8 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         this.graknSrv = graknSrv;
         this.responder = SynchronizedStreamObserver.of(responder);
         this.streams = new ConcurrentHashMap<>();
-        this.isOpen = new AtomicBoolean(false);
+        this.isRPCAlive = new AtomicBoolean(true);
+        this.isTransactionOpen = new AtomicBoolean(false);
     }
 
     public Context.Transaction context() {
@@ -139,10 +141,9 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     }
 
     private void executeRequest(TransactionProto.Transaction.Req request) {
-        if (!isOpen.get()) {
-            if (transaction != null) throw GraknException.of(TRANSACTION_CLOSED);
-            else throw GraknException.of(TRANSACTION_NOT_OPENED);
-        }
+        if (!isRPCAlive.get()) throw GraknException.of(TRANSACTION_CLOSED);
+        if (!isTransactionOpen.get()) throw GraknException.of(TRANSACTION_NOT_OPENED);
+        
         switch (request.getReqCase()) {
             case ROLLBACK_REQ:
                 rollback(request.getId());
@@ -177,7 +178,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     }
 
     private void open(TransactionProto.Transaction.Req request) {
-        if (isOpen.get()) throw GraknException.of(TRANSACTION_ALREADY_OPENED);
+        if (isTransactionOpen.get()) throw GraknException.of(TRANSACTION_ALREADY_OPENED);
         TransactionProto.Transaction.Open.Req openReq = request.getOpenReq();
         networkLatencyMillis = Math.min(openReq.getNetworkLatencyMillis(), MAX_NETWORK_LATENCY_MILLIS);
         sessionSrv = sessionService(graknSrv, openReq);
@@ -185,7 +186,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         transaction = transaction(sessionSrv, openReq);
         services = new Services();
         responder.onNext(ResponseBuilder.Transaction.open(request.getId()));
-        isOpen.set(true);
+        isTransactionOpen.set(true);
     }
 
     private static SessionService sessionService(GraknService graknSrv, TransactionProto.Transaction.Open.Req req) {
@@ -264,24 +265,28 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
 
     @Override
     public synchronized void close() {
-        if (isOpen.compareAndSet(true, false)) {
-            transaction.close();
-            sessionSrv.remove(this);
+        if (isRPCAlive.compareAndSet(true, false)) {
+            if (isTransactionOpen.compareAndSet(true, false)) {
+                transaction.close();
+                sessionSrv.remove(this);
+            }
+            responder.onCompleted();
         }
-        responder.onCompleted();
     }
 
     public synchronized void close(Throwable error) {
-        if (isOpen.compareAndSet(true, false)) {
-            transaction.close();
-            sessionSrv.remove(this);
-        }
-        responder.onError(ResponseBuilder.exception(error));
-        if (error instanceof StatusRuntimeException &&
-                ((StatusRuntimeException) error).getStatus() == Status.CANCELLED) {
-            LOG.debug(error.getMessage(), error);
-        } else {
-            LOG.error(error.getMessage(), error);
+        if (isRPCAlive.compareAndSet(true, false)) {
+            if (isTransactionOpen.compareAndSet(true, false)) {
+                transaction.close();
+                sessionSrv.remove(this);
+            }
+            responder.onError(ResponseBuilder.exception(error));
+            if (error instanceof StatusRuntimeException &&
+                    ((StatusRuntimeException) error).getStatus() == Status.CANCELLED) {
+                LOG.debug(error.getMessage(), error);
+            } else {
+                LOG.error(error.getMessage(), error);
+            }
         }
     }
 
