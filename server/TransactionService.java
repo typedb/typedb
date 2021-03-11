@@ -143,7 +143,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     private void executeRequest(TransactionProto.Transaction.Req request) {
         if (!isRPCAlive.get()) throw GraknException.of(TRANSACTION_CLOSED);
         if (!isTransactionOpen.get()) throw GraknException.of(TRANSACTION_NOT_OPENED);
-        
+
         switch (request.getReqCase()) {
             case ROLLBACK_REQ:
                 rollback(request.getId());
