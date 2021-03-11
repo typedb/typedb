@@ -37,6 +37,18 @@ public class ExplainableAnswer {
         this.hash = Objects.hash(completeMap, conjunctionAnswered, explainables);
     }
 
+    public ConceptMap completeMap() {
+        return completeMap;
+    }
+
+    public Conjunction conjunctionAnswered() {
+        return conjunctionAnswered;
+    }
+
+    public Set<Conjunction> explainables() {
+        return explainables;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

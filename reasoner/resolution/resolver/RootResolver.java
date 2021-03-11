@@ -115,6 +115,18 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
+        boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
+            RequestState requestState = requestStates.get(fromUpstream);
+            if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
+                requestState.recordProduced(upstreamAnswer.conceptMap());
+                answerToUpstream(upstreamAnswer, fromUpstream, iteration);
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        @Override
         protected Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?, ?> partialAnswer) {
             assert partialAnswer.isRoot();
             return Optional.of(partialAnswer.asRoot().toFinishedTop(conjunction));
@@ -242,6 +254,11 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
+        protected void failToUpstream(Request fromUpstream, int iteration) {
+            submitFail(iteration);
+        }
+
+        @Override
         Set<Concludable> concludablesTriggeringRules() {
             Set<Concludable> concludables = Iterators.iterate(Concludable.create(conjunction))
                     .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext())
@@ -265,9 +282,19 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
+        boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
+            answerToUpstream(upstreamAnswer, fromUpstream, iteration);
+            return true;
+        }
+
+        @Override
         Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?, ?> partialAnswer) {
             assert partialAnswer.isExplainRoot();
-            return Optional.of(partialAnswer.asExplainRoot().toFinishedTop());
+            if (partialAnswer.asExplainRoot().hasExplanation()) {
+                return Optional.of(partialAnswer.asExplainRoot().toFinishedTop());
+            } else {
+                return Optional.empty();
+            }
         }
 
         @Override
@@ -290,7 +317,6 @@ public interface RootResolver<TOP extends Top> {
         public void submitFail(int iteration) {
             onFail.accept(iteration);
         }
-
     }
 
 }

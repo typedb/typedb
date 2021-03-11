@@ -29,7 +29,6 @@ import grakn.core.logic.resolvable.Unifier;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Conclusion;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
@@ -105,7 +104,9 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
         Partial.Compound<?, ?> upstreamAnswer = fromDownstream.answer().asConcludable().toUpstreamInferred();
 
-        if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
+        if (upstreamAnswer.isExplainRoot()) {
+            answerFound(upstreamAnswer, fromUpstream, iteration);
+        } else if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
             requestState.recordProduced(upstreamAnswer.conceptMap());
             answerFound(upstreamAnswer, fromUpstream, iteration);
         } else {
@@ -123,7 +124,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
      */
     private void answerFound(Partial.Compound<?, ?> upstreamAnswer, Request fromUpstream, int iteration) {
         RequestState requestState = this.requestStates.get(fromUpstream);
-        if (requestState.singleAnswerRequired()) {
+        if (requestState.singleAnswerRequired() && !upstreamAnswer.isExplainRoot()) {
             requestState.clearDownstreamProducers();
         }
         answerToUpstream(upstreamAnswer, fromUpstream, iteration);
@@ -213,10 +214,10 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         }
 
         assert fromUpstream.partialAnswer().isConcludable();
-        FunctionalIterator<Partial.Compound<?, ?>> upstreamAnswers =
+        FunctionalIterator<Partial.Compound<?, ?>> upstreamAnswers = fromUpstream.partialAnswer().asConcludable().isExplain() ?
+                Iterators.empty() :
                 traversalIterator(concludable.pattern(), fromUpstream.partialAnswer().conceptMap())
                         .map(conceptMap -> fromUpstream.partialAnswer().asConcludable().toUpstreamLookup(conceptMap));
-        // TODO, take each concept map, if it is an inferred lookup, include that information
 
         boolean singleAnswerRequired = fromUpstream.partialAnswer().conceptMap().concepts().keySet().containsAll(unboundVars());
         RequestState requestState = new RequestState(upstreamAnswers, iteration, singleAnswerRequired);
@@ -232,7 +233,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             for (Map.Entry<Driver<ConclusionResolver>, Set<Unifier>> entry : applicableRules.entrySet()) {
                 Driver<ConclusionResolver> conclusionResolver = entry.getKey();
                 for (Unifier unifier : entry.getValue()) {
-                    Optional<Conclusion> unified = partialAnswer.unifyToDownstream(unifier, resolverRules.get(conclusionResolver));
+                    Optional<? extends Partial.Conclusion<?, ?>> unified = partialAnswer.toDownstream(unifier, resolverRules.get(conclusionResolver));
                     if (unified.isPresent()) {
                         Request toDownstream = Request.create(driver(), conclusionResolver, unified.get());
                         requestState.addDownstreamProducer(toDownstream);

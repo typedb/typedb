@@ -172,29 +172,29 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         RequestState requestState = new RequestState(iteration);
 
         assert fromUpstream.partialAnswer().isConclusion();
-        Partial.Conclusion partialAnswer = fromUpstream.partialAnswer().asConclusion();
+        Partial.Conclusion<?, ?> partialAnswer = fromUpstream.partialAnswer().asConclusion();
         // we do a extra traversal to expand the partial answer if we already have the concept that is meant to be generated
         // and if there's extra variables to be populated
         assert conclusion.retrievableIds().containsAll(partialAnswer.conceptMap().concepts().keySet());
         if (conclusion.generating().isPresent() && conclusion.retrievableIds().size() > partialAnswer.conceptMap().concepts().size() &&
                 partialAnswer.conceptMap().concepts().containsKey(conclusion.generating().get().id())) {
-            FunctionalIterator<Partial.Compound.Condition> completedDownstreamAnswers = candidateAnswers(partialAnswer);
+            FunctionalIterator<Partial.Compound.Condition<?>> completedDownstreamAnswers = candidateAnswers(partialAnswer);
             completedDownstreamAnswers.forEachRemaining(answer -> requestState.addDownstream(Request.create(driver(), ruleResolver,
                                                                                                             answer)));
         } else {
             Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
-            Partial.Compound.Condition downstreamAnswer = partialAnswer.filterToDownstream(named);
+            Partial.Compound.Condition<?> downstreamAnswer = partialAnswer.toDownstream(named);
             requestState.addDownstream(Request.create(driver(), ruleResolver, downstreamAnswer));
         }
 
         return requestState;
     }
 
-    private FunctionalIterator<Partial.Compound.Condition> candidateAnswers(Partial.Conclusion partialAnswer) {
+    private FunctionalIterator<Partial.Compound.Condition<?>> candidateAnswers(Partial.Conclusion<?, ?> partialAnswer) {
         Traversal traversal = boundTraversal(conclusion.conjunction().traversal(), partialAnswer.conceptMap());
         FunctionalIterator<ConceptMap> answers = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
         Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
-        return answers.map(ans -> partialAnswer.extend(ans).filterToDownstream(named));
+        return answers.map(ans -> partialAnswer.extend(ans).toDownstream(named));
     }
 
     @Override

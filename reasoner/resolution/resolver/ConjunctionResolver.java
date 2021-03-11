@@ -108,16 +108,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         }
     }
 
-    private boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
-        RequestState requestState = requestStates.get(fromUpstream);
-        if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
-            requestState.recordProduced(upstreamAnswer.conceptMap());
-            answerToUpstream(upstreamAnswer, fromUpstream, iteration);
-            return true;
-        } else {
-            return false;
-        }
-    }
+    abstract boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration);
 
     private void toNextChild(Response.Answer fromDownstream, int iteration, Request fromUpstream, RequestState requestState, Plans.Plan plan) {
         int nextResolverIndex = fromDownstream.planIndex() + 1;
@@ -311,6 +302,18 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
                 requestFromDownstream(requestState.nextDownstreamProducer(), fromUpstream, iteration);
             } else {
                 failToUpstream(fromUpstream, iteration);
+            }
+        }
+
+        @Override
+        boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
+            ConjunctionResolver.RequestState requestState = requestStates.get(fromUpstream);
+            if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
+                requestState.recordProduced(upstreamAnswer.conceptMap());
+                answerToUpstream(upstreamAnswer, fromUpstream, iteration);
+                return true;
+            } else {
+                return false;
             }
         }
 

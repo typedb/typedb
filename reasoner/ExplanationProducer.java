@@ -101,10 +101,11 @@ public class ExplanationProducer implements Producer<Explanation> {
         }
     }
     private boolean mustReiterate() {
-        /*
-        TODO do we definitely have to reiterate when calculating explanations...?
-         */
-        return requiresReiteration;
+        return false;
+//        /*
+//        TODO do we definitely have to reiterate when calculating explanations...?
+//         */
+//        return requiresReiteration;
     }
 
     private void prepareNextIteration() {

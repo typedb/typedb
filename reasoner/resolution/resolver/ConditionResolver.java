@@ -67,6 +67,18 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
     }
 
     @Override
+    boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
+        RequestState requestState = requestStates.get(fromUpstream);
+        if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
+            requestState.recordProduced(upstreamAnswer.conceptMap());
+            answerToUpstream(upstreamAnswer, fromUpstream, iteration);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    @Override
     protected Optional<AnswerState> toUpstreamAnswer(AnswerState.Partial.Compound<?, ?> partialAnswer) {
         assert partialAnswer.isCondition();
         return Optional.of(partialAnswer.asCondition().toUpstream(conjunction()));

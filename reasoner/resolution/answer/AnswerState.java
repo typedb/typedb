@@ -260,6 +260,16 @@ public abstract class AnswerState {
                 return conceptMap;
             }
 
+            @Override
+            public boolean isExplain() {
+                return true;
+            }
+
+            @Override
+            public Explain asExplain() {
+                return this;
+            }
+
             public boolean isFinished() {
                 return false;
             }
@@ -378,8 +388,8 @@ public abstract class AnswerState {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Concludable.class));
         }
 
-        public Conclusion asConclusion() {
-            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Conclusion.class));
+        public Conclusion<?, ?> asConclusion() {
+            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Conclusion.Match.class));
         }
 
         protected ConceptMap extendAnswer(ConceptMap extension) {
@@ -528,6 +538,10 @@ public abstract class AnswerState {
                     return new ExplainRoot(conceptMap, parent, root, false, null);
                 }
 
+                public boolean hasExplanation() {
+                    return explanation != null;
+                }
+
                 @Override
                 public boolean isExplainRoot() {
                     return true;
@@ -540,7 +554,7 @@ public abstract class AnswerState {
 
                 @Override
                 ExplainRoot with(ConceptMap extension, boolean requiresReiteration) {
-                    throw GraknException.of(ILLEGAL_STATE);
+                    return new ExplainRoot(extendAnswer(extension), parent(), root(), requiresReiteration, null);
                 }
 
                 @Override
@@ -586,13 +600,13 @@ public abstract class AnswerState {
 
             }
 
-            public static class Condition extends Compound<Condition, Conclusion> {
+            public static class Condition<P extends Conclusion<P, ?>> extends Compound<Condition<P>, P> {
 
                 private final Set<Conjunction> explainables;
                 private final Set<Identifier.Variable.Retrievable> filter;
                 private final int hash;
 
-                private Condition(ConceptMap filteredMap, Conclusion parent, Set<Identifier.Variable.Retrievable> filter,
+                private Condition(ConceptMap filteredMap, P parent, Set<Identifier.Variable.Retrievable> filter,
                                   Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration, Set<Conjunction> explainables) {
                     super(filteredMap, parent, root, requiresReiteration);
                     this.explainables = explainables;
@@ -600,9 +614,9 @@ public abstract class AnswerState {
                     this.hash = Objects.hash(root, conceptMap, parent, filter);
                 }
 
-                static Condition create(Conclusion parent, Set<Identifier.Variable.Retrievable> filter,
-                                        Actor.Driver<? extends Resolver<?>> root) {
-                    return new Condition(parent.conceptMap().filter(filter), parent, filter, root, false, set());
+                static <P extends Conclusion<P, ?>> Condition<P> create(P parent, Set<Identifier.Variable.Retrievable> filter,
+                                                                        Actor.Driver<? extends Resolver<?>> root) {
+                    return new Condition<>(parent.conceptMap().filter(filter), parent, filter, root, false, set());
                 }
 
                 @Override
@@ -611,16 +625,16 @@ public abstract class AnswerState {
                 }
 
                 @Override
-                public Condition asCondition() {
+                public Condition<P> asCondition() {
                     return this;
                 }
 
                 @Override
-                public Concludable.Match<Condition> mapToDownstream(Mapping mapping, Conjunction nextResolverConjunction) {
+                public Concludable.Match<Condition<P>> mapToDownstream(Mapping mapping, Conjunction nextResolverConjunction) {
                     return Concludable.match(this, mapping, root(), nextResolverConjunction);
                 }
 
-                public Conclusion toUpstream(Conjunction conditionConjunction) {
+                public P toUpstream(Conjunction conditionConjunction) {
                     if (conceptMap().concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
                     ExplainableAnswer conditionAnswer = explainables.isEmpty() ? null :
                             new ExplainableAnswer(conceptMap, conditionConjunction, explainables);
@@ -628,15 +642,15 @@ public abstract class AnswerState {
                 }
 
                 @Override
-                Condition with(ConceptMap extension, boolean requiresReiteration) {
-                    return new Condition(extendAnswer(extension), parent(), filter, root(), requiresReiteration, explainables);
+                Condition<P> with(ConceptMap extension, boolean requiresReiteration) {
+                    return new Condition<>(extendAnswer(extension), parent(), filter, root(), requiresReiteration, explainables);
                 }
 
                 @Override
-                public Condition with(ConceptMap extension, boolean requiresReiteration, Conjunction source, Explanation explanation) {
+                public Condition<P> with(ConceptMap extension, boolean requiresReiteration, Conjunction source, Explanation explanation) {
                     Set<Conjunction> explainablesClone = new HashSet<>(explainables);
                     explainablesClone.add(source);
-                    return new Condition(extendAnswer(extension), parent(), filter, root(), requiresReiteration, explainablesClone);
+                    return new Condition<>(extendAnswer(extension), parent(), filter, root(), requiresReiteration, explainablesClone);
                 }
 
                 @Override
@@ -653,11 +667,11 @@ public abstract class AnswerState {
                 public boolean equals(Object o) {
                     if (this == o) return true;
                     if (o == null || getClass() != o.getClass()) return false;
-                    Condition filtered = (Condition) o;
-                    return Objects.equals(root(), filtered.root()) &&
-                            Objects.equals(conceptMap, filtered.conceptMap) &&
-                            Objects.equals(parent, filtered.parent) &&
-                            Objects.equals(filter, filtered.filter);
+                    Condition that = (Condition) o;
+                    return Objects.equals(root(), that.root()) &&
+                            Objects.equals(conceptMap, that.conceptMap) &&
+                            Objects.equals(parent, that.parent) &&
+                            Objects.equals(filter, that.filter);
                 }
 
                 @Override
@@ -777,23 +791,17 @@ public abstract class AnswerState {
                                      sourceConjunction, explanation);
             }
 
-            public PRNT toUpstreamInferred(ConceptMap additionalConcepts) {
-                // TODO should we carry the condition answer inside conclusion answer or outside?
-                Explanation explanation = new Explanation(conclusionAnswer.rule(), mapping, conclusionAnswer, conclusionAnswer.conditionAnswer());
-                return parent().with(mapping.unTransform(additionalConcepts), requiresReiteration || parent().requiresReiteration(),
-                                     sourceConjunction, explanation);
-            }
-
-            public Optional<Conclusion> unifyToDownstream(Unifier unifier, Rule rule) {
-                return Conclusion.unify((Match)this, unifier, rule, root());
-//                return null;
-            }
+            public abstract Optional<? extends Conclusion<?, ?>> toDownstream(Unifier unifier, Rule rule);
 
             @Override
             public boolean isConcludable() { return true; }
 
             @Override
             public Concludable<?, ?> asConcludable() { return this; }
+
+            public boolean isExplain() {
+                return false;
+            }
 
             public static class Match<P extends Compound<P, ?>> extends Concludable<Match<P>, P> {
 
@@ -806,13 +814,18 @@ public abstract class AnswerState {
                 }
 
                 @Override
-                Match<P> with(ConceptMap extension, boolean requiresReiteration) {
+                public Optional<Conclusion.Match> toDownstream(Unifier unifier, Rule rule) {
+                    return Conclusion.Match.match(this, unifier, rule, root());
+                }
+
+                @Override
+                Concludable.Match<P> with(ConceptMap extension, boolean requiresReiteration) {
                     // if we decide to keep an "explain" flag, we would use this endpoint
                     throw GraknException.of(ILLEGAL_STATE);
                 }
 
-                Match<P> with(ConceptMap extension, boolean requiresReiteration, ConclusionAnswer conclusionAnswer) {
-                    return new Match<>(extendAnswer(extension), parent(), sourceConjunction, conclusionAnswer, mapping, root(), requiresReiteration);
+                Concludable.Match<P> with(ConceptMap extension, boolean requiresReiteration, ConclusionAnswer conclusionAnswer) {
+                    return new Concludable.Match<>(extendAnswer(extension), parent(), sourceConjunction, conclusionAnswer, mapping, root(), requiresReiteration);
                 }
 
                 @Override
@@ -828,11 +841,11 @@ public abstract class AnswerState {
                 public boolean equals(Object o) {
                     if (this == o) return true;
                     if (o == null || getClass() != o.getClass()) return false;
-                    Match mapped = (Match) o;
-                    return Objects.equals(root(), mapped.root()) &&
-                            Objects.equals(conceptMap, mapped.conceptMap) &&
-                            Objects.equals(parent, mapped.parent) &&
-                            Objects.equals(mapping, mapped.mapping);
+                    Match that = (Match) o;
+                    return Objects.equals(root(), that.root()) &&
+                            Objects.equals(conceptMap, that.conceptMap) &&
+                            Objects.equals(parent, that.parent) &&
+                            Objects.equals(mapping, that.mapping);
                 }
 
                 @Override
@@ -851,10 +864,10 @@ public abstract class AnswerState {
                     this.hash = Objects.hash(root, conceptMap, mapping, parent, conclusionAnswer); //note: includes conclusion answer
                 }
 
-//                public Optional<Conclusion> unifyToDownstream(Unifier unifier, Rule rule) {
-//                    // TODO specialise
-//                    return Conclusion.unify(this, unifier, rule, root());
-//                }
+                @Override
+                public Optional<Conclusion.Explain> toDownstream(Unifier unifier, Rule rule) {
+                    return Conclusion.explain(this, unifier, rule, root());
+                }
 
                 @Override
                 Explain with(ConceptMap extension, boolean requiresReiteration) {
@@ -864,6 +877,11 @@ public abstract class AnswerState {
 
                 Explain with(ConceptMap extension, boolean requiresReiteration, ConclusionAnswer conclusionAnswer) {
                     return new Explain(extendAnswer(extension), parent(), mapping, sourceConjunction, conclusionAnswer, root(), requiresReiteration);
+                }
+
+                @Override
+                public boolean isExplain() {
+                    return true;
                 }
 
                 @Override
@@ -895,106 +913,203 @@ public abstract class AnswerState {
             }
         }
 
-        /*
-        TODO we should create Conclusion.Initial and Conclusion.Final/Finished
-         */
-        public static class Conclusion extends Partial<Conclusion, Concludable.Match<?>> {
+        public static abstract class Conclusion<SLF extends Conclusion<SLF, PRNT>, PRNT extends Concludable<?, ?>> extends Partial<SLF, PRNT> {
 
-            private final Unifier unifier;
-            private final Instance instanceRequirements;
-            private final Rule rule;
-            private final ExplainableAnswer conditionAnswer;
+            final Rule rule;
+            final Unifier unifier;
+            final Instance instanceRequirements;
+            final ExplainableAnswer conditionAnswer;
 
-            private final int hash;
-
-            private Conclusion(ConceptMap unifiedConceptMap, Concludable.Match<?> parent, Unifier unifier,
-                               Instance instanceRequirements, Rule rule, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration,
-                               @Nullable ExplainableAnswer conditionAnswer) {
-                super(unifiedConceptMap, parent, root, requiresReiteration);
+            public Conclusion(ConceptMap partialAnswer, PRNT parent, Rule rule, Unifier unifier,
+                              Instance instanceRequirements, @Nullable ExplainableAnswer conditionAnswer, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
+                super(partialAnswer, parent, root, requiresReiteration);
+                this.rule = rule;
                 this.unifier = unifier;
                 this.instanceRequirements = instanceRequirements;
-                this.rule = rule;
                 this.conditionAnswer = conditionAnswer;
-                this.hash = Objects.hash(root, conceptMap, rule, unifier, instanceRequirements, parent);
             }
 
-            static Optional<Conclusion> unify(Concludable.Match parent, Unifier unifier, Rule rule, Actor.Driver<? extends Resolver<?>> root) {
+            static Optional<Match> match(Concludable.Match<?> parent, Unifier unifier, Rule rule, Actor.Driver<? extends Resolver<?>> root) {
                 Optional<Pair<ConceptMap, Instance>> unified = unifier.unify(parent.conceptMap());
-                return unified.map(unification -> new Conclusion(
-                        unification.first(), parent, unifier, unification.second(), rule, root, false, null
+                return unified.map(unification -> new Match(
+                        unification.first(), parent, rule, unifier, unification.second(), null, root, false
                 ));
             }
 
-            public Compound.Condition filterToDownstream(Set<Identifier.Variable.Retrievable> filter) {
-                return Compound.Condition.create(this, filter, root());
+            static Optional<Explain> explain(Concludable.Explain parent, Unifier unifier, Rule rule, Actor.Driver<? extends Resolver<?>> root) {
+                Optional<Pair<ConceptMap, Instance>> unified = unifier.unify(parent.conceptMap());
+                return unified.map(unification -> new Explain(
+                        unification.first(), parent, rule, unifier, unification.second(), null, root, false
+                ));
             }
 
-            public Optional<Concludable<?, ?>> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts) {
-                Optional<ConceptMap> unUnified = unifier.unUnify(concepts, instanceRequirements);
-                return unUnified.map(ans -> {
-                    // TODO we could make this "free" (object creation only) and skip the toConceptMap if we just store the raw map
-                    ConclusionAnswer conclusionAnswer = new ConclusionAnswer(rule, toConceptMap(concepts), unifier, conditionAnswer);
-                    return parent().with(ans, true, conclusionAnswer);
-                });
-            }
+            abstract SLF with(ConceptMap extension, boolean requiresReiteration, ExplainableAnswer conditionAnswer);
 
-            private ConceptMap toConceptMap(Map<Identifier.Variable, Concept> concepts) {
-                Map<Identifier.Variable.Retrievable, Concept> filteredMap = new HashMap<>();
-                iterate(concepts.entrySet()).filter(entry -> entry.getKey().isRetrievable()).forEachRemaining(entry ->
-                                                                                                                      filteredMap.put(entry.getKey().asRetrievable(), entry.getValue())
-                );
-                return new ConceptMap(filteredMap);
-            }
+            // TODO it should be possible to generify this method implementation too, the generics get tricky
+            public abstract Optional<? extends PRNT> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts);
+
+            // TODO it should be possible to generify this method implementation too, the generics get tricky
+            public abstract Compound.Condition<SLF> toDownstream(Set<Identifier.Variable.Retrievable> filter);
+
+            public abstract SLF extend(ConceptMap ans);
 
             @Override
             public boolean isConclusion() { return true; }
 
             @Override
-            public Conclusion asConclusion() { return this; }
+            public Conclusion<?, ?> asConclusion() { return this; }
 
-            Conclusion with(ConceptMap extension, boolean requiresReiteration) {
-                throw GraknException.of(ILLEGAL_STATE);
+            ConceptMap toConceptMap(Map<Identifier.Variable, Concept> concepts) {
+                Map<Identifier.Variable.Retrievable, Concept> filteredMap = new HashMap<>();
+                iterate(concepts.entrySet()).filter(entry -> entry.getKey().isRetrievable())
+                        .forEachRemaining(entry -> filteredMap.put(entry.getKey().asRetrievable(), entry.getValue()));
+                return new ConceptMap(filteredMap);
             }
 
-            Conclusion with(ConceptMap extension, boolean requiresReiteration, ExplainableAnswer conditionAnswer) {
-                return new Conclusion(extendAnswer(extension), parent(), unifier, instanceRequirements, rule, root(), requiresReiteration, conditionAnswer);
+            public static class Match extends Conclusion<Match, Concludable.Match<?>> {
+
+                private final int hash;
+
+                private Match(ConceptMap unifiedConceptMap, Concludable.Match<?> parent, Rule rule, Unifier unifier,
+                              Instance instanceRequirements, @Nullable ExplainableAnswer conditionAnswer, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
+                    super(unifiedConceptMap, parent, rule, unifier, instanceRequirements, conditionAnswer, root, requiresReiteration);
+                    this.hash = Objects.hash(root, conceptMap, rule, unifier, instanceRequirements, parent);
+                }
+
+                @Override
+                public Optional<Concludable.Match<?>> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts) {
+                    Optional<ConceptMap> unUnified = unifier.unUnify(concepts, instanceRequirements);
+                    return unUnified.map(ans -> {
+                        // TODO we could make this "free" (object creation only) and skip the toConceptMap if we just store the raw map
+                        ConclusionAnswer conclusionAnswer = new ConclusionAnswer(rule, toConceptMap(concepts), unifier, conditionAnswer);
+                        return parent().with(ans, true, conclusionAnswer);
+                    });
+                }
+
+                @Override
+                public Compound.Condition<Match> toDownstream(Set<Identifier.Variable.Retrievable> filter) {
+                    return Compound.Condition.create(this, filter, root());
+                }
+
+                @Override
+                public Match extend(ConceptMap ans) {
+                    Map<Identifier.Variable.Retrievable, Concept> extended = new HashMap<>();
+                    extended.putAll(ans.concepts());
+                    extended.putAll(conceptMap.concepts());
+                    return new Match(new ConceptMap(extended), parent(), rule, unifier, instanceRequirements, conditionAnswer, root(),
+                                     requiresReiteration);
+                }
+
+                Match with(ConceptMap extension, boolean requiresReiteration) {
+                    throw GraknException.of(ILLEGAL_STATE);
+                }
+
+                Match with(ConceptMap extension, boolean requiresReiteration, ExplainableAnswer conditionAnswer) {
+                    return new Match(extendAnswer(extension), parent(), rule, unifier, instanceRequirements, conditionAnswer, root(), requiresReiteration);
+                }
+
+                @Override
+                public String toString() {
+                    return "AnswerState.Partial.Conclusion.Match{" +
+                            "root=" + root() +
+                            ", conceptMap=" + conceptMap() +
+                            ", rule=" + rule.getLabel() +
+                            ", unifier=" + unifier +
+                            ", instanceRequirements=" + instanceRequirements +
+                            '}';
+                }
+
+                @Override
+                public boolean equals(Object o) {
+                    if (this == o) return true;
+                    if (o == null || getClass() != o.getClass()) return false;
+                    Match unified = (Match) o;
+                    return Objects.equals(root(), unified.root()) &&
+                            Objects.equals(conceptMap, unified.conceptMap) &&
+                            Objects.equals(parent, unified.parent) &&
+                            Objects.equals(rule, unified.rule) &&
+                            Objects.equals(unifier, unified.unifier) &&
+                            Objects.equals(instanceRequirements, unified.instanceRequirements);
+                }
+
+                @Override
+                public int hashCode() {
+                    return hash;
+                }
             }
 
-            public Conclusion extend(ConceptMap ans) {
-                Map<Identifier.Variable.Retrievable, Concept> extended = new HashMap<>();
-                extended.putAll(ans.concepts());
-                extended.putAll(conceptMap.concepts());
-                return new Conclusion(new ConceptMap(extended), parent(), unifier, instanceRequirements, rule, root(),
-                                      requiresReiteration, conditionAnswer);
-            }
+            public static class Explain extends Conclusion<Explain, Concludable.Explain> {
 
-            @Override
-            public String toString() {
-                return "AnswerState.Partial.Conclusion{" +
-                        "root=" + root() +
-                        ", conceptMap=" + conceptMap() +
-                        ", rule=" + rule.getLabel() +
-                        ", unifier=" + unifier +
-                        ", instanceRequirements=" + instanceRequirements +
-                        '}';
-            }
+                private final int hash;
 
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-                Conclusion unified = (Conclusion) o;
-                return Objects.equals(root(), unified.root()) &&
-                        Objects.equals(conceptMap, unified.conceptMap) &&
-                        Objects.equals(parent, unified.parent) &&
-                        Objects.equals(rule, unified.rule) &&
-                        Objects.equals(unifier, unified.unifier) &&
-                        Objects.equals(instanceRequirements, unified.instanceRequirements);
-            }
+                private Explain(ConceptMap unifiedConceptMap, Concludable.Explain parent, Rule rule, Unifier unifier,
+                                Instance instanceRequirements, @Nullable ExplainableAnswer conditionAnswer, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
+                    super(unifiedConceptMap, parent, rule, unifier, instanceRequirements, conditionAnswer, root, requiresReiteration);
+                    this.hash = Objects.hash(root, conceptMap, rule, unifier, instanceRequirements, parent, conditionAnswer);
+                }
 
-            @Override
-            public int hashCode() {
-                return hash;
+                @Override
+                public Optional<Concludable.Explain> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts) {
+                    Optional<ConceptMap> unUnified = unifier.unUnify(concepts, instanceRequirements);
+                    return unUnified.map(ans -> {
+                        // TODO we could make this "free" (object creation only) and skip the toConceptMap if we just store the raw map
+                        ConclusionAnswer conclusionAnswer = new ConclusionAnswer(rule, toConceptMap(concepts), unifier, conditionAnswer);
+                        return parent().with(ans, true, conclusionAnswer);
+                    });
+                }
+
+                @Override
+                public Compound.Condition<Explain> toDownstream(Set<Identifier.Variable.Retrievable> filter) {
+                    return Compound.Condition.create(this, filter, root());
+                }
+
+                @Override
+                public Explain extend(ConceptMap ans) {
+                    Map<Identifier.Variable.Retrievable, Concept> extended = new HashMap<>();
+                    extended.putAll(ans.concepts());
+                    extended.putAll(conceptMap.concepts());
+                    return new Explain(new ConceptMap(extended), parent(), rule, unifier, instanceRequirements, conditionAnswer, root(),
+                                       requiresReiteration);
+                }
+
+                Explain with(ConceptMap extension, boolean requiresReiteration) {
+                    throw GraknException.of(ILLEGAL_STATE);
+                }
+
+                Explain with(ConceptMap extension, boolean requiresReiteration, ExplainableAnswer conditionAnswer) {
+                    return new Explain(extendAnswer(extension), parent(), rule, unifier, instanceRequirements, conditionAnswer, root(), requiresReiteration);
+                }
+
+                @Override
+                public String toString() {
+                    return "AnswerState.Partial.Conclusion{" +
+                            "root=" + root() +
+                            ", conceptMap=" + conceptMap() +
+                            ", rule=" + rule.getLabel() +
+                            ", unifier=" + unifier +
+                            ", instanceRequirements=" + instanceRequirements +
+                            ", conditionAnswer=" + conditionAnswer +
+                            '}';
+                }
+
+                @Override
+                public boolean equals(Object o) {
+                    if (this == o) return true;
+                    if (o == null || getClass() != o.getClass()) return false;
+                    Explain that = (Explain) o;
+                    return Objects.equals(root(), that.root()) &&
+                            Objects.equals(conceptMap, that.conceptMap) &&
+                            Objects.equals(parent, that.parent) &&
+                            Objects.equals(rule, that.rule) &&
+                            Objects.equals(unifier, that.unifier) &&
+                            Objects.equals(instanceRequirements, that.instanceRequirements) &&
+                            Objects.equals(conditionAnswer, that.conditionAnswer);
+                }
+
+                @Override
+                public int hashCode() {
+                    return hash;
+                }
             }
         }
     }

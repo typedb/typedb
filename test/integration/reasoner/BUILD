@@ -45,6 +45,33 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
+    name = "test-explanation",
+    srcs = ["ExplanationTest.java"],
+    test_class = "grakn.core.reasoner.ExplanationTest",
+    native_libraries_deps = [
+        "//concept:concept",
+        "//logic:logic",
+        "//reasoner:reasoner",
+        "//rocks:rocks",
+        "//:grakn",
+    ],
+    deps = [
+        # Internal dependencies
+        "//test/integration/util:util",
+        "//common:common",
+        "//concurrent:concurrent",
+
+        # External dependencies from Grakn Labs
+        "@graknlabs_common//:common",
+        "@graknlabs_graql//java:graql",
+    ],
+    resources = [
+        "//common/test:logback"
+    ],
+    resource_strip_prefix = "common/test",
+)
+
+host_compatible_java_test(
     name = "test-resolution",
     srcs = ["resolution/ResolutionTest.java", "resolution/Util.java"],
     test_class = "grakn.core.reasoner.resolution.ResolutionTest",
