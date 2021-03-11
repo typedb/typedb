@@ -28,6 +28,7 @@ import grakn.core.logic.resolvable.Unifier;
 import grakn.core.logic.resolvable.Unifier.Requirements.Instance;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.framework.Resolver;
+import grakn.core.reasoner.resolution.resolver.RootResolver;
 import grakn.core.traversal.common.Identifier;
 
 import javax.annotation.Nullable;
@@ -159,7 +160,7 @@ public abstract class AnswerState {
 
                 @Override
                 public String toString() {
-                    return "AnswerState.Top.Initial{" +
+                    return "AnswerState.Top.Match.Initial{" +
                             "root=" + root() +
                             ", conceptMap=" + conceptMap +
                             ", filter=" + getFilter +
@@ -210,7 +211,7 @@ public abstract class AnswerState {
 
                 @Override
                 public String toString() {
-                    return "AnswerState.Top.Finished{" +
+                    return "AnswerState.Top.Match.Finished{" +
                             "root=" + root() +
                             ", conceptMap=" + conceptMap +
                             ", filter=" + getFilter +
@@ -236,8 +237,79 @@ public abstract class AnswerState {
             }
         }
 
-        public static class Explain {
+        public static class Explain extends Top {
 
+            public Explain(ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
+                super(conceptMap, root, requiresReiteration);
+            }
+
+            public static Initial initial(ConceptMap bounds, Actor.Driver<RootResolver.Explain> root) {
+                return new Initial(bounds, root, false);
+            }
+
+            @Override
+            public ConceptMap conceptMap() {
+                return conceptMap;
+            }
+
+            public static class Initial extends Explain {
+
+                public Initial(ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
+                    super(conceptMap, root, requiresReiteration);
+                }
+
+                public Partial.Compound.ExplainRoot toDownstream() {
+                    return Partial.Compound.ExplainRoot.create(conceptMap, this, root());
+                }
+
+                public Finished finish(ConceptMap conceptMap, boolean requiresReiteration, Explanation explanation) {
+                    return new Finished(conceptMap, root(), requiresReiteration, explanation);
+                }
+            }
+
+            public static class Finished extends Explain {
+
+                private final Explanation explanation;
+                private final int hash;
+
+                public Finished(ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration,
+                                Explanation explanation) {
+                    super(conceptMap, root, requiresReiteration);
+                    this.explanation = explanation;
+                    this.hash = Objects.hash(root, conceptMap, requiresReiteration, explanation);
+                }
+
+                public Explanation explanation() {
+                    return explanation;
+                }
+
+                @Override
+                public String toString() {
+                    return "AnswerState.Top.Explain.Finished{" +
+                            "root=" + root() +
+                            ", conceptMap=" + conceptMap +
+                            ", requiresReiteration=" + requiresReiteration +
+                            ", explanation=" + explanation +
+                            '}';
+                }
+
+                @Override
+                public boolean equals(Object o) {
+                    if (this == o) return true;
+                    if (o == null || getClass() != o.getClass()) return false;
+                    Top.Explain.Finished that = (Top.Explain.Finished) o;
+                    return Objects.equals(root(), that.root()) &&
+                            Objects.equals(conceptMap, that.conceptMap) &&
+                            requiresReiteration == that.requiresReiteration &&
+                            Objects.equals(explanation, that.explanation);
+                }
+
+                @Override
+                public int hashCode() {
+                    return hash;
+                }
+
+            }
         }
 
     }
@@ -407,15 +479,74 @@ public abstract class AnswerState {
 
             }
 
+            public static class ExplainRoot extends Compound<Top.Explain.Initial> {
+
+                private final int hash;
+                private final Explanation explanation;
+
+                private ExplainRoot(ConceptMap partialAnswer, Top.Explain.Initial parent, Actor.Driver<? extends Resolver<?>> root,
+                                   boolean requiresReiteration, @Nullable Explanation explanation) {
+                    super(partialAnswer, parent, root, requiresReiteration);
+                    this.explanation = explanation;
+                    this.hash = Objects.hash(root, conceptMap, parent, requiresReiteration, explanation);
+                }
+
+                static ExplainRoot create(ConceptMap conceptMap, Top.Explain.Initial parent, Actor.Driver<? extends Resolver<?>> root) {
+                    return new ExplainRoot(conceptMap, parent, root, false, null);
+                }
+
+                @Override
+                ExplainRoot with(ConceptMap extension, boolean requiresReiteration) {
+                    throw GraknException.of(ILLEGAL_STATE);
+                }
+
+                @Override
+                public ExplainRoot with(ConceptMap extension, boolean requiresReiteration, Conjunction source, Explanation explanation) {
+                    return new ExplainRoot(extendAnswer(extension), parent(), root(), requiresReiteration, explanation);
+                }
+
+                public Top.Explain.Finished toFinishedTop() {
+                    return parent().finish(conceptMap(), requiresReiteration || parent().requiresReiteration(), explanation);
+                }
+
+                @Override
+                public String toString() {
+                    return "AnswerState.Partial.Compound.ExplainRoot{" +
+                            "root=" + root() +
+                            ", conceptMap=" + conceptMap() +
+                            ", requiresReiteration=" + requiresReiteration +
+                            ", explanation=" + explanation +
+                            '}';
+                }
+
+                @Override
+                public boolean equals(Object o) {
+                    if (this == o) return true;
+                    if (o == null || getClass() != o.getClass()) return false;
+                    ExplainRoot that = (ExplainRoot) o;
+                    return Objects.equals(root(), that.root()) &&
+                            Objects.equals(conceptMap, that.conceptMap) &&
+                            Objects.equals(parent, that.parent) &&
+                            Objects.equals(requiresReiteration, that.requiresReiteration) &&
+                            Objects.equals(explanation, that.explanation);
+                }
+
+                @Override
+                public int hashCode() {
+                    return hash;
+                }
+
+            }
+
             public static class Condition extends Compound<Conclusion> {
 
                 private final Set<Conjunction> explainables;
                 private final Set<Identifier.Variable.Retrievable> filter;
                 private final int hash;
 
-                private Condition(ConceptMap filteredConceptMap, Conclusion parent, Set<Identifier.Variable.Retrievable> filter,
+                private Condition(ConceptMap filteredMap, Conclusion parent, Set<Identifier.Variable.Retrievable> filter,
                                   Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration, Set<Conjunction> explainables) {
-                    super(filteredConceptMap, parent, root, requiresReiteration);
+                    super(filteredMap, parent, root, requiresReiteration);
                     this.explainables = explainables;
                     this.filter = filter;
                     this.hash = Objects.hash(root, conceptMap, parent, filter);

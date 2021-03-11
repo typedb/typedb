@@ -22,18 +22,22 @@ import grakn.core.concept.answer.ExplainableAnswer;
 import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Unifier;
 
+import java.util.Objects;
+
 public class ConclusionAnswer {
 
     private final Rule rule;
     private final ConceptMap conceptMap;
     private final Unifier unifier;
     private final ExplainableAnswer conditionAnswer;
+    private final int hash;
 
     public ConclusionAnswer(Rule rule, ConceptMap conceptMap, Unifier unifier, ExplainableAnswer conditionAnswer) {
         this.rule = rule;
         this.conceptMap = conceptMap;
         this.unifier = unifier;
         this.conditionAnswer = conditionAnswer;
+        this.hash = Objects.hash(rule, conceptMap, unifier, conditionAnswer);
     }
 
     public Rule rule() {
@@ -42,5 +46,21 @@ public class ConclusionAnswer {
 
     public ExplainableAnswer conditionAnswer() {
         return conditionAnswer;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        final ConclusionAnswer that = (ConclusionAnswer) o;
+        return Objects.equals(rule, that.rule) &&
+                Objects.equals(conceptMap, that.conceptMap) &&
+                Objects.equals(unifier, that.unifier) &&
+                Objects.equals(conditionAnswer, that.conditionAnswer);
+    }
+
+    @Override
+    public int hashCode() {
+        return hash;
     }
 }

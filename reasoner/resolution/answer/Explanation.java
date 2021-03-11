@@ -22,6 +22,7 @@ import grakn.core.logic.Rule;
 import grakn.core.traversal.common.Identifier;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public class Explanation {
@@ -30,12 +31,14 @@ public class Explanation {
     private final Mapping intermediateMapping;
     private final ConclusionAnswer conclusionAnswer;
     private final ExplainableAnswer conditionAnswer;
+    private final int hash;
 
     public Explanation(Rule rule, Mapping intermediateMapping, ConclusionAnswer conclusionAnswer, ExplainableAnswer conditionAnswer) {
         this.rule = rule;
         this.intermediateMapping = intermediateMapping;
         this.conclusionAnswer = conclusionAnswer;
         this.conditionAnswer = conditionAnswer;
+        this.hash = Objects.hash(rule, intermediateMapping, conclusionAnswer, conditionAnswer);
     }
 
     public Map<Identifier.Variable.Retrievable, Set<Identifier.Variable.Retrievable>> variableMapping() {
@@ -43,4 +46,19 @@ public class Explanation {
         return null;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        final Explanation that = (Explanation) o;
+        return Objects.equals(rule, that.rule) &&
+                Objects.equals(intermediateMapping, that.intermediateMapping) &&
+                Objects.equals(conclusionAnswer, that.conclusionAnswer) &&
+                Objects.equals(conditionAnswer, that.conditionAnswer);
+    }
+
+    @Override
+    public int hashCode() {
+        return hash;
+    }
 }

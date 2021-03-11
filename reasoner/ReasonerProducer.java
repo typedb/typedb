@@ -114,7 +114,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     // note: root resolver calls this single-threaded, so is threads safe
-    private void requestAnswered(Top answer) {
+    private void requestAnswered(Top.Match.Finished answer) {
         if (options.traceInference()) ResolutionTracer.get().finish();
         if (answer.requiresReiteration()) requiresReiteration = true;
 

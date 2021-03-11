@@ -37,13 +37,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
-public interface RootResolver {
+public interface RootResolver<TOP extends Top> {
 
-    void submitAnswer(Top.Match.Finished answer);
+    void submitAnswer(TOP answer);
 
     void submitFail(int iteration);
 
-    class Conjunction extends ConjunctionResolver<Conjunction> implements RootResolver {
+    class Conjunction extends ConjunctionResolver<Conjunction> implements RootResolver<Top.Match.Finished> {
 
         private static final Logger LOG = LoggerFactory.getLogger(Conjunction.class);
 
@@ -131,7 +131,7 @@ public interface RootResolver {
 
     }
 
-    class Disjunction extends DisjunctionResolver<Disjunction> implements RootResolver {
+    class Disjunction extends DisjunctionResolver<Disjunction> implements RootResolver<Top.Match.Finished> {
 
         private static final Logger LOG = LoggerFactory.getLogger(Disjunction.class);
         private final Consumer<Top.Match.Finished> onAnswer;
@@ -207,4 +207,54 @@ public interface RootResolver {
             return new RequestState(newIteration, requestStatePrior.produced());
         }
     }
+
+
+    class Explain extends Resolver<Explain> implements RootResolver<Top.Explain.Finished> {
+
+        private final grakn.core.pattern.Conjunction conjunction;
+        private final Consumer<Top.Explain.Finished> requestAnswered;
+        private final Consumer<Integer> requestFailed;
+        private final Consumer<Throwable> exception;
+
+        public Explain(Driver<Explain> driver, grakn.core.pattern.Conjunction conjunction, Consumer<Top.Explain.Finished> requestAnswered,
+                       Consumer<Integer> requestFailed, Consumer<Throwable> exception, ResolverRegistry registry,
+                       TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
+            super(driver, "Explainer(" + conjunction, registry, traversalEngine, conceptMgr, resolutionTracing);
+            this.conjunction = conjunction;
+            this.requestAnswered = requestAnswered;
+            this.requestFailed = requestFailed;
+            this.exception = exception;
+        }
+
+        @Override
+        public void receiveRequest(Request fromUpstream, int iteration) {
+
+        }
+
+        @Override
+        protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
+
+        }
+
+        @Override
+        protected void receiveFail(Response.Fail fromDownstream, int iteration) {
+
+        }
+
+        @Override
+        protected void initialiseDownstreamResolvers() {
+
+        }
+
+        @Override
+        public void submitAnswer(Top.Explain.Finished answer) {
+
+        }
+
+        @Override
+        public void submitFail(int iteration) {
+
+        }
+    }
+
 }
