@@ -72,12 +72,7 @@ public class SessionService implements AutoCloseable {
     }
 
     void remove(TransactionService transactionSrv) {
-        try {
-            accessLock.readLock().lock();
-            transactionServices.remove(transactionSrv);
-        } finally {
-            accessLock.readLock().unlock();
-        }
+        transactionServices.remove(transactionSrv);
     }
 
     public boolean isOpen() {
