@@ -74,9 +74,9 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     private static final String TRACE_PREFIX = "transaction_services.";
     private static final int MAX_NETWORK_LATENCY_MILLIS = 3_000;
 
+    private final GraknService graknSrv;
     private final StreamObserver<TransactionProto.Transaction.Res> responder;
     private final ConcurrentMap<String, BatchedStream<?>> streams;
-    private final GraknService graknSrv;
     private final AtomicBoolean isOpen;
 
     private volatile SessionService sessionSrv;
@@ -94,9 +94,9 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     }
 
     public TransactionService(GraknService graknSrv, StreamObserver<TransactionProto.Transaction.Res> responder) {
+        this.graknSrv = graknSrv;
         this.responder = SynchronizedStreamObserver.of(responder);
         this.streams = new ConcurrentHashMap<>();
-        this.graknSrv = graknSrv;
         this.isOpen = new AtomicBoolean(false);
     }
 
@@ -232,7 +232,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     private <T> void stream(Iterator<T> iterator, String requestID, int batchSize, boolean prefetch,
                             Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
         BatchedStream<T> batchingIterator = new BatchedStream<>(
-                iterator, requestID, batchSize, networkLatencyMillis, responseBuilderFn
+                iterator, requestID, batchSize, responseBuilderFn
         );
         streams.compute(requestID, (key, oldValue) -> {
             if (oldValue == null) return batchingIterator;
@@ -292,7 +292,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         private final Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn;
         private final int batchSize;
 
-        BatchedStream(Iterator<T> iterator, String requestID, int batchSize, int latencyMillis,
+        BatchedStream(Iterator<T> iterator, String requestID, int batchSize,
                       Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
             this.iterator = iterator;
             this.requestID = requestID;
