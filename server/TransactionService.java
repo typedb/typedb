@@ -105,7 +105,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
 
     @Override
     public void onNext(TransactionProto.Transaction.Reqs requests) {
-        if (requests.getTransactionReqsList().isEmpty()) throw GraknException.of(EMPTY_TRANSACTION_REQUEST);
+        if (requests.getTransactionReqsList().isEmpty()) close(GraknException.of(EMPTY_TRANSACTION_REQUEST));
         else for (TransactionProto.Transaction.Req req : requests.getTransactionReqsList()) {
             execute(req);
         }
@@ -130,8 +130,8 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                 default:
                     executeRequest(request);
             }
-        } catch (Exception ex) {
-            close(ex);
+        } catch (Throwable error) {
+            close(error);
         } finally {
             mayCloseTrace(trace);
         }
@@ -265,22 +265,22 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     public synchronized void close() {
         if (isOpen.compareAndSet(true, false)) {
             transaction.close();
-            responder.onCompleted();
             sessionSrv.remove(this);
         }
+        responder.onCompleted();
     }
 
     public synchronized void close(Throwable error) {
         if (isOpen.compareAndSet(true, false)) {
             transaction.close();
-            responder.onError(ResponseBuilder.exception(error));
             sessionSrv.remove(this);
-            if (error instanceof StatusRuntimeException &&
-                    ((StatusRuntimeException) error).getStatus() == Status.CANCELLED) {
-                LOG.debug(error.getMessage(), error);
-            } else {
-                LOG.error(error.getMessage(), error);
-            }
+        }
+        responder.onError(ResponseBuilder.exception(error));
+        if (error instanceof StatusRuntimeException &&
+                ((StatusRuntimeException) error).getStatus() == Status.CANCELLED) {
+            LOG.debug(error.getMessage(), error);
+        } else {
+            LOG.error(error.getMessage(), error);
         }
     }
 
