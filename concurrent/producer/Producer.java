@@ -18,12 +18,12 @@
 package grakn.core.concurrent.producer;
 
 import javax.annotation.concurrent.ThreadSafe;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 
 @ThreadSafe
 public interface Producer<T> {
 
-    void produce(Queue<T> queue, int request, ExecutorService executor);
+    void produce(Queue<T> queue, int request, Executor executor);
 
     void recycle();
 

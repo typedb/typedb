@@ -18,10 +18,10 @@
 
 package grakn.core.traversal.procedure;
 
+import grakn.common.collection.ConcurrentSet;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Label;
-import grakn.common.collection.ConcurrentSet;
 import grakn.core.concurrent.producer.FunctionalProducer;
 import grakn.core.graph.GraphManager;
 import grakn.core.traversal.Traversal;
@@ -177,9 +177,9 @@ public class GraphProcedure implements Procedure {
         }
         assertWithinFilterBounds(filter);
         ConcurrentSet<VertexMap> produced = new ConcurrentSet<>();
-        FunctionalIterator<FunctionalIterator<VertexMap>> iterators = startVertex().iterator(graphMgr, params)
-                .map(v -> new GraphIterator(graphMgr, v, this, params, filter).distinct(produced));
-        return async(iterators, parallelisation);
+        return async(startVertex().iterator(graphMgr, params).map(
+                v -> new GraphIterator(graphMgr, v, this, params, filter).distinct(produced)
+        ), parallelisation);
     }
 
     @Override

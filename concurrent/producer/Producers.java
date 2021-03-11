@@ -24,7 +24,7 @@ import grakn.core.common.iterator.Iterators;
 import grakn.core.common.parameters.Arguments;
 
 import java.util.List;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 
 import static grakn.common.collection.Collections.list;
 
@@ -44,11 +44,11 @@ public class Producers {
         return new BaseProducer<>(iterator);
     }
 
-    public static <T> ProducerIterator<T> produce(Producer<T> producer, Either<Arguments.Query.Producer, Long> context, ExecutorService executor) {
+    public static <T> ProducerIterator<T> produce(Producer<T> producer, Either<Arguments.Query.Producer, Long> context, Executor executor) {
         return produce(list(producer), context, executor);
     }
 
-    public static <T> ProducerIterator<T> produce(List<Producer<T>> producers, Either<Arguments.Query.Producer, Long> context, ExecutorService executor) {
+    public static <T> ProducerIterator<T> produce(List<Producer<T>> producers, Either<Arguments.Query.Producer, Long> context, Executor executor) {
         int batchSize = context.isSecond() || context.first().isIncremental() ? BATCH_SIZE_DEFAULT : BATCH_SIZE_MAX;
         long limit = context.isSecond() ? context.second() : LIMIT_DEFAULT;
         return new ProducerIterator<>(producers, batchSize, limit, executor);

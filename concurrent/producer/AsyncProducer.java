@@ -18,15 +18,15 @@
 
 package grakn.core.concurrent.producer;
 
+import grakn.common.collection.ConcurrentSet;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.FunctionalIterator;
-import grakn.common.collection.ConcurrentSet;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -69,7 +69,7 @@ public class AsyncProducer<T> implements FunctionalProducer<T> {
     }
 
     @Override
-    public synchronized void produce(Queue<T> queue, int request, ExecutorService executor) {
+    public synchronized void produce(Queue<T> queue, int request, Executor executor) {
         if (isDone.get()) return;
         else if (!isInitialised) initialise(queue);
         distribute(queue, request, executor);
@@ -83,7 +83,7 @@ public class AsyncProducer<T> implements FunctionalProducer<T> {
         if (runningJobs.isEmpty()) done(queue);
     }
 
-    private synchronized void distribute(Queue<T> queue, int request, ExecutorService executor) {
+    private synchronized void distribute(Queue<T> queue, int request, Executor executor) {
         if (isDone.get()) return;
         int requestSplitMax = (int) Math.ceil((double) request / runningJobs.size());
         int requestSent = 0;
@@ -97,7 +97,7 @@ public class AsyncProducer<T> implements FunctionalProducer<T> {
         }
     }
 
-    private synchronized void transition(Queue<T> queue, FunctionalIterator<T> iterator, int unfulfilled, ExecutorService executor) {
+    private synchronized void transition(Queue<T> queue, FunctionalIterator<T> iterator, int unfulfilled, Executor executor) {
         if (!iterator.hasNext()) {
             if (runningJobs.remove(iterator) != null && iterators.hasNext()) compensate(queue, unfulfilled, executor);
             else if (!runningJobs.isEmpty() && unfulfilled > 0) distribute(queue, unfulfilled, executor);
@@ -108,7 +108,7 @@ public class AsyncProducer<T> implements FunctionalProducer<T> {
         }
     }
 
-    private synchronized void compensate(Queue<T> queue, int unfulfilled, ExecutorService executor) {
+    private synchronized void compensate(Queue<T> queue, int unfulfilled, Executor executor) {
         FunctionalIterator<T> it = iterators.next();
         runningJobs.put(it, completedFuture(null));
         if (unfulfilled > 0) {
@@ -118,7 +118,7 @@ public class AsyncProducer<T> implements FunctionalProducer<T> {
         }
     }
 
-    private void job(Queue<T> queue, FunctionalIterator<T> iterator, int request, ExecutorService executor) {
+    private void job(Queue<T> queue, FunctionalIterator<T> iterator, int request, Executor executor) {
         try {
             int unfulfilled = request;
             if (runningJobs.containsKey(iterator)) {

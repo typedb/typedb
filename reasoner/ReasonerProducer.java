@@ -17,7 +17,6 @@
 
 package grakn.core.reasoner;
 
-import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Options;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
@@ -40,10 +39,9 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static grakn.core.common.exception.ErrorMessage.Reasoner.RESOLUTION_TERMINATED;
 import static grakn.core.common.iterator.Iterators.iterate;
 
 @ThreadSafe
@@ -97,7 +95,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     @Override
-    public synchronized void produce(Queue<ConceptMap> queue, int request, ExecutorService executor) {
+    public synchronized void produce(Queue<ConceptMap> queue, int request, Executor executor) {
         assert this.queue == null || this.queue == queue;
         this.queue = queue;
         this.required.addAndGet(request);

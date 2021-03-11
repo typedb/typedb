@@ -67,7 +67,6 @@ public class Updater {
     }
 
     public static Updater create(Reasoner reasoner, ConceptManager conceptMgr, GraqlUpdate query, Context.Query context) {
-
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             VariableRegistry deleteRegistry = VariableRegistry.createFromThings(query.deleteVariables(), false);
             iterate(deleteRegistry.types()).filter(t -> !t.reference().isLabel()).forEachRemaining(t -> {

@@ -26,12 +26,10 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
-import static java.util.concurrent.Executors.newFixedThreadPool;
 
 public class Executors {
 
@@ -49,8 +47,8 @@ public class Executors {
     private static Executors singleton = null;
 
     private final ParallelThreadPoolExecutor serviceExecutorService;
-    private final ExecutorService asyncExecutorService1;
-    private final ExecutorService asyncExecutorService2;
+    private final ParallelThreadPoolExecutor asyncExecutorService1;
+    private final ParallelThreadPoolExecutor asyncExecutorService2;
     private final ActorExecutorGroup actorExecutorService;
     private final NioEventLoopGroup networkExecutorService;
     private final ScheduledThreadPoolExecutor scheduledThreadPool;
@@ -58,8 +56,8 @@ public class Executors {
     private Executors(int parallelisation) {
         if (parallelisation <= 0) throw GraknException.of(ILLEGAL_ARGUMENT);
         serviceExecutorService = new ParallelThreadPoolExecutor(parallelisation, threadFactory(GRAKN_CORE_SERVICE_THREAD_NAME));
-        asyncExecutorService1 = newFixedThreadPool(parallelisation, threadFactory(GRAKN_CORE_ASYNC_THREAD_1_NAME));
-        asyncExecutorService2 = newFixedThreadPool(parallelisation, threadFactory(GRAKN_CORE_ASYNC_THREAD_2_NAME));
+        asyncExecutorService1 = new ParallelThreadPoolExecutor(parallelisation, threadFactory(GRAKN_CORE_ASYNC_THREAD_1_NAME));
+        asyncExecutorService2 = new ParallelThreadPoolExecutor(parallelisation, threadFactory(GRAKN_CORE_ASYNC_THREAD_2_NAME));
         actorExecutorService = new ActorExecutorGroup(parallelisation, threadFactory(GRAKN_CORE_ACTOR_THREAD_NAME));
         networkExecutorService = new NioEventLoopGroup(parallelisation, threadFactory(GRAKN_CORE_NETWORK_THREAD_NAME));
         scheduledThreadPool = new ScheduledThreadPoolExecutor(GRAKN_CORE_SCHEDULED_THREAD_SIZE,
@@ -86,12 +84,12 @@ public class Executors {
         return singleton.serviceExecutorService;
     }
 
-    public static ExecutorService async1() {
+    public static ParallelThreadPoolExecutor async1() {
         assert isInitialised();
         return singleton.asyncExecutorService1;
     }
 
-    public static ExecutorService async2() {
+    public static ParallelThreadPoolExecutor async2() {
         assert isInitialised();
         return singleton.asyncExecutorService2;
     }
