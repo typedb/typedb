@@ -81,7 +81,7 @@ public class ResponseBuilder {
 
         public static SessionProto.Session.Open.Res open(SessionService sessionSrv, int durationMillis) {
             return SessionProto.Session.Open.Res.newBuilder().setSessionId(sessionSrv.UUIDAsByteString())
-                    .setProcessingTimeMillis(durationMillis).build();
+                    .setServerDurationMillis(durationMillis).build();
         }
 
         public static SessionProto.Session.Pulse.Res pulse(boolean isAlive) {
