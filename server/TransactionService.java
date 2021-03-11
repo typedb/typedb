@@ -179,7 +179,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     private void open(TransactionProto.Transaction.Req request) {
         if (isOpen.get()) throw GraknException.of(TRANSACTION_ALREADY_OPENED);
         TransactionProto.Transaction.Open.Req openReq = request.getOpenReq();
-        networkLatencyMillis = Math.min(openReq.getLatencyMillis(), MAX_NETWORK_LATENCY_MILLIS);
+        networkLatencyMillis = Math.min(openReq.getNetworkLatencyMillis(), MAX_NETWORK_LATENCY_MILLIS);
         sessionSrv = sessionService(graknSrv, openReq);
         sessionSrv.register(this);
         transaction = transaction(sessionSrv, openReq);
