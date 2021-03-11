@@ -17,38 +17,58 @@
 
 package grakn.core.reasoner;
 
+import grakn.core.common.parameters.Options;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.producer.Producer;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState;
+import grakn.core.reasoner.resolution.answer.AnswerState.Top;
 import grakn.core.reasoner.resolution.answer.Explanation;
 import grakn.core.reasoner.resolution.framework.ResolutionTracer;
-import grakn.core.reasoner.resolution.resolver.Explainer;
 
 import java.util.concurrent.ExecutorService;
 
 public class ExplanationProducer implements Producer<Explanation> {
 
-    private Conjunction conjunction;
-    private ConceptMap bounds;
+    private final Options.Query options;
+    private final Conjunction conjunction;
+    private final ConceptMap bounds;
+//    private final Actor.Driver<Explainer> explainer;
+//    private final Request explainRequest;
+    private boolean requiresReiteration;
+    private int iteration;
+    private Queue<Explanation> queue;
 
-    public ExplanationProducer(Conjunction conjunction, ConceptMap bounds, ResolverRegistry registry) {
+    public ExplanationProducer(Conjunction conjunction, ConceptMap bounds, ResolverRegistry registry, Options.Query options) {
         this.conjunction = conjunction;
         this.bounds = bounds;
-        Actor.Driver<Explainer> explainer = registry.explainer(conjunction, bounds, this::requestAnswered, this::requestFailed, this::exception);
+        this.options = options;
+        this.queue = null;
+        this.requiresReiteration = false;
+        this.iteration = 0;
+//        this.explainer = registry.explainer(conjunction, bounds, this::requestAnswered, this::requestFailed, this::exception);
+        if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
+
     }
 
     @Override
-    public void produce(Queue<Explanation> queue, int request, ExecutorService executor) {
+    public void produce(Queue<Explanation> queue, int toRequest, ExecutorService executor) {
+        assert this.queue == null || this.queue == queue;
+        this.queue = queue;
+        for (int i = 0; i < toRequest; i++) {
+            requestExplanation();
+        }
+    }
 
+    private void requestExplanation() {
+        if (options.traceInference()) ResolutionTracer.get().start();
+//        explainer.execute(explainer -> explainer.receiveRequest(explainRequest, iteration));
     }
 
     // note: root resolver calls this single-threaded, so is threads safe
-    private void requestAnswered(Explanation explanation) {
-//        if (options.traceInference()) ResolutionTracer.get().finish();
-//        if (answer.requiresReiteration()) requiresReiteration = true;
+    private void requestAnswered(Top answerWithExplanation) {
+        if (options.traceInference()) ResolutionTracer.get().finish();
+//        if (answerWithExplanation.requiresReiteration()) requiresReiteration = true;
 //
 //        queue.put(answer.conceptMap());
 //        if (required.decrementAndGet() > 0) requestAnswer();

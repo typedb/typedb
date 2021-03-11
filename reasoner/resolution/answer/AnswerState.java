@@ -84,17 +84,8 @@ public abstract class AnswerState {
 
     public static abstract class Top extends AnswerState {
 
-        final Set<Identifier.Variable.Name> getFilter;
-
-        Top(ConceptMap conceptMap, @Nullable Set<Identifier.Variable.Name> getFilter, Actor.Driver<? extends Resolver<?>> root,
-            boolean requiresReiteration) {
+        public Top(ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
             super(conceptMap, root, requiresReiteration);
-            this.getFilter = getFilter;
-        }
-
-        @Override
-        public ConceptMap conceptMap() {
-            return conceptMap.filter(getFilter);
         }
 
         public boolean isTop() { return true; }
@@ -103,99 +94,152 @@ public abstract class AnswerState {
             return this;
         }
 
-        public static class Initial extends Top {
+        public boolean isMatch() {
+            return false;
+        }
 
-            private final int hash;
+        public Match asMatch() {
+            throw GraknException.of(ILLEGAL_CAST, this.getClass(), Match.class);
+        }
 
-            Initial(ConceptMap conceptMap, @Nullable Set<Identifier.Variable.Name> getFilter, Actor.Driver<? extends Resolver<?>> root) {
-                super(conceptMap, getFilter, root, false);
-                this.hash = Objects.hash(conceptMap, getFilter, root);
+        public abstract static class Match extends Top {
+
+            final Set<Identifier.Variable.Name> getFilter;
+
+            Match(ConceptMap conceptMap, @Nullable Set<Identifier.Variable.Name> getFilter, Actor.Driver<? extends Resolver<?>> root,
+                  boolean requiresReiteration) {
+                super(conceptMap, root, requiresReiteration);
+                this.getFilter = getFilter;
             }
 
-            public static Initial create(Set<Identifier.Variable.Name> getFilter, Actor.Driver<? extends Resolver<?>> root) {
+            public static Initial initial(Set<Identifier.Variable.Name> getFilter, Actor.Driver<? extends Resolver<?>> root) {
                 return new Initial(new ConceptMap(), getFilter, root);
             }
 
-            public static Initial create(ConceptMap initialBounds, Set<Identifier.Variable.Name> getFilter, Actor.Driver<? extends Resolver<?>> root) {
-                return new Initial(initialBounds, getFilter, root);
-            }
-
-            public Partial.Compound.Root toDownstream() {
-                return Partial.Compound.Root.create(conceptMap(), this, root());
-            }
-
-            Finished finish(ConceptMap conceptMap, Conjunction conjunctionAnswered, Set<Conjunction> explainables,
-                            boolean requiresReiteration) {
-                return new Finished(conceptMap, getFilter, root(), conjunctionAnswered, explainables, requiresReiteration);
+            @Override
+            public boolean isMatch() {
+                return true;
             }
 
             @Override
-            public String toString() {
-                return "AnswerState.Top.Initial{" +
-                        "root=" + root() +
-                        ", conceptMap=" + conceptMap +
-                        ", filter=" + getFilter +
-                        '}';
+            public Match asMatch() {
+                return this;
+            }
+
+            public boolean isFinished() {
+                return false;
+            }
+
+            public Finished asFinished() {
+                throw GraknException.of(ILLEGAL_CAST, this.getClass(), Finished.class);
             }
 
             @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-                Top.Initial top = (Top.Initial) o;
-                return Objects.equals(root(), top.root()) &&
-                        Objects.equals(conceptMap, top.conceptMap) &&
-                        Objects.equals(getFilter, top.getFilter);
+            public ConceptMap conceptMap() {
+                return conceptMap.filter(getFilter);
             }
 
-            @Override
-            public int hashCode() {
-                return hash;
+            public static class Initial extends Match {
+
+                private final int hash;
+
+                Initial(ConceptMap conceptMap, @Nullable Set<Identifier.Variable.Name> getFilter, Actor.Driver<? extends Resolver<?>> root) {
+                    super(conceptMap, getFilter, root, false);
+                    this.hash = Objects.hash(conceptMap, getFilter, root);
+                }
+
+                public Partial.Compound.Root toDownstream() {
+                    return Partial.Compound.Root.create(conceptMap(), this, root());
+                }
+
+                Finished finish(ConceptMap conceptMap, Conjunction conjunctionAnswered, Set<Conjunction> explainables,
+                                boolean requiresReiteration) {
+                    return new Finished(conceptMap, getFilter, root(), conjunctionAnswered, explainables, requiresReiteration);
+                }
+
+                @Override
+                public String toString() {
+                    return "AnswerState.Top.Initial{" +
+                            "root=" + root() +
+                            ", conceptMap=" + conceptMap +
+                            ", filter=" + getFilter +
+                            '}';
+                }
+
+                @Override
+                public boolean equals(Object o) {
+                    if (this == o) return true;
+                    if (o == null || getClass() != o.getClass()) return false;
+                    Top.Match.Initial top = (Top.Match.Initial) o;
+                    return Objects.equals(root(), top.root()) &&
+                            Objects.equals(conceptMap, top.conceptMap) &&
+                            Objects.equals(getFilter, top.getFilter);
+                }
+
+                @Override
+                public int hashCode() {
+                    return hash;
+                }
+            }
+
+            public static class Finished extends Match {
+
+                private final int hash;
+
+                Finished(ConceptMap conceptMap, @Nullable Set<Identifier.Variable.Name> getFilter, Actor.Driver<? extends Resolver<?>> root,
+                         Conjunction conjunctionAnswered, Set<Conjunction> explainables, boolean requiresReiteration) {
+                    super(
+                            new ConceptMap(
+                                    conceptMap.concepts(),
+                                    explainables.isEmpty() ? null : new ExplainableAnswer(conceptMap, conjunctionAnswered, explainables)
+                            ),
+                            getFilter, root, requiresReiteration
+                    );
+                    this.hash = Objects.hash(root, conceptMap, getFilter);
+                }
+
+                @Override
+                public boolean isFinished() {
+                    return true;
+                }
+
+                @Override
+                public Finished asFinished() {
+                    return this;
+                }
+
+                @Override
+                public String toString() {
+                    return "AnswerState.Top.Finished{" +
+                            "root=" + root() +
+                            ", conceptMap=" + conceptMap +
+                            ", filter=" + getFilter +
+                            ", requiresReiteration=" + requiresReiteration +
+                            '}';
+                }
+
+                @Override
+                public boolean equals(Object o) {
+                    if (this == o) return true;
+                    if (o == null || getClass() != o.getClass()) return false;
+                    Top.Match.Finished top = (Top.Match.Finished) o;
+                    return Objects.equals(root(), top.root()) &&
+                            Objects.equals(conceptMap, top.conceptMap) &&
+                            Objects.equals(getFilter, top.getFilter) &&
+                            requiresReiteration == top.requiresReiteration;
+                }
+
+                @Override
+                public int hashCode() {
+                    return hash;
+                }
             }
         }
 
-        public static class Finished extends Top {
+        public static class Explain {
 
-            private final int hash;
-
-            Finished(ConceptMap conceptMap, @Nullable Set<Identifier.Variable.Name> getFilter, Actor.Driver<? extends Resolver<?>> root,
-                     Conjunction conjunctionAnswered, Set<Conjunction> explainables, boolean requiresReiteration) {
-                super(
-                        new ConceptMap(
-                                conceptMap.concepts(),
-                                explainables.isEmpty() ? null : new ExplainableAnswer(conceptMap, conjunctionAnswered, explainables)
-                        ),
-                        getFilter, root, requiresReiteration
-                );
-                this.hash = Objects.hash(root, conceptMap, getFilter);
-            }
-
-            @Override
-            public String toString() {
-                return "AnswerState.Top.Finished{" +
-                        "root=" + root() +
-                        ", conceptMap=" + conceptMap +
-                        ", filter=" + getFilter +
-                        ", requiresReiteration=" + requiresReiteration +
-                        '}';
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-                Top.Finished top = (Top.Finished) o;
-                return Objects.equals(root(), top.root()) &&
-                        Objects.equals(conceptMap, top.conceptMap) &&
-                        Objects.equals(getFilter, top.getFilter) &&
-                        requiresReiteration == top.requiresReiteration;
-            }
-
-            @Override
-            public int hashCode() {
-                return hash;
-            }
         }
+
     }
 
     public static abstract class Partial<SELF extends Partial<SELF, PARENT>, PARENT extends AnswerState> extends AnswerState {
@@ -299,19 +343,19 @@ public abstract class AnswerState {
                 throw GraknException.of(ILLEGAL_CAST, this.getClass(), NonRoot.class);
             }
 
-            public static class Root extends Compound<Top.Initial> {
+            public static class Root extends Compound<Top.Match.Initial> {
 
                 private final Set<Conjunction> explainables;
                 private final int hash;
 
-                public Root(ConceptMap partialAnswer, Top.Initial parent, Actor.Driver<? extends Resolver<?>> root,
+                public Root(ConceptMap partialAnswer, Top.Match.Initial parent, Actor.Driver<? extends Resolver<?>> root,
                             boolean requiresReiteration, Set<Conjunction> explainables) {
                     super(partialAnswer, parent, root, requiresReiteration);
                     this.explainables = explainables;
                     this.hash = Objects.hash(root, conceptMap, parent);
                 }
 
-                static Root create(ConceptMap conceptMap, Top.Initial parent, Actor.Driver<? extends Resolver<?>> root) {
+                static Root create(ConceptMap conceptMap, Top.Match.Initial parent, Actor.Driver<? extends Resolver<?>> root) {
                     return new Root(conceptMap, parent, root, false, new HashSet<>());
                 }
 
@@ -333,7 +377,7 @@ public abstract class AnswerState {
                     return new Root(extendAnswer(extension), parent(), root(), requiresReiteration, explainablesClone);
                 }
 
-                public Top.Finished toFinishedTop(Conjunction conjunctionAnswered) {
+                public Top.Match.Finished toFinishedTop(Conjunction conjunctionAnswered) {
                     return parent().finish(conceptMap(), conjunctionAnswered, explainables, requiresReiteration || parent().requiresReiteration());
                 }
 

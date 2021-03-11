@@ -39,7 +39,7 @@ import java.util.function.Consumer;
 
 public interface RootResolver {
 
-    void submitAnswer(Top answer);
+    void submitAnswer(Top.Match.Finished answer);
 
     void submitFail(int iteration);
 
@@ -48,12 +48,12 @@ public interface RootResolver {
         private static final Logger LOG = LoggerFactory.getLogger(Conjunction.class);
 
         private final grakn.core.pattern.Conjunction conjunction;
-        private final Consumer<Top> onAnswer;
+        private final Consumer<Top.Match.Finished> onAnswer;
         private final Consumer<Integer> onFail;
         private final Consumer<Throwable> onException;
 
         public Conjunction(Driver<Conjunction> driver, grakn.core.pattern.Conjunction conjunction,
-                           Consumer<Top> onAnswer, Consumer<Integer> onFail, Consumer<Throwable> onException,
+                           Consumer<Top.Match.Finished> onAnswer, Consumer<Integer> onFail, Consumer<Throwable> onException,
                            ResolverRegistry registry,
                            TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
                            Planner planner, boolean resolutionTracing) {
@@ -84,7 +84,7 @@ public interface RootResolver {
         }
 
         @Override
-        public void submitAnswer(Top answer) {
+        public void submitAnswer(Top.Match.Finished answer) {
             LOG.debug("Submitting answer: {}", answer);
             onAnswer.accept(answer);
         }
@@ -96,8 +96,8 @@ public interface RootResolver {
 
         @Override
         protected void answerToUpstream(AnswerState answer, Request fromUpstream, int iteration) {
-            assert answer.isTop();
-            submitAnswer(answer.asTop());
+            assert answer.isTop() && answer.asTop().isMatch() && answer.asTop().asMatch().isFinished();
+            submitAnswer(answer.asTop().asMatch().asFinished());
         }
 
         @Override
@@ -134,12 +134,12 @@ public interface RootResolver {
     class Disjunction extends DisjunctionResolver<Disjunction> implements RootResolver {
 
         private static final Logger LOG = LoggerFactory.getLogger(Disjunction.class);
-        private final Consumer<Top> onAnswer;
+        private final Consumer<Top.Match.Finished> onAnswer;
         private final Consumer<Integer> onFail;
         private final Consumer<Throwable> onException;
 
         public Disjunction(Driver<Disjunction> driver, grakn.core.pattern.Disjunction disjunction,
-                           Consumer<Top> onAnswer, Consumer<Integer> onFail, Consumer<Throwable> onException,
+                           Consumer<Top.Match.Finished> onAnswer, Consumer<Integer> onFail, Consumer<Throwable> onException,
                            ResolverRegistry registry,
                            TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
             super(driver, Disjunction.class.getSimpleName() + "(pattern:" + disjunction + ")", disjunction,
@@ -167,12 +167,12 @@ public interface RootResolver {
 
         @Override
         protected void answerToUpstream(AnswerState answer, Request fromUpstream, int iteration) {
-            assert answer.isTop();
-            submitAnswer(answer.asTop());
+            assert answer.isTop() && answer.asTop().isMatch() && answer.asTop().asMatch().isFinished();
+            submitAnswer(answer.asTop().asMatch().asFinished());
         }
 
         @Override
-        public void submitAnswer(Top answer) {
+        public void submitAnswer(Top.Match.Finished answer) {
             LOG.debug("Submitting answer: {}", answer);
             onAnswer.accept(answer);
         }

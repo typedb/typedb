@@ -41,8 +41,6 @@ import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.Explanation;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
-import graql.lang.Graql;
-import graql.lang.pattern.Conjunctable;
 import graql.lang.pattern.variable.UnboundVariable;
 import graql.lang.query.GraqlMatch;
 import org.slf4j.Logger;
@@ -195,12 +193,10 @@ public class Reasoner {
         return newClone;
     }
 
-    public FunctionalIterator<Explanation> explain(String conjunctionPattern, ConceptMap bounds) {
-        graql.lang.pattern.Conjunction<Conjunctable> conj = Graql.parsePattern(conjunctionPattern).asConjunction().normalise().patterns().get(0);
-        Conjunction conjunction = Conjunction.create(conj);
+    public FunctionalIterator<Explanation> explain(Conjunction conjunction, ConceptMap bounds, Context.Query defaultContext) {
         logicMgr.typeResolver().resolveVariables(conjunction, false);
         return Producers.produce(
-                list(new ExplanationProducer(conjunction, bounds, resolverRegistry)),
+                list(new ExplanationProducer(conjunction, bounds, resolverRegistry, defaultContext.options())),
                 Either.first(Arguments.Query.Producer.INCREMENTAL),
                 async1()
         );

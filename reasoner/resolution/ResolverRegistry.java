@@ -105,7 +105,7 @@ public class ResolverRegistry {
         }
     }
 
-    public Actor.Driver<RootResolver.Conjunction> root(Conjunction conjunction, Consumer<Top> onAnswer,
+    public Actor.Driver<RootResolver.Conjunction> root(Conjunction conjunction, Consumer<Top.Match.Finished> onAnswer,
                                                        Consumer<Integer> onFail, Consumer<Throwable> onException) {
         LOG.debug("Creating Root.Conjunction for: '{}'", conjunction);
         Actor.Driver<RootResolver.Conjunction> resolver = Actor.driver(driver -> new RootResolver.Conjunction(
@@ -117,7 +117,7 @@ public class ResolverRegistry {
         return resolver;
     }
 
-    public Actor.Driver<RootResolver.Disjunction> root(Disjunction disjunction, Consumer<Top> onAnswer,
+    public Actor.Driver<RootResolver.Disjunction> root(Disjunction disjunction, Consumer<Top.Match.Finished> onAnswer,
                                                        Consumer<Integer> onExhausted, Consumer<Throwable> onException) {
         LOG.debug("Creating Root.Disjunction for: '{}'", disjunction);
         Actor.Driver<RootResolver.Disjunction> resolver = Actor.driver(driver -> new RootResolver.Disjunction(

@@ -63,34 +63,34 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     // TODO: this class should not be a Producer, it implements a different async processing mechanism
     public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers,
                             Options.Query options) {
-        if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
-        this.rootResolver = resolverRegistry.root(conjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.options = options;
-        Root downstream = Top.Initial.create(filter(modifiers.filter()), this.rootResolver).toDownstream();
-        this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
-        assert computeSize > 0;
-        this.resolveRequest = Request.create(rootResolver, downstream);
         this.queue = null;
         this.iteration = 0;
         this.done = false;
         this.required = new AtomicInteger();
         this.processing = new AtomicInteger();
+        this.rootResolver = resolverRegistry.root(conjunction, this::requestAnswered, this::requestFailed, this::exception);
+        this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
+        assert computeSize > 0;
+        Root downstream = Top.Match.initial(filter(modifiers.filter()), this.rootResolver).toDownstream();
+        this.resolveRequest = Request.create(rootResolver, downstream);
+        if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
     public ReasonerProducer(Disjunction disjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers,
                             Options.Query options) {
-        if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
-        this.rootResolver = resolverRegistry.root(disjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.options = options;
-        Root downstream = Top.Initial.create(filter(modifiers.filter()), this.rootResolver).toDownstream();
-        this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
-        assert computeSize > 0;
-        this.resolveRequest = Request.create(rootResolver, downstream);
         this.queue = null;
         this.iteration = 0;
         this.done = false;
         this.required = new AtomicInteger();
         this.processing = new AtomicInteger();
+        this.rootResolver = resolverRegistry.root(disjunction, this::requestAnswered, this::requestFailed, this::exception);
+        this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
+        assert computeSize > 0;
+        Root downstream = Top.Match.initial(filter(modifiers.filter()), this.rootResolver).toDownstream();
+        this.resolveRequest = Request.create(rootResolver, downstream);
+        if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
     @Override
