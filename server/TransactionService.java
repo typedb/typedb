@@ -72,6 +72,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
 
     private static final Logger LOG = LoggerFactory.getLogger(TransactionService.class);
     private static final String TRACE_PREFIX = "transaction_services.";
+    private static final int MAX_NETWORK_LATENCY_MILLIS = 3_000;
 
     private final StreamObserver<TransactionProto.Transaction.Res> responder;
     private final ConcurrentMap<String, BatchedStream<?>> streams;
@@ -178,7 +179,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     private void open(TransactionProto.Transaction.Req request) {
         if (isOpen.get()) throw GraknException.of(TRANSACTION_ALREADY_OPENED);
         TransactionProto.Transaction.Open.Req openReq = request.getOpenReq();
-        networkLatencyMillis = openReq.getLatencyMillis();
+        networkLatencyMillis = Math.min(openReq.getLatencyMillis(), MAX_NETWORK_LATENCY_MILLIS);
         sessionSrv = sessionService(graknSrv, openReq);
         sessionSrv.register(this);
         transaction = transaction(sessionSrv, openReq);
@@ -286,13 +287,10 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
 
     private class BatchedStream<T> {
 
-        private static final int MAX_LATENCY_MILLIS = 3_000;
-
         private final Iterator<T> iterator;
         private final String requestID;
         private final Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn;
         private final int batchSize;
-        private final int latencyMillis;
 
         BatchedStream(Iterator<T> iterator, String requestID, int batchSize, int latencyMillis,
                       Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
@@ -300,19 +298,18 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
             this.requestID = requestID;
             this.batchSize = batchSize;
             this.responseBuilderFn = responseBuilderFn;
-            this.latencyMillis = Math.min(latencyMillis, MAX_LATENCY_MILLIS);
         }
 
         private void streamBatches() {
-            streamBatchesUntil(i -> i < batchSize && iterator.hasNext());
+            streamBatchesWhile(i -> i < batchSize && iterator.hasNext());
             if (mayClose()) return;
             else respond(ResponseBuilder.Transaction.stream(requestID, false));
-            Instant compensationTime = Instant.now().plusMillis(latencyMillis);
-            streamBatchesUntil(i -> iterator.hasNext() && Instant.now().isBefore(compensationTime));
+            Instant compensationEndTime = Instant.now().plusMillis(networkLatencyMillis);
+            streamBatchesWhile(i -> iterator.hasNext() && Instant.now().isBefore(compensationEndTime));
             mayClose();
         }
 
-        private void streamBatchesUntil(Predicate<Integer> predicate) {
+        private void streamBatchesWhile(Predicate<Integer> predicate) {
             List<T> answers = new ArrayList<>();
             Instant startTime = Instant.now();
             for (int i = 0; predicate.test(i); i++) {
