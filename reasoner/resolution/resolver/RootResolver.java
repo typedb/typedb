@@ -116,6 +116,7 @@ public interface RootResolver<TOP extends Top> {
 
         @Override
         protected Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?> partialAnswer) {
+            assert partialAnswer.isRoot();
             return Optional.of(partialAnswer.asRoot().toFinishedTop(conjunction));
         }
 
@@ -208,53 +209,88 @@ public interface RootResolver<TOP extends Top> {
         }
     }
 
+    class Explain extends ConjunctionResolver<Explain> implements RootResolver<Top.Explain.Finished> {
 
-    class Explain extends Resolver<Explain> implements RootResolver<Top.Explain.Finished> {
+        private static final Logger LOG = LoggerFactory.getLogger(Explain.class);
 
         private final grakn.core.pattern.Conjunction conjunction;
-        private final Consumer<Top.Explain.Finished> requestAnswered;
-        private final Consumer<Integer> requestFailed;
-        private final Consumer<Throwable> exception;
+        private final Consumer<Top.Explain.Finished> onAnswer;
+        private final Consumer<Integer> onFail;
+        private final Consumer<Throwable> onException;
 
-        public Explain(Driver<Explain> driver, grakn.core.pattern.Conjunction conjunction, Consumer<Top.Explain.Finished> requestAnswered,
-                       Consumer<Integer> requestFailed, Consumer<Throwable> exception, ResolverRegistry registry,
-                       TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
-            super(driver, "Explainer(" + conjunction, registry, traversalEngine, conceptMgr, resolutionTracing);
+        public Explain(Driver<Explain> driver, grakn.core.pattern.Conjunction conjunction, Consumer<Top.Explain.Finished> onAnswer,
+                       Consumer<Integer> onFail, Consumer<Throwable> onException, ResolverRegistry registry,
+                       TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr, Planner planner,
+                       boolean resolutionTracing) {
+            super(driver, "Explain(" + conjunction + ")", registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
             this.conjunction = conjunction;
-            this.requestAnswered = requestAnswered;
-            this.requestFailed = requestFailed;
-            this.exception = exception;
+            this.onAnswer = onAnswer;
+            this.onFail = onFail;
+            this.onException = onException;
         }
 
         @Override
-        public void receiveRequest(Request fromUpstream, int iteration) {
-
+        public void terminate(Throwable cause) {
+            super.terminate(cause);
+            onException.accept(cause);
         }
 
         @Override
-        protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
-
+        protected void answerToUpstream(AnswerState answer, Request fromUpstream, int iteration) {
+            assert answer.isTop() && answer.asTop().isExplain() && answer.asTop().asExplain().isFinished();
+            submitAnswer(answer.asTop().asExplain().asFinished());
         }
 
         @Override
-        protected void receiveFail(Response.Fail fromDownstream, int iteration) {
-
+        Set<Concludable> concludablesTriggeringRules() {
+            Set<Concludable> concludables = Iterators.iterate(Concludable.create(conjunction))
+                    .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext())
+                    .toSet();
+            assert concludables.size() == 1;
+            return concludables;
         }
 
         @Override
-        protected void initialiseDownstreamResolvers() {
+        grakn.core.pattern.Conjunction conjunction() {
+            return conjunction;
+        }
 
+        @Override
+        protected void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
+            if (requestState.hasDownstreamProducer()) {
+                requestFromDownstream(requestState.nextDownstreamProducer(), fromUpstream, iteration);
+            } else {
+                submitFail(iteration);
+            }
+        }
+
+        @Override
+        Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?> partialAnswer) {
+            assert partialAnswer.isExplainRoot();
+            return Optional.of(partialAnswer.asExplainRoot().toFinishedTop());
+        }
+
+        @Override
+        RequestState requestStateNew(int iteration) {
+            return new RequestState(iteration);
+        }
+
+        @Override
+        RequestState requestStateForIteration(RequestState requestStatePrior, int iteration) {
+            return new RequestState(iteration, requestStatePrior.produced());
         }
 
         @Override
         public void submitAnswer(Top.Explain.Finished answer) {
-
+            LOG.debug("Submitting answer: {}", answer);
+            onAnswer.accept(answer);
         }
 
         @Override
         public void submitFail(int iteration) {
-
+            onFail.accept(iteration);
         }
+
     }
 
 }

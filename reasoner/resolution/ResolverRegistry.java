@@ -231,7 +231,8 @@ public class ResolverRegistry {
     public Actor.Driver<RootResolver.Explain> explainer(Conjunction conjunction, Consumer<Top.Explain.Finished> requestAnswered,
                                                         Consumer<Integer> requestFailed, Consumer<Throwable> exception) {
         return Actor.driver(driver -> new RootResolver.Explain(driver, conjunction, requestAnswered, requestFailed, exception,
-                                                               this, traversalEngine, conceptMgr, resolutionTracing), executorService);
+                                                               this, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing
+        ), executorService);
     }
 
     public void setExecutorService(ActorExecutorGroup executorService) {
