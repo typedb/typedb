@@ -20,7 +20,7 @@ package grakn.core.reasoner;
 import grakn.core.common.parameters.Options;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
-import grakn.core.concurrent.common.Executors;
+import grakn.core.concurrent.executor.Executors;
 import grakn.core.concurrent.producer.Producer;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;

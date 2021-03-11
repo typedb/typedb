@@ -24,7 +24,7 @@ import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Options;
-import grakn.core.concurrent.common.Executors;
+import grakn.core.concurrent.executor.Executors;
 import grakn.core.migrator.MigratorClient;
 import grakn.core.migrator.MigratorService;
 import grakn.core.rocks.RocksGrakn;

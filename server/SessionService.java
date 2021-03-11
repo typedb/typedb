@@ -34,7 +34,7 @@ import java.util.concurrent.locks.StampedLock;
 import static com.google.protobuf.ByteString.copyFrom;
 import static grakn.core.common.collection.Bytes.uuidToBytes;
 import static grakn.core.common.exception.ErrorMessage.Session.SESSION_CLOSED;
-import static grakn.core.concurrent.common.Executors.scheduled;
+import static grakn.core.concurrent.executor.Executors.scheduled;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class SessionService implements AutoCloseable {

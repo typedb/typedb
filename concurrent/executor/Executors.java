@@ -16,12 +16,11 @@
  *
  */
 
-package grakn.core.concurrent.common;
+package grakn.core.concurrent.executor;
 
 import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concurrent.actor.ActorExecutorGroup;
-import grakn.core.concurrent.executor.ParallelThreadPoolExecutor;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
