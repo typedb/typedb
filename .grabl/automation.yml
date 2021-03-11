@@ -132,8 +132,8 @@ build:
     deploy-artifact-snapshot:
       image: graknlabs-ubuntu-20.04
       filter:
-        owner: graknlabs
-        branch: master
+        owner: [graknlabs, haikalpribadi]
+        branch: [master, optimise-grpc-server]
       # dependencies: [test-assembly-linux-targz] TODO: re-enable
       command: |
         export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
