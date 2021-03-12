@@ -220,20 +220,20 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     }
 
     public <T> void stream(Iterator<T> iterator, String requestID,
-                           Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
+                           Function<List<T>, TransactionProto.Transaction.Res> responseBatcherFn) {
         int size = transaction.context().options().responseBatchSize();
-        stream(iterator, requestID, size, true, responseBuilderFn);
+        stream(iterator, requestID, size, true, responseBatcherFn);
     }
 
     public <T> void stream(Iterator<T> iterator, String requestID, Options.Query options,
-                           Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
-        stream(iterator, requestID, options.responseBatchSize(), options.prefetch(), responseBuilderFn);
+                           Function<List<T>, TransactionProto.Transaction.Res> responseBatcherFn) {
+        stream(iterator, requestID, options.responseBatchSize(), options.prefetch(), responseBatcherFn);
     }
 
     private <T> void stream(Iterator<T> iterator, String requestID, int batchSize, boolean prefetch,
-                            Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
+                            Function<List<T>, TransactionProto.Transaction.Res> responseBatcherFn) {
         BatchedStream<T> batchingIterator = new BatchedStream<>(
-                iterator, requestID, batchSize, responseBuilderFn
+                iterator, requestID, batchSize, responseBatcherFn
         );
         streams.compute(requestID, (key, oldValue) -> {
             if (oldValue == null) return batchingIterator;
@@ -295,21 +295,22 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
 
         private final Iterator<T> iterator;
         private final String requestID;
-        private final Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn;
+        private final Function<List<T>, TransactionProto.Transaction.Res> responseBatcherFn;
         private final int batchSize;
 
         BatchedStream(Iterator<T> iterator, String requestID, int batchSize,
-                      Function<List<T>, TransactionProto.Transaction.Res> responseBuilderFn) {
+                      Function<List<T>, TransactionProto.Transaction.Res> responseBatcherFn) {
             this.iterator = iterator;
             this.requestID = requestID;
             this.batchSize = batchSize;
-            this.responseBuilderFn = responseBuilderFn;
+            this.responseBatcherFn = responseBatcherFn;
         }
 
         private void streamBatches() {
             streamBatchesWhile(i -> i < batchSize && iterator.hasNext());
             if (mayClose()) return;
-            else respond(ResponseBuilder.Transaction.stream(requestID, false));
+
+            respondStreamStatus(false);
             Instant compensationEndTime = Instant.now().plusMillis(networkLatencyMillis);
             streamBatchesWhile(i -> iterator.hasNext() && Instant.now().isBefore(compensationEndTime));
             mayClose();
@@ -322,18 +323,21 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                 answers.add(iterator.next());
                 Instant currentTime = Instant.now();
                 if (Duration.between(startTime, currentTime).toMillis() >= 1) {
-                    respond(responseBuilderFn.apply(answers));
+                    respond(responseBatcherFn.apply(answers));
                     answers.clear();
                     startTime = currentTime;
                 }
             }
-
-            if (!answers.isEmpty()) respond(responseBuilderFn.apply(answers));
+            if (!answers.isEmpty()) respond(responseBatcherFn.apply(answers));
         }
 
         private boolean mayClose() {
-            if (!iterator.hasNext()) respond(ResponseBuilder.Transaction.stream(requestID, true));
+            if (!iterator.hasNext()) respondStreamStatus(true);
             return !iterator.hasNext();
+        }
+
+        private void respondStreamStatus(boolean isDone) {
+            respond(ResponseBuilder.Transaction.stream(requestID, isDone));
         }
     }
 }
