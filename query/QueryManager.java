@@ -78,10 +78,8 @@ public class QueryManager {
         }
     }
 
-    public FunctionalIterator<Explanation> explain(String conjunctionPattern, ConceptMap bounds) {
-        graql.lang.pattern.Conjunction<Conjunctable> conj = Graql.parsePattern(conjunctionPattern).asConjunction().normalise().patterns().get(0);
-        Conjunction conjunction = Conjunction.create(conj);
-        return reasoner.explain(conjunction, bounds, defaultContext);
+    public FunctionalIterator<Explanation> explain(long explainableId, ConceptMap bounds) {
+        return reasoner.explain(explainableId, bounds, defaultContext);
     }
 
     public Numeric match(GraqlMatch.Aggregate query) {

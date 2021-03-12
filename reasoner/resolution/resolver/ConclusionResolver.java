@@ -95,7 +95,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         if (!materialisations.hasNext()) throw GraknException.of(ILLEGAL_STATE);
 
         FunctionalIterator<Partial.Concludable<?, ?>> materialisedAnswers = materialisations
-                .map(concepts -> fromUpstream.partialAnswer().asConclusion().aggregateToUpstream(concepts))
+                .map(concepts -> fromDownstream.answer().asConclusion().aggregateToUpstream(concepts))
                 .filter(Optional::isPresent)
                 .map(Optional::get);
         requestState.addResponses(materialisedAnswers);

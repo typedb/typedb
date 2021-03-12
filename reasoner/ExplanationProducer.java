@@ -38,9 +38,8 @@ public class ExplanationProducer implements Producer<Explanation> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ExplanationProducer.class);
 
+    private final Explanations explanations;
     private final Options.Query options;
-    private final Conjunction conjunction;
-    private final ConceptMap bounds;
     private final Actor.Driver<RootResolver.Explain> explainer;
     private final Request explainRequest;
     private int iteration;
@@ -48,9 +47,9 @@ public class ExplanationProducer implements Producer<Explanation> {
     private boolean done;
     private Queue<Explanation> queue;
 
-    public ExplanationProducer(Conjunction conjunction, ConceptMap bounds, ResolverRegistry registry, Options.Query options) {
-        this.conjunction = conjunction;
-        this.bounds = bounds;
+    public ExplanationProducer(Conjunction conjunction, ConceptMap bounds, Options.Query options,
+                               ResolverRegistry registry, Explanations explanations) {
+        this.explanations = explanations;
         this.options = options;
         this.queue = null;
         this.iteration = 0;
@@ -80,7 +79,9 @@ public class ExplanationProducer implements Producer<Explanation> {
     private void requestAnswered(Top.Explain.Finished explainedAnswer) {
         if (options.traceInference()) ResolutionTracer.get().finish();
         if (explainedAnswer.requiresReiteration()) requiresReiteration = true;
-        queue.put(explainedAnswer.explanation());
+        Explanation explanation = explainedAnswer.explanation();
+        explanations.setAndRecordExplainableIds(explanation.conditionAnswer());
+        queue.put(explanation);
     }
 
     // note: root resolver calls this single-threaded, so is threads safe

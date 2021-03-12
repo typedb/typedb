@@ -68,6 +68,7 @@ public class Reasoner {
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
     private final ResolverRegistry resolverRegistry;
+    private final Explanations explanations;
     private final Context.Query defaultContext;
 
     public Reasoner(ConceptManager conceptMgr, LogicManager logicMgr,
@@ -77,8 +78,8 @@ public class Reasoner {
         this.logicMgr = logicMgr;
         this.defaultContext = new Context.Query(context, new Options.Query());
         this.defaultContext.producer(Either.first(EXHAUSTIVE));
-        this.resolverRegistry = new ResolverRegistry(actor(), traversalEng, conceptMgr,
-                                                     logicMgr, this.defaultContext.options().traceInference());
+        this.resolverRegistry = new ResolverRegistry(actor(), traversalEng, conceptMgr, logicMgr, defaultContext.options().traceInference());
+        this.explanations = new Explanations();
     }
 
     public ResolverRegistry resolverRegistry() {
@@ -137,8 +138,8 @@ public class Reasoner {
     private FunctionalIterator<ConceptMap> executeReasoner(Disjunction disjunction, GraqlMatch.Modifiers modifiers,
                                                            Context.Query context) {
         ReasonerProducer producer = disjunction.conjunctions().size() == 1
-                ? new ReasonerProducer(disjunction.conjunctions().get(0), resolverRegistry, modifiers, context.options())
-                : new ReasonerProducer(disjunction, resolverRegistry, modifiers, context.options());
+                ? new ReasonerProducer(disjunction.conjunctions().get(0), modifiers, context.options(), resolverRegistry, explanations)
+                : new ReasonerProducer(disjunction, modifiers, context.options(), resolverRegistry, explanations);
         return produce(producer, context.producer(), async1());
     }
 
@@ -193,10 +194,10 @@ public class Reasoner {
         return newClone;
     }
 
-    public FunctionalIterator<Explanation> explain(Conjunction conjunction, ConceptMap bounds, Context.Query defaultContext) {
-        logicMgr.typeResolver().resolveVariables(conjunction, false);
+    public FunctionalIterator<Explanation> explain(long explainableId, ConceptMap bounds, Context.Query defaultContext) {
+        Conjunction explainable = explanations.getExplainable(explainableId);
         return Producers.produce(
-                list(new ExplanationProducer(conjunction, bounds, resolverRegistry, defaultContext.options())),
+                list(new ExplanationProducer(explainable, bounds, defaultContext.options(), resolverRegistry, explanations)),
                 Either.first(Arguments.Query.Producer.INCREMENTAL),
                 async1()
         );

@@ -161,7 +161,7 @@ public abstract class AnswerState {
                     return Partial.Compound.Root.create(conceptMap(), this, root());
                 }
 
-                Finished finish(ConceptMap conceptMap, Conjunction conjunctionAnswered, Set<Conjunction> explainables,
+                Finished finish(ConceptMap conceptMap, Conjunction conjunctionAnswered, Set<ExplainableAnswer.Explainable> explainables,
                                 boolean requiresReiteration) {
                     return new Finished(conceptMap, getFilter, root(), conjunctionAnswered, explainables, requiresReiteration);
                 }
@@ -196,7 +196,7 @@ public abstract class AnswerState {
                 private final int hash;
 
                 Finished(ConceptMap conceptMap, @Nullable Set<Identifier.Variable.Name> getFilter, Actor.Driver<? extends Resolver<?>> root,
-                         Conjunction conjunctionAnswered, Set<Conjunction> explainables, boolean requiresReiteration) {
+                         Conjunction conjunctionAnswered, Set<ExplainableAnswer.Explainable> explainables, boolean requiresReiteration) {
                     super(
                             new ConceptMap(
                                     conceptMap.concepts(),
@@ -443,7 +443,7 @@ public abstract class AnswerState {
 
             public boolean isCondition() { return false; }
 
-            public Condition asCondition() {
+            public Condition<?> asCondition() {
                 throw GraknException.of(ILLEGAL_CAST, this.getClass(), Condition.class);
             }
 
@@ -455,11 +455,11 @@ public abstract class AnswerState {
 
             public static class Root extends Compound<Root, Top.Match.Initial> {
 
-                private final Set<Conjunction> explainables;
+                private final Set<ExplainableAnswer.Explainable> explainables;
                 private final int hash;
 
                 public Root(ConceptMap partialAnswer, Top.Match.Initial parent, Actor.Driver<? extends Resolver<?>> root,
-                            boolean requiresReiteration, Set<Conjunction> explainables) {
+                            boolean requiresReiteration, Set<ExplainableAnswer.Explainable> explainables) {
                     super(partialAnswer, parent, root, requiresReiteration);
                     this.explainables = explainables;
                     this.hash = Objects.hash(root, conceptMap, parent);
@@ -482,8 +482,8 @@ public abstract class AnswerState {
 
                 @Override
                 public Root with(ConceptMap extension, boolean requiresReiteration, Conjunction source, Explanation explanation) {
-                    Set<Conjunction> explainablesClone = new HashSet<>(explainables);
-                    explainablesClone.add(source);
+                    Set<ExplainableAnswer.Explainable> explainablesClone = new HashSet<>(explainables);
+                    explainablesClone.add(ExplainableAnswer.Explainable.unidentified(source));
                     return new Root(extendAnswer(extension), parent(), root(), requiresReiteration, explainablesClone);
                 }
 
@@ -602,12 +602,12 @@ public abstract class AnswerState {
 
             public static class Condition<P extends Conclusion<P, ?>> extends Compound<Condition<P>, P> {
 
-                private final Set<Conjunction> explainables;
+                private final Set<ExplainableAnswer.Explainable> explainables;
                 private final Set<Identifier.Variable.Retrievable> filter;
                 private final int hash;
 
                 private Condition(ConceptMap filteredMap, P parent, Set<Identifier.Variable.Retrievable> filter,
-                                  Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration, Set<Conjunction> explainables) {
+                                  Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration, Set<ExplainableAnswer.Explainable> explainables) {
                     super(filteredMap, parent, root, requiresReiteration);
                     this.explainables = explainables;
                     this.filter = filter;
@@ -620,24 +620,13 @@ public abstract class AnswerState {
                 }
 
                 @Override
-                public boolean isCondition() {
-                    return true;
-                }
-
-                @Override
-                public Condition<P> asCondition() {
-                    return this;
-                }
-
-                @Override
                 public Concludable.Match<Condition<P>> mapToDownstream(Mapping mapping, Conjunction nextResolverConjunction) {
                     return Concludable.match(this, mapping, root(), nextResolverConjunction);
                 }
 
                 public P toUpstream(Conjunction conditionConjunction) {
                     if (conceptMap().concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
-                    ExplainableAnswer conditionAnswer = explainables.isEmpty() ? null :
-                            new ExplainableAnswer(conceptMap, conditionConjunction, explainables);
+                    ExplainableAnswer conditionAnswer = new ExplainableAnswer(conceptMap, conditionConjunction, explainables);
                     return parent().with(conceptMap().filter(filter), requiresReiteration || parent().requiresReiteration(), conditionAnswer);
                 }
 
@@ -648,9 +637,19 @@ public abstract class AnswerState {
 
                 @Override
                 public Condition<P> with(ConceptMap extension, boolean requiresReiteration, Conjunction source, Explanation explanation) {
-                    Set<Conjunction> explainablesClone = new HashSet<>(explainables);
-                    explainablesClone.add(source);
+                    Set<ExplainableAnswer.Explainable> explainablesClone = new HashSet<>(explainables);
+                    explainablesClone.add(ExplainableAnswer.Explainable.unidentified(source));
                     return new Condition<>(extendAnswer(extension), parent(), filter, root(), requiresReiteration, explainablesClone);
+                }
+
+                @Override
+                public boolean isCondition() {
+                    return true;
+                }
+
+                @Override
+                public Condition<P> asCondition() {
+                    return this;
                 }
 
                 @Override

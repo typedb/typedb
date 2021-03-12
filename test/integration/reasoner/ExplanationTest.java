@@ -44,7 +44,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
+import static grakn.core.concept.answer.ExplainableAnswer.Explainable.NOT_IDENTIFIED;
+import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 public class ExplanationTest {
@@ -111,20 +114,8 @@ public class ExplanationTest {
                 assertTrue(ans.get(0).explainableAnswer().isPresent());
                 assertTrue(ans.get(1).explainableAnswer().isPresent());
 
-                ExplainableAnswer explainableAnswer = ans.get(0).explainableAnswer().get();
-                assertEquals(ans.get(0).concepts().size() +  1, explainableAnswer.completeMap().concepts().size());
-                assertEquals(1, explainableAnswer.explainables().size());
-                // TODO use txn.query().explain() after we have a good toString or indexing method
-                FunctionalIterator<Explanation> explanations = txn.reasoner().explain(explainableAnswer.explainables().iterator().next(), explainableAnswer.completeMap(), txn.query().getDefaultContext());
-                List<Explanation> explList = explanations.toList();
-                assertEquals(1, explList.size());
-
-                ExplainableAnswer explainableAnswer2 = ans.get(1).explainableAnswer().get();
-                assertEquals(ans.get(1).concepts().size() +  1, explainableAnswer2.completeMap().concepts().size());
-                assertEquals(1, explainableAnswer2.explainables().size());
-                FunctionalIterator<Explanation> explanations2 = txn.reasoner().explain(explainableAnswer2.explainables().iterator().next(), explainableAnswer2.completeMap(), txn.query().getDefaultContext());
-                List<Explanation> explList2 = explanations2.toList();
-                assertEquals(1, explList2.size());
+                assertSingleExplainableExplanations(ans.get(0), 1, 1, 1, txn);
+                assertSingleExplainableExplanations(ans.get(1), 1, 1, 1, txn);
             }
         }
     }
@@ -170,21 +161,127 @@ public class ExplanationTest {
                 assertTrue(ans.get(0).explainableAnswer().isPresent());
                 assertTrue(ans.get(1).explainableAnswer().isPresent());
 
-                ExplainableAnswer explainableAnswer = ans.get(0).explainableAnswer().get();
-                assertEquals(ans.get(0).concepts().size() +  1, explainableAnswer.completeMap().concepts().size());
-                assertEquals(1, explainableAnswer.explainables().size());
-                // TODO use txn.query().explain() after we have a good toString or indexing method
-                FunctionalIterator<Explanation> explanations = txn.reasoner().explain(explainableAnswer.explainables().iterator().next(), explainableAnswer.completeMap(), txn.query().getDefaultContext());
-                List<Explanation> explList = explanations.toList();
-                assertEquals(3, explList.size());
-
-                ExplainableAnswer explainableAnswer2 = ans.get(1).explainableAnswer().get();
-                assertEquals(ans.get(1).concepts().size() +  1, explainableAnswer2.completeMap().concepts().size());
-                assertEquals(1, explainableAnswer2.explainables().size());
-                FunctionalIterator<Explanation> explanations2 = txn.reasoner().explain(explainableAnswer2.explainables().iterator().next(), explainableAnswer2.completeMap(), txn.query().getDefaultContext());
-                List<Explanation> explList2 = explanations2.toList();
-                assertEquals(3, explList2.size());
+                assertSingleExplainableExplanations(ans.get(0), 1, 1, 3, txn);
+                assertSingleExplainableExplanations(ans.get(1), 1, 1, 3, txn);
             }
         }
+    }
+
+    @Test
+    public void test_has_explicit_explainable_two_ways() {
+        try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+                ConceptManager conceptMgr = txn.concepts();
+                LogicManager logicMgr = txn.logic();
+
+                EntityType milk = conceptMgr.putEntityType("milk");
+                AttributeType ageInDays = conceptMgr.putAttributeType("age-in-days", AttributeType.ValueType.LONG);
+                AttributeType isStillGood = conceptMgr.putAttributeType("is-still-good", AttributeType.ValueType.BOOLEAN);
+                milk.setOwns(ageInDays);
+                milk.setOwns(isStillGood);
+                logicMgr.putRule(
+                        "old-milk-is-not-good",
+                        Graql.parsePattern("{ $x isa milk, has age-in-days <= 10; }").asConjunction(),
+                        Graql.parseVariable("$x has is-still-good true").asThing());
+                logicMgr.putRule(
+                        "all-milk-is-good",
+                        Graql.parsePattern("{ $x isa milk; }").asConjunction(),
+                        Graql.parseVariable("$x has is-still-good true").asThing());
+                txn.commit();
+            }
+        }
+
+        try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+                txn.query().insert(Graql.parseQuery("insert $x isa milk, has age-in-days 5;").asInsert());
+                txn.query().insert(Graql.parseQuery("insert $x isa milk, has age-in-days 10;").asInsert());
+                txn.query().insert(Graql.parseQuery("insert $x isa milk, has age-in-days 15;").asInsert());
+                txn.commit();
+            }
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
+                List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $x has is-still-good $a;").asMatch()).toList();
+                assertEquals(3, ans.size());
+
+                assertTrue(ans.get(0).explainableAnswer().isPresent());
+                assertTrue(ans.get(1).explainableAnswer().isPresent());
+                assertTrue(ans.get(2).explainableAnswer().isPresent());
+
+                AttributeType ageInDays = txn.concepts().getAttributeType("age-in-days");
+                if (ans.get(0).get("x").asThing().getHas(ageInDays).findFirst().get().asLong().getValue().equals(15L)) {
+                    assertSingleExplainableExplanations(ans.get(0), 0, 1, 1, txn);
+                } else assertSingleExplainableExplanations(ans.get(0), 0, 1, 2, txn);
+
+                if (ans.get(1).get("x").asThing().getHas(ageInDays).findFirst().get().asLong().getValue().equals(15L)) {
+                    assertSingleExplainableExplanations(ans.get(1), 0, 1, 1, txn);
+                } else assertSingleExplainableExplanations(ans.get(1), 0, 1, 2, txn);
+
+                if (ans.get(2).get("x").asThing().getHas(ageInDays).findFirst().get().asLong().getValue().equals(15L)) {
+                    assertSingleExplainableExplanations(ans.get(2), 0, 1, 1, txn);
+                } else assertSingleExplainableExplanations(ans.get(2), 0, 1, 2, txn);
+            }
+        }
+    }
+
+    @Test
+    public void test_has_variable_explainable_two_ways() {
+        try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+                LogicManager logicMgr = txn.logic();
+                txn.query().define(Graql.parseQuery("define " +
+                                                            "user sub entity, " +
+                                                            "  plays group-membership:member, " +
+                                                            "  owns permission; " +
+                                                            "user-group sub entity," +
+                                                            "  plays group-membership:user-group," +
+                                                            "  owns permission," +
+                                                            "  owns name; " +
+                                                            "group-membership sub relation," +
+                                                            "  relates member," +
+                                                            "  relates user-group; " +
+                                                            "permission sub attribute, value string;" +
+                                                            "name sub attribute, value string;"
+                ).asDefine());
+                logicMgr.putRule(
+                        "admin-group-gives-permissions",
+                        Graql.parsePattern("{ $x isa user; ($x, $g) isa group-membership; $g isa user-group, has name \"admin\", has permission $p; }").asConjunction(),
+                        Graql.parseVariable("$x has $p").asThing());
+                logicMgr.putRule(
+                        "writer-group-gives-permissions",
+                        Graql.parsePattern("{ $x isa user; ($x, $g) isa group-membership; $g isa user-group, has name \"write\", has permission $p; }").asConjunction(),
+                        Graql.parseVariable("$x has $p").asThing());
+                txn.commit();
+            }
+        }
+
+        try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+                txn.query().insert(Graql.parseQuery("insert " +
+                                                            "$x isa user; " +
+                                                            "$wg isa user-group, has name \"write\", has permission \"write\";" +
+                                                            "(member: $x, user-group: $wg) isa group-membership;" +
+                                                            "$admin isa user-group, has name \"admin\", has permission \"write\", has permission \"delete\";" +
+                                                            "(member: $x, user-group: $admin) isa group-membership;"
+                ).asInsert());
+                txn.commit();
+            }
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
+                List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $x isa user, has permission \"write\";").asMatch()).toList();
+                assertEquals(1, ans.size());
+
+                assertTrue(ans.get(0).explainableAnswer().isPresent());
+                assertSingleExplainableExplanations(ans.get(0), 1, 1, 2, txn);
+            }
+        }
+    }
+
+    private void assertSingleExplainableExplanations(ConceptMap ans, int anonymousConcepts, int explainablesCount, int explanationsCount, RocksTransaction txn) {
+        ExplainableAnswer explainableAnswer = ans.explainableAnswer().get();
+        assertEquals(ans.concepts().size() + anonymousConcepts, explainableAnswer.completeMap().concepts().size());
+        assertEquals(explainablesCount, explainableAnswer.explainables().size());
+        ExplainableAnswer.Explainable explainable = explainableAnswer.explainables().iterator().next();
+        assertNotEquals(NOT_IDENTIFIED, explainable.explainableId());
+        FunctionalIterator<Explanation> explanations = txn.query().explain(explainable.explainableId(), explainableAnswer.completeMap());
+        List<Explanation> explList = explanations.toList();
+        assertEquals(explanationsCount, explList.size());
     }
 }

@@ -430,70 +430,6 @@ public class ResolutionTest {
         }
     }
 
-    @Ignore // TODO: Un-ignore, ignored until explanations are ready to use
-    @Test
-    public void test_answer_recorder() throws InterruptedException {
-        String atomic1 = "$p1 isa person, has name \"Bob\";";
-        String atomic2 = "$p1 isa person, has age 42;";
-        String rule = "rule bobs-are-42: when { $p1 has name \"Bob\"; } then { $p1 has age 42; };";
-        try (RocksSession session = schemaSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                transaction.query().define(Graql.parseQuery(
-                        "define person sub entity, owns age, owns name;" +
-                                "age sub attribute, value long;" +
-                                "name sub attribute, value string;" +
-                                rule));
-                transaction.commit();
-            }
-        }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                transaction.query().insert(Graql.parseQuery("insert " + atomic1));
-                transaction.query().insert(Graql.parseQuery("insert " + atomic1));
-                transaction.query().insert(Graql.parseQuery("insert " + atomic1));
-                transaction.commit();
-            }
-        }
-
-        long atomic1TraversalAnswerCount = 3L;
-        long ruleTraversalAnswerCount = 0L;
-        long atomic2TraversalAnswerCount = 0L;
-        long conjunctionTraversalAnswerCount = 3L;
-        long answerCount = conjunctionTraversalAnswerCount + atomic2TraversalAnswerCount + ruleTraversalAnswerCount
-                + atomic1TraversalAnswerCount;
-
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                Conjunction conjunctionPattern = resolvedConjunction("{ " + atomic2 + " }", transaction.logic());
-                ResolverRegistry registry = transaction.reasoner().resolverRegistry();
-                LinkedBlockingQueue<Top> responses = new LinkedBlockingQueue<>();
-                AtomicLong doneReceived = new AtomicLong(0L);
-                Set<Identifier.Variable.Name> filter = iterate(conjunctionPattern.variables()).map(Variable::id)
-                        .filter(Identifier::isName).map(Identifier.Variable::asName).toSet();
-                Actor.Driver<RootResolver.Conjunction> root;
-                try {
-                    root = registry.root(conjunctionPattern, responses::add,
-                                         iterDone -> doneReceived.incrementAndGet(), (throwable) -> fail());
-                } catch (GraknException e) {
-                    fail();
-                    return;
-                }
-
-                for (int i = 0; i < answerCount; i++) {
-                    AnswerState.Partial.Compound.Root downstream = Top.Match.initial(filter, root).toDownstream();
-                    root.execute(actor ->
-                                         actor.receiveRequest(
-                                                 Request.create(root, downstream), 0)
-                    );
-                    Top answer = responses.take();
-
-                    // TODO: write more meaningful explanation tests
-                    System.out.println(answer);
-                }
-            }
-        }
-    }
-
     private RocksSession schemaSession() {
         return grakn.session(database, Arguments.Session.Type.SCHEMA);
     }
@@ -557,7 +493,10 @@ public class ResolutionTest {
             Top answer = responses.poll(1000, TimeUnit.MILLISECONDS); // polling prevents the test hanging
             if (answer != null) {
                 answersFound += 1;
-                if (answer.conceptMap().explainableAnswer().isPresent()) explainableAnswersFound++;
+                if (answer.conceptMap().explainableAnswer().isPresent()) {
+                    explainableAnswersFound++;
+                    assertTrue(answer.conceptMap().explainableAnswer().get().explainables().size() > 0);
+                }
             }
         }
         Thread.sleep(1000);

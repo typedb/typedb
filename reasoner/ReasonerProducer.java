@@ -53,6 +53,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private final AtomicInteger required;
     private final AtomicInteger processing;
     private final Options.Query options;
+    private final Explanations explanations;
     private final Request resolveRequest;
     private final int computeSize;
     private boolean requiresReiteration;
@@ -61,9 +62,10 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private Queue<ConceptMap> queue;
 
     // TODO: this class should not be a Producer, it implements a different async processing mechanism
-    public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers,
-                            Options.Query options) {
+    public ReasonerProducer(Conjunction conjunction, GraqlMatch.Modifiers modifiers, Options.Query options,
+                            ResolverRegistry resolverRegistry, Explanations explanations) {
         this.options = options;
+        this.explanations = explanations;
         this.queue = null;
         this.iteration = 0;
         this.done = false;
@@ -77,9 +79,10 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
-    public ReasonerProducer(Disjunction disjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers,
-                            Options.Query options) {
+    public ReasonerProducer(Disjunction disjunction, GraqlMatch.Modifiers modifiers, Options.Query options,
+                            ResolverRegistry resolverRegistry, Explanations explanations) {
         this.options = options;
+        this.explanations = explanations;
         this.queue = null;
         this.iteration = 0;
         this.done = false;
@@ -113,12 +116,15 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         return iterate(filter).map(v -> Identifier.Variable.of(v.reference().asName())).toSet();
     }
 
-    // note: root resolver calls this single-threaded, so is threads safe
+    // note: root resolver calls this single-threaded, so is thread safe
     private void requestAnswered(Top.Match.Finished answer) {
         if (options.traceInference()) ResolutionTracer.get().finish();
         if (answer.requiresReiteration()) requiresReiteration = true;
-
-        queue.put(answer.conceptMap());
+        ConceptMap conceptMap = answer.conceptMap();
+        if (conceptMap.explainableAnswer().isPresent()) {
+            explanations.setAndRecordExplainableIds(conceptMap.explainableAnswer().get());
+        }
+        queue.put(conceptMap);
         if (required.decrementAndGet() > 0) requestAnswer();
         else processing.decrementAndGet();
     }

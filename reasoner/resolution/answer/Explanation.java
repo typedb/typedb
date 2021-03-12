@@ -46,6 +46,14 @@ public class Explanation {
         return null;
     }
 
+    public ConclusionAnswer conclusionAnswer() {
+        return conclusionAnswer;
+    }
+
+    public ExplainableAnswer conditionAnswer() {
+        return conditionAnswer;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
