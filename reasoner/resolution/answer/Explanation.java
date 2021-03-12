@@ -19,8 +19,12 @@ package grakn.core.reasoner.resolution.answer;
 
 import grakn.core.concept.answer.ExplainableAnswer;
 import grakn.core.logic.Rule;
+import grakn.core.logic.resolvable.Unifier;
 import grakn.core.traversal.common.Identifier;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -41,9 +45,19 @@ public class Explanation {
         this.hash = Objects.hash(rule, intermediateMapping, conclusionAnswer, conditionAnswer);
     }
 
-    public Map<Identifier.Variable.Retrievable, Set<Identifier.Variable.Retrievable>> variableMapping() {
-        // TODO merge mapping and conclusionAnswer.unifier
-        return null;
+    public Map<Retrievable, Set<Retrievable>> variableMapping() {
+        Unifier unifier = conclusionAnswer.unifier();
+        Map<Retrievable, Set<Retrievable>> merged = new HashMap<>();
+
+        intermediateMapping.mapping().forEach((from, to) -> {
+            Set<Retrievable> tos = merged.computeIfAbsent(from, (key) -> new HashSet<>());
+            if (unifier.mapping().containsKey(to)) {
+                unifier.mapping().get(to).forEach(var -> {
+                    if (var.isRetrievable()) tos.add(var.asRetrievable());
+                });
+            }
+        });
+        return merged;
     }
 
     public ConclusionAnswer conclusionAnswer() {

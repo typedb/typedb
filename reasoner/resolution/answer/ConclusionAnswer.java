@@ -48,6 +48,10 @@ public class ConclusionAnswer {
         return conditionAnswer;
     }
 
+    public ConceptMap answer() {
+        return conceptMap;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -62,5 +66,9 @@ public class ConclusionAnswer {
     @Override
     public int hashCode() {
         return hash;
+    }
+
+    public Unifier unifier() {
+        return unifier;
     }
 }

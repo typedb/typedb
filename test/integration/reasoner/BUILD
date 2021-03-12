@@ -53,6 +53,7 @@ host_compatible_java_test(
         "//logic:logic",
         "//reasoner:reasoner",
         "//rocks:rocks",
+        "//traversal:traversal",
         "//:grakn",
     ],
     deps = [

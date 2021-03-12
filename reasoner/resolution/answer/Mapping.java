@@ -65,6 +65,10 @@ public class Mapping {
         return new ConceptMap(transformed);
     }
 
+    Map<Retrievable, Retrievable> mapping() {
+        return mapping;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

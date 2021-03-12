@@ -21,6 +21,7 @@ import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
+import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ExplainableAnswer;
@@ -34,6 +35,8 @@ import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
 import grakn.core.test.integration.util.Util;
+import grakn.core.traversal.common.Identifier;
+import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import graql.lang.Graql;
 import org.junit.After;
 import org.junit.Before;
@@ -42,7 +45,10 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static grakn.core.concept.answer.ExplainableAnswer.Explainable.NOT_IDENTIFIED;
 import static junit.framework.TestCase.assertFalse;
@@ -283,5 +289,28 @@ public class ExplanationTest {
         FunctionalIterator<Explanation> explanations = txn.query().explain(explainable.explainableId(), explainableAnswer.completeMap());
         List<Explanation> explList = explanations.toList();
         assertEquals(explanationsCount, explList.size());
+
+        explList.forEach(explanation -> {
+            Map<Retrievable, Set<Retrievable>> mapping = explanation.variableMapping();
+            ConceptMap completeMap = explainableAnswer.completeMap();
+            ConceptMap projected = applyMapping(mapping, completeMap);
+            projected.concepts().forEach((var, concept) -> {
+                assertTrue(explanation.conclusionAnswer().answer().contains(var));
+                assertEquals(explanation.conclusionAnswer().answer().get(var), concept);
+            });
+        });
+    }
+
+    private ConceptMap applyMapping(Map<Retrievable, Set<Retrievable>> mapping, ConceptMap completeMap) {
+        Map<Retrievable, Concept> concepts = new HashMap<>();
+        mapping.forEach((from, tos) -> {
+            assertTrue(completeMap.contains(from));
+            Concept concept = completeMap.get(from);
+            tos.forEach(mapped -> {
+                assertTrue(!concepts.containsKey(mapped) || concepts.get(mapped).equals(concept));
+                concepts.put(mapped, concept);
+            });
+        });
+        return new ConceptMap(concepts);
     }
 }
