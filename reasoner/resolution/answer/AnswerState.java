@@ -779,8 +779,13 @@ public abstract class AnswerState {
                 return new Explain(mappedConceptMap, parent, mapping, sourceConjunction, null, root, false);
             }
 
-            public PRNT toUpstreamLookup(ConceptMap additionalConcepts) {
-                return parent().with(mapping.unTransform(additionalConcepts), requiresReiteration || parent().requiresReiteration());
+            public PRNT toUpstreamLookup(ConceptMap additionalConcepts, boolean isInferredConclusion) {
+                if (isInferredConclusion) {
+                    return parent().with(mapping.unTransform(additionalConcepts), requiresReiteration || parent().requiresReiteration(),
+                                         sourceConjunction, null);
+                } else {
+                    return parent().with(mapping.unTransform(additionalConcepts), requiresReiteration || parent().requiresReiteration());
+                }
             }
 
             public PRNT toUpstreamInferred() {

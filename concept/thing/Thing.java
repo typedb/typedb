@@ -117,6 +117,13 @@ public interface Thing extends Concept {
     Stream<? extends Attribute> getHas(AttributeType... attributeType);
 
     /**
+     *
+     * @param attribute
+     * @return
+     */
+    boolean isHasInferred(Attribute attribute);
+
+    /**
      * Get all {@code RoleType} types this {@code Thing} is playing in a {@code Relation}.
      *
      * @return a stream of {@code RoleType} types that this {@code Thing} plays.
@@ -152,4 +159,5 @@ public interface Thing extends Concept {
      * Validates and throws an exception if there is any violation.
      */
     void validate();
+
 }

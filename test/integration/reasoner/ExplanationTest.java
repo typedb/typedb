@@ -35,7 +35,6 @@ import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
 import grakn.core.test.integration.util.Util;
-import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import graql.lang.Graql;
 import org.junit.After;
@@ -45,13 +44,14 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.concept.answer.ExplainableAnswer.Explainable.NOT_IDENTIFIED;
-import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -276,6 +276,64 @@ public class ExplanationTest {
 
                 assertTrue(ans.get(0).explainableAnswer().isPresent());
                 assertSingleExplainableExplanations(ans.get(0), 1, 1, 2, txn);
+            }
+        }
+    }
+
+    @Test
+    public void test_nested_explanations() {
+        try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+                LogicManager logicMgr = txn.logic();
+                txn.query().define(Graql.parseQuery("define " +
+                                                            "location sub entity, " +
+                                                            "  plays location-hierarchy:superior, " +
+                                                            "  plays location-hierarchy:subordinate; " +
+                                                            "location-hierarchy sub relation," +
+                                                            "  relates superior," +
+                                                            "  relates subordinate;"
+                ).asDefine());
+                logicMgr.putRule(
+                        "transitive-location",
+                        Graql.parsePattern("{ (subordinate: $x, superior: $y) isa location-hierarchy;" +
+                                                   "(subordinate: $y, superior: $z) isa location-hierarchy; }").asConjunction(),
+                        Graql.parseVariable("(subordinate: $x, superior: $z) isa location-hierarchy").asThing());
+                txn.commit();
+            }
+        }
+
+        try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+                txn.query().insert(Graql.parseQuery("insert " +
+                                                            "(subordinate: $a, superior: $b) isa location-hierarchy; " +
+                                                            "(subordinate: $b, superior: $c) isa location-hierarchy; " +
+                                                            "(subordinate: $c, superior: $d) isa location-hierarchy; " +
+                                                            "(subordinate: $d, superior: $e) isa location-hierarchy; " +
+                                                            "$a isa location; $b isa location; $c isa location;" +
+                                                            "$d isa location; $e isa location;"
+
+                ).asInsert());
+                txn.commit();
+            }
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
+                List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $r isa location-hierarchy;").asMatch()).toList();
+                assertEquals(10, ans.size());
+
+                List<ConceptMap> explainableMaps = iterate(ans).filter(answer -> answer.explainableAnswer().isPresent()).toList();
+                assertEquals(6, explainableMaps.size());
+
+                List<Explanation> recusivelyExplainable = new ArrayList<>();
+                for (ConceptMap explainableMap : explainableMaps) {
+                    ExplainableAnswer explainableAnswer = explainableMap.explainableAnswer().get();
+                    assertEquals(1, explainableAnswer.explainables().size());
+                    List<Explanation> explanations = txn.query().explain(explainableAnswer.explainables().iterator().next().explainableId(), explainableAnswer.completeMap()).toList();
+                    assertEquals(1, explanations.size());
+                    if (!explanations.get(0).conditionAnswer().explainables().isEmpty()) {
+                        recusivelyExplainable.add(explanations.get(0));
+                    }
+                }
+
+                assertEquals(3, recusivelyExplainable.size());
             }
         }
     }

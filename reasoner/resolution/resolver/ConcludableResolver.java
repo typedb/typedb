@@ -217,7 +217,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         FunctionalIterator<Partial.Compound<?, ?>> upstreamAnswers = fromUpstream.partialAnswer().asConcludable().isExplain() ?
                 Iterators.empty() :
                 traversalIterator(concludable.pattern(), fromUpstream.partialAnswer().conceptMap())
-                        .map(conceptMap -> fromUpstream.partialAnswer().asConcludable().toUpstreamLookup(conceptMap));
+                        .map(conceptMap -> fromUpstream.partialAnswer().asConcludable().toUpstreamLookup(conceptMap, concludable.isInferredAnswer(conceptMap)));
 
         boolean singleAnswerRequired = fromUpstream.partialAnswer().conceptMap().concepts().keySet().containsAll(unboundVars());
         RequestState requestState = new RequestState(upstreamAnswers, iteration, singleAnswerRequired);

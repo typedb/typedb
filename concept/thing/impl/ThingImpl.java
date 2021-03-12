@@ -177,6 +177,11 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     }
 
     @Override
+    public boolean isHasInferred(Attribute attribute) {
+        return vertex.outs().edge(HAS, ((ThingImpl) attribute).vertex).isInferred();
+    }
+
+    @Override
     public Stream<? extends RoleType> getPlaying() {
         return vertex.outs().edge(PLAYING).to().map(ThingVertex::type)
                 .map(v -> RoleTypeImpl.of(vertex.graphs(), v)).stream();

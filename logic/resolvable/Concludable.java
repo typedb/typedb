@@ -21,7 +21,11 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.parameters.Label;
+import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.Type;
 import grakn.core.graph.common.Encoding;
@@ -119,6 +123,8 @@ public abstract class Concludable extends Resolvable<Conjunction> {
     abstract Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr);
 
     abstract FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr);
+
+    public abstract boolean isInferredAnswer(ConceptMap conceptMap);
 
     public abstract AlphaEquivalence alphaEquals(Concludable that);
 
@@ -271,6 +277,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
     }
 
+
     /**
      * Relation handles these concludable patterns, where `$role` and `$relation` could be labelled, and there could
      * be any number of rolePlayers:
@@ -325,6 +332,11 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
             if (conclusion.isRelation()) return unify(conclusion.asRelation(), conceptMgr);
             return Iterators.empty();
+        }
+
+        @Override
+        public boolean isInferredAnswer(ConceptMap conceptMap) {
+            return conceptMap.get(generating().get().id()).asThing().isInferred();
         }
 
         public FunctionalIterator<Unifier> unify(Rule.Conclusion.Relation relationConclusion, ConceptManager conceptMgr) {
@@ -509,6 +521,13 @@ public abstract class Concludable extends Resolvable<Conjunction> {
             return Iterators.empty();
         }
 
+        @Override
+        public boolean isInferredAnswer(ConceptMap conceptMap) {
+            Thing owner = conceptMap.get(has.owner().id()).asThing();
+            grakn.core.concept.thing.Attribute attribute = conceptMap.get(has.attribute().id()).asAttribute();
+            return owner.isHasInferred(attribute);
+        }
+
         public FunctionalIterator<Unifier> unify(Rule.Conclusion.Has hasConclusion, ConceptManager conceptMgr) {
             Unifier.Builder unifierBuilder = Unifier.builder();
             if (unificationSatisfiable(has().owner(), hasConclusion.has().owner())) {
@@ -623,6 +642,11 @@ public abstract class Concludable extends Resolvable<Conjunction> {
             return Iterators.empty();
         }
 
+        @Override
+        public boolean isInferredAnswer(ConceptMap conceptMap) {
+            return conceptMap.get(generating().get().id()).asThing().isInferred();
+        }
+
         FunctionalIterator<Unifier> unify(Rule.Conclusion.Isa isa, ConceptManager conceptMgr) {
             Unifier.Builder unifierBuilder = Unifier.builder();
             if (unificationSatisfiable(isa().owner(), isa.isa().owner())) {
@@ -732,6 +756,11 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
             if (conclusion.isValue()) return unify(conclusion.asValue());
             return Iterators.empty();
+        }
+
+        @Override
+        public boolean isInferredAnswer(ConceptMap conceptMap) {
+            return conceptMap.get(generating().get().id()).asThing().isInferred();
         }
 
         FunctionalIterator<Unifier> unify(Rule.Conclusion.Value value) {
