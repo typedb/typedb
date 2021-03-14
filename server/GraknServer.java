@@ -24,6 +24,7 @@ import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Options;
+import grakn.common.util.Java;
 import grakn.core.concurrent.executor.Executors;
 import grakn.core.migrator.MigratorClient;
 import grakn.core.migrator.MigratorService;
@@ -62,6 +63,7 @@ import static grakn.core.common.exception.ErrorMessage.Server.FAILED_AT_STOPPING
 import static grakn.core.common.exception.ErrorMessage.Server.FAILED_PARSE_PROPERTIES;
 import static grakn.core.common.exception.ErrorMessage.Server.PROPERTIES_FILE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Server.UNCAUGHT_EXCEPTION;
+import static grakn.core.common.exception.ErrorMessage.Server.INCOMPATIBLE_JAVA_RUNTIME;
 import static grakn.core.server.common.ServerDefaults.ASCII_LOGO_FILE;
 import static grakn.core.server.common.ServerDefaults.PROPERTIES_FILE;
 
@@ -78,6 +80,7 @@ public class GraknServer implements AutoCloseable {
 
     private GraknServer(ServerCommand.Start command) throws IOException {
         this.command = command;
+        configureAndVerifyJavaVersion();
         configureAndVerifyDataDir();
         configureTracing();
 
@@ -125,6 +128,13 @@ public class GraknServer implements AutoCloseable {
 
     private Path dataDir() {
         return command.dataDir();
+    }
+
+    private void configureAndVerifyJavaVersion() {
+        int javaMajorVersion = Java.getMajorVersion();
+        if (javaMajorVersion < 11) {
+            throw GraknException.of(INCOMPATIBLE_JAVA_RUNTIME, javaMajorVersion);
+        }
     }
 
     private void configureAndVerifyDataDir() throws IOException {
