@@ -29,7 +29,7 @@ import static grakn.core.concept.answer.ExplainableAnswer.Explainable.NOT_IDENTI
 public class Explanations {
 
     private AtomicLong explainableId;
-    private ConcurrentMap<Long, Conjunction> explainableRegistry;
+    private ConcurrentMap<Long, ExplainableAnswer> explainableRegistry;
 
     public Explanations() {
         this.explainableId = new AtomicLong(NOT_IDENTIFIED + 1);
@@ -39,12 +39,12 @@ public class Explanations {
     public void setAndRecordExplainableIds(ExplainableAnswer explainableAnswer) {
         explainableAnswer.explainables().forEach(explainable -> {
             long nextId = explainableId.getAndIncrement();
-            explainable.withId(nextId);
-            explainableRegistry.put(nextId, explainable.conjunction());
+            explainable.setId(nextId);
+            explainableRegistry.put(nextId, explainableAnswer);
         });
     }
 
-    public Conjunction getExplainable(long explainableId) {
+    public ExplainableAnswer getExplainable(long explainableId) {
         return explainableRegistry.get(explainableId);
     }
 }

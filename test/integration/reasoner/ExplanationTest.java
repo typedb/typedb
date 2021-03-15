@@ -50,11 +50,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.concept.answer.ExplainableAnswer.Explainable.NOT_IDENTIFIED;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class ExplanationTest {
 
@@ -65,7 +67,11 @@ public class ExplanationTest {
     private static RocksGrakn grakn;
 
     private RocksTransaction singleThreadElgTransaction(RocksSession session, Arguments.Transaction.Type transactionType) {
-        RocksTransaction transaction = session.transaction(transactionType, new Options.Transaction().infer(true));
+        return singleThreadElgTransaction(session, transactionType, new Options.Transaction());
+    }
+
+    private RocksTransaction singleThreadElgTransaction(RocksSession session, Arguments.Transaction.Type transactionType, Options.Transaction options) {
+        RocksTransaction transaction = session.transaction(transactionType, options);
         ActorExecutorGroup service = new ActorExecutorGroup(1, new NamedThreadFactory("grakn-core-actor"));
         transaction.reasoner().resolverRegistry().setExecutorService(service);
         return transaction;
@@ -315,25 +321,34 @@ public class ExplanationTest {
                 ).asInsert());
                 txn.commit();
             }
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().traceInference(true).parallel(false)))) {
                 List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $r isa location-hierarchy;").asMatch()).toList();
                 assertEquals(10, ans.size());
 
                 List<ConceptMap> explainableMaps = iterate(ans).filter(answer -> answer.explainableAnswer().isPresent()).toList();
                 assertEquals(6, explainableMaps.size());
 
-                List<Explanation> recusivelyExplainable = new ArrayList<>();
+                Map<ExplainableAnswer, List<Explanation>> allExplanations = new HashMap<>();
                 for (ConceptMap explainableMap : explainableMaps) {
                     ExplainableAnswer explainableAnswer = explainableMap.explainableAnswer().get();
                     assertEquals(1, explainableAnswer.explainables().size());
                     List<Explanation> explanations = txn.query().explain(explainableAnswer.explainables().iterator().next().explainableId(), explainableAnswer.completeMap()).toList();
-                    assertEquals(1, explanations.size());
-                    if (!explanations.get(0).conditionAnswer().explainables().isEmpty()) {
-                        recusivelyExplainable.add(explanations.get(0));
-                    }
+                    allExplanations.put(explainableAnswer, explanations);
                 }
 
-                assertEquals(3, recusivelyExplainable.size());
+                int oneExplanation = 0;
+                int twoExplanations = 0;
+                int threeExplanations = 0;
+                for (Map.Entry<ExplainableAnswer, List<Explanation>> entry : allExplanations.entrySet()) {
+                    List<Explanation> explanations = entry.getValue();
+                    if (explanations.size() == 1) oneExplanation++;
+                    else if (explanations.size() == 2) twoExplanations++;
+                    else if (explanations.size() == 3) threeExplanations++;
+                    else fail();
+                }
+                assertEquals(3, oneExplanation);
+                assertEquals(2, twoExplanations);
+                assertEquals(1, threeExplanations);
             }
         }
     }

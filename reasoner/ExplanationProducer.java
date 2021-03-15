@@ -20,6 +20,7 @@ package grakn.core.reasoner;
 import grakn.core.common.parameters.Options;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
+import grakn.core.concurrent.common.Executors;
 import grakn.core.concurrent.producer.Producer;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
@@ -33,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ExplanationProducer implements Producer<Explanation> {
 
@@ -42,9 +44,13 @@ public class ExplanationProducer implements Producer<Explanation> {
     private final Options.Query options;
     private final Actor.Driver<RootResolver.Explain> explainer;
     private final Request explainRequest;
+    private final int computeSize;
+    private final AtomicInteger required;
+    private final AtomicInteger processing;
     private int iteration;
     private boolean requiresReiteration;
     private boolean done;
+
     private Queue<Explanation> queue;
 
     public ExplanationProducer(Conjunction conjunction, ConceptMap bounds, Options.Query options,
@@ -55,6 +61,9 @@ public class ExplanationProducer implements Producer<Explanation> {
         this.iteration = 0;
         this.requiresReiteration = false;
         this.done = false;
+        this.required = new AtomicInteger();
+        this.processing = new AtomicInteger();
+        this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         this.explainer = registry.explainer(conjunction, this::requestAnswered, this::requestFailed, this::exception);
         ExplainRoot downstream = Top.Explain.initial(bounds, explainer).toDownstream();
         this.explainRequest = Request.create(explainer, downstream);
@@ -62,12 +71,16 @@ public class ExplanationProducer implements Producer<Explanation> {
     }
 
     @Override
-    public void produce(Queue<Explanation> queue, int toRequest, ExecutorService executor) {
+    public synchronized void produce(Queue<Explanation> queue, int request, ExecutorService executor) {
         assert this.queue == null || this.queue == queue;
         this.queue = queue;
+        this.required.addAndGet(request);
+        int canRequest = computeSize - processing.get();
+        int toRequest = Math.min(canRequest, request);
         for (int i = 0; i < toRequest; i++) {
             requestExplanation();
         }
+        processing.addAndGet(toRequest);
     }
 
     private void requestExplanation() {
@@ -82,6 +95,8 @@ public class ExplanationProducer implements Producer<Explanation> {
         Explanation explanation = explainedAnswer.explanation();
         explanations.setAndRecordExplainableIds(explanation.conditionAnswer());
         queue.put(explanation);
+        if (required.decrementAndGet() > 0) requestExplanation();
+        else processing.decrementAndGet();
     }
 
     // note: root resolver calls this single-threaded, so is threads safe
@@ -92,6 +107,7 @@ public class ExplanationProducer implements Producer<Explanation> {
             // query is completely terminated
             done = true;
             queue.done();
+            required.set(0);
             return;
         }
 
@@ -101,8 +117,11 @@ public class ExplanationProducer implements Producer<Explanation> {
             retryInNewIteration();
         }
     }
+
     private boolean mustReiterate() {
-        return false;
+        return iteration < 10;
+
+//        return false;
 //        /*
 //        TODO do we definitely have to reiterate when calculating explanations...?
 //         */
@@ -119,8 +138,10 @@ public class ExplanationProducer implements Producer<Explanation> {
     }
 
     private void exception(Throwable e) {
+        if (options.traceInference()) ResolutionTracer.get().finish();
         if (!done) {
             done = true;
+            required.set(0);
             queue.done(e);
         }
     }

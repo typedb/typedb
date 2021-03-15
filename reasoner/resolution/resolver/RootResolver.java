@@ -19,6 +19,7 @@ package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.ConceptManager;
+import grakn.core.concept.answer.ExplainableAnswer;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.reasoner.resolution.Planner;
@@ -26,6 +27,7 @@ import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top;
+import grakn.core.reasoner.resolution.answer.Explanation;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
@@ -33,6 +35,7 @@ import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -230,6 +233,10 @@ public interface RootResolver<TOP extends Top> {
         private final Consumer<Integer> onFail;
         private final Consumer<Throwable> onException;
 
+
+        // TODO this is anti-pattern for testing/until we merge James' changes
+        private final Set<Explanation> seen;
+
         public Explain(Driver<Explain> driver, grakn.core.pattern.Conjunction conjunction, Consumer<Top.Explain.Finished> onAnswer,
                        Consumer<Integer> onFail, Consumer<Throwable> onException, ResolverRegistry registry,
                        TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr, Planner planner,
@@ -239,6 +246,8 @@ public interface RootResolver<TOP extends Top> {
             this.onAnswer = onAnswer;
             this.onFail = onFail;
             this.onException = onException;
+
+            this.seen = new HashSet<>();
         }
 
         @Override
@@ -283,8 +292,15 @@ public interface RootResolver<TOP extends Top> {
 
         @Override
         boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
-            answerToUpstream(upstreamAnswer, fromUpstream, iteration);
-            return true;
+            assert upstreamAnswer.isTop() && upstreamAnswer.asTop().isExplain() && upstreamAnswer.asTop().asExplain().isFinished();
+            Top.Explain.Finished finished = upstreamAnswer.asTop().asExplain().asFinished();
+            if (!seen.contains(finished.explanation())) {
+                seen.add(finished.explanation());
+                answerToUpstream(upstreamAnswer, fromUpstream, iteration);
+                return true;
+            } else {
+                return false;
+            }
         }
 
         @Override
@@ -317,6 +333,7 @@ public interface RootResolver<TOP extends Top> {
         public void submitFail(int iteration) {
             onFail.accept(iteration);
         }
+
     }
 
 }

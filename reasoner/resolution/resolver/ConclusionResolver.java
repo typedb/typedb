@@ -57,7 +57,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
 
     public ConclusionResolver(Driver<ConclusionResolver> driver, Rule.Conclusion conclusion, ResolverRegistry registry,
                               TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
-        super(driver, ConclusionResolver.class.getSimpleName() + "(" + conclusion.rule().getLabel() + ")",
+        super(driver, ConclusionResolver.class.getSimpleName() + "(" + conclusion + ")",
               registry, traversalEngine, conceptMgr, resolutionTracing);
         this.conclusion = conclusion;
         this.requestStates = new HashMap<>();
@@ -154,8 +154,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
             requestStates.put(fromUpstream, createRequestState(fromUpstream, iteration));
         } else {
             RequestState requestState = this.requestStates.get(fromUpstream);
-            assert requestState.iteration() == iteration ||
-                    requestState.iteration() + 1 == iteration;
+            assert requestState.iteration() == iteration || requestState.iteration() + 1 == iteration;
 
             if (requestState.iteration() + 1 == iteration) {
                 // when the same request for the next iteration the first time, re-initialise required state
@@ -199,7 +198,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
 
     @Override
     public String toString() {
-        return name() + ": then " + conclusion.rule().then();
+        return name();
     }
 
     private static class RequestState {

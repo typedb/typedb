@@ -114,11 +114,13 @@ public abstract class AnswerState {
         public abstract static class Match extends Top {
 
             final Set<Identifier.Variable.Name> getFilter;
+            private final int hash;
 
             Match(ConceptMap conceptMap, @Nullable Set<Identifier.Variable.Name> getFilter, Actor.Driver<? extends Resolver<?>> root,
                   boolean requiresReiteration) {
                 super(conceptMap, root, requiresReiteration);
                 this.getFilter = getFilter;
+                this.hash = Objects.hash(conceptMap, getFilter, root, requiresReiteration);
             }
 
             public static Initial initial(Set<Identifier.Variable.Name> getFilter, Actor.Driver<? extends Resolver<?>> root) {
@@ -148,13 +150,27 @@ public abstract class AnswerState {
                 throw GraknException.of(ILLEGAL_CAST, this.getClass(), Finished.class);
             }
 
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+                Top.Match.Initial that = (Top.Match.Initial) o;
+                return Objects.equals(root(), that.root()) &&
+                        Objects.equals(conceptMap, that.conceptMap) &&
+                        Objects.equals(getFilter, that.getFilter) &&
+                        requiresReiteration == that.requiresReiteration;
+            }
+
+            @Override
+            public int hashCode() {
+                return hash;
+            }
+
             public static class Initial extends Match {
 
-                private final int hash;
 
                 Initial(ConceptMap conceptMap, @Nullable Set<Identifier.Variable.Name> getFilter, Actor.Driver<? extends Resolver<?>> root) {
                     super(conceptMap, getFilter, root, false);
-                    this.hash = Objects.hash(conceptMap, getFilter, root);
                 }
 
                 public Partial.Compound.Root toDownstream() {
@@ -175,25 +191,9 @@ public abstract class AnswerState {
                             '}';
                 }
 
-                @Override
-                public boolean equals(Object o) {
-                    if (this == o) return true;
-                    if (o == null || getClass() != o.getClass()) return false;
-                    Top.Match.Initial top = (Top.Match.Initial) o;
-                    return Objects.equals(root(), top.root()) &&
-                            Objects.equals(conceptMap, top.conceptMap) &&
-                            Objects.equals(getFilter, top.getFilter);
-                }
-
-                @Override
-                public int hashCode() {
-                    return hash;
-                }
             }
 
             public static class Finished extends Match {
-
-                private final int hash;
 
                 Finished(ConceptMap conceptMap, @Nullable Set<Identifier.Variable.Name> getFilter, Actor.Driver<? extends Resolver<?>> root,
                          Conjunction conjunctionAnswered, Set<ExplainableAnswer.Explainable> explainables, boolean requiresReiteration) {
@@ -204,7 +204,6 @@ public abstract class AnswerState {
                             ),
                             getFilter, root, requiresReiteration
                     );
-                    this.hash = Objects.hash(root, conceptMap, getFilter);
                 }
 
                 @Override
@@ -227,21 +226,6 @@ public abstract class AnswerState {
                             '}';
                 }
 
-                @Override
-                public boolean equals(Object o) {
-                    if (this == o) return true;
-                    if (o == null || getClass() != o.getClass()) return false;
-                    Top.Match.Finished top = (Top.Match.Finished) o;
-                    return Objects.equals(root(), top.root()) &&
-                            Objects.equals(conceptMap, top.conceptMap) &&
-                            Objects.equals(getFilter, top.getFilter) &&
-                            requiresReiteration == top.requiresReiteration;
-                }
-
-                @Override
-                public int hashCode() {
-                    return hash;
-                }
             }
         }
 
@@ -280,8 +264,11 @@ public abstract class AnswerState {
 
             public static class Initial extends Explain {
 
+                private final int hash;
+
                 public Initial(ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
                     super(conceptMap, root, requiresReiteration);
+                    this.hash = Objects.hash(root, conceptMap, requiresReiteration);
                 }
 
                 public Partial.Compound.ExplainRoot toDownstream() {
@@ -290,6 +277,21 @@ public abstract class AnswerState {
 
                 public Finished finish(ConceptMap conceptMap, boolean requiresReiteration, Explanation explanation) {
                     return new Finished(conceptMap, root(), requiresReiteration, explanation);
+                }
+
+                @Override
+                public boolean equals(Object o) {
+                    if (this == o) return true;
+                    if (o == null || getClass() != o.getClass()) return false;
+                    Top.Explain.Initial that = (Top.Explain.Initial) o;
+                    return Objects.equals(root(), that.root()) &&
+                            Objects.equals(conceptMap, that.conceptMap) &&
+                            requiresReiteration == that.requiresReiteration;
+                }
+
+                @Override
+                public int hashCode() {
+                    return hash;
                 }
             }
 
@@ -814,7 +816,7 @@ public abstract class AnswerState {
                 private Match(ConceptMap mappedConceptMap, P parent, Conjunction sourceConjunction, @Nullable ConclusionAnswer conclusionAnswer, Mapping mapping,
                               Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
                     super(mappedConceptMap, mapping, sourceConjunction, conclusionAnswer, parent, root, requiresReiteration);
-                    this.hash = Objects.hash(root, conceptMap, mapping, parent);
+                    this.hash = Objects.hash(root, conceptMap, mapping, parent, requiresReiteration);
                 }
 
                 @Override
@@ -849,7 +851,8 @@ public abstract class AnswerState {
                     return Objects.equals(root(), that.root()) &&
                             Objects.equals(conceptMap, that.conceptMap) &&
                             Objects.equals(parent, that.parent) &&
-                            Objects.equals(mapping, that.mapping);
+                            Objects.equals(mapping, that.mapping) &&
+                            requiresReiteration == that.requiresReiteration;
                 }
 
                 @Override
@@ -865,7 +868,8 @@ public abstract class AnswerState {
                 private Explain(ConceptMap mappedConceptMap, Compound.ExplainRoot parent, Mapping mapping, Conjunction sourceConjunction,
                                 @Nullable ConclusionAnswer conclusionAnswer, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
                     super(mappedConceptMap, mapping, sourceConjunction, conclusionAnswer, parent, root, requiresReiteration);
-                    this.hash = Objects.hash(root, conceptMap, mapping, parent, conclusionAnswer); //note: includes conclusion answer
+                    //note: includes conclusion answer
+                    this.hash = Objects.hash(root, conceptMap, mapping, parent, requiresReiteration, conclusionAnswer);
                 }
 
                 @Override
@@ -907,7 +911,8 @@ public abstract class AnswerState {
                             Objects.equals(conceptMap, that.conceptMap) &&
                             Objects.equals(parent, that.parent) &&
                             Objects.equals(mapping, that.mapping) &&
-                            Objects.equals(conclusionAnswer, that.conclusionAnswer);
+                            Objects.equals(conclusionAnswer, that.conclusionAnswer) &&
+                            requiresReiteration == that.requiresReiteration;
                 }
 
                 @Override
@@ -977,7 +982,7 @@ public abstract class AnswerState {
                 private Match(ConceptMap unifiedConceptMap, Concludable.Match<?> parent, Rule rule, Unifier unifier,
                               Instance instanceRequirements, @Nullable ExplainableAnswer conditionAnswer, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
                     super(unifiedConceptMap, parent, rule, unifier, instanceRequirements, conditionAnswer, root, requiresReiteration);
-                    this.hash = Objects.hash(root, conceptMap, rule, unifier, instanceRequirements, parent);
+                    this.hash = Objects.hash(root, conceptMap, rule, unifier, instanceRequirements, parent, requiresReiteration);
                 }
 
                 @Override
@@ -1027,13 +1032,14 @@ public abstract class AnswerState {
                 public boolean equals(Object o) {
                     if (this == o) return true;
                     if (o == null || getClass() != o.getClass()) return false;
-                    Match unified = (Match) o;
-                    return Objects.equals(root(), unified.root()) &&
-                            Objects.equals(conceptMap, unified.conceptMap) &&
-                            Objects.equals(parent, unified.parent) &&
-                            Objects.equals(rule, unified.rule) &&
-                            Objects.equals(unifier, unified.unifier) &&
-                            Objects.equals(instanceRequirements, unified.instanceRequirements);
+                    Match that = (Match) o;
+                    return Objects.equals(root(), that.root()) &&
+                            Objects.equals(conceptMap, that.conceptMap) &&
+                            Objects.equals(parent, that.parent) &&
+                            Objects.equals(rule, that.rule) &&
+                            Objects.equals(unifier, that.unifier) &&
+                            Objects.equals(instanceRequirements, that.instanceRequirements) &&
+                            requiresReiteration == that.requiresReiteration;
                 }
 
                 @Override
@@ -1107,6 +1113,7 @@ public abstract class AnswerState {
                             Objects.equals(rule, that.rule) &&
                             Objects.equals(unifier, that.unifier) &&
                             Objects.equals(instanceRequirements, that.instanceRequirements) &&
+                            requiresReiteration == that.requiresReiteration &&
                             Objects.equals(conditionAnswer, that.conditionAnswer);
                 }
 

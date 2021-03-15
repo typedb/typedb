@@ -25,24 +25,24 @@ import java.util.Set;
 public class ExplainableAnswer {
 
     private final ConceptMap completeMap;
-    private final Conjunction conjunctionAnswered;
+    private final Conjunction conjunction;
     private final Set<Explainable> explainables;
 
     private final int hash;
 
-    public ExplainableAnswer(ConceptMap completeMap, Conjunction conjunctionAnswered, Set<Explainable> explainables) {
+    public ExplainableAnswer(ConceptMap completeMap, Conjunction conjunction, Set<Explainable> explainables) {
         this.completeMap = completeMap;
-        this.conjunctionAnswered = conjunctionAnswered;
+        this.conjunction = conjunction;
         this.explainables = explainables;
-        this.hash = Objects.hash(completeMap, conjunctionAnswered, explainables);
+        this.hash = Objects.hash(completeMap, conjunction, explainables);
     }
 
     public ConceptMap completeMap() {
         return completeMap;
     }
 
-    public Conjunction conjunctionAnswered() {
-        return conjunctionAnswered;
+    public Conjunction conjunction() {
+        return conjunction;
     }
 
     public Set<Explainable> explainables() {
@@ -55,7 +55,7 @@ public class ExplainableAnswer {
         if (o == null || getClass() != o.getClass()) return false;
         final ExplainableAnswer that = (ExplainableAnswer) o;
         return Objects.equals(completeMap, that.completeMap) &&
-                Objects.equals(conjunctionAnswered, that.conjunctionAnswered) &&
+                Objects.equals(conjunction, that.conjunction) &&
                 Objects.equals(explainables, that.explainables);
     }
 
@@ -80,7 +80,7 @@ public class ExplainableAnswer {
             return new Explainable(conjunction, NOT_IDENTIFIED);
         }
 
-        public void withId(long explainableId) {
+        public void setId(long explainableId) {
             this.explainableId = explainableId;
         }
 
@@ -97,13 +97,12 @@ public class ExplainableAnswer {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             final Explainable that = (Explainable) o;
-            return explainableId == that.explainableId &&
-                    Objects.equals(conjunction, that.conjunction);
+            return Objects.equals(conjunction, that.conjunction); // exclude ID as it changes
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(conjunction, explainableId);
+            return Objects.hash(conjunction); // exclude ID as it changes
         }
     }
 }

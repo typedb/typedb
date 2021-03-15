@@ -98,7 +98,7 @@ public abstract class Variable implements Pattern {
 
     @Override
     public String toString() {
-        return reference().toString();
+        return identifier.toString();
     }
 
     @Override

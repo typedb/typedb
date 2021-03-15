@@ -28,6 +28,7 @@ import grakn.core.common.parameters.Label;
 import grakn.core.common.parameters.Options;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.ExplainableAnswer;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.Type;
 import grakn.core.concurrent.producer.Producer;
@@ -195,9 +196,9 @@ public class Reasoner {
     }
 
     public FunctionalIterator<Explanation> explain(long explainableId, ConceptMap bounds, Context.Query defaultContext) {
-        Conjunction explainable = explanations.getExplainable(explainableId);
+        ExplainableAnswer explainable = explanations.getExplainable(explainableId);
         return Producers.produce(
-                list(new ExplanationProducer(explainable, bounds, defaultContext.options(), resolverRegistry, explanations)),
+                list(new ExplanationProducer(explainable.conjunction(), bounds, defaultContext.options(), resolverRegistry, explanations)),
                 Either.first(Arguments.Query.Producer.INCREMENTAL),
                 async1()
         );

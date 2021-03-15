@@ -42,7 +42,7 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
     public ConditionResolver(Driver<ConditionResolver> driver, Rule.Condition condition,
                              ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
                              LogicManager logicMgr, Planner planner, boolean resolutionTracing) {
-        super(driver, ConditionResolver.class.getCanonicalName() + "(rule:" + condition.rule().getLabel() + ")",
+        super(driver, ConditionResolver.class.getSimpleName() + "(" + condition + ")",
                registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
         this.condition = condition;
     }
@@ -96,7 +96,7 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
 
     @Override
     public String toString() {
-        return name() + ": " + condition.rule().when();
+        return name();
     }
 
 }

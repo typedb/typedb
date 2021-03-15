@@ -56,6 +56,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -287,6 +288,23 @@ public class Rule {
                     });
         }
 
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            final Condition that = (Condition) o;
+            return Objects.equals(rule, that.rule);
+        }
+
+        @Override
+        public int hashCode() {
+            return rule.hashCode();
+        }
+
+        @Override
+        public String toString() {
+            return "Rule[" + rule.getLabel() + "] Condition " + rule.when;
+        }
     }
 
     public static abstract class Conclusion {
@@ -390,6 +408,24 @@ public class Rule {
 
         public interface Value {
             ValueConstraint<?> value();
+        }
+
+        @Override
+        public String toString() {
+            return "Rule[" + rule.getLabel() + "] Conclusion " + rule.then;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            final Conclusion that = (Conclusion) o;
+            return Objects.equals(rule, that.rule);
+        }
+
+        @Override
+        public int hashCode() {
+            return rule.hashCode();
         }
 
         public static class Relation extends Conclusion implements Isa {
