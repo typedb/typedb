@@ -80,15 +80,15 @@ public abstract class AnswerState {
         return root;
     }
 
-    public static abstract class Top extends AnswerState {
+    public static abstract class Top2 extends AnswerState {
 
-        public Top(ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
+        public Top2(ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
             super(conceptMap, root, requiresReiteration);
         }
 
         public boolean isTop() { return true; }
 
-        public Top asTop() {
+        public Top2 asTop() {
             return this;
         }
 
@@ -96,25 +96,34 @@ public abstract class AnswerState {
             return false;
         }
 
-        public Match asMatch() {
-            throw GraknException.of(ILLEGAL_CAST, this.getClass(), Match.class);
+        public Match.Top asMatch() {
+            throw GraknException.of(ILLEGAL_CAST, this.getClass(), Top.Match.class);
         }
 
         public boolean isExplain() {
             return false;
         }
 
-        public Explain asExplain() {
-            throw GraknException.of(ILLEGAL_CAST, this.getClass(), Explain.class);
+        public Explain.Top asExplain() {
+            throw GraknException.of(ILLEGAL_CAST, this.getClass(), Top.Explain.class);
         }
 
-        public abstract static class Match extends Top {
+    }
+
+    public static abstract class Partial2 extends AnswerState {
+
+    }
+
+    public static abstract class Match extends AnswerState {
+
+
+        public static abstract class Top extends Top2 {
 
             final boolean explainable;
             final Set<Identifier.Variable.Name> getFilter;
             private final int hash;
 
-            Match(ConceptMap conceptMap, @Nullable Set<Identifier.Variable.Name> getFilter, Actor.Driver<? extends Resolver<?>> root,
+            Top(ConceptMap conceptMap, @Nullable Set<Identifier.Variable.Name> getFilter, Actor.Driver<? extends Resolver<?>> root,
                   boolean requiresReiteration, boolean explainable) {
                 super(conceptMap, root, requiresReiteration);
                 this.getFilter = getFilter;
@@ -122,8 +131,8 @@ public abstract class AnswerState {
                 this.hash = Objects.hash(conceptMap, getFilter, root, requiresReiteration, explainable);
             }
 
-            public static Initial initial(Set<Identifier.Variable.Name> getFilter, Actor.Driver<? extends Resolver<?>> root, boolean explainable) {
-                return new Initial(new ConceptMap(), getFilter, root, explainable);
+            public static Match.Top.Initial initial(Set<Identifier.Variable.Name> getFilter, Actor.Driver<? extends Resolver<?>> root, boolean explainable) {
+                return new Match.Top.Initial(new ConceptMap(), getFilter, root, explainable);
             }
 
             @Override
@@ -137,7 +146,7 @@ public abstract class AnswerState {
             }
 
             @Override
-            public Match asMatch() {
+            public Match.Top asMatch() {
                 return this;
             }
 
@@ -145,15 +154,15 @@ public abstract class AnswerState {
                 return false;
             }
 
-            public Finished asFinished() {
-                throw GraknException.of(ILLEGAL_CAST, this.getClass(), Finished.class);
+            public Top.Match.Finished asFinished() {
+                throw GraknException.of(ILLEGAL_CAST, this.getClass(), Top.Match.Finished.class);
             }
 
             @Override
             public boolean equals(Object o) {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
-                Top.Match.Initial that = (Top.Match.Initial) o;
+                Match.Top.Initial that = (Match.Top.Initial) o;
                 return Objects.equals(root(), that.root()) &&
                         Objects.equals(conceptMap, that.conceptMap) &&
                         Objects.equals(getFilter, that.getFilter) &&
@@ -166,23 +175,23 @@ public abstract class AnswerState {
                 return hash;
             }
 
-            public static class Initial extends Match {
+            public static class Initial extends Match.Top {
 
                 Initial(ConceptMap conceptMap, @Nullable Set<Identifier.Variable.Name> getFilter, Actor.Driver<? extends Resolver<?>> root, boolean explain) {
                     super(conceptMap, getFilter, root, false, explain);
                 }
 
-                public Partial.Compound.Match.Root toDownstream() {
-                    return Partial.Compound.Match.Root.create(conceptMap, this, root(), explainable);
+                public Match.Partial.Compound.Root toDownstream() {
+                    return Match.Partial.Compound.Root.create(conceptMap, this, root(), explainable);
                 }
 
-                Finished finish(ConceptMap conceptMap, boolean requiresReiteration) {
-                    return new Finished(conceptMap, getFilter, root(), requiresReiteration, explainable);
+                Match.Top.Finished finish(ConceptMap conceptMap, boolean requiresReiteration) {
+                    return new Match.Top.Finished(conceptMap, getFilter, root(), requiresReiteration, explainable);
                 }
 
                 @Override
                 public String toString() {
-                    return "AnswerState.Top.Match.Initial{" +
+                    return "AnswerState.Match.Top.Initial{" +
                             "root=" + root() +
                             ", conceptMap=" + conceptMap +
                             ", filter=" + getFilter +
@@ -191,7 +200,7 @@ public abstract class AnswerState {
 
             }
 
-            public static class Finished extends Match {
+            public static class Finished extends Match.Top {
 
                 Finished(ConceptMap conceptMap, @Nullable Set<Identifier.Variable.Name> getFilter, Actor.Driver<? extends Resolver<?>> root,
                          boolean requiresReiteration, boolean explainable) {
@@ -203,31 +212,62 @@ public abstract class AnswerState {
                 }
 
                 @Override
-                public Finished asFinished() {
+                public Match.Top.Finished asFinished() {
                     return this;
                 }
 
                 @Override
                 public String toString() {
-                    return "AnswerState.Top.Match.Finished{" +
+                    return "AnswerState.Match.Top.Finished{" +
                             "root=" + root() +
                             ", conceptMap=" + conceptMap +
                             ", filter=" + getFilter +
                             ", requiresReiteration=" + requiresReiteration +
                             '}';
                 }
-
             }
         }
 
-        public static class Explain extends Top {
+        public static class Partial extends Partial2 {
 
-            public Explain(ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
+            public static abstract class Compound extends Partial {
+
+                public static class Root extends Compound {
+
+                }
+
+                public static class NonRoot extends Compound {
+
+                }
+
+                public static class Condition extends Compound {
+
+                }
+
+            }
+
+            public static class Concludable extends Partial {
+
+            }
+
+            public static class Conclusion extends Partial {
+
+            }
+
+        }
+
+    }
+
+    public static abstract class Explain extends AnswerState {
+
+        public static class Top extends Top2 {
+
+            public Top(ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
                 super(conceptMap, root, requiresReiteration);
             }
 
-            public static Initial initial(ConceptMap bounds, Actor.Driver<RootResolver.Explain> root) {
-                return new Initial(bounds, root, false);
+            public static Explain.Top.Initial initial(ConceptMap bounds, Actor.Driver<RootResolver.Explain> root) {
+                return new Explain.Top.Initial(bounds, root, false);
             }
 
             @Override
@@ -241,7 +281,7 @@ public abstract class AnswerState {
             }
 
             @Override
-            public Explain asExplain() {
+            public Explain.Top asExplain() {
                 return this;
             }
 
@@ -249,11 +289,11 @@ public abstract class AnswerState {
                 return false;
             }
 
-            public Finished asFinished() {
+            public Explain.Top.Finished asFinished() {
                 throw GraknException.of(ILLEGAL_CAST, this.getClass(), Explain.class);
             }
 
-            public static class Initial extends Explain {
+            public static class Initial extends Explain.Top {
 
                 private final int hash;
 
@@ -262,8 +302,8 @@ public abstract class AnswerState {
                     this.hash = Objects.hash(root, conceptMap, requiresReiteration);
                 }
 
-                public Partial.Compound.ExplainRoot toDownstream() {
-                    return Partial.Compound.ExplainRoot.create(conceptMap, this, root());
+                public Explain.Partial.Compound.Root toDownstream() {
+                    return Explain.Partial.Compound.root(conceptMap, this, root());
                 }
 
                 public Finished finish(ConceptMap conceptMap, boolean requiresReiteration, Explanation explanation) {
@@ -274,7 +314,7 @@ public abstract class AnswerState {
                 public boolean equals(Object o) {
                     if (this == o) return true;
                     if (o == null || getClass() != o.getClass()) return false;
-                    Top.Explain.Initial that = (Top.Explain.Initial) o;
+                    AnswerState.Explain.Top.Initial that = (AnswerState.Explain.Top.Initial) o;
                     return Objects.equals(root(), that.root()) &&
                             Objects.equals(conceptMap, that.conceptMap) &&
                             requiresReiteration == that.requiresReiteration;
@@ -286,7 +326,7 @@ public abstract class AnswerState {
                 }
             }
 
-            public static class Finished extends Explain {
+            public static class Finished extends Explain.Top {
 
                 private final Explanation explanation;
                 private final int hash;
@@ -314,7 +354,7 @@ public abstract class AnswerState {
 
                 @Override
                 public String toString() {
-                    return "AnswerState.Top.Explain.Finished{" +
+                    return "AnswerState.Explain.To.Finished{" +
                             "root=" + root() +
                             ", conceptMap=" + conceptMap +
                             ", requiresReiteration=" + requiresReiteration +
@@ -326,7 +366,7 @@ public abstract class AnswerState {
                 public boolean equals(Object o) {
                     if (this == o) return true;
                     if (o == null || getClass() != o.getClass()) return false;
-                    Top.Explain.Finished that = (Top.Explain.Finished) o;
+                    Explain.Top.Finished that = (Explain.Top.Finished) o;
                     return Objects.equals(root(), that.root()) &&
                             Objects.equals(conceptMap, that.conceptMap) &&
                             requiresReiteration == that.requiresReiteration &&
@@ -340,6 +380,31 @@ public abstract class AnswerState {
 
             }
         }
+
+        public static class Partial extends Partial2 {
+
+            public static abstract class Compound extends Partial {
+
+                public static class Root extends Compound {
+
+                }
+
+                public static class Condition extends Compound {
+
+                }
+
+            }
+
+            public static class Concludable extends Partial {
+
+            }
+
+            public static class Conclusion extends Partial {
+
+            }
+
+        }
+
     }
 
     public static abstract class Partial<SELF extends Partial<SELF, PARENT>, PARENT extends AnswerState> extends AnswerState {
