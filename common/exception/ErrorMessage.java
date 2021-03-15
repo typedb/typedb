@@ -69,6 +69,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Server(16, "The request with ID '%s' is a duplicate.");
         public static final Server ALREADY_RUNNING =
                 new Server(17, "Another instance of Grakn Core server is already running at this port: '%s'.");
+        public static final Server INCOMPATIBLE_JAVA_RUNTIME =
+                new Server(18, "Incompatible Java runtime version: '%s'. Please use Java 11 or above.");
 
         private static final String codePrefix = "SRV";
         private static final String messagePrefix = "Invalid Server Operation";
