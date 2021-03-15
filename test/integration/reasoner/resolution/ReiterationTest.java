@@ -174,7 +174,7 @@ public class ReiterationTest {
     }
 
     private void sendRootRequest(Actor.Driver<RootResolver.Conjunction> root, Set<Identifier.Variable.Name> filter, int iteration) {
-        AnswerState.Partial.Compound.Root downstream = Top.Match.initial(filter, root).toDownstream();
+        AnswerState.Partial.Compound.Root downstream = Top.Match.initial(filter, root, true).toDownstream();
         root.execute(actor -> actor.receiveRequest(
                 Request.create(root, downstream), iteration)
         );

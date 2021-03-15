@@ -484,7 +484,7 @@ public class ResolutionTest {
         long startTime = System.currentTimeMillis();
         long n = answerCount + 1; //total number of traversal answers, plus one expected Exhausted (-1 answer)
         for (int i = 0; i < n; i++) {
-            AnswerState.Partial.Compound.Root downstream = Top.Match.initial(filter, root).toDownstream();
+            AnswerState.Partial.Compound.Root downstream = Top.Match.initial(filter, root, true).toDownstream();
             root.execute(actor -> actor.receiveRequest(Request.create(root, downstream), 0));
         }
         int answersFound = 0;

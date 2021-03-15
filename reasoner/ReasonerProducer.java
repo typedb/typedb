@@ -74,7 +74,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.rootResolver = resolverRegistry.root(conjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
-        Root downstream = Top.Match.initial(filter(modifiers.filter()), this.rootResolver).toDownstream();
+        Root downstream = Top.Match.initial(filter(modifiers.filter()), this.rootResolver, options.explain()).toDownstream();
         this.resolveRequest = Request.create(rootResolver, downstream);
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
@@ -91,7 +91,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.rootResolver = resolverRegistry.root(disjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
-        Root downstream = Top.Match.initial(filter(modifiers.filter()), this.rootResolver).toDownstream();
+        Root downstream = Top.Match.initial(filter(modifiers.filter()), this.rootResolver, options.explain()).toDownstream();
         this.resolveRequest = Request.create(rootResolver, downstream);
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }

@@ -47,8 +47,7 @@ import static grakn.core.common.iterator.Iterators.iterate;
 public class ConceptMap implements Answer {
 
     private final Map<Retrievable, ? extends Concept> concepts;
-    @Nullable
-    private ExplainableAnswer explainableAnswer;
+    private ExplainableAnswer explainableAnswer; // TODO remove this and roll it into ConceptMap
     private final int hash;
 
     public ConceptMap() {
@@ -62,7 +61,7 @@ public class ConceptMap implements Answer {
     public ConceptMap(Map<Retrievable, ? extends Concept> concepts, @Nullable ExplainableAnswer explainableAnswer) {
         this.concepts = concepts;
         this.explainableAnswer = explainableAnswer;
-        this.hash = Objects.hash(this.concepts);
+        this.hash = Objects.hash(this.concepts, this.explainableAnswer);
     }
 
     public FunctionalIterator<Pair<Retrievable, Concept>> iterator() {
@@ -139,7 +138,7 @@ public class ConceptMap implements Answer {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ConceptMap that = (ConceptMap) o;
-        return concepts.equals(that.concepts);
+        return concepts.equals(that.concepts) && Objects.equals(explainableAnswer, that.explainableAnswer);
     }
 
     @Override

@@ -119,13 +119,7 @@ public class ExplanationProducer implements Producer<Explanation> {
     }
 
     private boolean mustReiterate() {
-        return iteration < 10;
-
-//        return false;
-//        /*
-//        TODO do we definitely have to reiterate when calculating explanations...?
-//         */
-//        return requiresReiteration;
+        return  requiresReiteration;
     }
 
     private void prepareNextIteration() {
