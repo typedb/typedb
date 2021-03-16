@@ -179,8 +179,8 @@ public class GraknService extends GraknGrpc.GraknImplBase {
     }
 
     @Override
-    public StreamObserver<TransactionProto.Transaction.Reqs> transaction(
-            StreamObserver<TransactionProto.Transaction.Res> responder) {
+    public StreamObserver<TransactionProto.Transaction.Client> transaction(
+            StreamObserver<TransactionProto.Transaction.Server> responder) {
         return new TransactionService(this, responder);
     }
 

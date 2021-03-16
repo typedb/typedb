@@ -31,8 +31,8 @@ import grakn.protocol.TransactionProto.Transaction;
 
 import static grakn.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
-import static grakn.core.server.common.ResponseBuilder.Concept.thing;
-import static grakn.core.server.common.ResponseBuilder.Concept.type;
+import static grakn.core.server.common.ResponseBuilder.Concept.protoThing;
+import static grakn.core.server.common.ResponseBuilder.Concept.protoType;
 
 public class ConceptService {
 
@@ -68,9 +68,9 @@ public class ConceptService {
         }
     }
 
-    private static TransactionProto.Transaction.Res response(Transaction.Req request,
-                                                             ConceptProto.ConceptManager.Res.Builder response) {
-        return TransactionProto.Transaction.Res.newBuilder().setId(request.getId())
+    private static TransactionProto.Transaction.Res response(
+            Transaction.Req request, ConceptProto.ConceptManager.Res.Builder response) {
+        return TransactionProto.Transaction.Res.newBuilder().setReqId(request.getReqId())
                 .setConceptManagerRes(response).build();
     }
 
@@ -78,7 +78,7 @@ public class ConceptService {
         ThingType thingType = conceptMgr.getThingType(label);
         ConceptProto.ConceptManager.GetThingType.Res.Builder getThingTypeRes =
                 ConceptProto.ConceptManager.GetThingType.Res.newBuilder();
-        if (thingType != null) getThingTypeRes.setThingType(type(thingType));
+        if (thingType != null) getThingTypeRes.setThingType(protoType(thingType));
         ConceptProto.ConceptManager.Res.Builder response =
                 ConceptProto.ConceptManager.Res.newBuilder().setGetThingTypeRes(getThingTypeRes);
         transactionSrv.respond(response(request, response));
@@ -88,7 +88,7 @@ public class ConceptService {
         Thing thing = conceptMgr.getThing(iid);
         ConceptProto.ConceptManager.GetThing.Res.Builder getThingRes =
                 ConceptProto.ConceptManager.GetThing.Res.newBuilder();
-        if (thing != null) getThingRes.setThing(thing(thing));
+        if (thing != null) getThingRes.setThing(protoThing(thing));
         ConceptProto.ConceptManager.Res.Builder response =
                 ConceptProto.ConceptManager.Res.newBuilder().setGetThingRes(getThingRes);
         transactionSrv.respond(response(request, response));
@@ -97,7 +97,7 @@ public class ConceptService {
     private void putEntityType(String label, Transaction.Req request) {
         EntityType entityType = conceptMgr.putEntityType(label);
         transactionSrv.respond(response(request, ConceptProto.ConceptManager.Res.newBuilder().setPutEntityTypeRes(
-                ConceptProto.ConceptManager.PutEntityType.Res.newBuilder().setEntityType(type(entityType))
+                ConceptProto.ConceptManager.PutEntityType.Res.newBuilder().setEntityType(protoType(entityType))
         )));
     }
 
@@ -127,14 +127,14 @@ public class ConceptService {
         }
         AttributeType attributeType = conceptMgr.putAttributeType(attributeTypeReq.getLabel(), valueType);
         transactionSrv.respond(response(request, ConceptProto.ConceptManager.Res.newBuilder().setPutAttributeTypeRes(
-                ConceptProto.ConceptManager.PutAttributeType.Res.newBuilder().setAttributeType(type(attributeType))
+                ConceptProto.ConceptManager.PutAttributeType.Res.newBuilder().setAttributeType(protoType(attributeType))
         )));
     }
 
     private void putRelationType(String label, Transaction.Req request) {
         RelationType relationType = conceptMgr.putRelationType(label);
         transactionSrv.respond(response(request, ConceptProto.ConceptManager.Res.newBuilder().setPutRelationTypeRes(
-                ConceptProto.ConceptManager.PutRelationType.Res.newBuilder().setRelationType(type(relationType))
+                ConceptProto.ConceptManager.PutRelationType.Res.newBuilder().setRelationType(protoType(relationType))
         )));
     }
 
