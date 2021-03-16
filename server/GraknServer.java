@@ -30,7 +30,6 @@ import grakn.core.rocks.Factory;
 import grakn.core.rocks.RocksFactory;
 import grakn.core.server.common.ServerCommand;
 import grakn.core.server.common.ServerDefaults;
-import grakn.core.server.common.Util;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -62,12 +61,12 @@ public class GraknServer implements AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraknServer.class);
 
-    protected final ServerCommand.Start command;
     protected final Factory factory;
     protected final Grakn grakn;
     protected final Server server;
     protected GraknService graknService;
-    private MigratorService migratorRPCService;
+    private MigratorService migratorService;
+    protected final ServerCommand.Start command;
 
     private GraknServer(ServerCommand.Start command) {
         this(command, new RocksFactory());
@@ -132,7 +131,7 @@ public class GraknServer implements AutoCloseable {
         assert Executors.isInitialised();
 
         graknService = new GraknService(grakn);
-        migratorRPCService = new MigratorService(grakn);
+        migratorService = new MigratorService(grakn);
 
         return NettyServerBuilder.forPort(command.port())
                 .executor(Executors.service())
@@ -141,7 +140,7 @@ public class GraknServer implements AutoCloseable {
                 .maxConnectionIdle(1, TimeUnit.HOURS) // TODO: why 1 hour?
                 .channelType(NioServerSocketChannel.class)
                 .addService(graknService)
-                .addService(migratorRPCService)
+                .addService(migratorService)
                 .build();
     }
 
