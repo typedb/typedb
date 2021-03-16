@@ -134,7 +134,8 @@ public class Encoding {
         STATISTICS(1),
         TYPE(2),
         THING(3),
-        RULE(4);
+        RULE(4),
+        CLUSTER(5);
 
         private final int key;
 
@@ -159,6 +160,7 @@ public class Encoding {
         STATISTICS_COUNT_JOB(51, PrefixType.STATISTICS),
         STATISTICS_COUNTED(52, PrefixType.STATISTICS),
         STATISTICS_SNAPSHOT(53, PrefixType.STATISTICS),
+        CLUSTER_LAST_APPLIED(80, PrefixType.CLUSTER),
         VERTEX_THING_TYPE(100, PrefixType.TYPE),
         VERTEX_ENTITY_TYPE(110, PrefixType.TYPE),
         VERTEX_ATTRIBUTE_TYPE(120, PrefixType.TYPE),
@@ -178,6 +180,7 @@ public class Encoding {
                 pair(STATISTICS_COUNT_JOB.key, STATISTICS_COUNT_JOB),
                 pair(STATISTICS_COUNTED.key, STATISTICS_COUNTED),
                 pair(STATISTICS_SNAPSHOT.key, STATISTICS_SNAPSHOT),
+                pair(CLUSTER_LAST_APPLIED.key, CLUSTER_LAST_APPLIED),
                 pair(VERTEX_THING_TYPE.key, VERTEX_THING_TYPE),
                 pair(VERTEX_ENTITY_TYPE.key, VERTEX_ENTITY_TYPE),
                 pair(VERTEX_ATTRIBUTE_TYPE.key, VERTEX_ATTRIBUTE_TYPE),
@@ -235,6 +238,10 @@ public class Encoding {
 
         public boolean isRule() {
             return type.equals(PrefixType.RULE);
+        }
+
+        public boolean isCluster() {
+            return type.equals(PrefixType.CLUSTER);
         }
 
     }
