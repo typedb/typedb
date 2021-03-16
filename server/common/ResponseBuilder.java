@@ -150,13 +150,25 @@ public class ResponseBuilder {
 
     public static class QueryManager {
 
-        public static TransactionProto.Transaction.Res queryMgrRes(String reqID, QueryProto.QueryManager.Res.Builder res) {
+        private static TransactionProto.Transaction.Res queryMgrRes(String reqID, QueryProto.QueryManager.Res.Builder res) {
             return TransactionProto.Transaction.Res.newBuilder().setReqId(reqID).setQueryManagerRes(res).build();
         }
 
-        public static TransactionProto.Transaction.ResPart queryMgrResPart(
+        private static TransactionProto.Transaction.ResPart queryMgrResPart(
                 String reqID, QueryProto.QueryManager.ResPart.Builder resPart) {
             return TransactionProto.Transaction.ResPart.newBuilder().setReqId(reqID).setQueryManagerResPart(resPart).build();
+        }
+
+        public static TransactionProto.Transaction.Res defineRes(String reqID) {
+            return queryMgrRes(reqID, QueryProto.QueryManager.Res.newBuilder().setDefineRes(
+                    QueryProto.QueryManager.Define.Res.getDefaultInstance()
+            ));
+        }
+
+        public static TransactionProto.Transaction.Res undefineRes(String reqID) {
+            return queryMgrRes(reqID, QueryProto.QueryManager.Res.newBuilder().setUndefineRes(
+                    QueryProto.QueryManager.Undefine.Res.getDefaultInstance()
+            ));
         }
 
         public static TransactionProto.Transaction.ResPart matchResPart(String reqID, List<ConceptMap> answers) {

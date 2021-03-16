@@ -27,7 +27,6 @@ import grakn.core.concept.answer.ConceptMapGroup;
 import grakn.core.concept.answer.NumericGroup;
 import grakn.core.query.QueryManager;
 import grakn.core.server.TransactionService;
-import grakn.core.server.common.ResponseBuilder;
 import grakn.protocol.QueryProto;
 import grakn.protocol.TransactionProto;
 import graql.lang.Graql;
@@ -42,12 +41,14 @@ import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
 import static grakn.core.server.common.RequestReader.applyDefaultOptions;
 import static grakn.core.server.common.RequestReader.applyQueryOptions;
+import static grakn.core.server.common.ResponseBuilder.QueryManager.defineRes;
+import static grakn.core.server.common.ResponseBuilder.QueryManager.deleteRes;
 import static grakn.core.server.common.ResponseBuilder.QueryManager.insertResPart;
 import static grakn.core.server.common.ResponseBuilder.QueryManager.matchAggregateRes;
 import static grakn.core.server.common.ResponseBuilder.QueryManager.matchGroupAggregateResPart;
 import static grakn.core.server.common.ResponseBuilder.QueryManager.matchGroupResPart;
 import static grakn.core.server.common.ResponseBuilder.QueryManager.matchResPart;
-import static grakn.core.server.common.ResponseBuilder.QueryManager.queryMgrRes;
+import static grakn.core.server.common.ResponseBuilder.QueryManager.undefineRes;
 import static grakn.core.server.common.ResponseBuilder.QueryManager.updateResPart;
 
 public class QueryService {
@@ -60,39 +61,39 @@ public class QueryService {
         this.transactionSrv = transactionSrv;
     }
 
-    public void execute(TransactionProto.Transaction.Req request) {
+    public void execute(TransactionProto.Transaction.Req req) {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread("query")) {
-            QueryProto.QueryManager.Req queryReq = request.getQueryManagerReq();
+            QueryProto.QueryManager.Req queryReq = req.getQueryManagerReq();
             Options.Query options = new Options.Query();
             applyDefaultOptions(options, queryReq.getOptions());
             applyQueryOptions(options, queryReq.getOptions());
             switch (queryReq.getReqCase()) {
                 case DEFINE_REQ:
-                    this.define(queryReq.getDefineReq().getQuery(), options, request);
+                    this.define(queryReq.getDefineReq().getQuery(), options, req);
                     return;
                 case UNDEFINE_REQ:
-                    this.undefine(queryReq.getUndefineReq().getQuery(), options, request);
+                    this.undefine(queryReq.getUndefineReq().getQuery(), options, req);
                     return;
                 case MATCH_REQ:
-                    this.match(queryReq.getMatchReq().getQuery(), options, request);
+                    this.match(queryReq.getMatchReq().getQuery(), options, req);
                     return;
                 case MATCH_AGGREGATE_REQ:
-                    this.matchAggregate(queryReq.getMatchAggregateReq().getQuery(), options, request);
+                    this.matchAggregate(queryReq.getMatchAggregateReq().getQuery(), options, req);
                     return;
                 case MATCH_GROUP_REQ:
-                    this.matchGroup(queryReq.getMatchGroupReq().getQuery(), options, request);
+                    this.matchGroup(queryReq.getMatchGroupReq().getQuery(), options, req);
                     return;
                 case MATCH_GROUP_AGGREGATE_REQ:
-                    this.matchGroupAggregate(queryReq.getMatchGroupAggregateReq().getQuery(), options, request);
+                    this.matchGroupAggregate(queryReq.getMatchGroupAggregateReq().getQuery(), options, req);
                     return;
                 case INSERT_REQ:
-                    this.insert(queryReq.getInsertReq().getQuery(), options, request);
+                    this.insert(queryReq.getInsertReq().getQuery(), options, req);
                     return;
                 case DELETE_REQ:
-                    this.delete(queryReq.getDeleteReq().getQuery(), options, request);
+                    this.delete(queryReq.getDeleteReq().getQuery(), options, req);
                     return;
                 case UPDATE_REQ:
-                    this.update(queryReq.getUpdateReq().getQuery(), options, request);
+                    this.update(queryReq.getUpdateReq().getQuery(), options, req);
                     return;
                 case REQ_NOT_SET:
                 default:
@@ -101,22 +102,18 @@ public class QueryService {
         }
     }
 
-    private void define(String queryStr, Options.Query options, TransactionProto.Transaction.Req request) {
+    private void define(String queryStr, Options.Query options, TransactionProto.Transaction.Req req) {
         GraqlDefine query = Graql.parseQuery(queryStr).asDefine();
         Context.Query context = new Context.Query(transactionSrv.context(), options.query(query), query);
         queryMgr.define(query, context);
-        transactionSrv.respond(queryMgrRes(request.getReqId(), QueryProto.QueryManager.Res.newBuilder().setDefineRes(
-                QueryProto.QueryManager.Define.Res.getDefaultInstance()
-        )));
+        transactionSrv.respond(defineRes(req.getReqId()));
     }
 
-    private void undefine(String queryStr, Options.Query options, TransactionProto.Transaction.Req request) {
+    private void undefine(String queryStr, Options.Query options, TransactionProto.Transaction.Req req) {
         GraqlUndefine query = Graql.parseQuery(queryStr).asUndefine();
         Context.Query context = new Context.Query(transactionSrv.context(), options.query(query), query);
         queryMgr.undefine(query, context);
-        transactionSrv.respond(queryMgrRes(request.getReqId(), QueryProto.QueryManager.Res.newBuilder().setUndefineRes(
-                QueryProto.QueryManager.Undefine.Res.getDefaultInstance()
-        )));
+        transactionSrv.respond(undefineRes(req.getReqId()));
     }
 
     private void match(String queryStr, Options.Query options, TransactionProto.Transaction.Req eq) {
@@ -126,10 +123,10 @@ public class QueryService {
         transactionSrv.stream(answers, eq.getReqId(), context.options(), a -> matchResPart(eq.getReqId(), a));
     }
 
-    private void matchAggregate(String queryStr, Options.Query options, TransactionProto.Transaction.Req request) {
+    private void matchAggregate(String queryStr, Options.Query options, TransactionProto.Transaction.Req req) {
         GraqlMatch.Aggregate query = Graql.parseQuery(queryStr).asMatchAggregate();
         Context.Query context = new Context.Query(transactionSrv.context(), options.query(query), query);
-        transactionSrv.respond(matchAggregateRes(request.getReqId(), queryMgr.match(query, context)));
+        transactionSrv.respond(matchAggregateRes(req.getReqId(), queryMgr.match(query, context)));
     }
 
     private void matchGroup(String queryStr, Options.Query options, TransactionProto.Transaction.Req req) {
@@ -153,11 +150,11 @@ public class QueryService {
         transactionSrv.stream(answers, req.getReqId(), context.options(), a -> insertResPart(req.getReqId(), a));
     }
 
-    private void delete(String queryStr, Options.Query options, TransactionProto.Transaction.Req request) {
+    private void delete(String queryStr, Options.Query options, TransactionProto.Transaction.Req req) {
         GraqlDelete query = Graql.parseQuery(queryStr).asDelete();
         Context.Query context = new Context.Query(transactionSrv.context(), options.query(query), query);
         queryMgr.delete(query, context);
-        transactionSrv.respond(ResponseBuilder.QueryManager.deleteRes(request.getReqId()));
+        transactionSrv.respond(deleteRes(req.getReqId()));
     }
 
     private void update(String queryStr, Options.Query options, TransactionProto.Transaction.Req req) {
