@@ -26,7 +26,8 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Options;
 import grakn.core.concurrent.common.Executors;
 import grakn.core.migrator.MigratorClient;
-import grakn.core.rocks.RocksGrakn;
+import grakn.core.rocks.Factory;
+import grakn.core.rocks.RocksFactory;
 import grakn.core.server.common.ServerCommand;
 import grakn.core.server.common.ServerDefaults;
 import io.grpc.Server;
@@ -59,6 +60,7 @@ import static grakn.core.common.exception.ErrorMessage.Server.ENV_VAR_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Server.EXITED_WITH_ERROR;
 import static grakn.core.common.exception.ErrorMessage.Server.FAILED_AT_STOPPING;
 import static grakn.core.common.exception.ErrorMessage.Server.FAILED_PARSE_PROPERTIES;
+
 import static grakn.core.common.exception.ErrorMessage.Server.PROPERTIES_FILE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Server.UNCAUGHT_EXCEPTION;
 import static grakn.core.server.common.ServerDefaults.ASCII_LOGO_FILE;
@@ -69,27 +71,30 @@ public class GraknServer implements AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraknServer.class);
 
-    private final Grakn grakn;
-    private final Server server;
-    private final ServerCommand.Start command;
-    private final GraknService graknService;
-    private final MigratorService migratorRPCService;
+    protected final ServerCommand.Start command;
+    protected final Factory factory;
+    protected final Grakn grakn;
+    protected final Server server;
+    protected GraknService graknService;
+    private MigratorService migratorRPCService;
 
-    private GraknServer(ServerCommand.Start command) throws IOException {
+    private GraknServer(ServerCommand.Start command) {
+        this(command, new RocksFactory());
+    }
+
+    protected GraknServer(ServerCommand.Start command, Factory factory) {
         this.command = command;
         configureAndVerifyDataDir();
         configureTracing();
 
-        if (command.debug()) LOG.info("Running Grakn Core Server in debug mode.");
+        if (command.debug()) LOG.info("Running {} in debug mode.", name());
 
         Options.Database options = new Options.Database()
                 .graknDir(ServerDefaults.GRAKN_DIR)
                 .dataDir(command.dataDir())
                 .logsDir(command.logsDir());
-        grakn = RocksGrakn.open(options);
-        graknService = new GraknService(grakn);
-        migratorRPCService = new MigratorService(grakn);
-
+        this.factory = factory;
+        grakn = factory.grakn(options);
         server = rpcServer();
         Thread.setDefaultUncaughtExceptionHandler(
                 (t, e) -> LOG.error(UNCAUGHT_EXCEPTION.message(t.getName() + ": " + e.getMessage()), e)
@@ -101,8 +106,12 @@ public class GraknServer implements AutoCloseable {
         initLoggerConfig();
     }
 
-    private Server rpcServer() {
+    protected Server rpcServer() {
         assert Executors.isInitialised();
+
+        graknService = new GraknService(grakn);
+        migratorRPCService = new MigratorService(grakn);
+
         return NettyServerBuilder.forPort(command.port())
                 .executor(Executors.service())
                 .workerEventLoopGroup(Executors.network())
@@ -118,18 +127,38 @@ public class GraknServer implements AutoCloseable {
         java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
     }
 
+    protected String name() {
+        return "Grakn Core Server";
+    }
+
+    protected Factory factory() {
+        return factory;
+    }
+
+    protected Grakn grakn() {
+        return grakn;
+    }
+
+    protected ServerCommand.Start command() {
+        return command;
+    }
+
     private int port() {
         return command.port();
     }
 
-    private Path dataDir() {
+    protected Path dataDir() {
         return command.dataDir();
     }
 
-    private void configureAndVerifyDataDir() throws IOException {
+    private void configureAndVerifyDataDir() {
         if (!Files.isDirectory(this.command.dataDir())) {
             if (this.command.dataDir().equals(ServerDefaults.DATA_DIR)) {
-                Files.createDirectory(this.command.dataDir());
+                try {
+                    Files.createDirectory(this.command.dataDir());
+                } catch (IOException e) {
+                    throw GraknException.of(e);
+                }
             } else {
                 throw GraknException.of(DATA_DIRECTORY_NOT_FOUND, this.command.dataDir());
             }
@@ -159,7 +188,7 @@ public class GraknServer implements AutoCloseable {
         }
     }
 
-    private static Properties parseProperties() {
+    protected static Properties parseProperties() {
         Properties properties = new Properties();
         boolean error = false;
 
@@ -253,24 +282,24 @@ public class GraknServer implements AutoCloseable {
         System.exit(0);
     }
 
-    private static void printSchema(ServerCommand.PrintSchema printSchemaCommand) {
+    protected static void printSchema(ServerCommand.PrintSchema printSchemaCommand) {
         MigratorClient migrator = new MigratorClient(printSchemaCommand.port());
         migrator.printSchema(printSchemaCommand.database());
     }
 
-    private static void exportData(ServerCommand.ExportData exportDataCommand) {
+    protected static void exportData(ServerCommand.ExportData exportDataCommand) {
         MigratorClient migrator = new MigratorClient(exportDataCommand.port());
         boolean success = migrator.exportData(exportDataCommand.database(), exportDataCommand.filename());
         System.exit(success ? 0 : 1);
     }
 
-    private static void importData(ServerCommand.ImportData importDataCommand) {
+    protected static void importData(ServerCommand.ImportData importDataCommand) {
         MigratorClient migrator = new MigratorClient(importDataCommand.port());
         boolean success = migrator.importData(importDataCommand.database(), importDataCommand.filename(), importDataCommand.remapLabels());
         System.exit(success ? 0 : 1);
     }
 
-    private static void startGraknServer(ServerCommand.Start command) throws IOException {
+    private static void startGraknServer(ServerCommand.Start command) {
         Instant start = Instant.now();
         GraknServer server = new GraknServer(command);
         server.start();
@@ -279,9 +308,6 @@ public class GraknServer implements AutoCloseable {
         LOG.info("- listening to port: {}", server.port());
         LOG.info("- data directory configured to: {}", server.dataDir());
         LOG.info("- bootup completed in: {} ms", Duration.between(start, end).toMillis());
-        LOG.info("");
-        LOG.info("Grakn Core Server is now running and will keep this process alive.");
-        LOG.info("You can press CTRL+C to shutdown this server.");
         LOG.info("...");
         server.serve();
     }
@@ -289,8 +315,9 @@ public class GraknServer implements AutoCloseable {
     @Override
     public void close() {
         LOG.info("");
-        LOG.info("Shutting down Grakn Core Server...");
+        LOG.info("Shutting down {}...", name());
         try {
+            assert graknService != null;
             graknService.close();
             server.shutdown();
             server.awaitTermination();
@@ -303,19 +330,22 @@ public class GraknServer implements AutoCloseable {
         }
     }
 
-    private void start() throws IOException {
+    protected void start() {
         try {
             server.start();
+            LOG.info("{} is now running and will keep this process alive.", name());
+            LOG.info("You can press CTRL+C to shutdown this server.");
+            LOG.info("");
         } catch (IOException e) {
             if (e.getCause() != null && e.getCause() instanceof BindException) {
                 throw GraknException.of(ALREADY_RUNNING, port());
             } else {
-                throw e;
+                throw new RuntimeException(e);
             }
         }
     }
 
-    private void serve() {
+    protected void serve() {
         try {
             server.awaitTermination();
         } catch (InterruptedException e) {
