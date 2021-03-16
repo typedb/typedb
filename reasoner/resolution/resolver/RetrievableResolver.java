@@ -22,7 +22,7 @@ import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concept.ConceptManager;
 import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
+import grakn.core.reasoner.resolution.answer.AnswerStateOld.Partial;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
@@ -102,8 +102,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         assert fromUpstream.partialAnswer().isCompound() && fromUpstream.partialAnswer().asCompound().isNonRoot();
         FunctionalIterator<Partial.Compound<?, ?>> upstreamAnswers =
                 traversalIterator(retrievable.pattern(), fromUpstream.partialAnswer().conceptMap())
-                        // TODO introduce more types of filtered to avoid the asCompound cast
-                        .map(conceptMap -> fromUpstream.partialAnswer().asCompound().asNonRoot().aggregateToUpstream(conceptMap).asCompound());
+                        .map(conceptMap -> fromUpstream.partialAnswer().asCompound().asNonRoot().aggregateToUpstream(conceptMap));
         return new RequestStates(upstreamAnswers, iteration);
     }
 

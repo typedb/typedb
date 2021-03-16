@@ -19,14 +19,13 @@ package grakn.core.reasoner.resolution.resolver;
 
 import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.ConceptManager;
-import grakn.core.concept.answer.ExplainableAnswer;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
-import grakn.core.reasoner.resolution.answer.AnswerState.Top;
+import grakn.core.reasoner.resolution.answer.AnswerStateOld;
+import grakn.core.reasoner.resolution.answer.AnswerStateOld.Partial;
+import grakn.core.reasoner.resolution.answer.AnswerStateOld.Top;
 import grakn.core.reasoner.resolution.answer.Explanation;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
@@ -98,7 +97,7 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        protected void answerToUpstream(AnswerState answer, Request fromUpstream, int iteration) {
+        protected void answerToUpstream(AnswerStateOld answer, Request fromUpstream, int iteration) {
             assert answer.isTop() && answer.asTop().isMatch() && answer.asTop().asMatch().isFinished();
             submitAnswer(answer.asTop().asMatch().asFinished());
         }
@@ -118,7 +117,7 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
+        boolean tryAcceptUpstreamAnswer(AnswerStateOld upstreamAnswer, Request fromUpstream, int iteration) {
             RequestState requestState = requestStates.get(fromUpstream);
             if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
                 requestState.recordProduced(upstreamAnswer.conceptMap());
@@ -130,7 +129,7 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        protected Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?, ?> partialAnswer) {
+        protected Optional<AnswerStateOld> toUpstreamAnswer(Partial.Compound<?, ?> partialAnswer) {
             assert partialAnswer.isRoot();
             return Optional.of(partialAnswer.asRoot().toFinishedTop(conjunction));
         }
@@ -182,7 +181,7 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        protected void answerToUpstream(AnswerState answer, Request fromUpstream, int iteration) {
+        protected void answerToUpstream(AnswerStateOld answer, Request fromUpstream, int iteration) {
             assert answer.isTop() && answer.asTop().isMatch() && answer.asTop().asMatch().isFinished();
             submitAnswer(answer.asTop().asMatch().asFinished());
         }
@@ -199,7 +198,7 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        protected boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
+        protected boolean tryAcceptUpstreamAnswer(AnswerStateOld upstreamAnswer, Request fromUpstream, int iteration) {
             RequestState requestState = requestStates.get(fromUpstream);
             if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
                 requestState.recordProduced(upstreamAnswer.conceptMap());
@@ -211,7 +210,7 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        protected AnswerState toUpstreamAnswer(Partial.Compound<?, ?> answer, Response.Answer fromDownstream) {
+        protected AnswerStateOld toUpstreamAnswer(Partial.Compound<?, ?> answer, Response.Answer fromDownstream) {
             assert answer.isRoot();
             Driver<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
             grakn.core.pattern.Conjunction patternAnswered = downstreamResolvers.get(sender);
@@ -257,7 +256,7 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        protected void answerToUpstream(AnswerState answer, Request fromUpstream, int iteration) {
+        protected void answerToUpstream(AnswerStateOld answer, Request fromUpstream, int iteration) {
             assert answer.isTop() && answer.asTop().isExplain() && answer.asTop().asExplain().isFinished();
             submitAnswer(answer.asTop().asExplain().asFinished());
         }
@@ -291,7 +290,7 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
+        boolean tryAcceptUpstreamAnswer(AnswerStateOld upstreamAnswer, Request fromUpstream, int iteration) {
             assert upstreamAnswer.isTop() && upstreamAnswer.asTop().isExplain() && upstreamAnswer.asTop().asExplain().isFinished();
             Top.Explain.Finished finished = upstreamAnswer.asTop().asExplain().asFinished();
             if (!seen.contains(finished.explanation())) {
@@ -304,7 +303,7 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?, ?> partialAnswer) {
+        Optional<AnswerStateOld> toUpstreamAnswer(Partial.Compound<?, ?> partialAnswer) {
             assert partialAnswer.isExplainRoot();
             if (partialAnswer.asExplainRoot().hasExplanation()) {
                 return Optional.of(partialAnswer.asExplainRoot().toFinishedTop());

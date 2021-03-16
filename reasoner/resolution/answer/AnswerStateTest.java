@@ -21,9 +21,9 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptImpl;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Concludable;
-import grakn.core.reasoner.resolution.answer.AnswerState.Top;
+import grakn.core.reasoner.resolution.answer.AnswerStateOld.Partial;
+import grakn.core.reasoner.resolution.answer.AnswerStateOld.Partial.Concludable;
+import grakn.core.reasoner.resolution.answer.AnswerStateOld.Top;
 import grakn.core.traversal.common.Identifier;
 import org.junit.Test;
 

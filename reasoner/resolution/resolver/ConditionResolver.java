@@ -23,7 +23,7 @@ import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState;
+import grakn.core.reasoner.resolution.answer.AnswerStateOld;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
@@ -67,7 +67,7 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
     }
 
     @Override
-    boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
+    boolean tryAcceptUpstreamAnswer(AnswerStateOld upstreamAnswer, Request fromUpstream, int iteration) {
         RequestState requestState = requestStates.get(fromUpstream);
         if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
             requestState.recordProduced(upstreamAnswer.conceptMap());
@@ -79,7 +79,7 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
     }
 
     @Override
-    protected Optional<AnswerState> toUpstreamAnswer(AnswerState.Partial.Compound<?, ?> partialAnswer) {
+    protected Optional<AnswerStateOld> toUpstreamAnswer(AnswerStateOld.Partial.Compound<?, ?> partialAnswer) {
         assert partialAnswer.isCondition();
         return Optional.of(partialAnswer.asCondition().toUpstream(conjunction()));
     }
