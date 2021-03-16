@@ -29,6 +29,7 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.server.TransactionService;
+import grakn.core.server.common.ResponseBuilder;
 import grakn.protocol.ConceptProto;
 import grakn.protocol.TransactionProto.Transaction;
 
@@ -51,7 +52,8 @@ import static grakn.core.server.common.ResponseBuilder.Thing.getRelationsResPart
 import static grakn.core.server.common.ResponseBuilder.Thing.getTypeRes;
 import static grakn.core.server.common.ResponseBuilder.Thing.isInferredRes;
 import static grakn.core.server.common.ResponseBuilder.Thing.removePlayerRes;
-import static grakn.core.server.common.ResponseBuilder.Thing.thingRes;
+import static grakn.core.server.common.ResponseBuilder.Thing.setHasRes;
+import static grakn.core.server.common.ResponseBuilder.Thing.unsetHasRes;
 
 public class ThingService {
 
@@ -168,17 +170,13 @@ public class ThingService {
     private void setHas(Thing thing, ConceptProto.Thing protoAttribute, Transaction.Req req) {
         Attribute attribute = getThing(protoAttribute).asAttribute();
         thing.setHas(attribute);
-        transactionSrv.respond(thingRes(req.getReqId(), ConceptProto.Thing.Res.newBuilder().setThingSetHasRes(
-                ConceptProto.Thing.SetHas.Res.getDefaultInstance()
-        )));
+        transactionSrv.respond(setHasRes(req.getReqId()));
     }
 
     private void unsetHas(Thing thing, ConceptProto.Thing protoAttribute, Transaction.Req req) {
         Attribute attribute = getThing(protoAttribute).asAttribute();
         thing.unsetHas(attribute);
-        transactionSrv.respond(thingRes(req.getReqId(), ConceptProto.Thing.Res.newBuilder().setThingUnsetHasRes(
-                ConceptProto.Thing.UnsetHas.Res.getDefaultInstance()
-        )));
+        transactionSrv.respond(unsetHasRes(req.getReqId()));
     }
 
     private void getPlayersByRoleType(Relation relation, Transaction.Req req) {
