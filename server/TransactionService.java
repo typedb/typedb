@@ -78,7 +78,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
 
     private final GraknService graknSrv;
     private final StreamObserver<TransactionProto.Transaction.Server> responder;
-    private final ConcurrentMap<String, BatchedStream<?>> streams;
+    private final ConcurrentMap<String, ResponseStream<?>> streams;
     private final AtomicBoolean isRPCAlive;
     private final AtomicBoolean isTransactionOpen;
 
@@ -236,19 +236,19 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
 
     private <T> void stream(Iterator<T> iterator, String requestID, int batchSize, boolean prefetch,
                             Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn) {
-        BatchedStream<T> batchingIterator = new BatchedStream<>(iterator, requestID, batchSize, resPartFn);
+        ResponseStream<T> stream = new ResponseStream<>(iterator, requestID, batchSize, resPartFn);
         streams.compute(requestID, (key, oldValue) -> {
-            if (oldValue == null) return batchingIterator;
+            if (oldValue == null) return stream;
             else throw GraknException.of(DUPLICATE_REQUEST, requestID);
         });
-        if (prefetch) batchingIterator.streamBatches();
+        if (prefetch) stream.streamResParts();
         else respond(ResponseBuilder.Transaction.stream(requestID, CONTINUE));
     }
 
     private void stream(String requestId) {
-        BatchedStream<?> stream = streams.get(requestId);
+        ResponseStream<?> stream = streams.get(requestId);
         if (stream == null) throw GraknException.of(ITERATION_WITH_UNKNOWN_ID, requestId);
-        stream.streamBatches();
+        stream.streamResParts();
     }
 
     @Nullable
@@ -293,32 +293,32 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                 ((StatusRuntimeException) error).getStatus().getCode().equals(Status.CANCELLED.getCode());
     }
 
-    private class BatchedStream<T> {
+    private class ResponseStream<T> {
 
         private final Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn;
         private final Iterator<T> iterator;
         private final String requestID;
         private final int batchSize;
 
-        BatchedStream(Iterator<T> iterator, String requestID, int batchSize,
-                      Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn) {
+        ResponseStream(Iterator<T> iterator, String requestID, int batchSize,
+                       Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn) {
             this.iterator = iterator;
             this.requestID = requestID;
             this.batchSize = batchSize;
             this.resPartFn = resPartFn;
         }
 
-        private void streamBatches() {
-            streamBatchesWhile(i -> i < batchSize && iterator.hasNext());
+        private void streamResParts() {
+            streamResPartsWhile(i -> i < batchSize && iterator.hasNext());
             if (mayClose()) return;
 
             respondStreamState(CONTINUE);
             Instant compensationEndTime = Instant.now().plusMillis(networkLatencyMillis);
-            streamBatchesWhile(i -> iterator.hasNext() && Instant.now().isBefore(compensationEndTime));
+            streamResPartsWhile(i -> iterator.hasNext() && Instant.now().isBefore(compensationEndTime));
             mayClose();
         }
 
-        private void streamBatchesWhile(Predicate<Integer> predicate) {
+        private void streamResPartsWhile(Predicate<Integer> predicate) {
             List<T> answers = new ArrayList<>();
             Instant startTime = Instant.now();
             for (int i = 0; predicate.test(i); i++) {
