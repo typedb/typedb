@@ -53,6 +53,9 @@ import static grakn.core.common.exception.ErrorMessage.Server.EXITED_WITH_ERROR;
 import static grakn.core.common.exception.ErrorMessage.Server.FAILED_AT_STOPPING;
 
 import static grakn.core.common.exception.ErrorMessage.Server.UNCAUGHT_EXCEPTION;
+import static grakn.core.server.common.Util.parseCommandLine;
+import static grakn.core.server.common.Util.parseProperties;
+import static grakn.core.server.common.Util.printASCIILogo;
 
 
 public class GraknServer implements AutoCloseable {
@@ -150,18 +153,6 @@ public class GraknServer implements AutoCloseable {
         return "Grakn Core Server";
     }
 
-    protected Factory factory() {
-        return factory;
-    }
-
-    protected Grakn grakn() {
-        return grakn;
-    }
-
-    protected ServerCommand.Start command() {
-        return command;
-    }
-
     private int port() {
         return command.port();
     }
@@ -215,8 +206,8 @@ public class GraknServer implements AutoCloseable {
 
     public static void main(String[] args) {
         try {
-            Util.printASCIILogo();
-            ServerCommand command = Util.parseCommandLine(Util.parseProperties(), args);
+            printASCIILogo();
+            ServerCommand command = parseCommandLine(parseProperties(), args);
             if (command == null) System.exit(0);
 
             if (command.isStart()) {
