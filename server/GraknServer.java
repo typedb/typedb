@@ -106,6 +106,37 @@ public class GraknServer implements AutoCloseable {
         initLoggerConfig();
     }
 
+    private void configureAndVerifyDataDir() {
+        if (!Files.isDirectory(this.command.dataDir())) {
+            if (this.command.dataDir().equals(ServerDefaults.DATA_DIR)) {
+                try {
+                    Files.createDirectory(this.command.dataDir());
+                } catch (IOException e) {
+                    throw GraknException.of(e);
+                }
+            } else {
+                throw GraknException.of(DATA_DIRECTORY_NOT_FOUND, this.command.dataDir());
+            }
+        }
+
+        if (!Files.isWritable(this.command.dataDir())) {
+            throw GraknException.of(DATA_DIRECTORY_NOT_WRITABLE, this.command.dataDir());
+        }
+    }
+
+    private void configureTracing() {
+        if (this.command.grablTrace()) {
+            GrablTracing grablTracingClient;
+            grablTracingClient = GrablTracing.withLogging(GrablTracing.tracing(
+                    command.grablURI().toString(),
+                    command.grablUsername(),
+                    command.grablToken()
+            ));
+            GrablTracingThreadStatic.setGlobalTracingClient(grablTracingClient);
+            LOG.info("Grabl tracing is enabled");
+        }
+    }
+
     protected Server rpcServer() {
         assert Executors.isInitialised();
 
@@ -151,34 +182,46 @@ public class GraknServer implements AutoCloseable {
         return command.dataDir();
     }
 
-    private void configureAndVerifyDataDir() {
-        if (!Files.isDirectory(this.command.dataDir())) {
-            if (this.command.dataDir().equals(ServerDefaults.DATA_DIR)) {
-                try {
-                    Files.createDirectory(this.command.dataDir());
-                } catch (IOException e) {
-                    throw GraknException.of(e);
-                }
+    protected void start() {
+        try {
+            server.start();
+            LOG.info("{} is now running and will keep this process alive.", name());
+            LOG.info("You can press CTRL+C to shutdown this server.");
+            LOG.info("");
+        } catch (IOException e) {
+            if (e.getCause() != null && e.getCause() instanceof BindException) {
+                throw GraknException.of(ALREADY_RUNNING, port());
             } else {
-                throw GraknException.of(DATA_DIRECTORY_NOT_FOUND, this.command.dataDir());
+                throw new RuntimeException(e);
             }
-        }
-
-        if (!Files.isWritable(this.command.dataDir())) {
-            throw GraknException.of(DATA_DIRECTORY_NOT_WRITABLE, this.command.dataDir());
         }
     }
 
-    private void configureTracing() {
-        if (this.command.grablTrace()) {
-            GrablTracing grablTracingClient;
-            grablTracingClient = GrablTracing.withLogging(GrablTracing.tracing(
-                    command.grablURI().toString(),
-                    command.grablUsername(),
-                    command.grablToken()
-            ));
-            GrablTracingThreadStatic.setGlobalTracingClient(grablTracingClient);
-            LOG.info("Grabl tracing is enabled");
+    protected void serve() {
+        try {
+            server.awaitTermination();
+        } catch (InterruptedException e) {
+            // server is terminated
+            close();
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    @Override
+    public void close() {
+        LOG.info("");
+        LOG.info("Shutting down {}...", name());
+        try {
+            assert graknService != null;
+            graknService.close();
+            server.shutdown();
+            server.awaitTermination();
+            grakn.close();
+            System.runFinalization();
+            LOG.info("Grakn Core Server has been shutdown");
+        } catch (InterruptedException e) {
+            LOG.error(FAILED_AT_STOPPING.message(), e);
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -282,6 +325,19 @@ public class GraknServer implements AutoCloseable {
         System.exit(0);
     }
 
+    private static void startGraknServer(ServerCommand.Start command) {
+        Instant start = Instant.now();
+        GraknServer server = new GraknServer(command);
+        server.start();
+        Instant end = Instant.now();
+        LOG.info("- version: {}", Version.VERSION);
+        LOG.info("- listening to port: {}", server.port());
+        LOG.info("- data directory configured to: {}", server.dataDir());
+        LOG.info("- bootup completed in: {} ms", Duration.between(start, end).toMillis());
+        LOG.info("...");
+        server.serve();
+    }
+
     protected static void printSchema(ServerCommand.PrintSchema printSchemaCommand) {
         MigratorClient migrator = new MigratorClient(printSchemaCommand.port());
         migrator.printSchema(printSchemaCommand.database());
@@ -297,61 +353,5 @@ public class GraknServer implements AutoCloseable {
         MigratorClient migrator = new MigratorClient(importDataCommand.port());
         boolean success = migrator.importData(importDataCommand.database(), importDataCommand.filename(), importDataCommand.remapLabels());
         System.exit(success ? 0 : 1);
-    }
-
-    private static void startGraknServer(ServerCommand.Start command) {
-        Instant start = Instant.now();
-        GraknServer server = new GraknServer(command);
-        server.start();
-        Instant end = Instant.now();
-        LOG.info("- version: {}", Version.VERSION);
-        LOG.info("- listening to port: {}", server.port());
-        LOG.info("- data directory configured to: {}", server.dataDir());
-        LOG.info("- bootup completed in: {} ms", Duration.between(start, end).toMillis());
-        LOG.info("...");
-        server.serve();
-    }
-
-    @Override
-    public void close() {
-        LOG.info("");
-        LOG.info("Shutting down {}...", name());
-        try {
-            assert graknService != null;
-            graknService.close();
-            server.shutdown();
-            server.awaitTermination();
-            grakn.close();
-            System.runFinalization();
-            LOG.info("Grakn Core Server has been shutdown");
-        } catch (InterruptedException e) {
-            LOG.error(FAILED_AT_STOPPING.message(), e);
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    protected void start() {
-        try {
-            server.start();
-            LOG.info("{} is now running and will keep this process alive.", name());
-            LOG.info("You can press CTRL+C to shutdown this server.");
-            LOG.info("");
-        } catch (IOException e) {
-            if (e.getCause() != null && e.getCause() instanceof BindException) {
-                throw GraknException.of(ALREADY_RUNNING, port());
-            } else {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
-    protected void serve() {
-        try {
-            server.awaitTermination();
-        } catch (InterruptedException e) {
-            // server is terminated
-            close();
-            Thread.currentThread().interrupt();
-        }
     }
 }
