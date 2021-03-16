@@ -50,7 +50,6 @@ import static grakn.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT
 import static grakn.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT_WRITABLE;
 import static grakn.core.common.exception.ErrorMessage.Server.EXITED_WITH_ERROR;
 import static grakn.core.common.exception.ErrorMessage.Server.FAILED_AT_STOPPING;
-
 import static grakn.core.common.exception.ErrorMessage.Server.UNCAUGHT_EXCEPTION;
 import static grakn.core.server.common.Util.parseCommandLine;
 import static grakn.core.server.common.Util.parseProperties;
