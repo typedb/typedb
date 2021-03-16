@@ -30,41 +30,29 @@ import grakn.core.rocks.Factory;
 import grakn.core.rocks.RocksFactory;
 import grakn.core.server.common.ServerCommand;
 import grakn.core.server.common.ServerDefaults;
+import grakn.core.server.common.Util;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import picocli.CommandLine;
-import picocli.CommandLine.ParameterException;
-import picocli.CommandLine.PropertiesDefaultProvider;
-import picocli.CommandLine.UnmatchedArgumentException;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.BindException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import static grakn.core.common.exception.ErrorMessage.Server.ALREADY_RUNNING;
 import static grakn.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT_WRITABLE;
-import static grakn.core.common.exception.ErrorMessage.Server.ENV_VAR_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Server.EXITED_WITH_ERROR;
 import static grakn.core.common.exception.ErrorMessage.Server.FAILED_AT_STOPPING;
-import static grakn.core.common.exception.ErrorMessage.Server.FAILED_PARSE_PROPERTIES;
 
-import static grakn.core.common.exception.ErrorMessage.Server.PROPERTIES_FILE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Server.UNCAUGHT_EXCEPTION;
-import static grakn.core.server.common.ServerDefaults.ASCII_LOGO_FILE;
-import static grakn.core.server.common.ServerDefaults.PROPERTIES_FILE;
 
 
 public class GraknServer implements AutoCloseable {
@@ -225,81 +213,10 @@ public class GraknServer implements AutoCloseable {
         }
     }
 
-    private static void printASCIILogo() throws IOException {
-        if (ASCII_LOGO_FILE.exists()) {
-            System.out.println("\n" + new String(Files.readAllBytes(ASCII_LOGO_FILE.toPath()), StandardCharsets.UTF_8));
-        }
-    }
-
-    protected static Properties parseProperties() {
-        Properties properties = new Properties();
-        boolean error = false;
-
-        try {
-            properties.load(new FileInputStream(PROPERTIES_FILE));
-        } catch (IOException e) {
-            LOG.warn(PROPERTIES_FILE_NOT_FOUND.message(PROPERTIES_FILE.toString()));
-            return new Properties();
-        }
-
-        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
-            String val = (String) entry.getValue();
-            if (val.startsWith("$")) {
-                String envVarName = val.substring(1);
-                if (System.getenv(envVarName) == null) {
-                    LOG.error(ENV_VAR_NOT_FOUND.message(val));
-                    error = true;
-                } else {
-                    properties.put(entry.getKey(), System.getenv(envVarName));
-                }
-            }
-        }
-
-        if (error) throw GraknException.of(FAILED_PARSE_PROPERTIES);
-        else return properties;
-    }
-
-    private static ServerCommand parseCommandLine(Properties properties, String[] args) {
-        ServerCommand.Start startCommand = new ServerCommand.Start();
-        ServerCommand.ImportData importDataCommand = new ServerCommand.ImportData(startCommand);
-        ServerCommand.ExportData exportDataCommand = new ServerCommand.ExportData(startCommand);
-        ServerCommand.PrintSchema printSchemaCommand = new ServerCommand.PrintSchema(startCommand);
-        CommandLine commandLine = new CommandLine(startCommand)
-                .addSubcommand(importDataCommand)
-                .addSubcommand(exportDataCommand)
-                .addSubcommand(printSchemaCommand);
-        commandLine.setDefaultValueProvider(new PropertiesDefaultProvider(properties));
-
-        try {
-            CommandLine.ParseResult parseResult = commandLine.parseArgs(args);
-            if (commandLine.isUsageHelpRequested()) {
-                commandLine.usage(commandLine.getOut());
-                return null;
-            } else if (commandLine.isVersionHelpRequested()) {
-                commandLine.printVersionHelp(commandLine.getOut());
-                return null;
-            } else {
-                if (parseResult.hasSubcommand()) {
-                    assert parseResult.subcommand().asCommandLineList().size() == 1;
-                    return parseResult.subcommand().asCommandLineList().get(0).getCommand();
-                } else {
-                    assert parseResult.asCommandLineList().size() == 1;
-                    return parseResult.asCommandLineList().get(0).getCommand();
-                }
-            }
-        } catch (ParameterException ex) {
-            commandLine.getErr().println(ex.getMessage());
-            if (!UnmatchedArgumentException.printSuggestions(ex, commandLine.getErr())) {
-                ex.getCommandLine().usage(commandLine.getErr());
-            }
-            return null;
-        }
-    }
-
     public static void main(String[] args) {
         try {
-            printASCIILogo();
-            ServerCommand command = parseCommandLine(parseProperties(), args);
+            Util.printASCIILogo();
+            ServerCommand command = Util.parseCommandLine(Util.parseProperties(), args);
             if (command == null) System.exit(0);
 
             if (command.isStart()) {
