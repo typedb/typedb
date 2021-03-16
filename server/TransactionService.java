@@ -67,6 +67,7 @@ import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_A
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_NOT_OPENED;
 import static grakn.core.server.common.RequestReader.applyDefaultOptions;
+import static grakn.core.server.common.ResponseBuilder.Transaction.serverMsg;
 import static grakn.protocol.TransactionProto.Transaction.Stream.State.CONTINUE;
 import static grakn.protocol.TransactionProto.Transaction.Stream.State.DONE;
 
@@ -216,11 +217,11 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     }
 
     public void respond(TransactionProto.Transaction.Res response) {
-        responder.onNext(ResponseBuilder.Transaction.serverMsg(response));
+        responder.onNext(serverMsg(response));
     }
 
     public void respond(TransactionProto.Transaction.ResPart partialResponse) {
-        responder.onNext(ResponseBuilder.Transaction.serverMsg(partialResponse));
+        responder.onNext(serverMsg(partialResponse));
     }
 
     public <T> void stream(Iterator<T> iterator, String requestID,

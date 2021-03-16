@@ -107,16 +107,8 @@ public class ResponseBuilder {
 
     public static class Transaction {
 
-        public static TransactionProto.Transaction.Server serverMsg(TransactionProto.Transaction.Res.Builder res) {
-            return serverMsg(res.build());
-        }
-
         public static TransactionProto.Transaction.Server serverMsg(TransactionProto.Transaction.Res res) {
             return TransactionProto.Transaction.Server.newBuilder().setRes(res).build();
-        }
-
-        public static TransactionProto.Transaction.Server serverMsg(TransactionProto.Transaction.ResPart.Builder resPart) {
-            return serverMsg(resPart.build());
         }
 
         public static TransactionProto.Transaction.Server serverMsg(TransactionProto.Transaction.ResPart resPart) {
