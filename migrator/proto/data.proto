@@ -59,72 +59,72 @@ option java_outer_classname = "DataProto";
 package data;
 
 message Item {
-  oneof item {
-    Attribute attribute = 1;
-    Entity entity = 2;
-    Relation relation = 3;
+    oneof item {
+        Attribute attribute = 1;
+        Entity entity = 2;
+        Relation relation = 3;
 
-    Header header = 15;
-    Checksums checksums = 16;
-  }
-
-  message Entity {
-    string id = 1;
-    string label = 2;
-    repeated OwnedAttribute attribute = 3;
-  }
-
-  message Attribute {
-    string id = 1;
-    string label = 2;
-    repeated OwnedAttribute attribute = 3;
-    ValueObject value = 4;
-  }
-
-  message Key {
-    string id = 1;
-  }
-
-  message Relation {
-    string id = 1;
-    string label = 2;
-    repeated OwnedAttribute attribute = 3;
-    repeated Role role = 4;
-    message Role {
-      string label = 1;
-      repeated Player player = 2;
-      message Player {
-        string id = 1;
-      }
+        Header header = 15;
+        Checksums checksums = 16;
     }
-  }
 
-  message OwnedAttribute {
-    string id = 1;
-  }
+    message Entity {
+        string id = 1;
+        string label = 2;
+        repeated OwnedAttribute attribute = 3;
+    }
 
-  message Header {
-    string grakn_version = 1;
-    string original_database = 2; // formerly keyspace
-  }
+    message Attribute {
+        string id = 1;
+        string label = 2;
+        repeated OwnedAttribute attribute = 3;
+        ValueObject value = 4;
+    }
 
-  message Checksums {
-    int64 entity_count = 1;
-    int64 attribute_count = 2;
-    int64 relation_count = 3;
-    int64 role_count = 4;
-    int64 ownership_count = 5;
-    int64 key_ownership_count = 6;
-  }
+    message Key {
+        string id = 1;
+    }
+
+    message Relation {
+        string id = 1;
+        string label = 2;
+        repeated OwnedAttribute attribute = 3;
+        repeated Role role = 4;
+        message Role {
+            string label = 1;
+            repeated Player player = 2;
+            message Player {
+                string id = 1;
+            }
+        }
+    }
+
+    message OwnedAttribute {
+        string id = 1;
+    }
+
+    message Header {
+        string grakn_version = 1;
+        string original_database = 2;
+    }
+
+    message Checksums {
+        int64 entity_count = 1;
+        int64 attribute_count = 2;
+        int64 relation_count = 3;
+        int64 role_count = 4;
+        int64 ownership_count = 5;
+        int64 key_ownership_count = 6;
+    }
 }
 
 // Attribute Value object
 message ValueObject {
-  oneof value {
-    string string = 1;
-    bool boolean = 2;
-    int64 long = 3;
-    double double = 4;
-    int64 datetime = 5; // time since epoch in milliseconds
-  }
+    oneof value {
+        string string = 1;
+        bool boolean = 2;
+        int64 long = 3;
+        double double = 4;
+        int64 datetime = 5; // time since epoch in milliseconds
+    }
 }

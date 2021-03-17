@@ -31,6 +31,22 @@ public class Label {
     private final String scope;
     private final int hash;
 
+    /**
+     * TODO:
+     *
+     * Note that in Graql, you declare "scoped labels/types" by writing the scope first: var("x").type("marriage", "husband") or var("x").plays("marriage", "husband").
+     *
+     * Meanwhile, in Grakn, you declare "scoped labels/types" by writing the label first: graph.getType(label, scope), and Label.of(label, scope).
+     *
+     * This is is not good and needs to be fixed so we don't get tripped up (which we have).
+     *
+     * I think Graql wins, as it is closer to "native Graql", and therefore would be most intuitive for our users. E.g.
+     * person sub entity, plays marriage:husband; is symmetrical to
+     * type("person").sub("entity").plays("marriage", "husband");
+     *
+     * @param name
+     * @param scope
+     */
     private Label(String name, @Nullable String scope) {
         this.name = name;
         this.scope = scope;
@@ -41,7 +57,7 @@ public class Label {
         return new Label(name, null);
     }
 
-    public static Label of(String name, @Nullable String scope) {
+    public static Label of(String name, String scope) {
         return new Label(name, scope);
     }
 

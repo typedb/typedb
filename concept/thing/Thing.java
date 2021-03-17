@@ -117,11 +117,11 @@ public interface Thing extends Concept {
     Stream<? extends Attribute> getHas(AttributeType... attributeType);
 
     /**
-     * Get all {@code RoleType} types that this {@code Thing} plays in a {@code Relation}.
+     * Get all {@code RoleType} types this {@code Thing} is playing in a {@code Relation}.
      *
      * @return a stream of {@code RoleType} types that this {@code Thing} plays.
      */
-    Stream<? extends RoleType> getPlays();
+    Stream<? extends RoleType> getPlaying();
 
     /**
      * Get all {@code Relation} instances that this {@code Thing} is playing any of the specified roles in.

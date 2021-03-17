@@ -21,10 +21,10 @@ package grakn.core.server;
 import grabl.tracing.client.GrablTracing;
 import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.common.concurrent.NamedThreadFactory;
+import grakn.common.util.Java;
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Options;
-import grakn.common.util.Java;
 import grakn.core.concurrent.executor.Executors;
 import grakn.core.migrator.MigratorClient;
 import grakn.core.migrator.MigratorService;
@@ -61,9 +61,9 @@ import static grakn.core.common.exception.ErrorMessage.Server.ENV_VAR_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Server.EXITED_WITH_ERROR;
 import static grakn.core.common.exception.ErrorMessage.Server.FAILED_AT_STOPPING;
 import static grakn.core.common.exception.ErrorMessage.Server.FAILED_PARSE_PROPERTIES;
+import static grakn.core.common.exception.ErrorMessage.Server.INCOMPATIBLE_JAVA_RUNTIME;
 import static grakn.core.common.exception.ErrorMessage.Server.PROPERTIES_FILE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Server.UNCAUGHT_EXCEPTION;
-import static grakn.core.common.exception.ErrorMessage.Server.INCOMPATIBLE_JAVA_RUNTIME;
 import static grakn.core.server.common.ServerDefaults.ASCII_LOGO_FILE;
 import static grakn.core.server.common.ServerDefaults.PROPERTIES_FILE;
 
@@ -134,8 +134,7 @@ public class GraknServer implements AutoCloseable {
         int majorVersion = Java.getMajorVersion();
         if (majorVersion == Java.UNKNOWN_VERSION) {
             LOG.warn("Could not detect Java version from version string '{}'. Will start Grakn Core Server anyway.", System.getProperty("java.version"));
-        }
-        else if (majorVersion < 11) {
+        } else if (majorVersion < 11) {
             throw GraknException.of(INCOMPATIBLE_JAVA_RUNTIME, majorVersion);
         }
     }

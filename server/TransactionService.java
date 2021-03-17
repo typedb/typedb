@@ -67,16 +67,19 @@ import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_A
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_NOT_OPENED;
 import static grakn.core.server.common.RequestReader.applyDefaultOptions;
+import static grakn.core.server.common.ResponseBuilder.Transaction.serverMsg;
+import static grakn.protocol.TransactionProto.Transaction.Stream.State.CONTINUE;
+import static grakn.protocol.TransactionProto.Transaction.Stream.State.DONE;
 
-public class TransactionService implements StreamObserver<TransactionProto.Transaction.Reqs>, AutoCloseable {
+public class TransactionService implements StreamObserver<TransactionProto.Transaction.Client>, AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(TransactionService.class);
     private static final String TRACE_PREFIX = "transaction_services.";
     private static final int MAX_NETWORK_LATENCY_MILLIS = 3_000;
 
     private final GraknService graknSrv;
-    private final StreamObserver<TransactionProto.Transaction.Res> responder;
-    private final ConcurrentMap<String, BatchedStream<?>> streams;
+    private final StreamObserver<TransactionProto.Transaction.Server> responder;
+    private final ConcurrentMap<String, ResponseStream<?>> streams;
     private final AtomicBoolean isRPCAlive;
     private final AtomicBoolean isTransactionOpen;
 
@@ -94,7 +97,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         private final RuleService rule = new RuleService(TransactionService.this, transaction.logic());
     }
 
-    public TransactionService(GraknService graknSrv, StreamObserver<TransactionProto.Transaction.Res> responder) {
+    public TransactionService(GraknService graknSrv, StreamObserver<TransactionProto.Transaction.Server> responder) {
         this.graknSrv = graknSrv;
         this.responder = SynchronizedStreamObserver.of(responder);
         this.streams = new ConcurrentHashMap<>();
@@ -107,11 +110,9 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     }
 
     @Override
-    public void onNext(TransactionProto.Transaction.Reqs requests) {
-        if (requests.getTransactionReqsList().isEmpty()) close(GraknException.of(EMPTY_TRANSACTION_REQUEST));
-        else for (TransactionProto.Transaction.Req req : requests.getTransactionReqsList()) {
-            execute(req);
-        }
+    public void onNext(TransactionProto.Transaction.Client requests) {
+        if (requests.getReqsList().isEmpty()) close(GraknException.of(EMPTY_TRANSACTION_REQUEST));
+        else for (TransactionProto.Transaction.Req req : requests.getReqsList()) execute(req);
     }
 
     @Override
@@ -140,37 +141,37 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         }
     }
 
-    private void executeRequest(TransactionProto.Transaction.Req request) {
+    private void executeRequest(TransactionProto.Transaction.Req req) {
         if (!isRPCAlive.get()) throw GraknException.of(TRANSACTION_CLOSED);
         if (!isTransactionOpen.get()) throw GraknException.of(TRANSACTION_NOT_OPENED);
 
-        switch (request.getReqCase()) {
+        switch (req.getReqCase()) {
             case ROLLBACK_REQ:
-                rollback(request.getId());
+                rollback(req.getReqId());
                 break;
             case COMMIT_REQ:
-                commit(request.getId());
+                commit(req.getReqId());
                 break;
             case STREAM_REQ:
-                stream(request.getId());
+                stream(req.getReqId());
                 break;
-            case QUERY_REQ:
-                services.query.execute(request);
+            case QUERY_MANAGER_REQ:
+                services.query.execute(req);
                 break;
             case CONCEPT_MANAGER_REQ:
-                services.concept.execute(request);
+                services.concept.execute(req);
                 break;
             case LOGIC_MANAGER_REQ:
-                services.logic.execute(request);
+                services.logic.execute(req);
                 break;
             case THING_REQ:
-                services.thing.execute(request);
+                services.thing.execute(req);
                 break;
             case TYPE_REQ:
-                services.type.execute(request);
+                services.type.execute(req);
                 break;
             case RULE_REQ:
-                services.rule.execute(request);
+                services.rule.execute(req);
                 break;
             default:
                 throw GraknException.of(ILLEGAL_ARGUMENT);
@@ -185,7 +186,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         sessionSrv.register(this);
         transaction = transaction(sessionSrv, openReq);
         services = new Services();
-        responder.onNext(ResponseBuilder.Transaction.open(request.getId()));
+        respond(ResponseBuilder.Transaction.open(request.getReqId()));
         isTransactionOpen.set(true);
     }
 
@@ -216,37 +217,39 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     }
 
     public void respond(TransactionProto.Transaction.Res response) {
-        responder.onNext(response);
+        responder.onNext(serverMsg(response));
+    }
+
+    public void respond(TransactionProto.Transaction.ResPart partialResponse) {
+        responder.onNext(serverMsg(partialResponse));
     }
 
     public <T> void stream(Iterator<T> iterator, String requestID,
-                           Function<List<T>, TransactionProto.Transaction.Res> responseBatcherFn) {
+                           Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn) {
         int size = transaction.context().options().responseBatchSize();
-        stream(iterator, requestID, size, true, responseBatcherFn);
+        stream(iterator, requestID, size, true, resPartFn);
     }
 
     public <T> void stream(Iterator<T> iterator, String requestID, Options.Query options,
-                           Function<List<T>, TransactionProto.Transaction.Res> responseBatcherFn) {
-        stream(iterator, requestID, options.responseBatchSize(), options.prefetch(), responseBatcherFn);
+                           Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn) {
+        stream(iterator, requestID, options.responseBatchSize(), options.prefetch(), resPartFn);
     }
 
     private <T> void stream(Iterator<T> iterator, String requestID, int batchSize, boolean prefetch,
-                            Function<List<T>, TransactionProto.Transaction.Res> responseBatcherFn) {
-        BatchedStream<T> batchingIterator = new BatchedStream<>(
-                iterator, requestID, batchSize, responseBatcherFn
-        );
+                            Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn) {
+        ResponseStream<T> stream = new ResponseStream<>(iterator, requestID, batchSize, resPartFn);
         streams.compute(requestID, (key, oldValue) -> {
-            if (oldValue == null) return batchingIterator;
+            if (oldValue == null) return stream;
             else throw GraknException.of(DUPLICATE_REQUEST, requestID);
         });
-        if (prefetch) batchingIterator.streamBatches();
-        else respond(ResponseBuilder.Transaction.stream(requestID, false));
+        if (prefetch) stream.streamResParts();
+        else respond(ResponseBuilder.Transaction.stream(requestID, CONTINUE));
     }
 
     private void stream(String requestId) {
-        BatchedStream<?> stream = streams.get(requestId);
+        ResponseStream<?> stream = streams.get(requestId);
         if (stream == null) throw GraknException.of(ITERATION_WITH_UNKNOWN_ID, requestId);
-        stream.streamBatches();
+        stream.streamResParts();
     }
 
     @Nullable
@@ -291,53 +294,53 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                 ((StatusRuntimeException) error).getStatus().getCode().equals(Status.CANCELLED.getCode());
     }
 
-    private class BatchedStream<T> {
+    private class ResponseStream<T> {
 
+        private final Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn;
         private final Iterator<T> iterator;
         private final String requestID;
-        private final Function<List<T>, TransactionProto.Transaction.Res> responseBatcherFn;
         private final int batchSize;
 
-        BatchedStream(Iterator<T> iterator, String requestID, int batchSize,
-                      Function<List<T>, TransactionProto.Transaction.Res> responseBatcherFn) {
+        ResponseStream(Iterator<T> iterator, String requestID, int batchSize,
+                       Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn) {
             this.iterator = iterator;
             this.requestID = requestID;
             this.batchSize = batchSize;
-            this.responseBatcherFn = responseBatcherFn;
+            this.resPartFn = resPartFn;
         }
 
-        private void streamBatches() {
-            streamBatchesWhile(i -> i < batchSize && iterator.hasNext());
+        private void streamResParts() {
+            streamResPartsWhile(i -> i < batchSize && iterator.hasNext());
             if (mayClose()) return;
 
-            respondStreamStatus(false);
+            respondStreamState(CONTINUE);
             Instant compensationEndTime = Instant.now().plusMillis(networkLatencyMillis);
-            streamBatchesWhile(i -> iterator.hasNext() && Instant.now().isBefore(compensationEndTime));
+            streamResPartsWhile(i -> iterator.hasNext() && Instant.now().isBefore(compensationEndTime));
             mayClose();
         }
 
-        private void streamBatchesWhile(Predicate<Integer> predicate) {
+        private void streamResPartsWhile(Predicate<Integer> predicate) {
             List<T> answers = new ArrayList<>();
             Instant startTime = Instant.now();
             for (int i = 0; predicate.test(i); i++) {
                 answers.add(iterator.next());
                 Instant currentTime = Instant.now();
                 if (Duration.between(startTime, currentTime).toMillis() >= 1) {
-                    respond(responseBatcherFn.apply(answers));
+                    respond(resPartFn.apply(answers));
                     answers.clear();
                     startTime = currentTime;
                 }
             }
-            if (!answers.isEmpty()) respond(responseBatcherFn.apply(answers));
+            if (!answers.isEmpty()) respond(resPartFn.apply(answers));
         }
 
         private boolean mayClose() {
-            if (!iterator.hasNext()) respondStreamStatus(true);
+            if (!iterator.hasNext()) respondStreamState(DONE);
             return !iterator.hasNext();
         }
 
-        private void respondStreamStatus(boolean isDone) {
-            respond(ResponseBuilder.Transaction.stream(requestID, isDone));
+        private void respondStreamState(TransactionProto.Transaction.Stream.State state) {
+            respond(ResponseBuilder.Transaction.stream(requestID, state));
         }
     }
 }

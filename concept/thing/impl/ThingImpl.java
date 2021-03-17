@@ -177,8 +177,9 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     }
 
     @Override
-    public Stream<? extends RoleType> getPlays() {
-        return vertex.outs().edge(PLAYING).to().map(ThingVertex::type).map(v -> RoleTypeImpl.of(vertex.graphs(), v)).stream();
+    public Stream<? extends RoleType> getPlaying() {
+        return vertex.outs().edge(PLAYING).to().map(ThingVertex::type)
+                .map(v -> RoleTypeImpl.of(vertex.graphs(), v)).stream();
     }
 
     @Override

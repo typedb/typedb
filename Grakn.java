@@ -29,12 +29,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-/**
- * A Grakn Database API
- *
- * This interface allows you to open a 'Session' to connect to the Grakn
- * database, and open a 'Transaction' from that session.
- */
 public interface Grakn extends AutoCloseable {
 
     Session session(String database, Arguments.Session.Type type);
@@ -47,9 +41,6 @@ public interface Grakn extends AutoCloseable {
 
     void close();
 
-    /**
-     * Grakn Database Manager
-     */
     interface DatabaseManager {
 
         boolean contains(String name);
@@ -61,11 +52,6 @@ public interface Grakn extends AutoCloseable {
         Set<? extends Database> all();
     }
 
-    /**
-     * A Grakn Database
-     *
-     * A database is an isolated scope of data in the storage engine.
-     */
     interface Database {
 
         String name();
@@ -79,12 +65,6 @@ public interface Grakn extends AutoCloseable {
         void delete();
     }
 
-    /**
-     * A Grakn Database Session
-     *
-     * This interface allows you to create transactions to perform READs or
-     * WRITEs onto the database.
-     */
     interface Session extends AutoCloseable {
 
         Transaction transaction(Arguments.Transaction.Type type);
@@ -102,9 +82,6 @@ public interface Grakn extends AutoCloseable {
         void close();
     }
 
-    /**
-     * A Grakn Database Transaction
-     */
     interface Transaction extends AutoCloseable {
 
         Arguments.Transaction.Type type();
