@@ -19,7 +19,7 @@
 package grakn.core.reasoner.resolution.framework;
 
 import grakn.core.common.exception.GraknException;
-import grakn.core.reasoner.resolution.answer.AnswerStateOld.Partial;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;

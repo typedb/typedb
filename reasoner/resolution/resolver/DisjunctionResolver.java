@@ -22,8 +22,8 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerStateOld;
-import grakn.core.reasoner.resolution.answer.AnswerStateOld.Partial.Compound;
+import grakn.core.reasoner.resolution.answer.AnswerState;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Compound;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Response;
 import grakn.core.traversal.TraversalEngine;
@@ -64,14 +64,14 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         RequestState requestState = requestStates.get(fromUpstream);
 
         assert fromDownstream.answer().isCompound();
-        AnswerStateOld answer = toUpstreamAnswer(fromDownstream.answer().asCompound(), fromDownstream);
+        AnswerState answer = toUpstreamAnswer(fromDownstream.answer().asCompound(), fromDownstream);
         boolean acceptedAnswer = tryAcceptUpstreamAnswer(answer, fromUpstream, iteration);
         if (!acceptedAnswer) nextAnswer(fromUpstream, requestState, iteration);
     }
 
-    protected abstract boolean tryAcceptUpstreamAnswer(AnswerStateOld upstreamAnswer, Request fromUpstream, int iteration);
+    protected abstract boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration);
 
-    protected abstract AnswerStateOld toUpstreamAnswer(Compound<?, ?> answer, Response.Answer fromDownstream);
+    protected abstract AnswerState toUpstreamAnswer(Compound<?, ?> answer, Response.Answer fromDownstream);
 
     @Override
     protected void initialiseDownstreamResolvers() {
@@ -93,8 +93,8 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         assert fromUpstream.partialAnswer().isCompound();
         RequestState requestState = new RequestState(iteration);
         for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers.keySet()) {
-            Compound.Match.NonRoot downstream = fromUpstream.partialAnswer().asCompound()
-                    .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver));
+            Compound.Nestable downstream = fromUpstream.partialAnswer().asCompound()
+                    .filterToNestable(conjunctionRetrievedIds(conjunctionResolver));
             Request request = Request.create(driver(), conjunctionResolver, downstream);
             requestState.addDownstreamProducer(request);
         }
@@ -110,8 +110,8 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
 
         RequestState requestStateNextIteration = requestStateForIteration(requestStatePrior, newIteration);
         for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers.keySet()) {
-            Compound.Match.NonRoot downstream = fromUpstream.partialAnswer().asCompound()
-                    .filterToDownstream(conjunctionRetrievedIds(conjunctionResolver));
+            Compound.Nestable downstream = fromUpstream.partialAnswer().asCompound()
+                    .filterToNestable(conjunctionRetrievedIds(conjunctionResolver));
             Request request = Request.create(driver(), conjunctionResolver, downstream);
             requestStateNextIteration.addDownstreamProducer(request);
         }
@@ -171,15 +171,15 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         }
 
         @Override
-        protected boolean tryAcceptUpstreamAnswer(AnswerStateOld upstreamAnswer, Request fromUpstream, int iteration) {
+        protected boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
             answerToUpstream(upstreamAnswer, fromUpstream, iteration);
             return true;
         }
 
         @Override
-        protected AnswerStateOld toUpstreamAnswer(Compound<?, ?> answer, Response.Answer fromDownstream) {
-            assert answer.isNonRoot();
-            return answer.asNonRoot().toUpstream();
+        protected AnswerState toUpstreamAnswer(Compound<?, ?> answer, Response.Answer fromDownstream) {
+            assert answer.isNestable();
+            return answer.asNestable().toUpstream();
         }
 
         @Override

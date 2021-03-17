@@ -30,8 +30,8 @@ import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.pattern.Negation;
 import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerStateOld;
-import grakn.core.reasoner.resolution.answer.AnswerStateOld.Partial;
+import grakn.core.reasoner.resolution.answer.AnswerState;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import grakn.core.reasoner.resolution.answer.Mapping;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Response;
@@ -80,7 +80,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
 
     protected abstract void nextAnswer(Request fromUpstream, RequestState requestState, int iteration);
 
-    abstract Optional<AnswerStateOld> toUpstreamAnswer(Partial.Compound<?, ?> fromDownstream);
+    abstract Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?, ?> fromDownstream);
 
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
@@ -100,7 +100,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
 
         Partial.Compound<?, ?> partialAnswer = fromDownstream.answer().asCompound();
         if (plan.isLast(fromDownstream.planIndex())) {
-            Optional<AnswerStateOld> upstreamAnswer = toUpstreamAnswer(partialAnswer);
+            Optional<AnswerState> upstreamAnswer = toUpstreamAnswer(partialAnswer);
             boolean answerAccepted = upstreamAnswer.isPresent() && tryAcceptUpstreamAnswer(upstreamAnswer.get(), fromUpstream, iteration);
             if (!answerAccepted) nextAnswer(fromUpstream, requestState, iteration);
         } else {
@@ -108,7 +108,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         }
     }
 
-    abstract boolean tryAcceptUpstreamAnswer(AnswerStateOld upstreamAnswer, Request fromUpstream, int iteration);
+    abstract boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration);
 
     private void toNextChild(Response.Answer fromDownstream, int iteration, Request fromUpstream, RequestState requestState, Plans.Plan plan) {
         int nextResolverIndex = fromDownstream.planIndex() + 1;
@@ -196,10 +196,12 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
 
     private Partial<?, ?> toDownstream(Partial.Compound<?, ?> partialAnswer, ResolverRegistry.ResolverView nextDownstream, Resolvable<?> nextResolvable) {
         assert downstreamResolvers.get(nextResolvable).equals(nextDownstream);
-        if (nextDownstream.isMapped()) {
-            return partialAnswer.mapToDownstream(Mapping.of(nextDownstream.asMapped().mapping()), nextResolvable.asConcludable().pattern());
-        } else if (nextDownstream.isFiltered()) {
-            return partialAnswer.filterToDownstream(nextDownstream.asFiltered().filter());
+        if (nextDownstream.isMappedConcludable()) {
+            return partialAnswer.mapToConcludable(Mapping.of(nextDownstream.asMappedConcludable().mapping()), nextResolvable.asConcludable().pattern());
+        } else if (nextDownstream.isFilteredNegation()) {
+            return partialAnswer.filterToNestable(nextDownstream.asFilteredNegation().filter());
+        } else if (nextDownstream.isRetrievable()) {
+            return partialAnswer.filterToRetrievable(nextDownstream.asFilteredRetrievable().filter());
         } else {
             throw GraknException.of(ILLEGAL_STATE);
         }
@@ -306,7 +308,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         }
 
         @Override
-        boolean tryAcceptUpstreamAnswer(AnswerStateOld upstreamAnswer, Request fromUpstream, int iteration) {
+        boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
             ConjunctionResolver.RequestState requestState = requestStates.get(fromUpstream);
             if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
                 requestState.recordProduced(upstreamAnswer.conceptMap());
@@ -318,8 +320,8 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         }
 
         @Override
-        protected Optional<AnswerStateOld> toUpstreamAnswer(Partial.Compound<?, ?> partialAnswer) {
-            return Optional.of(partialAnswer.asNonRoot().toUpstream());
+        protected Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?, ?> partialAnswer) {
+            return Optional.of(partialAnswer.asNestable().toUpstream());
         }
 
         @Override

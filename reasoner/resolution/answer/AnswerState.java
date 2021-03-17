@@ -75,7 +75,7 @@ public interface AnswerState {
 
             interface Initial extends Match {
 
-                Partial.Compound.Match.Root toDownstream();
+                Partial.Compound.Root.Root.Explain toDownstream();
 
                 Finished finish(ConceptMap conceptMap, boolean requiresReiteration);
 
@@ -107,7 +107,7 @@ public interface AnswerState {
 
             interface Initial extends Explain {
 
-                Partial.Compound.Explain.Root toDownstream();
+                Partial.Compound.Root.Explain toDownstream();
 
                 Finished finish(ConceptMap conceptMap, boolean requiresReiteration, Explanation explanation);
 
@@ -143,6 +143,8 @@ public interface AnswerState {
 
         default boolean isConclusion() { return false; }
 
+        default boolean isRetrievable() { return false; }
+
         default Compound<?, ?> asCompound() {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Compound.class));
         }
@@ -155,136 +157,168 @@ public interface AnswerState {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Conclusion.class));
         }
 
+        default Retrievable<?> asRetrievable() {
+            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Retrievable.class));
+        }
+
         interface Compound<SLF extends Compound<SLF, PRNT>, PRNT extends AnswerState> extends Partial<SLF, PRNT> {
 
-            Concludable<?, ?> mapToDownstream(Mapping mapping, Conjunction nextResolverConjunction);
+            // TODo does everyone have to implement this? It's used for receiving from a NonRoot
+            SLF with(ConceptMap extension, boolean requiresReiteration);
+
+            // note: this is only used my Match, can't get generics for asMatch() casting to work to do this transparently
+            SLF with(ConceptMap extension, boolean requiresReiteration, Conjunction source);
+
+            Concludable<?, SLF> mapToConcludable(Mapping mapping, Conjunction nextResolverConjunction);
+
+            Nestable filterToNestable(Set<Identifier.Variable.Retrievable> filter);
+
+            Retrievable<SLF> filterToRetrievable(Set<Identifier.Variable.Retrievable> filter);
 
             @Override
             default boolean isCompound() { return true; }
 
             @Override
-            default Compound<?, ?> asCompound() { return this; }
+            default Compound<?, PRNT> asCompound() { return this; }
 
-            default boolean isMatch() { return false; }
+            default boolean isRoot() { return false; }
 
-            default Match<?, ?> asMatch() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Match.class); }
+            default Root<?, ?> asRoot() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Root.class); }
+
+            default boolean isCondition() { return false; }
+
+            default Condition<?, ?> asCondition() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Condition.class); }
+
+            default boolean isNestable() { return false; }
+
+            default Nestable asNestable() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Nestable.class); }
 
             default boolean isExplain() { return false; }
 
-            default Explain<?, ?> asExplain() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Explain.class); }
+            default boolean isMatch() { return false; }
 
-            interface Match<S extends Match<S, P>, P extends AnswerState> extends Compound<S, P>, Explainable {
+            interface Nestable extends Compound<Nestable, Compound<?, ?>> {
 
-                // TODo does everyone have to implement this? It's used for receiving from a NonRoot
-                S with(ConceptMap extension, boolean requiresReiteration);
+                Set<Identifier.Variable.Retrievable> filter();
 
-                S with(ConceptMap extension, boolean requiresReiteration, Conjunction source);
+                Partial.Compound<?, ?> toUpstream();
 
-                default boolean isRoot() { return false; }
+                Partial.Compound<?, ?> aggregateToUpstream(ConceptMap conceptMap);
 
-                default Root asRoot() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Root.class); }
+                @Override
+                default Nestable with(ConceptMap extension, boolean requiresReiteration, Conjunction source) {
+                    return with(extension, requiresReiteration);
+                }
 
-                default boolean isCondition() { return false; }
+                @Override
+                Nestable with(ConceptMap extension, boolean requiresReiteration);
 
-                default Condition<?> asCondition() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Condition.class); }
+                @Override
+                Concludable.Match<Nestable> mapToConcludable(Mapping mapping, Conjunction nextResolverConjunction);
 
-                default boolean isNonRoot() { return false; }
+                @Override
+                default boolean isNestable() { return true; }
 
-                default NonRoot asNonRoot() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), NonRoot.class); }
+                @Override
+                default Nestable asNestable() { return this; }
 
-                interface Root extends Match<Root, Top.Match.Initial> {
+            }
+
+            interface Root<S extends Root<S, P>, P extends AnswerState> extends Compound<S, P> {
+
+                @Override
+                default boolean isRoot() { return true; }
+
+                @Override
+                default Root<?, P> asRoot() { return this; }
+
+                default Match asMatch() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Match.class); }
+
+                default Explain asExplain() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Explain.class); }
+
+                interface Match extends Root<Match, Top.Match.Initial>, Explainable {
 
                     @Override
-                    Concludable.Match<Root> mapToDownstream(Mapping mapping, Conjunction nextResolverConjunction);
+                    Concludable.Match<Match> mapToConcludable(Mapping mapping, Conjunction nextResolverConjunction);
 
                     Top.Match.Finished toFinishedTop(Conjunction conjunctionAnswered);
 
                     @Override
-                    default boolean isRoot() { return true; }
+                    default boolean isMatch() { return true; }
 
                     @Override
-                    default Root asRoot() { return this; }
+                    default Match asMatch() { return this; }
 
                 }
 
-                interface NonRoot extends Match<NonRoot, Compound.Match<?, ?>> {
+                interface Explain extends Root<Explain, Top.Match.Explain> {
 
-                    Set<Identifier.Variable.Retrievable> filter();
-
-                    @Override
-                    Concludable.Match<NonRoot> mapToDownstream(Mapping mapping, Conjunction nextResolverConjunction);
-
-                    Partial.Compound<?, ?> toUpstream();
-
-                    Partial.Compound<?, ?> aggregateToUpstream(ConceptMap conceptMap);
-
-                    @Override
-                    default boolean isNonRoot() { return true; }
-
-                    @Override
-                    default NonRoot asNonRoot() { return this; }
-
-                }
-
-                interface Condition extends Match<Condition, Conclusion.Match> {
-
-                    @Override
-                    Concludable.Match<Condition> mapToDownstream(Mapping mapping, Conjunction nextResolverConjunction);
-
-                    Conclusion.Match toUpstream();
-
-                    @Override
-                    default boolean isCondition() {
-                        return true;
-                    }
-
-                    @Override
-                    default Condition asCondition() { return this; }
-
-                }
-            }
-
-            interface Explain<S extends Explain<S, P>, P extends AnswerState> extends Compound<S, P> {
-
-                default boolean isRoot() { return false; }
-
-                default Root asRoot() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Root.class); }
-
-                default boolean isCondition() { return false; }
-
-                default Condition asCondition() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Condition.class); }
-
-                interface Root extends Explain<Root, Top.Explain.Initial> {
-
-                    Root with(ConceptMap extension, boolean requiresReiteration, Explanation explanation);
+                    Explain with(ConceptMap extension, boolean requiresReiteration, Explanation explanation);
 
                     boolean hasExplanation();
 
                     @Override
-                    Concludable.Explain mapToDownstream(Mapping mapping, Conjunction nextResolverConjunction);
+                    Concludable.Explain mapToConcludable(Mapping mapping, Conjunction nextResolverConjunction);
 
                     Top.Explain.Finished toFinishedTop();
 
                     @Override
-                    default boolean isRoot() { return true; }
+                    default Explain with(ConceptMap extension, boolean requiresReiteration, Conjunction source) {
+                        return with(extension, requiresReiteration);
+                    }
 
                     @Override
-                    default Root asRoot() { return this; }
+                    default boolean isExplain() { return true; }
+
+                    @Override
+                    default Explain asExplain() { return this; }
+
+                }
+            }
+
+            interface Condition<S extends Condition<S, P>, P extends Conclusion<P, ?>> extends Compound<S, P> {
+
+                Concludable.Match<S> mapToConcludable(Mapping mapping, Conjunction nextResolverConjunction);
+
+                @Override
+                default boolean isCondition() { return true; }
+
+                @Override
+                default Condition<?, P> asCondition() { return this; }
+
+                default Match asMatch() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Root.Match.class); }
+
+                default Explain asExplain() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Root.Explain.class); }
+
+                interface Match extends Condition<Match, Conclusion.Match> {
+
+                    Conclusion.Match toUpstream();
+
+                    @Override
+                    default boolean isMatch() { return true; }
+
+                    @Override
+                    default Match asMatch() { return this; }
 
                 }
 
-                interface Condition extends Explain<Condition, Conclusion.Explain> {
-
+                interface Explain extends Condition<Explain, Conclusion.Explain> {
                     // TODO
 
-                    @Override
-                    default boolean isCondition() { return true; }
+                    Conclusion.Explain toUpstream(Conjunction conditionConjunction);
 
                     @Override
-                    default Condition asCondition() { return this; }
+                    default Explain with(ConceptMap extension, boolean requiresReiteration, Conjunction source) {
+                        return with(extension, requiresReiteration);
+                    }
+
+                    @Override
+                    default boolean isExplain() { return true; }
+
+                    @Override
+                    default Explain asExplain() { return this; }
 
                 }
-
             }
 
         }
@@ -311,7 +345,7 @@ public interface AnswerState {
 
             default Explain asExplain() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Explain.class); }
 
-            interface Match<P extends Compound.Match<P, ?>> extends Concludable<Match<P>, P>, Explainable {
+            interface Match<P extends Compound<P, ?>> extends Concludable<Match<P>, P>, Explainable {
 
                 @Override
                 Optional<Conclusion.Match> toDownstream(Unifier unifier, Rule rule);
@@ -330,7 +364,7 @@ public interface AnswerState {
 
             }
 
-            interface Explain extends Concludable<Explain, Compound.Explain.Root> {
+            interface Explain extends Concludable<Explain, Compound.Root.Explain> {
 
                 @Override
                 Optional<Conclusion.Explain> toDownstream(Unifier unifier, Rule rule);
@@ -362,8 +396,9 @@ public interface AnswerState {
 
             Optional<? extends PRNT> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts);
 
-
             SLF extend(ConceptMap ans);
+
+            Compound<?, SLF> toDownstream(Set<Identifier.Variable.Retrievable> filter);
 
             @Override
             default boolean isConclusion() { return true; }
@@ -378,7 +413,8 @@ public interface AnswerState {
 
                 Match with(ConceptMap extension, boolean requiresReiteration);
 
-                Compound.Match.Condition toDownstream(Set<Identifier.Variable.Retrievable> filter);
+                @Override
+                Compound.Root.Condition.Match toDownstream(Set<Identifier.Variable.Retrievable> filter);
 
             }
 
@@ -391,9 +427,22 @@ public interface AnswerState {
                 @Override
                 Optional<Concludable.Explain> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts);
 
-                Compound.Explain.Condition toDownstream(Set<Identifier.Variable.Retrievable> filter);
+                @Override
+                Compound.Condition.Explain toDownstream(Set<Identifier.Variable.Retrievable> filter);
 
             }
+
+        }
+
+        interface Retrievable<P extends Compound<P, ?>> extends Partial<Retrievable<P>, P> {
+
+            P aggregateToUpstream(ConceptMap concepts);
+
+            @Override
+            default boolean isRetrievable() { return true; }
+
+            @Override
+            default Retrievable<?> asRetrievable() { return this; }
 
         }
 

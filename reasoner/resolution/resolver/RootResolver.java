@@ -23,9 +23,10 @@ import grakn.core.logic.LogicManager;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerStateOld;
-import grakn.core.reasoner.resolution.answer.AnswerStateOld.Partial;
-import grakn.core.reasoner.resolution.answer.AnswerStateOld.Top;
+import grakn.core.reasoner.resolution.answer.AnswerState;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
+import grakn.core.reasoner.resolution.answer.AnswerState.Top;
+import grakn.core.reasoner.resolution.answer.AnswerState.Top.Match.Finished;
 import grakn.core.reasoner.resolution.answer.Explanation;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
@@ -50,12 +51,12 @@ public interface RootResolver<TOP extends Top> {
         private static final Logger LOG = LoggerFactory.getLogger(Conjunction.class);
 
         private final grakn.core.pattern.Conjunction conjunction;
-        private final Consumer<Top.Match.Finished> onAnswer;
+        private final Consumer<Finished> onAnswer;
         private final Consumer<Integer> onFail;
         private final Consumer<Throwable> onException;
 
         public Conjunction(Driver<Conjunction> driver, grakn.core.pattern.Conjunction conjunction,
-                           Consumer<Top.Match.Finished> onAnswer, Consumer<Integer> onFail, Consumer<Throwable> onException,
+                           Consumer<Finished> onAnswer, Consumer<Integer> onFail, Consumer<Throwable> onException,
                            ResolverRegistry registry,
                            TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
                            Planner planner, boolean resolutionTracing) {
@@ -86,7 +87,7 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        public void submitAnswer(Top.Match.Finished answer) {
+        public void submitAnswer(Finished answer) {
             LOG.debug("Submitting answer: {}", answer);
             onAnswer.accept(answer);
         }
@@ -97,7 +98,7 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        protected void answerToUpstream(AnswerStateOld answer, Request fromUpstream, int iteration) {
+        protected void answerToUpstream(AnswerState answer, Request fromUpstream, int iteration) {
             assert answer.isTop() && answer.asTop().isMatch() && answer.asTop().asMatch().isFinished();
             submitAnswer(answer.asTop().asMatch().asFinished());
         }
@@ -117,7 +118,7 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        boolean tryAcceptUpstreamAnswer(AnswerStateOld upstreamAnswer, Request fromUpstream, int iteration) {
+        boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
             RequestState requestState = requestStates.get(fromUpstream);
             if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
                 requestState.recordProduced(upstreamAnswer.conceptMap());
@@ -129,9 +130,9 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        protected Optional<AnswerStateOld> toUpstreamAnswer(Partial.Compound<?, ?> partialAnswer) {
-            assert partialAnswer.isRoot();
-            return Optional.of(partialAnswer.asRoot().toFinishedTop(conjunction));
+        protected Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?, ?> partialAnswer) {
+            assert partialAnswer.isRoot() && partialAnswer.isMatch();
+            return Optional.of(partialAnswer.asRoot().asMatch().toFinishedTop(conjunction));
         }
 
         @Override
@@ -146,15 +147,15 @@ public interface RootResolver<TOP extends Top> {
 
     }
 
-    class Disjunction extends DisjunctionResolver<Disjunction> implements RootResolver<Top.Match.Finished> {
+    class Disjunction extends DisjunctionResolver<Disjunction> implements RootResolver<Finished> {
 
         private static final Logger LOG = LoggerFactory.getLogger(Disjunction.class);
-        private final Consumer<Top.Match.Finished> onAnswer;
+        private final Consumer<Finished> onAnswer;
         private final Consumer<Integer> onFail;
         private final Consumer<Throwable> onException;
 
         public Disjunction(Driver<Disjunction> driver, grakn.core.pattern.Disjunction disjunction,
-                           Consumer<Top.Match.Finished> onAnswer, Consumer<Integer> onFail, Consumer<Throwable> onException,
+                           Consumer<Finished> onAnswer, Consumer<Integer> onFail, Consumer<Throwable> onException,
                            ResolverRegistry registry,
                            TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
             super(driver, Disjunction.class.getSimpleName() + "(pattern:" + disjunction + ")", disjunction,
@@ -181,13 +182,13 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        protected void answerToUpstream(AnswerStateOld answer, Request fromUpstream, int iteration) {
+        protected void answerToUpstream(AnswerState answer, Request fromUpstream, int iteration) {
             assert answer.isTop() && answer.asTop().isMatch() && answer.asTop().asMatch().isFinished();
             submitAnswer(answer.asTop().asMatch().asFinished());
         }
 
         @Override
-        public void submitAnswer(Top.Match.Finished answer) {
+        public void submitAnswer(Finished answer) {
             LOG.debug("Submitting answer: {}", answer);
             onAnswer.accept(answer);
         }
@@ -198,7 +199,7 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        protected boolean tryAcceptUpstreamAnswer(AnswerStateOld upstreamAnswer, Request fromUpstream, int iteration) {
+        protected boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
             RequestState requestState = requestStates.get(fromUpstream);
             if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
                 requestState.recordProduced(upstreamAnswer.conceptMap());
@@ -210,11 +211,11 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        protected AnswerStateOld toUpstreamAnswer(Partial.Compound<?, ?> answer, Response.Answer fromDownstream) {
-            assert answer.isRoot();
+        protected AnswerState toUpstreamAnswer(Partial.Compound<?, ?> partialAnswer, Response.Answer fromDownstream) {
+            assert partialAnswer.isRoot() && partialAnswer.isMatch();
             Driver<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
             grakn.core.pattern.Conjunction patternAnswered = downstreamResolvers.get(sender);
-            return answer.asRoot().toFinishedTop(patternAnswered);
+            return partialAnswer.asRoot().asMatch().toFinishedTop(patternAnswered);
         }
 
         @Override
@@ -231,7 +232,6 @@ public interface RootResolver<TOP extends Top> {
         private final Consumer<Top.Explain.Finished> onAnswer;
         private final Consumer<Integer> onFail;
         private final Consumer<Throwable> onException;
-
 
         // TODO this is anti-pattern for testing/until we merge James' changes
         private final Set<Explanation> seen;
@@ -256,7 +256,7 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        protected void answerToUpstream(AnswerStateOld answer, Request fromUpstream, int iteration) {
+        protected void answerToUpstream(AnswerState answer, Request fromUpstream, int iteration) {
             assert answer.isTop() && answer.asTop().isExplain() && answer.asTop().asExplain().isFinished();
             submitAnswer(answer.asTop().asExplain().asFinished());
         }
@@ -264,20 +264,6 @@ public interface RootResolver<TOP extends Top> {
         @Override
         protected void failToUpstream(Request fromUpstream, int iteration) {
             submitFail(iteration);
-        }
-
-        @Override
-        Set<Concludable> concludablesTriggeringRules() {
-            Set<Concludable> concludables = Iterators.iterate(Concludable.create(conjunction))
-                    .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext())
-                    .toSet();
-            assert concludables.size() == 1;
-            return concludables;
-        }
-
-        @Override
-        grakn.core.pattern.Conjunction conjunction() {
-            return conjunction;
         }
 
         @Override
@@ -290,7 +276,18 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        boolean tryAcceptUpstreamAnswer(AnswerStateOld upstreamAnswer, Request fromUpstream, int iteration) {
+        public void submitAnswer(Top.Explain.Finished answer) {
+            LOG.debug("Submitting answer: {}", answer);
+            onAnswer.accept(answer);
+        }
+
+        @Override
+        public void submitFail(int iteration) {
+            onFail.accept(iteration);
+        }
+
+        @Override
+        boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
             assert upstreamAnswer.isTop() && upstreamAnswer.asTop().isExplain() && upstreamAnswer.asTop().asExplain().isFinished();
             Top.Explain.Finished finished = upstreamAnswer.asTop().asExplain().asFinished();
             if (!seen.contains(finished.explanation())) {
@@ -303,10 +300,11 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        Optional<AnswerStateOld> toUpstreamAnswer(Partial.Compound<?, ?> partialAnswer) {
-            assert partialAnswer.isExplainRoot();
-            if (partialAnswer.asExplainRoot().hasExplanation()) {
-                return Optional.of(partialAnswer.asExplainRoot().toFinishedTop());
+        Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?, ?> partialAnswer) {
+            assert partialAnswer.isRoot() && partialAnswer.isExplain();
+            // TODO can we do this fail step earlier?
+            if (partialAnswer.asRoot().asExplain().hasExplanation()) {
+                return Optional.of(partialAnswer.asRoot().asExplain().toFinishedTop());
             } else {
                 return Optional.empty();
             }
@@ -323,14 +321,17 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        public void submitAnswer(Top.Explain.Finished answer) {
-            LOG.debug("Submitting answer: {}", answer);
-            onAnswer.accept(answer);
+        Set<Concludable> concludablesTriggeringRules() {
+            Set<Concludable> concludables = Iterators.iterate(Concludable.create(conjunction))
+                    .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext())
+                    .toSet();
+            assert concludables.size() == 1;
+            return concludables;
         }
 
         @Override
-        public void submitFail(int iteration) {
-            onFail.accept(iteration);
+        grakn.core.pattern.Conjunction conjunction() {
+            return conjunction;
         }
 
     }

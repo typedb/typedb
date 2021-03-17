@@ -31,6 +31,7 @@ import grakn.core.concurrent.producer.Producers;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.reasoner.resolution.ResolverRegistry;
+import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.answer.AnswerStateOld;
 import grakn.core.reasoner.resolution.framework.Response.Answer;
 import grakn.core.traversal.Traversal;
@@ -115,7 +116,7 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
         receiver.execute(actor -> actor.receiveRequest(request, iteration));
     }
 
-    protected void answerToUpstream(AnswerStateOld answer, Request fromUpstream, int iteration) {
+    protected void answerToUpstream(AnswerState answer, Request fromUpstream, int iteration) {
         assert answer.isPartial();
         Answer response = Answer.create(fromUpstream, answer.asPartial());
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());

@@ -28,7 +28,7 @@ import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Unifier;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerStateOld.Partial;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
@@ -104,7 +104,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
         Partial.Compound<?, ?> upstreamAnswer = fromDownstream.answer().asConcludable().toUpstreamInferred();
 
-        if (upstreamAnswer.isExplainRoot()) {
+        if (upstreamAnswer.isExplain()) {
             answerFound(upstreamAnswer, fromUpstream, iteration);
         } else if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
             requestState.recordProduced(upstreamAnswer.conceptMap());
@@ -124,7 +124,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
      */
     private void answerFound(Partial.Compound<?, ?> upstreamAnswer, Request fromUpstream, int iteration) {
         RequestState requestState = this.requestStates.get(fromUpstream);
-        if (requestState.singleAnswerRequired() && !upstreamAnswer.isExplainRoot()) {
+        if (requestState.singleAnswerRequired() && !upstreamAnswer.isExplain()) {
             requestState.clearDownstreamProducers();
         }
         answerToUpstream(upstreamAnswer, fromUpstream, iteration);
@@ -217,7 +217,9 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         FunctionalIterator<Partial.Compound<?, ?>> upstreamAnswers = fromUpstream.partialAnswer().asConcludable().isExplain() ?
                 Iterators.empty() :
                 traversalIterator(concludable.pattern(), fromUpstream.partialAnswer().conceptMap())
-                        .map(conceptMap -> fromUpstream.partialAnswer().asConcludable().toUpstreamLookup(conceptMap, concludable.isInferredAnswer(conceptMap)));
+                        .map(conceptMap -> fromUpstream.partialAnswer().asConcludable().asMatch()
+                                .toUpstreamLookup(conceptMap, concludable.isInferredAnswer(conceptMap))
+                        );
 
         boolean singleAnswerRequired = fromUpstream.partialAnswer().conceptMap().concepts().keySet().containsAll(unboundVars());
         RequestState requestState = new RequestState(upstreamAnswers, iteration, singleAnswerRequired);

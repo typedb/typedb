@@ -24,7 +24,7 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.Rule;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerStateOld.Partial;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
@@ -177,19 +177,19 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
         assert conclusion.retrievableIds().containsAll(partialAnswer.conceptMap().concepts().keySet());
         if (conclusion.generating().isPresent() && conclusion.retrievableIds().size() > partialAnswer.conceptMap().concepts().size() &&
                 partialAnswer.conceptMap().concepts().containsKey(conclusion.generating().get().id())) {
-            FunctionalIterator<Partial.Compound.Match.Condition<?>> completedDownstreamAnswers = candidateAnswers(partialAnswer);
+            FunctionalIterator<Partial.Compound<?, ?>> completedDownstreamAnswers = candidateAnswers(partialAnswer);
             completedDownstreamAnswers.forEachRemaining(answer -> requestState.addDownstream(Request.create(driver(), ruleResolver,
                                                                                                             answer)));
         } else {
             Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
-            Partial.Compound.Match.Condition<?> downstreamAnswer = partialAnswer.toDownstream(named);
+            Partial.Compound<?, ?> downstreamAnswer = partialAnswer.toDownstream(named);
             requestState.addDownstream(Request.create(driver(), ruleResolver, downstreamAnswer));
         }
 
         return requestState;
     }
 
-    private FunctionalIterator<Partial.Compound.Match.Condition<?>> candidateAnswers(Partial.Conclusion<?, ?> partialAnswer) {
+    private FunctionalIterator<Partial.Compound<?, ?>> candidateAnswers(Partial.Conclusion<?, ?> partialAnswer) {
         Traversal traversal = boundTraversal(conclusion.conjunction().traversal(), partialAnswer.conceptMap());
         FunctionalIterator<ConceptMap> answers = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
         Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();

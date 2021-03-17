@@ -25,8 +25,9 @@ import grakn.core.concurrent.producer.Producer;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerStateOld.Partial.Compound.Match.Root;
-import grakn.core.reasoner.resolution.answer.AnswerStateOld.Top;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Compound.Root.Match.Root;
+import grakn.core.reasoner.resolution.answer.AnswerState.Top.Match.Finished;
+import grakn.core.reasoner.resolution.answer.AnswerStateImpl.TopImpl.MatchImpl.InitialImpl;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionTracer;
 import grakn.core.reasoner.resolution.framework.Resolver;
@@ -74,7 +75,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.rootResolver = resolverRegistry.root(conjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
-        Root downstream = Top.Match.initial(filter(modifiers.filter()), this.rootResolver, options.explain()).toDownstream();
+        Root downstream = new InitialImpl(filter(modifiers.filter()), new ConceptMap(), this.rootResolver, false, options.explain()).toDownstream();
         this.resolveRequest = Request.create(rootResolver, downstream);
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
@@ -91,7 +92,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.rootResolver = resolverRegistry.root(disjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
-        Root downstream = Top.Match.initial(filter(modifiers.filter()), this.rootResolver, options.explain()).toDownstream();
+        Root downstream = new InitialImpl(filter(modifiers.filter()), new ConceptMap(), this.rootResolver, false, options.explain()).toDownstream();
         this.resolveRequest = Request.create(rootResolver, downstream);
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
@@ -117,7 +118,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     // note: root resolver calls this single-threaded, so is thread safe
-    private void requestAnswered(Top.Match.Finished answer) {
+    private void requestAnswered(Finished answer) {
         if (options.traceInference()) ResolutionTracer.get().finish();
         if (answer.requiresReiteration()) requiresReiteration = true;
         ConceptMap conceptMap = answer.conceptMap();

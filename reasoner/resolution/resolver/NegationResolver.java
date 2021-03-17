@@ -24,8 +24,8 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.resolvable.Negated;
 import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerStateOld.Partial;
-import grakn.core.reasoner.resolution.answer.AnswerStateOld.Partial.Compound;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Compound;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.traversal.TraversalEngine;
@@ -108,7 +108,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
               as a sort of new root!
         */
         assert fromUpstream.partialAnswer().isCompound();
-        Compound<?, ?> downstreamPartial = fromUpstream.partialAnswer().asCompound().filterToDownstream(negated.retrieves());
+        Compound.Nestable downstreamPartial = fromUpstream.partialAnswer().asCompound().filterToNestable(negated.retrieves());
         Request request = Request.create(driver(), this.downstream, downstreamPartial);
         requestFromDownstream(request, fromUpstream, 0);
         boundsState.setRequested();
@@ -146,8 +146,8 @@ public class NegationResolver extends Resolver<NegationResolver> {
     }
 
     private Partial<?, ?> upstreamAnswer(Request fromUpstream) {
-        assert fromUpstream.partialAnswer().isCompound() && fromUpstream.partialAnswer().asCompound().isNonRoot();
-        return fromUpstream.partialAnswer().asCompound().asNonRoot().toUpstream();
+        assert fromUpstream.partialAnswer().isCompound() && fromUpstream.partialAnswer().asCompound().isNestable();
+        return fromUpstream.partialAnswer().asCompound().asNestable().toUpstream();
     }
 
     private static class BoundsState {

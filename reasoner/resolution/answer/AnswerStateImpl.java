@@ -135,7 +135,7 @@ public abstract class AnswerStateImpl implements AnswerState {
 
             public static class InitialImpl extends MatchImpl implements Initial {
 
-                InitialImpl(Set<Identifier.Variable.Name> getFilter, ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration, boolean explainable) {
+                public InitialImpl(Set<Identifier.Variable.Name> getFilter, ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration, boolean explainable) {
                     super(getFilter, conceptMap, root, requiresReiteration, explainable);
                 }
 
@@ -266,8 +266,67 @@ public abstract class AnswerStateImpl implements AnswerState {
                 super(prnt, conceptMap, root, requiresReiteration);
             }
 
-            public static abstract class MatchImpl<S extends Match<S, P>, P extends AnswerState> extends CompoundImpl<S, P>
-                    implements Match<S, P> {
+            @Override
+            public Nestable filterToNestable(Set<Identifier.Variable.Retrievable> filter) {
+                return new NestableImpl(filter, this, conceptMap(), root(), requiresReiteration());
+            }
+
+            @Override
+            public Retrievable<SLF> filterToRetrievable(Set<Identifier.Variable.Retrievable> filter) {
+                return new RetrievableImpl<>(filter, getThis(), conceptMap(), root(), requiresReiteration());
+            }
+
+            abstract SLF getThis();
+
+            public static class NestableImpl extends CompoundImpl<Nestable, Compound<?, ?>> implements Nestable {
+
+                private final Set<Identifier.Variable.Retrievable> filter;
+                private final int hash;
+
+                NestableImpl(Set<Identifier.Variable.Retrievable> filter, Compound<?, ?> parent,
+                             ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
+                    // TODO we should apply filter here and not in the toUpstream() and aggregateToUpstream()
+                    super(parent, conceptMap, root, requiresReiteration);
+                    this.filter = filter;
+                    this.hash = Objects.hash(root, conceptMap, parent, filter);
+                }
+
+                @Override
+                public Set<Identifier.Variable.Retrievable> filter() {
+                    return filter;
+                }
+
+                @Override
+                public Nestable with(ConceptMap extension, boolean requiresReiteration) {
+                    return new NestableImpl(filter(), parent(), extendAnswer(extension), root(), requiresReiteration);
+                }
+
+                @Override
+                public Concludable.Match<Nestable> mapToConcludable(Mapping mapping, Conjunction nextResolverConjunction) {
+                    // TODO create a static constructor that hardcodes false
+                    return new ConcludableImpl.MatchImpl<>(mapping, nextResolverConjunction, this, conceptMap(), root(), false, false);
+                }
+
+                @Override
+                public Compound<?, ?> toUpstream() {
+                    if (conceptMap().concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
+                    return parent().with(conceptMap().filter(filter), requiresReiteration() || parent().requiresReiteration());
+                }
+
+                @Override
+                public Compound<?, ?> aggregateToUpstream(ConceptMap conceptMap) {
+                    if (conceptMap.concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
+                    return parent().with(conceptMap.filter(filter), requiresReiteration() || parent().requiresReiteration());
+                }
+
+                @Override
+                Nestable getThis() {
+                    return this;
+                }
+            }
+
+            public static abstract class MatchImpl<S extends Root.Match<S, P>, P extends AnswerState> extends CompoundImpl<S, P>
+                    implements Root.Match<S, P> {
 
                 private final boolean explainable;
 
@@ -313,9 +372,14 @@ public abstract class AnswerStateImpl implements AnswerState {
                     }
 
                     @Override
-                    public Concludable.Match<Root> mapToDownstream(Mapping mapping, Conjunction nextResolverConjunction) {
+                    public Concludable.Match<Root> mapToConcludable(Mapping mapping, Conjunction nextResolverConjunction) {
                         // TODO create a static constructor that hardcodes false
                         return new ConcludableImpl.MatchImpl<>(mapping, nextResolverConjunction, this, conceptMap(), root(), false, explainable());
+                    }
+
+                    @Override
+                    public Retrievable<Root> filterToRetrievable(Set<Identifier.Variable.Retrievable> filter) {
+                        return null;
                     }
 
                     @Override
@@ -323,55 +387,11 @@ public abstract class AnswerStateImpl implements AnswerState {
                         // TODO inject conjunction into the concept map here or in the parent constructor
                         return parent().finish(conceptMap(), requiresReiteration());
                     }
-                }
-
-                public static class NonRootImpl extends MatchImpl<NonRoot, Compound.Match<?, ?>> implements NonRoot {
-
-                    private final Set<Identifier.Variable.Retrievable> filter;
-                    private final int hash;
-
-                    NonRootImpl(Set<Identifier.Variable.Retrievable> filter, Compound.Match<?, ?> parent,
-                                ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration,
-                                boolean explainable) {
-                        // TODO we should apply filter here and not in the toUpstream() and aggregateToUpstream()
-                        super(parent, conceptMap, root, requiresReiteration, explainable);
-                        this.filter = filter;
-                        this.hash = Objects.hash(root, conceptMap, parent, filter, explainable);
-                    }
 
                     @Override
-                    public Set<Identifier.Variable.Retrievable> filter() {
-                        return filter;
+                    Root getThis() {
+                        return this;
                     }
-
-                    @Override
-                    public NonRoot with(ConceptMap extension, boolean requiresReiteration) {
-                        return new NonRootImpl(filter(), parent(), extendAnswer(extension), root(), requiresReiteration, explainable());
-                    }
-
-                    @Override
-                    public NonRoot with(ConceptMap extension, boolean requiresReiteration, Conjunction source) {
-                        throw GraknException.of(ILLEGAL_STATE);
-                    }
-
-                    @Override
-                    public Concludable.Match<NonRoot> mapToDownstream(Mapping mapping, Conjunction nextResolverConjunction) {
-                        // TODO create a static constructor that hardcodes false
-                        return new ConcludableImpl.MatchImpl<>(mapping, nextResolverConjunction, this, conceptMap(), root(), false, explainable());
-                    }
-
-                    @Override
-                    public Compound<?, ?> toUpstream() {
-                        if (conceptMap().concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
-                        return parent().with(conceptMap().filter(filter), requiresReiteration() || parent().requiresReiteration());
-                    }
-
-                    @Override
-                    public Compound<?, ?> aggregateToUpstream(ConceptMap conceptMap) {
-                        if (conceptMap.concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
-                        return parent().with(conceptMap.filter(filter), requiresReiteration() || parent().requiresReiteration());
-                    }
-
                 }
 
                 public static class ConditionImpl extends MatchImpl<Condition, Conclusion.Match> implements Condition {
@@ -401,7 +421,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                     }
 
                     @Override
-                    public Concludable.Match<Condition> mapToDownstream(Mapping mapping, Conjunction nextResolverConjunction) {
+                    public Concludable.Match<Condition> mapToConcludable(Mapping mapping, Conjunction nextResolverConjunction) {
                         return new ConcludableImpl.MatchImpl<>(mapping, nextResolverConjunction, this, conceptMap(), root(), false, explainable());
                     }
 
@@ -409,6 +429,11 @@ public abstract class AnswerStateImpl implements AnswerState {
                     public Conclusion.Match toUpstream() {
                         if (conceptMap().concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
                         return parent().with(conceptMap().filter(filter), requiresReiteration() || parent().requiresReiteration());
+                    }
+
+                    @Override
+                    Condition getThis() {
+                        return this;
                     }
                 }
             }
@@ -430,6 +455,12 @@ public abstract class AnswerStateImpl implements AnswerState {
                     }
 
                     @Override
+                    public Root with(ConceptMap extension, boolean requiresReiteration) {
+                        // note: we never receive answers from negations or (if in a disjunction) from a nested conjunction
+                        throw GraknException.of(ILLEGAL_STATE);
+                    }
+
+                    @Override
                     public Root with(ConceptMap extension, boolean requiresReiteration, Explanation explanation) {
                         assert explanation == null;
                         return new RootImpl(explanation, parent(), extendAnswer(extension), root(), requiresReiteration());
@@ -442,7 +473,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                     }
 
                     @Override
-                    public Concludable.Explain mapToDownstream(Mapping mapping, Conjunction nextResolverConjunction) {
+                    public Concludable.Explain mapToConcludable(Mapping mapping, Conjunction nextResolverConjunction) {
                         // TODO we don't really want the conjunction?
                         return new ConcludableImpl.ExplainImpl(null, mapping, this, conceptMap(), root(), requiresReiteration());
                     }
@@ -451,6 +482,11 @@ public abstract class AnswerStateImpl implements AnswerState {
                     public Top.Explain.Finished toFinishedTop() {
                         assert explanation != null;
                         return new TopImpl.ExplainImpl.FinishedImpl(explanation, conceptMap(), root(), requiresReiteration());
+                    }
+
+                    @Override
+                    Root getThis() {
+                        return this;
                     }
                 }
 
@@ -464,10 +500,19 @@ public abstract class AnswerStateImpl implements AnswerState {
                         this.filter = filter;
                     }
 
+                    @Override
+                    public Condition with(ConceptMap extension, boolean requiresReiteration) {
+                        return null;
+                    }
 
                     @Override
-                    public Concludable<?, ?> mapToDownstream(Mapping mapping, Conjunction nextResolverConjunction) {
+                    public Concludable<?, Condition> mapToConcludable(Mapping mapping, Conjunction nextResolverConjunction) {
                         return null;
+                    }
+
+                    @Override
+                    Condition getThis() {
+                        return this;
                     }
                 }
             }
@@ -489,7 +534,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                 return mapping;
             }
 
-            public static class MatchImpl<P extends Compound.Match<P, ?>> extends ConcludableImpl<Match<P>, P> implements Match<P> {
+            public static class MatchImpl<P extends Compound<P, ?>> extends ConcludableImpl<Match<P>, P> implements Match<P> {
 
                 private final Conjunction conjunction;
                 private boolean explainable;
@@ -640,7 +685,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                 }
 
                 @Override
-                public Compound.Match.Condition toDownstream(Set<Identifier.Variable.Retrievable> filter) {
+                public Compound.Root.Match.Condition toDownstream(Set<Identifier.Variable.Retrievable> filter) {
                     // TODO create static constructor to hide the `false`
                     return new CompoundImpl.MatchImpl.ConditionImpl(filter, explainable() ? new HashSet<>() : null, this, conceptMap(), root(), false, explainable());
                 }
@@ -737,6 +782,25 @@ public abstract class AnswerStateImpl implements AnswerState {
 
             }
         }
+
+        public static class RetrievableImpl<P extends Compound<P, ?>> extends PartialImpl<Retrievable<P>, P> implements Retrievable<P> {
+
+            private final Set<Identifier.Variable.Retrievable> filter;
+
+            RetrievableImpl(Set<Identifier.Variable.Retrievable> filter, P parent, ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
+                super(parent, conceptMap, root, requiresReiteration);
+                this.filter = filter;
+            }
+
+            @Override
+            public P aggregateToUpstream(ConceptMap concepts) {
+                assert conceptMap().concepts().keySet().containsAll(concepts.concepts().keySet());
+                if (concepts.concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
+                return parent().with(concepts.filter(filter), requiresReiteration() || parent().requiresReiteration());
+            }
+
+        }
+
 
     }
 
