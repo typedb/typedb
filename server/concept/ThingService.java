@@ -29,7 +29,6 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.server.TransactionService;
-import grakn.core.server.common.ResponseBuilder;
 import grakn.protocol.ConceptProto;
 import grakn.protocol.TransactionProto.Transaction;
 
@@ -41,17 +40,18 @@ import java.util.stream.Stream;
 import static grakn.common.collection.Collections.pair;
 import static grakn.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
-import static grakn.core.server.common.ResponseBuilder.Thing.addPlayerRes;
+import static grakn.core.server.common.ResponseBuilder.Thing.Attribute.getOwnersResPart;
+import static grakn.core.server.common.ResponseBuilder.Thing.Relation.addPlayerRes;
+import static grakn.core.server.common.ResponseBuilder.Thing.Relation.getPlayersByRoleTypeResPart;
+import static grakn.core.server.common.ResponseBuilder.Thing.Relation.getPlayersResPart;
+import static grakn.core.server.common.ResponseBuilder.Thing.Relation.getRelatingResPart;
+import static grakn.core.server.common.ResponseBuilder.Thing.Relation.removePlayerRes;
 import static grakn.core.server.common.ResponseBuilder.Thing.deleteRes;
 import static grakn.core.server.common.ResponseBuilder.Thing.getHasResPart;
-import static grakn.core.server.common.ResponseBuilder.Thing.getOwnersResPart;
-import static grakn.core.server.common.ResponseBuilder.Thing.getPlayersByRoleTypeResPart;
-import static grakn.core.server.common.ResponseBuilder.Thing.getPlayersResPart;
-import static grakn.core.server.common.ResponseBuilder.Thing.getPlaysResPart;
+import static grakn.core.server.common.ResponseBuilder.Thing.getPlayingResPart;
 import static grakn.core.server.common.ResponseBuilder.Thing.getRelationsResPart;
 import static grakn.core.server.common.ResponseBuilder.Thing.getTypeRes;
 import static grakn.core.server.common.ResponseBuilder.Thing.isInferredRes;
-import static grakn.core.server.common.ResponseBuilder.Thing.removePlayerRes;
 import static grakn.core.server.common.ResponseBuilder.Thing.setHasRes;
 import static grakn.core.server.common.ResponseBuilder.Thing.unsetHasRes;
 
@@ -91,8 +91,8 @@ public class ThingService {
             case THING_GET_RELATIONS_REQ:
                 getRelations(thing, thingReq.getThingGetRelationsReq().getRoleTypesList(), req);
                 return;
-            case THING_GET_PLAYS_REQ:
-                getPlays(thing, req);
+            case THING_GET_PLAYING_REQ:
+                getPlaying(thing, req);
                 return;
             case RELATION_ADD_PLAYER_REQ:
                 addPlayer(thing.asRelation(), thingReq.getRelationAddPlayerReq(), req);
@@ -106,6 +106,9 @@ public class ThingService {
             case RELATION_GET_PLAYERS_BY_ROLE_TYPE_REQ:
                 getPlayersByRoleType(thing.asRelation(), req);
                 return;
+            case RELATION_GET_RELATING_REQ:
+                getRelating(thing.asRelation(), req);
+                break;
             case ATTRIBUTE_GET_OWNERS_REQ:
                 getOwners(thing.asAttribute(), thingReq.getAttributeGetOwnersReq(), req);
                 return;
@@ -162,9 +165,9 @@ public class ThingService {
         transactionSrv.stream(concepts.iterator(), req.getReqId(), rels -> getRelationsResPart(req.getReqId(), rels));
     }
 
-    private void getPlays(Thing thing, Transaction.Req req) {
-        Stream<? extends RoleType> roleTypes = thing.getPlays();
-        transactionSrv.stream(roleTypes.iterator(), req.getReqId(), rols -> getPlaysResPart(req.getReqId(), rols));
+    private void getPlaying(Thing thing, Transaction.Req req) {
+        Stream<? extends RoleType> roleTypes = thing.getPlaying();
+        transactionSrv.stream(roleTypes.iterator(), req.getReqId(), rols -> getPlayingResPart(req.getReqId(), rols));
     }
 
     private void setHas(Thing thing, ConceptProto.Thing protoAttribute, Transaction.Req req) {
@@ -179,6 +182,12 @@ public class ThingService {
         transactionSrv.respond(unsetHasRes(req.getReqId()));
     }
 
+    private void getPlayers(Relation relation, List<ConceptProto.Type> protoRoleTypes, Transaction.Req req) {
+        RoleType[] roleTypes = protoRoleTypes.stream().map(type -> notNull(getRoleType(type))).toArray(RoleType[]::new);
+        Stream<? extends Thing> players = relation.getPlayers(roleTypes);
+        transactionSrv.stream(players.iterator(), req.getReqId(), things -> getPlayersResPart(req.getReqId(), things));
+    }
+
     private void getPlayersByRoleType(Relation relation, Transaction.Req req) {
         // TODO: this should be optimised to actually iterate over role players by role type lazily
         Map<? extends RoleType, ? extends List<? extends Thing>> playersByRole = relation.getPlayersByRoleType();
@@ -188,13 +197,13 @@ public class ThingService {
                 responses.add(pair(players.getKey(), player));
             }
         }
-        transactionSrv.stream(responses.build().iterator(), req.getReqId(), rps -> getPlayersByRoleTypeResPart(req.getReqId(), rps));
+        transactionSrv.stream(responses.build().iterator(), req.getReqId(),
+                              players -> getPlayersByRoleTypeResPart(req.getReqId(), players));
     }
 
-    private void getPlayers(Relation relation, List<ConceptProto.Type> protoRoleTypes, Transaction.Req req) {
-        RoleType[] roleTypes = protoRoleTypes.stream().map(type -> notNull(getRoleType(type))).toArray(RoleType[]::new);
-        Stream<? extends Thing> things = relation.getPlayers(roleTypes);
-        transactionSrv.stream(things.iterator(), req.getReqId(), cons -> getPlayersResPart(req.getReqId(), cons));
+    private void getRelating(Relation relation, Transaction.Req req) {
+        transactionSrv.stream(relation.getRelating().iterator(), req.getReqId(),
+                              roleTypes -> getRelatingResPart(req.getReqId(), roleTypes));
     }
 
     private void addPlayer(Relation relation, ConceptProto.Relation.AddPlayer.Req addPlayerReq, Transaction.Req req) {

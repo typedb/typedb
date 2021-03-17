@@ -18,13 +18,17 @@
 package grakn.core.server.common;
 
 import grabl.tracing.client.GrablTracingThreadStatic;
+import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Options;
+import grakn.core.concept.type.AttributeType.ValueType;
+import grakn.protocol.ConceptProto;
 import grakn.protocol.OptionsProto;
 import grakn.protocol.TransactionProto;
 
 import java.util.Map;
 import java.util.Optional;
 
+import static grakn.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
 import static grakn.protocol.OptionsProto.Options.BatchSizeOptCase.BATCH_SIZE;
 import static grakn.protocol.OptionsProto.Options.ExplainOptCase.EXPLAIN;
 import static grakn.protocol.OptionsProto.Options.InferOptCase.INFER;
@@ -67,6 +71,26 @@ public class RequestReader {
     public static void applyQueryOptions(Options.Query options, OptionsProto.Options request) {
         if (request.getPrefetchOptCase().equals(PREFETCH)) {
             options.prefetch(request.getPrefetch());
+        }
+    }
+
+    public static ValueType valueType(ConceptProto.AttributeType.ValueType valueType) {
+        switch (valueType) {
+            case OBJECT:
+                return ValueType.OBJECT;
+            case STRING:
+                return ValueType.STRING;
+            case BOOLEAN:
+                return ValueType.BOOLEAN;
+            case LONG:
+                return ValueType.LONG;
+            case DOUBLE:
+                return ValueType.DOUBLE;
+            case DATETIME:
+                return ValueType.DATETIME;
+            case UNRECOGNIZED:
+            default:
+                throw GraknException.of(BAD_VALUE_TYPE, valueType);
         }
     }
 

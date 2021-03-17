@@ -50,12 +50,11 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.server.common.ResponseBuilder.Answer.numeric;
 import static grakn.core.server.common.ResponseBuilder.Concept.protoThing;
-import static grakn.core.server.common.ResponseBuilder.Concept.protoType;
 import static grakn.core.server.common.ResponseBuilder.Rule.protoRule;
+import static grakn.core.server.common.ResponseBuilder.Type.protoType;
 import static java.util.stream.Collectors.toList;
 
 public class ResponseBuilder {
@@ -319,31 +318,6 @@ public class ResponseBuilder {
             return protoThing.build();
         }
 
-        public static ConceptProto.Type protoType(grakn.core.concept.type.Type type) {
-            ConceptProto.Type.Builder protoType = ConceptProto.Type.newBuilder()
-                    .setLabel(type.getLabel().name()).setEncoding(getEncoding(type));
-            if (type.isAttributeType()) protoType.setValueType(valueType(type.asAttributeType()));
-            if (type.isRoleType()) protoType.setScope(type.asRoleType().getLabel().scope().get());
-            if (type.isRoot()) protoType.setRoot(true);
-            return protoType.build();
-        }
-
-        private static ConceptProto.Type.Encoding getEncoding(grakn.core.concept.type.Type type) {
-            if (type.isEntityType()) {
-                return ConceptProto.Type.Encoding.ENTITY_TYPE;
-            } else if (type.isRelationType()) {
-                return ConceptProto.Type.Encoding.RELATION_TYPE;
-            } else if (type.isAttributeType()) {
-                return ConceptProto.Type.Encoding.ATTRIBUTE_TYPE;
-            } else if (type.isThingType()) {
-                return ConceptProto.Type.Encoding.THING_TYPE;
-            } else if (type.isRoleType()) {
-                return ConceptProto.Type.Encoding.ROLE_TYPE;
-            } else {
-                throw GraknException.of(ILLEGAL_STATE);
-            }
-        }
-
         public static ConceptProto.Attribute.Value attributeValue(Attribute attribute) {
             ConceptProto.Attribute.Value.Builder builder = ConceptProto.Attribute.Value.newBuilder();
 
@@ -364,30 +338,34 @@ public class ResponseBuilder {
             return builder.build();
         }
 
-        public static ConceptProto.AttributeType.ValueType valueType(Attribute attribute) {
-            return valueType(attribute.getType());
-        }
-
-        public static ConceptProto.AttributeType.ValueType valueType(AttributeType attributeType) {
-            if (attributeType.isString()) {
-                return ConceptProto.AttributeType.ValueType.STRING;
-            } else if (attributeType.isBoolean()) {
-                return ConceptProto.AttributeType.ValueType.BOOLEAN;
-            } else if (attributeType.isLong()) {
-                return ConceptProto.AttributeType.ValueType.LONG;
-            } else if (attributeType.isDouble()) {
-                return ConceptProto.AttributeType.ValueType.DOUBLE;
-            } else if (attributeType.isDateTime()) {
-                return ConceptProto.AttributeType.ValueType.DATETIME;
-            } else if (attributeType.isRoot()) {
-                return ConceptProto.AttributeType.ValueType.OBJECT;
-            } else {
-                throw GraknException.of(ErrorMessage.Server.BAD_VALUE_TYPE);
-            }
-        }
     }
 
     public static class Type {
+
+        private static ConceptProto.Type.Encoding protoEncoding(grakn.core.concept.type.Type type) {
+            if (type.isEntityType()) {
+                return ConceptProto.Type.Encoding.ENTITY_TYPE;
+            } else if (type.isRelationType()) {
+                return ConceptProto.Type.Encoding.RELATION_TYPE;
+            } else if (type.isAttributeType()) {
+                return ConceptProto.Type.Encoding.ATTRIBUTE_TYPE;
+            } else if (type.isThingType()) {
+                return ConceptProto.Type.Encoding.THING_TYPE;
+            } else if (type.isRoleType()) {
+                return ConceptProto.Type.Encoding.ROLE_TYPE;
+            } else {
+                throw GraknException.of(ILLEGAL_STATE);
+            }
+        }
+
+        public static ConceptProto.Type protoType(grakn.core.concept.type.Type type) {
+            ConceptProto.Type.Builder protoType = ConceptProto.Type.newBuilder()
+                    .setLabel(type.getLabel().name()).setEncoding(protoEncoding(type));
+            if (type.isAttributeType()) protoType.setValueType(AttributeType.protoValueType(type.asAttributeType()));
+            if (type.isRoleType()) protoType.setScope(type.asRoleType().getLabel().scope().get());
+            if (type.isRoot()) protoType.setRoot(true);
+            return protoType.build();
+        }
 
         private static TransactionProto.Transaction.Res typeRes(String reqID, ConceptProto.Type.Res.Builder res) {
             return TransactionProto.Transaction.Res.newBuilder().setReqId(reqID).setTypeRes(res).build();
@@ -395,6 +373,12 @@ public class ResponseBuilder {
 
         private static TransactionProto.Transaction.ResPart typeResPart(String reqID, ConceptProto.Type.ResPart.Builder resPart) {
             return TransactionProto.Transaction.ResPart.newBuilder().setReqId(reqID).setTypeResPart(resPart).build();
+        }
+
+        public static TransactionProto.Transaction.Res deleteRes(String reqID) {
+            return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setTypeDeleteRes(
+                    ConceptProto.Type.Delete.Res.getDefaultInstance()
+            ));
         }
 
         public static TransactionProto.Transaction.Res setLabelRes(String reqID) {
@@ -406,18 +390,6 @@ public class ResponseBuilder {
         public static TransactionProto.Transaction.Res isAbstractRes(String reqID, boolean isAbstract) {
             return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setTypeIsAbstractRes(
                     ConceptProto.Type.IsAbstract.Res.newBuilder().setAbstract(isAbstract)
-            ));
-        }
-
-        public static TransactionProto.Transaction.Res setAbstractRes(String reqID) {
-            return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeSetAbstractRes(
-                    ConceptProto.ThingType.SetAbstract.Res.getDefaultInstance()
-            ));
-        }
-
-        public static TransactionProto.Transaction.Res unsetAbstractRes(String reqID) {
-            return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeUnsetAbstractRes(
-                    ConceptProto.ThingType.UnsetAbstract.Res.getDefaultInstance()
             ));
         }
 
@@ -438,167 +410,186 @@ public class ResponseBuilder {
                 String reqID, List<? extends grakn.core.concept.type.Type> types) {
             return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setTypeGetSupertypesResPart(
                     ConceptProto.Type.GetSupertypes.ResPart.newBuilder().addAllTypes(
-                            types.stream().map(Concept::protoType).collect(toList()))));
+                            types.stream().map(Type::protoType).collect(toList()))));
         }
 
         public static TransactionProto.Transaction.ResPart getSubtypesResPart(
                 String reqID, List<? extends grakn.core.concept.type.Type> types) {
             return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setTypeGetSubtypesResPart(
                     ConceptProto.Type.GetSubtypes.ResPart.newBuilder().addAllTypes(
-                            types.stream().map(Concept::protoType).collect(toList()))));
+                            types.stream().map(Type::protoType).collect(toList()))));
         }
 
-        public static TransactionProto.Transaction.ResPart getInstancesResPart(
-                String reqID, List<? extends grakn.core.concept.thing.Thing> things) {
-            return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setThingTypeGetInstancesResPart(
-                    ConceptProto.ThingType.GetInstances.ResPart.newBuilder().addAllThings(
-                            things.stream().map(Concept::protoThing).collect(toList()))));
+        public static class RoleType {
+
+            public static TransactionProto.Transaction.ResPart getRelationTypesResPart(String reqID, List<? extends grakn.core.concept.type.RelationType> relationTypes) {
+                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRoleTypeGetRelationTypesResPart(
+                        ConceptProto.RoleType.GetRelationTypes.ResPart.newBuilder().addAllRelationTypes(
+                                relationTypes.stream().map(Type::protoType).collect(toList()))));
+            }
+
+            public static TransactionProto.Transaction.ResPart getPlayersResPart(String reqID, List<? extends grakn.core.concept.type.ThingType> players) {
+                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRoleTypeGetPlayersResPart(
+                        ConceptProto.RoleType.GetPlayers.ResPart.newBuilder().addAllThingTypes(
+                                players.stream().map(Type::protoType).collect(toList()))));
+            }
         }
 
-        public static TransactionProto.Transaction.ResPart getOwnsResPart(
-                String reqID, List<? extends AttributeType> attributeTypes) {
-            return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setThingTypeGetOwnsResPart(
-                    ConceptProto.ThingType.GetOwns.ResPart.newBuilder().addAllAttributeTypes(
-                            attributeTypes.stream().map(Concept::protoType).collect(toList()))));
+        public static class ThingType {
+
+            public static TransactionProto.Transaction.ResPart getInstancesResPart(
+                    String reqID, List<? extends grakn.core.concept.thing.Thing> things) {
+                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setThingTypeGetInstancesResPart(
+                        ConceptProto.ThingType.GetInstances.ResPart.newBuilder().addAllThings(
+                                things.stream().map(Concept::protoThing).collect(toList()))));
+            }
+
+            public static TransactionProto.Transaction.Res setAbstractRes(String reqID) {
+                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeSetAbstractRes(
+                        ConceptProto.ThingType.SetAbstract.Res.getDefaultInstance()
+                ));
+            }
+
+            public static TransactionProto.Transaction.Res unsetAbstractRes(String reqID) {
+                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeUnsetAbstractRes(
+                        ConceptProto.ThingType.UnsetAbstract.Res.getDefaultInstance()
+                ));
+            }
+
+            public static TransactionProto.Transaction.ResPart getOwnsResPart(
+                    String reqID, List<? extends grakn.core.concept.type.AttributeType> attributeTypes) {
+                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setThingTypeGetOwnsResPart(
+                        ConceptProto.ThingType.GetOwns.ResPart.newBuilder().addAllAttributeTypes(
+                                attributeTypes.stream().map(Type::protoType).collect(toList()))));
+            }
+
+            public static TransactionProto.Transaction.Res setOwnsRes(String reqID) {
+                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeSetOwnsRes(
+                        ConceptProto.ThingType.SetOwns.Res.getDefaultInstance()
+                ));
+            }
+
+            public static TransactionProto.Transaction.Res unsetOwnsRes(String reqID) {
+                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeUnsetOwnsRes(
+                        ConceptProto.ThingType.UnsetOwns.Res.getDefaultInstance()
+                ));
+            }
+
+            public static TransactionProto.Transaction.ResPart getPlaysResPart(
+                    String reqID, List<? extends grakn.core.concept.type.RoleType> roleTypes) {
+                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setThingTypeGetPlaysResPart(
+                        ConceptProto.ThingType.GetPlays.ResPart.newBuilder().addAllRoles(
+                                roleTypes.stream().map(Type::protoType).collect(toList()))));
+            }
+
+            public static TransactionProto.Transaction.Res setPlaysRes(String reqID) {
+                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeSetPlaysRes(
+                        ConceptProto.ThingType.SetPlays.Res.getDefaultInstance()
+                ));
+            }
+
+            public static TransactionProto.Transaction.Res unsetPlaysRes(String reqID) {
+                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeUnsetPlaysRes(
+                        ConceptProto.ThingType.UnsetPlays.Res.getDefaultInstance()
+                ));
+            }
         }
 
-        public static TransactionProto.Transaction.ResPart getPlaysResPart(
-                String reqID, List<? extends RoleType> roleTypes) {
-            return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setThingTypeGetPlaysResPart(
-                    ConceptProto.ThingType.GetPlays.ResPart.newBuilder().addAllRoles(
-                            roleTypes.stream().map(Concept::protoType).collect(toList()))));
+        public static class EntityType {
+
+            public static TransactionProto.Transaction.Res createRes(String reqID, Entity entity) {
+                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setEntityTypeCreateRes(
+                        ConceptProto.EntityType.Create.Res.newBuilder().setEntity(protoThing(entity))
+                ));
+            }
         }
 
-        public static TransactionProto.Transaction.Res setOwnsRes(String reqID) {
-            return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeSetOwnsRes(
-                    ConceptProto.ThingType.SetOwns.Res.getDefaultInstance()
-            ));
+        public static class RelationType {
+
+            public static TransactionProto.Transaction.Res createRes(String reqID, Relation relation) {
+                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setRelationTypeCreateRes(
+                        ConceptProto.RelationType.Create.Res.newBuilder().setRelation(protoThing(relation))
+                ));
+            }
+
+            public static TransactionProto.Transaction.Res getRelatesForRoleLabelRes(String reqID, @Nullable grakn.core.concept.type.RoleType roleType) {
+                ConceptProto.RelationType.GetRelatesForRoleLabel.Res.Builder getRelatesRes =
+                        ConceptProto.RelationType.GetRelatesForRoleLabel.Res.newBuilder();
+                if (roleType != null) getRelatesRes.setRoleType(protoType(roleType));
+                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setRelationTypeGetRelatesForRoleLabelRes(getRelatesRes));
+            }
+
+            public static TransactionProto.Transaction.ResPart getRelatesResPart(
+                    String reqID, List<? extends grakn.core.concept.type.RoleType> roleTypes) {
+                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRelationTypeGetRelatesResPart(
+                        ConceptProto.RelationType.GetRelates.ResPart.newBuilder().addAllRoles(
+                                roleTypes.stream().map(Type::protoType).collect(toList()))
+                ));
+            }
+
+            public static TransactionProto.Transaction.Res setRelatesRes(String reqID) {
+                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setRelationTypeSetRelatesRes(
+                        ConceptProto.RelationType.SetRelates.Res.getDefaultInstance()
+                ));
+            }
+
+            public static TransactionProto.Transaction.Res unsetRelatesRes(String reqID) {
+                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setRelationTypeUnsetRelatesRes(
+                        ConceptProto.RelationType.UnsetRelates.Res.getDefaultInstance()
+                ));
+            }
         }
 
-        public static TransactionProto.Transaction.Res setPlaysRes(String reqID) {
-            return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeSetPlaysRes(
-                    ConceptProto.ThingType.SetPlays.Res.getDefaultInstance()
-            ));
-        }
+        public static class AttributeType {
 
-        public static TransactionProto.Transaction.Res unsetOwnsRes(String reqID) {
-            return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeUnsetOwnsRes(
-                    ConceptProto.ThingType.UnsetOwns.Res.getDefaultInstance()
-            ));
-        }
+            public static ConceptProto.AttributeType.ValueType protoValueType(grakn.core.concept.type.AttributeType attributeType) {
+                if (attributeType.isString()) {
+                    return ConceptProto.AttributeType.ValueType.STRING;
+                } else if (attributeType.isBoolean()) {
+                    return ConceptProto.AttributeType.ValueType.BOOLEAN;
+                } else if (attributeType.isLong()) {
+                    return ConceptProto.AttributeType.ValueType.LONG;
+                } else if (attributeType.isDouble()) {
+                    return ConceptProto.AttributeType.ValueType.DOUBLE;
+                } else if (attributeType.isDateTime()) {
+                    return ConceptProto.AttributeType.ValueType.DATETIME;
+                } else if (attributeType.isRoot()) {
+                    return ConceptProto.AttributeType.ValueType.OBJECT;
+                } else {
+                    throw GraknException.of(ErrorMessage.Server.BAD_VALUE_TYPE);
+                }
+            }
 
-        public static TransactionProto.Transaction.Res createRes(String reqID, Entity entity) {
-            return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setEntityTypeCreateRes(
-                    ConceptProto.EntityType.Create.Res.newBuilder().setEntity(protoThing(entity))
-            ));
-        }
+            public static TransactionProto.Transaction.Res putRes(String reqID, Attribute attribute) {
+                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setAttributeTypePutRes(
+                        ConceptProto.AttributeType.Put.Res.newBuilder().setAttribute(protoThing(attribute))
+                ));
+            }
 
-        public static TransactionProto.Transaction.Res createRes(String reqID, Relation relation) {
-            return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setRelationTypeCreateRes(
-                    ConceptProto.RelationType.Create.Res.newBuilder().setRelation(protoThing(relation))
-            ));
-        }
+            public static TransactionProto.Transaction.Res getRes(String reqID, @Nullable Attribute attribute) {
+                ConceptProto.AttributeType.Get.Res.Builder getAttributeTypeRes = ConceptProto.AttributeType.Get.Res.newBuilder();
+                if (attribute != null) getAttributeTypeRes.setAttribute(protoThing(attribute));
+                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setAttributeTypeGetRes(getAttributeTypeRes));
+            }
 
-        public static TransactionProto.Transaction.Res unsetPlaysRes(String reqID) {
-            return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeUnsetPlaysRes(
-                    ConceptProto.ThingType.UnsetPlays.Res.getDefaultInstance()
-            ));
-        }
+            public static TransactionProto.Transaction.Res getRegexRes(String reqID, Pattern regex) {
+                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setAttributeTypeGetRegexRes(
+                        ConceptProto.AttributeType.GetRegex.Res.newBuilder().setRegex((regex != null) ? regex.pattern() : "")
+                ));
+            }
 
-        public static TransactionProto.Transaction.ResPart getOwnersResPart(
-                String reqID, List<? extends ThingType> owners) {
-            return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setAttributeTypeGetOwnersResPart(
-                    ConceptProto.AttributeType.GetOwners.ResPart.newBuilder().addAllOwners(
-                            owners.stream().map(Concept::protoType).collect(toList()))
-            ));
-        }
+            public static TransactionProto.Transaction.Res setRegexRes(String reqID) {
+                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setAttributeTypeSetRegexRes(
+                        ConceptProto.AttributeType.SetRegex.Res.getDefaultInstance()
+                ));
+            }
 
-        public static TransactionProto.Transaction.Res putRes(String reqID, Attribute attribute) {
-            return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setAttributeTypePutRes(
-                    ConceptProto.AttributeType.Put.Res.newBuilder().setAttribute(protoThing(attribute))
-            ));
-        }
-
-        public static TransactionProto.Transaction.Res getRes(String reqID, @Nullable Attribute attribute) {
-            ConceptProto.AttributeType.Get.Res.Builder getAttributeTypeRes = ConceptProto.AttributeType.Get.Res.newBuilder();
-            if (attribute != null) getAttributeTypeRes.setAttribute(protoThing(attribute));
-            return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setAttributeTypeGetRes(getAttributeTypeRes));
-        }
-
-        public static TransactionProto.Transaction.Res getRegexRes(String reqID, Pattern regex) {
-            return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setAttributeTypeGetRegexRes(
-                    ConceptProto.AttributeType.GetRegex.Res.newBuilder().setRegex((regex != null) ? regex.pattern() : "")
-            ));
-        }
-
-        public static TransactionProto.Transaction.Res setRegexRes(String reqID) {
-            return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setAttributeTypeSetRegexRes(
-                    ConceptProto.AttributeType.SetRegex.Res.getDefaultInstance()
-            ));
-        }
-
-        public static TransactionProto.Transaction.ResPart getRelatesResPart(
-                String reqID, List<? extends RoleType> roleTypes) {
-            return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRelationTypeGetRelatesResPart(
-                    ConceptProto.RelationType.GetRelates.ResPart.newBuilder().addAllRoles(
-                            roleTypes.stream().map(Concept::protoType).collect(toList()))
-            ));
-        }
-
-        public static TransactionProto.Transaction.Res getRelatesForRoleLabelRes(String reqID, @Nullable RoleType roleType) {
-            ConceptProto.RelationType.GetRelatesForRoleLabel.Res.Builder getRelatesRes =
-                    ConceptProto.RelationType.GetRelatesForRoleLabel.Res.newBuilder();
-            if (roleType != null) getRelatesRes.setRoleType(protoType(roleType));
-            return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setRelationTypeGetRelatesForRoleLabelRes(getRelatesRes));
-        }
-
-        public static TransactionProto.Transaction.Res setRelatesRes(String reqID) {
-            return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setRelationTypeSetRelatesRes(
-                    ConceptProto.RelationType.SetRelates.Res.getDefaultInstance()
-            ));
-        }
-
-        public static TransactionProto.Transaction.Res unsetRelatesRes(String reqID) {
-            return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setRelationTypeUnsetRelatesRes(
-                    ConceptProto.RelationType.UnsetRelates.Res.getDefaultInstance()
-            ));
-        }
-
-        public static TransactionProto.Transaction.ResPart getRelationTypesResPart(String reqID, List<? extends RelationType> relationTypes) {
-            return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRoleTypeGetRelationTypesResPart(
-                    ConceptProto.RoleType.GetRelationTypes.ResPart.newBuilder().addAllRelationTypes(
-                            relationTypes.stream().map(Concept::protoType).collect(toList()))));
-        }
-
-        public static TransactionProto.Transaction.ResPart getPlayersResPart(String reqID, List<? extends ThingType> players) {
-            return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRoleTypeGetPlayersResPart(
-                    ConceptProto.RoleType.GetPlayers.ResPart.newBuilder().addAllThingTypes(
-                            players.stream().map(Concept::protoType).collect(toList()))));
-        }
-
-        public static TransactionProto.Transaction.Res deleteRes(String reqID) {
-            return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setTypeDeleteRes(
-                    ConceptProto.Type.Delete.Res.getDefaultInstance()
-            ));
-        }
-
-        public static AttributeType.ValueType valueType(ConceptProto.AttributeType.ValueType valueType) {
-            switch (valueType) {
-                case OBJECT:
-                    return AttributeType.ValueType.OBJECT;
-                case STRING:
-                    return AttributeType.ValueType.STRING;
-                case BOOLEAN:
-                    return AttributeType.ValueType.BOOLEAN;
-                case LONG:
-                    return AttributeType.ValueType.LONG;
-                case DOUBLE:
-                    return AttributeType.ValueType.DOUBLE;
-                case DATETIME:
-                    return AttributeType.ValueType.DATETIME;
-                case UNRECOGNIZED:
-                default:
-                    throw GraknException.of(BAD_VALUE_TYPE, valueType);
+            public static TransactionProto.Transaction.ResPart getOwnersResPart(
+                    String reqID, List<? extends grakn.core.concept.type.ThingType> owners) {
+                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setAttributeTypeGetOwnersResPart(
+                        ConceptProto.AttributeType.GetOwners.ResPart.newBuilder().addAllOwners(
+                                owners.stream().map(Type::protoType).collect(toList()))
+                ));
             }
         }
     }
@@ -614,9 +605,9 @@ public class ResponseBuilder {
             return TransactionProto.Transaction.ResPart.newBuilder().setReqId(reqID).setThingResPart(resPart).build();
         }
 
-        public static TransactionProto.Transaction.Res isInferredRes(String reqID, boolean isInferred) {
-            return thingRes(reqID, ConceptProto.Thing.Res.newBuilder().setThingIsInferredRes(
-                    ConceptProto.Thing.IsInferred.Res.newBuilder().setInferred(isInferred)
+        public static TransactionProto.Transaction.Res deleteRes(String reqID) {
+            return thingRes(reqID, ConceptProto.Thing.Res.newBuilder().setThingDeleteRes(
+                    ConceptProto.Thing.Delete.Res.getDefaultInstance()
             ));
         }
 
@@ -626,66 +617,16 @@ public class ResponseBuilder {
             ));
         }
 
-        public static TransactionProto.Transaction.ResPart getHasResPart(String reqID, List<? extends Attribute> attributes) {
+        public static TransactionProto.Transaction.Res isInferredRes(String reqID, boolean isInferred) {
+            return thingRes(reqID, ConceptProto.Thing.Res.newBuilder().setThingIsInferredRes(
+                    ConceptProto.Thing.IsInferred.Res.newBuilder().setInferred(isInferred)
+            ));
+        }
+
+        public static TransactionProto.Transaction.ResPart getHasResPart(String reqID, List<? extends grakn.core.concept.thing.Attribute> attributes) {
             return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setThingGetHasResPart(
                     ConceptProto.Thing.GetHas.ResPart.newBuilder().addAllAttributes(
                             attributes.stream().map(Concept::protoThing).collect(toList()))
-            ));
-        }
-
-        public static TransactionProto.Transaction.ResPart getRelationsResPart(String reqID, List<? extends Relation> relations) {
-            return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setThingGetRelationsResPart(
-                    ConceptProto.Thing.GetRelations.ResPart.newBuilder().addAllRelations(
-                            relations.stream().map(Concept::protoThing).collect(toList()))
-            ));
-        }
-
-        public static TransactionProto.Transaction.ResPart getPlaysResPart(String reqID, List<? extends RoleType> roleTypes) {
-            return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setThingGetPlaysResPart(
-                    ConceptProto.Thing.GetPlays.ResPart.newBuilder().addAllRoleTypes(
-                            roleTypes.stream().map(Concept::protoType).collect(toList()))
-            ));
-        }
-
-        public static TransactionProto.Transaction.Res deleteRes(String reqID) {
-            return thingRes(reqID, ConceptProto.Thing.Res.newBuilder().setThingDeleteRes(
-                    ConceptProto.Thing.Delete.Res.getDefaultInstance()
-            ));
-        }
-
-        public static TransactionProto.Transaction.ResPart getPlayersByRoleTypeResPart(
-                String reqID, List<Pair<RoleType, grakn.core.concept.thing.Thing>> rolePlayers) {
-            return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setRelationGetPlayersByRoleTypeResPart(
-                    ConceptProto.Relation.GetPlayersByRoleType.ResPart.newBuilder().addAllRoleTypesWithPlayers(
-                            rolePlayers.stream().map(rp -> ConceptProto.Relation.GetPlayersByRoleType.RoleTypeWithPlayer.newBuilder()
-                                    .setRoleType(protoType(rp.first())).setPlayer(protoThing(rp.second())).build()).collect(toList()))
-            ));
-        }
-
-        public static TransactionProto.Transaction.ResPart getPlayersResPart(
-                String reqID, List<? extends grakn.core.concept.thing.Thing> players) {
-            return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setRelationGetPlayersResPart(
-                    ConceptProto.Relation.GetPlayers.ResPart.newBuilder().addAllThings(
-                            players.stream().map(Concept::protoThing).collect(toList()))
-            ));
-        }
-
-        public static TransactionProto.Transaction.Res addPlayerRes(String reqID) {
-            return thingRes(reqID, ConceptProto.Thing.Res.newBuilder().setRelationAddPlayerRes(
-                    ConceptProto.Relation.AddPlayer.Res.getDefaultInstance()
-            ));
-        }
-
-        public static TransactionProto.Transaction.Res removePlayerRes(String reqID) {
-            return thingRes(reqID, ConceptProto.Thing.Res.newBuilder().setRelationRemovePlayerRes(
-                    ConceptProto.Relation.RemovePlayer.Res.getDefaultInstance()
-            ));
-        }
-
-        public static TransactionProto.Transaction.ResPart getOwnersResPart(String reqID, List<? extends grakn.core.concept.thing.Thing> owners) {
-            return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setAttributeGetOwnersResPart(
-                    ConceptProto.Attribute.GetOwners.ResPart.newBuilder().addAllThings(
-                            owners.stream().map(Concept::protoThing).collect(toList()))
             ));
         }
 
@@ -699,6 +640,69 @@ public class ResponseBuilder {
             return thingRes(reqID, ConceptProto.Thing.Res.newBuilder().setThingUnsetHasRes(
                     ConceptProto.Thing.UnsetHas.Res.getDefaultInstance()
             ));
+        }
+
+        public static TransactionProto.Transaction.ResPart getRelationsResPart(String reqID, List<? extends grakn.core.concept.thing.Relation> relations) {
+            return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setThingGetRelationsResPart(
+                    ConceptProto.Thing.GetRelations.ResPart.newBuilder().addAllRelations(
+                            relations.stream().map(Concept::protoThing).collect(toList()))
+            ));
+        }
+
+        public static TransactionProto.Transaction.ResPart getPlayingResPart(String reqID, List<? extends RoleType> roleTypes) {
+            return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setThingGetPlayingResPart(
+                    ConceptProto.Thing.GetPlaying.ResPart.newBuilder().addAllRoleTypes(
+                            roleTypes.stream().map(Type::protoType).collect(toList()))
+            ));
+        }
+
+        public static class Relation {
+
+            public static TransactionProto.Transaction.Res addPlayerRes(String reqID) {
+                return thingRes(reqID, ConceptProto.Thing.Res.newBuilder().setRelationAddPlayerRes(
+                        ConceptProto.Relation.AddPlayer.Res.getDefaultInstance()
+                ));
+            }
+
+            public static TransactionProto.Transaction.Res removePlayerRes(String reqID) {
+                return thingRes(reqID, ConceptProto.Thing.Res.newBuilder().setRelationRemovePlayerRes(
+                        ConceptProto.Relation.RemovePlayer.Res.getDefaultInstance()
+                ));
+            }
+
+            public static TransactionProto.Transaction.ResPart getPlayersResPart(
+                    String reqID, List<? extends grakn.core.concept.thing.Thing> players) {
+                return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setRelationGetPlayersResPart(
+                        ConceptProto.Relation.GetPlayers.ResPart.newBuilder().addAllThings(
+                                players.stream().map(Concept::protoThing).collect(toList()))
+                ));
+            }
+
+            public static TransactionProto.Transaction.ResPart getPlayersByRoleTypeResPart(
+                    String reqID, List<Pair<RoleType, grakn.core.concept.thing.Thing>> rolePlayers) {
+                return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setRelationGetPlayersByRoleTypeResPart(
+                        ConceptProto.Relation.GetPlayersByRoleType.ResPart.newBuilder().addAllRoleTypesWithPlayers(
+                                rolePlayers.stream().map(rp -> ConceptProto.Relation.GetPlayersByRoleType.RoleTypeWithPlayer.newBuilder()
+                                        .setRoleType(protoType(rp.first())).setPlayer(protoThing(rp.second())).build()).collect(toList()))
+                ));
+            }
+
+            public static TransactionProto.Transaction.ResPart getRelatingResPart(String reqID, List<? extends RoleType> roleTypes) {
+                return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setRelationGetRelatingResPart(
+                        ConceptProto.Relation.GetRelating.ResPart.newBuilder().addAllRoleTypes(
+                                roleTypes.stream().map(Type::protoType).collect(toList()))
+                ));
+            }
+        }
+
+        public static class Attribute {
+
+            public static TransactionProto.Transaction.ResPart getOwnersResPart(String reqID, List<? extends grakn.core.concept.thing.Thing> owners) {
+                return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setAttributeGetOwnersResPart(
+                        ConceptProto.Attribute.GetOwners.ResPart.newBuilder().addAllThings(
+                                owners.stream().map(Concept::protoThing).collect(toList()))
+                ));
+            }
         }
     }
 
