@@ -50,7 +50,6 @@ import static grakn.core.server.common.ResponseBuilder.Type.getPlaysResPart;
 import static grakn.core.server.common.ResponseBuilder.Type.getRegexRes;
 import static grakn.core.server.common.ResponseBuilder.Type.getRelatesForRoleLabelRes;
 import static grakn.core.server.common.ResponseBuilder.Type.getRelatesResPart;
-import static grakn.core.server.common.ResponseBuilder.Type.getRelationTypeRes;
 import static grakn.core.server.common.ResponseBuilder.Type.getRelationTypesResPart;
 import static grakn.core.server.common.ResponseBuilder.Type.getRes;
 import static grakn.core.server.common.ResponseBuilder.Type.getSubtypesResPart;
@@ -113,9 +112,6 @@ public class TypeService {
                 return;
             case TYPE_GET_SUBTYPES_REQ:
                 getSubtypes(type, request);
-                return;
-            case ROLE_TYPE_GET_RELATION_TYPE_REQ:
-                getRelationType(type.asRoleType(), request);
                 return;
             case ROLE_TYPE_GET_RELATION_TYPES_REQ:
                 getRelationTypes(type.asRoleType(), request);
@@ -414,10 +410,6 @@ public class TypeService {
                               Transaction.Req req) {
         relationType.unsetRelates(unsetRelatesReq.getLabel());
         transactionSrv.respond(unsetRelatesRes(req.getReqId()));
-    }
-
-    private void getRelationType(RoleType roleType, Transaction.Req req) {
-        transactionSrv.respond(getRelationTypeRes(req.getReqId(), roleType.getRelationType()));
     }
 
     private void getRelationTypes(RoleType roleType, Transaction.Req req) {

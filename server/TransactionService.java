@@ -141,37 +141,37 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         }
     }
 
-    private void executeRequest(TransactionProto.Transaction.Req request) {
+    private void executeRequest(TransactionProto.Transaction.Req req) {
         if (!isRPCAlive.get()) throw GraknException.of(TRANSACTION_CLOSED);
         if (!isTransactionOpen.get()) throw GraknException.of(TRANSACTION_NOT_OPENED);
 
-        switch (request.getReqCase()) {
+        switch (req.getReqCase()) {
             case ROLLBACK_REQ:
-                rollback(request.getReqId());
+                rollback(req.getReqId());
                 break;
             case COMMIT_REQ:
-                commit(request.getReqId());
+                commit(req.getReqId());
                 break;
             case STREAM_REQ:
-                stream(request.getReqId());
+                stream(req.getReqId());
                 break;
             case QUERY_MANAGER_REQ:
-                services.query.execute(request);
+                services.query.execute(req);
                 break;
             case CONCEPT_MANAGER_REQ:
-                services.concept.execute(request);
+                services.concept.execute(req);
                 break;
             case LOGIC_MANAGER_REQ:
-                services.logic.execute(request);
+                services.logic.execute(req);
                 break;
             case THING_REQ:
-                services.thing.execute(request);
+                services.thing.execute(req);
                 break;
             case TYPE_REQ:
-                services.type.execute(request);
+                services.type.execute(req);
                 break;
             case RULE_REQ:
-                services.rule.execute(request);
+                services.rule.execute(req);
                 break;
             default:
                 throw GraknException.of(ILLEGAL_ARGUMENT);

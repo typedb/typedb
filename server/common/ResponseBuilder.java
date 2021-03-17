@@ -564,12 +564,6 @@ public class ResponseBuilder {
             ));
         }
 
-        public static TransactionProto.Transaction.Res getRelationTypeRes(String reqID, RelationType relationType) {
-            return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setRoleTypeGetRelationTypeRes(
-                    ConceptProto.RoleType.GetRelationType.Res.newBuilder().setRelationType(protoType(relationType))
-            ));
-        }
-
         public static TransactionProto.Transaction.ResPart getRelationTypesResPart(String reqID, List<? extends RelationType> relationTypes) {
             return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRoleTypeGetRelationTypesResPart(
                     ConceptProto.RoleType.GetRelationTypes.ResPart.newBuilder().addAllRelationTypes(
