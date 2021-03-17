@@ -25,7 +25,7 @@ import grakn.core.concurrent.producer.Producer;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Compound.Root.Match.Root;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Compound.Root;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top.Match.Finished;
 import grakn.core.reasoner.resolution.answer.AnswerStateImpl.TopImpl.MatchImpl.InitialImpl;
 import grakn.core.reasoner.resolution.framework.Request;

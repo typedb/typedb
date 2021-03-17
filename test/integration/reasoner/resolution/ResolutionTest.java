@@ -21,13 +21,15 @@ import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options.Database;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.actor.ActorExecutorGroup;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.variable.Variable;
-import grakn.core.reasoner.resolution.answer.AnswerState;
-import grakn.core.reasoner.resolution.answer.AnswerState.Top;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Compound.Root;
+import grakn.core.reasoner.resolution.answer.AnswerState.Top.Match;
+import grakn.core.reasoner.resolution.answer.AnswerStateImpl;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
@@ -128,7 +130,7 @@ public class ResolutionTest {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 Conjunction conjunctionPattern = resolvedConjunction("{ $t(twin1: $p1, twin2: $p2) isa twins; $p1 has age $a; }", transaction.logic());
                 ResolverRegistry registry = transaction.reasoner().resolverRegistry();
-                LinkedBlockingQueue<Top> responses = new LinkedBlockingQueue<>();
+                LinkedBlockingQueue<Match.Finished> responses = new LinkedBlockingQueue<>();
                 AtomicLong doneReceived = new AtomicLong(0L);
                 LinkedBlockingQueue<Throwable> exceptions = new LinkedBlockingQueue<>();
                 Actor.Driver<RootResolver.Conjunction> root;
@@ -448,7 +450,7 @@ public class ResolutionTest {
                                               Set<Identifier.Variable.Name> filter, long answerCount,
                                               long explainableAnswers) throws InterruptedException {
         ResolverRegistry registry = transaction.reasoner().resolverRegistry();
-        LinkedBlockingQueue<Top.Match.Finished> responses = new LinkedBlockingQueue<>();
+        LinkedBlockingQueue<Match.Finished> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
         Actor.Driver<RootResolver.Disjunction> root;
         try {
@@ -463,7 +465,7 @@ public class ResolutionTest {
     private void createRootAndAssertResponses(RocksTransaction transaction, Conjunction conjunction, long answerCount, long explainableAnswers)
             throws InterruptedException {
         ResolverRegistry registry = transaction.reasoner().resolverRegistry();
-        LinkedBlockingQueue<Top.Match.Finished> responses = new LinkedBlockingQueue<>();
+        LinkedBlockingQueue<Match.Finished> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
         Set<Identifier.Variable.Name> filter = iterate(conjunction.variables()).map(Variable::id)
                 .filter(Identifier::isName).map(Identifier.Variable::asName).toSet();
@@ -478,18 +480,18 @@ public class ResolutionTest {
     }
 
     private void assertResponses(Actor.Driver<? extends Resolver<?>> root, Set<Identifier.Variable.Name> filter,
-                                 LinkedBlockingQueue<Top.Match.Finished> responses, AtomicLong doneReceived,
+                                 LinkedBlockingQueue<Match.Finished> responses, AtomicLong doneReceived,
                                  long answerCount, long explainableAnswers) throws InterruptedException {
         long startTime = System.currentTimeMillis();
         long n = answerCount + 1; //total number of traversal answers, plus one expected Exhausted (-1 answer)
         for (int i = 0; i < n; i++) {
-            AnswerState.Partial.Compound.Match.Root downstream = Top.Match.initial(filter, root, true).toDownstream();
+            Root.Match downstream = new AnswerStateImpl.TopImpl.MatchImpl.InitialImpl(filter, new ConceptMap(), root, false, true).toDownstream();
             root.execute(actor -> actor.receiveRequest(Request.create(root, downstream), 0));
         }
         int answersFound = 0;
         int explainableAnswersFound = 0;
         for (int i = 0; i < n - 1; i++) {
-            Top answer = responses.poll(1000, TimeUnit.MILLISECONDS); // polling prevents the test hanging
+            Match.Finished answer = responses.poll(1000, TimeUnit.MILLISECONDS);// polling prevents the test hanging
             if (answer != null) {
                 answersFound += 1;
                 if (answer.conceptMap().explainableAnswer().isPresent()) {

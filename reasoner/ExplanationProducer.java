@@ -24,8 +24,9 @@ import grakn.core.concurrent.common.Executors;
 import grakn.core.concurrent.producer.Producer;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerStateOld.Partial.Compound.ExplainRoot;
-import grakn.core.reasoner.resolution.answer.AnswerStateOld.Top;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Compound.Root;
+import grakn.core.reasoner.resolution.answer.AnswerState.Top.Explain;
+import grakn.core.reasoner.resolution.answer.AnswerStateImpl;
 import grakn.core.reasoner.resolution.answer.Explanation;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionTracer;
@@ -65,7 +66,7 @@ public class ExplanationProducer implements Producer<Explanation> {
         this.processing = new AtomicInteger();
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         this.explainer = registry.explainer(conjunction, this::requestAnswered, this::requestFailed, this::exception);
-        ExplainRoot downstream = Top.Explain.initial(bounds, explainer).toDownstream();
+        Root.Explain downstream = new AnswerStateImpl.TopImpl.ExplainImpl.InitialImpl(bounds, explainer, false).toDownstream();
         this.explainRequest = Request.create(explainer, downstream);
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
@@ -89,7 +90,7 @@ public class ExplanationProducer implements Producer<Explanation> {
     }
 
     // note: root resolver calls this single-threaded, so is threads safe
-    private void requestAnswered(Top.Explain.Finished explainedAnswer) {
+    private void requestAnswered(Explain.Finished explainedAnswer) {
         if (options.traceInference()) ResolutionTracer.get().finish();
         if (explainedAnswer.requiresReiteration()) requiresReiteration = true;
         Explanation explanation = explainedAnswer.explanation();

@@ -20,12 +20,14 @@ package grakn.core.reasoner.resolution;
 import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.actor.ActorExecutorGroup;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.variable.Variable;
-import grakn.core.reasoner.resolution.answer.AnswerState;
-import grakn.core.reasoner.resolution.answer.AnswerState.Top;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Compound.Root;
+import grakn.core.reasoner.resolution.answer.AnswerState.Top.Match;
+import grakn.core.reasoner.resolution.answer.AnswerStateImpl;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionTracer;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
@@ -119,7 +121,7 @@ public class ReiterationTest {
                 Set<Identifier.Variable.Name> filter = iterate(conjunction.variables()).map(Variable::id).filter(Identifier::isName)
                         .map(Identifier.Variable::asName).toSet();
                 ResolverRegistry registry = transaction.reasoner().resolverRegistry();
-                LinkedBlockingQueue<Top> responses = new LinkedBlockingQueue<>();
+                LinkedBlockingQueue<Match.Finished> responses = new LinkedBlockingQueue<>();
                 LinkedBlockingQueue<Integer> failed = new LinkedBlockingQueue<>();
                 int[] iteration = {0};
                 int[] doneInIteration = {0};
@@ -135,7 +137,7 @@ public class ReiterationTest {
                     failed.add(iterDone);
                 }, throwable -> fail());
 
-                Set<Top> answers = new HashSet<>();
+                Set<Match.Finished> answers = new HashSet<>();
                 // iteration 0
                 sendRootRequest(root, filter, iteration[0]);
                 answers.add(responses.take());
@@ -152,7 +154,7 @@ public class ReiterationTest {
                 for (int j = 0; j <= 100; j++) {
                     ResolutionTracer.get().start();
                     sendRootRequest(root, filter, iteration[0]);
-                    Top re = responses.poll(100, MILLISECONDS);
+                    Match.Finished re = responses.poll(100, MILLISECONDS);
                     if (re == null) {
                         Integer ex = failed.poll(100, MILLISECONDS);
                         if (ex == null) {
@@ -174,7 +176,7 @@ public class ReiterationTest {
     }
 
     private void sendRootRequest(Actor.Driver<RootResolver.Conjunction> root, Set<Identifier.Variable.Name> filter, int iteration) {
-        AnswerState.Partial.Compound.Match.Root downstream = Top.Match.initial(filter, root, true).toDownstream();
+        Root.Match downstream = new AnswerStateImpl.TopImpl.MatchImpl.InitialImpl(filter, new ConceptMap(), root, false, true).toDownstream();
         root.execute(actor -> actor.receiveRequest(
                 Request.create(root, downstream), iteration)
         );

@@ -21,6 +21,7 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptImpl;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Concludable;
 import grakn.core.reasoner.resolution.answer.AnswerStateImpl.TopImpl.MatchImpl.InitialImpl;
 import grakn.core.traversal.common.Identifier;
@@ -49,7 +50,7 @@ public class AnswerStateTest {
         Map<Identifier.Variable.Retrievable, Concept> concepts = new HashMap<>();
         concepts.put(Identifier.Variable.name("x"), new MockConcept(0));
         concepts.put(Identifier.Variable.name("y"), new MockConcept(1));
-        AnswerState.Partial.Compound<?, ?> partial = mapped.toUpstreamLookup(new ConceptMap(concepts), false);
+        Partial.Compound<?, ?> partial = mapped.toUpstreamLookup(new ConceptMap(concepts), false);
         Map<Identifier.Variable.Retrievable, Concept> expected = new HashMap<>();
         expected.put(Identifier.Variable.name("a"), new MockConcept(0));
         expected.put(Identifier.Variable.name("b"), new MockConcept(1));
@@ -64,7 +65,7 @@ public class AnswerStateTest {
         Map<Identifier.Variable.Retrievable, Concept> concepts = new HashMap<>();
         concepts.put(Identifier.Variable.name("a"), new MockConcept(0));
         Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
-        Concludable<?, ?> mapped = new InitialImpl(filter, new ConceptMap(), null, false, false).toDownstream()
+        Concludable.Match<?> mapped = new InitialImpl(filter, new ConceptMap(), null, false, false).toDownstream()
                 .with(new ConceptMap(concepts), false)
                 .mapToConcludable(Mapping.of(mapping), null);
 
@@ -92,8 +93,9 @@ public class AnswerStateTest {
         concepts.put(Identifier.Variable.name("a"), new MockConcept(0));
         concepts.put(Identifier.Variable.name("c"), new MockConcept(2));
         Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
-        Concludable<?, ?> mapped = Top.Match.initial(filter, null, false).toDownstream().with(new ConceptMap(concepts), false)
-                .mapToDownstream(Mapping.of(mapping), null);
+        Concludable.Match<?> mapped = new InitialImpl(filter, new ConceptMap(), null, false, false).toDownstream()
+                .with(new ConceptMap(concepts), false)
+                .mapToConcludable(Mapping.of(mapping), null);
 
         Map<Identifier.Variable.Retrievable, Concept> expectedMapped = new HashMap<>();
         expectedMapped.put(Identifier.Variable.name("x"), new MockConcept(0));

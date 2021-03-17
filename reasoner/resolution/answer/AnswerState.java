@@ -75,7 +75,7 @@ public interface AnswerState {
 
             interface Initial extends Match {
 
-                Partial.Compound.Root.Root.Explain toDownstream();
+                Partial.Compound.Root.Root.Match toDownstream();
 
                 Finished finish(ConceptMap conceptMap, boolean requiresReiteration);
 
@@ -251,7 +251,7 @@ public interface AnswerState {
 
                 }
 
-                interface Explain extends Root<Explain, Top.Match.Explain> {
+                interface Explain extends Root<Explain, Top.Explain.Initial> {
 
                     Explain with(ConceptMap extension, boolean requiresReiteration, Explanation explanation);
 
@@ -278,6 +278,7 @@ public interface AnswerState {
 
             interface Condition<S extends Condition<S, P>, P extends Conclusion<P, ?>> extends Compound<S, P> {
 
+                // merge point where Match and Explain all become Match states
                 Concludable.Match<S> mapToConcludable(Mapping mapping, Conjunction nextResolverConjunction);
 
                 @Override
@@ -290,7 +291,7 @@ public interface AnswerState {
 
                 default Explain asExplain() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Root.Explain.class); }
 
-                interface Match extends Condition<Match, Conclusion.Match> {
+                interface Match extends Condition<Match, Conclusion.Match>, Explainable {
 
                     Conclusion.Match toUpstream();
 
