@@ -173,7 +173,8 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         counter example: $x isa $type; -> unifies with then { (friend: $y) isa friendship; }
         Without reiteration we will miss $x = instance, $type = relation/thing
          */
-        return requiresReiteration;
+        return iteration < 5;
+//        return requiresReiteration;
     }
 
     private void retryInNewIteration() {

@@ -94,6 +94,7 @@ public interface RootResolver<TOP extends Top> {
 
         @Override
         public void submitFail(int iteration) {
+            LOG.debug("Submitting fail in iteration: {}", iteration);
             onFail.accept(iteration);
         }
 

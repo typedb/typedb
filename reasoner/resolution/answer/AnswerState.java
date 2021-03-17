@@ -211,9 +211,6 @@ public interface AnswerState {
                 }
 
                 @Override
-                Nestable with(ConceptMap extension, boolean requiresReiteration);
-
-                @Override
                 Concludable.Match<Nestable> mapToConcludable(Mapping mapping, Conjunction nextResolverConjunction);
 
                 @Override

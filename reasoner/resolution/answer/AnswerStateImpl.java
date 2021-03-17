@@ -142,12 +142,12 @@ public abstract class AnswerStateImpl implements AnswerState {
                 @Override
                 public PartialImpl.CompoundImpl.RootImpl.MatchImpl toDownstream() {
                     //TODO we should use the original conceptmap instead of the filtered one
-                    return PartialImpl.CompoundImpl.RootImpl.MatchImpl.from(this);
+                    return PartialImpl.CompoundImpl.RootImpl.MatchImpl.childOf(this);
                 }
 
                 @Override
                 public FinishedImpl finish(ConceptMap conceptMap, boolean requiresReiteration) {
-                    return new FinishedImpl(getFilter(), conceptMap().filter(getFilter()), root(), requiresReiteration(), explainable());
+                    return new FinishedImpl(getFilter(), conceptMap.filter(getFilter()), root(), requiresReiteration(), explainable());
                 }
 
             }
@@ -263,12 +263,12 @@ public abstract class AnswerStateImpl implements AnswerState {
 
             @Override
             public Nestable filterToNestable(Set<Identifier.Variable.Retrievable> filter) {
-                return NestableImpl.from(filter, this);
+                return NestableImpl.childOf(filter, this);
             }
 
             @Override
             public Retrievable<SLF> filterToRetrievable(Set<Identifier.Variable.Retrievable> filter) {
-                return PartialImpl.PartialImpl.ConcludableImpl.RetrievableImpl.from(filter, getThis());
+                return PartialImpl.PartialImpl.ConcludableImpl.RetrievableImpl.childOf(filter, getThis());
             }
 
             abstract SLF getThis();
@@ -286,7 +286,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                     this.hash = Objects.hash(root, conceptMap, parent, requiresReiteration, filter);
                 }
 
-                static NestableImpl from(Set<Identifier.Variable.Retrievable> filter, Compound<?, ?> parent) {
+                static NestableImpl childOf(Set<Identifier.Variable.Retrievable> filter, Compound<?, ?> parent) {
                     return new NestableImpl(filter, parent, parent.conceptMap().filter(filter), parent.root(), parent.requiresReiteration());
                 }
 
@@ -303,7 +303,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                 @Override
                 public Concludable.Match<Nestable> mapToConcludable(Mapping mapping, Conjunction nextResolverConjunction) {
                     // TODO create a static constructor that hardcodes false
-                    return ConcludableImpl.MatchImpl.from(mapping, nextResolverConjunction, this, false);
+                    return ConcludableImpl.MatchImpl.childOf(mapping, nextResolverConjunction, this, false);
                 }
 
                 @Override
@@ -362,7 +362,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                         this.hash = Objects.hash(root, conceptMap, parent, explainable); //note: NOT including explainables
                     }
 
-                    static MatchImpl from(Top.Match.Initial parent) {
+                    static MatchImpl childOf(Top.Match.Initial parent) {
                         return new MatchImpl(
                                 parent.explainable() ? new HashSet<>() : null, parent, parent.conceptMap(), parent.root(),
                                 parent.requiresReiteration(), parent.explainable()
@@ -393,13 +393,19 @@ public abstract class AnswerStateImpl implements AnswerState {
                     @Override
                     public Concludable.Match<Match> mapToConcludable(Mapping mapping, Conjunction nextResolverConjunction) {
                         // TODO create a static constructor that hardcodes false
-                        return ConcludableImpl.MatchImpl.from(mapping, nextResolverConjunction, this, explainable());
+                        return ConcludableImpl.MatchImpl.childOf(mapping, nextResolverConjunction, this, explainable());
                     }
 
                     @Override
                     public Top.Match.Finished toFinishedTop(Conjunction compoundConjunction) {
-                        // TODO inject conjunction into the concept map here or in the parent constructor
-                        return parent().finish(conceptMap(), requiresReiteration());
+                        ConceptMap conceptMap;
+                        if (explainable() && !explainables.isEmpty()) {
+                            ExplainableAnswer explainableAnswer = new ExplainableAnswer(conceptMap(), compoundConjunction, explainables);
+                            conceptMap = new ConceptMap(conceptMap().concepts(), explainableAnswer);
+                        } else {
+                            conceptMap = conceptMap();
+                        }
+                        return parent().finish(conceptMap, requiresReiteration());
                     }
 
                     @Override
@@ -437,7 +443,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                         this.hash = Objects.hash(root(), parent(), conceptMap(), requiresReiteration, explanation);
                     }
 
-                    static ExplainImpl from(Top.Explain.Initial parent) {
+                    static ExplainImpl childOf(Top.Explain.Initial parent) {
                         return new ExplainImpl(null, parent, parent.conceptMap(), parent.root(), parent.requiresReiteration());
                     }
 
@@ -462,7 +468,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                     @Override
                     public Concludable.Explain mapToConcludable(Mapping mapping, Conjunction nextResolverConjunction) {
                         // TODO we don't really want the conjunction?
-                        return ConcludableImpl.ExplainImpl.from(mapping, this);
+                        return ConcludableImpl.ExplainImpl.childOf(mapping, this);
                     }
 
                     @Override
@@ -505,7 +511,7 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                 @Override
                 public Concludable.Match<S> mapToConcludable(Mapping mapping, Conjunction nextResolverConjunction) {
-                    return ConcludableImpl.MatchImpl.from(mapping, nextResolverConjunction, getThis(), false);
+                    return ConcludableImpl.MatchImpl.childOf(mapping, nextResolverConjunction, getThis(), false);
                 }
 
                 public static class MatchImpl extends ConditionImpl<Match, Conclusion.Match> implements Match {
@@ -520,7 +526,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                         this.hash = Objects.hash(parent(), root(), conceptMap(), requiresReiteration(), filter);
                     }
 
-                    static MatchImpl from(Set<Identifier.Variable.Retrievable> filter, Conclusion.Match parent) {
+                    static MatchImpl childOf(Set<Identifier.Variable.Retrievable> filter, Conclusion.Match parent) {
                         return new MatchImpl(filter, parent, parent.conceptMap().filter(filter), parent.root(), false);
                     }
 
@@ -573,7 +579,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                         this.hash = Objects.hash(root(), parent(), conceptMap(), requiresReiteration(), filter);
                     }
 
-                    static ExplainImpl from(Set<Identifier.Variable.Retrievable> filter, Conclusion.Explain parent) {
+                    static ExplainImpl childOf(Set<Identifier.Variable.Retrievable> filter, Conclusion.Explain parent) {
                         return new ExplainImpl(filter, new HashSet<>(), parent, parent.conceptMap().filter(filter),
                                                parent.root(), false);
                     }
@@ -651,7 +657,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                     this.hash = Objects.hash(root, conceptMap, mapping, parent, requiresReiteration, explainable);
                 }
 
-                static <P extends Compound<P, ?>> MatchImpl<P> from(Mapping mapping, Conjunction conjunction, P parent, boolean explainable) {
+                static <P extends Compound<P, ?>> MatchImpl<P> childOf(Mapping mapping, Conjunction conjunction, P parent, boolean explainable) {
                     return new MatchImpl<>(mapping, conjunction, parent, mapping.transform(parent.conceptMap()),
                                            parent.root(), parent.requiresReiteration(), explainable);
                 }
@@ -684,7 +690,7 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                 @Override
                 public Optional<Conclusion.Match> toDownstream(Unifier unifier, Rule rule) {
-                    return ConclusionImpl.MatchImpl.from(unifier, rule, this);
+                    return ConclusionImpl.MatchImpl.childOf(unifier, rule, this);
                 }
 
                 @Override
@@ -724,7 +730,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                     this.hash = Objects.hash(root, conceptMap, mapping, parent, requiresReiteration, conclusionAnswer);
                 }
 
-                static ExplainImpl from(Mapping mapping, Compound.Root.Explain parent) {
+                static ExplainImpl childOf(Mapping mapping, Compound.Root.Explain parent) {
                     return new ExplainImpl(null, mapping, parent, mapping.transform(parent.conceptMap()), parent.root(), parent.requiresReiteration());
                 }
 
@@ -743,7 +749,7 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                 @Override
                 public Optional<Conclusion.Explain> toDownstream(Unifier unifier, Rule rule) {
-                    return ConclusionImpl.ExplainImpl.from(unifier, rule, this);
+                    return ConclusionImpl.ExplainImpl.childOf(unifier, rule, this);
                 }
 
                 @Override
@@ -816,7 +822,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                     this.hash = Objects.hash(root, conceptMap, rule, unifier, instanceRequirements, parent, requiresReiteration, explainable);
                 }
 
-                static Optional<Match> from(Unifier unifier, Rule rule, Concludable.Match<?> parent) {
+                static Optional<Match> childOf(Unifier unifier, Rule rule, Concludable.Match<?> parent) {
                     Optional<Pair<ConceptMap, Unifier.Requirements.Instance>> unified = unifier.unify(parent.conceptMap());
                     return unified.map(unification -> new MatchImpl(
                             rule, unifier, unification.second(), parent, unification.first(), parent.root(), false, parent.explainable()
@@ -835,7 +841,7 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                 @Override
                 public Compound.Root.Condition.Match toDownstream(Set<Identifier.Variable.Retrievable> filter) {
-                    return CompoundImpl.ConditionImpl.MatchImpl.from(filter, this);
+                    return CompoundImpl.ConditionImpl.MatchImpl.childOf(filter, this);
                 }
 
                 @Override
@@ -881,7 +887,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                     this.hash = Objects.hash(root, conceptMap, rule, unifier, instanceRequirements, parent, conditionAnswer);
                 }
 
-                static Optional<Explain> from(Unifier unifier, Rule rule, Concludable.Explain parent) {
+                static Optional<Explain> childOf(Unifier unifier, Rule rule, Concludable.Explain parent) {
                     Optional<Pair<ConceptMap, Unifier.Requirements.Instance>> unified = unifier.unify(parent.conceptMap());
                     return unified.map(unification -> new ExplainImpl(
                             null, rule, unifier, unification.second(), unification.first(), parent, parent.root(), false
@@ -890,7 +896,7 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                 @Override
                 public Compound.Condition.Explain toDownstream(Set<Identifier.Variable.Retrievable> filter) {
-                    return CompoundImpl.ConditionImpl.ExplainImpl.from(filter, this);
+                    return CompoundImpl.ConditionImpl.ExplainImpl.childOf(filter, this);
                 }
 
                 @Override
@@ -960,7 +966,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                 this.hash = Objects.hash(filter, parent(), conceptMap(), root(), requiresReiteration());
             }
 
-            static <P extends Compound<P, ?>> RetrievableImpl<P> from(Set<Identifier.Variable.Retrievable> filter, P parent) {
+            static <P extends Compound<P, ?>> RetrievableImpl<P> childOf(Set<Identifier.Variable.Retrievable> filter, P parent) {
                 return new RetrievableImpl<>(filter, parent, parent.conceptMap().filter(filter), parent.root(), parent.requiresReiteration());
             }
 
