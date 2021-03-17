@@ -253,22 +253,22 @@ public class ResolverRegistry {
             return new FilteredRetrievable(resolver, filter);
         }
 
-        public abstract boolean isMappedConcludable();
+        public boolean isMappedConcludable() { return false; }
 
-        public abstract boolean isFilteredNegation();
+        public boolean isFilteredNegation() { return false; }
 
-        public abstract boolean isRetrievable();
+        public boolean isFilteredRetrievable() { return false; }
 
         public MappedConcludable asMappedConcludable() {
             throw GraknException.of(ILLEGAL_CAST, getClass(), MappedConcludable.class);
         }
 
         public FilteredNegation asFilteredNegation() {
-            throw GraknException.of(ILLEGAL_CAST, getClass(), MappedConcludable.class);
+            throw GraknException.of(ILLEGAL_CAST, getClass(), FilteredNegation.class);
         }
 
         public FilteredRetrievable asFilteredRetrievable() {
-            throw GraknException.of(ILLEGAL_CAST, getClass(), MappedConcludable.class);
+            throw GraknException.of(ILLEGAL_CAST, getClass(), FilteredRetrievable.class);
         }
 
         public abstract Actor.Driver<? extends Resolver<?>> resolver();
@@ -290,14 +290,6 @@ public class ResolverRegistry {
             public boolean isMappedConcludable() {
                 return true;
             }
-
-            @Override
-            public boolean isFilteredNegation() {
-                return false;
-            }
-
-            @Override
-            public boolean isRetrievable() { return false; }
 
             @Override
             public MappedConcludable asMappedConcludable() {
@@ -324,17 +316,9 @@ public class ResolverRegistry {
             }
 
             @Override
-            public boolean isMappedConcludable() {
-                return false;
-            }
-
-            @Override
             public boolean isFilteredNegation() {
                 return true;
             }
-
-            @Override
-            public boolean isRetrievable() { return false; }
 
             @Override
             public FilteredNegation asFilteredNegation() {
@@ -361,17 +345,7 @@ public class ResolverRegistry {
             }
 
             @Override
-            public boolean isMappedConcludable() {
-                return false;
-            }
-
-            @Override
-            public boolean isFilteredNegation() {
-                return true;
-            }
-
-            @Override
-            public boolean isRetrievable() { return true; }
+            public boolean isFilteredRetrievable() { return true; }
 
             @Override
             public FilteredRetrievable asFilteredRetrievable() {

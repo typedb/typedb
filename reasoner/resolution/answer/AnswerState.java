@@ -166,7 +166,7 @@ public interface AnswerState {
             // TODo does everyone have to implement this? It's used for receiving from a NonRoot
             SLF with(ConceptMap extension, boolean requiresReiteration);
 
-            // note: this is only used my Match, can't get generics for asMatch() casting to work to do this transparently
+            // note: this is only used by Explain, can't get generics for asMatch() casting to work to do this transparently
             SLF with(ConceptMap extension, boolean requiresReiteration, Conjunction source);
 
             Concludable<?, SLF> mapToConcludable(Mapping mapping, Conjunction nextResolverConjunction);
@@ -291,9 +291,14 @@ public interface AnswerState {
 
                 default Explain asExplain() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Root.Explain.class); }
 
-                interface Match extends Condition<Match, Conclusion.Match>, Explainable {
+                interface Match extends Condition<Match, Conclusion.Match> {
 
                     Conclusion.Match toUpstream();
+
+                    @Override
+                    default Match with(ConceptMap extension, boolean requiresReiteration, Conjunction source) {
+                        return with(extension, requiresReiteration);
+                    }
 
                     @Override
                     default boolean isMatch() { return true; }
@@ -307,11 +312,6 @@ public interface AnswerState {
                     // TODO
 
                     Conclusion.Explain toUpstream(Conjunction conditionConjunction);
-
-                    @Override
-                    default Explain with(ConceptMap extension, boolean requiresReiteration, Conjunction source) {
-                        return with(extension, requiresReiteration);
-                    }
 
                     @Override
                     default boolean isExplain() { return true; }

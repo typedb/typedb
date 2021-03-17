@@ -200,7 +200,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
             return partialAnswer.mapToConcludable(Mapping.of(nextDownstream.asMappedConcludable().mapping()), nextResolvable.asConcludable().pattern());
         } else if (nextDownstream.isFilteredNegation()) {
             return partialAnswer.filterToNestable(nextDownstream.asFilteredNegation().filter());
-        } else if (nextDownstream.isRetrievable()) {
+        } else if (nextDownstream.isFilteredRetrievable()) {
             return partialAnswer.filterToRetrievable(nextDownstream.asFilteredRetrievable().filter());
         } else {
             throw GraknException.of(ILLEGAL_STATE);
