@@ -189,6 +189,11 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
+        protected void failToUpstream(Request fromUpstream, int iteration) {
+            submitFail(iteration);
+        }
+
+        @Override
         public void submitAnswer(Finished answer) {
             LOG.debug("Submitting answer: {}", answer);
             onAnswer.accept(answer);

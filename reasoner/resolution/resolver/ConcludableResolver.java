@@ -201,6 +201,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
                 this.requestStates.put(fromUpstream, newRequestState);
             }
         }
+        boolean bad = requestStates.values().stream().anyMatch(rs -> rs.iteration() + 1 < iteration);
         return requestStates.get(fromUpstream);
     }
 

@@ -73,7 +73,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.required = new AtomicInteger();
         this.processing = new AtomicInteger();
         this.rootResolver = resolverRegistry.root(conjunction, this::requestAnswered, this::requestFailed, this::exception);
-        this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
+        this.computeSize = 1;// options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
         Root downstream = new InitialImpl(filter(modifiers.filter()), new ConceptMap(), this.rootResolver, false, options.explain()).toDownstream();
         this.resolveRequest = Request.create(rootResolver, downstream);

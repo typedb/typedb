@@ -61,7 +61,7 @@ public class ConceptMap implements Answer {
     public ConceptMap(Map<Retrievable, ? extends Concept> concepts, @Nullable ExplainableAnswer explainableAnswer) {
         this.concepts = concepts;
         this.explainableAnswer = explainableAnswer;
-        this.hash = Objects.hash(this.concepts, this.explainableAnswer);
+        this.hash = Objects.hash(this.concepts); //, this.explainableAnswer);
     }
 
     public FunctionalIterator<Pair<Retrievable, Concept>> iterator() {
@@ -138,7 +138,7 @@ public class ConceptMap implements Answer {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ConceptMap that = (ConceptMap) o;
-        return concepts.equals(that.concepts) && Objects.equals(explainableAnswer, that.explainableAnswer);
+        return concepts.equals(that.concepts); // && Objects.equals(explainableAnswer, that.explainableAnswer);
     }
 
     @Override

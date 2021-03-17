@@ -162,6 +162,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
                 this.requestStates.put(fromUpstream, requestStateNextIter);
             }
         }
+        boolean bad = requestStates.values().stream().anyMatch(rs -> rs.iteration() + 1 < iteration);
         return requestStates.get(fromUpstream);
     }
 

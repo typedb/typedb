@@ -103,7 +103,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                 super(conceptMap.filter(getFilter), root, requiresReiteration);
                 this.getFilter = getFilter;
                 this.explainable = explainable;
-                this.hash = Objects.hash(conceptMap, getFilter, root, requiresReiteration, explainable);
+                this.hash = Objects.hash(root(), conceptMap(), requiresReiteration(), getFilter(), explainable());
             }
 
             @Override
@@ -124,8 +124,8 @@ public abstract class AnswerStateImpl implements AnswerState {
                 return Objects.equals(root(), that.root()) &&
                         Objects.equals(conceptMap(), that.conceptMap()) &&
                         requiresReiteration() == that.requiresReiteration() &&
-                        Objects.equals(getFilter, that.getFilter) &&
-                        explainable == that.explainable;
+                        Objects.equals(getFilter(), that.getFilter()) &&
+                        explainable() == that.explainable();
             }
 
             @Override
@@ -147,7 +147,7 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                 @Override
                 public FinishedImpl finish(ConceptMap conceptMap, boolean requiresReiteration) {
-                    return new FinishedImpl(getFilter(), conceptMap.filter(getFilter()), root(), requiresReiteration(), explainable());
+                    return new FinishedImpl(getFilter(), conceptMap.filter(getFilter()), root(), requiresReiteration, explainable());
                 }
 
             }
@@ -173,7 +173,7 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                 public InitialImpl(ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
                     super(conceptMap, root, requiresReiteration);
-                    this.hash = Objects.hash(root, conceptMap, requiresReiteration);
+                    this.hash = Objects.hash(root(), conceptMap(), requiresReiteration());
                 }
 
                 @Override
@@ -212,7 +212,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                     super(conceptMap, root, requiresReiteration);
                     assert explanation != null;
                     this.explanation = explanation;
-                    this.hash = Objects.hash(root, conceptMap, requiresReiteration, explanation);
+                    this.hash = Objects.hash(root(), conceptMap(), requiresReiteration(), explanation());
                 }
 
                 @Override
@@ -228,7 +228,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                     return Objects.equals(root(), that.root()) &&
                             Objects.equals(conceptMap(), that.conceptMap()) &&
                             requiresReiteration() == that.requiresReiteration() &&
-                            Objects.equals(explanation, that.explanation);
+                            Objects.equals(explanation(), that.explanation());
                 }
 
                 @Override
@@ -283,7 +283,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                     // TODO we should apply filter here and not in the toUpstream() and aggregateToUpstream()
                     super(parent, conceptMap, root, requiresReiteration);
                     this.filter = filter;
-                    this.hash = Objects.hash(root, conceptMap, parent, requiresReiteration, filter);
+                    this.hash = Objects.hash(root(), parent(), conceptMap(), requiresReiteration(), filter());
                 }
 
                 static NestableImpl childOf(Set<Identifier.Variable.Retrievable> filter, Compound<?, ?> parent) {
@@ -332,7 +332,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                             Objects.equals(parent(), that.parent()) &&
                             Objects.equals(conceptMap(), that.conceptMap()) &&
                             requiresReiteration() == that.requiresReiteration() &&
-                            Objects.equals(filter, that.filter);
+                            Objects.equals(filter(), that.filter());
                 }
 
                 @Override
@@ -359,7 +359,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                         this.explainable = explainable;
                         assert explainable ? explainables != null : explainables == null;
                         this.explainables = explainables;
-                        this.hash = Objects.hash(root, conceptMap, parent, explainable); //note: NOT including explainables
+                        this.hash = Objects.hash(root, parent, conceptMap, requiresReiteration(), explainable); //note: NOT including explainables
                     }
 
                     static MatchImpl childOf(Top.Match.Initial parent) {
@@ -422,7 +422,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                                 Objects.equals(parent(), that.parent()) &&
                                 Objects.equals(conceptMap(), that.conceptMap()) &&
                                 requiresReiteration() == that.requiresReiteration() &&
-                                explainable == that.explainable;
+                                explainable() == that.explainable();
                     }
 
                     @Override
@@ -440,7 +440,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                                         Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
                         super(parent, conceptMap, root, requiresReiteration);
                         this.explanation = explanation;
-                        this.hash = Objects.hash(root(), parent(), conceptMap(), requiresReiteration, explanation);
+                        this.hash = Objects.hash(root(), parent(), conceptMap(), requiresReiteration(), explanation);
                     }
 
                     static ExplainImpl childOf(Top.Explain.Initial parent) {
@@ -576,7 +576,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                         super(parent, conceptMap, root, requiresReiteration);
                         this.filter = filter;
                         this.explainables = explainables;
-                        this.hash = Objects.hash(root(), parent(), conceptMap(), requiresReiteration(), filter);
+                        this.hash = Objects.hash(root(), parent(), conceptMap(), requiresReiteration(), explainables, filter);
                     }
 
                     static ExplainImpl childOf(Set<Identifier.Variable.Retrievable> filter, Conclusion.Explain parent) {
@@ -617,6 +617,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                                 Objects.equals(conceptMap(), that.conceptMap()) &&
                                 Objects.equals(parent(), that.parent()) &&
                                 requiresReiteration() == that.requiresReiteration() &&
+                                Objects.equals(explainables, that.explainables) &&
                                 Objects.equals(filter, that.filter);
                     }
 
@@ -654,7 +655,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                     super(mapping, parent, conceptMap, root, requiresReiteration);
                     this.conjunction = conjunction;
                     this.explainable = explainable;
-                    this.hash = Objects.hash(root, conceptMap, mapping, parent, requiresReiteration, explainable);
+                    this.hash = Objects.hash(root(), parent(), conceptMap(), requiresReiteration(), explainable(), mapping());
                 }
 
                 static <P extends Compound<P, ?>> MatchImpl<P> childOf(Mapping mapping, Conjunction conjunction, P parent, boolean explainable) {
@@ -707,9 +708,9 @@ public abstract class AnswerStateImpl implements AnswerState {
                     return Objects.equals(root(), that.root()) &&
                             Objects.equals(conceptMap(), that.conceptMap()) &&
                             Objects.equals(parent(), that.parent()) &&
-                            Objects.equals(mapping(), that.mapping()) &&
                             requiresReiteration() == that.requiresReiteration() &&
-                            explainable == that.explainable;
+                            explainable == that.explainable &&
+                            Objects.equals(mapping(), that.mapping());
                 }
 
                 @Override
@@ -727,7 +728,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                             Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
                     super(mapping, parent, conceptMap, root, requiresReiteration);
                     this.conclusionAnswer = conclusionAnswer;
-                    this.hash = Objects.hash(root, conceptMap, mapping, parent, requiresReiteration, conclusionAnswer);
+                    this.hash = Objects.hash(root(), parent(), conceptMap(), mapping(), requiresReiteration(), conclusionAnswer);
                 }
 
                 static ExplainImpl childOf(Mapping mapping, Compound.Root.Explain parent) {
@@ -764,8 +765,8 @@ public abstract class AnswerStateImpl implements AnswerState {
                     if (o == null || getClass() != o.getClass()) return false;
                     ExplainImpl that = (ExplainImpl) o;
                     return Objects.equals(root(), that.root()) &&
-                            Objects.equals(conceptMap(), that.conceptMap()) &&
                             Objects.equals(parent(), that.parent()) &&
+                            Objects.equals(conceptMap(), that.conceptMap()) &&
                             Objects.equals(mapping(), that.mapping()) &&
                             requiresReiteration() == that.requiresReiteration() &&
                             Objects.equals(conclusionAnswer, that.conclusionAnswer);
@@ -819,7 +820,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                                   boolean explainable) {
                     super(rule, unifier, instanceRequirements, parent, conceptMap, root, requiresReiteration);
                     this.explainable = explainable;
-                    this.hash = Objects.hash(root, conceptMap, rule, unifier, instanceRequirements, parent, requiresReiteration, explainable);
+                    this.hash = Objects.hash(root(), parent(), conceptMap(), rule(), unifier(), instanceRequirements(), requiresReiteration(), explainable());
                 }
 
                 static Optional<Match> childOf(Unifier unifier, Rule rule, Concludable.Match<?> parent) {
@@ -861,13 +862,13 @@ public abstract class AnswerStateImpl implements AnswerState {
                     if (o == null || getClass() != o.getClass()) return false;
                     MatchImpl that = (MatchImpl) o;
                     return Objects.equals(root(), that.root()) &&
-                            Objects.equals(conceptMap(), that.conceptMap()) &&
                             Objects.equals(parent(), that.parent()) &&
+                            Objects.equals(conceptMap(), that.conceptMap()) &&
                             Objects.equals(rule(), that.rule()) &&
                             Objects.equals(unifier(), that.unifier()) &&
                             Objects.equals(instanceRequirements(), that.instanceRequirements()) &&
                             requiresReiteration() == that.requiresReiteration() &&
-                            explainable == that.explainable;
+                            explainable() == that.explainable();
                 }
 
                 @Override
@@ -884,7 +885,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                 private ExplainImpl(ExplainableAnswer conditionAnswer, Rule rule, Unifier unifier, Unifier.Requirements.Instance instanceRequirements, ConceptMap conceptMap, Concludable.Explain parent, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
                     super(rule, unifier, instanceRequirements, parent, conceptMap, root, requiresReiteration);
                     this.conditionAnswer = conditionAnswer;
-                    this.hash = Objects.hash(root, conceptMap, rule, unifier, instanceRequirements, parent, conditionAnswer);
+                    this.hash = Objects.hash(root(), parent(), conceptMap(), rule(), unifier(), instanceRequirements(), requiresReiteration(), conditionAnswer());
                 }
 
                 static Optional<Explain> childOf(Unifier unifier, Rule rule, Concludable.Explain parent) {
@@ -939,8 +940,8 @@ public abstract class AnswerStateImpl implements AnswerState {
                     if (o == null || getClass() != o.getClass()) return false;
                     ExplainImpl that = (ExplainImpl) o;
                     return Objects.equals(root(), that.root()) &&
-                            Objects.equals(conceptMap(), that.conceptMap()) &&
                             Objects.equals(parent(), that.parent()) &&
+                            Objects.equals(conceptMap(), that.conceptMap()) &&
                             Objects.equals(rule(), that.rule()) &&
                             Objects.equals(unifier(), that.unifier()) &&
                             Objects.equals(instanceRequirements(), that.instanceRequirements()) &&
@@ -963,7 +964,7 @@ public abstract class AnswerStateImpl implements AnswerState {
             private RetrievableImpl(Set<Identifier.Variable.Retrievable> filter, P parent, ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
                 super(parent, conceptMap, root, requiresReiteration);
                 this.filter = filter;
-                this.hash = Objects.hash(filter, parent(), conceptMap(), root(), requiresReiteration());
+                this.hash = Objects.hash(root(), parent(), conceptMap(), requiresReiteration(), filter);
             }
 
             static <P extends Compound<P, ?>> RetrievableImpl<P> childOf(Set<Identifier.Variable.Retrievable> filter, P parent) {
@@ -983,8 +984,8 @@ public abstract class AnswerStateImpl implements AnswerState {
                 if (o == null || getClass() != o.getClass()) return false;
                 RetrievableImpl that = (RetrievableImpl) o;
                 return Objects.equals(root(), that.root()) &&
-                        Objects.equals(conceptMap(), that.conceptMap()) &&
                         Objects.equals(parent(), that.parent()) &&
+                        Objects.equals(conceptMap(), that.conceptMap()) &&
                         requiresReiteration() == that.requiresReiteration() &&
                         Objects.equals(filter, that.filter);
             }
