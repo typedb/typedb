@@ -30,9 +30,8 @@ import grakn.core.migrator.MigratorClient;
 import grakn.core.migrator.MigratorService;
 import grakn.core.rocks.Factory;
 import grakn.core.rocks.RocksFactory;
-import grakn.core.server.common.ServerCommand;
+import grakn.core.server.common.RunOptions;
 import grakn.core.server.common.ServerDefaults;
-import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.slf4j.Logger;
@@ -52,9 +51,7 @@ import static grakn.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT
 import static grakn.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT_WRITABLE;
 import static grakn.core.common.exception.ErrorMessage.Server.EXITED_WITH_ERROR;
 import static grakn.core.common.exception.ErrorMessage.Server.FAILED_AT_STOPPING;
-import static grakn.core.common.exception.ErrorMessage.Server.FAILED_PARSE_PROPERTIES;
 import static grakn.core.common.exception.ErrorMessage.Server.INCOMPATIBLE_JAVA_RUNTIME;
-import static grakn.core.common.exception.ErrorMessage.Server.PROPERTIES_FILE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Server.UNCAUGHT_EXCEPTION;
 import static grakn.core.server.common.Util.parseCommandLine;
 import static grakn.core.server.common.Util.parseProperties;
@@ -67,16 +64,15 @@ public class GraknServer implements AutoCloseable {
 
     protected final Factory factory;
     protected final Grakn grakn;
-    protected final Server server;
+    protected final io.grpc.Server server;
+    protected final RunOptions.Server command;
     protected GraknService graknService;
-    private MigratorService migratorService;
-    protected final ServerCommand.Start command;
 
-    private GraknServer(ServerCommand.Start command) {
+    private GraknServer(RunOptions.Server command) {
         this(command, new RocksFactory());
     }
 
-    protected GraknServer(ServerCommand.Start command, Factory factory) {
+    protected GraknServer(RunOptions.Server command, Factory factory) {
         this.command = command;
         configureAndVerifyJavaVersion();
         configureAndVerifyDataDir();
@@ -141,11 +137,11 @@ public class GraknServer implements AutoCloseable {
         }
     }
 
-    protected Server rpcServer() {
+    protected io.grpc.Server rpcServer() {
         assert Executors.isInitialised();
 
         graknService = new GraknService(grakn);
-        migratorService = new MigratorService(grakn, Version.VERSION);
+        MigratorService migratorService = new MigratorService(grakn, Version.VERSION);
 
         return NettyServerBuilder.forPort(command.port())
                 .executor(Executors.service())
@@ -220,19 +216,12 @@ public class GraknServer implements AutoCloseable {
     public static void main(String[] args) {
         try {
             printASCIILogo();
-            ServerCommand command = parseCommandLine(parseProperties(), args);
-            if (command == null) System.exit(0);
-
-            if (command.isStart()) {
-                startGraknServer(command.asStart());
-            } else if (command.isImportData()) {
-                importData(command.asImportData());
-            } else if (command.isExportData()) {
-                exportData(command.asExportData());
-            } else if (command.isPrintSchema()) {
-                ServerCommand.PrintSchema printSchemaCommand = command.asPrintSchema();
-                printSchema(printSchemaCommand);
-            }
+            RunOptions options = parseCommandLine(parseProperties(), args);
+            if (options == null) System.exit(0);
+            else if (options.isServer()) runServer(options.asServer());
+            else if (options.isDataImport()) importData(options.asDataImport());
+            else if (options.isDataExport()) exportData(options.asDataExport());
+            else assert false;
         } catch (Exception e) {
             if (e instanceof GraknException) {
                 LOG.error(e.getMessage());
@@ -246,7 +235,7 @@ public class GraknServer implements AutoCloseable {
         System.exit(0);
     }
 
-    private static void startGraknServer(ServerCommand.Start command) {
+    private static void runServer(RunOptions.Server command) {
         Instant start = Instant.now();
         GraknServer server = new GraknServer(command);
         server.start();
@@ -259,18 +248,13 @@ public class GraknServer implements AutoCloseable {
         server.serve();
     }
 
-    protected static void printSchema(ServerCommand.PrintSchema printSchemaCommand) {
-        MigratorClient migrator = new MigratorClient(printSchemaCommand.port());
-        migrator.printSchema(printSchemaCommand.database());
-    }
-
-    protected static void exportData(ServerCommand.ExportData exportDataCommand) {
+    protected static void exportData(RunOptions.DataExport exportDataCommand) {
         MigratorClient migrator = new MigratorClient(exportDataCommand.port());
         boolean success = migrator.exportData(exportDataCommand.database(), exportDataCommand.filename());
         System.exit(success ? 0 : 1);
     }
 
-    protected static void importData(ServerCommand.ImportData importDataCommand) {
+    protected static void importData(RunOptions.DataImport importDataCommand) {
         MigratorClient migrator = new MigratorClient(importDataCommand.port());
         boolean success = migrator.importData(importDataCommand.database(), importDataCommand.filename(), importDataCommand.remapLabels());
         System.exit(success ? 0 : 1);

@@ -71,35 +71,39 @@ public class ResponseBuilder {
 
     public static class Database {
 
-        public static DatabaseProto.Database.Contains.Res contains(boolean contains) {
+        public static DatabaseProto.Database.Contains.Res containsRes(boolean contains) {
             return DatabaseProto.Database.Contains.Res.newBuilder().setContains(contains).build();
         }
 
-        public static DatabaseProto.Database.Create.Res create() {
+        public static DatabaseProto.Database.Create.Res createRes() {
             return DatabaseProto.Database.Create.Res.getDefaultInstance();
         }
 
-        public static DatabaseProto.Database.All.Res all(List<String> names) {
+        public static DatabaseProto.Database.All.Res allRes(List<String> names) {
             return DatabaseProto.Database.All.Res.newBuilder().addAllNames(names).build();
         }
 
-        public static DatabaseProto.Database.Delete.Res delete() {
+        public static DatabaseProto.Database.Schema.Res schemaRes(String schema) {
+            return DatabaseProto.Database.Schema.Res.newBuilder().setSchema(schema).build();
+        }
+
+        public static DatabaseProto.Database.Delete.Res deleteRes() {
             return DatabaseProto.Database.Delete.Res.getDefaultInstance();
         }
     }
 
     public static class Session {
 
-        public static SessionProto.Session.Open.Res open(SessionService sessionSrv, int durationMillis) {
+        public static SessionProto.Session.Open.Res openRes(SessionService sessionSrv, int durationMillis) {
             return SessionProto.Session.Open.Res.newBuilder().setSessionId(sessionSrv.UUIDAsByteString())
                     .setServerDurationMillis(durationMillis).build();
         }
 
-        public static SessionProto.Session.Pulse.Res pulse(boolean isAlive) {
+        public static SessionProto.Session.Pulse.Res pulseRes(boolean isAlive) {
             return SessionProto.Session.Pulse.Res.newBuilder().setAlive(isAlive).build();
         }
 
-        public static SessionProto.Session.Close.Res close() {
+        public static SessionProto.Session.Close.Res closeRes() {
             return SessionProto.Session.Close.Res.newBuilder().build();
         }
     }

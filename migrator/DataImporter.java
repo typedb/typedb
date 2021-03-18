@@ -54,9 +54,9 @@ import static grakn.core.common.exception.ErrorMessage.Migrator.FILE_NOT_READABL
 import static grakn.core.common.exception.ErrorMessage.Migrator.INVALID_DATA;
 import static grakn.core.common.exception.ErrorMessage.Migrator.TYPE_NOT_FOUND;
 
-public class Importer implements Migrator {
+public class DataImporter implements Migrator {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Importer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DataImporter.class);
     private static final Parser<DataProto.Item> ITEM_PARSER = DataProto.Item.parser();
     private static final int BATCH_SIZE = 20_000;
     private final Grakn.Session session;
@@ -76,7 +76,7 @@ public class Importer implements Migrator {
     private int txWriteCount = 0;
     private Grakn.Transaction tx;
 
-    Importer(Grakn grakn, String database, Path filename, Map<String, String> remapLabels, String version) {
+    DataImporter(Grakn grakn, String database, Path filename, Map<String, String> remapLabels, String version) {
         this.session = grakn.session(database, Arguments.Session.Type.DATA);
         this.filename = filename;
         this.remapLabels = remapLabels;

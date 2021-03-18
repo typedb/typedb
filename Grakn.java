@@ -58,9 +58,11 @@ public interface Grakn extends AutoCloseable {
 
         boolean contains(UUID sessionID);
 
-        Session get(UUID sessionID);
+        Session session(UUID sessionID);
 
         Stream<Session> sessions();
+
+        String schema();
 
         void delete();
     }

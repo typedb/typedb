@@ -21,6 +21,7 @@ package grakn.core.logic;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Label;
+import grakn.core.common.util.StringBuilders;
 import grakn.core.concept.ConceptManager;
 import grakn.core.graph.GraphManager;
 import grakn.core.graph.structure.RuleStructure;
@@ -39,9 +40,13 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static grakn.common.collection.Collections.list;
+import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.CONTRADICTORY_RULE_CYCLE;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.iterator.Iterators.link;
+import static grakn.core.logic.LogicManager.RuleExporter.writeRule;
+import static java.util.Comparator.comparing;
 
 public class LogicManager {
 
@@ -55,6 +60,13 @@ public class LogicManager {
         this.conceptMgr = conceptMgr;
         this.logicCache = logicCache;
         this.typeResolver = new TypeResolver(logicCache, traversalEng, conceptMgr);
+    }
+
+
+    GraphManager graph() { return graphMgr; }
+
+    public TypeResolver typeResolver() {
+        return typeResolver;
     }
 
     public Rule putRule(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
@@ -162,6 +174,10 @@ public class LogicManager {
         return cycle;
     }
 
+    public void exportRules(StringBuilder builder) {
+        rules().stream().sorted(comparing(Rule::getLabel)).forEach(x -> writeRule(builder, x));
+    }
+
     private static class RuleDependency {
 
         final Rule recursiveRule;
@@ -190,10 +206,47 @@ public class LogicManager {
         }
     }
 
-    public TypeResolver typeResolver() {
-        return typeResolver;
+    // TODO: This class should be dissolved and its logic should be moved to Rules and Patterns
+    static class RuleExporter {
+
+        static void writeRule(StringBuilder builder, Rule rule) {
+            builder.append(String.format("rule %s:\n", rule.getLabel()))
+                    .append(StringBuilders.indent(1))
+                    .append("when\n")
+                    .append(getPatternString(wrapConjunction(rule.getWhenPreNormalised()), 1))
+                    .append("\n")
+                    .append(StringBuilders.indent(1))
+                    .append("then\n")
+                    .append(getPatternString(wrapConjunction(rule.getThenPreNormalised()), 1))
+                    .append(StringBuilders.SEMICOLON_NEWLINE_X2);
+        }
+
+        static String getPatternString(Pattern pattern, int indent) {
+            if (pattern.isVariable()) {
+                return StringBuilders.indent(indent) + pattern.asVariable().toString();
+            } else if (pattern.isConjunction()) {
+                StringBuilder builder = new StringBuilder()
+                        .append(StringBuilders.indent(indent))
+                        .append("{\n");
+                pattern.asConjunction().patterns().forEach(p -> builder
+                        .append(getPatternString(p, indent + 1))
+                        .append(";\n"));
+                builder.append(StringBuilders.indent(indent))
+                        .append("}");
+                return builder.toString();
+            } else if (pattern.isDisjunction()) {
+                return pattern.asDisjunction().patterns().stream()
+                        .map(p -> getPatternString(wrapConjunction(p), indent))
+                        .collect(Collectors.joining("\n" + StringBuilders.indent(indent) + "or\n"));
+            } else if (pattern.isNegation()) {
+                return StringBuilders.indent(indent) + "not\n" + getPatternString(wrapConjunction(pattern.asNegation().pattern()), indent);
+            } else {
+                throw GraknException.of(ILLEGAL_STATE);
+            }
+        }
+
+        static Pattern wrapConjunction(Pattern pattern) {
+            return pattern.isConjunction() ? pattern : new Conjunction<>(list(pattern));
+        }
     }
-
-    GraphManager graph() { return graphMgr; }
-
 }

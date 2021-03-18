@@ -21,7 +21,6 @@ import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
-import grakn.core.server.common.ResponseBuilder;
 import grakn.protocol.DatabaseProto;
 import grakn.protocol.GraknGrpc;
 import grakn.protocol.SessionProto;
@@ -44,6 +43,14 @@ import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOU
 import static grakn.core.common.exception.ErrorMessage.Server.SERVER_SHUTDOWN;
 import static grakn.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
 import static grakn.core.server.common.RequestReader.applyDefaultOptions;
+import static grakn.core.server.common.ResponseBuilder.Database.allRes;
+import static grakn.core.server.common.ResponseBuilder.Database.containsRes;
+import static grakn.core.server.common.ResponseBuilder.Database.createRes;
+import static grakn.core.server.common.ResponseBuilder.Database.deleteRes;
+import static grakn.core.server.common.ResponseBuilder.Database.schemaRes;
+import static grakn.core.server.common.ResponseBuilder.Session.closeRes;
+import static grakn.core.server.common.ResponseBuilder.Session.openRes;
+import static grakn.core.server.common.ResponseBuilder.Session.pulseRes;
 import static grakn.core.server.common.ResponseBuilder.exception;
 import static java.util.stream.Collectors.toList;
 
@@ -64,7 +71,7 @@ public class GraknService extends GraknGrpc.GraknImplBase {
                                  StreamObserver<DatabaseProto.Database.Contains.Res> responder) {
         try {
             boolean contains = grakn.databases().contains(request.getName());
-            responder.onNext(ResponseBuilder.Database.contains(contains));
+            responder.onNext(containsRes(contains));
             responder.onCompleted();
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
@@ -80,7 +87,7 @@ public class GraknService extends GraknGrpc.GraknImplBase {
                 throw GraknException.of(DATABASE_EXISTS, request.getName());
             }
             grakn.databases().create(request.getName());
-            responder.onNext(ResponseBuilder.Database.create());
+            responder.onNext(createRes());
             responder.onCompleted();
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
@@ -93,9 +100,22 @@ public class GraknService extends GraknGrpc.GraknImplBase {
                             StreamObserver<DatabaseProto.Database.All.Res> responder) {
         try {
             List<String> databaseNames = grakn.databases().all().stream().map(Grakn.Database::name).collect(toList());
-            responder.onNext(ResponseBuilder.Database.all(databaseNames));
+            responder.onNext(allRes(databaseNames));
             responder.onCompleted();
         } catch (RuntimeException e) {
+            LOG.error(e.getMessage(), e);
+            responder.onError(exception(e));
+        }
+    }
+
+    @Override
+    public void databaseSchema(DatabaseProto.Database.Schema.Req request,
+                               StreamObserver<DatabaseProto.Database.Schema.Res> responder) {
+        try {
+            String schema = grakn.databases().get(request.getName()).schema();
+            responder.onNext(schemaRes(schema));
+            responder.onCompleted();
+        } catch (GraknException e) {
             LOG.error(e.getMessage(), e);
             responder.onError(exception(e));
         }
@@ -119,7 +139,7 @@ public class GraknService extends GraknGrpc.GraknImplBase {
                 }
             });
             database.delete();
-            responder.onNext(ResponseBuilder.Database.delete());
+            responder.onNext(deleteRes());
             responder.onCompleted();
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
@@ -138,7 +158,7 @@ public class GraknService extends GraknGrpc.GraknImplBase {
             SessionService sessionSrv = new SessionService(this, session, options);
             sessionServices.put(sessionSrv.session().uuid(), sessionSrv);
             int duration = (int) Duration.between(start, Instant.now()).toMillis();
-            responder.onNext(ResponseBuilder.Session.open(sessionSrv, duration));
+            responder.onNext(openRes(sessionSrv, duration));
             responder.onCompleted();
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
@@ -154,7 +174,7 @@ public class GraknService extends GraknGrpc.GraknImplBase {
             SessionService sessionSrv = sessionServices.get(sessionID);
             if (sessionSrv == null) throw GraknException.of(SESSION_NOT_FOUND, sessionID);
             sessionSrv.close();
-            responder.onNext(ResponseBuilder.Session.close());
+            responder.onNext(closeRes());
             responder.onCompleted();
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
@@ -170,7 +190,7 @@ public class GraknService extends GraknGrpc.GraknImplBase {
             SessionService sessionSrv = sessionServices.get(sessionID);
             boolean isAlive = sessionSrv != null && sessionSrv.isOpen();
             if (isAlive) sessionSrv.keepAlive();
-            responder.onNext(ResponseBuilder.Session.pulse(isAlive));
+            responder.onNext(pulseRes(isAlive));
             responder.onCompleted();
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);

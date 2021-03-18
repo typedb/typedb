@@ -31,16 +31,16 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
 
+// TODO: This class does not belong in the server, it should be moved to client-side,
+//       and it should be able to stream import/export file to/from the server
 public class MigratorClient {
 
     private final MigratorGrpc.MigratorStub streamingStub;
-    private final MigratorGrpc.MigratorBlockingStub blockingStub;
 
     public MigratorClient(int serverPort) {
         String uri = "localhost:" + serverPort;
         ManagedChannel channel = ManagedChannelBuilder.forTarget(uri).usePlaintext().build();
         streamingStub = MigratorGrpc.newStub(channel);
-        blockingStub = MigratorGrpc.newBlockingStub(channel);
     }
 
     public boolean importData(String database, String filename, Map<String, String> remapLabels) {
@@ -64,14 +64,6 @@ public class MigratorClient {
         streamingStub.exportData(req, streamObserver);
         streamObserver.await();
         return streamObserver.success();
-    }
-
-    public void printSchema(String database) {
-        MigratorProto.GetSchema.Req req = MigratorProto.GetSchema.Req.newBuilder()
-                .setDatabase(database)
-                .build();
-        MigratorProto.GetSchema.Res res = blockingStub.getSchema(req);
-        System.out.println(res.getSchema());
     }
 
     static class ResponseObserver implements StreamObserver<MigratorProto.Job.Res> {
@@ -121,12 +113,7 @@ public class MigratorClient {
 
     private static class ProgressPrinter {
 
-        private static final String[] ANIM = new String[]{
-                "-",
-                "\\",
-                "|",
-                "/"
-        };
+        private static final String[] ANIM = new String[]{"-", "\\", "|", "/"};
         private static final String STATUS_STARTING = "starting";
         private static final String STATUS_IN_PROGRESS = "in progress";
         private static final String STATUS_COMPLETED = "completed";

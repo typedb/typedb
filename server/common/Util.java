@@ -73,15 +73,13 @@ public class Util {
         else return properties;
     }
 
-    public static ServerCommand parseCommandLine(Properties properties, String[] args) {
-        ServerCommand.Start startCommand = new ServerCommand.Start();
-        ServerCommand.ImportData importDataCommand = new ServerCommand.ImportData(startCommand);
-        ServerCommand.ExportData exportDataCommand = new ServerCommand.ExportData(startCommand);
-        ServerCommand.PrintSchema printSchemaCommand = new ServerCommand.PrintSchema(startCommand);
-        CommandLine commandLine = new CommandLine(startCommand)
-                .addSubcommand(importDataCommand)
-                .addSubcommand(exportDataCommand)
-                .addSubcommand(printSchemaCommand);
+    public static RunOptions parseCommandLine(Properties properties, String[] args) {
+        RunOptions.Server serverOptions = new RunOptions.Server();
+        RunOptions.DataImport importDataOptions = new RunOptions.DataImport(serverOptions);
+        RunOptions.DataExport exportDataOptions = new RunOptions.DataExport(serverOptions);
+        CommandLine commandLine = new CommandLine(serverOptions)
+                .addSubcommand(importDataOptions)
+                .addSubcommand(exportDataOptions);
         commandLine.setDefaultValueProvider(new CommandLine.PropertiesDefaultProvider(properties));
 
         try {
