@@ -1120,7 +1120,7 @@ public class UnifyRelationConcludableTest {
 
     private void verifyUnificationSucceeds(String parent, Rule rule){
         Unifier unifier = uniqueUnifier(parent, rule);
-        List<ConceptMap> childAnswers = rocksTransaction.query().match(Graql.match(rule.getWhenPreNormalised())).toList();
+        List<ConceptMap> childAnswers = rocksTransaction.query().match(Graql.match(rule.getThenPreNormalised())).toList();
         List<ConceptMap> parentAnswers = rocksTransaction.query().match(Graql.match(Graql.parsePattern(parent))).toList();
         assertFalse(childAnswers.isEmpty());
         assertFalse(parentAnswers.isEmpty());
