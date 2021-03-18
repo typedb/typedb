@@ -55,7 +55,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -864,8 +863,8 @@ public class UnifyRelationConcludableTest {
         String conclusion = "(part-time-employer: $u, part-time-employee: $v) isa part-time-employment";
         String conclusion2 = "(taxi: $u, night-shift-driver: $v) isa part-time-driving";
 
-        verifyUnificationOutcome(parentRelation, conclusion, "{ $u isa part-time-organisation; $v isa student;}");
-        verifyUnificationOutcome(parentRelation, conclusion2, "{ $u isa driving-hire; $v isa student-driver;}");
+        verifyUnificationSucceeds(parentRelation, conclusion, "{ $u isa part-time-organisation; $v isa student;}");
+        verifyUnificationSucceeds(parentRelation, conclusion2, "{ $u isa driving-hire; $v isa student-driver;}");
     }
 
     @Test
@@ -876,8 +875,8 @@ public class UnifyRelationConcludableTest {
         String conclusion3 = "(taxi: $u, part-time-employee-recommender: $v) isa part-time-driving";
         String conclusion4 = "(employer: $u, employee: $v) isa employment";
 
-        verifyUnificationOutcome(parentRelation, conclusion, "{$u isa part-time-organisation; $v isa student;}");
-        verifyUnificationOutcome(parentRelation, conclusion2, "{$u isa driving-hire; $v isa student-driver;}");
+        verifyUnificationSucceeds(parentRelation, conclusion, "{$u isa part-time-organisation; $v isa student;}");
+        verifyUnificationSucceeds(parentRelation, conclusion2, "{$u isa driving-hire; $v isa student-driver;}");
         nonExistentUnifier(parentRelation, conclusion3, "{$u isa driving-hire; $v isa student;}");
         nonExistentUnifier(parentRelation, conclusion4, "{$u isa part-time-organisation; $v isa person;}");
     }
@@ -889,8 +888,8 @@ public class UnifyRelationConcludableTest {
         String conclusion2 = "(part-time-employer: $u, part-time-employee: $v, part-time-employee-recommender: $q) isa part-time-employment";
         String conclusion3 = "(part-time-employer: $u, part-time-employer: $v, part-time-employee-recommender: $q) isa part-time-employment";
 
-        verifyUnificationOutcome(parentRelation, conclusion, "{$u isa driving-hire; $v isa student-driver; $q isa student;}");
-        verifyUnificationOutcome(parentRelation, conclusion2, "{$u isa part-time-organisation; $v isa student; $q isa student;}");
+        verifyUnificationSucceeds(parentRelation, conclusion, "{$u isa driving-hire; $v isa student-driver; $q isa student;}");
+        verifyUnificationSucceeds(parentRelation, conclusion2, "{$u isa part-time-organisation; $v isa student; $q isa student;}");
         nonExistentUnifier(parentRelation, conclusion3, "{$u isa part-time-organisation; $v isa part-time-organisation; $q isa student;}");
     }
 
@@ -903,8 +902,8 @@ public class UnifyRelationConcludableTest {
         String conclusion4 = "(part-time-employer: $u, part-time-employer: $v, part-time-employee-recommender: $q) isa part-time-employment";
 
         nonExistentUnifier(parentRelation, conclusion, "{$u isa organisation; $v isa person; $q isa person;}");
-        verifyUnificationOutcome(parentRelation, conclusion2, "{$u isa part-time-organisation; $v isa student; $q isa student;}");
-        verifyUnificationOutcome(parentRelation, conclusion3,"{$u isa driving-hire; $v isa student-driver; $q isa student;}");
+        verifyUnificationSucceeds(parentRelation, conclusion2, "{$u isa part-time-organisation; $v isa student; $q isa student;}");
+        verifyUnificationSucceeds(parentRelation, conclusion3,"{$u isa driving-hire; $v isa student-driver; $q isa student;}");
         nonExistentUnifier(parentRelation, conclusion4, "{$u isa part-time-organisation; $v isa student; $q isa student;}");
     }
 
@@ -915,8 +914,8 @@ public class UnifyRelationConcludableTest {
         String conclusion2 = "(part-time-employer: $u, part-time-employee: $u, part-time-employee-recommender: $q) isa part-time-employment";
         String conclusion3 = "(part-time-employer: $u, part-time-employer: $u, part-time-employee-recommender: $q) isa part-time-employment";
 
-        verifyUnificationOutcome(parentRelation, conclusion, "{$u isa student; $q isa student;}");
-        verifyUnificationOutcome(parentRelation, conclusion2,  "{$u isa student; $q isa student;}");
+        verifyUnificationSucceeds(parentRelation, conclusion, "{$u isa student; $q isa student;}");
+        verifyUnificationSucceeds(parentRelation, conclusion2,  "{$u isa student; $q isa student;}");
         nonExistentUnifier(parentRelation, conclusion3, "{$u isa student; $q isa student;}");
     }
 
@@ -927,8 +926,8 @@ public class UnifyRelationConcludableTest {
         String conclusion2 = "(part-time-employer: $u, part-time-employee: $v, part-time-employee-recommender: $q) isa part-time-employment";
         String conclusion3 = "(part-time-employer: $u, part-time-employer: $v, part-time-employee-recommender: $q) isa part-time-employment";
 
-        verifyUnificationOutcome(parentRelation, conclusion, "{$u isa student; $v isa student; $q isa student;}");
-        verifyUnificationOutcome(parentRelation, conclusion2, "{$u isa student; $v isa student; $q isa student;}");
+        verifyUnificationSucceeds(parentRelation, conclusion, "{$u isa student; $v isa student; $q isa student;}");
+        verifyUnificationSucceeds(parentRelation, conclusion2, "{$u isa student; $v isa student; $q isa student;}");
         nonExistentUnifier(parentRelation, conclusion3, "{$u isa student; $v isa student; $q isa student;}");
     }
 
@@ -938,22 +937,22 @@ public class UnifyRelationConcludableTest {
         String parent2 = "{ (part-time-employee: $y) isa employment; }";
         String conclusion = "(part-time-employer: $y, part-time-employee: $x) isa part-time-employment";
 
-        verifyUnificationOutcome(parent, conclusion,"{$x isa student; $y isa student;}");
-        verifyUnificationOutcome(parent2, conclusion, "{$x isa student; $y isa student;}");
+        verifyUnificationSucceeds(parent, conclusion,"{$x isa student; $y isa student;}");
+        verifyUnificationSucceeds(parent2, conclusion, "{$x isa student; $y isa student;}");
     }
 
     @Test
-    public void differentRelationVariantsWithTypedRoleplayers() {
+    public void relations_with_known_role_player_types() {
         //NB: typed roleplayers have match (indirect) semantics, they specify the type plus its specialisations
         List<String> parents = Lists.newArrayList(
                 "{(employer: $x, employee: $y); $x isa organisation;}",
                 "{(employer: $x, employee: $y); $x isa part-time-organisation;}",
                 "{(employer: $x, employee: $y); $x isa driving-hire;}",
-//3
+                //3
                 "{(employer: $x, employee: $y); $y isa person;}",
                 "{(employer: $x, employee: $y); $y isa student;}",
                 "{(employer: $x, employee: $y); $y isa student-driver;}",
-//6
+                //6
                 "{(employer: $x, employee: $y); $x isa person;$y isa student;}",
                 "{(employer: $x, employee: $y); $x isa person;$y isa student-driver;}",
                 "{(employer: $x, employee: $y); $x isa person;$y isa driving-hire;}",
@@ -971,48 +970,48 @@ public class UnifyRelationConcludableTest {
                 "(part-time-employer: $p, part-time-employee: $q) isa part-time-employment",
                 "(taxi: $p, day-shift-driver: $q) isa part-time-driving"
         );
-        unifiable(conclusions.get(0), "{$p isa person; $q isa person;}", parents, Lists.newArrayList(3, 4, 5, 6, 7, 9, 13));
-        unifiable(conclusions.get(0), "{$p isa student; $q isa student-driver;}", parents, Lists.newArrayList(3, 4, 5, 6, 7, 9, 13));
+        verifyUnificationSucceedsFor(conclusions.get(0), "{$p isa person; $q isa person;}", parents, Lists.newArrayList(3, 4, 5, 6, 7, 9, 13));
+        verifyUnificationSucceedsFor(conclusions.get(0), "{$p isa student; $q isa student-driver;}", parents, Lists.newArrayList(3, 4, 5, 6, 7, 9, 13));
 
-        unifiable(conclusions.get(1), "{$p isa person;}", parents, Lists.newArrayList(3, 4, 5, 6, 7, 9, 13));
-        unifiable(conclusions.get(1), "{$p isa student;}", parents, Lists.newArrayList(3, 4, 5, 6, 7, 9, 13));
+        verifyUnificationSucceedsFor(conclusions.get(1), "{$p isa person;}", parents, Lists.newArrayList(3, 4, 5, 6, 7, 9, 13));
+        verifyUnificationSucceedsFor(conclusions.get(1), "{$p isa student;}", parents, Lists.newArrayList(3, 4, 5, 6, 7, 9, 13));
 
-        unifiable(conclusions.get(2), "{$p isa part-time-organisation;$q isa student;}", parents, Lists.newArrayList(0, 1 ,2, 3, 4, 5));
-        unifiable(conclusions.get(2), "{$p isa student;$q isa student-driver;}", parents, Lists.newArrayList( 3, 4, 5, 6, 7, 9, 13));
+        verifyUnificationSucceedsFor(conclusions.get(2), "{$p isa part-time-organisation;$q isa student;}", parents, Lists.newArrayList(0, 1 ,2, 3, 4, 5));
+        verifyUnificationSucceedsFor(conclusions.get(2), "{$p isa student;$q isa student-driver;}", parents, Lists.newArrayList( 3, 4, 5, 6, 7, 9, 13));
 
-        unifiable(conclusions.get(3), "{$p isa driving-hire; $q isa student-driver;}", parents, Lists.newArrayList(0, 1 ,2, 3, 4, 5));
-        unifiable(conclusions.get(3), "{$p isa driving-hire; $q isa student-driver;}", parents, Lists.newArrayList(0, 1 ,2, 3, 4, 5));
+        verifyUnificationSucceedsFor(conclusions.get(3), "{$p isa driving-hire; $q isa student-driver;}", parents, Lists.newArrayList(0, 1 ,2, 3, 4, 5));
+        verifyUnificationSucceedsFor(conclusions.get(3), "{$p isa driving-hire; $q isa student-driver;}", parents, Lists.newArrayList(0, 1 ,2, 3, 4, 5));
     }
     
     @Test
-    public void differentRelationVariantsWithSubstitution() {
+    public void relations_with_exact_role_player_instances() {
         //NB: ids have insert (direct) semantics, they specify the exact type required (no specialisations)
-        String person = Bytes.bytesToHexString(instanceOf("person").getIID());
-        String student = Bytes.bytesToHexString(instanceOf("student").getIID());
-        String studentDriver = Bytes.bytesToHexString(instanceOf("student-driver").getIID());
-        String organisation = Bytes.bytesToHexString(instanceOf("organisation").getIID());
-        String ptOrganisation = Bytes.bytesToHexString(instanceOf("part-time-organisation").getIID());
-        String drivingHire = Bytes.bytesToHexString(instanceOf("driving-hire").getIID());
+        String personIID = Bytes.bytesToHexString(instanceOf("person").getIID());
+        String studentIID = Bytes.bytesToHexString(instanceOf("student").getIID());
+        String studentDriverIID = Bytes.bytesToHexString(instanceOf("student-driver").getIID());
+        String organisationIID = Bytes.bytesToHexString(instanceOf("organisation").getIID());
+        String ptOrganisationIID = Bytes.bytesToHexString(instanceOf("part-time-organisation").getIID());
+        String drivingHireIID = Bytes.bytesToHexString(instanceOf("driving-hire").getIID());
 
         List<String> parents = Lists.newArrayList(
-                String.format("{(employer: $x, employee: $y); $x iid %s;}", organisation),
-                String.format("{(employer: $x, employee: $y); $x iid %s;}", ptOrganisation),
-                String.format("{(employer: $x, employee: $y); $x iid %s;}", drivingHire),
+                String.format("{(employer: $x, employee: $y); $x iid %s;}", organisationIID),
+                String.format("{(employer: $x, employee: $y); $x iid %s;}", ptOrganisationIID),
+                String.format("{(employer: $x, employee: $y); $x iid %s;}", drivingHireIID),
                 //3
-                String.format("{(employer: $x, employee: $y); $y iid %s;}", person),
-                String.format("{(employer: $x, employee: $y); $y iid %s;}", student),
-                String.format("{(employer: $x, employee: $y); $y iid %s;}", studentDriver),
+                String.format("{(employer: $x, employee: $y); $y iid %s;}", personIID),
+                String.format("{(employer: $x, employee: $y); $y iid %s;}", studentIID),
+                String.format("{(employer: $x, employee: $y); $y iid %s;}", studentDriverIID),
                 //6
-                String.format("{(employer: $x, employee: $y); $x iid %s;$y iid %s;}", person, student), //1-2
-                String.format("{(employer: $x, employee: $y); $x iid %s;$y iid %s;}", person, studentDriver), //1-
-                String.format("{(employer: $x, employee: $y); $x iid %s;$y iid %s;}", person, drivingHire),//1-3
+                String.format("{(employer: $x, employee: $y); $x iid %s;$y iid %s;}", personIID, studentIID), //1-2
+                String.format("{(employer: $x, employee: $y); $x iid %s;$y iid %s;}", personIID, studentDriverIID), //1-
+                String.format("{(employer: $x, employee: $y); $x iid %s;$y iid %s;}", personIID, drivingHireIID),//1-3
                 //9
-                String.format("{(employer: $x, employee: $y); $x iid %s;$y iid %s;}", student, studentDriver), //2-31
-                String.format("{(employer: $x, employee: $y); $x iid %s;$y iid %s;}", student, ptOrganisation), //2-2
-                String.format("{(employer: $x, employee: $y); $x iid %s;$y iid %s;}", student, drivingHire), //2-3
+                String.format("{(employer: $x, employee: $y); $x iid %s;$y iid %s;}", studentIID, studentDriverIID), //2-31
+                String.format("{(employer: $x, employee: $y); $x iid %s;$y iid %s;}", studentIID, ptOrganisationIID), //2-2
+                String.format("{(employer: $x, employee: $y); $x iid %s;$y iid %s;}", studentIID, drivingHireIID), //2-3
                 //12
-                String.format("{(employer: $x, employee: $y); $x iid %s;$y iid %s;}", studentDriver, drivingHire), //3-3
-                String.format("{(employer: $x, employee: $y); $x iid %s;$y iid %s;}", studentDriver, studentDriver)
+                String.format("{(employer: $x, employee: $y); $x iid %s;$y iid %s;}", studentDriverIID, drivingHireIID), //3-3
+                String.format("{(employer: $x, employee: $y); $x iid %s;$y iid %s;}", studentDriverIID, studentDriverIID)
         );
 
         List<String> conclusions = Lists.newArrayList(
@@ -1021,21 +1020,21 @@ public class UnifyRelationConcludableTest {
                 "(part-time-employer: $p, part-time-employee: $q) isa part-time-employment",
                 "(taxi: $p, day-shift-driver: $q) isa part-time-driving"
         );
-        unifiable(conclusions.get(0), "{$p isa person; $q isa person;}", parents, Lists.newArrayList(3, 4, 5, 6, 7, 9, 13));
-        unifiable(conclusions.get(0), "{$p isa student; $q isa student-driver;}", parents, Lists.newArrayList(5, 9, 13));
+        verifyUnificationSucceedsFor(conclusions.get(0), "{$p isa person; $q isa person;}", parents, Lists.newArrayList(3, 4, 5, 6, 7, 9, 13));
+        verifyUnificationSucceedsFor(conclusions.get(0), "{$p isa student; $q isa student-driver;}", parents, Lists.newArrayList(5, 9, 13));
 
         //NB: all variants with different ids are only not satisfiable (and non-unifiable) if id types are disjoint
-        unifiable(conclusions.get(1), "{$p isa person;}", parents, Lists.newArrayList(3, 4, 5, 6, 7, 9, 13));
-        unifiable(conclusions.get(1), "{$p isa student;}", parents, Lists.newArrayList(4, 5, 9, 13 ));
+        verifyUnificationSucceedsFor(conclusions.get(1), "{$p isa person;}", parents, Lists.newArrayList(3, 4, 5, 6, 7, 9, 13));
+        verifyUnificationSucceedsFor(conclusions.get(1), "{$p isa student;}", parents, Lists.newArrayList(4, 5, 9, 13 ));
 
-        unifiable(conclusions.get(2), "{$p isa part-time-organisation;$q isa student;}", parents, Lists.newArrayList(1, 2, 4, 5));
-        unifiable(conclusions.get(2), "{$p isa student;$q isa student-driver;}", parents, Lists.newArrayList(5, 9, 13));
+        verifyUnificationSucceedsFor(conclusions.get(2), "{$p isa part-time-organisation;$q isa student;}", parents, Lists.newArrayList(1, 2, 4, 5));
+        verifyUnificationSucceedsFor(conclusions.get(2), "{$p isa student;$q isa student-driver;}", parents, Lists.newArrayList(5, 9, 13));
 
-        unifiable(conclusions.get(3), "{$p isa driving-hire; $q isa student-driver;}", parents, Lists.newArrayList(2, 5));
+        verifyUnificationSucceedsFor(conclusions.get(3), "{$p isa driving-hire; $q isa student-driver;}", parents, Lists.newArrayList(2, 5));
     }
 
     @Test
-    public void relationWithTypeSubstitution() {
+    public void relations_with_exact_relation_instance() {
         String employment = Bytes.bytesToHexString(instanceOf("employment").getIID());
         String ptEmployment = Bytes.bytesToHexString(instanceOf("part-time-employment").getIID());
         List<String> parents = Lists.newArrayList(
@@ -1049,12 +1048,12 @@ public class UnifyRelationConcludableTest {
         );
 
         //NB: this is unifiable but not satisfiable
-        unifiable(conclusions.get(0), "{$p isa person; $q isa person;}", parents, Lists.newArrayList(0));
-        unifiable(conclusions.get(1), "{$p isa part-time-organisation; $q isa student;}", parents, Lists.newArrayList(1));
+        verifyUnificationSucceedsFor(conclusions.get(0), "{$p isa person; $q isa person;}", parents, Lists.newArrayList(0));
+        verifyUnificationSucceedsFor(conclusions.get(1), "{$p isa part-time-organisation; $q isa student;}", parents, Lists.newArrayList(1));
     }
 
     @Test
-    public void differentReflexiveRelationVariants() {
+    public void relations_reflexive() {
         List<String> parents = Lists.newArrayList(
                 "{(employer: $x, employee: $x); $x isa person;}",
                 "{(part-time-employer: $x, part-time-employee: $x);}",
@@ -1067,16 +1066,16 @@ public class UnifyRelationConcludableTest {
                 "(part-time-employer: $p, part-time-employee: $q) isa part-time-employment",
                 "(taxi: $p, day-shift-driver: $q) isa part-time-driving"
         );
-        unifiable(conclusions.get(0), "{$p isa student; $q isa student-driver;}", parents, Lists.newArrayList(0));
-        unifiable(conclusions.get(1), "{$p isa student;}", parents, Lists.newArrayList(0));
+        verifyUnificationSucceedsFor(conclusions.get(0), "{$p isa student; $q isa student-driver;}", parents, Lists.newArrayList(0));
+        verifyUnificationSucceedsFor(conclusions.get(1), "{$p isa student;}", parents, Lists.newArrayList(0));
 
         //NB: here even though types are disjoint, the rule is unifiable
-        unifiable(conclusions.get(2), "{$p isa part-time-organisation;$q isa student;}", parents, Lists.newArrayList(1));
+        verifyUnificationSucceedsFor(conclusions.get(2), "{$p isa part-time-organisation;$q isa student;}", parents, Lists.newArrayList(1));
 
-        unifiable(conclusions.get(2), "{$p isa student;$q isa student-driver;}", parents, Lists.newArrayList(0, 1));
+        verifyUnificationSucceedsFor(conclusions.get(2), "{$p isa student;$q isa student-driver;}", parents, Lists.newArrayList(0, 1));
 
-        unifiable(conclusions.get(3), "{$p isa driving-hire; $q isa student-driver;}", parents,  Lists.newArrayList(1));
-        unifiable(conclusions.get(3), "{$p isa driving-hire; $q isa driving-hire;}", parents, Lists.newArrayList(1, 2, 3));
+        verifyUnificationSucceedsFor(conclusions.get(3), "{$p isa driving-hire; $q isa student-driver;}", parents,  Lists.newArrayList(1));
+        verifyUnificationSucceedsFor(conclusions.get(3), "{$p isa driving-hire; $q isa driving-hire;}", parents, Lists.newArrayList(1, 2, 3));
     }
 
     private FunctionalIterator<Unifier> unifiers(String parent, String ruleConclusion, String rulePremises){
@@ -1099,7 +1098,7 @@ public class UnifyRelationConcludableTest {
         return unifiers.iterator().next();
     }
 
-    private void unifiable(String ruleConclusion, String rulePremises, List<String> parents, List<Integer> unifiableParents){
+    private void verifyUnificationSucceedsFor(String ruleConclusion, String rulePremises, List<String> parents, List<Integer> unifiableParents){
         for (int parentIndex = 0; parentIndex < parents.size() ; parentIndex++) {
             String parent = parents.get(parentIndex);
             assertEquals(
@@ -1110,7 +1109,7 @@ public class UnifyRelationConcludableTest {
         }
     }
 
-    private void verifyUnificationOutcome(String parent, String ruleConclusion, String rulePremises){
+    private void verifyUnificationSucceeds(String parent, String ruleConclusion, String rulePremises){
         Unifier unifier = uniqueUnifier(parent, ruleConclusion, rulePremises);
         List<ConceptMap> childAnswers = rocksTransaction.query().match(Graql.match(Graql.parsePattern(ruleConclusion))).toList();
         List<ConceptMap> parentAnswers = rocksTransaction.query().match(Graql.match(Graql.parsePattern(parent))).toList();
@@ -1119,15 +1118,15 @@ public class UnifyRelationConcludableTest {
 
         List<ConceptMap> unifiedAnswers = childAnswers.stream()
                 .map(ans -> {
-                    Map<Variable, Concept> enriched = enrichConcepts(ans, unifier);
-                    Map<Variable, Concept> completion = completeConcepts(ans, unifier);
-                    enriched.putAll(completion);
+                    Map<Variable, Concept> labelledTypes = addRequiredLabeledTypes(ans, unifier);
+                    Map<Variable, Concept> requiredRetrievableConcepts = addRequiredRetrievableConcepts(ans, unifier);
+                    labelledTypes.putAll(requiredRetrievableConcepts);
                     //TODO if want to use with iids add instance requirements
-                    ConceptMap unified = unifier.unUnify(enriched, new Unifier.Requirements.Instance(map())).orElse(null);
+                    ConceptMap unified = unifier.unUnify(labelledTypes, new Unifier.Requirements.Instance(map())).orElse(null);
                     if (unified == null) return null;
                     Map<Variable.Retrievable, Concept> concepts = unified.concepts().entrySet().stream()
                             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-                    completion.forEach(concepts::remove);
+                    requiredRetrievableConcepts.forEach(concepts::remove);
                     return new ConceptMap(concepts);
                 })
                 .filter(Objects::nonNull)
@@ -1137,17 +1136,17 @@ public class UnifyRelationConcludableTest {
         assertTrue(parentAnswers.containsAll(unifiedAnswers));
     }
 
-    Map<Variable, Concept> enrichConcepts(ConceptMap ans, Unifier unifier){
-        Map<Variable, Concept> imap = ans.concepts().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    Map<Variable, Concept> addRequiredLabeledTypes(ConceptMap ans, Unifier unifier){
+        Map<Variable, Concept> imap = new HashMap<>(ans.concepts());
         unifier.unifiedRequirements().roleTypes()
                 .forEach((var, labels) -> labels.forEach(label -> imap.put(var, role(label.name(), label.scope().get()))));
         return imap;
     }
 
-    Map<Variable, Concept> completeConcepts(ConceptMap ans, Unifier unifier){
+    Map<Variable, Concept> addRequiredRetrievableConcepts(ConceptMap ans, Unifier unifier){
         //insert random concepts for any var in unifier that is not in conceptmap
         Iterator<? extends Thing> instances = conceptMgr.getRootThingType().getInstances().iterator();
-        return unifier.inverseMapping().keySet().stream()
+        return unifier.reverseUnifier().keySet().stream()
                 .filter(var -> !ans.contains(var.asRetrievable()))
                 .collect(Collectors.toMap(var -> var, var -> instances.next()));
     }

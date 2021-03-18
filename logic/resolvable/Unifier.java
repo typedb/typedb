@@ -117,7 +117,7 @@ public class Unifier {
     public Map<Retrievable, Set<Variable>> mapping() {
         return unifier;
     }
-    public Map<Variable, Set<Retrievable>> inverseMapping(){ return reverseUnifier; }
+    public Map<Variable, Set<Retrievable>> reverseUnifier(){ return reverseUnifier; }
 
     public Requirements.Constraint requirements() {
         return requirements;
