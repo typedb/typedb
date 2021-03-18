@@ -43,9 +43,9 @@ import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOU
 import static grakn.core.common.exception.ErrorMessage.Server.SERVER_SHUTDOWN;
 import static grakn.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
 import static grakn.core.server.common.RequestReader.applyDefaultOptions;
-import static grakn.core.server.common.ResponseBuilder.Database.allRes;
-import static grakn.core.server.common.ResponseBuilder.Database.containsRes;
-import static grakn.core.server.common.ResponseBuilder.Database.createRes;
+import static grakn.core.server.common.ResponseBuilder.DatabaseManager.allRes;
+import static grakn.core.server.common.ResponseBuilder.DatabaseManager.containsRes;
+import static grakn.core.server.common.ResponseBuilder.DatabaseManager.createRes;
 import static grakn.core.server.common.ResponseBuilder.Database.deleteRes;
 import static grakn.core.server.common.ResponseBuilder.Database.schemaRes;
 import static grakn.core.server.common.ResponseBuilder.Session.closeRes;
@@ -67,8 +67,8 @@ public class GraknService extends GraknGrpc.GraknImplBase {
     }
 
     @Override
-    public void databaseContains(DatabaseProto.Database.Contains.Req request,
-                                 StreamObserver<DatabaseProto.Database.Contains.Res> responder) {
+    public void databasesContains(DatabaseProto.DatabaseManager.Contains.Req request,
+                                 StreamObserver<DatabaseProto.DatabaseManager.Contains.Res> responder) {
         try {
             boolean contains = grakn.databases().contains(request.getName());
             responder.onNext(containsRes(contains));
@@ -80,8 +80,8 @@ public class GraknService extends GraknGrpc.GraknImplBase {
     }
 
     @Override
-    public void databaseCreate(DatabaseProto.Database.Create.Req request,
-                               StreamObserver<DatabaseProto.Database.Create.Res> responder) {
+    public void databasesCreate(DatabaseProto.DatabaseManager.Create.Req request,
+                               StreamObserver<DatabaseProto.DatabaseManager.Create.Res> responder) {
         try {
             if (grakn.databases().contains(request.getName())) {
                 throw GraknException.of(DATABASE_EXISTS, request.getName());
@@ -96,8 +96,8 @@ public class GraknService extends GraknGrpc.GraknImplBase {
     }
 
     @Override
-    public void databaseAll(DatabaseProto.Database.All.Req request,
-                            StreamObserver<DatabaseProto.Database.All.Res> responder) {
+    public void databasesAll(DatabaseProto.DatabaseManager.All.Req request,
+                            StreamObserver<DatabaseProto.DatabaseManager.All.Res> responder) {
         try {
             List<String> databaseNames = grakn.databases().all().stream().map(Grakn.Database::name).collect(toList());
             responder.onNext(allRes(databaseNames));

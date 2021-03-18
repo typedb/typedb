@@ -69,19 +69,22 @@ public class ResponseBuilder {
         }
     }
 
+    public static class DatabaseManager {
+
+        public static DatabaseProto.DatabaseManager.Contains.Res containsRes(boolean contains) {
+            return DatabaseProto.DatabaseManager.Contains.Res.newBuilder().setContains(contains).build();
+        }
+
+        public static DatabaseProto.DatabaseManager.Create.Res createRes() {
+            return DatabaseProto.DatabaseManager.Create.Res.getDefaultInstance();
+        }
+
+        public static DatabaseProto.DatabaseManager.All.Res allRes(List<String> names) {
+            return DatabaseProto.DatabaseManager.All.Res.newBuilder().addAllNames(names).build();
+        }
+    }
+
     public static class Database {
-
-        public static DatabaseProto.Database.Contains.Res containsRes(boolean contains) {
-            return DatabaseProto.Database.Contains.Res.newBuilder().setContains(contains).build();
-        }
-
-        public static DatabaseProto.Database.Create.Res createRes() {
-            return DatabaseProto.Database.Create.Res.getDefaultInstance();
-        }
-
-        public static DatabaseProto.Database.All.Res allRes(List<String> names) {
-            return DatabaseProto.Database.All.Res.newBuilder().addAllNames(names).build();
-        }
 
         public static DatabaseProto.Database.Schema.Res schemaRes(String schema) {
             return DatabaseProto.Database.Schema.Res.newBuilder().setSchema(schema).build();
