@@ -71,12 +71,12 @@ public interface ServerCommand {
         @Option(descriptionKey = "server.data",
                 names = {"--data"},
                 description = "Directory in which database server data will be stored")
-        private String data;
+        protected String data;
 
         @Option(descriptionKey = "server.logs",
                 names = {"--logs"},
                 description = "Directory in which database server logs will be stored")
-        private String logs;
+        protected String logs;
 
         @Option(descriptionKey = "server.port",
                 names = {"--port"},
