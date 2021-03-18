@@ -45,5 +45,8 @@ public interface Relation extends Thing {
 
     Stream<? extends Thing> getPlayers(RoleType... roleTypes);
 
+    // TODO: This method should just return Stream<Pair<RoleType, Thing>>
     Map<? extends RoleType, ? extends List<? extends Thing>> getPlayersByRoleType();
+
+    Stream<? extends RoleType> getRelating();
 }

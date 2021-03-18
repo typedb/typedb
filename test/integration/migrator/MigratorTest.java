@@ -16,18 +16,15 @@
  *
  */
 
-package grakn.core.server.migrator;
+package grakn.core.migrator;
 
 import com.google.protobuf.Parser;
 import grakn.core.Grakn;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options.Database;
-import grakn.core.migrator.Exporter;
-import grakn.core.migrator.Importer;
-import grakn.core.migrator.SchemaExporter;
+import grakn.core.migrator.proto.DataProto;
 import grakn.core.rocks.RocksGrakn;
 import grakn.core.server.Version;
-import grakn.core.server.migrator.proto.DataProto;
 import grakn.core.test.integration.util.Util;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;

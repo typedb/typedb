@@ -18,11 +18,11 @@
 
 package grakn.core.reasoner.resolution;
 
+import grakn.common.collection.ConcurrentSet;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.actor.ActorExecutorGroup;
-import grakn.core.concurrent.common.ConcurrentSet;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Concludable;

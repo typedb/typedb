@@ -31,8 +31,8 @@ java_library(
 )
 
 filegroup(
-    name = "logback",
-    srcs = ["logback.xml"],
+    name = "logback-test",
+    srcs = ["logback-test.xml"],
 )
 
 checkstyle_test(

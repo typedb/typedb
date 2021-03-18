@@ -21,11 +21,13 @@ package grakn.core.server;
 import grabl.tracing.client.GrablTracing;
 import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.common.concurrent.NamedThreadFactory;
+import grakn.common.util.Java;
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Options;
-import grakn.core.concurrent.common.Executors;
+import grakn.core.concurrent.executor.Executors;
 import grakn.core.migrator.MigratorClient;
+import grakn.core.migrator.MigratorService;
 import grakn.core.rocks.Factory;
 import grakn.core.rocks.RocksFactory;
 import grakn.core.server.common.ServerCommand;
@@ -50,6 +52,9 @@ import static grakn.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT
 import static grakn.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT_WRITABLE;
 import static grakn.core.common.exception.ErrorMessage.Server.EXITED_WITH_ERROR;
 import static grakn.core.common.exception.ErrorMessage.Server.FAILED_AT_STOPPING;
+import static grakn.core.common.exception.ErrorMessage.Server.FAILED_PARSE_PROPERTIES;
+import static grakn.core.common.exception.ErrorMessage.Server.INCOMPATIBLE_JAVA_RUNTIME;
+import static grakn.core.common.exception.ErrorMessage.Server.PROPERTIES_FILE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Server.UNCAUGHT_EXCEPTION;
 import static grakn.core.server.common.Util.parseCommandLine;
 import static grakn.core.server.common.Util.parseProperties;
@@ -73,6 +78,7 @@ public class GraknServer implements AutoCloseable {
 
     protected GraknServer(ServerCommand.Start command, Factory factory) {
         this.command = command;
+        configureAndVerifyJavaVersion();
         configureAndVerifyDataDir();
         configureTracing();
 
@@ -93,6 +99,15 @@ public class GraknServer implements AutoCloseable {
         );
 
         initLoggerConfig();
+    }
+
+    private void configureAndVerifyJavaVersion() {
+        int majorVersion = Java.getMajorVersion();
+        if (majorVersion == Java.UNKNOWN_VERSION) {
+            LOG.warn("Could not detect Java version from version string '{}'. Will start Grakn Core Server anyway.", System.getProperty("java.version"));
+        } else if (majorVersion < 11) {
+            throw GraknException.of(INCOMPATIBLE_JAVA_RUNTIME, majorVersion);
+        }
     }
 
     private void configureAndVerifyDataDir() {
@@ -130,7 +145,7 @@ public class GraknServer implements AutoCloseable {
         assert Executors.isInitialised();
 
         graknService = new GraknService(grakn);
-        migratorService = new MigratorService(grakn);
+        migratorService = new MigratorService(grakn, Version.VERSION);
 
         return NettyServerBuilder.forPort(command.port())
                 .executor(Executors.service())

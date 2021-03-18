@@ -18,12 +18,12 @@
 
 package grakn.core.graph;
 
+import grakn.common.collection.ConcurrentSet;
 import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknCheckedException;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Label;
-import grakn.core.concurrent.common.ConcurrentSet;
 import grakn.core.graph.common.Encoding;
 import grakn.core.graph.common.KeyGenerator;
 import grakn.core.graph.common.StatisticsBytes;

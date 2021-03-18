@@ -20,15 +20,16 @@ package grakn.core.server.logic;
 import grakn.core.common.exception.GraknException;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
-import grakn.core.server.transaction.TransactionService;
+import grakn.core.server.TransactionService;
 import grakn.protocol.LogicProto;
-import grakn.protocol.TransactionProto;
 import grakn.protocol.TransactionProto.Transaction;
 
 import javax.annotation.Nullable;
 
 import static grakn.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
+import static grakn.core.server.common.ResponseBuilder.Rule.deleteRes;
+import static grakn.core.server.common.ResponseBuilder.Rule.setLabelRes;
 
 public class RuleService {
 
@@ -56,26 +57,18 @@ public class RuleService {
         }
     }
 
-    private static TransactionProto.Transaction.Res response(Transaction.Req request, LogicProto.Rule.Res.Builder response) {
-        return TransactionProto.Transaction.Res.newBuilder().setId(request.getId()).setRuleRes(response).build();
+    private void setLabel(Rule rule, String label, Transaction.Req request) {
+        rule.setLabel(label);
+        transactionSrv.respond(setLabelRes(request.getReqId()));
+    }
+
+    private void delete(Rule rule, Transaction.Req request) {
+        rule.delete();
+        transactionSrv.respond(deleteRes(request.getReqId()));
     }
 
     private static Rule notNull(@Nullable Rule rule) {
         if (rule == null) throw GraknException.of(MISSING_CONCEPT);
         return rule;
-    }
-
-    private void delete(Rule rule, Transaction.Req request) {
-        rule.delete();
-        LogicProto.Rule.Res.Builder response =
-                LogicProto.Rule.Res.newBuilder().setRuleDeleteRes(LogicProto.Rule.Delete.Res.getDefaultInstance());
-        transactionSrv.respond(response(request, response));
-    }
-
-    private void setLabel(Rule rule, String label, Transaction.Req request) {
-        rule.setLabel(label);
-        LogicProto.Rule.Res.Builder response =
-                LogicProto.Rule.Res.newBuilder().setRuleSetLabelRes(LogicProto.Rule.SetLabel.Res.getDefaultInstance());
-        transactionSrv.respond(response(request, response));
     }
 }

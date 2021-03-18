@@ -118,15 +118,19 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
         assert answer.isPartial();
         Answer response = Answer.create(fromUpstream, answer.asPartial());
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
-        if (resolutionTracing) ResolutionTracer.get().responseAnswer(this.name(), fromUpstream.sender().name(), iteration,
-                                                                     response.asAnswer().answer().conceptMap().concepts().keySet().toString());
+        if (resolutionTracing) ResolutionTracer.get().responseAnswer(
+                this.name(), fromUpstream.sender().name(), iteration,
+                response.asAnswer().answer().conceptMap().concepts().keySet().toString()
+        );
         fromUpstream.sender().execute(actor -> actor.receiveAnswer(response, iteration));
     }
 
     protected void failToUpstream(Request fromUpstream, int iteration) {
         Response.Fail response = new Response.Fail(fromUpstream);
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
-        if (resolutionTracing) ResolutionTracer.get().responseExhausted(this.name(), fromUpstream.sender().name(), iteration);
+        if (resolutionTracing) ResolutionTracer.get().responseExhausted(
+                this.name(), fromUpstream.sender().name(), iteration
+        );
         fromUpstream.sender().execute(actor -> actor.receiveFail(response, iteration));
     }
 

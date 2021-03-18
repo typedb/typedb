@@ -37,7 +37,7 @@ host_compatible_java_test(
         "@graknlabs_graql//java:graql",
     ],
     resources = [
-        "//common/test:logback"
+        "//common/test:logback-test"
     ],
     resource_strip_prefix = "common/test",
 )

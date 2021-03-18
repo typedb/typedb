@@ -25,8 +25,6 @@ import grakn.core.concept.answer.ConceptMapGroup;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.NumericGroup;
 import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.Type;
 import grakn.core.test.behaviour.exception.ScenarioDefinitionException;
 import graql.lang.Graql;
 import graql.lang.common.exception.GraqlException;

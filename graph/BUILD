@@ -34,7 +34,6 @@ java_library(
 
         # Internal dependencies
         "//common:common",
-        "//concurrent:concurrent",
 
         # External dependencies from Grakn Labs
         "@graknlabs_graql//java:graql",

@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
@@ -41,7 +41,7 @@ public class ProducerIterator<T> extends AbstractFunctionalIterator<T> {
 
     // TODO: why does 'producers' have to be ConcurrentLinkedQueue? see method recycle() below
     private final ConcurrentLinkedQueue<Producer<T>> producers;
-    private final ExecutorService executor;
+    private final Executor executor;
     private final Queue queue;
     private final int batchSize;
     private final long limit;
@@ -51,7 +51,7 @@ public class ProducerIterator<T> extends AbstractFunctionalIterator<T> {
     private T next;
     private State state;
 
-    public ProducerIterator(List<Producer<T>> producers, int batchSize, long limit, ExecutorService executor) {
+    public ProducerIterator(List<Producer<T>> producers, int batchSize, long limit, Executor executor) {
         // TODO: Could we optimise IterableProducer by accepting FunctionalIterator<Producer<T>> instead?
         assert !producers.isEmpty() && batchSize < Integer.MAX_VALUE / 2;
         this.producers = new ConcurrentLinkedQueue<>(producers);
@@ -75,7 +75,7 @@ public class ProducerIterator<T> extends AbstractFunctionalIterator<T> {
             final int request = batchSize < (limit - requested) ? batchSize : (int) (limit - requested);
             requested += request;
             Producer<T> producer = producers.peek();
-            executor.submit(() -> producer.produce(queue, request, executor));
+            executor.execute(() -> producer.produce(queue, request, executor));
         }
     }
 
