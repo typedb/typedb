@@ -74,7 +74,6 @@ public class ActorExecutor {
                 }
             }
         }
-        System.out.println(thread.getName() + " DIED");
     }
 
     public void submit(Runnable runnable, Consumer<Throwable> errorHandler) {

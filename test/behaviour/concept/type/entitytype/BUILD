@@ -53,7 +53,7 @@ java_test(
     ],
     size = "medium",
     resources = [
-        "//common/test:logback"
+        "//common/test:logback-test"
     ],
     resource_strip_prefix = "common/test",
 )

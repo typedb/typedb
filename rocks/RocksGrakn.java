@@ -24,7 +24,7 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
-import grakn.core.concurrent.common.Executors;
+import grakn.core.concurrent.executor.Executors;
 import org.rocksdb.BlockBasedTableConfig;
 import org.rocksdb.ClockCache;
 import org.rocksdb.RocksDB;

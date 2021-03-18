@@ -53,8 +53,8 @@ import static grakn.core.common.exception.ErrorMessage.Transaction.UNSUPPORTED_O
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MISSING;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
-import static grakn.core.concurrent.common.Executors.PARALLELISATION_FACTOR;
-import static grakn.core.concurrent.common.Executors.async1;
+import static grakn.core.concurrent.executor.Executors.PARALLELISATION_FACTOR;
+import static grakn.core.concurrent.executor.Executors.async1;
 import static grakn.core.concurrent.producer.Producers.async;
 import static grakn.core.concurrent.producer.Producers.produce;
 import static grakn.core.graph.common.Encoding.Vertex.Thing.ROLE;

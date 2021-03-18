@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.concurrent.common;
+package grakn.core.concurrent.executor;
 
 import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.common.exception.GraknException;
@@ -25,12 +25,10 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
-import static java.util.concurrent.Executors.newFixedThreadPool;
 
 public class Executors {
 
@@ -47,39 +45,23 @@ public class Executors {
 
     private static Executors singleton = null;
 
-    private final ExecutorService serviceExecutorService;
-    private final ExecutorService asyncExecutorService1;
-    private final ExecutorService asyncExecutorService2;
+    private final ParallelThreadPoolExecutor serviceExecutorService;
+    private final ParallelThreadPoolExecutor asyncExecutorService1;
+    private final ParallelThreadPoolExecutor asyncExecutorService2;
     private final ActorExecutorGroup actorExecutorService;
     private final NioEventLoopGroup networkExecutorService;
     private final ScheduledThreadPoolExecutor scheduledThreadPool;
 
     private Executors(int parallelisation) {
         if (parallelisation <= 0) throw GraknException.of(ILLEGAL_ARGUMENT);
-        // TODO: this is temporarily not used until we enable TransactionExecutor
-        // serviceExecutorService = newFixedThreadPool(serviceThreadCount(parallelisation), threadFactory(GRAKN_CORE_SERVICE_THREAD_NAME));
-        serviceExecutorService = newFixedThreadPool(parallelisation, threadFactory(GRAKN_CORE_SERVICE_THREAD_NAME));
-        asyncExecutorService1 = newFixedThreadPool(parallelisation, threadFactory(GRAKN_CORE_ASYNC_THREAD_1_NAME));
-        asyncExecutorService2 = newFixedThreadPool(parallelisation, threadFactory(GRAKN_CORE_ASYNC_THREAD_2_NAME));
+        serviceExecutorService = new ParallelThreadPoolExecutor(parallelisation, threadFactory(GRAKN_CORE_SERVICE_THREAD_NAME));
+        asyncExecutorService1 = new ParallelThreadPoolExecutor(parallelisation, threadFactory(GRAKN_CORE_ASYNC_THREAD_1_NAME));
+        asyncExecutorService2 = new ParallelThreadPoolExecutor(parallelisation, threadFactory(GRAKN_CORE_ASYNC_THREAD_2_NAME));
         actorExecutorService = new ActorExecutorGroup(parallelisation, threadFactory(GRAKN_CORE_ACTOR_THREAD_NAME));
         networkExecutorService = new NioEventLoopGroup(parallelisation, threadFactory(GRAKN_CORE_NETWORK_THREAD_NAME));
         scheduledThreadPool = new ScheduledThreadPoolExecutor(GRAKN_CORE_SCHEDULED_THREAD_SIZE,
                                                               threadFactory(GRAKN_CORE_SCHEDULED_THREAD_NAME));
         scheduledThreadPool.setRemoveOnCancelPolicy(true);
-    }
-
-    // TODO: this is temporarily not used until we enable TransactionExecutor
-    private int serviceThreadCount(int parallelisation) {
-        assert parallelisation > 0;
-        if (parallelisation <= 2) return 1;
-        else if (parallelisation <= 8) return 2;
-        else if (parallelisation <= 16) return 3;
-        else if (parallelisation <= 32) return 4;
-        else if (parallelisation <= 48) return 5;
-        else if (parallelisation <= 64) return 6;
-        else if (parallelisation <= 96) return 7;
-        else if (parallelisation <= 128) return 8;
-        else return 8 + ((parallelisation - 128) / 16);
     }
 
     private NamedThreadFactory threadFactory(String threadNamePrefix) {
@@ -96,17 +78,17 @@ public class Executors {
         return singleton != null;
     }
 
-    public static ExecutorService service() {
+    public static ParallelThreadPoolExecutor service() {
         assert isInitialised();
         return singleton.serviceExecutorService;
     }
 
-    public static ExecutorService async1() {
+    public static ParallelThreadPoolExecutor async1() {
         assert isInitialised();
         return singleton.asyncExecutorService1;
     }
 
-    public static ExecutorService async2() {
+    public static ParallelThreadPoolExecutor async2() {
         assert isInitialised();
         return singleton.asyncExecutorService2;
     }

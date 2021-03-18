@@ -38,7 +38,7 @@ java_test(
         "@graknlabs_behaviour//graql/reasoner:resolution-test-framework.feature",
     ],
     resources = [
-        "//common/test:logback"
+        "//common/test:logback-test"
     ],
     resource_strip_prefix = "common/test",
 )

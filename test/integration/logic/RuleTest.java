@@ -18,7 +18,6 @@
 package grakn.core.logic;
 
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Label;
 import grakn.core.common.parameters.Options.Database;
@@ -41,7 +40,6 @@ import grakn.core.rocks.RocksTransaction;
 import grakn.core.test.integration.util.Util;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.Graql;
-import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 import org.junit.Test;
 
@@ -63,7 +61,6 @@ import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.test.Util.assertNotThrows;
 import static grakn.core.common.test.Util.assertThrows;
 import static grakn.core.common.test.Util.assertThrowsGraknException;
-import static grakn.core.common.test.Util.assertThrowsWithMessage;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertFalse;

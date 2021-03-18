@@ -17,30 +17,13 @@
 
 <configuration debug="true" scan="true" scanPeriod="10 seconds" packagingData="true">
 
-    <property resource="grakn.properties"/>
-    <property name="directory" value="${grakn.dir}/${server.logs}"/>
-    <property name="filename" value="grakn.log"/>
-
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%date{ISO8601} [%thread] [%-5level] %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <appender name="LOGFILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${directory}/${filename}</file>
-        <encoder>
-            <pattern>%date{ISO8601} [%thread] [%-5level] %logger{36} - %msg%n</pattern>
-        </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${directory}/${filename}-%d{yyyy-MM}.%i.log.gz</fileNamePattern>
-            <maxFileSize>50MB</maxFileSize>
-            <maxHistory>120</maxHistory>
-            <totalSizeCap>2GB</totalSizeCap>
-        </rollingPolicy>
-    </appender>
-
-    <root level="DEBUG"/>
+    <root level="WARN"/>
 
     <!--
     TRACE: (Extremely verbose reporting events that gives complete traceability of a server operation)
@@ -50,7 +33,6 @@
     ERROR: (Incorrect events that disrupts the server operation, against user expectation)
     -->
     <logger name="grakn.core" level="DEBUG">
-        <appender-ref ref="LOGFILE"/>
         <appender-ref ref="STDOUT"/>
     </logger>
 </configuration>

@@ -21,49 +21,49 @@
 
 syntax = "proto3";
 
-option java_package = "grakn.core.server.migrator.proto";
+option java_package = "grakn.core.migrator.proto";
 option java_outer_classname = "MigratorProto";
 
 package migrator;
 
 service Migrator {
-  rpc exportData (ExportData.Req) returns (stream Job.Res);
-  rpc importData (ImportData.Req) returns (stream Job.Res);
-  rpc getSchema (GetSchema.Req) returns (GetSchema.Res);
+    rpc exportData (ExportData.Req) returns (stream Job.Res);
+    rpc importData (ImportData.Req) returns (stream Job.Res);
+    rpc getSchema (GetSchema.Req) returns (GetSchema.Res);
 }
 
 message ExportData {
-  message Req {
-    string database = 1;
-    string filename = 2;
-  }
+    message Req {
+        string database = 1;
+        string filename = 2;
+    }
 }
 
 message ImportData {
-  message Req {
-    string database = 1;
-    string filename = 2;
-    map<string, string> remap_labels = 3;
-  }
+    message Req {
+        string database = 1;
+        string filename = 2;
+        map<string, string> remap_labels = 3;
+    }
 }
 
 message GetSchema {
-  message Req {
-    string database = 1;
-  }
+    message Req {
+        string database = 1;
+    }
 
-  message Res {
-    string schema = 1;
-  }
+    message Res {
+        string schema = 1;
+    }
 }
 
 message Job {
-  message Res {
-    Progress progress = 1;
-  }
+    message Res {
+        Progress progress = 1;
+    }
 
-  message Progress {
-    uint64 total = 1;
-    uint64 current = 2;
-  }
+    message Progress {
+        uint64 total = 1;
+        uint64 current = 2;
+    }
 }

@@ -22,7 +22,7 @@ import grakn.core.common.iterator.FunctionalIterator;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -56,7 +56,7 @@ public class BaseProducer<T> implements FunctionalProducer<T> {
     }
 
     @Override
-    public synchronized void produce(Queue<T> queue, int request, ExecutorService executor) {
+    public synchronized void produce(Queue<T> queue, int request, Executor executor) {
         if (isDone.get()) return;
         future = future.thenRunAsync(() -> {
             try {

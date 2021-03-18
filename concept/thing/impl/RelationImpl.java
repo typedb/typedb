@@ -136,6 +136,13 @@ public class RelationImpl extends ThingImpl implements Relation {
     }
 
     @Override
+    public Stream<? extends RoleType> getRelating() {
+        return vertex.outs().edge(RELATING).to().map(ThingVertex::type)
+                .map(v -> RoleTypeImpl.of(vertex.graphs(), v))
+                .distinct().stream();
+    }
+
+    @Override
     public void validate() {
         super.validate();
         if (!vertex.outs().edge(RELATING).to().hasNext()) {

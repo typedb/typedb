@@ -38,7 +38,7 @@ java_test(
         "@graknlabs_behaviour//graql/reasoner:recursion.feature",
     ],
     resources = [
-        "//common/test:logback"
+        "//common/test:logback-test"
     ],
     resource_strip_prefix = "common/test",
 )

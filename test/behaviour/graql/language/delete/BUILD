@@ -41,7 +41,7 @@ java_test(
     size = "large", #TODO: Change back to medium when Query Planner has been optimised.
     visibility = ["//visibility:public"],
     resources = [
-        "//common/test:logback"
+        "//common/test:logback-test"
     ],
     resource_strip_prefix = "common/test",
 )

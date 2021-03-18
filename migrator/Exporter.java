@@ -26,8 +26,8 @@ import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.RoleType;
-import grakn.core.server.migrator.proto.DataProto;
-import grakn.core.server.migrator.proto.MigratorProto;
+import grakn.core.migrator.proto.DataProto;
+import grakn.core.migrator.proto.MigratorProto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +60,7 @@ public class Exporter implements Migrator {
     private final AtomicLong playerCount = new AtomicLong(0);
     private long totalThingCount = 0;
 
-    public Exporter(Grakn grakn, String database, Path filename, String version) {
+    Exporter(Grakn grakn, String database, Path filename, String version) {
         this.grakn = grakn;
         this.database = database;
         this.filename = filename;
