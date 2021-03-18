@@ -109,6 +109,8 @@ public class UnifyRelationConcludableTest {
                                 "   plays employment:employee-recommender,\n" +
                                 "   plays friendship:friend;\n" +
                                 "\n" +
+                                "restricted-entity sub entity,\n" +
+                                "   plays part-time-employment:restriction;\n" +
                                 "student sub person,\n" +
                                 "   plays part-time-employment:part-time-employee,\n" +
                                 "   plays part-time-employment:part-time-employer,\n" +
@@ -840,7 +842,7 @@ public class UnifyRelationConcludableTest {
 
     @Test
     public void relation_more_players_than_rule_relation_fails_unify() {
-        String parentRelation = "{ (part-time-employee: $r, employer: $p, restriction: $q) isa part-time-employment; }";
+        String parentRelation = "{ (part-time-employee: $r, part-time-employer: $p, restriction: $q) isa part-time-employment; }";
         Set<Concludable> concludables = Concludable.create(resolvedConjunction(parentRelation, logicMgr));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
@@ -996,11 +998,11 @@ public class UnifyRelationConcludableTest {
                 String.format("{(employer: $x, employee: $y); $x iid %s;}", organisation),
                 String.format("{(employer: $x, employee: $y); $x iid %s;}", ptOrganisation),
                 String.format("{(employer: $x, employee: $y); $x iid %s;}", drivingHire),
-//3
+                //3
                 String.format("{(employer: $x, employee: $y); $y iid %s;}", person),
                 String.format("{(employer: $x, employee: $y); $y iid %s;}", student),
                 String.format("{(employer: $x, employee: $y); $y iid %s;}", studentDriver),
-//6
+                //6
                 String.format("{(employer: $x, employee: $y); $x iid %s;$y iid %s;}", person, student), //1-2
                 String.format("{(employer: $x, employee: $y); $x iid %s;$y iid %s;}", person, studentDriver), //1-
                 String.format("{(employer: $x, employee: $y); $x iid %s;$y iid %s;}", person, drivingHire),//1-3
@@ -1022,15 +1024,14 @@ public class UnifyRelationConcludableTest {
         unifiable(conclusions.get(0), "{$p isa person; $q isa person;}", parents, Lists.newArrayList(3, 4, 5, 6, 7, 9, 13));
         unifiable(conclusions.get(0), "{$p isa student; $q isa student-driver;}", parents, Lists.newArrayList(5, 9, 13));
 
-        //due to reflexivity all variants with different ids are not satisfiable
-        unifiable(conclusions.get(1), "{$p isa person;}", parents, Lists.newArrayList(3, 4, 5));
-        unifiable(conclusions.get(1), "{$p isa student;}", parents, Lists.newArrayList(4, 5 ));
+        //NB: all variants with different ids are only not satisfiable (and non-unifiable) if id types are disjoint
+        unifiable(conclusions.get(1), "{$p isa person;}", parents, Lists.newArrayList(3, 4, 5, 6, 7, 9, 13));
+        unifiable(conclusions.get(1), "{$p isa student;}", parents, Lists.newArrayList(4, 5, 9, 13 ));
 
         unifiable(conclusions.get(2), "{$p isa part-time-organisation;$q isa student;}", parents, Lists.newArrayList(1, 2, 4, 5));
         unifiable(conclusions.get(2), "{$p isa student;$q isa student-driver;}", parents, Lists.newArrayList(5, 9, 13));
 
-        unifiable(conclusions.get(3), "{$p isa driving-hire; $q isa student-driver;}", parents, Lists.newArrayList(2, 5, 12));
-        unifiable(conclusions.get(3), "{$p isa part-time-organisation; $q isa student;}", parents, Lists.newArrayList(1, 2, 4, 5, 10, 11, 12));
+        unifiable(conclusions.get(3), "{$p isa driving-hire; $q isa student-driver;}", parents, Lists.newArrayList(2, 5));
     }
 
     @Test
@@ -1047,15 +1048,16 @@ public class UnifyRelationConcludableTest {
                 "(part-time-employer: $p, part-time-employee: $q) isa part-time-employment"
         );
 
-        unifiable(conclusions.get(0), "{$p isa person; $q isa person;}", parents, Lists.newArrayList());
-        unifiable(conclusions.get(1), "{$p isa part-time-organisation; $q isa student;}", parents, Lists.newArrayList());
+        //NB: this is unifiable but not satisfiable
+        unifiable(conclusions.get(0), "{$p isa person; $q isa person;}", parents, Lists.newArrayList(0));
+        unifiable(conclusions.get(1), "{$p isa part-time-organisation; $q isa student;}", parents, Lists.newArrayList(1));
     }
 
     @Test
     public void differentReflexiveRelationVariants() {
         List<String> parents = Lists.newArrayList(
                 "{(employer: $x, employee: $x); $x isa person;}",
-                "{(part-time-employer: $x, part-time-employee: $x); $x isa person;}",
+                "{(part-time-employer: $x, part-time-employee: $x);}",
                 "{(taxi: $x, employee: $x); $x isa organisation;}",
                 "{(taxi: $x, employee: $x); $x isa driving-hire;}"
                 );
@@ -1068,31 +1070,13 @@ public class UnifyRelationConcludableTest {
         unifiable(conclusions.get(0), "{$p isa student; $q isa student-driver;}", parents, Lists.newArrayList(0));
         unifiable(conclusions.get(1), "{$p isa student;}", parents, Lists.newArrayList(0));
 
-        unifiable(conclusions.get(2), "{$p isa part-time-organisation;$q isa student;}", parents, new ArrayList<>());
+        //NB: here even though types are disjoint, the rule is unifiable
+        unifiable(conclusions.get(2), "{$p isa part-time-organisation;$q isa student;}", parents, Lists.newArrayList(1));
+
         unifiable(conclusions.get(2), "{$p isa student;$q isa student-driver;}", parents, Lists.newArrayList(0, 1));
 
-        unifiable(conclusions.get(3), "{$p isa driving-hire; $q isa student-driver;}", parents,  new ArrayList<>());
-        unifiable(conclusions.get(3), "{$p isa driving-hire; $q isa driving-hire;}", parents, Lists.newArrayList(1, 2));
-        unifiable(conclusions.get(3), "{$p isa driving-hire; $q isa organisation;}", parents, Lists.newArrayList(1, 2));
-    }
-
-    @Test
-    public void differentIllegalRelationVariants() {
-        String student = Bytes.bytesToHexString(instanceOf("student").getIID());
-        String organisation = Bytes.bytesToHexString(instanceOf("organisation").getIID());
-        List<String> parents = Lists.newArrayList(
-                String.format("{(taxi: $x, night-shift-driver: $y); $x iid %s;}", organisation),
-                String.format("{(taxi: $x, night-shift-driver: $y); $x iid %s;}", student),
-                String.format("{(employer: $x, night-shift-driver: $y); $y iid %s;}", organisation),
-                String.format("{(employer: $x, night-shift-driver: $y); $y iid %s;}", student)
-        );
-
-        List<String> conclusions = Lists.newArrayList(
-                "(employer: $p, employee: $q) isa employment",
-                "(part-time-employer: $p, part-time-employee: $q) isa part-time-employment",
-                "(taxi: $p, day-shift-driver: $q) isa part-time-driving"
-        );
-        conclusions.forEach(conclusion -> unifiable(conclusion,"{$p isa driving-hire; $q isa student-driver;}", parents, new ArrayList<>()));
+        unifiable(conclusions.get(3), "{$p isa driving-hire; $q isa student-driver;}", parents,  Lists.newArrayList(1));
+        unifiable(conclusions.get(3), "{$p isa driving-hire; $q isa driving-hire;}", parents, Lists.newArrayList(1, 2, 3));
     }
 
     private FunctionalIterator<Unifier> unifiers(String parent, String ruleConclusion, String rulePremises){
@@ -1138,6 +1122,7 @@ public class UnifyRelationConcludableTest {
                     Map<Variable, Concept> enriched = enrichConcepts(ans, unifier);
                     Map<Variable, Concept> completion = completeConcepts(ans, unifier);
                     enriched.putAll(completion);
+                    //TODO if want to use with iids add instance requirements
                     ConceptMap unified = unifier.unUnify(enriched, new Unifier.Requirements.Instance(map())).orElse(null);
                     if (unified == null) return null;
                     Map<Variable.Retrievable, Concept> concepts = unified.concepts().entrySet().stream()
