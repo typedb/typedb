@@ -119,7 +119,7 @@ public class ExplanationTest {
                 txn.query().insert(Graql.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (husband: $x, wife: $y) isa marriage;").asInsert());
                 txn.commit();
             }
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().traceInference(true).parallel(false).explain(true)))) {
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
                 List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;").asMatch()).toList();
                 assertEquals(2, ans.size());
 
@@ -166,7 +166,7 @@ public class ExplanationTest {
                 txn.query().insert(Graql.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (husband: $x, wife: $y) isa marriage;").asInsert());
                 txn.commit();
             }
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().traceInference(true).parallel(false).explain(true)))) {
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
                 List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;").asMatch()).toList();
                 assertEquals(2, ans.size());
 
@@ -210,7 +210,7 @@ public class ExplanationTest {
                 txn.query().insert(Graql.parseQuery("insert $x isa milk, has age-in-days 15;").asInsert());
                 txn.commit();
             }
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().traceInference(true).parallel(false).explain(true)))) {
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
                 List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $x has is-still-good $a;").asMatch()).toList();
                 assertEquals(3, ans.size());
 
@@ -276,7 +276,7 @@ public class ExplanationTest {
                 ).asInsert());
                 txn.commit();
             }
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().traceInference(true).parallel(false).explain(true)))) {
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
                 List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $x isa user, has permission \"write\";").asMatch()).toList();
                 assertEquals(1, ans.size());
 

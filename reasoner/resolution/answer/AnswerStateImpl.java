@@ -178,7 +178,7 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                 @Override
                 public Partial.Compound.Root.Explain toDownstream() {
-                    return new PartialImpl.CompoundImpl.RootImpl.ExplainImpl(null, this, conceptMap(), root(), requiresReiteration());
+                    return PartialImpl.CompoundImpl.RootImpl.ExplainImpl.childOf(this);
                 }
 
                 @Override
@@ -455,7 +455,7 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                     @Override
                     public Explain with(ConceptMap extension, boolean requiresReiteration, Explanation explanation) {
-                        assert explanation == null;
+                        assert this.explanation == null;
                         return new ExplainImpl(explanation, parent(), extendAnswer(extension), root(), requiresReiteration());
                     }
 
@@ -737,7 +737,7 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                 @Override
                 public Explain with(ConceptMap extension, boolean requiresReiteration, ConclusionAnswer conclusionAnswer) {
-                    assert conclusionAnswer == null;
+                    assert this.conclusionAnswer == null;
                     return new ExplainImpl(conclusionAnswer, mapping(), parent(), extendAnswer(extension), root(), requiresReiteration);
                 }
 
@@ -907,7 +907,7 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                 @Override
                 public Explain with(ConceptMap extension, boolean requiresReiteration, ExplainableAnswer conditionAnswer) {
-                    assert conditionAnswer == null;
+                    assert this.conditionAnswer == null;
                     return new ExplainImpl(conditionAnswer, rule(), unifier(), instanceRequirements(), extendAnswer(extension), parent(), root(), requiresReiteration);
                 }
 
