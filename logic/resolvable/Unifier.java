@@ -307,8 +307,6 @@ public class Unifier {
             }
         }
 
-        // TODO we only need this for Type variables with their labels (labeled vars)
-        // because we can now do
         public static class Instance {
 
             Map<Retrievable, ? extends Concept> requireCompatible;
