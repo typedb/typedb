@@ -429,7 +429,7 @@ public interface AnswerState {
 
                 ConceptMap conditionAnswer();
 
-                Explain with(ConceptMap extension, boolean requiresReiteration, ConceptMap conditionAnswer);
+                Explain with(ConceptMap conditionAnswer, boolean requiresReiteration);
 
                 @Override
                 Optional<Concludable.Explain> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts);

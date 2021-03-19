@@ -17,6 +17,7 @@
 
 package grakn.core.reasoner;
 
+import grakn.common.collection.Pair;
 import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Arguments;
@@ -319,25 +320,25 @@ public class ExplanationTest {
                 ).asInsert());
                 txn.commit();
             }
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true).parallel(false).traceInference(true)))) {
                 List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $r isa location-hierarchy;").asMatch()).toList();
                 assertEquals(10, ans.size());
 
                 List<ConceptMap> explainableMaps = iterate(ans).filter(answer -> answer.explainables().get().size() > 0).toList();
                 assertEquals(6, explainableMaps.size());
 
-                Map<ConceptMap.Explainable, List<Explanation>> allExplanations = new HashMap<>();
+                Map<Pair<ConceptMap, ConceptMap.Explainable>, List<Explanation>> allExplanations = new HashMap<>();
                 for (ConceptMap explainableMap : explainableMaps) {
                     Set<ConceptMap.Explainable> explainables = explainableMap.explainables().get();
                     assertEquals(1, explainables.size());
                     List<Explanation> explanations = txn.query().explain(explainables.iterator().next().explainableId(), explainableMap).toList();
-                    allExplanations.put(explainables.iterator().next(), explanations);
+                    allExplanations.put(new Pair<>(explainableMap, explainables.iterator().next()), explanations);
                 }
 
                 int oneExplanation = 0;
                 int twoExplanations = 0;
                 int threeExplanations = 0;
-                for (Map.Entry<ConceptMap.Explainable, List<Explanation>> entry : allExplanations.entrySet()) {
+                for (Map.Entry<Pair<ConceptMap, ConceptMap.Explainable>, List<Explanation>> entry : allExplanations.entrySet()) {
                     List<Explanation> explanations = entry.getValue();
                     if (explanations.size() == 1) oneExplanation++;
                     else if (explanations.size() == 2) twoExplanations++;

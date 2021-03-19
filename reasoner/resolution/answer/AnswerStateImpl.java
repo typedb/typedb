@@ -587,7 +587,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                     @Override
                     public Conclusion.Explain toUpstream(Conjunction conditionConjunction) {
                         if (conceptMap().concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
-                        return parent().with(conceptMap().filter(filter), requiresReiteration() || parent().requiresReiteration(), conceptMap());
+                        return parent().with(conceptMap(), requiresReiteration() || parent().requiresReiteration());
                     }
 
                     @Override
@@ -892,9 +892,10 @@ public abstract class AnswerStateImpl implements AnswerState {
                 }
 
                 @Override
-                public Explain with(ConceptMap extension, boolean requiresReiteration, ConceptMap conditionAnswer) {
+                public Explain with(ConceptMap conditionAnswer, boolean requiresReiteration) {
                     assert this.conditionAnswer() == null;
-                    return new ExplainImpl(conditionAnswer, rule(), unifier(), instanceRequirements(), extendAnswer(extension), parent(), root(), requiresReiteration);
+                    // note: we add more concepts to the conclusion answer than there are variables to preserve uniqueness of multiple explanations
+                    return new ExplainImpl(conditionAnswer, rule(), unifier(), instanceRequirements(), extendAnswer(conditionAnswer), parent(), root(), requiresReiteration);
                 }
 
                 @Override
