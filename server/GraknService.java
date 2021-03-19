@@ -21,8 +21,9 @@ import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
-import grakn.protocol.DatabaseProto;
-import grakn.protocol.GraknGrpc;
+import grakn.protocol.CoreDatabaseProto.CoreDatabase;
+import grakn.protocol.CoreDatabaseProto.CoreDatabaseManager;
+import grakn.protocol.GraknCoreGrpc;
 import grakn.protocol.SessionProto;
 import grakn.protocol.TransactionProto;
 import io.grpc.stub.StreamObserver;
@@ -43,18 +44,18 @@ import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOU
 import static grakn.core.common.exception.ErrorMessage.Server.SERVER_SHUTDOWN;
 import static grakn.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
 import static grakn.core.server.common.RequestReader.applyDefaultOptions;
+import static grakn.core.server.common.ResponseBuilder.Database.deleteRes;
+import static grakn.core.server.common.ResponseBuilder.Database.schemaRes;
 import static grakn.core.server.common.ResponseBuilder.DatabaseManager.allRes;
 import static grakn.core.server.common.ResponseBuilder.DatabaseManager.containsRes;
 import static grakn.core.server.common.ResponseBuilder.DatabaseManager.createRes;
-import static grakn.core.server.common.ResponseBuilder.Database.deleteRes;
-import static grakn.core.server.common.ResponseBuilder.Database.schemaRes;
 import static grakn.core.server.common.ResponseBuilder.Session.closeRes;
 import static grakn.core.server.common.ResponseBuilder.Session.openRes;
 import static grakn.core.server.common.ResponseBuilder.Session.pulseRes;
 import static grakn.core.server.common.ResponseBuilder.exception;
 import static java.util.stream.Collectors.toList;
 
-public class GraknService extends GraknGrpc.GraknImplBase {
+public class GraknService extends GraknCoreGrpc.GraknCoreImplBase {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraknService.class);
 
@@ -67,8 +68,8 @@ public class GraknService extends GraknGrpc.GraknImplBase {
     }
 
     @Override
-    public void databasesContains(DatabaseProto.DatabaseManager.Contains.Req request,
-                                 StreamObserver<DatabaseProto.DatabaseManager.Contains.Res> responder) {
+    public void databasesContains(CoreDatabaseManager.Contains.Req request,
+                                  StreamObserver<CoreDatabaseManager.Contains.Res> responder) {
         try {
             boolean contains = grakn.databases().contains(request.getName());
             responder.onNext(containsRes(contains));
@@ -80,8 +81,8 @@ public class GraknService extends GraknGrpc.GraknImplBase {
     }
 
     @Override
-    public void databasesCreate(DatabaseProto.DatabaseManager.Create.Req request,
-                               StreamObserver<DatabaseProto.DatabaseManager.Create.Res> responder) {
+    public void databasesCreate(CoreDatabaseManager.Create.Req request,
+                                StreamObserver<CoreDatabaseManager.Create.Res> responder) {
         try {
             if (grakn.databases().contains(request.getName())) {
                 throw GraknException.of(DATABASE_EXISTS, request.getName());
@@ -96,8 +97,8 @@ public class GraknService extends GraknGrpc.GraknImplBase {
     }
 
     @Override
-    public void databasesAll(DatabaseProto.DatabaseManager.All.Req request,
-                            StreamObserver<DatabaseProto.DatabaseManager.All.Res> responder) {
+    public void databasesAll(CoreDatabaseManager.All.Req request,
+                             StreamObserver<CoreDatabaseManager.All.Res> responder) {
         try {
             List<String> databaseNames = grakn.databases().all().stream().map(Grakn.Database::name).collect(toList());
             responder.onNext(allRes(databaseNames));
@@ -109,8 +110,7 @@ public class GraknService extends GraknGrpc.GraknImplBase {
     }
 
     @Override
-    public void databaseSchema(DatabaseProto.Database.Schema.Req request,
-                               StreamObserver<DatabaseProto.Database.Schema.Res> responder) {
+    public void databaseSchema(CoreDatabase.Schema.Req request, StreamObserver<CoreDatabase.Schema.Res> responder) {
         try {
             String schema = grakn.databases().get(request.getName()).schema();
             responder.onNext(schemaRes(schema));
@@ -122,8 +122,7 @@ public class GraknService extends GraknGrpc.GraknImplBase {
     }
 
     @Override
-    public void databaseDelete(DatabaseProto.Database.Delete.Req request,
-                               StreamObserver<DatabaseProto.Database.Delete.Res> responder) {
+    public void databaseDelete(CoreDatabase.Delete.Req request, StreamObserver<CoreDatabase.Delete.Res> responder) {
         try {
             String databaseName = request.getName();
             if (!grakn.databases().contains(databaseName)) {

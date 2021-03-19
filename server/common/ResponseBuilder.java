@@ -36,7 +36,8 @@ import grakn.core.concept.type.ThingType;
 import grakn.core.server.SessionService;
 import grakn.protocol.AnswerProto;
 import grakn.protocol.ConceptProto;
-import grakn.protocol.DatabaseProto;
+import grakn.protocol.CoreDatabaseProto.CoreDatabase;
+import grakn.protocol.CoreDatabaseProto.CoreDatabaseManager;
 import grakn.protocol.LogicProto;
 import grakn.protocol.QueryProto;
 import grakn.protocol.SessionProto;
@@ -71,27 +72,27 @@ public class ResponseBuilder {
 
     public static class DatabaseManager {
 
-        public static DatabaseProto.DatabaseManager.Contains.Res containsRes(boolean contains) {
-            return DatabaseProto.DatabaseManager.Contains.Res.newBuilder().setContains(contains).build();
+        public static CoreDatabaseManager.Contains.Res containsRes(boolean contains) {
+            return CoreDatabaseManager.Contains.Res.newBuilder().setContains(contains).build();
         }
 
-        public static DatabaseProto.DatabaseManager.Create.Res createRes() {
-            return DatabaseProto.DatabaseManager.Create.Res.getDefaultInstance();
+        public static CoreDatabaseManager.Create.Res createRes() {
+            return CoreDatabaseManager.Create.Res.getDefaultInstance();
         }
 
-        public static DatabaseProto.DatabaseManager.All.Res allRes(List<String> names) {
-            return DatabaseProto.DatabaseManager.All.Res.newBuilder().addAllNames(names).build();
+        public static CoreDatabaseManager.All.Res allRes(List<String> names) {
+            return CoreDatabaseManager.All.Res.newBuilder().addAllNames(names).build();
         }
     }
 
     public static class Database {
 
-        public static DatabaseProto.Database.Schema.Res schemaRes(String schema) {
-            return DatabaseProto.Database.Schema.Res.newBuilder().setSchema(schema).build();
+        public static CoreDatabase.Schema.Res schemaRes(String schema) {
+            return CoreDatabase.Schema.Res.newBuilder().setSchema(schema).build();
         }
 
-        public static DatabaseProto.Database.Delete.Res deleteRes() {
-            return DatabaseProto.Database.Delete.Res.getDefaultInstance();
+        public static CoreDatabase.Delete.Res deleteRes() {
+            return CoreDatabase.Delete.Res.getDefaultInstance();
         }
     }
 
@@ -429,13 +430,15 @@ public class ResponseBuilder {
 
         public static class RoleType {
 
-            public static TransactionProto.Transaction.ResPart getRelationTypesResPart(String reqID, List<? extends grakn.core.concept.type.RelationType> relationTypes) {
+            public static TransactionProto.Transaction.ResPart getRelationTypesResPart(
+                    String reqID, List<? extends grakn.core.concept.type.RelationType> relationTypes) {
                 return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRoleTypeGetRelationTypesResPart(
                         ConceptProto.RoleType.GetRelationTypes.ResPart.newBuilder().addAllRelationTypes(
                                 relationTypes.stream().map(Type::protoType).collect(toList()))));
             }
 
-            public static TransactionProto.Transaction.ResPart getPlayersResPart(String reqID, List<? extends grakn.core.concept.type.ThingType> players) {
+            public static TransactionProto.Transaction.ResPart getPlayersResPart(
+                    String reqID, List<? extends grakn.core.concept.type.ThingType> players) {
                 return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRoleTypeGetPlayersResPart(
                         ConceptProto.RoleType.GetPlayers.ResPart.newBuilder().addAllThingTypes(
                                 players.stream().map(Type::protoType).collect(toList()))));
@@ -519,7 +522,8 @@ public class ResponseBuilder {
                 ));
             }
 
-            public static TransactionProto.Transaction.Res getRelatesForRoleLabelRes(String reqID, @Nullable grakn.core.concept.type.RoleType roleType) {
+            public static TransactionProto.Transaction.Res getRelatesForRoleLabelRes(
+                    String reqID, @Nullable grakn.core.concept.type.RoleType roleType) {
                 ConceptProto.RelationType.GetRelatesForRoleLabel.Res.Builder getRelatesRes =
                         ConceptProto.RelationType.GetRelatesForRoleLabel.Res.newBuilder();
                 if (roleType != null) getRelatesRes.setRoleType(protoType(roleType));
@@ -549,7 +553,8 @@ public class ResponseBuilder {
 
         public static class AttributeType {
 
-            public static ConceptProto.AttributeType.ValueType protoValueType(grakn.core.concept.type.AttributeType attributeType) {
+            public static ConceptProto.AttributeType.ValueType protoValueType(
+                    grakn.core.concept.type.AttributeType attributeType) {
                 if (attributeType.isString()) {
                     return ConceptProto.AttributeType.ValueType.STRING;
                 } else if (attributeType.isBoolean()) {
@@ -630,7 +635,8 @@ public class ResponseBuilder {
             ));
         }
 
-        public static TransactionProto.Transaction.ResPart getHasResPart(String reqID, List<? extends grakn.core.concept.thing.Attribute> attributes) {
+        public static TransactionProto.Transaction.ResPart getHasResPart(
+                String reqID, List<? extends grakn.core.concept.thing.Attribute> attributes) {
             return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setThingGetHasResPart(
                     ConceptProto.Thing.GetHas.ResPart.newBuilder().addAllAttributes(
                             attributes.stream().map(Concept::protoThing).collect(toList()))
@@ -649,14 +655,16 @@ public class ResponseBuilder {
             ));
         }
 
-        public static TransactionProto.Transaction.ResPart getRelationsResPart(String reqID, List<? extends grakn.core.concept.thing.Relation> relations) {
+        public static TransactionProto.Transaction.ResPart getRelationsResPart(
+                String reqID, List<? extends grakn.core.concept.thing.Relation> relations) {
             return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setThingGetRelationsResPart(
                     ConceptProto.Thing.GetRelations.ResPart.newBuilder().addAllRelations(
                             relations.stream().map(Concept::protoThing).collect(toList()))
             ));
         }
 
-        public static TransactionProto.Transaction.ResPart getPlayingResPart(String reqID, List<? extends RoleType> roleTypes) {
+        public static TransactionProto.Transaction.ResPart getPlayingResPart(
+                String reqID, List<? extends RoleType> roleTypes) {
             return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setThingGetPlayingResPart(
                     ConceptProto.Thing.GetPlaying.ResPart.newBuilder().addAllRoleTypes(
                             roleTypes.stream().map(Type::protoType).collect(toList()))
@@ -704,7 +712,8 @@ public class ResponseBuilder {
 
         public static class Attribute {
 
-            public static TransactionProto.Transaction.ResPart getOwnersResPart(String reqID, List<? extends grakn.core.concept.thing.Thing> owners) {
+            public static TransactionProto.Transaction.ResPart getOwnersResPart(
+                    String reqID, List<? extends grakn.core.concept.thing.Thing> owners) {
                 return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setAttributeGetOwnersResPart(
                         ConceptProto.Attribute.GetOwners.ResPart.newBuilder().addAllThings(
                                 owners.stream().map(Concept::protoThing).collect(toList()))
