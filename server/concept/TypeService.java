@@ -77,11 +77,11 @@ import static java.time.ZoneOffset.UTC;
 
 public class TypeService {
 
-    private final TransactionService transactionSrv;
+    private final TransactionService transactionSvc;
     private final ConceptManager conceptMgr;
 
-    public TypeService(TransactionService transactionSrv, ConceptManager conceptMgr) {
-        this.transactionSrv = transactionSrv;
+    public TypeService(TransactionService transactionSvc, ConceptManager conceptMgr) {
+        this.transactionSvc = transactionSvc;
         this.conceptMgr = conceptMgr;
     }
 
@@ -204,25 +204,25 @@ public class TypeService {
 
     private void setLabel(Type type, String label, Transaction.Req request) {
         type.setLabel(label);
-        transactionSrv.respond(setLabelRes(request.getReqId()));
+        transactionSvc.respond(setLabelRes(request.getReqId()));
     }
 
     private void isAbstract(Type type, Transaction.Req request) {
-        transactionSrv.respond(isAbstractRes(request.getReqId(), type.isAbstract()));
+        transactionSvc.respond(isAbstractRes(request.getReqId(), type.isAbstract()));
     }
 
     private void setAbstract(ThingType thingType, Transaction.Req req) {
         thingType.setAbstract();
-        transactionSrv.respond(setAbstractRes(req.getReqId()));
+        transactionSvc.respond(setAbstractRes(req.getReqId()));
     }
 
     private void unsetAbstract(ThingType thingType, Transaction.Req req) {
         thingType.unsetAbstract();
-        transactionSrv.respond(unsetAbstractRes(req.getReqId()));
+        transactionSvc.respond(unsetAbstractRes(req.getReqId()));
     }
 
     private void getSupertype(Type type, Transaction.Req request) {
-        transactionSrv.respond(getSupertypeRes(request.getReqId(), type.getSupertype()));
+        transactionSvc.respond(getSupertypeRes(request.getReqId(), type.getSupertype()));
     }
 
     private void setSupertype(Type type, ConceptProto.Type supertype, Transaction.Req req) {
@@ -238,21 +238,21 @@ public class TypeService {
             throw GraknException.of(ILLEGAL_SUPERTYPE_ENCODING, className(type.getClass()));
         }
 
-        transactionSrv.respond(setSupertypeRes(req.getReqId()));
+        transactionSvc.respond(setSupertypeRes(req.getReqId()));
     }
 
     private void getSupertypes(Type type, Transaction.Req req) {
-        transactionSrv.stream(type.getSupertypes().iterator(), req.getReqId(),
+        transactionSvc.stream(type.getSupertypes().iterator(), req.getReqId(),
                               types -> getSupertypesResPart(req.getReqId(), types));
     }
 
     private void getSubtypes(Type type, Transaction.Req req) {
-        transactionSrv.stream(type.getSubtypes().iterator(), req.getReqId(),
+        transactionSvc.stream(type.getSubtypes().iterator(), req.getReqId(),
                               types -> getSubtypesResPart(req.getReqId(), types));
     }
 
     private void getInstances(ThingType thingType, Transaction.Req req) {
-        transactionSrv.stream(thingType.getInstances().iterator(), req.getReqId(),
+        transactionSvc.stream(thingType.getInstances().iterator(), req.getReqId(),
                               things -> getInstancesResPart(req.getReqId(), things));
     }
 
@@ -266,18 +266,18 @@ public class TypeService {
     }
 
     private void getOwns(ThingType thingType, boolean keysOnly, Transaction.Req req) {
-        transactionSrv.stream(thingType.getOwns(keysOnly).iterator(), req.getReqId(),
+        transactionSvc.stream(thingType.getOwns(keysOnly).iterator(), req.getReqId(),
                               attributeTypes -> getOwnsResPart(req.getReqId(), attributeTypes));
     }
 
     private void getOwns(ThingType thingType, AttributeType.ValueType valueType,
                          boolean keysOnly, Transaction.Req req) {
-        transactionSrv.stream(thingType.getOwns(valueType, keysOnly).iterator(), req.getReqId(),
+        transactionSvc.stream(thingType.getOwns(valueType, keysOnly).iterator(), req.getReqId(),
                               attributeTypes -> getOwnsResPart(req.getReqId(), attributeTypes));
     }
 
     private void getPlays(ThingType thingType, Transaction.Req req) {
-        transactionSrv.stream(thingType.getPlays().iterator(), req.getReqId(),
+        transactionSvc.stream(thingType.getPlays().iterator(), req.getReqId(),
                               roleTypes -> getPlaysResPart(req.getReqId(), roleTypes));
     }
 
@@ -292,7 +292,7 @@ public class TypeService {
         } else {
             thingType.setOwns(attributeType, isKey);
         }
-        transactionSrv.respond(setOwnsRes(req.getReqId()));
+        transactionSvc.respond(setOwnsRes(req.getReqId()));
     }
 
     private void setPlays(ThingType thingType, ConceptProto.ThingType.SetPlays.Req setPlaysRequest,
@@ -304,21 +304,21 @@ public class TypeService {
         } else {
             thingType.setPlays(role);
         }
-        transactionSrv.respond(setPlaysRes(req.getReqId()));
+        transactionSvc.respond(setPlaysRes(req.getReqId()));
     }
 
     private void unsetOwns(ThingType thingType, ConceptProto.Type protoAttributeType, Transaction.Req req) {
         thingType.unsetOwns(getThingType(protoAttributeType).asAttributeType());
-        transactionSrv.respond(unsetOwnsRes(req.getReqId()));
+        transactionSvc.respond(unsetOwnsRes(req.getReqId()));
     }
 
     private void unsetPlays(ThingType thingType, ConceptProto.Type protoRoleType, Transaction.Req req) {
         thingType.unsetPlays(notNull(getRoleType(protoRoleType)));
-        transactionSrv.respond(unsetPlaysRes(req.getReqId()));
+        transactionSvc.respond(unsetPlaysRes(req.getReqId()));
     }
 
     private void getOwners(AttributeType attributeType, boolean onlyKey, Transaction.Req req) {
-        transactionSrv.stream(attributeType.getOwners(onlyKey).iterator(), req.getReqId(),
+        transactionSvc.stream(attributeType.getOwners(onlyKey).iterator(), req.getReqId(),
                               owners -> getOwnersResPart(req.getReqId(), owners));
     }
 
@@ -347,7 +347,7 @@ public class TypeService {
                 throw GraknException.of(BAD_VALUE_TYPE, protoValue.getValueCase());
         }
 
-        transactionSrv.respond(putRes(req.getReqId(), attribute));
+        transactionSvc.respond(putRes(req.getReqId(), attribute));
     }
 
     private void get(AttributeType attributeType, ConceptProto.Attribute.Value protoValue, Transaction.Req req) {
@@ -375,26 +375,26 @@ public class TypeService {
                 throw GraknException.of(BAD_VALUE_TYPE);
         }
 
-        transactionSrv.respond(getRes(req.getReqId(), attribute));
+        transactionSvc.respond(getRes(req.getReqId(), attribute));
     }
 
     private void getRegex(AttributeType attributeType, Transaction.Req req) {
-        transactionSrv.respond(getRegexRes(req.getReqId(), attributeType.asString().getRegex()));
+        transactionSvc.respond(getRegexRes(req.getReqId(), attributeType.asString().getRegex()));
     }
 
     private void setRegex(AttributeType attributeType, String regex, Transaction.Req req) {
         if (regex.isEmpty()) attributeType.asString().setRegex(null);
         else attributeType.asString().setRegex(Pattern.compile(regex));
-        transactionSrv.respond(setRegexRes(req.getReqId()));
+        transactionSvc.respond(setRegexRes(req.getReqId()));
     }
 
     private void getRelates(RelationType relationType, Transaction.Req req) {
-        transactionSrv.stream(relationType.getRelates().iterator(), req.getReqId(),
+        transactionSvc.stream(relationType.getRelates().iterator(), req.getReqId(),
                               roleTypes -> getRelatesResPart(req.getReqId(), roleTypes));
     }
 
     private void getRelatesForRoleLabel(RelationType relationType, String roleLabel, Transaction.Req req) {
-        transactionSrv.respond(getRelatesForRoleLabelRes(req.getReqId(), relationType.getRelates(roleLabel)));
+        transactionSvc.respond(getRelatesForRoleLabelRes(req.getReqId(), relationType.getRelates(roleLabel)));
     }
 
     private void setRelates(RelationType relationType, ConceptProto.RelationType.SetRelates.Req setRelatesReq,
@@ -404,36 +404,36 @@ public class TypeService {
         } else {
             relationType.setRelates(setRelatesReq.getLabel());
         }
-        transactionSrv.respond(setRelatesRes(req.getReqId()));
+        transactionSvc.respond(setRelatesRes(req.getReqId()));
     }
 
     private void unsetRelates(RelationType relationType, ConceptProto.RelationType.UnsetRelates.Req unsetRelatesReq,
                               Transaction.Req req) {
         relationType.unsetRelates(unsetRelatesReq.getLabel());
-        transactionSrv.respond(unsetRelatesRes(req.getReqId()));
+        transactionSvc.respond(unsetRelatesRes(req.getReqId()));
     }
 
     private void getRelationTypes(RoleType roleType, Transaction.Req req) {
-        transactionSrv.stream(roleType.getRelationTypes().iterator(), req.getReqId(),
+        transactionSvc.stream(roleType.getRelationTypes().iterator(), req.getReqId(),
                               relationTypes -> getRelationTypesResPart(req.getReqId(), relationTypes));
     }
 
     private void getPlayers(RoleType roleType, Transaction.Req req) {
-        transactionSrv.stream(roleType.getPlayers().iterator(), req.getReqId(),
+        transactionSvc.stream(roleType.getPlayers().iterator(), req.getReqId(),
                               players -> getPlayersResPart(req.getReqId(), players));
     }
 
     private void create(EntityType entityType, Transaction.Req req) {
-        transactionSrv.respond(createRes(req.getReqId(), entityType.create()));
+        transactionSvc.respond(createRes(req.getReqId(), entityType.create()));
     }
 
     private void create(RelationType relationType, Transaction.Req req) {
-        transactionSrv.respond(createRes(req.getReqId(), relationType.create()));
+        transactionSvc.respond(createRes(req.getReqId(), relationType.create()));
     }
 
     private void delete(Type type, Transaction.Req request) {
         type.delete();
-        transactionSrv.respond(deleteRes(request.getReqId()));
+        transactionSvc.respond(deleteRes(request.getReqId()));
     }
 
 }

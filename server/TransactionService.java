@@ -77,13 +77,13 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     private static final String TRACE_PREFIX = "transaction_services.";
     private static final int MAX_NETWORK_LATENCY_MILLIS = 3_000;
 
-    private final GraknService graknSrv;
+    private final GraknService graknSvc;
     private final StreamObserver<TransactionProto.Transaction.Server> responder;
     private final ConcurrentMap<String, ResponseStream<?>> streams;
     private final AtomicBoolean isRPCAlive;
     private final AtomicBoolean isTransactionOpen;
 
-    private volatile SessionService sessionSrv;
+    private volatile SessionService sessionSvc;
     private volatile Grakn.Transaction transaction;
     private volatile Services services;
     private volatile int networkLatencyMillis;
@@ -97,8 +97,8 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         private final RuleService rule = new RuleService(TransactionService.this, transaction.logic());
     }
 
-    public TransactionService(GraknService graknSrv, StreamObserver<TransactionProto.Transaction.Server> responder) {
-        this.graknSrv = graknSrv;
+    public TransactionService(GraknService graknSvc, StreamObserver<TransactionProto.Transaction.Server> responder) {
+        this.graknSvc = graknSvc;
         this.responder = SynchronizedStreamObserver.of(responder);
         this.streams = new ConcurrentHashMap<>();
         this.isRPCAlive = new AtomicBoolean(true);
@@ -182,27 +182,27 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         if (isTransactionOpen.get()) throw GraknException.of(TRANSACTION_ALREADY_OPENED);
         TransactionProto.Transaction.Open.Req openReq = request.getOpenReq();
         networkLatencyMillis = Math.min(openReq.getNetworkLatencyMillis(), MAX_NETWORK_LATENCY_MILLIS);
-        sessionSrv = sessionService(graknSrv, openReq);
-        sessionSrv.register(this);
-        transaction = transaction(sessionSrv, openReq);
+        sessionSvc = sessionService(graknSvc, openReq);
+        sessionSvc.register(this);
+        transaction = transaction(sessionSvc, openReq);
         services = new Services();
         respond(ResponseBuilder.Transaction.open(request.getReqId()));
         isTransactionOpen.set(true);
     }
 
-    private static SessionService sessionService(GraknService graknSrv, TransactionProto.Transaction.Open.Req req) {
+    private static SessionService sessionService(GraknService graknSvc, TransactionProto.Transaction.Open.Req req) {
         UUID sessionID = bytesToUUID(req.getSessionId().toByteArray());
-        SessionService sessionSrv = graknSrv.session(sessionID);
-        if (sessionSrv == null) throw GraknException.of(SESSION_NOT_FOUND, sessionID);
-        return sessionSrv;
+        SessionService sessionSvc = graknSvc.session(sessionID);
+        if (sessionSvc == null) throw GraknException.of(SESSION_NOT_FOUND, sessionID);
+        return sessionSvc;
     }
 
-    private static Grakn.Transaction transaction(SessionService sessionSrv, TransactionProto.Transaction.Open.Req req) {
+    private static Grakn.Transaction transaction(SessionService sessionSvc, TransactionProto.Transaction.Open.Req req) {
         Arguments.Transaction.Type type = Arguments.Transaction.Type.of(req.getType().getNumber());
         if (type == null) throw GraknException.of(BAD_TRANSACTION_TYPE, req.getType());
-        Options.Transaction options = new Options.Transaction().parent(sessionSrv.options());
+        Options.Transaction options = new Options.Transaction().parent(sessionSvc.options());
         applyDefaultOptions(options, req.getOptions());
-        return sessionSrv.session().transaction(type, options);
+        return sessionSvc.session().transaction(type, options);
     }
 
     private void commit(String requestID) {
@@ -271,7 +271,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         if (isRPCAlive.compareAndSet(true, false)) {
             if (isTransactionOpen.compareAndSet(true, false)) {
                 transaction.close();
-                sessionSrv.remove(this);
+                sessionSvc.remove(this);
             }
             responder.onCompleted();
         }
@@ -281,7 +281,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         if (isRPCAlive.compareAndSet(true, false)) {
             if (isTransactionOpen.compareAndSet(true, false)) {
                 transaction.close();
-                sessionSrv.remove(this);
+                sessionSvc.remove(this);
             }
             responder.onError(ResponseBuilder.exception(error));
             if (isClientCancelled(error)) LOG.debug(error.getMessage(), error);

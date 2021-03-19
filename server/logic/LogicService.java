@@ -31,11 +31,11 @@ import graql.lang.pattern.variable.ThingVariable;
 
 public class LogicService {
 
-    private final TransactionService transactionSrv;
+    private final TransactionService transactionSvc;
     private final grakn.core.logic.LogicManager logicMgr;
 
-    public LogicService(TransactionService transactionSrv, grakn.core.logic.LogicManager logicMgr) {
-        this.transactionSrv = transactionSrv;
+    public LogicService(TransactionService transactionSvc, grakn.core.logic.LogicManager logicMgr) {
+        this.transactionSvc = transactionSvc;
         this.logicMgr = logicMgr;
     }
 
@@ -61,16 +61,16 @@ public class LogicService {
         Conjunction<? extends Pattern> when = Graql.parsePattern(ruleReq.getWhen()).asConjunction();
         ThingVariable<?> then = Graql.parseVariable(ruleReq.getThen()).asThing();
         grakn.core.logic.Rule rule = logicMgr.putRule(ruleReq.getLabel(), when, then);
-        transactionSrv.respond(ResponseBuilder.LogicManager.putRuleRes(req.getReqId(), rule));
+        transactionSvc.respond(ResponseBuilder.LogicManager.putRuleRes(req.getReqId(), rule));
     }
 
     private void getRule(String label, TransactionProto.Transaction.Req req) {
         grakn.core.logic.Rule rule = logicMgr.getRule(label);
-        transactionSrv.respond(ResponseBuilder.LogicManager.getRuleRes(req.getReqId(), rule));
+        transactionSvc.respond(ResponseBuilder.LogicManager.getRuleRes(req.getReqId(), rule));
     }
 
     private void getRules(TransactionProto.Transaction.Req req) {
         FunctionalIterator<grakn.core.logic.Rule> rules = logicMgr.rules();
-        transactionSrv.stream(rules, req.getReqId(), r -> ResponseBuilder.LogicManager.getRulesResPart(req.getReqId(), r));
+        transactionSvc.stream(rules, req.getReqId(), r -> ResponseBuilder.LogicManager.getRulesResPart(req.getReqId(), r));
     }
 }

@@ -98,8 +98,8 @@ public class ResponseBuilder {
 
     public static class Session {
 
-        public static SessionProto.Session.Open.Res openRes(SessionService sessionSrv, int durationMillis) {
-            return SessionProto.Session.Open.Res.newBuilder().setSessionId(sessionSrv.UUIDAsByteString())
+        public static SessionProto.Session.Open.Res openRes(SessionService sessionSvc, int durationMillis) {
+            return SessionProto.Session.Open.Res.newBuilder().setSessionId(sessionSvc.UUIDAsByteString())
                     .setServerDurationMillis(durationMillis).build();
         }
 

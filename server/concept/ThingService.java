@@ -57,11 +57,11 @@ import static grakn.core.server.common.ResponseBuilder.Thing.unsetHasRes;
 
 public class ThingService {
 
-    private final TransactionService transactionSrv;
+    private final TransactionService transactionSvc;
     private final ConceptManager conceptMgr;
 
-    public ThingService(TransactionService transactionSrv, ConceptManager conceptMgr) {
-        this.transactionSrv = transactionSrv;
+    public ThingService(TransactionService transactionSvc, ConceptManager conceptMgr) {
+        this.transactionSvc = transactionSvc;
         this.conceptMgr = conceptMgr;
     }
 
@@ -139,16 +139,16 @@ public class ThingService {
 
     private void delete(Thing thing, Transaction.Req req) {
         thing.delete();
-        transactionSrv.respond(deleteRes(req.getReqId()));
+        transactionSvc.respond(deleteRes(req.getReqId()));
     }
 
     private void isInferred(Thing thing, Transaction.Req req) {
         String reqID = req.getReqId();
-        transactionSrv.respond(isInferredRes(reqID, thing.isInferred()));
+        transactionSvc.respond(isInferredRes(reqID, thing.isInferred()));
     }
 
     private void getType(Thing thing, Transaction.Req req) {
-        transactionSrv.respond(getTypeRes(req.getReqId(), thing.getType()));
+        transactionSvc.respond(getTypeRes(req.getReqId(), thing.getType()));
     }
 
     private void getHas(Thing thing, ConceptProto.Thing.GetHas.Req getHasRequest, Transaction.Req req) {
@@ -156,36 +156,36 @@ public class ThingService {
         Stream<? extends Attribute> attributes = types.isEmpty()
                 ? thing.getHas(getHasRequest.getKeysOnly())
                 : thing.getHas(types.stream().map(t -> notNull(getThingType(t)).asAttributeType()).toArray(AttributeType[]::new));
-        transactionSrv.stream(attributes.iterator(), req.getReqId(), atts -> getHasResPart(req.getReqId(), atts));
+        transactionSvc.stream(attributes.iterator(), req.getReqId(), atts -> getHasResPart(req.getReqId(), atts));
     }
 
     private void getRelations(Thing thing, List<ConceptProto.Type> protoRoleTypes, Transaction.Req req) {
         RoleType[] roleTypes = protoRoleTypes.stream().map(type -> notNull(getRoleType(type))).toArray(RoleType[]::new);
         Stream<? extends Relation> concepts = thing.getRelations(roleTypes);
-        transactionSrv.stream(concepts.iterator(), req.getReqId(), rels -> getRelationsResPart(req.getReqId(), rels));
+        transactionSvc.stream(concepts.iterator(), req.getReqId(), rels -> getRelationsResPart(req.getReqId(), rels));
     }
 
     private void getPlaying(Thing thing, Transaction.Req req) {
         Stream<? extends RoleType> roleTypes = thing.getPlaying();
-        transactionSrv.stream(roleTypes.iterator(), req.getReqId(), rols -> getPlayingResPart(req.getReqId(), rols));
+        transactionSvc.stream(roleTypes.iterator(), req.getReqId(), rols -> getPlayingResPart(req.getReqId(), rols));
     }
 
     private void setHas(Thing thing, ConceptProto.Thing protoAttribute, Transaction.Req req) {
         Attribute attribute = getThing(protoAttribute).asAttribute();
         thing.setHas(attribute);
-        transactionSrv.respond(setHasRes(req.getReqId()));
+        transactionSvc.respond(setHasRes(req.getReqId()));
     }
 
     private void unsetHas(Thing thing, ConceptProto.Thing protoAttribute, Transaction.Req req) {
         Attribute attribute = getThing(protoAttribute).asAttribute();
         thing.unsetHas(attribute);
-        transactionSrv.respond(unsetHasRes(req.getReqId()));
+        transactionSvc.respond(unsetHasRes(req.getReqId()));
     }
 
     private void getPlayers(Relation relation, List<ConceptProto.Type> protoRoleTypes, Transaction.Req req) {
         RoleType[] roleTypes = protoRoleTypes.stream().map(type -> notNull(getRoleType(type))).toArray(RoleType[]::new);
         Stream<? extends Thing> players = relation.getPlayers(roleTypes);
-        transactionSrv.stream(players.iterator(), req.getReqId(), things -> getPlayersResPart(req.getReqId(), things));
+        transactionSvc.stream(players.iterator(), req.getReqId(), things -> getPlayersResPart(req.getReqId(), things));
     }
 
     private void getPlayersByRoleType(Relation relation, Transaction.Req req) {
@@ -197,23 +197,23 @@ public class ThingService {
                 responses.add(pair(players.getKey(), player));
             }
         }
-        transactionSrv.stream(responses.build().iterator(), req.getReqId(),
+        transactionSvc.stream(responses.build().iterator(), req.getReqId(),
                               players -> getPlayersByRoleTypeResPart(req.getReqId(), players));
     }
 
     private void getRelating(Relation relation, Transaction.Req req) {
-        transactionSrv.stream(relation.getRelating().iterator(), req.getReqId(),
+        transactionSvc.stream(relation.getRelating().iterator(), req.getReqId(),
                               roleTypes -> getRelatingResPart(req.getReqId(), roleTypes));
     }
 
     private void addPlayer(Relation relation, ConceptProto.Relation.AddPlayer.Req addPlayerReq, Transaction.Req req) {
         relation.addPlayer(getRoleType(addPlayerReq.getRoleType()), getThing(addPlayerReq.getPlayer()).asThing());
-        transactionSrv.respond(addPlayerRes(req.getReqId()));
+        transactionSvc.respond(addPlayerRes(req.getReqId()));
     }
 
     private void removePlayer(Relation relation, ConceptProto.Relation.RemovePlayer.Req removePlayerReq, Transaction.Req req) {
         relation.removePlayer(getRoleType(removePlayerReq.getRoleType()), getThing(removePlayerReq.getPlayer()).asThing());
-        transactionSrv.respond(removePlayerRes(req.getReqId()));
+        transactionSvc.respond(removePlayerRes(req.getReqId()));
     }
 
     private void getOwners(Attribute attribute, ConceptProto.Attribute.GetOwners.Req getOwnersReq, Transaction.Req req) {
@@ -227,7 +227,7 @@ public class ThingService {
                 things = attribute.getOwners();
         }
 
-        transactionSrv.stream(things.iterator(), req.getReqId(), owners -> getOwnersResPart(req.getReqId(), owners));
+        transactionSvc.stream(things.iterator(), req.getReqId(), owners -> getOwnersResPart(req.getReqId(), owners));
     }
 
 }

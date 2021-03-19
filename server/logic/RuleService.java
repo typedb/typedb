@@ -33,11 +33,11 @@ import static grakn.core.server.common.ResponseBuilder.Rule.setLabelRes;
 
 public class RuleService {
 
-    private final TransactionService transactionSrv;
+    private final TransactionService transactionSvc;
     private final LogicManager logicMgr;
 
-    public RuleService(TransactionService transactionSrv, LogicManager logicMgr) {
-        this.transactionSrv = transactionSrv;
+    public RuleService(TransactionService transactionSvc, LogicManager logicMgr) {
+        this.transactionSvc = transactionSvc;
         this.logicMgr = logicMgr;
     }
 
@@ -59,12 +59,12 @@ public class RuleService {
 
     private void setLabel(Rule rule, String label, Transaction.Req request) {
         rule.setLabel(label);
-        transactionSrv.respond(setLabelRes(request.getReqId()));
+        transactionSvc.respond(setLabelRes(request.getReqId()));
     }
 
     private void delete(Rule rule, Transaction.Req request) {
         rule.delete();
-        transactionSrv.respond(deleteRes(request.getReqId()));
+        transactionSvc.respond(deleteRes(request.getReqId()));
     }
 
     private static Rule notNull(@Nullable Rule rule) {
