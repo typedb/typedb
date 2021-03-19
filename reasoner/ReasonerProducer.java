@@ -73,7 +73,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.required = new AtomicInteger();
         this.processing = new AtomicInteger();
         this.rootResolver = resolverRegistry.root(conjunction, this::requestAnswered, this::requestFailed, this::exception);
-        this.computeSize = 1;// options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
+        this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
         Root downstream = new InitialImpl(filter(modifiers.filter()), new ConceptMap(), this.rootResolver, false, options.explain()).toDownstream();
         this.resolveRequest = Request.create(rootResolver, downstream);
@@ -122,7 +122,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         if (options.traceInference()) ResolutionTracer.get().finish();
         if (answer.requiresReiteration()) requiresReiteration = true;
         ConceptMap conceptMap = answer.conceptMap();
-        if (conceptMap.explainableAnswer().isPresent()) {
+        if (options.explain() && conceptMap.explainableAnswer().isPresent()) {
             explanations.setAndRecordExplainableIds(conceptMap.explainableAnswer().get());
         }
         queue.put(conceptMap);

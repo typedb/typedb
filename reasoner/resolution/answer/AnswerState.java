@@ -39,7 +39,7 @@ public interface AnswerState {
 
     default boolean isPartial() { return false; }
 
-    default Partial<?, ?> asPartial() { throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Partial.class)); }
+    default Partial<?> asPartial() { throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Partial.class)); }
 
     interface Top extends AnswerState {
 
@@ -127,7 +127,7 @@ public interface AnswerState {
         }
     }
 
-    interface Partial<SELF extends Partial<SELF, PARENT>, PARENT extends AnswerState> extends AnswerState {
+    interface Partial<PARENT extends AnswerState> extends AnswerState {
 
         PARENT parent();
 
@@ -135,7 +135,7 @@ public interface AnswerState {
         default boolean isPartial() { return true; }
 
         @Override
-        default Partial<?, ?> asPartial() { return this; }
+        default Partial<?> asPartial() { return this; }
 
         default boolean isCompound() { return false; }
 
@@ -149,7 +149,7 @@ public interface AnswerState {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Compound.class));
         }
 
-        default Concludable<?, ?> asConcludable() {
+        default Concludable<?> asConcludable() {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Concludable.class));
         }
 
@@ -161,7 +161,7 @@ public interface AnswerState {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Retrievable.class));
         }
 
-        interface Compound<SLF extends Compound<SLF, PRNT>, PRNT extends AnswerState> extends Partial<SLF, PRNT> {
+        interface Compound<SLF extends Compound<SLF, PRNT>, PRNT extends AnswerState> extends Partial<PRNT> {
 
             // TODo does everyone have to implement this? It's used for receiving from a NonRoot
             SLF with(ConceptMap extension, boolean requiresReiteration);
@@ -169,7 +169,7 @@ public interface AnswerState {
             // note: this is only used by Explain, can't get generics for asMatch() casting to work to do this transparently
             SLF with(ConceptMap extension, boolean requiresReiteration, Conjunction source);
 
-            Concludable<?, SLF> mapToConcludable(Mapping mapping, Conjunction nextResolverConjunction);
+            Concludable<SLF> toDownstream(Mapping mapping, Conjunction concludableConjunction);
 
             Nestable filterToNestable(Set<Identifier.Variable.Retrievable> filter);
 
@@ -203,15 +203,13 @@ public interface AnswerState {
 
                 Partial.Compound<?, ?> toUpstream();
 
-                Partial.Compound<?, ?> aggregateToUpstream(ConceptMap conceptMap);
-
                 @Override
                 default Nestable with(ConceptMap extension, boolean requiresReiteration, Conjunction source) {
                     return with(extension, requiresReiteration);
                 }
 
                 @Override
-                Concludable.Match<Nestable> mapToConcludable(Mapping mapping, Conjunction nextResolverConjunction);
+                Concludable.Match<Nestable> toDownstream(Mapping mapping, Conjunction concludableConjunction);
 
                 @Override
                 default boolean isNestable() { return true; }
@@ -236,7 +234,7 @@ public interface AnswerState {
                 interface Match extends Root<Match, Top.Match.Initial>, Explainable {
 
                     @Override
-                    Concludable.Match<Match> mapToConcludable(Mapping mapping, Conjunction nextResolverConjunction);
+                    Concludable.Match<Match> toDownstream(Mapping mapping, Conjunction concludableConjunction);
 
                     Top.Match.Finished toFinishedTop(Conjunction conjunctionAnswered);
 
@@ -252,10 +250,8 @@ public interface AnswerState {
 
                     Explain with(ConceptMap extension, boolean requiresReiteration, Explanation explanation);
 
-                    boolean hasExplanation();
-
                     @Override
-                    Concludable.Explain mapToConcludable(Mapping mapping, Conjunction nextResolverConjunction);
+                    Concludable.Explain toDownstream(Mapping mapping, Conjunction concludableConjunction);
 
                     Top.Explain.Finished toFinishedTop();
 
@@ -276,7 +272,7 @@ public interface AnswerState {
             interface Condition<S extends Condition<S, P>, P extends Conclusion<P, ?>> extends Compound<S, P> {
 
                 // merge point where Match and Explain all become Match states
-                Concludable.Match<S> mapToConcludable(Mapping mapping, Conjunction nextResolverConjunction);
+                Concludable.Match<S> toDownstream(Mapping mapping, Conjunction concludableConjunction);
 
                 @Override
                 default boolean isCondition() { return true; }
@@ -306,7 +302,6 @@ public interface AnswerState {
                 }
 
                 interface Explain extends Condition<Explain, Conclusion.Explain> {
-                    // TODO
 
                     Conclusion.Explain toUpstream(Conjunction conditionConjunction);
 
@@ -317,11 +312,12 @@ public interface AnswerState {
                     default Explain asExplain() { return this; }
 
                 }
+
             }
 
         }
 
-        interface Concludable<SLF extends Concludable<SLF, PRNT>, PRNT extends Compound<PRNT, ?>> extends Partial<SLF, PRNT> {
+        interface Concludable<PRNT extends Compound<PRNT, ?>> extends Partial<PRNT> {
 
             Mapping mapping();
 
@@ -333,7 +329,7 @@ public interface AnswerState {
             default boolean isConcludable() { return true; }
 
             @Override
-            default Concludable<?, ?> asConcludable() { return this; }
+            default Concludable<?> asConcludable() { return this; }
 
             default boolean isMatch() { return false; }
 
@@ -343,7 +339,7 @@ public interface AnswerState {
 
             default Explain asExplain() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Explain.class); }
 
-            interface Match<P extends Compound<P, ?>> extends Concludable<Match<P>, P>, Explainable {
+            interface Match<P extends Compound<P, ?>> extends Concludable<P>, Explainable {
 
                 @Override
                 Optional<Conclusion.Match> toDownstream(Unifier unifier, Rule rule);
@@ -351,8 +347,6 @@ public interface AnswerState {
                 Match<P> with(ConceptMap extension, boolean requiresReiteration);
 
                 P toUpstreamLookup(ConceptMap additionalConcepts, boolean isInferredConclusion);
-
-                Conjunction conjunction();
 
                 @Override
                 default boolean isMatch() { return true; }
@@ -362,7 +356,7 @@ public interface AnswerState {
 
             }
 
-            interface Explain extends Concludable<Explain, Compound.Root.Explain> {
+            interface Explain extends Concludable<Compound.Root.Explain> {
 
                 @Override
                 Optional<Conclusion.Explain> toDownstream(Unifier unifier, Rule rule);
@@ -383,8 +377,7 @@ public interface AnswerState {
 
         }
 
-        interface Conclusion<SLF extends Conclusion<SLF, PRNT>, PRNT extends Concludable<?, ?>>
-                extends Partial<SLF, PRNT> {
+        interface Conclusion<SLF extends Conclusion<SLF, PRNT>, PRNT extends Concludable<?>> extends Partial<PRNT> {
 
             Rule rule();
 
@@ -432,7 +425,7 @@ public interface AnswerState {
 
         }
 
-        interface Retrievable<P extends Compound<P, ?>> extends Partial<Retrievable<P>, P> {
+        interface Retrievable<P extends Compound<P, ?>> extends Partial<P> {
 
             P aggregateToUpstream(ConceptMap concepts);
 

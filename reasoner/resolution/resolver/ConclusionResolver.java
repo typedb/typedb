@@ -94,7 +94,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
                 .materialise(fromDownstream.answer().conceptMap(), traversalEngine, conceptMgr);
         if (!materialisations.hasNext()) throw GraknException.of(ILLEGAL_STATE);
 
-        FunctionalIterator<Partial.Concludable<?, ?>> materialisedAnswers = materialisations
+        FunctionalIterator<Partial.Concludable<?>> materialisedAnswers = materialisations
                 .map(concepts -> fromDownstream.answer().asConclusion().aggregateToUpstream(concepts))
                 .filter(Optional::isPresent)
                 .map(Optional::get);
@@ -139,7 +139,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
     }
 
     private void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
-        Optional<Partial.Concludable<?, ?>> upstreamAnswer = requestState.nextResponse();
+        Optional<Partial.Concludable<?>> upstreamAnswer = requestState.nextResponse();
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
         } else if (requestState.hasDownstream()) {
@@ -162,7 +162,6 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
                 this.requestStates.put(fromUpstream, requestStateNextIter);
             }
         }
-        boolean bad = requestStates.values().stream().anyMatch(rs -> rs.iteration() + 1 < iteration);
         return requestStates.get(fromUpstream);
     }
 
@@ -204,7 +203,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
 
     private static class RequestState {
 
-        private final List<FunctionalIterator<Partial.Concludable<?, ?>>> materialisedAnswers;
+        private final List<FunctionalIterator<Partial.Concludable<?>>> materialisedAnswers;
         private final LinkedHashSet<Request> downstreams;
         private Iterator<Request> downstreamProducerSelector;
         private final int iteration;
@@ -220,11 +219,11 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
             return iteration;
         }
 
-        public void addResponses(FunctionalIterator<Partial.Concludable<?, ?>> materialisations) {
+        public void addResponses(FunctionalIterator<Partial.Concludable<?>> materialisations) {
             materialisedAnswers.add(materialisations);
         }
 
-        public Optional<Partial.Concludable<?, ?>> nextResponse() {
+        public Optional<Partial.Concludable<?>> nextResponse() {
             if (hasResponse()) return Optional.of(materialisedAnswers.get(0).next());
             else return Optional.empty();
         }

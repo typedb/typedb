@@ -44,7 +44,7 @@ public class AnswerStateTest {
         mapping.put(Identifier.Variable.name("a"), Identifier.Variable.name("x"));
         mapping.put(Identifier.Variable.name("b"), Identifier.Variable.name("y"));
         Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
-        Concludable.Match<?> mapped = new InitialImpl(filter, new ConceptMap(), null, false, false).toDownstream().mapToConcludable(Mapping.of(mapping), null);
+        Concludable.Match<?> mapped = new InitialImpl(filter, new ConceptMap(), null, false, false).toDownstream().toDownstream(Mapping.of(mapping), null);
         assertTrue(mapped.conceptMap().concepts().isEmpty());
 
         Map<Identifier.Variable.Retrievable, Concept> concepts = new HashMap<>();
@@ -67,7 +67,7 @@ public class AnswerStateTest {
         Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
         Concludable.Match<?> mapped = new InitialImpl(filter, new ConceptMap(), null, false, false).toDownstream()
                 .with(new ConceptMap(concepts), false)
-                .mapToConcludable(Mapping.of(mapping), null);
+                .toDownstream(Mapping.of(mapping), null);
 
         Map<Identifier.Variable.Retrievable, Concept> expectedMapped = new HashMap<>();
         expectedMapped.put(Identifier.Variable.name("x"), new MockConcept(0));
@@ -95,7 +95,7 @@ public class AnswerStateTest {
         Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
         Concludable.Match<?> mapped = new InitialImpl(filter, new ConceptMap(), null, false, false).toDownstream()
                 .with(new ConceptMap(concepts), false)
-                .mapToConcludable(Mapping.of(mapping), null);
+                .toDownstream(Mapping.of(mapping), null);
 
         Map<Identifier.Variable.Retrievable, Concept> expectedMapped = new HashMap<>();
         expectedMapped.put(Identifier.Variable.name("x"), new MockConcept(0));

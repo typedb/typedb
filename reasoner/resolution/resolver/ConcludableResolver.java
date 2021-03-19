@@ -201,7 +201,6 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
                 this.requestStates.put(fromUpstream, newRequestState);
             }
         }
-        boolean bad = requestStates.values().stream().anyMatch(rs -> rs.iteration() + 1 < iteration);
         return requestStates.get(fromUpstream);
     }
 
@@ -232,7 +231,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         // loop termination: when receiving a new request, we check if we have seen it before from this root query
         // if we have, we do not allow rules to be registered as possible downstreams
         if (!recursionState.hasReceived(fromUpstream.partialAnswer().conceptMap())) {
-            Partial.Concludable<?, ?> partialAnswer = fromUpstream.partialAnswer().asConcludable();
+            Partial.Concludable<?> partialAnswer = fromUpstream.partialAnswer().asConcludable();
             for (Map.Entry<Driver<ConclusionResolver>, Set<Unifier>> entry : applicableRules.entrySet()) {
                 Driver<ConclusionResolver> conclusionResolver = entry.getKey();
                 for (Unifier unifier : entry.getValue()) {

@@ -321,7 +321,7 @@ public class ExplanationTest {
                 ).asInsert());
                 txn.commit();
             }
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().traceInference(true).parallel(false).explain(true)))) {
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
                 List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $r isa location-hierarchy;").asMatch()).toList();
                 assertEquals(10, ans.size());
 

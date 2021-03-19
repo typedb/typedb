@@ -196,7 +196,7 @@ public class Reasoner {
     }
 
     public FunctionalIterator<Explanation> explain(long explainableId, ConceptMap bounds, Context.Query defaultContext) {
-        ExplainableAnswer explainable = explanations.getExplainable(explainableId);
+        ExplainableAnswer.Explainable explainable = explanations.getExplainable(explainableId);
         return Producers.produce(
                 list(new ExplanationProducer(explainable.conjunction(), bounds, defaultContext.options(), resolverRegistry, explanations)),
                 Either.first(Arguments.Query.Producer.INCREMENTAL),

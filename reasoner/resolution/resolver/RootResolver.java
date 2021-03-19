@@ -308,12 +308,7 @@ public interface RootResolver<TOP extends Top> {
         @Override
         Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?, ?> partialAnswer) {
             assert partialAnswer.isRoot() && partialAnswer.isExplain();
-            // TODO can we do this fail step earlier?
-            if (partialAnswer.asRoot().asExplain().hasExplanation()) {
-                return Optional.of(partialAnswer.asRoot().asExplain().toFinishedTop());
-            } else {
-                return Optional.empty();
-            }
+            return Optional.of(partialAnswer.asRoot().asExplain().toFinishedTop());
         }
 
         @Override

@@ -145,7 +145,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
         boundsState.clearAwaiting();
     }
 
-    private Partial<?, ?> upstreamAnswer(Request fromUpstream) {
+    private Partial<?> upstreamAnswer(Request fromUpstream) {
         assert fromUpstream.partialAnswer().isCompound() && fromUpstream.partialAnswer().asCompound().isNestable();
         return fromUpstream.partialAnswer().asCompound().asNestable().toUpstream();
     }

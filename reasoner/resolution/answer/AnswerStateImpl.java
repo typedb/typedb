@@ -29,6 +29,7 @@ import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.traversal.common.Identifier;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -66,8 +67,6 @@ public abstract class AnswerStateImpl implements AnswerState {
         return root;
     }
 
-
-    // TODO clean up
     protected ConceptMap extendAnswer(ConceptMap extension) {
         return extendAnswer(extension, null);
     }
@@ -84,7 +83,6 @@ public abstract class AnswerStateImpl implements AnswerState {
         concepts.putAll(conceptMap().concepts());
         return new ConceptMap(concepts, explainableAnswer);
     }
-
 
     public static abstract class TopImpl extends AnswerStateImpl implements Top {
 
@@ -141,7 +139,6 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                 @Override
                 public PartialImpl.CompoundImpl.RootImpl.MatchImpl toDownstream() {
-                    //TODO we should use the original conceptmap instead of the filtered one
                     return PartialImpl.CompoundImpl.RootImpl.MatchImpl.childOf(this);
                 }
 
@@ -156,6 +153,10 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                 FinishedImpl(Set<Identifier.Variable.Name> getFilter, ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration, boolean explainable) {
                     super(getFilter, conceptMap, root, requiresReiteration, explainable);
+
+//                    if (explainable && conceptMap.explainableAnswer().isPresent()) {
+//                        assert conceptMap.concepts().size() == conceptMap.explainableAnswer().get().completeMap().concepts().size();
+//                    }
                 }
 
             }
@@ -239,8 +240,8 @@ public abstract class AnswerStateImpl implements AnswerState {
         }
     }
 
-    public static abstract class PartialImpl<SELF extends Partial<SELF, PARENT>, PARENT extends AnswerState>
-            extends AnswerStateImpl implements Partial<SELF, PARENT> {
+    public static abstract class PartialImpl<PARENT extends AnswerState>
+            extends AnswerStateImpl implements Partial<PARENT> {
 
         private final PARENT parent;
 
@@ -255,7 +256,7 @@ public abstract class AnswerStateImpl implements AnswerState {
         }
 
         public static abstract class CompoundImpl<SLF extends Compound<SLF, PRNT>, PRNT extends AnswerState>
-                extends PartialImpl<SLF, PRNT> implements Compound<SLF, PRNT> {
+                extends PartialImpl<PRNT> implements Compound<SLF, PRNT> {
 
             CompoundImpl(PRNT prnt, ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
                 super(prnt, conceptMap, root, requiresReiteration);
@@ -280,7 +281,6 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                 NestableImpl(Set<Identifier.Variable.Retrievable> filter, Compound<?, ?> parent,
                              ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
-                    // TODO we should apply filter here and not in the toUpstream() and aggregateToUpstream()
                     super(parent, conceptMap, root, requiresReiteration);
                     this.filter = filter;
                     this.hash = Objects.hash(root(), parent(), conceptMap(), requiresReiteration(), filter());
@@ -301,9 +301,8 @@ public abstract class AnswerStateImpl implements AnswerState {
                 }
 
                 @Override
-                public Concludable.Match<Nestable> mapToConcludable(Mapping mapping, Conjunction nextResolverConjunction) {
-                    // TODO create a static constructor that hardcodes false
-                    return ConcludableImpl.MatchImpl.childOf(mapping, nextResolverConjunction, this, false);
+                public Concludable.Match<Nestable> toDownstream(Mapping mapping, Conjunction concludableConjunction) {
+                    return ConcludableImpl.MatchImpl.childOf(mapping, concludableConjunction, this, false);
                 }
 
                 @Override
@@ -312,11 +311,6 @@ public abstract class AnswerStateImpl implements AnswerState {
                     return parent().with(conceptMap().filter(filter), requiresReiteration() || parent().requiresReiteration());
                 }
 
-                @Override
-                public Compound<?, ?> aggregateToUpstream(ConceptMap conceptMap) {
-                    if (conceptMap.concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
-                    return parent().with(conceptMap.filter(filter), requiresReiteration() || parent().requiresReiteration());
-                }
 
                 @Override
                 Nestable getThis() {
@@ -374,7 +368,6 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                     @Override
                     public Match with(ConceptMap extension, boolean requiresReiteration) {
-                        // TODO is this ever used.. should it?
                         return new MatchImpl(explainables, parent(), extendAnswer(extension), root(), requiresReiteration, explainable());
                     }
 
@@ -391,9 +384,8 @@ public abstract class AnswerStateImpl implements AnswerState {
                     }
 
                     @Override
-                    public Concludable.Match<Match> mapToConcludable(Mapping mapping, Conjunction nextResolverConjunction) {
-                        // TODO create a static constructor that hardcodes false
-                        return ConcludableImpl.MatchImpl.childOf(mapping, nextResolverConjunction, this, explainable());
+                    public Concludable.Match<Match> toDownstream(Mapping mapping, Conjunction concludableConjunction) {
+                        return ConcludableImpl.MatchImpl.childOf(mapping, concludableConjunction, this, explainable());
                     }
 
                     @Override
@@ -460,21 +452,15 @@ public abstract class AnswerStateImpl implements AnswerState {
                     }
 
                     @Override
-                    public boolean hasExplanation() {
-                        // TODO we don't really want this, can we just not have this state before we get here?
-                        return explanation != null;
-                    }
-
-                    @Override
-                    public Concludable.Explain mapToConcludable(Mapping mapping, Conjunction nextResolverConjunction) {
-                        // TODO we don't really want the conjunction?
+                    public Concludable.Explain toDownstream(Mapping mapping, Conjunction concludableConjunction) {
+                        // note: we implement the method to conform to API, but do not use the conjunction when explaining
                         return ConcludableImpl.ExplainImpl.childOf(mapping, this);
                     }
 
                     @Override
                     public Top.Explain.Finished toFinishedTop() {
                         assert explanation != null;
-                        return new TopImpl.ExplainImpl.FinishedImpl(explanation, conceptMap(), root(), requiresReiteration());
+                        return parent().finish(conceptMap(), requiresReiteration(), explanation);
                     }
 
                     @Override
@@ -510,8 +496,8 @@ public abstract class AnswerStateImpl implements AnswerState {
                 }
 
                 @Override
-                public Concludable.Match<S> mapToConcludable(Mapping mapping, Conjunction nextResolverConjunction) {
-                    return ConcludableImpl.MatchImpl.childOf(mapping, nextResolverConjunction, getThis(), false);
+                public Concludable.Match<S> toDownstream(Mapping mapping, Conjunction concludableConjunction) {
+                    return ConcludableImpl.MatchImpl.childOf(mapping, concludableConjunction, getThis(), false);
                 }
 
                 public static class MatchImpl extends ConditionImpl<Match, Conclusion.Match> implements Match {
@@ -629,8 +615,8 @@ public abstract class AnswerStateImpl implements AnswerState {
             }
         }
 
-        public static abstract class ConcludableImpl<SLF extends Concludable<SLF, PRNT>, PRNT extends Compound<PRNT, ?>>
-                extends PartialImpl<SLF, PRNT> implements Concludable<SLF, PRNT> {
+        public static abstract class ConcludableImpl<PRNT extends Compound<PRNT, ?>>
+                extends PartialImpl<PRNT> implements Concludable<PRNT> {
 
             private final Mapping mapping;
 
@@ -644,10 +630,10 @@ public abstract class AnswerStateImpl implements AnswerState {
                 return mapping;
             }
 
-            public static class MatchImpl<P extends Compound<P, ?>> extends ConcludableImpl<Match<P>, P> implements Match<P> {
+            public static class MatchImpl<P extends Compound<P, ?>> extends ConcludableImpl<P> implements Match<P> {
 
                 private final Conjunction conjunction;
-                private boolean explainable;
+                private final boolean explainable;
                 private final int hash;
 
                 private MatchImpl(Mapping mapping, Conjunction conjunction, P parent, ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root,
@@ -694,11 +680,6 @@ public abstract class AnswerStateImpl implements AnswerState {
                     return ConclusionImpl.MatchImpl.childOf(unifier, rule, this);
                 }
 
-                @Override
-                public Conjunction conjunction() {
-                    // TODO do we want this to be public?
-                    return conjunction;
-                }
 
                 @Override
                 public boolean equals(Object o) {
@@ -719,12 +700,12 @@ public abstract class AnswerStateImpl implements AnswerState {
                 }
             }
 
-            public static class ExplainImpl extends ConcludableImpl<Explain, Compound.Root.Explain> implements Explain {
+            public static class ExplainImpl extends ConcludableImpl<Compound.Root.Explain> implements Explain {
 
                 private final ConclusionAnswer conclusionAnswer;
                 private final int hash;
 
-                ExplainImpl(ConclusionAnswer conclusionAnswer, Mapping mapping, Compound.Root.Explain parent, ConceptMap conceptMap,
+                ExplainImpl(@Nullable ConclusionAnswer conclusionAnswer, Mapping mapping, Compound.Root.Explain parent, ConceptMap conceptMap,
                             Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
                     super(mapping, parent, conceptMap, root, requiresReiteration);
                     this.conclusionAnswer = conclusionAnswer;
@@ -737,14 +718,14 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                 @Override
                 public Explain with(ConceptMap extension, boolean requiresReiteration, ConclusionAnswer conclusionAnswer) {
-                    assert this.conclusionAnswer == null;
+                    assert this.conclusionAnswer() == null;
                     return new ExplainImpl(conclusionAnswer, mapping(), parent(), extendAnswer(extension), root(), requiresReiteration);
                 }
 
                 @Override
                 public Compound.Root.Explain toUpstreamInferred() {
                     boolean requiresReiteration = requiresReiteration() || parent().requiresReiteration();
-                    Explanation explanation = new Explanation(conclusionAnswer.rule(), mapping(), conclusionAnswer, conclusionAnswer.conditionAnswer());
+                    Explanation explanation = new Explanation(conclusionAnswer().rule(), mapping(), conclusionAnswer(), conclusionAnswer().conditionAnswer());
                     return parent().with(mapping().unTransform(this.conceptMap()), requiresReiteration, explanation);
                 }
 
@@ -755,7 +736,6 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                 @Override
                 public ConclusionAnswer conclusionAnswer() {
-                    // TODO do we want this to be public?
                     return conclusionAnswer;
                 }
 
@@ -780,8 +760,8 @@ public abstract class AnswerStateImpl implements AnswerState {
             }
         }
 
-        public static abstract class ConclusionImpl<SLF extends Conclusion<SLF, PRNT>, PRNT extends Concludable<?, ?>>
-                extends PartialImpl<SLF, PRNT> implements Conclusion<SLF, PRNT> {
+        public static abstract class ConclusionImpl<SLF extends Conclusion<SLF, PRNT>, PRNT extends Concludable<?>>
+                extends PartialImpl<PRNT> implements Conclusion<SLF, PRNT> {
 
             private final Rule rule;
             private final Unifier unifier;
@@ -902,21 +882,20 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                 @Override
                 public Explain extend(ConceptMap ans) {
-                    return new ExplainImpl(conditionAnswer, rule(), unifier(), instanceRequirements(), extendAnswer(ans), parent(), root(), requiresReiteration());
+                    return new ExplainImpl(conditionAnswer(), rule(), unifier(), instanceRequirements(), extendAnswer(ans), parent(), root(), requiresReiteration());
                 }
 
                 @Override
                 public Explain with(ConceptMap extension, boolean requiresReiteration, ExplainableAnswer conditionAnswer) {
-                    assert this.conditionAnswer == null;
-                    return new ExplainImpl(conditionAnswer, rule(), unifier(), instanceRequirements(), extendAnswer(extension), parent(), root(), requiresReiteration);
+                    assert this.conditionAnswer() == null;
+                    return new ExplainImpl(conditionAnswer, rule(), unifier(), instanceRequirements(), extendAnswer(extension, conditionAnswer), parent(), root(), requiresReiteration);
                 }
 
                 @Override
                 public Optional<Concludable.Explain> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts) {
                     Optional<ConceptMap> unUnified = unifier().unUnify(concepts, instanceRequirements());
                     return unUnified.map(ans -> {
-                        // TODO we could make this "free" (object creation only) and skip the toConceptMap if we just store the raw map
-                        ConclusionAnswer conclusionAnswer = new ConclusionAnswer(rule(), toConceptMap(concepts), unifier(), conditionAnswer);
+                        ConclusionAnswer conclusionAnswer = new ConclusionAnswer(rule(), toConceptMap(concepts), unifier(), conditionAnswer());
                         return parent().with(ans, true, conclusionAnswer);
                     });
                 }
@@ -930,7 +909,6 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                 @Override
                 public ExplainableAnswer conditionAnswer() {
-                    // TODO do we want this to be public?
                     return conditionAnswer;
                 }
 
@@ -946,7 +924,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                             Objects.equals(unifier(), that.unifier()) &&
                             Objects.equals(instanceRequirements(), that.instanceRequirements()) &&
                             requiresReiteration() == that.requiresReiteration() &&
-                            Objects.equals(conditionAnswer, that.conditionAnswer());
+                            Objects.equals(conditionAnswer(), that.conditionAnswer());
                 }
 
                 @Override
@@ -956,7 +934,7 @@ public abstract class AnswerStateImpl implements AnswerState {
             }
         }
 
-        public static class RetrievableImpl<P extends Compound<P, ?>> extends PartialImpl<Retrievable<P>, P> implements Retrievable<P> {
+        public static class RetrievableImpl<P extends Compound<P, ?>> extends PartialImpl<P> implements Retrievable<P> {
 
             private final Set<Identifier.Variable.Retrievable> filter;
             private final int hash;

@@ -114,7 +114,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         int nextResolverIndex = fromDownstream.planIndex() + 1;
         Resolvable<?> nextResolvable = plan.get(nextResolverIndex);
         ResolverRegistry.ResolverView nextPlannedDownstream = downstreamResolvers.get(nextResolvable);
-        final Partial<?, ?> downstream = toDownstream(fromDownstream.answer().asCompound(), nextPlannedDownstream, nextResolvable);
+        final Partial<?> downstream = toDownstream(fromDownstream.answer().asCompound(), nextPlannedDownstream, nextResolvable);
         Request downstreamRequest = Request.create(driver(), nextPlannedDownstream.resolver(), downstream, nextResolverIndex);
         requestState.addDownstreamProducer(downstreamRequest);
         requestFromDownstream(downstreamRequest, fromUpstream, iteration);
@@ -189,15 +189,15 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
 
     private void initialiseRequestState(RequestState requestState, Partial.Compound<?, ?> partialAnswer, Plans.Plan plan) {
         ResolverRegistry.ResolverView childResolver = downstreamResolvers.get(plan.get(0));
-        Partial<?, ?> downstream = toDownstream(partialAnswer, childResolver, plan.get(0));
+        Partial<?> downstream = toDownstream(partialAnswer, childResolver, plan.get(0));
         Request toDownstream = Request.create(driver(), childResolver.resolver(), downstream, 0);
         requestState.addDownstreamProducer(toDownstream);
     }
 
-    private Partial<?, ?> toDownstream(Partial.Compound<?, ?> partialAnswer, ResolverRegistry.ResolverView nextDownstream, Resolvable<?> nextResolvable) {
+    private Partial<?> toDownstream(Partial.Compound<?, ?> partialAnswer, ResolverRegistry.ResolverView nextDownstream, Resolvable<?> nextResolvable) {
         assert downstreamResolvers.get(nextResolvable).equals(nextDownstream);
         if (nextDownstream.isMappedConcludable()) {
-            return partialAnswer.mapToConcludable(Mapping.of(nextDownstream.asMappedConcludable().mapping()), nextResolvable.asConcludable().pattern());
+            return partialAnswer.toDownstream(Mapping.of(nextDownstream.asMappedConcludable().mapping()), nextResolvable.asConcludable().pattern());
         } else if (nextDownstream.isFilteredNegation()) {
             return partialAnswer.filterToNestable(nextDownstream.asFilteredNegation().filter());
         } else if (nextDownstream.isFilteredRetrievable()) {
