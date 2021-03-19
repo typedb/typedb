@@ -17,34 +17,35 @@
 
 package grakn.core.reasoner;
 
-import grakn.core.concept.answer.ExplainableAnswer;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.pattern.Conjunction;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static grakn.core.concept.answer.ExplainableAnswer.Explainable.NOT_IDENTIFIED;
+import static grakn.core.concept.answer.ConceptMap.Explainable.NOT_IDENTIFIED;
 
 public class Explanations {
 
     private AtomicLong explainableId;
-    private ConcurrentMap<Long, ExplainableAnswer.Explainable> explainableRegistry;
+    private ConcurrentMap<Long, ConceptMap.Explainable> explainableRegistry;
 
     public Explanations() {
         this.explainableId = new AtomicLong(NOT_IDENTIFIED + 1);
         this.explainableRegistry = new ConcurrentHashMap<>();
     }
 
-    public void setAndRecordExplainableIds(ExplainableAnswer explainableAnswer) {
-        explainableAnswer.explainables().forEach(explainable -> {
+    public void setAndRecordExplainableIds(ConceptMap explainableAnswer) {
+        assert explainableAnswer.explainables().isPresent();
+        explainableAnswer.explainables().get().forEach(explainable -> {
             long nextId = explainableId.getAndIncrement();
             explainable.setId(nextId);
             explainableRegistry.put(nextId, explainable);
         });
     }
 
-    public ExplainableAnswer.Explainable getExplainable(long explainableId) {
-        return explainableRegistry.get(explainableId);
+    public Conjunction getExplainableConjunction(long explainableId) {
+        return explainableRegistry.get(explainableId).conjunction();
     }
 }

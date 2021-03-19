@@ -75,7 +75,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.rootResolver = resolverRegistry.root(conjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
-        Root downstream = new InitialImpl(filter(modifiers.filter()), new ConceptMap(), this.rootResolver, false, options.explain()).toDownstream();
+        Root downstream = InitialImpl.create(filter(modifiers.filter()), new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
         this.resolveRequest = Request.create(rootResolver, downstream);
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
@@ -92,7 +92,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.rootResolver = resolverRegistry.root(disjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
-        Root downstream = new InitialImpl(filter(modifiers.filter()), new ConceptMap(), this.rootResolver, false, options.explain()).toDownstream();
+        Root downstream = InitialImpl.create(filter(modifiers.filter()), new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
         this.resolveRequest = Request.create(rootResolver, downstream);
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
@@ -122,8 +122,8 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         if (options.traceInference()) ResolutionTracer.get().finish();
         if (answer.requiresReiteration()) requiresReiteration = true;
         ConceptMap conceptMap = answer.conceptMap();
-        if (options.explain() && conceptMap.explainableAnswer().isPresent()) {
-            explanations.setAndRecordExplainableIds(conceptMap.explainableAnswer().get());
+        if (options.explain() && conceptMap.explainables().isPresent()) {
+            explanations.setAndRecordExplainableIds(conceptMap);
         }
         queue.put(conceptMap);
         if (required.decrementAndGet() > 0) requestAnswer();

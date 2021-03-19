@@ -64,7 +64,7 @@ public class ExplanationProducer implements Producer<Explanation> {
         this.done = false;
         this.required = new AtomicInteger();
         this.processing = new AtomicInteger();
-        this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
+        this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR : 1;
         this.explainer = registry.explainer(conjunction, this::requestAnswered, this::requestFailed, this::exception);
         Root.Explain downstream = new AnswerStateImpl.TopImpl.ExplainImpl.InitialImpl(bounds, explainer, false).toDownstream();
         this.explainRequest = Request.create(explainer, downstream);

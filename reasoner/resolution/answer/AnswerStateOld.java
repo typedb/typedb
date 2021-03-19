@@ -17,33 +17,7 @@
 
 package grakn.core.reasoner.resolution.answer;
 
-import grakn.common.collection.Pair;
-import grakn.core.common.exception.GraknException;
-import grakn.core.concept.Concept;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.ExplainableAnswer;
-import grakn.core.concurrent.actor.Actor;
-import grakn.core.logic.Rule;
-import grakn.core.logic.resolvable.Unifier;
-import grakn.core.logic.resolvable.Unifier.Requirements.Instance;
-import grakn.core.pattern.Conjunction;
-import grakn.core.reasoner.resolution.framework.Resolver;
-import grakn.core.reasoner.resolution.resolver.RootResolver;
-import grakn.core.traversal.common.Identifier;
-
-import javax.annotation.Nullable;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-
 import static grakn.common.collection.Collections.set;
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 import static grakn.core.common.iterator.Iterators.iterate;
 
 public abstract class AnswerStateOld {

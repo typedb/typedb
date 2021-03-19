@@ -25,6 +25,7 @@ import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concept.Concept;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.Type;
+import grakn.core.pattern.Conjunction;
 import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import graql.lang.pattern.variable.Reference;
@@ -47,7 +48,7 @@ import static grakn.core.common.iterator.Iterators.iterate;
 public class ConceptMap implements Answer {
 
     private final Map<Retrievable, ? extends Concept> concepts;
-    private ExplainableAnswer explainableAnswer; // TODO remove this and roll it into ConceptMap
+    private final Set<Explainable> explainables;
     private final int hash;
 
     public ConceptMap() {
@@ -58,10 +59,10 @@ public class ConceptMap implements Answer {
         this(concepts, null);
     }
 
-    public ConceptMap(Map<Retrievable, ? extends Concept> concepts, @Nullable ExplainableAnswer explainableAnswer) {
+    public ConceptMap(Map<Retrievable, ? extends Concept> concepts, @Nullable Set<Explainable> explainables) {
         this.concepts = concepts;
-        this.explainableAnswer = explainableAnswer;
-        this.hash = Objects.hash(this.concepts, this.explainableAnswer);
+        this.explainables = explainables;
+        this.hash = Objects.hash(this.concepts, this.explainables);
     }
 
     public FunctionalIterator<Pair<Retrievable, Concept>> iterator() {
@@ -99,15 +100,11 @@ public class ConceptMap implements Answer {
 
     public Map<Retrievable, ? extends Concept> concepts() { return concepts; }
 
-    public Optional<ExplainableAnswer> explainableAnswer() {
-        return Optional.ofNullable(explainableAnswer);
-    }
-
     public ConceptMap filter(Set<? extends Retrievable> vars) {
         Map<Retrievable, ? extends Concept> filtered = concepts.entrySet().stream()
                 .filter(e -> vars.contains(e.getKey()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        return new ConceptMap(filtered, explainableAnswer);
+        return new ConceptMap(filtered, null);
     }
 
     public void forEach(BiConsumer<Retrievable, Concept> consumer) {
@@ -128,6 +125,10 @@ public class ConceptMap implements Answer {
         return map;
     }
 
+    public Optional<Set<Explainable>> explainables() {
+        return Optional.ofNullable(explainables);
+    }
+
     @Override
     public String toString() {
         return "ConceptMap{" + concepts + '}';
@@ -138,12 +139,54 @@ public class ConceptMap implements Answer {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ConceptMap that = (ConceptMap) o;
-        return concepts.equals(that.concepts) && Objects.equals(explainableAnswer, that.explainableAnswer);
+        return concepts.equals(that.concepts) && Objects.equals(explainables, that.explainables);
     }
 
     @Override
     public int hashCode() {
         return hash;
+    }
+
+    public static class Explainable {
+
+        public static long NOT_IDENTIFIED = -1L;
+
+        private final Conjunction conjunction;
+        private long explainableId;
+
+        private Explainable(Conjunction conjunction, long explainableId) {
+            this.conjunction = conjunction;
+            this.explainableId = explainableId;
+        }
+
+        public static Explainable unidentified(Conjunction conjunction) {
+            return new Explainable(conjunction, NOT_IDENTIFIED);
+        }
+
+        public void setId(long explainableId) {
+            this.explainableId = explainableId;
+        }
+
+        public Conjunction conjunction() {
+            return conjunction;
+        }
+
+        public long explainableId() {
+            return explainableId;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            final Explainable that = (Explainable) o;
+            return Objects.equals(conjunction, that.conjunction); // exclude ID as it changes
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(conjunction); // exclude ID as it changes
+        }
     }
 
 }

@@ -18,7 +18,6 @@
 package grakn.core.reasoner.resolution.answer;
 
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.ExplainableAnswer;
 import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Unifier;
 
@@ -29,10 +28,10 @@ public class ConclusionAnswer {
     private final Rule rule;
     private final ConceptMap conceptMap;
     private final Unifier unifier;
-    private final ExplainableAnswer conditionAnswer;
+    private final ConceptMap conditionAnswer;
     private final int hash;
 
-    public ConclusionAnswer(Rule rule, ConceptMap conceptMap, Unifier unifier, ExplainableAnswer conditionAnswer) {
+    public ConclusionAnswer(Rule rule, ConceptMap conceptMap, Unifier unifier, ConceptMap conditionAnswer) {
         this.rule = rule;
         this.conceptMap = conceptMap;
         this.unifier = unifier;
@@ -44,7 +43,7 @@ public class ConclusionAnswer {
         return rule;
     }
 
-    public ExplainableAnswer conditionAnswer() {
+    public ConceptMap conditionAnswer() {
         return conditionAnswer;
     }
 

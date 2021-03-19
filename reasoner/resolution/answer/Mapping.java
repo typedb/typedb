@@ -50,7 +50,7 @@ public class Mapping {
                 transformed.put(mapped, concept);
             }
         }
-        return new ConceptMap(transformed);
+        return new ConceptMap(transformed, conceptMap.explainables().isPresent() ? conceptMap.explainables().get() : null);
     }
 
     public ConceptMap unTransform(ConceptMap conceptMap) {
@@ -62,7 +62,7 @@ public class Mapping {
             Concept concept = entry.getValue();
             transformed.put(reverseMapping.get(id), concept);
         }
-        return new ConceptMap(transformed);
+        return new ConceptMap(transformed, conceptMap.explainables().isPresent() ? conceptMap.explainables().get() : null);
     }
 
     Map<Retrievable, Retrievable> mapping() {

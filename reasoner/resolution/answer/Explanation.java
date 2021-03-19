@@ -17,10 +17,9 @@
 
 package grakn.core.reasoner.resolution.answer;
 
-import grakn.core.concept.answer.ExplainableAnswer;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Unifier;
-import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 
 import java.util.HashMap;
@@ -34,10 +33,10 @@ public class Explanation {
     private final Rule rule;
     private final Mapping intermediateMapping;
     private final ConclusionAnswer conclusionAnswer;
-    private final ExplainableAnswer conditionAnswer;
+    private final ConceptMap conditionAnswer;
     private final int hash;
 
-    public Explanation(Rule rule, Mapping intermediateMapping, ConclusionAnswer conclusionAnswer, ExplainableAnswer conditionAnswer) {
+    public Explanation(Rule rule, Mapping intermediateMapping, ConclusionAnswer conclusionAnswer, ConceptMap conditionAnswer) {
         this.rule = rule;
         this.intermediateMapping = intermediateMapping;
         this.conclusionAnswer = conclusionAnswer;
@@ -64,7 +63,7 @@ public class Explanation {
         return conclusionAnswer;
     }
 
-    public ExplainableAnswer conditionAnswer() {
+    public ConceptMap conditionAnswer() {
         return conditionAnswer;
     }
 

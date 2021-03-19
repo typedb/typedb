@@ -29,7 +29,7 @@ import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Compound.Root;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top.Match;
-import grakn.core.reasoner.resolution.answer.AnswerStateImpl;
+import grakn.core.reasoner.resolution.answer.AnswerStateImpl.TopImpl.MatchImpl.InitialImpl;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
@@ -485,7 +485,7 @@ public class ResolutionTest {
         long startTime = System.currentTimeMillis();
         long n = answerCount + 1; //total number of traversal answers, plus one expected Exhausted (-1 answer)
         for (int i = 0; i < n; i++) {
-            Root.Match downstream = new AnswerStateImpl.TopImpl.MatchImpl.InitialImpl(filter, new ConceptMap(), root, false, true).toDownstream();
+            Root.Match downstream = InitialImpl.create(filter, new ConceptMap(), root, true).toDownstream();
             root.execute(actor -> actor.receiveRequest(Request.create(root, downstream), 0));
         }
         int answersFound = 0;
@@ -494,9 +494,9 @@ public class ResolutionTest {
             Match.Finished answer = responses.poll(1000, TimeUnit.MILLISECONDS);// polling prevents the test hanging
             if (answer != null) {
                 answersFound += 1;
-                if (answer.conceptMap().explainableAnswer().isPresent()) {
+                assert answer.conceptMap().explainables().isPresent(); // always present when explainable == true
+                if (answer.conceptMap().explainables().get().size() > 0) {
                     explainableAnswersFound++;
-                    assertTrue(answer.conceptMap().explainableAnswer().get().explainables().size() > 0);
                 }
             }
         }

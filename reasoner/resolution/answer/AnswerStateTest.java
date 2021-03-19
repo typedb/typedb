@@ -44,7 +44,7 @@ public class AnswerStateTest {
         mapping.put(Identifier.Variable.name("a"), Identifier.Variable.name("x"));
         mapping.put(Identifier.Variable.name("b"), Identifier.Variable.name("y"));
         Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
-        Concludable.Match<?> mapped = new InitialImpl(filter, new ConceptMap(), null, false, false).toDownstream().toDownstream(Mapping.of(mapping), null);
+        Concludable.Match<?> mapped = InitialImpl.create(filter, new ConceptMap(), null, false).toDownstream().toDownstream(Mapping.of(mapping), null);
         assertTrue(mapped.conceptMap().concepts().isEmpty());
 
         Map<Identifier.Variable.Retrievable, Concept> concepts = new HashMap<>();
@@ -65,7 +65,7 @@ public class AnswerStateTest {
         Map<Identifier.Variable.Retrievable, Concept> concepts = new HashMap<>();
         concepts.put(Identifier.Variable.name("a"), new MockConcept(0));
         Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
-        Concludable.Match<?> mapped = new InitialImpl(filter, new ConceptMap(), null, false, false).toDownstream()
+        Concludable.Match<?> mapped = InitialImpl.create(filter, new ConceptMap(), null, false).toDownstream()
                 .with(new ConceptMap(concepts), false)
                 .toDownstream(Mapping.of(mapping), null);
 
@@ -93,7 +93,7 @@ public class AnswerStateTest {
         concepts.put(Identifier.Variable.name("a"), new MockConcept(0));
         concepts.put(Identifier.Variable.name("c"), new MockConcept(2));
         Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
-        Concludable.Match<?> mapped = new InitialImpl(filter, new ConceptMap(), null, false, false).toDownstream()
+        Concludable.Match<?> mapped = InitialImpl.create(filter, new ConceptMap(), null, false).toDownstream()
                 .with(new ConceptMap(concepts), false)
                 .toDownstream(Mapping.of(mapping), null);
 

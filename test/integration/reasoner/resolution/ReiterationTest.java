@@ -27,7 +27,7 @@ import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.variable.Variable;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Compound.Root;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top.Match;
-import grakn.core.reasoner.resolution.answer.AnswerStateImpl;
+import grakn.core.reasoner.resolution.answer.AnswerStateImpl.TopImpl.MatchImpl.InitialImpl;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionTracer;
 import grakn.core.reasoner.resolution.resolver.RootResolver;
@@ -176,7 +176,7 @@ public class ReiterationTest {
     }
 
     private void sendRootRequest(Actor.Driver<RootResolver.Conjunction> root, Set<Identifier.Variable.Name> filter, int iteration) {
-        Root.Match downstream = new AnswerStateImpl.TopImpl.MatchImpl.InitialImpl(filter, new ConceptMap(), root, false, true).toDownstream();
+        Root.Match downstream = InitialImpl.create(filter, new ConceptMap(), root, true).toDownstream();
         root.execute(actor -> actor.receiveRequest(
                 Request.create(root, downstream), iteration)
         );

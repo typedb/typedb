@@ -1,9 +1,25 @@
+/*
+ * Copyright (C) 2021 Grakn Labs
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package grakn.core.reasoner.resolution.answer;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.ExplainableAnswer;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Unifier;
@@ -411,9 +427,9 @@ public interface AnswerState {
 
             interface Explain extends Conclusion<Explain, Concludable.Explain> {
 
-                ExplainableAnswer conditionAnswer();
+                ConceptMap conditionAnswer();
 
-                Explain with(ConceptMap extension, boolean requiresReiteration, ExplainableAnswer conditionAnswer);
+                Explain with(ConceptMap extension, boolean requiresReiteration, ConceptMap conditionAnswer);
 
                 @Override
                 Optional<Concludable.Explain> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts);

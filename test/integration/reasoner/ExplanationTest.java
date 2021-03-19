@@ -24,7 +24,6 @@ import grakn.core.common.parameters.Options;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.ExplainableAnswer;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
@@ -35,6 +34,7 @@ import grakn.core.rocks.RocksGrakn;
 import grakn.core.rocks.RocksSession;
 import grakn.core.rocks.RocksTransaction;
 import grakn.core.test.integration.util.Util;
+import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import graql.lang.Graql;
 import org.junit.After;
@@ -44,15 +44,13 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.list;
 import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.concept.answer.ExplainableAnswer.Explainable.NOT_IDENTIFIED;
+import static grakn.core.concept.answer.ConceptMap.Explainable.NOT_IDENTIFIED;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -123,8 +121,8 @@ public class ExplanationTest {
                 List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;").asMatch()).toList();
                 assertEquals(2, ans.size());
 
-                assertTrue(ans.get(0).explainableAnswer().isPresent());
-                assertTrue(ans.get(1).explainableAnswer().isPresent());
+                assertTrue(ans.get(0).explainables().isPresent());
+                assertTrue(ans.get(1).explainables().isPresent());
 
                 assertSingleExplainableExplanations(ans.get(0), 1, 1, 1, txn);
                 assertSingleExplainableExplanations(ans.get(1), 1, 1, 1, txn);
@@ -170,8 +168,8 @@ public class ExplanationTest {
                 List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;").asMatch()).toList();
                 assertEquals(2, ans.size());
 
-                assertTrue(ans.get(0).explainableAnswer().isPresent());
-                assertTrue(ans.get(1).explainableAnswer().isPresent());
+                assertTrue(ans.get(0).explainables().isPresent());
+                assertTrue(ans.get(1).explainables().isPresent());
 
                 assertSingleExplainableExplanations(ans.get(0), 1, 1, 3, txn);
                 assertSingleExplainableExplanations(ans.get(1), 1, 1, 3, txn);
@@ -214,9 +212,9 @@ public class ExplanationTest {
                 List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $x has is-still-good $a;").asMatch()).toList();
                 assertEquals(3, ans.size());
 
-                assertTrue(ans.get(0).explainableAnswer().isPresent());
-                assertTrue(ans.get(1).explainableAnswer().isPresent());
-                assertTrue(ans.get(2).explainableAnswer().isPresent());
+                assertTrue(ans.get(0).explainables().isPresent());
+                assertTrue(ans.get(1).explainables().isPresent());
+                assertTrue(ans.get(2).explainables().isPresent());
 
                 AttributeType ageInDays = txn.concepts().getAttributeType("age-in-days");
                 if (ans.get(0).get("x").asThing().getHas(ageInDays).findFirst().get().asLong().getValue().equals(15L)) {
@@ -280,7 +278,7 @@ public class ExplanationTest {
                 List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $x isa user, has permission \"write\";").asMatch()).toList();
                 assertEquals(1, ans.size());
 
-                assertTrue(ans.get(0).explainableAnswer().isPresent());
+                assertTrue(ans.get(0).explainables().isPresent());
                 assertSingleExplainableExplanations(ans.get(0), 1, 1, 2, txn);
             }
         }
@@ -325,21 +323,21 @@ public class ExplanationTest {
                 List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $r isa location-hierarchy;").asMatch()).toList();
                 assertEquals(10, ans.size());
 
-                List<ConceptMap> explainableMaps = iterate(ans).filter(answer -> answer.explainableAnswer().isPresent()).toList();
+                List<ConceptMap> explainableMaps = iterate(ans).filter(answer -> answer.explainables().get().size() > 0).toList();
                 assertEquals(6, explainableMaps.size());
 
-                Map<ExplainableAnswer, List<Explanation>> allExplanations = new HashMap<>();
+                Map<ConceptMap.Explainable, List<Explanation>> allExplanations = new HashMap<>();
                 for (ConceptMap explainableMap : explainableMaps) {
-                    ExplainableAnswer explainableAnswer = explainableMap.explainableAnswer().get();
-                    assertEquals(1, explainableAnswer.explainables().size());
-                    List<Explanation> explanations = txn.query().explain(explainableAnswer.explainables().iterator().next().explainableId(), explainableAnswer.completeMap()).toList();
-                    allExplanations.put(explainableAnswer, explanations);
+                    Set<ConceptMap.Explainable> explainables = explainableMap.explainables().get();
+                    assertEquals(1, explainables.size());
+                    List<Explanation> explanations = txn.query().explain(explainables.iterator().next().explainableId(), explainableMap).toList();
+                    allExplanations.put(explainables.iterator().next(), explanations);
                 }
 
                 int oneExplanation = 0;
                 int twoExplanations = 0;
                 int threeExplanations = 0;
-                for (Map.Entry<ExplainableAnswer, List<Explanation>> entry : allExplanations.entrySet()) {
+                for (Map.Entry<ConceptMap.Explainable, List<Explanation>> entry : allExplanations.entrySet()) {
                     List<Explanation> explanations = entry.getValue();
                     if (explanations.size() == 1) oneExplanation++;
                     else if (explanations.size() == 2) twoExplanations++;
@@ -353,20 +351,22 @@ public class ExplanationTest {
         }
     }
 
+
+    // TODO write test that has recursive explanation (chained) and must not filter in order to get correct sub-explanations
+
     private void assertSingleExplainableExplanations(ConceptMap ans, int anonymousConcepts, int explainablesCount, int explanationsCount, RocksTransaction txn) {
-        ExplainableAnswer explainableAnswer = ans.explainableAnswer().get();
-        assertEquals(ans.concepts().size() + anonymousConcepts, explainableAnswer.completeMap().concepts().size());
-        assertEquals(explainablesCount, explainableAnswer.explainables().size());
-        ExplainableAnswer.Explainable explainable = explainableAnswer.explainables().iterator().next();
+        Set<ConceptMap.Explainable> explainables = ans.explainables().get();
+        assertEquals(anonymousConcepts, iterate(ans.concepts().keySet()).filter(Identifier::isAnonymous).count());
+        assertEquals(explainablesCount, explainables.size());
+        ConceptMap.Explainable explainable = explainables.iterator().next();
         assertNotEquals(NOT_IDENTIFIED, explainable.explainableId());
-        FunctionalIterator<Explanation> explanations = txn.query().explain(explainable.explainableId(), explainableAnswer.completeMap());
+        FunctionalIterator<Explanation> explanations = txn.query().explain(explainable.explainableId(), ans);
         List<Explanation> explList = explanations.toList();
         assertEquals(explanationsCount, explList.size());
 
         explList.forEach(explanation -> {
             Map<Retrievable, Set<Retrievable>> mapping = explanation.variableMapping();
-            ConceptMap completeMap = explainableAnswer.completeMap();
-            ConceptMap projected = applyMapping(mapping, completeMap);
+            ConceptMap projected = applyMapping(mapping, ans);
             projected.concepts().forEach((var, concept) -> {
                 assertTrue(explanation.conclusionAnswer().answer().contains(var));
                 assertEquals(explanation.conclusionAnswer().answer().get(var), concept);
