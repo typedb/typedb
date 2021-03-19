@@ -119,6 +119,12 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
+        protected Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?, ?> partialAnswer) {
+            assert partialAnswer.isRoot() && partialAnswer.isMatch();
+            return Optional.of(partialAnswer.asRoot().asMatch().toFinishedTop(conjunction));
+        }
+
+        @Override
         boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
             RequestState requestState = requestStates.get(fromUpstream);
             if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
@@ -128,12 +134,6 @@ public interface RootResolver<TOP extends Top> {
             } else {
                 return false;
             }
-        }
-
-        @Override
-        protected Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?, ?> partialAnswer) {
-            assert partialAnswer.isRoot() && partialAnswer.isMatch();
-            return Optional.of(partialAnswer.asRoot().asMatch().toFinishedTop(conjunction));
         }
 
         @Override
@@ -293,6 +293,12 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
+        Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?, ?> partialAnswer) {
+            assert partialAnswer.isRoot() && partialAnswer.isExplain();
+            return Optional.of(partialAnswer.asRoot().asExplain().toFinishedTop());
+        }
+
+        @Override
         boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
             assert upstreamAnswer.isTop() && upstreamAnswer.asTop().isExplain() && upstreamAnswer.asTop().asExplain().isFinished();
             Top.Explain.Finished finished = upstreamAnswer.asTop().asExplain().asFinished();
@@ -303,12 +309,6 @@ public interface RootResolver<TOP extends Top> {
             } else {
                 return false;
             }
-        }
-
-        @Override
-        Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?, ?> partialAnswer) {
-            assert partialAnswer.isRoot() && partialAnswer.isExplain();
-            return Optional.of(partialAnswer.asRoot().asExplain().toFinishedTop());
         }
 
         @Override

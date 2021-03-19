@@ -25,6 +25,7 @@ import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.actor.ActorExecutorGroup;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
+import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Negated;
 import grakn.core.logic.resolvable.Resolvable;
 import grakn.core.pattern.Conjunction;
@@ -68,7 +69,7 @@ public class ResolverRegistry {
 
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
-    private final Map<grakn.core.logic.resolvable.Concludable, Actor.Driver<ConcludableResolver>> concludableResolvers;
+    private final Map<Concludable, Actor.Driver<ConcludableResolver>> concludableResolvers;
     private final ConcurrentMap<Rule, Actor.Driver<ConditionResolver>> ruleConditions;
     private final ConcurrentMap<Rule, Actor.Driver<ConclusionResolver>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
     private final Set<Actor.Driver<? extends Resolver<?>>> resolvers;
@@ -187,9 +188,9 @@ public class ResolverRegistry {
     }
 
     // note: must be thread safe. We could move to a ConcurrentHashMap if we create an alpha-equivalence wrapper
-    private synchronized ResolverView.MappedConcludable registerConcludable(grakn.core.logic.resolvable.Concludable concludable) {
+    private synchronized ResolverView.MappedConcludable registerConcludable(Concludable concludable) {
         LOG.debug("Register ConcludableResolver: '{}'", concludable.pattern());
-        for (Map.Entry<grakn.core.logic.resolvable.Concludable, Actor.Driver<ConcludableResolver>> c : concludableResolvers.entrySet()) {
+        for (Map.Entry<Concludable, Actor.Driver<ConcludableResolver>> c : concludableResolvers.entrySet()) {
             // TODO: This needs to be optimised from a linear search to use an alpha hash
             AlphaEquivalence alphaEquality = concludable.alphaEquals(c.getKey());
             if (alphaEquality.isValid()) {
@@ -209,8 +210,7 @@ public class ResolverRegistry {
     public Actor.Driver<ConjunctionResolver.Nested> nested(Conjunction conjunction) {
         LOG.debug("Creating Conjunction resolver for : {}", conjunction);
         Actor.Driver<ConjunctionResolver.Nested> resolver = Actor.driver(driver -> new ConjunctionResolver.Nested(
-                driver, conjunction, this, traversalEngine,
-                conceptMgr, logicMgr, planner, resolutionTracing
+                driver, conjunction, this, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing
         ), executorService);
         resolvers.add(resolver);
         if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
@@ -230,8 +230,9 @@ public class ResolverRegistry {
 
     public Actor.Driver<RootResolver.Explain> explainer(Conjunction conjunction, Consumer<Explain.Finished> requestAnswered,
                                                         Consumer<Integer> requestFailed, Consumer<Throwable> exception) {
-        return Actor.driver(driver -> new RootResolver.Explain(driver, conjunction, requestAnswered, requestFailed, exception,
-                                                               this, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing
+        return Actor.driver(driver -> new RootResolver.Explain(
+                driver, conjunction, requestAnswered, requestFailed, exception,
+                this, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing
         ), executorService);
     }
 

@@ -735,8 +735,10 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         public static Attribute of(ThingVariable attribute) {
-            return new Attribute(attribute.clone().isa(TypeVariable.of(Identifier.Variable.of(
-                    Reference.label(GraqlToken.Type.ATTRIBUTE.toString()))), false));
+            TypeVariable typeVar = TypeVariable.of(Identifier.Variable.of(Reference.label(GraqlToken.Type.ATTRIBUTE.toString())));
+            typeVar.label(Label.of(GraqlToken.Type.ATTRIBUTE.toString()));
+            typeVar.setResolvedTypes(attribute.resolvedTypes());
+            return new Attribute(attribute.clone().isa(typeVar, false));
         }
 
         public static Attribute of(ThingVariable attribute, Set<ValueConstraint<?>> values) {

@@ -98,7 +98,8 @@ public abstract class Variable implements Pattern {
 
     @Override
     public String toString() {
-        return identifier.toString();
+        if (identifier.isLabel()) return asType().label().get().properLabel().name();
+        else return identifier.toString();
     }
 
     @Override

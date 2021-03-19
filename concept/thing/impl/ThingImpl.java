@@ -178,7 +178,8 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
 
     @Override
     public boolean isHasInferred(Attribute attribute) {
-        return vertex.outs().edge(HAS, ((ThingImpl) attribute).vertex).isInferred();
+        ThingEdge hasEdge = vertex.outs().edge(HAS, ((ThingImpl) attribute).vertex);
+        return hasEdge != null && hasEdge.isInferred();
     }
 
     @Override

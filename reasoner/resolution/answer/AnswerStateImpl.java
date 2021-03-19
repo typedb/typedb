@@ -685,7 +685,6 @@ public abstract class AnswerStateImpl implements AnswerState {
                     return ConclusionImpl.MatchImpl.childOf(unifier, rule, this);
                 }
 
-
                 @Override
                 public boolean equals(Object o) {
                     if (this == o) return true;

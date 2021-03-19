@@ -192,6 +192,7 @@ public class Conjunction implements Pattern, Cloneable {
         String negationsToString = negations.isEmpty() ? "" : negations.stream().map(Object::toString).collect(
                 Collectors.joining("" + SEMICOLON + SPACE, "", "" + SEMICOLON + SPACE));
         return variableSet.stream()
+                .filter(v -> !v.id().isLabel())
                 .map(variable -> variable.constraints().stream().map(Object::toString)
                         .collect(Collectors.joining("" + SEMICOLON + SPACE)))
                 .filter(s -> !s.isEmpty())

@@ -154,8 +154,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
 
     public static class Nested extends DisjunctionResolver<Nested> {
 
-        public Nested(Driver<Nested> driver, Disjunction disjunction,
-                      ResolverRegistry registry,
+        public Nested(Driver<Nested> driver, Disjunction disjunction, ResolverRegistry registry,
                       TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean explanations) {
             super(driver, Nested.class.getSimpleName() + "(pattern: " + disjunction + ")", disjunction,
                   registry, traversalEngine, conceptMgr, explanations);

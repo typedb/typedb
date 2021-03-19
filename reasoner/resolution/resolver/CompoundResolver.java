@@ -30,7 +30,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.stream.Stream;
 
 public abstract class CompoundResolver<
         RESOLVER extends CompoundResolver<RESOLVER, REQ_STATE>,
@@ -99,7 +98,6 @@ public abstract class CompoundResolver<
                 this.requestStates.put(fromUpstream, responseProducerNextIter);
             }
         }
-        boolean bad = requestStates.values().stream().anyMatch(rs -> rs.iteration() + 1 < iteration);
         return requestStates.get(fromUpstream);
     }
 
