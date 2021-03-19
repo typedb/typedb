@@ -121,7 +121,7 @@ public interface Thing extends Concept {
      * @param attribute
      * @return
      */
-    boolean isHasInferred(Attribute attribute);
+    boolean hasInferred(Attribute attribute);
 
     /**
      * Get all {@code RoleType} types this {@code Thing} is playing in a {@code Relation}.

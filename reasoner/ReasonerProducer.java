@@ -122,7 +122,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         if (options.traceInference()) ResolutionTracer.get().finish();
         if (answer.requiresReiteration()) requiresReiteration = true;
         ConceptMap conceptMap = answer.conceptMap();
-        if (options.explain() && conceptMap.explainables().isPresent()) {
+        if (options.explain() && !conceptMap.explainables().isEmpty()) {
             explanations.setAndRecordExplainableIds(conceptMap);
         }
         queue.put(conceptMap);

@@ -37,8 +37,7 @@ public class Explanations {
     }
 
     public void setAndRecordExplainableIds(ConceptMap explainableAnswer) {
-        assert explainableAnswer.explainables().isPresent();
-        explainableAnswer.explainables().get().forEach(explainable -> {
+        explainableAnswer.explainables().forEach(explainable -> {
             long nextId = explainableId.getAndIncrement();
             explainable.setId(nextId);
             explainableRegistry.put(nextId, explainable);

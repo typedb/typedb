@@ -31,8 +31,8 @@ import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 import graql.lang.pattern.variable.Reference;
 import graql.lang.pattern.variable.UnboundVariable;
 
-import javax.annotation.Nullable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -56,10 +56,10 @@ public class ConceptMap implements Answer {
     }
 
     public ConceptMap(Map<Retrievable, ? extends Concept> concepts) {
-        this(concepts, null);
+        this(concepts, new HashSet<>());
     }
 
-    public ConceptMap(Map<Retrievable, ? extends Concept> concepts, @Nullable Set<Explainable> explainables) {
+    public ConceptMap(Map<Retrievable, ? extends Concept> concepts, Set<Explainable> explainables) {
         this.concepts = concepts;
         this.explainables = explainables;
         this.hash = Objects.hash(this.concepts, this.explainables);
@@ -104,7 +104,7 @@ public class ConceptMap implements Answer {
         Map<Retrievable, ? extends Concept> filtered = concepts.entrySet().stream()
                 .filter(e -> vars.contains(e.getKey()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        return new ConceptMap(filtered, null);
+        return new ConceptMap(filtered);
     }
 
     public void forEach(BiConsumer<Retrievable, Concept> consumer) {
@@ -125,8 +125,8 @@ public class ConceptMap implements Answer {
         return map;
     }
 
-    public Optional<Set<Explainable>> explainables() {
-        return Optional.ofNullable(explainables);
+    public Set<Explainable> explainables() {
+        return explainables;
     }
 
     @Override
@@ -139,7 +139,7 @@ public class ConceptMap implements Answer {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ConceptMap that = (ConceptMap) o;
-        return concepts.equals(that.concepts) && Objects.equals(explainables, that.explainables);
+        return concepts.equals(that.concepts) && explainables.equals(that.explainables);
     }
 
     @Override

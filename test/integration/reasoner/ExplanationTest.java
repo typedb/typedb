@@ -19,7 +19,6 @@ package grakn.core.reasoner;
 
 import grakn.common.collection.Pair;
 import grakn.common.concurrent.NamedThreadFactory;
-import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
 import grakn.core.concept.Concept;
@@ -53,6 +52,7 @@ import java.util.Set;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.concept.answer.ConceptMap.Explainable.NOT_IDENTIFIED;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -122,8 +122,8 @@ public class ExplanationTest {
                 List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;").asMatch()).toList();
                 assertEquals(2, ans.size());
 
-                assertTrue(ans.get(0).explainables().isPresent());
-                assertTrue(ans.get(1).explainables().isPresent());
+                assertFalse(ans.get(0).explainables().isEmpty());
+                assertFalse(ans.get(1).explainables().isEmpty());
 
                 assertSingleExplainableExplanations(ans.get(0), 1, 1, 1, txn);
                 assertSingleExplainableExplanations(ans.get(1), 1, 1, 1, txn);
@@ -132,7 +132,7 @@ public class ExplanationTest {
     }
 
     @Test
-    public void test_relation_explainable_two_ways() {
+    public void test_relation_explainable_multiple_ways() {
         try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
@@ -169,8 +169,8 @@ public class ExplanationTest {
                 List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;").asMatch()).toList();
                 assertEquals(2, ans.size());
 
-                assertTrue(ans.get(0).explainables().isPresent());
-                assertTrue(ans.get(1).explainables().isPresent());
+                assertFalse(ans.get(0).explainables().isEmpty());
+                assertFalse(ans.get(1).explainables().isEmpty());
 
                 assertSingleExplainableExplanations(ans.get(0), 1, 1, 3, txn);
                 assertSingleExplainableExplanations(ans.get(1), 1, 1, 3, txn);
@@ -213,9 +213,9 @@ public class ExplanationTest {
                 List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $x has is-still-good $a;").asMatch()).toList();
                 assertEquals(3, ans.size());
 
-                assertTrue(ans.get(0).explainables().isPresent());
-                assertTrue(ans.get(1).explainables().isPresent());
-                assertTrue(ans.get(2).explainables().isPresent());
+                assertFalse(ans.get(0).explainables().isEmpty());
+                assertFalse(ans.get(1).explainables().isEmpty());
+                assertFalse(ans.get(2).explainables().isEmpty());
 
                 AttributeType ageInDays = txn.concepts().getAttributeType("age-in-days");
                 if (ans.get(0).get("x").asThing().getHas(ageInDays).findFirst().get().asLong().getValue().equals(15L)) {
@@ -279,14 +279,14 @@ public class ExplanationTest {
                 List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $x isa user, has permission \"write\";").asMatch()).toList();
                 assertEquals(1, ans.size());
 
-                assertTrue(ans.get(0).explainables().isPresent());
+                assertFalse(ans.get(0).explainables().isEmpty());
                 assertSingleExplainableExplanations(ans.get(0), 1, 1, 2, txn);
             }
         }
     }
 
     @Test
-    public void test_nested_explanations() {
+    public void test_all_transitive_explanations() {
         try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 LogicManager logicMgr = txn.logic();
@@ -320,16 +320,16 @@ public class ExplanationTest {
                 ).asInsert());
                 txn.commit();
             }
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true).parallel(false).traceInference(true)))) {
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
                 List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $r isa location-hierarchy;").asMatch()).toList();
                 assertEquals(10, ans.size());
 
-                List<ConceptMap> explainableMaps = iterate(ans).filter(answer -> answer.explainables().get().size() > 0).toList();
+                List<ConceptMap> explainableMaps = iterate(ans).filter(answer -> answer.explainables().size() > 0).toList();
                 assertEquals(6, explainableMaps.size());
 
                 Map<Pair<ConceptMap, ConceptMap.Explainable>, List<Explanation>> allExplanations = new HashMap<>();
                 for (ConceptMap explainableMap : explainableMaps) {
-                    Set<ConceptMap.Explainable> explainables = explainableMap.explainables().get();
+                    Set<ConceptMap.Explainable> explainables = explainableMap.explainables();
                     assertEquals(1, explainables.size());
                     List<Explanation> explanations = txn.query().explain(explainables.iterator().next().explainableId(), explainableMap).toList();
                     allExplanations.put(new Pair<>(explainableMap, explainables.iterator().next()), explanations);
@@ -352,20 +352,88 @@ public class ExplanationTest {
         }
     }
 
+    @Test
+    public void test_nested_explanations() {
+        try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+                ConceptManager conceptMgr = txn.concepts();
+                LogicManager logicMgr = txn.logic();
 
-    // TODO write test that has recursive explanation (chained) and must not filter in order to get correct sub-explanations
+                EntityType person = conceptMgr.putEntityType("person");
+                AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
+                AttributeType gender = conceptMgr.putAttributeType("gender", AttributeType.ValueType.STRING);
+                EntityType city = conceptMgr.putEntityType("city");
+                person.setOwns(name);
+                person.setOwns(gender);
+                RelationType friendship = conceptMgr.putRelationType("friendship");
+                friendship.setRelates("friend");
+                RelationType marriage = conceptMgr.putRelationType("marriage");
+                marriage.setRelates("husband");
+                marriage.setRelates("wife");
+                RelationType wedding = conceptMgr.putRelationType("wedding");
+                wedding.setRelates("male");
+                wedding.setRelates("female");
+                wedding.setRelates("location");
+                person.setPlays(friendship.getRelates("friend"));
+                person.setPlays(marriage.getRelates("husband"));
+                person.setPlays(marriage.getRelates("wife"));
+                person.setPlays(wedding.getRelates("male"));
+                person.setPlays(wedding.getRelates("female"));
+                city.setPlays(wedding.getRelates("location"));
 
-    private void assertSingleExplainableExplanations(ConceptMap ans, int anonymousConcepts, int explainablesCount, int explanationsCount, RocksTransaction txn) {
-        Set<ConceptMap.Explainable> explainables = ans.explainables().get();
+                logicMgr.putRule(
+                        "wedding-implies-marriage",
+                        Graql.parsePattern("{ $x isa person, has gender \"male\"; $y isa person, has gender \"female\"; " +
+                                                   "$l isa city; (male: $x, female: $y, location: $l) isa wedding; }").asConjunction(),
+                        Graql.parseVariable("(husband: $x, wife: $y) isa marriage").asThing());
+                logicMgr.putRule(
+                        "marriage-is-friendship",
+                        Graql.parsePattern("{ $a isa person; $b isa person; (husband: $a, wife: $b) isa marriage; }").asConjunction(),
+                        Graql.parseVariable("(friend: $a, friend: $b) isa friendship").asThing());
+                txn.commit();
+            }
+        }
+
+        try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+                txn.query().insert(Graql.parseQuery("insert " +
+                                                            "(male: $x, female: $y, location: $l) isa wedding;" +
+                                                            "$x isa person, has gender \"male\";" +
+                                                            "$y isa person, has gender \"female\";" +
+                                                            "$l isa city;"
+                ).asInsert());
+                txn.commit();
+            }
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
+                List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match ($x) isa friendship;").asMatch()).toList();
+                assertEquals(2, ans.size());
+
+                assertFalse(ans.get(0).explainables().isEmpty());
+                List<Explanation> explanations = assertSingleExplainableExplanations(ans.get(0), 1, 1, 1, txn);
+                Explanation explanation = explanations.get(0);
+
+                assertEquals(txn.logic().getRule("marriage-is-friendship"), explanation.rule());
+                assertEquals(2, explanation.variableMapping().size());
+                assertEquals(3, explanation.conclusionAnswer().answer().concepts().size());
+
+                ConceptMap marriageIsFriendshipAnswer = explanation.conditionAnswer();
+                assertEquals(1, marriageIsFriendshipAnswer.explainables().size());
+                assertSingleExplainableExplanations(marriageIsFriendshipAnswer, 1, 1, 1, txn);
+            }
+        }
+    }
+
+    private List<Explanation> assertSingleExplainableExplanations(ConceptMap ans, int anonymousConcepts, int explainablesCount,
+                                                                  int explanationsCount, RocksTransaction txn) {
+        Set<ConceptMap.Explainable> explainables = ans.explainables();
         assertEquals(anonymousConcepts, iterate(ans.concepts().keySet()).filter(Identifier::isAnonymous).count());
         assertEquals(explainablesCount, explainables.size());
         ConceptMap.Explainable explainable = explainables.iterator().next();
         assertNotEquals(NOT_IDENTIFIED, explainable.explainableId());
-        FunctionalIterator<Explanation> explanations = txn.query().explain(explainable.explainableId(), ans);
-        List<Explanation> explList = explanations.toList();
-        assertEquals(explanationsCount, explList.size());
+        List<Explanation> explanations = txn.query().explain(explainable.explainableId(), ans).toList();
+        assertEquals(explanationsCount, explanations.size());
 
-        explList.forEach(explanation -> {
+        explanations.forEach(explanation -> {
             Map<Retrievable, Set<Retrievable>> mapping = explanation.variableMapping();
             ConceptMap projected = applyMapping(mapping, ans);
             projected.concepts().forEach((var, concept) -> {
@@ -373,6 +441,7 @@ public class ExplanationTest {
                 assertEquals(explanation.conclusionAnswer().answer().get(var), concept);
             });
         });
+        return explanations;
     }
 
     private ConceptMap applyMapping(Map<Retrievable, Set<Retrievable>> mapping, ConceptMap completeMap) {

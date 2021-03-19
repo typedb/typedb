@@ -21,10 +21,8 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.parameters.Label;
-import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.Type;
@@ -525,7 +523,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         public boolean isInferredAnswer(ConceptMap conceptMap) {
             Thing owner = conceptMap.get(has.owner().id()).asThing();
             grakn.core.concept.thing.Attribute attribute = conceptMap.get(has.attribute().id()).asAttribute();
-            return owner.isHasInferred(attribute);
+            return owner.hasInferred(attribute);
         }
 
         public FunctionalIterator<Unifier> unify(Rule.Conclusion.Has hasConclusion, ConceptManager conceptMgr) {

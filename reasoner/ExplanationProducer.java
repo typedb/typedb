@@ -20,7 +20,7 @@ package grakn.core.reasoner;
 import grakn.core.common.parameters.Options;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
-import grakn.core.concurrent.common.Executors;
+import grakn.core.concurrent.executor.Executors;
 import grakn.core.concurrent.producer.Producer;
 import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
@@ -34,7 +34,7 @@ import grakn.core.reasoner.resolution.resolver.RootResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ExplanationProducer implements Producer<Explanation> {
@@ -72,7 +72,7 @@ public class ExplanationProducer implements Producer<Explanation> {
     }
 
     @Override
-    public synchronized void produce(Queue<Explanation> queue, int request, ExecutorService executor) {
+    public synchronized void produce(Queue<Explanation> queue, int request, Executor executor) {
         assert this.queue == null || this.queue == queue;
         this.queue = queue;
         this.required.addAndGet(request);

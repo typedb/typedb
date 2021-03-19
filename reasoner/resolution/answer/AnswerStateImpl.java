@@ -67,7 +67,7 @@ public abstract class AnswerStateImpl implements AnswerState {
     }
 
     protected ConceptMap extendAnswer(ConceptMap extension) {
-        return extendAnswer(extension, conceptMap().explainables().isPresent() ? conceptMap.explainables().get() : null);
+        return extendAnswer(extension, conceptMap.explainables());
     }
 
     protected ConceptMap extendAnswer(ConceptMap extension, Set<ConceptMap.Explainable> explainables) {
@@ -133,7 +133,6 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                 private InitialImpl(Set<Identifier.Variable.Name> getFilter, ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration, boolean explainable) {
                     super(getFilter, conceptMap, root, requiresReiteration, explainable);
-                    assert explainable == conceptMap.explainables().isPresent();
                 }
 
                 public static InitialImpl create(Set<Identifier.Variable.Name> getFilter, ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root, boolean explainable) {
@@ -360,7 +359,6 @@ public abstract class AnswerStateImpl implements AnswerState {
                               Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration, boolean explainable) {
                         super(parent, conceptMap, root, requiresReiteration);
                         this.explainable = explainable;
-                        assert explainable == conceptMap.explainables().isPresent();
                         this.hash = Objects.hash(root, parent, conceptMap, requiresReiteration(), explainable); //note: NOT including explainables
                     }
 
@@ -380,8 +378,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                     public Match with(ConceptMap extension, boolean requiresReiteration, Conjunction source) {
                         Set<ConceptMap.Explainable> explainablesExtended;
                         if (explainable()) {
-                            assert conceptMap().explainables().isPresent();
-                            Set<ConceptMap.Explainable> explainables = conceptMap().explainables().get();
+                            Set<ConceptMap.Explainable> explainables = conceptMap().explainables();
                             explainablesExtended = new HashSet<>(explainables);
                             explainablesExtended.add(ConceptMap.Explainable.unidentified(source));
                         } else {
@@ -577,8 +574,7 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                     @Override
                     public Explain with(ConceptMap extension, boolean requiresReiteration, Conjunction source) {
-                        assert conceptMap().explainables().isPresent();
-                        Set<ConceptMap.Explainable> explainables = conceptMap().explainables().get();
+                        Set<ConceptMap.Explainable> explainables = conceptMap().explainables();
                         Set<ConceptMap.Explainable> explainablesExtended = new HashSet<>(explainables);
                         explainablesExtended.add(ConceptMap.Explainable.unidentified(source));
                         return new ExplainImpl(filter, parent(), extendAnswer(extension, explainablesExtended), root(), requiresReiteration);

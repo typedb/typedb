@@ -59,6 +59,10 @@ public class Explanation {
         return merged;
     }
 
+    public Rule rule() {
+        return rule;
+    }
+
     public ConclusionAnswer conclusionAnswer() {
         return conclusionAnswer;
     }
