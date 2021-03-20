@@ -136,10 +136,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                 }
 
                 public static InitialImpl create(Set<Identifier.Variable.Name> getFilter, ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root, boolean explainable) {
-                    ConceptMap initialAns = conceptMap;
-                    if (explainable) initialAns = new ConceptMap(initialAns.concepts(), new HashSet<>());
-                    else initialAns = conceptMap.filter(getFilter);
-                    return new InitialImpl(getFilter, initialAns, root, false, explainable);
+                    return new InitialImpl(getFilter, conceptMap, root, false, explainable);
                 }
 
                 @Override
@@ -149,9 +146,8 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                 @Override
                 public FinishedImpl finish(ConceptMap conceptMap, boolean requiresReiteration) {
-                    ConceptMap answer;
-                    if (explainable()) answer = conceptMap;
-                    else answer = conceptMap.filter(getFilter());
+                    ConceptMap answer = conceptMap;
+                    if (!explainable()) answer = conceptMap.filter(getFilter());
                     return FinishedImpl.create(getFilter(), answer, root(), requiresReiteration, explainable());
                 }
 
@@ -320,7 +316,6 @@ public abstract class AnswerStateImpl implements AnswerState {
                     return parent().with(conceptMap().filter(filter), requiresReiteration() || parent().requiresReiteration());
                 }
 
-
                 @Override
                 Nestable getThis() {
                     return this;
@@ -359,7 +354,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                               Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration, boolean explainable) {
                         super(parent, conceptMap, root, requiresReiteration);
                         this.explainable = explainable;
-                        this.hash = Objects.hash(root, parent, conceptMap, requiresReiteration(), explainable); //note: NOT including explainables
+                        this.hash = Objects.hash(root, parent, conceptMap, requiresReiteration(), explainable);
                     }
 
                     static MatchImpl childOf(Top.Match.Initial parent) {
@@ -376,15 +371,15 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                     @Override
                     public Match with(ConceptMap extension, boolean requiresReiteration, Conjunction source) {
-                        Set<ConceptMap.Explainable> explainablesExtended;
+                        ConceptMap extended;
                         if (explainable()) {
-                            Set<ConceptMap.Explainable> explainables = conceptMap().explainables();
-                            explainablesExtended = new HashSet<>(explainables);
-                            explainablesExtended.add(ConceptMap.Explainable.unidentified(source));
+                            Set<ConceptMap.Explainable> explainables = new HashSet<>(conceptMap().explainables());
+                            explainables.add(ConceptMap.Explainable.unidentified(source));
+                            extended = extendAnswer(extension, explainables);
                         } else {
-                            explainablesExtended = null;
+                            extended = extendAnswer(extension);
                         }
-                        return new MatchImpl(parent(), extendAnswer(extension, explainablesExtended), root(), requiresReiteration, explainable());
+                        return new MatchImpl(parent(), extended, root(), requiresReiteration, explainable());
                     }
 
                     @Override
@@ -516,7 +511,6 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                     @Override
                     public Conclusion.Match toUpstream() {
-                        if (conceptMap().concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
                         return parent().with(conceptMap().filter(filter), requiresReiteration() || parent().requiresReiteration());
                     }
 
@@ -562,9 +556,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                     }
 
                     static ExplainImpl childOf(Set<Identifier.Variable.Retrievable> filter, Conclusion.Explain parent) {
-                        return new ExplainImpl(filter, parent,
-                                               new ConceptMap(parent.conceptMap().filter(filter).concepts(), new HashSet<>()),
-                                               parent.root(), false);
+                        return new ExplainImpl(filter, parent, parent.conceptMap().filter(filter), parent.root(), false);
                     }
 
                     @Override
