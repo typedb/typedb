@@ -108,8 +108,8 @@ public abstract class CompoundResolver<
     static class RequestState {
 
         private final int iteration;
-        private final LinkedHashSet<Request> downstreamProducer;
         private Iterator<Request> downstreamProducerSelector;
+        final LinkedHashSet<Request> downstreamProducer;
 
         public RequestState(int iteration) {
             this.iteration = iteration;

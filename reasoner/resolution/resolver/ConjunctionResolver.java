@@ -95,6 +95,11 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
 
         Plans.Plan plan = plans.get(fromUpstream.partialAnswer().conceptMap().concepts().keySet());
 
+        // TODO: this is a bit of a hack, we want requests to a negation to be "single use", otherwise we can end up in an infinite loop
+        // TODO: where the request to the negation never gets removed and we constantly re-request from it!
+        // TODO: this could be either implemented with a different response type: FinalAnswer, or splitting Request into ReusableRequest vs SingleRequest
+        if (plan.get(toDownstream.planIndex()).isNegated()) requestState.removeDownstreamProducer(toDownstream);
+
         Partial.Compound<?, ?> partialAnswer = fromDownstream.answer().asCompound();
         if (plan.isLast(fromDownstream.planIndex())) {
             Optional<AnswerState> upstreamAnswer = toUpstreamAnswer(partialAnswer);
@@ -112,9 +117,10 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         final Partial<?> downstream = toDownstream(fromDownstream.answer().asCompound(), nextPlannedDownstream, nextResolvable);
         Request downstreamRequest = Request.create(driver(), nextPlannedDownstream.resolver(), downstream, nextResolverIndex);
         requestFromDownstream(downstreamRequest, fromUpstream, iteration);
-        // TODO: this is a bit of a hack, we want to transparently handle requests to a negation as "single use" (otherwise we can end up in an infinite loop)
-        // TODO: special purpose code here feels like this behaviour could be baked into the model
-        if (!nextResolvable.isNegated()) requestState.addDownstreamProducer(downstreamRequest);
+        // negated requests can be used twice in a parallel setting, and return the same answer twice
+        if (!nextResolvable.isNegated() || (nextResolvable.isNegated() && !requestState.containsDownstream(downstreamRequest))) {
+            requestState.addDownstreamProducer(downstreamRequest);
+        }
     }
 
     @Override
@@ -231,6 +237,10 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
 
         public Set<ConceptMap> produced() {
             return produced;
+        }
+
+        public boolean containsDownstream(Request downstream) {
+            return downstreamProducer.contains(downstream);
         }
     }
 
