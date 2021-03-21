@@ -78,8 +78,8 @@ public class QueryManager {
         }
     }
 
-    public FunctionalIterator<Explanation> explain(long explainableId, ConceptMap bounds) {
-        return reasoner.explain(explainableId, bounds, defaultContext);
+    public FunctionalIterator<Explanation> explain(long explainableId) {
+        return reasoner.explain(explainableId, defaultContext);
     }
 
     public Numeric match(GraqlMatch.Aggregate query) {

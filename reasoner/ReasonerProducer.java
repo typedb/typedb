@@ -54,7 +54,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private final AtomicInteger required;
     private final AtomicInteger processing;
     private final Options.Query options;
-    private final Explanations explanations;
+    private final ExplainablesManager explainablesManager;
     private final Request resolveRequest;
     private final int computeSize;
     private boolean requiresReiteration;
@@ -64,9 +64,9 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     // TODO: this class should not be a Producer, it implements a different async processing mechanism
     public ReasonerProducer(Conjunction conjunction, GraqlMatch.Modifiers modifiers, Options.Query options,
-                            ResolverRegistry resolverRegistry, Explanations explanations) {
+                            ResolverRegistry resolverRegistry, ExplainablesManager explainablesManager) {
         this.options = options;
-        this.explanations = explanations;
+        this.explainablesManager = explainablesManager;
         this.queue = null;
         this.iteration = 0;
         this.done = false;
@@ -81,9 +81,9 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     public ReasonerProducer(Disjunction disjunction, GraqlMatch.Modifiers modifiers, Options.Query options,
-                            ResolverRegistry resolverRegistry, Explanations explanations) {
+                            ResolverRegistry resolverRegistry, ExplainablesManager explainablesManager) {
         this.options = options;
-        this.explanations = explanations;
+        this.explainablesManager = explainablesManager;
         this.queue = null;
         this.iteration = 0;
         this.done = false;
@@ -123,7 +123,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         if (answer.requiresReiteration()) requiresReiteration = true;
         ConceptMap conceptMap = answer.conceptMap();
         if (options.explain() && !conceptMap.explainables().isEmpty()) {
-            explanations.setAndRecordExplainableIds(conceptMap);
+            explainablesManager.setAndRecordExplainables(conceptMap);
         }
         queue.put(conceptMap);
         if (required.decrementAndGet() > 0) requestAnswer();

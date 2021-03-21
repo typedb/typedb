@@ -26,25 +26,32 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static grakn.core.concept.answer.ConceptMap.Explainable.NOT_IDENTIFIED;
 
-public class Explanations {
+public class ExplainablesManager {
 
-    private AtomicLong explainableId;
-    private ConcurrentMap<Long, ConceptMap.Explainable> explainableRegistry;
+    private AtomicLong nextId;
+    private ConcurrentMap<Long, Conjunction> conjunctions;
+    private ConcurrentMap<Long, ConceptMap> bounds;
 
-    public Explanations() {
-        this.explainableId = new AtomicLong(NOT_IDENTIFIED + 1);
-        this.explainableRegistry = new ConcurrentHashMap<>();
+    public ExplainablesManager() {
+        this.nextId = new AtomicLong(NOT_IDENTIFIED + 1);
+        this.conjunctions = new ConcurrentHashMap<>();
+        this.bounds = new ConcurrentHashMap<>();
     }
 
-    public void setAndRecordExplainableIds(ConceptMap explainableAnswer) {
-        explainableAnswer.explainables().forEach(explainable -> {
-            long nextId = explainableId.getAndIncrement();
+    public void setAndRecordExplainables(ConceptMap explainableMap) {
+        explainableMap.explainables().forEach(explainable -> {
+            long nextId = this.nextId.getAndIncrement();
             explainable.setId(nextId);
-            explainableRegistry.put(nextId, explainable);
+            conjunctions.put(nextId, explainable.conjunction());
+            bounds.put(nextId, explainableMap);
         });
     }
 
-    public Conjunction getExplainableConjunction(long explainableId) {
-        return explainableRegistry.get(explainableId).conjunction();
+    public Conjunction getConjunction(long explainableId) {
+        return conjunctions.get(explainableId);
+    }
+
+    public ConceptMap getBounds(long explainableId) {
+        return bounds.get(explainableId);
     }
 }

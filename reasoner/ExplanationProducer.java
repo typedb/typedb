@@ -41,7 +41,7 @@ public class ExplanationProducer implements Producer<Explanation> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ExplanationProducer.class);
 
-    private final Explanations explanations;
+    private final ExplainablesManager explainablesManager;
     private final Options.Query options;
     private final Actor.Driver<RootResolver.Explain> explainer;
     private final Request explainRequest;
@@ -55,8 +55,8 @@ public class ExplanationProducer implements Producer<Explanation> {
     private Queue<Explanation> queue;
 
     public ExplanationProducer(Conjunction conjunction, ConceptMap bounds, Options.Query options,
-                               ResolverRegistry registry, Explanations explanations) {
-        this.explanations = explanations;
+                               ResolverRegistry registry, ExplainablesManager explainablesManager) {
+        this.explainablesManager = explainablesManager;
         this.options = options;
         this.queue = null;
         this.iteration = 0;
@@ -94,7 +94,7 @@ public class ExplanationProducer implements Producer<Explanation> {
         if (options.traceInference()) ResolutionTracer.get().finish();
         if (explainedAnswer.requiresReiteration()) requiresReiteration = true;
         Explanation explanation = explainedAnswer.explanation();
-        explanations.setAndRecordExplainableIds(explanation.conditionAnswer());
+        explainablesManager.setAndRecordExplainables(explanation.conditionAnswer());
         queue.put(explanation);
         if (required.decrementAndGet() > 0) requestExplanation();
         else processing.decrementAndGet();

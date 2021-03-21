@@ -331,7 +331,7 @@ public class ExplanationTest {
                 for (ConceptMap explainableMap : explainableMaps) {
                     Set<ConceptMap.Explainable> explainables = explainableMap.explainables();
                     assertEquals(1, explainables.size());
-                    List<Explanation> explanations = txn.query().explain(explainables.iterator().next().explainableId(), explainableMap).toList();
+                    List<Explanation> explanations = txn.query().explain(explainables.iterator().next().explainableId()).toList();
                     allExplanations.put(new Pair<>(explainableMap, explainables.iterator().next()), explanations);
                 }
 
@@ -414,7 +414,7 @@ public class ExplanationTest {
 
                 assertEquals(txn.logic().getRule("marriage-is-friendship"), explanation.rule());
                 assertEquals(2, explanation.variableMapping().size());
-                assertEquals(3, explanation.conclusionAnswer().answer().concepts().size());
+                assertEquals(3, explanation.conclusionAnswer().concepts().size());
 
                 ConceptMap marriageIsFriendshipAnswer = explanation.conditionAnswer();
                 assertEquals(1, marriageIsFriendshipAnswer.explainables().size());
@@ -430,15 +430,15 @@ public class ExplanationTest {
         assertEquals(explainablesCount, explainables.size());
         ConceptMap.Explainable explainable = explainables.iterator().next();
         assertNotEquals(NOT_IDENTIFIED, explainable.explainableId());
-        List<Explanation> explanations = txn.query().explain(explainable.explainableId(), ans).toList();
+        List<Explanation> explanations = txn.query().explain(explainable.explainableId()).toList();
         assertEquals(explanationsCount, explanations.size());
 
         explanations.forEach(explanation -> {
             Map<Retrievable, Set<Retrievable>> mapping = explanation.variableMapping();
             ConceptMap projected = applyMapping(mapping, ans);
             projected.concepts().forEach((var, concept) -> {
-                assertTrue(explanation.conclusionAnswer().answer().contains(var));
-                assertEquals(explanation.conclusionAnswer().answer().get(var), concept);
+                assertTrue(explanation.conclusionAnswer().contains(var));
+                assertEquals(explanation.conclusionAnswer().get(var), concept);
             });
         });
         return explanations;

@@ -694,14 +694,14 @@ public abstract class AnswerStateImpl implements AnswerState {
 
             public static class ExplainImpl extends ConcludableImpl<Compound.Root.Explain> implements Explain {
 
-                private final ConclusionAnswer conclusionAnswer;
+                private final Explanation explanation;
                 private final int hash;
 
-                ExplainImpl(@Nullable ConclusionAnswer conclusionAnswer, Mapping mapping, Compound.Root.Explain parent, ConceptMap conceptMap,
+                ExplainImpl(@Nullable Explanation explanation, Mapping mapping, Compound.Root.Explain parent, ConceptMap conceptMap,
                             Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
                     super(mapping, parent, conceptMap, root, requiresReiteration);
-                    this.conclusionAnswer = conclusionAnswer;
-                    this.hash = Objects.hash(root(), parent(), conceptMap(), mapping(), requiresReiteration(), conclusionAnswer);
+                    this.explanation = explanation;
+                    this.hash = Objects.hash(root(), parent(), conceptMap(), mapping(), requiresReiteration(), explanation);
                 }
 
                 static ExplainImpl childOf(Mapping mapping, Compound.Root.Explain parent) {
@@ -709,26 +709,34 @@ public abstract class AnswerStateImpl implements AnswerState {
                 }
 
                 @Override
-                public Explain with(ConceptMap extension, boolean requiresReiteration, ConclusionAnswer conclusionAnswer) {
-                    assert this.conclusionAnswer() == null;
-                    return new ExplainImpl(conclusionAnswer, mapping(), parent(), extendAnswer(extension), root(), requiresReiteration);
+                public Explain with(ConceptMap extension, boolean requiresReiteration, Rule rule, ConceptMap conclusionAnser, Unifier unifier, ConceptMap conditionAnswer) {
+                    assert this.explanation == null;
+                    Explanation explanation = new Explanation(rule, transitiveMapping(mapping(), unifier), conclusionAnser, conditionAnswer);
+                    return new ExplainImpl(explanation, mapping(), parent(), extendAnswer(extension), root(), requiresReiteration);
+                }
+
+                private Map<Identifier.Variable.Retrievable, Set<Identifier.Variable.Retrievable>> transitiveMapping(Mapping mapping, Unifier unifier) {
+                    Map<Identifier.Variable.Retrievable, Set<Identifier.Variable.Retrievable>> merged = new HashMap<>();
+                    mapping.mapping().forEach((from, to) -> {
+                        Set<Identifier.Variable.Retrievable> tos = merged.computeIfAbsent(from, (key) -> new HashSet<>());
+                        if (unifier.mapping().containsKey(to)) {
+                            unifier.mapping().get(to).forEach(var -> {
+                                if (var.isRetrievable()) tos.add(var.asRetrievable());
+                            });
+                        }
+                    });
+                    return merged;
                 }
 
                 @Override
                 public Compound.Root.Explain toUpstreamInferred() {
                     boolean requiresReiteration = requiresReiteration() || parent().requiresReiteration();
-                    Explanation explanation = new Explanation(conclusionAnswer().rule(), mapping(), conclusionAnswer(), conclusionAnswer().conditionAnswer());
                     return parent().with(mapping().unTransform(this.conceptMap()), requiresReiteration, explanation);
                 }
 
                 @Override
                 public Optional<Conclusion.Explain> toDownstream(Unifier unifier, Rule rule) {
                     return ConclusionImpl.ExplainImpl.childOf(unifier, rule, this);
-                }
-
-                @Override
-                public ConclusionAnswer conclusionAnswer() {
-                    return conclusionAnswer;
                 }
 
                 @Override
@@ -741,7 +749,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                             Objects.equals(conceptMap(), that.conceptMap()) &&
                             Objects.equals(mapping(), that.mapping()) &&
                             requiresReiteration() == that.requiresReiteration() &&
-                            Objects.equals(conclusionAnswer, that.conclusionAnswer);
+                            Objects.equals(explanation, that.explanation);
                 }
 
                 @Override
@@ -890,7 +898,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                     Optional<ConceptMap> unUnified = unifier().unUnify(concepts, instanceRequirements());
                     return unUnified.map(ans -> {
                         ConclusionAnswer conclusionAnswer = new ConclusionAnswer(rule(), toConceptMap(concepts), unifier(), conditionAnswer());
-                        return parent().with(ans, true, conclusionAnswer);
+                        return parent().with(ans, true, rule(), toConceptMap(concepts), unifier(), conditionAnswer());
                     });
                 }
 
@@ -925,6 +933,57 @@ public abstract class AnswerStateImpl implements AnswerState {
                 public int hashCode() {
                     return hash;
                 }
+
+
+                static class ConclusionAnswer {
+
+                    private final Rule rule;
+                    private final ConceptMap conceptMap;
+                    private final Unifier unifier;
+                    private final ConceptMap conditionAnswer;
+                    private final int hash;
+
+                    public ConclusionAnswer(Rule rule, ConceptMap conceptMap, Unifier unifier, ConceptMap conditionAnswer) {
+                        this.rule = rule;
+                        this.conceptMap = conceptMap;
+                        this.unifier = unifier;
+                        this.conditionAnswer = conditionAnswer;
+                        this.hash = Objects.hash(rule, conceptMap, unifier, conditionAnswer);
+                    }
+
+                    public Rule rule() {
+                        return rule;
+                    }
+
+                    public ConceptMap conditionAnswer() {
+                        return conditionAnswer;
+                    }
+
+                    public ConceptMap answer() {
+                        return conceptMap;
+                    }
+
+                    @Override
+                    public boolean equals(Object o) {
+                        if (this == o) return true;
+                        if (o == null || getClass() != o.getClass()) return false;
+                        final ConclusionAnswer that = (ConclusionAnswer) o;
+                        return Objects.equals(rule, that.rule) &&
+                                Objects.equals(conceptMap, that.conceptMap) &&
+                                Objects.equals(unifier, that.unifier) &&
+                                Objects.equals(conditionAnswer, that.conditionAnswer);
+                    }
+
+                    @Override
+                    public int hashCode() {
+                        return hash;
+                    }
+
+                    public Unifier unifier() {
+                        return unifier;
+                    }
+                }
+
             }
         }
 

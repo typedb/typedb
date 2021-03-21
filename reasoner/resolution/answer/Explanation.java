@@ -31,39 +31,28 @@ import java.util.Set;
 public class Explanation {
 
     private final Rule rule;
-    private final Mapping intermediateMapping;
-    private final ConclusionAnswer conclusionAnswer;
+    private final Map<Retrievable, Set<Retrievable>> variableMapping;
+    private final ConceptMap conclusionAnswer;
     private final ConceptMap conditionAnswer;
     private final int hash;
 
-    public Explanation(Rule rule, Mapping intermediateMapping, ConclusionAnswer conclusionAnswer, ConceptMap conditionAnswer) {
+    public Explanation(Rule rule, Map<Retrievable, Set<Retrievable>> variableMapping, ConceptMap conclusionAnswer, ConceptMap conditionAnswer) {
         this.rule = rule;
-        this.intermediateMapping = intermediateMapping;
+        this.variableMapping = variableMapping;
         this.conclusionAnswer = conclusionAnswer;
         this.conditionAnswer = conditionAnswer;
-        this.hash = Objects.hash(rule, intermediateMapping, conclusionAnswer, conditionAnswer);
-    }
-
-    public Map<Retrievable, Set<Retrievable>> variableMapping() {
-        Unifier unifier = conclusionAnswer.unifier();
-        Map<Retrievable, Set<Retrievable>> merged = new HashMap<>();
-
-        intermediateMapping.mapping().forEach((from, to) -> {
-            Set<Retrievable> tos = merged.computeIfAbsent(from, (key) -> new HashSet<>());
-            if (unifier.mapping().containsKey(to)) {
-                unifier.mapping().get(to).forEach(var -> {
-                    if (var.isRetrievable()) tos.add(var.asRetrievable());
-                });
-            }
-        });
-        return merged;
+        this.hash = Objects.hash(rule, variableMapping, conclusionAnswer, conditionAnswer);
     }
 
     public Rule rule() {
         return rule;
     }
 
-    public ConclusionAnswer conclusionAnswer() {
+    public Map<Retrievable, Set<Retrievable>> variableMapping() {
+        return variableMapping;
+    }
+
+    public ConceptMap conclusionAnswer() {
         return conclusionAnswer;
     }
 
@@ -77,7 +66,7 @@ public class Explanation {
         if (o == null || getClass() != o.getClass()) return false;
         final Explanation that = (Explanation) o;
         return Objects.equals(rule, that.rule) &&
-                Objects.equals(intermediateMapping, that.intermediateMapping) &&
+                Objects.equals(variableMapping, that.variableMapping) &&
                 Objects.equals(conclusionAnswer, that.conclusionAnswer) &&
                 Objects.equals(conditionAnswer, that.conditionAnswer);
     }
