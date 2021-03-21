@@ -220,11 +220,6 @@ public interface AnswerState {
                 Partial.Compound<?, ?> toUpstream();
 
                 @Override
-                default Nestable with(ConceptMap extension, boolean requiresReiteration, Conjunction source) {
-                    return with(extension, requiresReiteration);
-                }
-
-                @Override
                 Concludable.Match<Nestable> toDownstream(Mapping mapping, Conjunction concludableConjunction);
 
                 @Override

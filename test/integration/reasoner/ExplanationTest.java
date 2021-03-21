@@ -89,6 +89,69 @@ public class ExplanationTest {
     }
 
     @Test
+    public void test_disjunction_explainable() {
+        try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+                ConceptManager conceptMgr = txn.concepts();
+                LogicManager logicMgr = txn.logic();
+
+                EntityType person = conceptMgr.putEntityType("person");
+                AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
+                person.setOwns(name);
+                RelationType friendship = conceptMgr.putRelationType("friendship");
+                friendship.setRelates("friend");
+                RelationType marriage = conceptMgr.putRelationType("marriage");
+                marriage.setRelates("husband");
+                marriage.setRelates("wife");
+                person.setPlays(friendship.getRelates("friend"));
+                person.setPlays(marriage.getRelates("husband"));
+                person.setPlays(marriage.getRelates("wife"));
+                logicMgr.putRule(
+                        "marriage-is-friendship",
+                        Graql.parsePattern("{ $x isa person; $y isa person; (husband: $x, wife: $y) isa marriage; }").asConjunction(),
+                        Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
+                txn.commit();
+            }
+        }
+        try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+                txn.query().insert(Graql.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (husband: $x, wife: $y) isa marriage;").asInsert());
+                txn.commit();
+            }
+            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
+                List<ConceptMap> ans = txn.query().match(Graql.parseQuery(
+                        "match $p1 isa person; { (friend: $p1, friend: $p2) isa friendship;} or { $p1 has name 'Zack'; }; "
+                ).asMatch()).toList();
+                assertEquals(3, ans.size());
+
+                ConceptMap withExplainable;
+                ConceptMap withoutExplainable;
+                if (ans.get(0).contains("p2")) {
+                    withExplainable = ans.get(0);
+                    if (!ans.get(1).contains("p2")) withoutExplainable = ans.get(1);
+                    else withoutExplainable = ans.get(2);
+                } else if (ans.get(1).contains("p2")) {
+                    withExplainable = ans.get(1);
+                    if (!ans.get(0).contains("p2")) withoutExplainable = ans.get(0);
+                    else withoutExplainable = ans.get(2);
+                } else {
+                    withExplainable = ans.get(2);
+                    if (!ans.get(0).contains("p2")) withoutExplainable = ans.get(0);
+                    else withoutExplainable = ans.get(1);
+                }
+
+                assertEquals(3, withExplainable.concepts().size());
+                assertEquals(2, withoutExplainable.concepts().size());
+
+                assertFalse(withExplainable.explainables().isEmpty());
+                assertTrue(withoutExplainable.explainables().isEmpty());
+
+                assertSingleExplainableExplanations(withExplainable, 1, 1, 1, txn);
+            }
+        }
+    }
+
+    @Test
     public void test_relation_explainable() {
         try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {

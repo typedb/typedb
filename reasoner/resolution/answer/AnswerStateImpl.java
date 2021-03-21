@@ -36,6 +36,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.iterate;
 
@@ -67,7 +68,7 @@ public abstract class AnswerStateImpl implements AnswerState {
     }
 
     protected ConceptMap extendAnswer(ConceptMap extension) {
-        return extendAnswer(extension, conceptMap.explainables());
+        return extendAnswer(extension, set(conceptMap.explainables(), extension.explainables()));
     }
 
     protected ConceptMap extendAnswer(ConceptMap extension, Set<ConceptMap.Explainable> explainables) {
@@ -267,7 +268,6 @@ public abstract class AnswerStateImpl implements AnswerState {
                 super(prnt, conceptMap, root, requiresReiteration);
             }
 
-
             @Override
             public Retrievable<SLF> filterToRetrievable(Set<Identifier.Variable.Retrievable> filter) {
                 return PartialImpl.PartialImpl.ConcludableImpl.RetrievableImpl.childOf(filter, getThis());
@@ -305,6 +305,19 @@ public abstract class AnswerStateImpl implements AnswerState {
                 }
 
                 @Override
+                public Nestable with(ConceptMap extension, boolean requiresReiteration, Conjunction source) {
+                    ConceptMap extended;
+                    if (explainable) {
+                        Set<ConceptMap.Explainable> explainables = new HashSet<>(conceptMap().explainables());
+                        explainables.add(ConceptMap.Explainable.unidentified(source));
+                        extended = extendAnswer(extension, explainables);
+                    } else {
+                        extended = extendAnswer(extension);
+                    }
+                    return new NestableImpl(filter(), parent(), extended, root(), requiresReiteration, explainable);
+                }
+
+                @Override
                 public Concludable.Match<Nestable> toDownstream(Mapping mapping, Conjunction concludableConjunction) {
                     return ConcludableImpl.MatchImpl.childOf(mapping, concludableConjunction, this, explainable);
                 }
@@ -316,8 +329,9 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                 @Override
                 public Compound<?, ?> toUpstream() {
-                    if (conceptMap().concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
-                    return parent().with(conceptMap().filter(filter), requiresReiteration() || parent().requiresReiteration());
+                    ConceptMap conceptMap = conceptMap();
+                    if (!explainable) conceptMap = conceptMap.filter(filter);
+                    return parent().with(conceptMap, requiresReiteration() || parent().requiresReiteration());
                 }
 
                 @Override
