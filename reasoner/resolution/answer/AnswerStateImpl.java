@@ -267,10 +267,6 @@ public abstract class AnswerStateImpl implements AnswerState {
                 super(prnt, conceptMap, root, requiresReiteration);
             }
 
-            @Override
-            public Nestable filterToNestable(Set<Identifier.Variable.Retrievable> filter) {
-                return NestableImpl.childOf(filter, this);
-            }
 
             @Override
             public Retrievable<SLF> filterToRetrievable(Set<Identifier.Variable.Retrievable> filter) {
@@ -282,17 +278,20 @@ public abstract class AnswerStateImpl implements AnswerState {
             public static class NestableImpl extends CompoundImpl<Nestable, Compound<?, ?>> implements Nestable {
 
                 private final Set<Identifier.Variable.Retrievable> filter;
+                private final boolean explainable;
                 private final int hash;
 
                 NestableImpl(Set<Identifier.Variable.Retrievable> filter, Compound<?, ?> parent,
-                             ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration) {
+                             ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration,
+                             boolean explainable) {
                     super(parent, conceptMap, root, requiresReiteration);
                     this.filter = filter;
+                    this.explainable = explainable;
                     this.hash = Objects.hash(root(), parent(), conceptMap(), requiresReiteration(), filter());
                 }
 
-                static NestableImpl childOf(Set<Identifier.Variable.Retrievable> filter, Compound<?, ?> parent) {
-                    return new NestableImpl(filter, parent, parent.conceptMap().filter(filter), parent.root(), parent.requiresReiteration());
+                static NestableImpl childOf(Set<Identifier.Variable.Retrievable> filter, Compound<?, ?> parent, boolean explainable) {
+                    return new NestableImpl(filter, parent, parent.conceptMap().filter(filter), parent.root(), parent.requiresReiteration(), explainable);
                 }
 
                 @Override
@@ -302,12 +301,17 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                 @Override
                 public Nestable with(ConceptMap extension, boolean requiresReiteration) {
-                    return new NestableImpl(filter(), parent(), extendAnswer(extension), root(), requiresReiteration);
+                    return new NestableImpl(filter(), parent(), extendAnswer(extension), root(), requiresReiteration, explainable);
                 }
 
                 @Override
                 public Concludable.Match<Nestable> toDownstream(Mapping mapping, Conjunction concludableConjunction) {
-                    return ConcludableImpl.MatchImpl.childOf(mapping, concludableConjunction, this, false);
+                    return ConcludableImpl.MatchImpl.childOf(mapping, concludableConjunction, this, explainable);
+                }
+
+                @Override
+                public Nestable filterToNestable(Set<Identifier.Variable.Retrievable> filter) {
+                    return NestableImpl.childOf(filter, this, explainable);
                 }
 
                 @Override
@@ -388,6 +392,11 @@ public abstract class AnswerStateImpl implements AnswerState {
                     }
 
                     @Override
+                    public Nestable filterToNestable(Set<Identifier.Variable.Retrievable> filter) {
+                        return NestableImpl.childOf(filter, this, explainable);
+                    }
+
+                    @Override
                     public Top.Match.Finished toFinishedTop(Conjunction compoundConjunction) {
                         return parent().finish(conceptMap(), requiresReiteration());
                     }
@@ -450,6 +459,11 @@ public abstract class AnswerStateImpl implements AnswerState {
                     }
 
                     @Override
+                    public Nestable filterToNestable(Set<Identifier.Variable.Retrievable> filter) {
+                        return NestableImpl.childOf(filter, this, false);
+                    }
+
+                    @Override
                     public Top.Explain.Finished toFinishedTop() {
                         assert explanation != null;
                         return parent().finish(conceptMap(), requiresReiteration(), explanation);
@@ -487,6 +501,10 @@ public abstract class AnswerStateImpl implements AnswerState {
                     super(parent, conceptMap, root, requiresReiteration);
                 }
 
+                @Override
+                public Nestable filterToNestable(Set<Identifier.Variable.Retrievable> filter) {
+                    return NestableImpl.childOf(filter, this, false);
+                }
 
                 public static class MatchImpl extends ConditionImpl<Match, Conclusion.Match> implements Match {
 
