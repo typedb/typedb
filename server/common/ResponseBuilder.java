@@ -28,21 +28,12 @@ import grakn.core.concept.answer.NumericGroup;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.RoleType;
-import grakn.core.concept.type.ThingType;
+import grakn.core.concept.type.*;
 import grakn.core.reasoner.resolution.answer.Explanation;
 import grakn.core.server.SessionService;
-import grakn.protocol.AnswerProto;
-import grakn.protocol.ConceptProto;
+import grakn.protocol.*;
 import grakn.protocol.CoreDatabaseProto.CoreDatabase;
 import grakn.protocol.CoreDatabaseProto.CoreDatabaseManager;
-import grakn.protocol.LogicProto;
-import grakn.protocol.QueryProto;
-import grakn.protocol.SessionProto;
-import grakn.protocol.TransactionProto;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 
@@ -53,9 +44,10 @@ import java.util.regex.Pattern;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.server.common.ResponseBuilder.Answer.conceptMap;
 import static grakn.core.server.common.ResponseBuilder.Answer.numeric;
 import static grakn.core.server.common.ResponseBuilder.Concept.protoThing;
-import static grakn.core.server.common.ResponseBuilder.Rule.protoRule;
+import static grakn.core.server.common.ResponseBuilder.Logic.Rule.protoRule;
 import static grakn.core.server.common.ResponseBuilder.Type.protoType;
 import static java.util.stream.Collectors.toList;
 
@@ -222,7 +214,7 @@ public class ResponseBuilder {
         public static TransactionProto.Transaction.ResPart explainResPart(String reqID, List<Explanation> explanations) {
             return queryMgrResPart(reqID, QueryProto.QueryManager.ResPart.newBuilder().setExplainResPart(
                     QueryProto.QueryManager.Explain.ResPart.newBuilder().addAllExplanations(
-                            iterate(explanations).map(Answer::explanation).toList()
+                            iterate(explanations).map(Logic::explanation).toList()
                     )));
         }
 
@@ -291,30 +283,11 @@ public class ResponseBuilder {
         public static TransactionProto.Transaction.ResPart getRulesResPart(String reqID, List<grakn.core.logic.Rule> rules) {
             return logicMgrResPart(reqID, LogicProto.LogicManager.ResPart.newBuilder().setGetRulesResPart(
                     LogicProto.LogicManager.GetRules.ResPart.newBuilder().addAllRules(
-                            rules.stream().map(Rule::protoRule).collect(toList()))
+                            rules.stream().map(Logic.Rule::protoRule).collect(toList()))
             ));
         }
     }
-//
-//        /**
-//         * @param explanation
-//         * @return
-//         */
-//        static TransactionProto.Transaction.Res explanation(Explanation explanation) {
-//            TransactionProto.Transaction.Res.Builder res = TransactionProto.Transaction.Res.newBuilder();
-//            AnswerProto.Explanation.Res.Builder explanationBuilder = AnswerProto.Explanation.Res.newBuilder()
-//                    .addAllExplanation(explanation.getAnswers().stream().map(Answer::conceptMap)
-//                                               .collect(Collectors.toList()));
-//
-//            if (explanation.isRuleExplanation()) {
-//                Rule rule = ((RuleExplanation) explanation).getRule();
-//                ConceptProto.Concept ruleProto = Concept.concept(rule);
-//                explanationBuilder.setRule(ruleProto);
-//            }
-//
-//            res.setExplanationRes(explanationBuilder.build());
-//            return res.build();
-//        }
+
 
     public static class Concept {
 
@@ -731,28 +704,44 @@ public class ResponseBuilder {
         }
     }
 
-    public static class Rule {
+    public static class Logic {
 
-        public static LogicProto.Rule protoRule(grakn.core.logic.Rule rule) {
-            return LogicProto.Rule.newBuilder().setLabel(rule.getLabel())
-                    .setWhen(rule.getWhenPreNormalised().toString())
-                    .setThen(rule.getThenPreNormalised().toString()).build();
+        public static class Rule {
+
+            public static LogicProto.Rule protoRule(grakn.core.logic.Rule rule) {
+                return LogicProto.Rule.newBuilder().setLabel(rule.getLabel())
+                        .setWhen(rule.getWhenPreNormalised().toString())
+                        .setThen(rule.getThenPreNormalised().toString()).build();
+            }
+
+            public static TransactionProto.Transaction.Res ruleRes(String reqID, LogicProto.Rule.Res.Builder res) {
+                return TransactionProto.Transaction.Res.newBuilder().setReqId(reqID).setRuleRes(res).build();
+            }
+
+            public static TransactionProto.Transaction.Res setLabelRes(String reqID) {
+                return ruleRes(reqID, LogicProto.Rule.Res.newBuilder().setRuleSetLabelRes(
+                        LogicProto.Rule.SetLabel.Res.getDefaultInstance())
+                );
+            }
+
+            public static TransactionProto.Transaction.Res deleteRes(String reqID) {
+                return ruleRes(reqID, LogicProto.Rule.Res.newBuilder().setRuleDeleteRes(
+                        LogicProto.Rule.Delete.Res.getDefaultInstance())
+                );
+            }
         }
 
-        public static TransactionProto.Transaction.Res ruleRes(String reqID, LogicProto.Rule.Res.Builder res) {
-            return TransactionProto.Transaction.Res.newBuilder().setReqId(reqID).setRuleRes(res).build();
-        }
-
-        public static TransactionProto.Transaction.Res setLabelRes(String reqID) {
-            return ruleRes(reqID, LogicProto.Rule.Res.newBuilder().setRuleSetLabelRes(
-                    LogicProto.Rule.SetLabel.Res.getDefaultInstance())
-            );
-        }
-
-        public static TransactionProto.Transaction.Res deleteRes(String reqID) {
-            return ruleRes(reqID, LogicProto.Rule.Res.newBuilder().setRuleDeleteRes(
-                    LogicProto.Rule.Delete.Res.getDefaultInstance())
-            );
+        public static LogicProto.Explanation explanation(Explanation explanation) {
+            LogicProto.Explanation.Builder builder = LogicProto.Explanation.newBuilder();
+            builder.setRule(protoRule(explanation.rule()));
+            explanation.variableMapping().forEach((from, tos) -> {
+                LogicProto.Explanation.VarsList.Builder listBuilder = LogicProto.Explanation.VarsList.newBuilder();
+                tos.forEach(var -> listBuilder.addVars(var.toString()));
+                builder.putVarMapping(from.toString(), listBuilder.build());
+            });
+            builder.setThenAnswer(conceptMap(explanation.conclusionAnswer()));
+            builder.setWhenAnswer(conceptMap(explanation.conditionAnswer()));
+            return builder.build();
         }
     }
 
@@ -806,19 +795,6 @@ public class ResponseBuilder {
                     .setOwner(Concept.protoConcept(answer.owner()))
                     .setNumber(numeric(answer.numeric()))
                     .build();
-        }
-
-        public static AnswerProto.Explanation explanation(Explanation explanation) {
-            AnswerProto.Explanation.Builder builder = AnswerProto.Explanation.newBuilder();
-            builder.setRule(Rule.protoRule(explanation.rule()));
-            explanation.variableMapping().forEach((from, tos) -> {
-                AnswerProto.Explanation.VarsList.Builder listBuilder = AnswerProto.Explanation.VarsList.newBuilder();
-                tos.forEach(var -> listBuilder.addVars(var.toString()));
-                builder.putVarMapping(from.toString(), listBuilder.build());
-            });
-            builder.setThenAnswer(conceptMap(explanation.conclusionAnswer()));
-            builder.setWhenAnswer(conceptMap(explanation.conditionAnswer()));
-            return builder.build();
         }
 
     }

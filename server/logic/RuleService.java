@@ -28,8 +28,8 @@ import javax.annotation.Nullable;
 
 import static grakn.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
-import static grakn.core.server.common.ResponseBuilder.Rule.deleteRes;
-import static grakn.core.server.common.ResponseBuilder.Rule.setLabelRes;
+import static grakn.core.server.common.ResponseBuilder.Logic.Rule.deleteRes;
+import static grakn.core.server.common.ResponseBuilder.Logic.Rule.setLabelRes;
 
 public class RuleService {
 
