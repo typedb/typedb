@@ -134,10 +134,8 @@ public class Bytes {
     }
 
     public static long bytesToLong(byte[] bytes) {
-        ByteBuffer buf = ByteBuffer.allocate(LONG_SIZE).order(ByteOrder.LITTLE_ENDIAN);
-        buf.put(bytes);
-        buf.flip();
-        return buf.getLong();
+        assert bytes.length == LONG_SIZE;
+        return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
     }
 
     public static byte[] intToBytes(int num) {
@@ -147,10 +145,8 @@ public class Bytes {
     }
 
     public static int bytesToInt(byte[] bytes) {
-        ByteBuffer buf = ByteBuffer.allocate(INTEGER_SIZE).order(ByteOrder.LITTLE_ENDIAN);
-        buf.put(bytes);
-        buf.flip();
-        return buf.getInt();
+        assert bytes.length == INTEGER_SIZE;
+        return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
     }
 
     /**
