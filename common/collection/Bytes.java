@@ -29,6 +29,7 @@ import java.time.ZoneId;
 import java.util.UUID;
 
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.Arrays.copyOfRange;
 
 public class Bytes {
@@ -128,25 +129,21 @@ public class Bytes {
     }
 
     public static byte[] longToBytes(long num) {
-        ByteBuffer buf = ByteBuffer.allocate(LONG_SIZE).order(ByteOrder.LITTLE_ENDIAN);
-        buf.putLong(num);
-        return buf.array();
+        return ByteBuffer.allocate(LONG_SIZE).order(LITTLE_ENDIAN).putLong(num).array();
     }
 
     public static long bytesToLong(byte[] bytes) {
         assert bytes.length == LONG_SIZE;
-        return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
+        return ByteBuffer.wrap(bytes).order(LITTLE_ENDIAN).getLong();
     }
 
     public static byte[] intToBytes(int num) {
-        ByteBuffer buf = ByteBuffer.allocate(INTEGER_SIZE).order(ByteOrder.LITTLE_ENDIAN);
-        buf.putInt(num);
-        return buf.array();
+        return ByteBuffer.allocate(INTEGER_SIZE).order(LITTLE_ENDIAN).putInt(num).array();
     }
 
     public static int bytesToInt(byte[] bytes) {
         assert bytes.length == INTEGER_SIZE;
-        return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
+        return ByteBuffer.wrap(bytes).order(LITTLE_ENDIAN).getInt();
     }
 
     /**
