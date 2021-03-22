@@ -171,7 +171,7 @@ public class ConceptMap implements Answer {
             return conjunction;
         }
 
-        public long explainableId() {
+        public long id() {
             return explainableId;
         }
 

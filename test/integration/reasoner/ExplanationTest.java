@@ -394,7 +394,7 @@ public class ExplanationTest {
                 for (ConceptMap explainableMap : explainableMaps) {
                     Set<ConceptMap.Explainable> explainables = explainableMap.explainables();
                     assertEquals(1, explainables.size());
-                    List<Explanation> explanations = txn.query().explain(explainables.iterator().next().explainableId()).toList();
+                    List<Explanation> explanations = txn.query().explain(explainables.iterator().next().id()).toList();
                     allExplanations.put(new Pair<>(explainableMap, explainables.iterator().next()), explanations);
                 }
 
@@ -492,8 +492,8 @@ public class ExplanationTest {
         assertEquals(anonymousConcepts, iterate(ans.concepts().keySet()).filter(Identifier::isAnonymous).count());
         assertEquals(explainablesCount, explainables.size());
         ConceptMap.Explainable explainable = explainables.iterator().next();
-        assertNotEquals(NOT_IDENTIFIED, explainable.explainableId());
-        List<Explanation> explanations = txn.query().explain(explainable.explainableId()).toList();
+        assertNotEquals(NOT_IDENTIFIED, explainable.id());
+        List<Explanation> explanations = txn.query().explain(explainable.id()).toList();
         assertEquals(explanationsCount, explanations.size());
 
         explanations.forEach(explanation -> {
