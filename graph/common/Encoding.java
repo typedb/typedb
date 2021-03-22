@@ -170,7 +170,7 @@ public class Encoding {
         VERTEX_ROLE(180, PrefixType.THING),
         STRUCTURE_RULE(190, PrefixType.RULE);
 
-        private static List<Prefix> keyIndex = indexedBytes(
+        private static final ByteMap<Prefix> prefixByKey = ByteMap.create(
                 pair(INDEX_TYPE.key, INDEX_TYPE),
                 pair(INDEX_RULE.key, INDEX_RULE),
                 pair(INDEX_ATTRIBUTE.key, INDEX_ATTRIBUTE),
@@ -202,7 +202,7 @@ public class Encoding {
         }
 
         public static Prefix of(byte key) {
-            Prefix prefix = keyIndex.get(key + 128);
+            Prefix prefix = prefixByKey.get(key);
             if (prefix == null) throw GraknException.of(UNRECOGNISED_VALUE);
             else return prefix;
         }
@@ -275,7 +275,7 @@ public class Encoding {
         EDGE_ROLEPLAYER_OUT(73, true),
         EDGE_ROLEPLAYER_IN(-73, true);
 
-        private static List<Infix> keyIndex = indexedBytes(
+        private static final ByteMap<Infix> infixByKey = ByteMap.create(
                 pair(PROPERTY_LABEL.key, PROPERTY_LABEL),
                 pair(PROPERTY_SCOPE.key, PROPERTY_SCOPE),
                 pair(PROPERTY_ABSTRACT.key, PROPERTY_ABSTRACT),
@@ -321,7 +321,7 @@ public class Encoding {
         }
 
         public static Infix of(byte key) {
-            Infix infix = keyIndex.get(key); // already unsigned??
+            Infix infix = infixByKey.get(key); // already unsigned??
             if (infix == null) throw GraknException.of(UNRECOGNISED_VALUE);
             else return infix;
         }
@@ -379,7 +379,7 @@ public class Encoding {
         public static final int STRING_MAX_SIZE = Bytes.SHORT_UNSIGNED_MAX_VALUE;
         public static final double DOUBLE_PRECISION = 0.0000000000000001;
 
-        private static List<ValueType> keyIndex = indexedBytes(
+        private static final ByteMap<ValueType> valueTypeByKey = ByteMap.create(
                 pair(OBJECT.key, OBJECT),
                 pair(BOOLEAN.key, BOOLEAN),
                 pair(LONG.key, LONG),
@@ -424,7 +424,7 @@ public class Encoding {
         }
 
         public static ValueType of(byte value) {
-            ValueType valueType = keyIndex.get(value + 128);
+            ValueType valueType = valueTypeByKey.get(value);
             if (valueType == null) throw GraknException.of(UNRECOGNISED_VALUE);
             else return valueType;
         }
@@ -516,7 +516,7 @@ public class Encoding {
             RELATION_TYPE(Prefix.VERTEX_RELATION_TYPE, Root.RELATION, Thing.RELATION),
             ROLE_TYPE(Prefix.VERTEX_ROLE_TYPE, Root.ROLE, Thing.ROLE);
 
-            private static List<Type> prefixIndex = indexedBytes(
+            private static final ByteMap<Type> typeVertexByKey = ByteMap.create(
                     pair(THING_TYPE.prefix.key, THING_TYPE),
                     pair(ENTITY_TYPE.prefix.key, ENTITY_TYPE),
                     pair(ATTRIBUTE_TYPE.prefix.key, ATTRIBUTE_TYPE),
@@ -535,7 +535,7 @@ public class Encoding {
             }
 
             public static Type of(byte prefix) {
-                Type type = prefixIndex.get(prefix + 128);
+                Type type = typeVertexByKey.get(prefix);
                 if (type == null) throw GraknException.of(UNRECOGNISED_VALUE);
                 else return type;
             }
@@ -613,7 +613,7 @@ public class Encoding {
             RELATION(Prefix.VERTEX_RELATION),
             ROLE(Prefix.VERTEX_ROLE);
 
-            private static List<Thing> prefixIndex = indexedBytes(
+            private static final ByteMap<Thing> thingVertexByKey = ByteMap.create(
                     pair(ENTITY.prefix.key, ENTITY),
                     pair(ATTRIBUTE.prefix.key, ATTRIBUTE),
                     pair(RELATION.prefix.key, RELATION),
@@ -627,7 +627,7 @@ public class Encoding {
             }
 
             public static Thing of(byte prefix) {
-                Thing thing = prefixIndex.get(prefix + 128);
+                Thing thing = thingVertexByKey.get(prefix);
                 if (thing == null) throw GraknException.of(UNRECOGNISED_VALUE);
                 else return thing;
             }
@@ -959,12 +959,23 @@ public class Encoding {
         }
     }
 
-    private static <T> List<T> indexedBytes(Pair<Byte, T>... byteIndices) {
-        List<T> indexList = new ArrayList<>(Collections.nCopies(255, (T) null));
-        for (Pair<Byte, T> index : byteIndices) {
-            indexList.set(index.first() + 128, index.second());
-        }
-        return indexList;
-    }
+    private static class ByteMap<T> {
 
+        private final List<T> listOrderedByByteValue;
+
+        private ByteMap(List<T> listOrderedByByteValue) {
+            this.listOrderedByByteValue = listOrderedByByteValue;
+        }
+
+        @SafeVarargs
+        public static <T> ByteMap<T> create(Pair<Byte, T>... byteIndices) {
+            List<T> indexList = new ArrayList<>(Collections.nCopies(255, (T) null));
+            for (Pair<Byte, T> index : byteIndices) indexList.set(index.first() + 128, index.second());
+            return new ByteMap<>(indexList);
+        }
+
+        T get(byte b) {
+            return listOrderedByByteValue.get(b + 128);
+        }
+    }
 }
