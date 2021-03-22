@@ -26,6 +26,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ConceptMapGroup;
 import grakn.core.concept.answer.NumericGroup;
 import grakn.core.query.QueryManager;
+import grakn.core.reasoner.resolution.answer.Explanation;
 import grakn.core.server.TransactionService;
 import grakn.protocol.QueryProto;
 import grakn.protocol.TransactionProto;
@@ -43,6 +44,7 @@ import static grakn.core.server.common.RequestReader.applyDefaultOptions;
 import static grakn.core.server.common.RequestReader.applyQueryOptions;
 import static grakn.core.server.common.ResponseBuilder.QueryManager.defineRes;
 import static grakn.core.server.common.ResponseBuilder.QueryManager.deleteRes;
+import static grakn.core.server.common.ResponseBuilder.QueryManager.explainResPart;
 import static grakn.core.server.common.ResponseBuilder.QueryManager.insertResPart;
 import static grakn.core.server.common.ResponseBuilder.QueryManager.matchAggregateRes;
 import static grakn.core.server.common.ResponseBuilder.QueryManager.matchGroupAggregateResPart;
@@ -95,6 +97,8 @@ public class QueryService {
                 case UPDATE_REQ:
                     this.update(queryReq.getUpdateReq().getQuery(), options, req);
                     return;
+                case EXPLAIN_REQ:
+                    this.explain(queryReq.getExplainReq().getExplainableId(), req);
                 case REQ_NOT_SET:
                 default:
                     throw GraknException.of(UNKNOWN_REQUEST_TYPE);
@@ -116,11 +120,11 @@ public class QueryService {
         transactionSvc.respond(undefineRes(req.getReqId()));
     }
 
-    private void match(String queryStr, Options.Query options, TransactionProto.Transaction.Req eq) {
+    private void match(String queryStr, Options.Query options, TransactionProto.Transaction.Req req) {
         GraqlMatch query = Graql.parseQuery(queryStr).asMatch();
         Context.Query context = new Context.Query(transactionSvc.context(), options.query(query), query);
         FunctionalIterator<ConceptMap> answers = queryMgr.match(query, context);
-        transactionSvc.stream(answers, eq.getReqId(), context.options(), a -> matchResPart(eq.getReqId(), a));
+        transactionSvc.stream(answers, req.getReqId(), context.options(), a -> matchResPart(req.getReqId(), a));
     }
 
     private void matchAggregate(String queryStr, Options.Query options, TransactionProto.Transaction.Req req) {
@@ -162,6 +166,11 @@ public class QueryService {
         Context.Query context = new Context.Query(transactionSvc.context(), options.query(query), query);
         FunctionalIterator<ConceptMap> answers = queryMgr.update(query, context);
         transactionSvc.stream(answers, req.getReqId(), context.options(), a -> updateResPart(req.getReqId(), a));
+    }
+
+    private void explain(long explainableId, TransactionProto.Transaction.Req req) {
+        FunctionalIterator<Explanation> explanations = queryMgr.explain(explainableId);
+        transactionSvc.stream(explanations, req.getReqId(), a -> explainResPart(req.getReqId(), a));
     }
 
 }

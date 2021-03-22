@@ -33,6 +33,7 @@ import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
+import grakn.core.reasoner.resolution.answer.Explanation;
 import grakn.core.server.SessionService;
 import grakn.protocol.AnswerProto;
 import grakn.protocol.ConceptProto;
@@ -217,6 +218,14 @@ public class ResponseBuilder {
                             iterate(answers).map(Answer::conceptMap).toList()))
             );
         }
+
+        public static TransactionProto.Transaction.ResPart explainResPart(String reqID, List<Explanation> explanations) {
+            return queryMgrResPart(reqID, QueryProto.QueryManager.ResPart.newBuilder().setExplainResPart(
+                    QueryProto.QueryManager.Explain.ResPart.newBuilder().addAllExplanations(
+                            iterate(explanations).map(Answer::explanation).toList()
+                    )));
+        }
+
     }
 
     public static class ConceptManager {
@@ -762,17 +771,15 @@ public class ResponseBuilder {
                 }
             });
 
-            // TODO
-//            if (answer.getPattern() != null) {
-//                conceptMapProto.setPattern(answer.getPattern().toString());
-//            }
-//
-//            if (answer.explanation() != null && !answer.explanation().isEmpty()) {
-//                conceptMapProto.setHasExplanation(true);
-//            } else {
-//                conceptMapProto.setHasExplanation(false);
-//            }
+            answer.explainables().forEach(explainable -> conceptMapProto.addExplainables(explainable(explainable)));
             return conceptMapProto.build();
+        }
+
+        private static AnswerProto.Explainable explainable(ConceptMap.Explainable explainable) {
+            AnswerProto.Explainable.Builder builder = AnswerProto.Explainable.newBuilder();
+            builder.setConjunction(explainable.conjunction().toString());
+            builder.setId(explainable.id());
+            return builder.build();
         }
 
         public static AnswerProto.ConceptMapGroup conceptMapGroup(ConceptMapGroup answer) {
@@ -800,5 +807,20 @@ public class ResponseBuilder {
                     .setNumber(numeric(answer.numeric()))
                     .build();
         }
+
+        public static AnswerProto.Explanation explanation(Explanation explanation) {
+            AnswerProto.Explanation.Builder builder = AnswerProto.Explanation.newBuilder();
+            builder.setRule(Rule.protoRule(explanation.rule()));
+            explanation.variableMapping().forEach((from, tos) -> {
+                AnswerProto.Explanation.VarsList.Builder listBuilder = AnswerProto.Explanation.VarsList.newBuilder();
+                tos.forEach(var -> listBuilder.addVars(var.toString()));
+                builder.putVarMapping(from.toString(), listBuilder.build());
+            });
+            builder.setThenAnswer(conceptMap(explanation.conclusionAnswer()));
+            builder.setWhenAnswer(conceptMap(explanation.conditionAnswer()));
+            return builder.build();
+        }
+
     }
+
 }
