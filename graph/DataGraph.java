@@ -20,6 +20,7 @@ package grakn.core.graph;
 
 import grakn.common.collection.ConcurrentSet;
 import grakn.common.collection.Pair;
+import grakn.core.common.collection.Bytes;
 import grakn.core.common.exception.GraknCheckedException;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.FunctionalIterator;
@@ -440,7 +441,7 @@ public class DataGraph implements Graph {
                     IIDMap.put(vertex.iid(), newIID);
                     vertex.iid(newIID);
                 }
-        ); // thingByIID no longer contains valid mapping from IID to TypeVertex
+        ); // thingsByIID no longer contains valid mapping from IID to TypeVertex
         thingsByIID.values().stream().filter(v -> !v.isInferred()).forEach(Vertex::commit);
         attributesByIID.valuesIterator().forEachRemaining(Vertex::commit);
         statistics.commit(IIDMap);
@@ -523,7 +524,7 @@ public class DataGraph implements Graph {
 
     public static class Statistics {
 
-        private static int COUNT_JOB_BATCH_SIZE = 10000;
+        private static final int COUNT_JOB_BATCH_SIZE = 10_000;
         private final ConcurrentMap<VertexIID.Type, Long> persistedVertexCount;
         private final ConcurrentMap<VertexIID.Type, Long> persistedVertexTransitiveCount;
         private final ConcurrentMap<VertexIID.Type, Long> deltaVertexCount;
