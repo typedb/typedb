@@ -99,6 +99,7 @@ public class QueryService {
                     return;
                 case EXPLAIN_REQ:
                     this.explain(queryReq.getExplainReq().getExplainableId(), req);
+                    return;
                 case REQ_NOT_SET:
                 default:
                     throw GraknException.of(UNKNOWN_REQUEST_TYPE);
