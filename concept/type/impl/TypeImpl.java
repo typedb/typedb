@@ -28,6 +28,7 @@ import grakn.core.graph.common.Encoding;
 import grakn.core.graph.structure.RuleStructure;
 import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
+import graql.lang.Graql;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -60,6 +61,7 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
     }
 
     TypeImpl(GraphManager graphMgr, String label, Encoding.Vertex.Type encoding, String scope) {
+        label = Graql.parseLabel(label);
         this.graphMgr = graphMgr;
         this.vertex = graphMgr.schema().create(encoding, label, scope);
         TypeVertex superTypeVertex = graphMgr.schema().getType(encoding.root().label(), encoding.root().scope());
