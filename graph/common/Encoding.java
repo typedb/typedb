@@ -30,7 +30,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -961,15 +960,15 @@ public class Encoding {
 
     private static class ByteMap<T> {
 
-        private final List<T> listOrderedByByteValue;
+        private final ArrayList<T> listOrderedByByteValue;
 
-        private ByteMap(List<T> listOrderedByByteValue) {
+        private ByteMap(ArrayList<T> listOrderedByByteValue) {
             this.listOrderedByByteValue = listOrderedByByteValue;
         }
 
         @SafeVarargs
         public static <T> ByteMap<T> create(Pair<Byte, T>... byteIndices) {
-            List<T> indexList = new ArrayList<>(Collections.nCopies(255, (T) null));
+            ArrayList<T> indexList = new ArrayList<>(Collections.nCopies(255, (T) null));
             for (Pair<Byte, T> index : byteIndices) indexList.set(index.first() + 128, index.second());
             return new ByteMap<>(indexList);
         }
