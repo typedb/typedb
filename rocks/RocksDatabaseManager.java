@@ -32,8 +32,8 @@ import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
 
 public class RocksDatabaseManager implements Grakn.DatabaseManager {
 
-    private final RocksGrakn grakn;
-    private final ConcurrentMap<String, RocksDatabase> databases;
+    protected final RocksGrakn grakn;
+    protected final ConcurrentMap<String, RocksDatabase> databases;
     private final Factory.Database databaseFactory;
 
     protected RocksDatabaseManager(RocksGrakn grakn, Factory.Database databaseFactory) {
@@ -42,7 +42,7 @@ public class RocksDatabaseManager implements Grakn.DatabaseManager {
         databases = new ConcurrentHashMap<>();
     }
 
-    void loadAll() {
+    protected void loadAll() {
         File[] databaseDirectories = grakn.directory().toFile().listFiles(File::isDirectory);
         if (databaseDirectories != null && databaseDirectories.length > 0) {
             Arrays.stream(databaseDirectories).parallel().forEach(directory -> {
