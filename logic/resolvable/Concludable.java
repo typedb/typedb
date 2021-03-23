@@ -500,6 +500,14 @@ public abstract class Concludable extends Resolvable<Conjunction> {
             return new Has(cloner.conjunction(), cloner.getClone(has).asThing().asHas(), clonedIsa, valueIt.toSet());
         }
 
+        public ThingVariable owner() {
+            return has.owner();
+        }
+
+        public ThingVariable attribute() {
+            return has.attribute();
+        }
+
         public HasConstraint has() {
             return has;
         }

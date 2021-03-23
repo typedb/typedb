@@ -179,13 +179,9 @@ public interface AnswerState {
 
         interface Compound<SLF extends Compound<SLF, PRNT>, PRNT extends AnswerState> extends Partial<PRNT> {
 
-            // TODo does everyone have to implement this? It's used for receiving from a NonRoot
             SLF with(ConceptMap extension, boolean requiresReiteration);
 
-            // note: this is only used by Explain, can't get generics for asMatch() casting to work to do this transparently
-            SLF with(ConceptMap extension, boolean requiresReiteration, Conjunction source);
-
-            Concludable<SLF> toDownstream(Mapping mapping, Conjunction concludableConjunction);
+            Concludable<SLF> toDownstream(Mapping mapping, grakn.core.logic.resolvable.Concludable concludable);
 
             Nestable filterToNestable(Set<Identifier.Variable.Retrievable> filter);
 
@@ -220,7 +216,7 @@ public interface AnswerState {
                 Partial.Compound<?, ?> toUpstream();
 
                 @Override
-                Concludable.Match<Nestable> toDownstream(Mapping mapping, Conjunction concludableConjunction);
+                Concludable.Match<Nestable> toDownstream(Mapping mapping, grakn.core.logic.resolvable.Concludable concludable);
 
                 @Override
                 default boolean isNestable() { return true; }
@@ -245,7 +241,7 @@ public interface AnswerState {
                 interface Match extends Root<Match, Top.Match.Initial>, Explainable {
 
                     @Override
-                    Concludable.Match<Match> toDownstream(Mapping mapping, Conjunction concludableConjunction);
+                    Concludable.Match<Match> toDownstream(Mapping mapping, grakn.core.logic.resolvable.Concludable concludable);
 
                     Top.Match.Finished toFinishedTop(Conjunction conjunctionAnswered);
 
@@ -262,14 +258,9 @@ public interface AnswerState {
                     Explain with(ConceptMap extension, boolean requiresReiteration, Explanation explanation);
 
                     @Override
-                    Concludable.Explain toDownstream(Mapping mapping, Conjunction concludableConjunction);
+                    Concludable.Explain toDownstream(Mapping mapping,grakn.core.logic.resolvable.Concludable concludable);
 
                     Top.Explain.Finished toFinishedTop();
-
-                    @Override
-                    default Explain with(ConceptMap extension, boolean requiresReiteration, Conjunction source) {
-                        return with(extension, requiresReiteration);
-                    }
 
                     @Override
                     default boolean isExplain() { return true; }
@@ -283,7 +274,9 @@ public interface AnswerState {
             interface Condition<S extends Condition<S, P>, P extends Conclusion<P, ?>> extends Compound<S, P> {
 
                 // merge point where Match and Explain all become Match states
-                Concludable.Match<S> toDownstream(Mapping mapping, Conjunction concludableConjunction);
+                Concludable.Match<S> toDownstream(Mapping mapping, grakn.core.logic.resolvable.Concludable concludable);
+
+                Conclusion<?, ?> toUpstream();
 
                 @Override
                 default boolean isCondition() { return true; }
@@ -300,11 +293,6 @@ public interface AnswerState {
                     Conclusion.Match toUpstream();
 
                     @Override
-                    default Match with(ConceptMap extension, boolean requiresReiteration, Conjunction source) {
-                        return with(extension, requiresReiteration);
-                    }
-
-                    @Override
                     default boolean isMatch() { return true; }
 
                     @Override
@@ -314,7 +302,7 @@ public interface AnswerState {
 
                 interface Explain extends Condition<Explain, Conclusion.Explain> {
 
-                    Conclusion.Explain toUpstream(Conjunction conditionConjunction);
+                    Conclusion.Explain toUpstream();
 
                     @Override
                     default boolean isExplain() { return true; }

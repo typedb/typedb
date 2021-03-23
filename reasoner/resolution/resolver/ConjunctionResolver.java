@@ -200,7 +200,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
     private Partial<?> toDownstream(Partial.Compound<?, ?> partialAnswer, ResolverRegistry.ResolverView nextDownstream, Resolvable<?> nextResolvable) {
         assert downstreamResolvers.get(nextResolvable).equals(nextDownstream);
         if (nextDownstream.isMappedConcludable()) {
-            return partialAnswer.toDownstream(Mapping.of(nextDownstream.asMappedConcludable().mapping()), nextResolvable.asConcludable().pattern());
+            return partialAnswer.toDownstream(Mapping.of(nextDownstream.asMappedConcludable().mapping()), nextResolvable.asConcludable());
         } else if (nextDownstream.isFilteredNegation()) {
             return partialAnswer.filterToNestable(nextDownstream.asFilteredNegation().filter());
         } else if (nextDownstream.isFilteredRetrievable()) {

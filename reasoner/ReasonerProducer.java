@@ -75,7 +75,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.rootResolver = resolverRegistry.root(conjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
-        Root downstream = InitialImpl.create(filter(modifiers.filter()), new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
+        Root<?, ?> downstream = InitialImpl.create(filter(modifiers.filter()), new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
         this.resolveRequest = Request.create(rootResolver, downstream);
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
@@ -92,7 +92,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.rootResolver = resolverRegistry.root(disjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
-        Root downstream = InitialImpl.create(filter(modifiers.filter()), new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
+        Root<?, ?> downstream = InitialImpl.create(filter(modifiers.filter()), new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
         this.resolveRequest = Request.create(rootResolver, downstream);
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
@@ -111,7 +111,8 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     @Override
-    public void recycle() {}
+    public void recycle() {
+    }
 
     private Set<Identifier.Variable.Name> filter(List<UnboundVariable> filter) {
         return iterate(filter).map(v -> Identifier.Variable.of(v.reference().asName())).toSet();
@@ -173,8 +174,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         counter example: $x isa $type; -> unifies with then { (friend: $y) isa friendship; }
         Without reiteration we will miss $x = instance, $type = relation/thing
          */
-        return iteration < 5;
-//        return requiresReiteration;
+        return requiresReiteration;
     }
 
     private void retryInNewIteration() {

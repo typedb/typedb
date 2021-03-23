@@ -68,10 +68,6 @@ public abstract class AnswerStateImpl implements AnswerState {
     }
 
     protected ConceptMap extendAnswer(ConceptMap extension) {
-        return extendAnswer(extension, set(conceptMap.explainables(), extension.explainables()));
-    }
-
-    protected ConceptMap extendAnswer(ConceptMap extension, Set<ConceptMap.Explainable> explainables) {
         /*
         We MUST retain initial concepts, and add derived answers afterward. It's possible, and correct,
         that the derived answers overlap but are different: for example, when a subtype is found
@@ -80,7 +76,7 @@ public abstract class AnswerStateImpl implements AnswerState {
         Map<Identifier.Variable.Retrievable, Concept> concepts = new HashMap<>(extension.concepts());
         // add the initial concept map second, to make sure we override and retain all of these
         concepts.putAll(conceptMap().concepts());
-        return new ConceptMap(concepts, explainables);
+        return new ConceptMap(concepts, conceptMap().explainables().merge(extension.explainables()));
     }
 
     public static abstract class TopImpl extends AnswerStateImpl implements Top {
@@ -305,21 +301,8 @@ public abstract class AnswerStateImpl implements AnswerState {
                 }
 
                 @Override
-                public Nestable with(ConceptMap extension, boolean requiresReiteration, Conjunction source) {
-                    ConceptMap extended;
-                    if (explainable) {
-                        Set<ConceptMap.Explainable> explainables = new HashSet<>(conceptMap().explainables());
-                        explainables.add(ConceptMap.Explainable.unidentified(source));
-                        extended = extendAnswer(extension, explainables);
-                    } else {
-                        extended = extendAnswer(extension);
-                    }
-                    return new NestableImpl(filter(), parent(), extended, root(), requiresReiteration, explainable);
-                }
-
-                @Override
-                public Concludable.Match<Nestable> toDownstream(Mapping mapping, Conjunction concludableConjunction) {
-                    return ConcludableImpl.MatchImpl.childOf(mapping, concludableConjunction, this, explainable);
+                public Concludable.Match<Nestable> toDownstream(Mapping mapping, grakn.core.logic.resolvable.Concludable concludable) {
+                    return ConcludableImpl.MatchImpl.childOf(mapping, concludable, this, explainable);
                 }
 
                 @Override
@@ -380,7 +363,9 @@ public abstract class AnswerStateImpl implements AnswerState {
                     }
 
                     @Override
-                    public boolean explainable() { return explainable; }
+                    public boolean explainable() {
+                        return explainable;
+                    }
 
                     @Override
                     public Match with(ConceptMap extension, boolean requiresReiteration) {
@@ -388,21 +373,8 @@ public abstract class AnswerStateImpl implements AnswerState {
                     }
 
                     @Override
-                    public Match with(ConceptMap extension, boolean requiresReiteration, Conjunction source) {
-                        ConceptMap extended;
-                        if (explainable()) {
-                            Set<ConceptMap.Explainable> explainables = new HashSet<>(conceptMap().explainables());
-                            explainables.add(ConceptMap.Explainable.unidentified(source));
-                            extended = extendAnswer(extension, explainables);
-                        } else {
-                            extended = extendAnswer(extension);
-                        }
-                        return new MatchImpl(parent(), extended, root(), requiresReiteration, explainable());
-                    }
-
-                    @Override
-                    public Concludable.Match<Match> toDownstream(Mapping mapping, Conjunction concludableConjunction) {
-                        return ConcludableImpl.MatchImpl.childOf(mapping, concludableConjunction, this, explainable());
+                    public Concludable.Match<Match> toDownstream(Mapping mapping, grakn.core.logic.resolvable.Concludable concludable) {
+                        return ConcludableImpl.MatchImpl.childOf(mapping, concludable, this, explainable());
                     }
 
                     @Override
@@ -456,7 +428,6 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                     @Override
                     public Explain with(ConceptMap extension, boolean requiresReiteration) {
-                        // note: we never receive answers from negations or (if in a disjunction) from a nested conjunction
                         throw GraknException.of(ILLEGAL_STATE);
                     }
 
@@ -467,7 +438,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                     }
 
                     @Override
-                    public Concludable.Explain toDownstream(Mapping mapping, Conjunction concludableConjunction) {
+                    public Concludable.Explain toDownstream(Mapping mapping, grakn.core.logic.resolvable.Concludable concludable) {
                         // note: we implement the method to conform to API, but do not use the conjunction when explaining
                         return ConcludableImpl.ExplainImpl.childOf(mapping, this);
                     }
@@ -547,8 +518,8 @@ public abstract class AnswerStateImpl implements AnswerState {
                     }
 
                     @Override
-                    public Concludable.Match<Match> toDownstream(Mapping mapping, Conjunction concludableConjunction) {
-                        return ConcludableImpl.MatchImpl.childOf(mapping, concludableConjunction, this, false);
+                    public Concludable.Match<Match> toDownstream(Mapping mapping, grakn.core.logic.resolvable.Concludable concludable) {
+                        return ConcludableImpl.MatchImpl.childOf(mapping, concludable, this, false);
                     }
 
                     @Override
@@ -597,22 +568,14 @@ public abstract class AnswerStateImpl implements AnswerState {
                     }
 
                     @Override
-                    public Explain with(ConceptMap extension, boolean requiresReiteration, Conjunction source) {
-                        Set<ConceptMap.Explainable> explainables = conceptMap().explainables();
-                        Set<ConceptMap.Explainable> explainablesExtended = new HashSet<>(explainables);
-                        explainablesExtended.add(ConceptMap.Explainable.unidentified(source));
-                        return new ExplainImpl(filter, parent(), extendAnswer(extension, explainablesExtended), root(), requiresReiteration);
-                    }
-
-                    @Override
-                    public Conclusion.Explain toUpstream(Conjunction conditionConjunction) {
+                    public Conclusion.Explain toUpstream() {
                         if (conceptMap().concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
                         return parent().with(conceptMap(), requiresReiteration() || parent().requiresReiteration());
                     }
 
                     @Override
-                    public Concludable.Match<Explain> toDownstream(Mapping mapping, Conjunction concludableConjunction) {
-                        return ConcludableImpl.MatchImpl.childOf(mapping, concludableConjunction, this, true); // record recursive explanations
+                    public Concludable.Match<Explain> toDownstream(Mapping mapping, grakn.core.logic.resolvable.Concludable concludable) {
+                        return ConcludableImpl.MatchImpl.childOf(mapping, concludable, this, true); // record recursive explanations
                     }
 
                     @Override
@@ -657,21 +620,22 @@ public abstract class AnswerStateImpl implements AnswerState {
 
             public static class MatchImpl<P extends Compound<P, ?>> extends ConcludableImpl<P> implements Match<P> {
 
-                private final Conjunction conjunction;
+                private final grakn.core.logic.resolvable.Concludable concludable;
                 private final boolean explainable;
                 private final int hash;
 
-                private MatchImpl(Mapping mapping, Conjunction conjunction, P parent, ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root,
-                                  boolean requiresReiteration, boolean explainable) {
+                private MatchImpl(Mapping mapping, grakn.core.logic.resolvable.Concludable concludable, P parent, ConceptMap conceptMap,
+                                  Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration, boolean explainable) {
                     super(mapping, parent, conceptMap, root, requiresReiteration);
-                    this.conjunction = conjunction;
+                    this.concludable = concludable;
                     this.explainable = explainable;
                     this.hash = Objects.hash(root(), parent(), conceptMap(), requiresReiteration(), explainable(), mapping());
                 }
 
-                static <P extends Compound<P, ?>> MatchImpl<P> childOf(Mapping mapping, Conjunction conjunction, P parent, boolean explainable) {
-                    return new MatchImpl<>(mapping, conjunction, parent, mapping.transform(parent.conceptMap()),
-                                           parent.root(), parent.requiresReiteration(), explainable);
+                static <P extends Compound<P, ?>> MatchImpl<P> childOf(Mapping mapping, grakn.core.logic.resolvable.Concludable concludable,
+                                                                       P parent, boolean explainable) {
+                    return new MatchImpl<>(mapping, concludable, parent, mapping.transform(parent.conceptMap()),
+                            parent.root(), parent.requiresReiteration(), explainable);
                 }
 
                 @Override
@@ -681,22 +645,35 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                 @Override
                 public Match<P> with(ConceptMap extension, boolean requiresReiteration) {
-                    return new MatchImpl<>(mapping(), conjunction, parent(), extendAnswer(extension), root(), requiresReiteration, explainable());
+                    return new MatchImpl<>(mapping(), concludable, parent(), extendAnswer(extension), root(), requiresReiteration, explainable());
                 }
 
                 @Override
                 public P toUpstreamInferred() {
-                    boolean requiresReiteration = requiresReiteration() || parent().requiresReiteration();
-                    return parent().with(mapping().unTransform(conceptMap()), requiresReiteration, conjunction);
+                    ConceptMap upstreamAnswer = mapping().unTransform(conceptMap());
+                    if (explainable()) upstreamAnswer = withExplainable(upstreamAnswer);
+                    return parent().with(upstreamAnswer, requiresReiteration() || parent().requiresReiteration());
                 }
 
                 @Override
                 public P toUpstreamLookup(ConceptMap additionalConcepts, boolean isInferredConclusion) {
                     boolean requiresReiteration = requiresReiteration() || parent().requiresReiteration();
+                    ConceptMap upstreamAnswer = mapping().unTransform(additionalConcepts);
                     if (isInferredConclusion) {
-                        return parent().with(mapping().unTransform(additionalConcepts), requiresReiteration, conjunction);
+                        if (explainable()) upstreamAnswer = withExplainable(upstreamAnswer);
+                        return parent().with(upstreamAnswer, requiresReiteration);
                     } else {
-                        return parent().with(mapping().unTransform(additionalConcepts), requiresReiteration);
+                        return parent().with(upstreamAnswer, requiresReiteration);
+                    }
+                }
+
+                private ConceptMap withExplainable(ConceptMap conceptMap) {
+                    if (concludable.isRelation() || concludable.isAttribute() || concludable.isIsa()) {
+                        return conceptMap.withExplainableConcept(concludable.generating().get().id(), concludable.pattern());
+                    } else if (concludable.isHas()) {
+                        return conceptMap.withExplainableAttrOwnership(concludable.asHas().owner().id(), concludable.asHas().attribute().id(), concludable.pattern());
+                    } else {
+                        throw GraknException.of(ILLEGAL_STATE);
                     }
                 }
 

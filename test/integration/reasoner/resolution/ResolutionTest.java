@@ -494,7 +494,7 @@ public class ResolutionTest {
             Match.Finished answer = responses.poll(1000, TimeUnit.MILLISECONDS);// polling prevents the test hanging
             if (answer != null) {
                 answersFound += 1;
-                if (answer.conceptMap().explainables().size() > 0) {
+                if (answer.conceptMap().explainables().explainables().count() > 0) {
                     explainableAnswersFound++;
                 }
             }

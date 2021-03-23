@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static grakn.core.concept.answer.ConceptMap.Explainable.NOT_IDENTIFIED;
+import static grakn.core.concept.answer.ConceptMap.Explainables.Explainable.NOT_IDENTIFIED;
 
 public class ExplainablesManager {
 
@@ -39,7 +39,7 @@ public class ExplainablesManager {
     }
 
     public void setAndRecordExplainables(ConceptMap explainableMap) {
-        explainableMap.explainables().forEach(explainable -> {
+        explainableMap.explainables().explainables().forEachRemaining(explainable -> {
             long nextId = this.nextId.getAndIncrement();
             explainable.setId(nextId);
             conjunctions.put(nextId, explainable.conjunction());

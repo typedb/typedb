@@ -50,12 +50,8 @@ import java.util.Map;
 import java.util.Set;
 
 import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.concept.answer.ConceptMap.Explainable.NOT_IDENTIFIED;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static grakn.core.concept.answer.ConceptMap.Explainables.Explainable.NOT_IDENTIFIED;
+import static org.junit.Assert.*;
 
 public class ExplanationTest {
 
@@ -387,21 +383,21 @@ public class ExplanationTest {
                 List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $r isa location-hierarchy;").asMatch()).toList();
                 assertEquals(10, ans.size());
 
-                List<ConceptMap> explainableMaps = iterate(ans).filter(answer -> answer.explainables().size() > 0).toList();
+                List<ConceptMap> explainableMaps = iterate(ans).filter(answer -> !answer.explainables().isEmpty()).toList();
                 assertEquals(6, explainableMaps.size());
 
-                Map<Pair<ConceptMap, ConceptMap.Explainable>, List<Explanation>> allExplanations = new HashMap<>();
+                Map<Pair<ConceptMap, ConceptMap.Explainables.Explainable>, List<Explanation>> allExplanations = new HashMap<>();
                 for (ConceptMap explainableMap : explainableMaps) {
-                    Set<ConceptMap.Explainable> explainables = explainableMap.explainables();
+                    List<ConceptMap.Explainables.Explainable> explainables = explainableMap.explainables().explainables().toList();
                     assertEquals(1, explainables.size());
-                    List<Explanation> explanations = txn.query().explain(explainables.iterator().next().explainableId()).toList();
+                    List<Explanation> explanations = txn.query().explain(explainables.iterator().next().id()).toList();
                     allExplanations.put(new Pair<>(explainableMap, explainables.iterator().next()), explanations);
                 }
 
                 int oneExplanation = 0;
                 int twoExplanations = 0;
                 int threeExplanations = 0;
-                for (Map.Entry<Pair<ConceptMap, ConceptMap.Explainable>, List<Explanation>> entry : allExplanations.entrySet()) {
+                for (Map.Entry<Pair<ConceptMap, ConceptMap.Explainables.Explainable>, List<Explanation>> entry : allExplanations.entrySet()) {
                     List<Explanation> explanations = entry.getValue();
                     if (explanations.size() == 1) oneExplanation++;
                     else if (explanations.size() == 2) twoExplanations++;
@@ -480,7 +476,7 @@ public class ExplanationTest {
                 assertEquals(3, explanation.conclusionAnswer().concepts().size());
 
                 ConceptMap marriageIsFriendshipAnswer = explanation.conditionAnswer();
-                assertEquals(1, marriageIsFriendshipAnswer.explainables().size());
+                assertEquals(1, marriageIsFriendshipAnswer.explainables().explainables().count());
                 assertSingleExplainableExplanations(marriageIsFriendshipAnswer, 1, 1, 1, txn);
             }
         }
@@ -488,12 +484,12 @@ public class ExplanationTest {
 
     private List<Explanation> assertSingleExplainableExplanations(ConceptMap ans, int anonymousConcepts, int explainablesCount,
                                                                   int explanationsCount, RocksTransaction txn) {
-        Set<ConceptMap.Explainable> explainables = ans.explainables();
+        List<ConceptMap.Explainables.Explainable> explainables = ans.explainables().explainables().toList();
         assertEquals(anonymousConcepts, iterate(ans.concepts().keySet()).filter(Identifier::isAnonymous).count());
         assertEquals(explainablesCount, explainables.size());
-        ConceptMap.Explainable explainable = explainables.iterator().next();
-        assertNotEquals(NOT_IDENTIFIED, explainable.explainableId());
-        List<Explanation> explanations = txn.query().explain(explainable.explainableId()).toList();
+        ConceptMap.Explainables.Explainable explainable = explainables.iterator().next();
+        assertNotEquals(NOT_IDENTIFIED, explainable.id());
+        List<Explanation> explanations = txn.query().explain(explainable.id()).toList();
         assertEquals(explanationsCount, explanations.size());
 
         explanations.forEach(explanation -> {

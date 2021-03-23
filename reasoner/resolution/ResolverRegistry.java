@@ -34,16 +34,8 @@ import grakn.core.pattern.equivalence.AlphaEquivalence;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top.Explain;
 import grakn.core.reasoner.resolution.answer.AnswerState.Top.Match;
 import grakn.core.reasoner.resolution.framework.Resolver;
-import grakn.core.reasoner.resolution.resolver.ConcludableResolver;
-import grakn.core.reasoner.resolution.resolver.ConclusionResolver;
-import grakn.core.reasoner.resolution.resolver.ConditionResolver;
-import grakn.core.reasoner.resolution.resolver.ConjunctionResolver;
-import grakn.core.reasoner.resolution.resolver.DisjunctionResolver;
-import grakn.core.reasoner.resolution.resolver.NegationResolver;
-import grakn.core.reasoner.resolution.resolver.RetrievableResolver;
-import grakn.core.reasoner.resolution.resolver.RootResolver;
+import grakn.core.reasoner.resolution.resolver.*;
 import grakn.core.traversal.TraversalEngine;
-import grakn.core.traversal.common.Identifier;
 import grakn.core.traversal.common.Identifier.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,9 +68,8 @@ public class ResolverRegistry {
     private final TraversalEngine traversalEngine;
     private final Planner planner;
     private final boolean resolutionTracing;
+    private final AtomicBoolean terminated;
     private ActorExecutorGroup executorService;
-    private AtomicBoolean terminated;
-    private boolean explanations;
 
     public ResolverRegistry(ActorExecutorGroup executorService, TraversalEngine traversalEngine, ConceptManager conceptMgr,
                             LogicManager logicMgr, boolean resolutionTracing) {

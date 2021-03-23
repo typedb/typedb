@@ -32,10 +32,8 @@ import graql.lang.pattern.variable.Reference;
 import graql.lang.pattern.variable.UnboundVariable;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -44,11 +42,13 @@ import java.util.stream.Collectors;
 import static grakn.common.collection.Collections.pair;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.common.iterator.Iterators.link;
+import static java.util.Collections.unmodifiableMap;
 
 public class ConceptMap implements Answer {
 
     private final Map<Retrievable, ? extends Concept> concepts;
-    private final Set<Explainable> explainables;
+    private final Explainables explainables;
     private final int hash;
 
     public ConceptMap() {
@@ -56,10 +56,10 @@ public class ConceptMap implements Answer {
     }
 
     public ConceptMap(Map<Retrievable, ? extends Concept> concepts) {
-        this(concepts, new HashSet<>());
+        this(concepts, new Explainables());
     }
 
-    public ConceptMap(Map<Retrievable, ? extends Concept> concepts, Set<Explainable> explainables) {
+    public ConceptMap(Map<Retrievable, ? extends Concept> concepts, Explainables explainables) {
         this.concepts = concepts;
         this.explainables = explainables;
         this.hash = Objects.hash(this.concepts, this.explainables);
@@ -98,7 +98,9 @@ public class ConceptMap implements Answer {
         return concepts.get(id);
     }
 
-    public Map<Retrievable, ? extends Concept> concepts() { return concepts; }
+    public Map<Retrievable, ? extends Concept> concepts() {
+        return concepts;
+    }
 
     public ConceptMap filter(Set<? extends Retrievable> vars) {
         Map<Retrievable, ? extends Concept> filtered = concepts.entrySet().stream()
@@ -125,8 +127,26 @@ public class ConceptMap implements Answer {
         return map;
     }
 
-    public Set<Explainable> explainables() {
+    public Explainables explainables() {
         return explainables;
+    }
+
+    public ConceptMap withExplainableConcept(Retrievable id, Conjunction conjunction) {
+        HashMap<Retrievable, Explainables.Explainable> explainableConceptsClone = new HashMap<>(explainables.explainableConcepts);
+        explainableConceptsClone.put(id, Explainables.Explainable.unidentified(conjunction));
+        return new ConceptMap(
+                concepts,
+                new Explainables(unmodifiableMap(explainableConceptsClone), explainables.explainableAttributeOwnerships)
+        );
+    }
+
+    public ConceptMap withExplainableAttrOwnership(Retrievable owner, Retrievable attribute, Conjunction conjunction) {
+        Map<Pair<Retrievable, Retrievable>, Explainables.Explainable> explainableAttributeOwnershipsClone = new HashMap<>(explainables.explainableAttributeOwnerships);
+        explainableAttributeOwnershipsClone.put(new Pair<>(owner, attribute), Explainables.Explainable.unidentified(conjunction));
+        return new ConceptMap(
+                concepts,
+                new Explainables(explainables.explainableConcepts, unmodifiableMap(explainableAttributeOwnershipsClone))
+        );
     }
 
     @Override
@@ -147,46 +167,92 @@ public class ConceptMap implements Answer {
         return hash;
     }
 
-    public static class Explainable {
+    public static class Explainables {
 
-        public static long NOT_IDENTIFIED = -1L;
+        Map<Retrievable, Explainable> explainableConcepts;
+        Map<Pair<Retrievable, Retrievable>, Explainable> explainableAttributeOwnerships;
 
-        private final Conjunction conjunction;
-        private long explainableId;
-
-        private Explainable(Conjunction conjunction, long explainableId) {
-            this.conjunction = conjunction;
-            this.explainableId = explainableId;
+        public Explainables() {
+            this(unmodifiableMap(new HashMap<>()), unmodifiableMap(new HashMap<>()));
         }
 
-        public static Explainable unidentified(Conjunction conjunction) {
-            return new Explainable(conjunction, NOT_IDENTIFIED);
+        public Explainables(Map<Retrievable, Explainable> explainableConcepts,
+                            Map<Pair<Retrievable, Retrievable>, Explainable> explainableAttributeOwnerships) {
+            // to save memory, we only initialise these maps when we have to (we create a lot of concept maps)
+            this.explainableConcepts = explainableConcepts;
+            this.explainableAttributeOwnerships = explainableAttributeOwnerships;
         }
 
-        public void setId(long explainableId) {
-            this.explainableId = explainableId;
+        public FunctionalIterator<Explainable> explainables() {
+            return link(iterate(explainableConcepts.values()), iterate(explainableAttributeOwnerships.values()));
         }
 
-        public Conjunction conjunction() {
-            return conjunction;
-        }
-
-        public long explainableId() {
-            return explainableId;
+        public boolean isEmpty() {
+            return explainableConcepts.isEmpty() && explainableAttributeOwnerships.isEmpty();
         }
 
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            final Explainable that = (Explainable) o;
-            return Objects.equals(conjunction, that.conjunction); // exclude ID as it changes
+            Explainables that = (Explainables) o;
+            return Objects.equals(explainableConcepts, that.explainableConcepts) &&
+                    Objects.equals(explainableAttributeOwnerships, that.explainableAttributeOwnerships);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(conjunction); // exclude ID as it changes
+            return Objects.hash(explainableConcepts, explainableAttributeOwnerships);
+        }
+
+        public Explainables merge(Explainables explainables) {
+            Map<Retrievable, Explainable> concepts = new HashMap<>(this.explainableConcepts);
+            Map<Pair<Retrievable, Retrievable>, Explainable> ownerships = new HashMap<>((this.explainableAttributeOwnerships));
+            concepts.putAll(explainables.explainableConcepts);
+            ownerships.putAll(explainables.explainableAttributeOwnerships);
+            return new Explainables(concepts, ownerships);
+        }
+
+        public static class Explainable {
+
+            public static long NOT_IDENTIFIED = -1L;
+
+            private Conjunction conjunction;
+            private long id;
+
+            private Explainable(Conjunction conjunction, long id) {
+                this.conjunction = conjunction;
+                this.id = id;
+            }
+
+            static Explainable unidentified(Conjunction conjunction) {
+                return new Explainable(conjunction, NOT_IDENTIFIED);
+            }
+
+            public void setId(long id) {
+                this.id = id;
+            }
+
+            public Conjunction conjunction() {
+                return conjunction;
+            }
+
+            public long id() {
+                return id;
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+                Explainable that = (Explainable) o;
+                return conjunction == that.conjunction; // exclude ID as it changes
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(conjunction); // exclude ID as it changes
+            }
         }
     }
-
 }
