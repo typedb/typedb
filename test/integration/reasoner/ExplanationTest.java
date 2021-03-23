@@ -51,7 +51,11 @@ import java.util.Set;
 
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.concept.answer.ConceptMap.Explainables.Explainable.NOT_IDENTIFIED;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class ExplanationTest {
 
