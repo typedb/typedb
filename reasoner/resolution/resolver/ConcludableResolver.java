@@ -193,7 +193,6 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             requestStates.put(fromUpstream, requestStateCreate(fromUpstream, iteration));
         } else {
             RequestState requestState = this.requestStates.get(fromUpstream);
-//            assert requestState.iteration() == iteration || requestState.iteration() + 1 == iteration;
 
             if (requestState.iteration() < iteration) {
                 // when the same request for the next iteration the first time, re-initialise required state

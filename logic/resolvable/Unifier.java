@@ -27,13 +27,7 @@ import grakn.core.concept.type.ThingType;
 import grakn.core.traversal.common.Identifier.Variable;
 import grakn.core.traversal.common.Identifier.Variable.Retrievable;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
