@@ -239,8 +239,7 @@ public interface RootResolver<TOP extends Top> {
         private final Consumer<Integer> onFail;
         private final Consumer<Throwable> onException;
 
-        // TODO this is anti-pattern for testing/until we merge James' changes
-        private final Set<Explanation> seen;
+        private final Set<Explanation> submittedExplanations;
 
         public Explain(Driver<Explain> driver, grakn.core.pattern.Conjunction conjunction, Consumer<Top.Explain.Finished> onAnswer,
                        Consumer<Integer> onFail, Consumer<Throwable> onException, ResolverRegistry registry,
@@ -251,8 +250,7 @@ public interface RootResolver<TOP extends Top> {
             this.onAnswer = onAnswer;
             this.onFail = onFail;
             this.onException = onException;
-
-            this.seen = new HashSet<>();
+            this.submittedExplanations = new HashSet<>();
         }
 
         @Override
@@ -302,8 +300,8 @@ public interface RootResolver<TOP extends Top> {
         boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
             assert upstreamAnswer.isTop() && upstreamAnswer.asTop().isExplain() && upstreamAnswer.asTop().asExplain().isFinished();
             Top.Explain.Finished finished = upstreamAnswer.asTop().asExplain().asFinished();
-            if (!seen.contains(finished.explanation())) {
-                seen.add(finished.explanation());
+            if (!submittedExplanations.contains(finished.explanation())) {
+                submittedExplanations.add(finished.explanation());
                 answerToUpstream(upstreamAnswer, fromUpstream, iteration);
                 return true;
             } else {

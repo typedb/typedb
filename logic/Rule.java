@@ -36,7 +36,11 @@ import grakn.core.logic.resolvable.Concludable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.Negation;
-import grakn.core.pattern.constraint.thing.*;
+import grakn.core.pattern.constraint.thing.HasConstraint;
+import grakn.core.pattern.constraint.thing.IsaConstraint;
+import grakn.core.pattern.constraint.thing.RelationConstraint;
+import grakn.core.pattern.constraint.thing.ThingConstraint;
+import grakn.core.pattern.constraint.thing.ValueConstraint;
 import grakn.core.pattern.variable.ThingVariable;
 import grakn.core.pattern.variable.TypeVariable;
 import grakn.core.pattern.variable.Variable;
@@ -49,17 +53,31 @@ import graql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
-import static grakn.core.common.exception.ErrorMessage.RuleWrite.*;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.INVALID_NEGATION_CONTAINS_DISJUNCTION;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CAN_IMPLY_UNINSERTABLE_RESULTS;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_CANNOT_BE_SATISFIED;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CANNOT_BE_SATISFIED;
 import static grakn.core.common.iterator.Iterators.iterate;
-import static graql.lang.common.GraqlToken.Char.*;
-import static graql.lang.common.GraqlToken.Schema.*;
+import static graql.lang.common.GraqlToken.Char.COLON;
+import static graql.lang.common.GraqlToken.Char.CURLY_CLOSE;
+import static graql.lang.common.GraqlToken.Char.CURLY_OPEN;
+import static graql.lang.common.GraqlToken.Char.NEW_LINE;
+import static graql.lang.common.GraqlToken.Char.SEMICOLON;
+import static graql.lang.common.GraqlToken.Char.SPACE;
+import static graql.lang.common.GraqlToken.Schema.RULE;
+import static graql.lang.common.GraqlToken.Schema.THEN;
+import static graql.lang.common.GraqlToken.Schema.WHEN;
 
 
 public class Rule {

@@ -27,6 +27,7 @@ import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Negated;
 import grakn.core.logic.resolvable.Resolvable;
 import grakn.core.logic.resolvable.Retrievable;
+import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Negation;
 import grakn.core.reasoner.resolution.Planner;
 import grakn.core.reasoner.resolution.ResolverRegistry;
@@ -62,9 +63,8 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
     final Plans plans;
     final Map<Resolvable<?>, ResolverRegistry.ResolverView> downstreamResolvers;
 
-    public ConjunctionResolver(Driver<RESOLVER> driver, String name,
-                               ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                               LogicManager logicMgr, Planner planner, boolean resolutionTracing) {
+    public ConjunctionResolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry, TraversalEngine traversalEngine,
+                               ConceptManager conceptMgr, LogicManager logicMgr, Planner planner, boolean resolutionTracing) {
         super(driver, name, registry, traversalEngine, conceptMgr, resolutionTracing);
         this.logicMgr = logicMgr;
         this.planner = planner;
@@ -76,7 +76,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
 
     abstract Set<Concludable> concludablesTriggeringRules();
 
-    abstract grakn.core.pattern.Conjunction conjunction();
+    abstract Conjunction conjunction();
 
     protected abstract void nextAnswer(Request fromUpstream, RequestState requestState, int iteration);
 
@@ -283,9 +283,9 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
 
     public static class Nested extends ConjunctionResolver<Nested> {
 
-        private final grakn.core.pattern.Conjunction conjunction;
+        private final Conjunction conjunction;
 
-        public Nested(Driver<Nested> driver, grakn.core.pattern.Conjunction conjunction,
+        public Nested(Driver<Nested> driver, Conjunction conjunction,
                       ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
                       LogicManager logicMgr, Planner planner, boolean resolutionTracing) {
             super(driver, Nested.class.getSimpleName() + "(pattern: " + conjunction + ")",
@@ -301,7 +301,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         }
 
         @Override
-        grakn.core.pattern.Conjunction conjunction() {
+        Conjunction conjunction() {
             return conjunction;
         }
 
