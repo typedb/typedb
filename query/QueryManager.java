@@ -28,7 +28,11 @@ import grakn.core.concept.answer.ConceptMapGroup;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.NumericGroup;
 import grakn.core.logic.LogicManager;
+import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.Reasoner;
+import grakn.core.reasoner.resolution.answer.Explanation;
+import graql.lang.Graql;
+import graql.lang.pattern.Conjunctable;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlInsert;
@@ -72,6 +76,10 @@ public class QueryManager {
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }
+    }
+
+    public FunctionalIterator<Explanation> explain(long explainableId) {
+        return reasoner.explain(explainableId, defaultContext);
     }
 
     public Numeric match(GraqlMatch.Aggregate query) {

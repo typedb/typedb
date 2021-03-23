@@ -93,8 +93,8 @@ public class Rule {
 
     private Rule(LogicManager logicMgr, RuleStructure structure) {
         this.structure = structure;
-        this.when = whenPattern(structure.when(), logicMgr);
         this.then = thenPattern(structure.then(), logicMgr);
+        this.when = whenPattern(structure.when(), structure.then(), logicMgr);
         pruneThenResolvedTypes();
         this.conclusion = Conclusion.create(this);
         this.condition = Condition.create(this);
@@ -103,8 +103,8 @@ public class Rule {
     private Rule(GraphManager graphMgr, LogicManager logicMgr, String label,
                  graql.lang.pattern.Conjunction<? extends Pattern> when, graql.lang.pattern.variable.ThingVariable<?> then) {
         this.structure = graphMgr.schema().rules().create(label, when, then);
-        this.when = whenPattern(structure.when(), logicMgr);
         this.then = thenPattern(structure.then(), logicMgr);
+        this.when = whenPattern(structure.when(), structure.then(), logicMgr);
         pruneThenResolvedTypes();
         validateSatisfiable();
         validateInsertable(logicMgr);
@@ -204,8 +204,9 @@ public class Rule {
                 });
     }
 
-    private Conjunction whenPattern(graql.lang.pattern.Conjunction<? extends Pattern> conjunction, LogicManager logicMgr) {
-        Disjunction when = Disjunction.create(conjunction.normalise());
+    private Conjunction whenPattern(graql.lang.pattern.Conjunction<? extends Pattern> conjunction,
+                                    graql.lang.pattern.variable.ThingVariable<?> then, LogicManager logicMgr) {
+        Disjunction when = Disjunction.create(conjunction.normalise(), VariableRegistry.createFromThings(list(then)));
         assert when.conjunctions().size() == 1;
 
         if (iterate(when.conjunctions().get(0).negations()).filter(neg -> neg.disjunction().conjunctions().size() != 1).hasNext()) {
@@ -287,6 +288,23 @@ public class Rule {
                     });
         }
 
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            final Condition that = (Condition) o;
+            return rule.equals(that.rule);
+        }
+
+        @Override
+        public int hashCode() {
+            return rule.hashCode();
+        }
+
+        @Override
+        public String toString() {
+            return "Rule[" + rule.getLabel() + "] Condition " + rule.when;
+        }
     }
 
     public static abstract class Conclusion {
@@ -390,6 +408,24 @@ public class Rule {
 
         public interface Value {
             ValueConstraint<?> value();
+        }
+
+        @Override
+        public String toString() {
+            return "Rule[" + rule.getLabel() + "] Conclusion " + rule.then;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            final Conclusion that = (Conclusion) o;
+            return rule.equals(that.rule);
+        }
+
+        @Override
+        public int hashCode() {
+            return rule.hashCode();
         }
 
         public static class Relation extends Conclusion implements Isa {

@@ -44,9 +44,9 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     private final Map<Request, RequestStates> requestStates;
 
     public RetrievableResolver(Driver<RetrievableResolver> driver, Retrievable retrievable, ResolverRegistry registry,
-                               TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean explanations) {
+                               TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
         super(driver, RetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable.pattern() + ")",
-              registry, traversalEngine, conceptMgr, explanations);
+              registry, traversalEngine, conceptMgr, resolutionTracing);
         this.retrievable = retrievable;
         this.requestStates = new HashMap<>();
     }
@@ -86,29 +86,29 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
             requestStates.put(fromUpstream, createRequestState(fromUpstream, iteration));
         } else {
             RequestStates requestStates = this.requestStates.get(fromUpstream);
-            assert iteration <= requestStates.iteration() + 1;
 
-            if (requestStates.iteration() + 1 == iteration) {
+            if (requestStates.iteration() < iteration) {
                 // when the same request for the next iteration the first time, re-initialise required state
                 RequestStates responseProducerNextIter = createRequestState(fromUpstream, iteration);
                 this.requestStates.put(fromUpstream, responseProducerNextIter);
             }
         }
+        boolean bad = requestStates.values().stream().anyMatch(rs -> rs.iteration() + 1 < iteration);
         return requestStates.get(fromUpstream);
     }
 
     protected RequestStates createRequestState(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new ResponseProducer for iteration:{}, request: {}", name(), iteration, fromUpstream);
-        assert fromUpstream.partialAnswer().isFiltered();
-        FunctionalIterator<Partial<?>> upstreamAnswers =
+        assert fromUpstream.partialAnswer().isRetrievable();
+        FunctionalIterator<Partial.Compound<?, ?>> upstreamAnswers =
                 traversalIterator(retrievable.pattern(), fromUpstream.partialAnswer().conceptMap())
-                        .map(conceptMap -> fromUpstream.partialAnswer().asFiltered().aggregateToUpstream(conceptMap));
+                        .map(conceptMap -> fromUpstream.partialAnswer().asRetrievable().aggregateToUpstream(conceptMap));
         return new RequestStates(upstreamAnswers, iteration);
     }
 
     private void nextAnswer(Request fromUpstream, RequestStates responseProducer, int iteration) {
         if (responseProducer.hasUpstreamAnswer()) {
-            Partial<?> upstreamAnswer = responseProducer.upstreamAnswers().next();
+            Partial.Compound<?, ?> upstreamAnswer = responseProducer.upstreamAnswers().next();
             answerToUpstream(upstreamAnswer, fromUpstream, iteration);
         } else {
             failToUpstream(fromUpstream, iteration);
@@ -117,10 +117,10 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
 
     private static class RequestStates {
 
-        private final FunctionalIterator<Partial<?>> newUpstreamAnswers;
+        private final FunctionalIterator<Partial.Compound<?, ?>> newUpstreamAnswers;
         private final int iteration;
 
-        public RequestStates(FunctionalIterator<Partial<?>> upstreamAnswers, int iteration) {
+        public RequestStates(FunctionalIterator<Partial.Compound<?, ?>> upstreamAnswers, int iteration) {
             this.newUpstreamAnswers = upstreamAnswers;
             this.iteration = iteration;
         }
@@ -129,7 +129,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
             return newUpstreamAnswers.hasNext();
         }
 
-        public FunctionalIterator<Partial<?>> upstreamAnswers() {
+        public FunctionalIterator<Partial.Compound<?, ?>> upstreamAnswers() {
             return newUpstreamAnswers;
         }
 

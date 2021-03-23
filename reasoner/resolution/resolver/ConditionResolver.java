@@ -21,11 +21,10 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.logic.LogicManager;
 import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Concludable;
-import grakn.core.pattern.Conjunction;
 import grakn.core.reasoner.resolution.Planner;
-import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
@@ -41,16 +40,16 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
 
     private final Rule.Condition condition;
 
-    public ConditionResolver(Driver<ConditionResolver> driver, Rule.Condition condition, Driver<ResolutionRecorder> resolutionRecorder,
+    public ConditionResolver(Driver<ConditionResolver> driver, Rule.Condition condition,
                              ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
                              LogicManager logicMgr, Planner planner, boolean resolutionTracing) {
-        super(driver, ConditionResolver.class.getCanonicalName() + "(rule:" + condition.rule().getLabel() + ")",
-              resolutionRecorder, registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
+        super(driver, ConditionResolver.class.getSimpleName() + "(" + condition + ")",
+               registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
         this.condition = condition;
     }
 
     @Override
-    public Conjunction conjunction() {
+    public grakn.core.pattern.Conjunction conjunction() {
         return condition.rule().when();
     }
 
@@ -69,8 +68,21 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
     }
 
     @Override
-    protected Optional<AnswerState> toUpstreamAnswer(AnswerState.Partial<?> fromDownstream) {
-        return Optional.of(fromDownstream.asFiltered().toUpstream());
+    protected Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?, ?> partialAnswer) {
+        assert partialAnswer.isCondition();
+        return Optional.of(partialAnswer.asCondition().toUpstream());
+    }
+
+    @Override
+    boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
+        RequestState requestState = requestStates.get(fromUpstream);
+        if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
+            requestState.recordProduced(upstreamAnswer.conceptMap());
+            answerToUpstream(upstreamAnswer, fromUpstream, iteration);
+            return true;
+        } else {
+            return false;
+        }
     }
 
     @Override
@@ -85,7 +97,7 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
 
     @Override
     public String toString() {
-        return name() + ": " + condition.rule().when();
+        return name();
     }
 
 }

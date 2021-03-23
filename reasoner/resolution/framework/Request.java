@@ -93,12 +93,7 @@ public class Request {
                 "sender=" + sender +
                 ", receiver=" + receiver +
                 ", partial=" + partialAnswer +
-                ", partialDerivation=" + partialAnswer.derivation() +
                 '}';
-    }
-
-    public AnswerState.Derivation partialDerivation() {
-        return partialAnswer.derivation();
     }
 
 }

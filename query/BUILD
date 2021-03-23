@@ -40,6 +40,7 @@ native_java_libraries(
         "@graknlabs_common//:common",
         "@graknlabs_grabl_tracing//client:client",
         "@graknlabs_graql//java/common:common",
+        "@graknlabs_graql//java:graql",
         "@graknlabs_graql//java/pattern:pattern",
         "@graknlabs_graql//java/query:query",
 
