@@ -80,4 +80,8 @@ public class RocksDatabaseManager implements Grakn.DatabaseManager {
     void remove(RocksDatabase database) {
         databases.remove(database.name());
     }
+
+    protected void close() {
+        all().parallelStream().forEach(RocksDatabase::close);
+    }
 }
