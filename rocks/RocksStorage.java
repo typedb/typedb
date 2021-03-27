@@ -139,7 +139,7 @@ public abstract class RocksStorage implements Storage {
     @Override
     public GraknException exception(ErrorMessage error) {
         GraknException e = GraknException.of(error);
-        LOG.error(e.getMessage(), e);
+        LOG.debug(e.getMessage(), e);
         return e;
     }
 
@@ -148,7 +148,7 @@ public abstract class RocksStorage implements Storage {
         GraknException e;
         if (exception instanceof GraknException) e = (GraknException) exception;
         else e = GraknException.of(exception);
-        LOG.error(e.getMessage(), e);
+        LOG.debug(e.getMessage(), e);
         return e;
     }
 

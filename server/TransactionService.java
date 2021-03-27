@@ -284,6 +284,8 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                 sessionSvc.remove(this);
             }
             responder.onError(ResponseBuilder.exception(error));
+            // TODO: We should restrict the type of errors that we log.
+            //       Expected error handling from the server side does not need to be logged - they create noise.
             if (isClientCancelled(error)) LOG.debug(error.getMessage(), error);
             else LOG.error(error.getMessage(), error);
         }
