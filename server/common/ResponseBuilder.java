@@ -28,12 +28,21 @@ import grakn.core.concept.answer.NumericGroup;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
-import grakn.core.concept.type.*;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.RoleType;
+import grakn.core.concept.type.ThingType;
 import grakn.core.reasoner.resolution.answer.Explanation;
 import grakn.core.server.SessionService;
-import grakn.protocol.*;
+import grakn.protocol.AnswerProto;
+import grakn.protocol.ConceptProto;
 import grakn.protocol.CoreDatabaseProto.CoreDatabase;
 import grakn.protocol.CoreDatabaseProto.CoreDatabaseManager;
+import grakn.protocol.LogicProto;
+import grakn.protocol.QueryProto;
+import grakn.protocol.SessionProto;
+import grakn.protocol.TransactionProto;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 
@@ -759,9 +768,27 @@ public class ResponseBuilder {
                     conceptMapProto.putMap(id.asVariable().asName().reference().name(), conceptProto);
                 }
             });
-
-            answer.explainables().forEach(explainable -> conceptMapProto.addExplainables(explainable(explainable)));
+            conceptMapProto.setExplainables(explainables(answer.explainables()));
             return conceptMapProto.build();
+        }
+
+        private static AnswerProto.Explainables explainables(ConceptMap.Explainables explainables) {
+            AnswerProto.Explainables.Builder builder = AnswerProto.Explainables.newBuilder();
+            explainables.explainableRelations().forEach(
+                    (var, explainable) -> builder.putExplainableRelations(var.toString(), explainable(explainable))
+            );
+            explainables.explainableAttributes().forEach(
+                    (var, explainable) -> builder.putExplainableRelations(var.toString(), explainable(explainable))
+            );
+            explainables.explainableOwnerships().forEach((ownership, explainable) -> {
+                        AnswerProto.ExplainableOwnership.Builder ownershipBuilder = AnswerProto.ExplainableOwnership.newBuilder();
+                        ownershipBuilder.setOwner(ownership.first().toString());
+                        ownershipBuilder.setAttribute(ownership.second().toString());
+                        ownershipBuilder.setExplainable(explainable(explainable));
+                        builder.addExplainableOwnerships(ownershipBuilder.build());
+                    }
+            );
+            return builder.build();
         }
 
         private static AnswerProto.Explainable explainable(ConceptMap.Explainable explainable) {

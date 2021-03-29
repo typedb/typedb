@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static grakn.core.concept.answer.ConceptMap.Explainables.Explainable.NOT_IDENTIFIED;
+import static grakn.core.concept.answer.ConceptMap.Explainable.NOT_IDENTIFIED;
 
 public class ExplainablesManager {
 
