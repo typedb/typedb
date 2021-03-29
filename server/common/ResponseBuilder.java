@@ -774,13 +774,13 @@ public class ResponseBuilder {
 
         private static AnswerProto.Explainables explainables(ConceptMap.Explainables explainables) {
             AnswerProto.Explainables.Builder builder = AnswerProto.Explainables.newBuilder();
-            explainables.explainableRelations().forEach(
+            explainables.relations().forEach(
                     (var, explainable) -> builder.putExplainableRelations(var.toString(), explainable(explainable))
             );
-            explainables.explainableAttributes().forEach(
-                    (var, explainable) -> builder.putExplainableRelations(var.toString(), explainable(explainable))
+            explainables.attributes().forEach(
+                    (var, explainable) -> builder.putExplainableAttributes(var.toString(), explainable(explainable))
             );
-            explainables.explainableOwnerships().forEach((ownership, explainable) -> {
+            explainables.ownerships().forEach((ownership, explainable) -> {
                         AnswerProto.ExplainableOwnership.Builder ownershipBuilder = AnswerProto.ExplainableOwnership.newBuilder();
                         ownershipBuilder.setOwner(ownership.first().toString());
                         ownershipBuilder.setAttribute(ownership.second().toString());

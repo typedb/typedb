@@ -39,7 +39,7 @@ public class ExplainablesManager {
     }
 
     public void setAndRecordExplainables(ConceptMap explainableMap) {
-        explainableMap.explainables().explainables().forEachRemaining(explainable -> {
+        explainableMap.explainables().iterator().forEachRemaining(explainable -> {
             long nextId = this.nextId.getAndIncrement();
             explainable.setId(nextId);
             conjunctions.put(nextId, explainable.conjunction());

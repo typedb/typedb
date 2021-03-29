@@ -392,10 +392,10 @@ public class ExplanationTest {
 
                 Map<Pair<ConceptMap, ConceptMap.Explainable>, List<Explanation>> allExplanations = new HashMap<>();
                 for (ConceptMap explainableMap : explainableMaps) {
-                    List<ConceptMap.Explainable> explainables = explainableMap.explainables().explainables().toList();
+                    List<ConceptMap.Explainable> explainables = explainableMap.explainables().iterator().toList();
                     assertEquals(1, explainables.size());
-                    List<Explanation> explanations = txn.query().explain(explainables.iterator().next().id()).toList();
-                    allExplanations.put(new Pair<>(explainableMap, explainables.iterator().next()), explanations);
+                    List<Explanation> explanations = txn.query().explain(explainables.get(0).id()).toList();
+                    allExplanations.put(new Pair<>(explainableMap, explainables.get(0)), explanations);
                 }
 
                 int oneExplanation = 0;
@@ -480,7 +480,7 @@ public class ExplanationTest {
                 assertEquals(3, explanation.conclusionAnswer().concepts().size());
 
                 ConceptMap marriageIsFriendshipAnswer = explanation.conditionAnswer();
-                assertEquals(1, marriageIsFriendshipAnswer.explainables().explainables().count());
+                assertEquals(1, marriageIsFriendshipAnswer.explainables().iterator().count());
                 assertSingleExplainableExplanations(marriageIsFriendshipAnswer, 1, 1, 1, txn);
             }
         }
@@ -488,7 +488,7 @@ public class ExplanationTest {
 
     private List<Explanation> assertSingleExplainableExplanations(ConceptMap ans, int anonymousConcepts, int explainablesCount,
                                                                   int explanationsCount, RocksTransaction txn) {
-        List<ConceptMap.Explainable> explainables = ans.explainables().explainables().toList();
+        List<ConceptMap.Explainable> explainables = ans.explainables().iterator().toList();
         assertEquals(anonymousConcepts, iterate(ans.concepts().keySet()).filter(Identifier::isAnonymous).count());
         assertEquals(explainablesCount, explainables.size());
         ConceptMap.Explainable explainable = explainables.iterator().next();

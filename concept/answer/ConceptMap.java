@@ -185,23 +185,23 @@ public class ConceptMap implements Answer {
             this.concepts = concepts;
         }
 
-        public FunctionalIterator<Explainable> explainables() {
+        public FunctionalIterator<Explainable> iterator() {
             return link(iterate(explainableConcepts.values()), iterate(explainableOwnerships.values()));
         }
 
-        public Map<Retrievable, Explainable> explainableRelations() {
+        public Map<Retrievable, Explainable> relations() {
             return explainableConcepts.entrySet().stream()
                     .filter((entry) -> concepts.get(entry.getKey()).isRelation())
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         }
 
-        public Map<Retrievable, Explainable> explainableAttributes() {
+        public Map<Retrievable, Explainable> attributes() {
             return explainableConcepts.entrySet().stream()
                     .filter((entry) -> concepts.get(entry.getKey()).isAttribute())
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         }
 
-        public Map<Pair<Retrievable, Retrievable>, Explainable> explainableOwnerships() {
+        public Map<Pair<Retrievable, Retrievable>, Explainable> ownerships() {
             return explainableOwnerships;
         }
 
