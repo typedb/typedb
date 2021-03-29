@@ -20,7 +20,6 @@ package grakn.core.graph;
 
 import grakn.common.collection.ConcurrentSet;
 import grakn.common.collection.Pair;
-import grakn.core.common.collection.Bytes;
 import grakn.core.common.exception.GraknCheckedException;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.FunctionalIterator;
@@ -269,17 +268,17 @@ public class DataGraph implements Graph {
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(Boolean.class);
 
+        boolean[] isNewVertex = new boolean[]{false};
         AttributeVertex<Boolean> vertex = attributesByIID.booleans.computeIfAbsent(
                 new VertexIID.Attribute.Boolean(type.iid(), value),
                 iid -> {
                     AttributeVertex<Boolean> v = new AttributeVertexImpl.Boolean(this, iid, isInferred);
                     thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
-                    if (!isInferred) statistics.attributeVertexCreated(v.iid());
+                    isNewVertex[0] = true;
                     return v;
                 }
         );
-        if (!isInferred && vertex.isInferred()) {
-            // promote inferred attribute to non-inferred attribute
+        if (!isInferred && (isNewVertex[0] || vertex.isInferred())) {
             vertex.isInferred(false);
             statistics.attributeVertexCreated(vertex.iid());
         }
@@ -291,20 +290,22 @@ public class DataGraph implements Graph {
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(Long.class);
 
+        boolean[] isNewVertex = new boolean[]{false};
         AttributeVertex<Long> vertex = attributesByIID.longs.computeIfAbsent(
                 new VertexIID.Attribute.Long(type.iid(), value),
                 iid -> {
                     AttributeVertex<Long> v = new AttributeVertexImpl.Long(this, iid, isInferred);
                     thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
-                    if (!isInferred) statistics.attributeVertexCreated(v.iid());
+                    isNewVertex[0] = true;
                     return v;
                 }
         );
-        if (!isInferred && vertex.isInferred()) {
-            // promote inferred attribute to non-inferred attribute
+
+        if (!isInferred && (isNewVertex[0] || vertex.isInferred())) {
             vertex.isInferred(false);
             statistics.attributeVertexCreated(vertex.iid());
         }
+
         return vertex;
     }
 
@@ -313,17 +314,17 @@ public class DataGraph implements Graph {
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(Double.class);
 
+        boolean[] isNewVertex = new boolean[]{false};
         AttributeVertex<Double> vertex = attributesByIID.doubles.computeIfAbsent(
                 new VertexIID.Attribute.Double(type.iid(), value),
                 iid -> {
                     AttributeVertex<Double> v = new AttributeVertexImpl.Double(this, iid, isInferred);
                     thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
-                    if (!isInferred) statistics.attributeVertexCreated(v.iid());
+                    isNewVertex[0] = true;
                     return v;
                 }
         );
-        if (!isInferred && vertex.isInferred()) {
-            // promote inferred attribute to non-inferred attribute
+        if (!isInferred && (isNewVertex[0] || vertex.isInferred())) {
             vertex.isInferred(false);
             statistics.attributeVertexCreated(vertex.iid());
         }
@@ -347,16 +348,17 @@ public class DataGraph implements Graph {
             }
         }
 
+        boolean[] isNewVertex = new boolean[]{false};
         AttributeVertex<String> vertex = attributesByIID.strings.computeIfAbsent(
                 attIID, iid -> {
                     AttributeVertex<String> v = new AttributeVertexImpl.String(this, iid, isInferred);
                     thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
-                    if (!isInferred) statistics.attributeVertexCreated(v.iid());
+                    isNewVertex[0] = true;
                     return v;
                 }
         );
-        if (!isInferred && vertex.isInferred()) {
-            // promote inferred attribute to non-inferred attribute
+
+        if (!isInferred && (isNewVertex[0] || vertex.isInferred())) {
             vertex.isInferred(false);
             statistics.attributeVertexCreated(vertex.iid());
         }
@@ -368,17 +370,18 @@ public class DataGraph implements Graph {
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(LocalDateTime.class);
 
+        boolean[] isNewVertex = new boolean[]{false};
         AttributeVertex<LocalDateTime> vertex = attributesByIID.dateTimes.computeIfAbsent(
                 new VertexIID.Attribute.DateTime(type.iid(), value),
                 iid -> {
                     AttributeVertex<LocalDateTime> v = new AttributeVertexImpl.DateTime(this, iid, isInferred);
                     thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
-                    if (!isInferred) statistics.attributeVertexCreated(v.iid());
+                    isNewVertex[0] = true;
                     return v;
                 }
         );
-        if (!isInferred && vertex.isInferred()) {
-            // promote inferred attribute to non-inferred attribute
+
+        if (!isInferred && (isNewVertex[0] || vertex.isInferred())) {
             vertex.isInferred(false);
             statistics.attributeVertexCreated(vertex.iid());
         }
