@@ -77,6 +77,7 @@ native_java_libraries(
         "//logic:logic",
         "//query:query",
         "//rocks:rocks",
+        "//reasoner:reasoner",
         "//migrator:migrator",
     ],
     runtime_deps = [

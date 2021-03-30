@@ -33,6 +33,7 @@ import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
+import grakn.core.reasoner.resolution.answer.Explanation;
 import grakn.core.server.SessionService;
 import grakn.protocol.AnswerProto;
 import grakn.protocol.ConceptProto;
@@ -47,14 +48,17 @@ import io.grpc.StatusRuntimeException;
 
 import javax.annotation.Nullable;
 import java.time.ZoneOffset;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.server.common.ResponseBuilder.Answer.conceptMap;
 import static grakn.core.server.common.ResponseBuilder.Answer.numeric;
 import static grakn.core.server.common.ResponseBuilder.Concept.protoThing;
-import static grakn.core.server.common.ResponseBuilder.Rule.protoRule;
+import static grakn.core.server.common.ResponseBuilder.Logic.Rule.protoRule;
 import static grakn.core.server.common.ResponseBuilder.Type.protoType;
 import static java.util.stream.Collectors.toList;
 
@@ -217,6 +221,14 @@ public class ResponseBuilder {
                             iterate(answers).map(Answer::conceptMap).toList()))
             );
         }
+
+        public static TransactionProto.Transaction.ResPart explainResPart(String reqID, List<Explanation> explanations) {
+            return queryMgrResPart(reqID, QueryProto.QueryManager.ResPart.newBuilder().setExplainResPart(
+                    QueryProto.QueryManager.Explain.ResPart.newBuilder().addAllExplanations(
+                            iterate(explanations).map(Logic::explanation).toList()
+                    )));
+        }
+
     }
 
     public static class ConceptManager {
@@ -282,30 +294,11 @@ public class ResponseBuilder {
         public static TransactionProto.Transaction.ResPart getRulesResPart(String reqID, List<grakn.core.logic.Rule> rules) {
             return logicMgrResPart(reqID, LogicProto.LogicManager.ResPart.newBuilder().setGetRulesResPart(
                     LogicProto.LogicManager.GetRules.ResPart.newBuilder().addAllRules(
-                            rules.stream().map(Rule::protoRule).collect(toList()))
+                            rules.stream().map(Logic.Rule::protoRule).collect(toList()))
             ));
         }
     }
-//
-//        /**
-//         * @param explanation
-//         * @return
-//         */
-//        static TransactionProto.Transaction.Res explanation(Explanation explanation) {
-//            TransactionProto.Transaction.Res.Builder res = TransactionProto.Transaction.Res.newBuilder();
-//            AnswerProto.Explanation.Res.Builder explanationBuilder = AnswerProto.Explanation.Res.newBuilder()
-//                    .addAllExplanation(explanation.getAnswers().stream().map(Answer::conceptMap)
-//                                               .collect(Collectors.toList()));
-//
-//            if (explanation.isRuleExplanation()) {
-//                Rule rule = ((RuleExplanation) explanation).getRule();
-//                ConceptProto.Concept ruleProto = Concept.concept(rule);
-//                explanationBuilder.setRule(ruleProto);
-//            }
-//
-//            res.setExplanationRes(explanationBuilder.build());
-//            return res.build();
-//        }
+
 
     public static class Concept {
 
@@ -722,28 +715,44 @@ public class ResponseBuilder {
         }
     }
 
-    public static class Rule {
+    public static class Logic {
 
-        public static LogicProto.Rule protoRule(grakn.core.logic.Rule rule) {
-            return LogicProto.Rule.newBuilder().setLabel(rule.getLabel())
-                    .setWhen(rule.getWhenPreNormalised().toString())
-                    .setThen(rule.getThenPreNormalised().toString()).build();
+        public static class Rule {
+
+            public static LogicProto.Rule protoRule(grakn.core.logic.Rule rule) {
+                return LogicProto.Rule.newBuilder().setLabel(rule.getLabel())
+                        .setWhen(rule.getWhenPreNormalised().toString())
+                        .setThen(rule.getThenPreNormalised().toString()).build();
+            }
+
+            public static TransactionProto.Transaction.Res ruleRes(String reqID, LogicProto.Rule.Res.Builder res) {
+                return TransactionProto.Transaction.Res.newBuilder().setReqId(reqID).setRuleRes(res).build();
+            }
+
+            public static TransactionProto.Transaction.Res setLabelRes(String reqID) {
+                return ruleRes(reqID, LogicProto.Rule.Res.newBuilder().setRuleSetLabelRes(
+                        LogicProto.Rule.SetLabel.Res.getDefaultInstance())
+                );
+            }
+
+            public static TransactionProto.Transaction.Res deleteRes(String reqID) {
+                return ruleRes(reqID, LogicProto.Rule.Res.newBuilder().setRuleDeleteRes(
+                        LogicProto.Rule.Delete.Res.getDefaultInstance())
+                );
+            }
         }
 
-        public static TransactionProto.Transaction.Res ruleRes(String reqID, LogicProto.Rule.Res.Builder res) {
-            return TransactionProto.Transaction.Res.newBuilder().setReqId(reqID).setRuleRes(res).build();
-        }
-
-        public static TransactionProto.Transaction.Res setLabelRes(String reqID) {
-            return ruleRes(reqID, LogicProto.Rule.Res.newBuilder().setRuleSetLabelRes(
-                    LogicProto.Rule.SetLabel.Res.getDefaultInstance())
-            );
-        }
-
-        public static TransactionProto.Transaction.Res deleteRes(String reqID) {
-            return ruleRes(reqID, LogicProto.Rule.Res.newBuilder().setRuleDeleteRes(
-                    LogicProto.Rule.Delete.Res.getDefaultInstance())
-            );
+        public static LogicProto.Explanation explanation(Explanation explanation) {
+            LogicProto.Explanation.Builder builder = LogicProto.Explanation.newBuilder();
+            builder.setRule(protoRule(explanation.rule()));
+            explanation.variableMapping().forEach((from, tos) -> {
+                LogicProto.Explanation.VarList.Builder listBuilder = LogicProto.Explanation.VarList.newBuilder();
+                tos.forEach(var -> listBuilder.addVars(var.name()));
+                builder.putVarMapping(from.name(), listBuilder.build());
+            });
+            builder.setConclusion(conceptMap(explanation.conclusionAnswer()));
+            builder.setCondition(conceptMap(explanation.conditionAnswer()));
+            return builder.build();
         }
     }
 
@@ -756,23 +765,40 @@ public class ResponseBuilder {
             AnswerProto.ConceptMap.Builder conceptMapProto = AnswerProto.ConceptMap.newBuilder();
             // TODO: needs testing
             answer.concepts().forEach((id, concept) -> {
-                if (id.isName()) {
-                    ConceptProto.Concept conceptProto = ResponseBuilder.Concept.protoConcept(concept);
-                    conceptMapProto.putMap(id.asVariable().asName().reference().name(), conceptProto);
-                }
+                ConceptProto.Concept conceptProto = ResponseBuilder.Concept.protoConcept(concept);
+                conceptMapProto.putMap(id.name(), conceptProto);
+            });
+            conceptMapProto.setExplainables(explainables(answer.explainables()));
+            return conceptMapProto.build();
+        }
+
+        private static AnswerProto.Explainables explainables(ConceptMap.Explainables explainables) {
+            AnswerProto.Explainables.Builder builder = AnswerProto.Explainables.newBuilder();
+            explainables.relations().forEach(
+                    (var, explainable) -> builder.putRelations(var.name(), explainable(explainable))
+            );
+            explainables.attributes().forEach(
+                    (var, explainable) -> builder.putAttributes(var.name(), explainable(explainable))
+            );
+            Map<String, Map<String, ConceptMap.Explainable>> ownedExtracted = new HashMap<>();
+            explainables.ownerships().forEach((ownership, explainable) -> {
+                Map<String, ConceptMap.Explainable> owned = ownedExtracted.computeIfAbsent(ownership.first().name(), (val) -> new HashMap<String, ConceptMap.Explainable>());
+                owned.put(ownership.second().name(), explainable);
+            });
+            ownedExtracted.forEach((owner, owned) -> {
+                AnswerProto.Explainables.Owned.Builder ownedBuilder = AnswerProto.Explainables.Owned.newBuilder();
+                owned.forEach((attribute, explainable) -> ownedBuilder.putOwned(attribute, explainable(explainable)));
+                builder.putOwnerships(owner, ownedBuilder.build());
             });
 
-            // TODO
-//            if (answer.getPattern() != null) {
-//                conceptMapProto.setPattern(answer.getPattern().toString());
-//            }
-//
-//            if (answer.explanation() != null && !answer.explanation().isEmpty()) {
-//                conceptMapProto.setHasExplanation(true);
-//            } else {
-//                conceptMapProto.setHasExplanation(false);
-//            }
-            return conceptMapProto.build();
+            return builder.build();
+        }
+
+        private static AnswerProto.Explainable explainable(ConceptMap.Explainable explainable) {
+            AnswerProto.Explainable.Builder builder = AnswerProto.Explainable.newBuilder();
+            builder.setConjunction(explainable.conjunction().toString());
+            builder.setId(explainable.id());
+            return builder.build();
         }
 
         public static AnswerProto.ConceptMapGroup conceptMapGroup(ConceptMapGroup answer) {
@@ -800,5 +826,7 @@ public class ResponseBuilder {
                     .setNumber(numeric(answer.numeric()))
                     .build();
         }
+
     }
+
 }

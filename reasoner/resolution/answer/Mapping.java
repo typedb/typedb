@@ -50,7 +50,7 @@ public class Mapping {
                 transformed.put(mapped, concept);
             }
         }
-        return new ConceptMap(transformed, conceptMap.explainables());
+        return new ConceptMap(transformed);
     }
 
     public ConceptMap unTransform(ConceptMap conceptMap) {
