@@ -132,7 +132,7 @@ public class ConceptMap implements Answer {
     }
 
     public ConceptMap withExplainableConcept(Retrievable id, Conjunction conjunction) {
-        assert concepts.get(id).isRelation() && concepts.get(id).isAttribute();
+        assert concepts.get(id).isRelation() || concepts.get(id).isAttribute();
         if (concepts.get(id).isRelation()) {
             HashMap<Retrievable, Explainable> clone = new HashMap<>(explainables.explainableRelations);
             clone.put(id, Explainable.unidentified(conjunction));
@@ -219,7 +219,7 @@ public class ConceptMap implements Answer {
             relations.putAll(explainables.explainableRelations);
             attributes.putAll(explainables.explainableAttributes);
             ownerships.putAll(explainables.explainableOwnerships);
-            return new Explainables(explainableRelations, explainableAttributes, ownerships);
+            return new Explainables(relations, attributes, ownerships);
         }
 
         @Override
