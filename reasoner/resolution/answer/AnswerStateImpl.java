@@ -76,7 +76,7 @@ public abstract class AnswerStateImpl implements AnswerState {
         Map<Identifier.Variable.Retrievable, Concept> concepts = new HashMap<>(extension.concepts());
         // add the initial concept map second, to make sure we override and retain all of these
         concepts.putAll(conceptMap().concepts());
-        return new ConceptMap(concepts, conceptMap().explainables().merge(extension.explainables(), concepts));
+        return new ConceptMap(concepts, conceptMap().explainables().merge(extension.explainables()));
     }
 
     public static abstract class TopImpl extends AnswerStateImpl implements Top {

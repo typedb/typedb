@@ -19,7 +19,6 @@
 package grakn.core.traversal.common;
 
 import grakn.core.common.exception.GraknException;
-import graql.lang.common.GraqlToken;
 import graql.lang.pattern.variable.Reference;
 
 import javax.annotation.Nullable;
@@ -246,7 +245,7 @@ public abstract class Identifier {
             }
 
             public String name() {
-                return "_" + id; //TODO this shouldn't be hardcoded here...?
+                return reference().name() + id;
             }
 
             @Override

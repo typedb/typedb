@@ -782,7 +782,7 @@ public class ResponseBuilder {
             );
             Map<String, Map<String, ConceptMap.Explainable>> ownedExtracted = new HashMap<>();
             explainables.ownerships().forEach((ownership, explainable) -> {
-                Map<String, ConceptMap.Explainable> owned = ownedExtracted.computeIfAbsent(ownership.first().name(), new HashMap<>());
+                Map<String, ConceptMap.Explainable> owned = ownedExtracted.computeIfAbsent(ownership.first().name(), (val) -> new HashMap<String, ConceptMap.Explainable>());
                 owned.put(ownership.second().name(), explainable);
             });
             ownedExtracted.forEach((owner, owned) -> {
