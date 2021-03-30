@@ -136,13 +136,15 @@ public class ConceptMap implements Answer {
         if (concepts.get(id).isRelation()) {
             HashMap<Retrievable, Explainable> clone = new HashMap<>(explainables.explainableRelations);
             clone.put(id, Explainable.unidentified(conjunction));
-            return new ConceptMap(concepts,
+            return new ConceptMap(
+                    concepts,
                     new Explainables(unmodifiableMap(clone), explainables.explainableRelations, explainables.explainableOwnerships)
             );
         } else {
             HashMap<Retrievable, Explainable> clone = new HashMap<>(explainables.explainableAttributes);
             clone.put(id, Explainable.unidentified(conjunction));
-            return new ConceptMap(concepts,
+            return new ConceptMap(
+                    concepts,
                     new Explainables(explainables.explainableRelations, unmodifiableMap(clone), explainables.explainableOwnerships)
             );
         }
@@ -151,7 +153,8 @@ public class ConceptMap implements Answer {
     public ConceptMap withExplainableAttrOwnership(Retrievable owner, Retrievable attribute, Conjunction conjunction) {
         Map<Pair<Retrievable, Retrievable>, Explainable> explainableAttributeOwnershipsClone = new HashMap<>(explainables.explainableOwnerships);
         explainableAttributeOwnershipsClone.put(new Pair<>(owner, attribute), Explainable.unidentified(conjunction));
-        return new ConceptMap(concepts,
+        return new ConceptMap(
+                concepts,
                 new Explainables(explainables.explainableRelations, explainables.explainableAttributes, unmodifiableMap(explainableAttributeOwnershipsClone))
         );
     }

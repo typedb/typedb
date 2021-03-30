@@ -50,7 +50,7 @@ public class Mapping {
                 transformed.put(mapped, concept);
             }
         }
-        return new ConceptMap(transformed); // we ignore explainables because they can't be mapped here
+        return new ConceptMap(transformed);
     }
 
     public ConceptMap unTransform(ConceptMap conceptMap) {
