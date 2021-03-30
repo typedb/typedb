@@ -35,14 +35,14 @@ def graknlabs_graql():
     git_repository(
         name = "graknlabs_graql",
         remote = "https://github.com/graknlabs/graql",
-        commit = "754b56a8a850d209785b9eb663a4331b9a8a16d6", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_graql
+        commit = "be64cd9d253b56526715b3dd0435716d26a34f87", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_graql
     )
 
 def graknlabs_protocol():
     git_repository(
         name = "graknlabs_protocol",
         remote = "https://github.com/flyingsilverfin/protocol",
-        commit = "38d442fdb2f1a5f2f9707c3ee5625fe09efc3a97", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_protocol
+        commit = "db450964d23303ab73a04c781db0dd0ef53fa869", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_protocol
     )
 
 def graknlabs_grabl_tracing():

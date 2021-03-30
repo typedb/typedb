@@ -48,7 +48,9 @@ import io.grpc.StatusRuntimeException;
 
 import javax.annotation.Nullable;
 import java.time.ZoneOffset;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -744,12 +746,12 @@ public class ResponseBuilder {
             LogicProto.Explanation.Builder builder = LogicProto.Explanation.newBuilder();
             builder.setRule(protoRule(explanation.rule()));
             explanation.variableMapping().forEach((from, tos) -> {
-                LogicProto.Explanation.VarsList.Builder listBuilder = LogicProto.Explanation.VarsList.newBuilder();
-                tos.forEach(var -> listBuilder.addVars(var.toString()));
-                builder.putVarMapping(from.toString(), listBuilder.build());
+                LogicProto.Explanation.VarList.Builder listBuilder = LogicProto.Explanation.VarList.newBuilder();
+                tos.forEach(var -> listBuilder.addVars(var.name()));
+                builder.putVarMapping(from.name(), listBuilder.build());
             });
-            builder.setThenAnswer(conceptMap(explanation.conclusionAnswer()));
-            builder.setWhenAnswer(conceptMap(explanation.conditionAnswer()));
+            builder.setConclusion(conceptMap(explanation.conclusionAnswer()));
+            builder.setCondition(conceptMap(explanation.conditionAnswer()));
             return builder.build();
         }
     }
@@ -773,19 +775,22 @@ public class ResponseBuilder {
         private static AnswerProto.Explainables explainables(ConceptMap.Explainables explainables) {
             AnswerProto.Explainables.Builder builder = AnswerProto.Explainables.newBuilder();
             explainables.relations().forEach(
-                    (var, explainable) -> builder.putExplainableRelations(var.name(), explainable(explainable))
+                    (var, explainable) -> builder.putRelations(var.name(), explainable(explainable))
             );
             explainables.attributes().forEach(
-                    (var, explainable) -> builder.putExplainableAttributes(var.name(), explainable(explainable))
+                    (var, explainable) -> builder.putAttributes(var.name(), explainable(explainable))
             );
+            Map<String, Map<String, ConceptMap.Explainable>> ownedExtracted = new HashMap<>();
             explainables.ownerships().forEach((ownership, explainable) -> {
-                        AnswerProto.ExplainableOwnership.Builder ownershipBuilder = AnswerProto.ExplainableOwnership.newBuilder();
-                        ownershipBuilder.setOwner(ownership.first().name());
-                        ownershipBuilder.setAttribute(ownership.second().name());
-                        ownershipBuilder.setExplainable(explainable(explainable));
-                        builder.addExplainableOwnerships(ownershipBuilder.build());
-                    }
-            );
+                Map<String, ConceptMap.Explainable> owned = ownedExtracted.computeIfAbsent(ownership.first().name(), new HashMap<>());
+                owned.put(ownership.second().name(), explainable);
+            });
+            ownedExtracted.forEach((owner, owned) -> {
+                AnswerProto.Explainables.Owned.Builder ownedBuilder = AnswerProto.Explainables.Owned.newBuilder();
+                owned.forEach((attribute, explainable) -> ownedBuilder.putOwned(attribute, explainable(explainable)));
+                builder.putOwnerships(owner, ownedBuilder.build());
+            });
+
             return builder.build();
         }
 
