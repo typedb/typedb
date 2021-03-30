@@ -763,10 +763,8 @@ public class ResponseBuilder {
             AnswerProto.ConceptMap.Builder conceptMapProto = AnswerProto.ConceptMap.newBuilder();
             // TODO: needs testing
             answer.concepts().forEach((id, concept) -> {
-                if (id.isName()) {
-                    ConceptProto.Concept conceptProto = ResponseBuilder.Concept.protoConcept(concept);
-                    conceptMapProto.putMap(id.asVariable().asName().reference().name(), conceptProto);
-                }
+                ConceptProto.Concept conceptProto = ResponseBuilder.Concept.protoConcept(concept);
+                conceptMapProto.putMap(id.name(), conceptProto);
             });
             conceptMapProto.setExplainables(explainables(answer.explainables()));
             return conceptMapProto.build();
@@ -775,15 +773,15 @@ public class ResponseBuilder {
         private static AnswerProto.Explainables explainables(ConceptMap.Explainables explainables) {
             AnswerProto.Explainables.Builder builder = AnswerProto.Explainables.newBuilder();
             explainables.relations().forEach(
-                    (var, explainable) -> builder.putExplainableRelations(var.toString(), explainable(explainable))
+                    (var, explainable) -> builder.putExplainableRelations(var.name(), explainable(explainable))
             );
             explainables.attributes().forEach(
-                    (var, explainable) -> builder.putExplainableAttributes(var.toString(), explainable(explainable))
+                    (var, explainable) -> builder.putExplainableAttributes(var.name(), explainable(explainable))
             );
             explainables.ownerships().forEach((ownership, explainable) -> {
                         AnswerProto.ExplainableOwnership.Builder ownershipBuilder = AnswerProto.ExplainableOwnership.newBuilder();
-                        ownershipBuilder.setOwner(ownership.first().toString());
-                        ownershipBuilder.setAttribute(ownership.second().toString());
+                        ownershipBuilder.setOwner(ownership.first().name());
+                        ownershipBuilder.setAttribute(ownership.second().name());
                         ownershipBuilder.setExplainable(explainable(explainable));
                         builder.addExplainableOwnerships(ownershipBuilder.build());
                     }

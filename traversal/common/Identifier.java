@@ -19,6 +19,7 @@
 package grakn.core.traversal.common;
 
 import grakn.core.common.exception.GraknException;
+import graql.lang.common.GraqlToken;
 import graql.lang.pattern.variable.Reference;
 
 import javax.annotation.Nullable;
@@ -111,8 +112,8 @@ public abstract class Identifier {
     public abstract static class Variable extends Identifier {
 
         final Reference reference;
-        private final Integer id;
         private final int hash;
+        protected final Integer id;
 
         private Variable(Reference reference, @Nullable Integer id) {
             this.reference = reference;
@@ -196,11 +197,13 @@ public abstract class Identifier {
             return hash;
         }
 
-        public static class Retrievable extends Variable {
+        public static abstract class Retrievable extends Variable {
 
             public Retrievable(Reference reference, Integer id) {
                 super(reference, id);
             }
+
+            public abstract String name();
 
             @Override
             public boolean isRetrievable() {
@@ -220,6 +223,11 @@ public abstract class Identifier {
             }
 
             @Override
+            public String name() {
+                return reference.asName().name();
+            }
+
+            @Override
             public Reference.Name reference() {
                 return reference.asName();
             }
@@ -235,6 +243,10 @@ public abstract class Identifier {
 
             private Anonymous(Reference.Anonymous reference, int id) {
                 super(reference, id);
+            }
+
+            public String name() {
+                return "_" + id; //TODO this shouldn't be hardcoded here...?
             }
 
             @Override
