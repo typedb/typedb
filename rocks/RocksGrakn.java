@@ -26,9 +26,11 @@ import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
 import grakn.core.concurrent.executor.Executors;
 import org.rocksdb.BlockBasedTableConfig;
+import org.rocksdb.BloomFilter;
 import org.rocksdb.ClockCache;
 import org.rocksdb.RocksDB;
 import org.rocksdb.UInt64AddOperator;
+import org.rocksdb.util.SizeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Internal.GRAKN_CLOSED;
+import static java.lang.Math.max;
 
 public class RocksGrakn implements Grakn {
 
@@ -66,7 +69,14 @@ public class RocksGrakn implements Grakn {
     private org.rocksdb.Options initRocksDBOptions() {
         return new org.rocksdb.Options()
                 .setCreateIfMissing(true)
-                .setMaxBackgroundJobs(MAX_THREADS / 2)
+                .setWriteBufferSize(128 * SizeUnit.MB)
+                .setMaxWriteBufferNumber(max(MAX_THREADS / 2, 1))
+                .setMaxWriteBufferNumberToMaintain(max(MAX_THREADS / 8, 1))
+                .setMinWriteBufferNumberToMerge(max(MAX_THREADS / 16, 1))
+                .setLevel0FileNumCompactionTrigger(MAX_THREADS * 4)
+                .setMaxSubcompactions(MAX_THREADS)
+                .setMaxBackgroundJobs(MAX_THREADS)
+                .setUnorderedWrite(true)
                 .setTableFormatConfig(initRocksDBTableOptions())
                 .setMergeOperator(new UInt64AddOperator());
     }
@@ -77,6 +87,7 @@ public class RocksGrakn implements Grakn {
         ClockCache uncompressedCache = new ClockCache(blockSize);
         ClockCache compressedCache = new ClockCache(blockSize);
         rocksDBTableOptions.setBlockCache(uncompressedCache).setBlockCacheCompressed(compressedCache);
+        rocksDBTableOptions.setFilterPolicy(new BloomFilter(16, false));
         return rocksDBTableOptions;
     }
 
