@@ -66,11 +66,11 @@ public class ExplanationTest {
     private static RocksGrakn grakn;
 
     private RocksTransaction singleThreadElgTransaction(RocksSession session, Arguments.Transaction.Type transactionType) {
-        return singleThreadElgTransaction(session, transactionType, new Options.Transaction());
+        return singleThreadElgTransaction(session, transactionType, new Options.Transaction().infer(true));
     }
 
     private RocksTransaction singleThreadElgTransaction(RocksSession session, Arguments.Transaction.Type transactionType, Options.Transaction options) {
-        RocksTransaction transaction = session.transaction(transactionType, options);
+        RocksTransaction transaction = session.transaction(transactionType, options.infer(true));
         ActorExecutorGroup service = new ActorExecutorGroup(1, new NamedThreadFactory("grakn-core-actor"));
         transaction.reasoner().resolverRegistry().setExecutorService(service);
         return transaction;
