@@ -20,6 +20,7 @@ package grakn.core.reasoner.resolution;
 import grakn.common.concurrent.NamedThreadFactory;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
+import grakn.core.common.parameters.Options;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.actor.ActorExecutorGroup;
@@ -191,7 +192,7 @@ public class ReiterationTest {
     }
 
     private RocksTransaction singleThreadElgTransaction(RocksSession session) {
-        RocksTransaction transaction = session.transaction(Arguments.Transaction.Type.WRITE);
+        RocksTransaction transaction = session.transaction(Arguments.Transaction.Type.WRITE, new Options.Transaction().infer(true));
         ActorExecutorGroup service = new ActorExecutorGroup(1, new NamedThreadFactory("grakn-core-actor"));
         transaction.reasoner().resolverRegistry().setExecutorService(service);
         return transaction;
