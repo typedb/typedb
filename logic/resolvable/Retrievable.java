@@ -84,14 +84,20 @@ public class Retrievable extends Resolvable<Conjunction> {
         }
 
         public Set<Retrievable> extract() {
-            concludables.forEach(concludable -> extractedConstraints.addAll(concludable.concludableConstraints()));
+            concludables.forEach(concludable ->
+                                         iterate(concludable.concludableConstraints())
+                                                 .filter(constraint -> !(constraint.isType() && constraint.asType().isLabel() && constraint.asType().owner().id().isLabel())
+                                                 ).forEachRemaining(extractedConstraints::add)
+            );
             iterate(conjunction.variables()).filter(var -> var.id().isRetrievable()).forEachRemaining(var -> {
                 if (!extractedVariables.contains(var)) {
                     SubgraphRegistry subgraph = new SubgraphRegistry();
                     subgraph.registerVariable(var);
                     subgraphs.add(subgraph);
                     extractedVariables.addAll(subgraph.registeredVariables());
-                    extractedConstraints.addAll(subgraph.registeredConstraints);
+                    iterate(subgraph.registeredConstraints).filter(constraint ->
+                        !(constraint.isType() && constraint.asType().isLabel() && constraint.asType().owner().id().isLabel())
+                    ).forEachRemaining(extractedConstraints::add);
                 }
             });
             return iterate(subgraphs).filter(SubgraphRegistry::isValid).map(subgraph -> {
