@@ -34,7 +34,7 @@ public class RocksDatabaseManager implements Grakn.DatabaseManager {
 
     protected final RocksGrakn grakn;
     protected final ConcurrentMap<String, RocksDatabase> databases;
-    private final Factory.Database databaseFactory;
+    protected final Factory.Database databaseFactory;
 
     protected RocksDatabaseManager(RocksGrakn grakn, Factory.Database databaseFactory) {
         this.grakn = grakn;
