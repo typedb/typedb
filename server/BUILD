@@ -100,7 +100,7 @@ java_binary(
 )
 
 java_binary( # TODO: this target should not be needed if :server-deps-mac can depend directly on :server-mac (lib)
-    name = "server-bin-mac-deps",
+    name = "server-bin-deps-mac",
     main_class = "grakn.core.server.GraknServer",
     runtime_deps = [":server-mac"],
     tags = ["maven_coordinates=io.grakn.core:grakn-server-bin-deps:{pom_version}"],
@@ -118,8 +118,8 @@ java_binary(
     data = [ "//server/conf:grakn-properties" ], # Separately needed for grakn.core.server.common.Util
 )
 
-java_binary( # TODO: this target should not be needed if :server-deps-mac can depend directly on :server-linux (lib)
-    name = "server-bin-linux-deps",
+java_binary( # TODO: this target should not be needed if :server-deps-linux can depend directly on :server-linux (lib)
+    name = "server-bin-deps-linux",
     main_class = "grakn.core.server.GraknServer",
     runtime_deps = [":server-linux"],
     tags = ["maven_coordinates=io.grakn.core:grakn-server-bin-deps:{pom_version}"],
@@ -137,8 +137,8 @@ java_binary(
     data = [ "//server/conf:grakn-properties" ], # Separately needed for grakn.core.server.common.Util
 )
 
-java_binary( # TODO: this target should not be needed if :server-deps-mac can depend directly on :server-windows (lib)
-    name = "server-bin-windows-deps",
+java_binary( # TODO: this target should not be needed if :server-deps-windows can depend directly on :server-windows (lib)
+    name = "server-bin-deps-windows",
     main_class = "grakn.core.server.GraknServer",
     runtime_deps = [":server-windows"],
     tags = ["maven_coordinates=io.grakn.core:grakn-server-bin-deps:{pom_version}"],
@@ -146,7 +146,7 @@ java_binary( # TODO: this target should not be needed if :server-deps-mac can de
 
 java_deps(
     name = "server-deps-mac",
-    target = ":server-bin-mac-deps",
+    target = ":server-bin-deps-mac",
     java_deps_root = "server/lib/common/",
     java_deps_root_overrides = {
         "rocksdbjni-dev-*": "server/lib/dev/",
@@ -157,7 +157,7 @@ java_deps(
 
 java_deps(
     name = "server-deps-linux",
-    target = ":server-bin-linux-deps",
+    target = ":server-bin-deps-linux",
     java_deps_root = "server/lib/common/",
 #    java_deps_root_overrides = {
 #        "rocksdbjni-dev-*": "server/lib/dev/",
@@ -168,7 +168,7 @@ java_deps(
 
 java_deps(
     name = "server-deps-windows",
-    target = ":server-bin-windows-deps",
+    target = ":server-bin-deps-windows",
     java_deps_root = "server/lib/common/",
 #    java_deps_root_overrides = {
 #        "rocksdbjni-dev-*": "server/lib/dev/",
