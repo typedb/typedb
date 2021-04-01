@@ -93,7 +93,6 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
                 this.requestStates.put(fromUpstream, responseProducerNextIter);
             }
         }
-        boolean bad = requestStates.values().stream().anyMatch(rs -> rs.iteration() + 1 < iteration);
         return requestStates.get(fromUpstream);
     }
 
