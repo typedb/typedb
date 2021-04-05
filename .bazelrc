@@ -17,7 +17,7 @@
 
 try-import /opt/credentials/bazel-remote-cache.rc
 
-build --workspace_status_command bin/workspace_status.sh --incompatible_strict_action_env
+build --workspace_status_command bin/workspace_status.sh --incompatible_strict_action_env --incompatible_restrict_string_escapes=false
 run --incompatible_strict_action_env
 test --incompatible_strict_action_env --test_env=PATH
 
