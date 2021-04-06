@@ -47,6 +47,8 @@ public interface AttributeVertex<VALUE> extends ThingVertex {
      */
     VALUE value();
 
+    boolean isPersisted();
+
     boolean isBoolean();
 
     boolean isLong();

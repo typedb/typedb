@@ -846,10 +846,19 @@ public class BasicTest {
                     txn.commit();
                 }
 
-                /* we expect to be able to concurrently insert and attribute and append an edge to the attribute safely */
-
+                /* we expect to be able to concurrent insert the same attribute */
                 Grakn.Transaction txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
                 Grakn.Transaction txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
+
+                txn1.query().insert(Graql.parseQuery("insert $x isa person, has name \"Catherine\";"));
+                txn2.query().insert(Graql.parseQuery("insert $x isa person, has name \"Catherine\";"));
+
+                txn1.commit();
+                txn2.commit();
+                /* we expect to be able to concurrently insert and attribute and append an edge to the attribute safely */
+
+                txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
+                txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
 
                 txn1.query().insert(Graql.parseQuery("match $alice \"Alice\" isa name; insert $x isa person, has $alice;"));
                 txn2.query().insert(Graql.parseQuery("insert $x isa person, has name \"Alice\";"));

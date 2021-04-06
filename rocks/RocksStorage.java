@@ -86,11 +86,6 @@ public abstract class RocksStorage implements Storage {
     }
 
     @Override
-    public byte[] getForUpdate(byte[] key) {
-        throw exception(ILLEGAL_OPERATION);
-    }
-
-    @Override
     public byte[] getLastKey(byte[] prefix) {
         throw exception(ILLEGAL_OPERATION);
     }
@@ -231,19 +226,6 @@ public abstract class RocksStorage implements Storage {
         }
 
         @Override
-        public byte[] getForUpdate(byte[] key) {
-            try {
-                deleteCloseSchemaWriteLock.readLock().lock();
-                if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
-                return storageTransaction.getForUpdate(readOptions, key, false);
-            } catch (RocksDBException e) {
-                throw exception(e);
-            } finally {
-                deleteCloseSchemaWriteLock.readLock().unlock();
-            }
-        }
-
-        @Override
         public byte[] getLastKey(byte[] prefix) {
             assert isOpen();
             byte[] upperBound = Arrays.copyOf(prefix, prefix.length);
@@ -283,7 +265,15 @@ public abstract class RocksStorage implements Storage {
 
         @Override
         public void setModified(byte[] key) {
-            getForUpdate(key);
+            try {
+                deleteCloseSchemaWriteLock.readLock().lock();
+                if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
+                storageTransaction.getForUpdate(readOptions, key, false);
+            } catch (RocksDBException e) {
+                throw exception(e);
+            } finally {
+                deleteCloseSchemaWriteLock.readLock().unlock();
+            }
         }
 
         @Override

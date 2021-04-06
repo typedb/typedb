@@ -37,10 +37,12 @@ import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERA
 public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl implements AttributeVertex<VALUE> {
 
     private final VertexIID.Attribute<VALUE> attributeIID;
+    private java.lang.Boolean isPersisted;
 
     AttributeVertexImpl(DataGraph graph, VertexIID.Attribute<VALUE> iid, boolean isInferred) {
         super(graph, iid, isInferred);
         this.attributeIID = iid;
+        this.isPersisted = null;
     }
 
     public static AttributeVertexImpl<?> of(DataGraph graph, VertexIID.Attribute<?> iid) {
@@ -62,6 +64,20 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     }
 
     protected abstract IndexIID.Attribute index();
+
+    @Override
+    public boolean isPersisted() {
+        if (isPersisted == null) isPersisted = graph.storage().get(iid.bytes()) != null;
+        return isPersisted;
+    }
+
+    @Override
+    public void setModified() {
+        if (!isModified) {
+            isModified = true;
+            if (isPersisted()) graph.setModified(iid);
+        }
+    }
 
     @Override
     protected ThingAdjacency newAdjacency(Encoding.Direction.Adjacency direction) {
@@ -126,11 +142,13 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     }
 
     private void commitVertex() {
-        if (graph.storage().getForUpdate(attributeIID.bytes()) == null) {
+        if (!isPersisted()) {
             graph.storage().putUntracked(attributeIID.bytes());
             graph.storage().putUntracked(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
             graph.storage().putUntracked(index().bytes(), attributeIID.bytes());
             // TODO: we should make use of attribute indexes to look up attributes by value (without type) quickly
+        } else {
+            graph.storage().setModified(attributeIID.bytes());
         }
     }
 

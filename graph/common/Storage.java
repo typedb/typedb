@@ -33,8 +33,6 @@ public interface Storage {
 
     byte[] get(byte[] key);
 
-    byte[] getForUpdate(byte[] key);
-
     byte[] getLastKey(byte[] prefix);
 
     void delete(byte[] key);
