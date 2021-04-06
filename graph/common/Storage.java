@@ -47,6 +47,8 @@ public interface Storage {
 
     void mergeUntracked(byte[] key, byte[] value);
 
+    void setModified(byte[] key);
+
     <G> FunctionalIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor);
 
     GraknException exception(ErrorMessage error);

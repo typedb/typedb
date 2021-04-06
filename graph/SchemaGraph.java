@@ -25,6 +25,7 @@ import grakn.core.common.parameters.Label;
 import grakn.core.graph.common.Encoding;
 import grakn.core.graph.common.KeyGenerator;
 import grakn.core.graph.common.Storage;
+import grakn.core.graph.iid.IID;
 import grakn.core.graph.iid.IndexIID;
 import grakn.core.graph.iid.IndexIID.Type.Rule;
 import grakn.core.graph.iid.StructureIID;
@@ -129,16 +130,17 @@ public class SchemaGraph implements Graph {
         return storage;
     }
 
+    @Override
+    public boolean isReadOnly() {
+        return isReadOnly;
+    }
+
     public Rules rules() {
         return rules;
     }
 
     public SchemaGraph.Statistics stats() {
         return statistics;
-    }
-
-    public boolean isReadOnly() {
-        return isReadOnly;
     }
 
     public boolean isInitialised() throws GraknException {
@@ -345,8 +347,9 @@ public class SchemaGraph implements Graph {
         }
     }
 
-    public void setModified() {
+    public void setModified(IID iid) {
         if (!isModified) isModified = true;
+        if (!isReadOnly) storage.setModified(iid.bytes());
     }
 
     public boolean isModified() {
