@@ -29,7 +29,6 @@ import grakn.core.graph.common.KeyGenerator;
 import grakn.core.graph.common.StatisticsBytes;
 import grakn.core.graph.common.Storage;
 import grakn.core.graph.iid.EdgeIID;
-import grakn.core.graph.iid.IID;
 import grakn.core.graph.iid.PrefixIID;
 import grakn.core.graph.iid.VertexIID;
 import grakn.core.graph.vertex.AttributeVertex;
@@ -89,13 +88,11 @@ public class DataGraph implements Graph {
     private final ConcurrentMap<VertexIID.Type, ConcurrentSet<ThingVertex>> thingsByTypeIID;
     private final AttributesByIID attributesByIID;
     private final Statistics statistics;
-    private final boolean isReadOnly;
     private boolean isModified;
 
-    public DataGraph(Storage.Data storage, SchemaGraph schemaGraph, boolean isReadOnly) {
+    public DataGraph(Storage.Data storage, SchemaGraph schemaGraph) {
         this.storage = storage;
         this.schemaGraph = schemaGraph;
-        this.isReadOnly = isReadOnly;
         keyGenerator = new KeyGenerator.Data.Buffered();
         thingsByIID = new ConcurrentHashMap<>();
         thingsByTypeIID = new ConcurrentHashMap<>();
@@ -106,11 +103,6 @@ public class DataGraph implements Graph {
     @Override
     public Storage.Data storage() {
         return storage;
-    }
-
-    @Override
-    public boolean isReadOnly() {
-        return isReadOnly;
     }
 
     public SchemaGraph schema() {
@@ -416,10 +408,9 @@ public class DataGraph implements Graph {
         } else delete(vertex.asAttribute());
     }
 
-    public void setModified(IID iid) {
+    public void setModified() {
         assert storage.isOpen();
         if (!isModified) isModified = true;
-        if (!isReadOnly) storage.setModified(iid.bytes());
     }
 
     public boolean isModified() {
