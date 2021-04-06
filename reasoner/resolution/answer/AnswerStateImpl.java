@@ -36,7 +36,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.iterator.Iterators.iterate;
 
@@ -635,7 +634,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                 static <P extends Compound<P, ?>> MatchImpl<P> childOf(Mapping mapping, grakn.core.logic.resolvable.Concludable concludable,
                                                                        P parent, boolean explainable) {
                     return new MatchImpl<>(mapping, concludable, parent, mapping.transform(parent.conceptMap()),
-                            parent.root(), parent.requiresReiteration(), explainable);
+                                           parent.root(), parent.requiresReiteration(), explainable);
                 }
 
                 @Override

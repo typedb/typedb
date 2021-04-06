@@ -120,7 +120,7 @@ public class ExplanationProducer implements Producer<Explanation> {
     }
 
     private boolean mustReiterate() {
-        return  requiresReiteration;
+        return requiresReiteration;
     }
 
     private void prepareNextIteration() {

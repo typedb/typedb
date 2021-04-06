@@ -44,7 +44,7 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
                              ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
                              LogicManager logicMgr, Planner planner, boolean resolutionTracing) {
         super(driver, ConditionResolver.class.getSimpleName() + "(" + condition + ")",
-               registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
+              registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
         this.condition = condition;
     }
 

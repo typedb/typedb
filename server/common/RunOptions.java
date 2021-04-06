@@ -158,7 +158,7 @@ public abstract class RunOptions {
     @CommandLine.Command(name = "import")
     public static class DataImport extends RunOptions {
 
-        private final Server startCommand;
+        private final Server serverCommand;
 
         @CommandLine.Parameters(index = "0", description = "Database to import data into")
         private String database;
@@ -169,8 +169,8 @@ public abstract class RunOptions {
         @CommandLine.Parameters(index = "2..*", arity = "0..*", description = "Schema concept remap labels")
         private Map<String, String> remapLabels = new LinkedHashMap<>();
 
-        public DataImport(Server startCommand) {
-            this.startCommand = startCommand;
+        public DataImport(Server serverCommand) {
+            this.serverCommand = serverCommand;
         }
 
         public String database() {
@@ -186,7 +186,7 @@ public abstract class RunOptions {
         }
 
         public int port() {
-            return startCommand.port();
+            return serverCommand.port();
         }
 
         @Override
@@ -203,7 +203,7 @@ public abstract class RunOptions {
     @CommandLine.Command(name = "export")
     public static class DataExport extends RunOptions {
 
-        private final Server startCommand;
+        private final Server serverCommand;
 
         @CommandLine.Parameters(index = "0", description = "Database to export data from")
         private String database;
@@ -211,8 +211,8 @@ public abstract class RunOptions {
         @CommandLine.Parameters(index = "1", description = "File for the data to export to")
         private String filename;
 
-        public DataExport(Server startCommand) {
-            this.startCommand = startCommand;
+        public DataExport(Server serverCommand) {
+            this.serverCommand = serverCommand;
         }
 
         public String database() {
@@ -224,7 +224,7 @@ public abstract class RunOptions {
         }
 
         public int port() {
-            return startCommand.port();
+            return serverCommand.port();
         }
 
         @Override

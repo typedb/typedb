@@ -258,7 +258,7 @@ public interface AnswerState {
                     Explain with(ConceptMap extension, boolean requiresReiteration, Explanation explanation);
 
                     @Override
-                    Concludable.Explain toDownstream(Mapping mapping,grakn.core.logic.resolvable.Concludable concludable);
+                    Concludable.Explain toDownstream(Mapping mapping, grakn.core.logic.resolvable.Concludable concludable);
 
                     Top.Explain.Finished toFinishedTop();
 

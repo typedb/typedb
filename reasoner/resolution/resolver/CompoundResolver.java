@@ -42,7 +42,7 @@ public abstract class CompoundResolver<
     boolean isInitialised;
 
     protected CompoundResolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry,
-                               TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing ) {
+                               TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
         super(driver, name, registry, traversalEngine, conceptMgr, resolutionTracing);
         this.requestStates = new HashMap<>();
         this.isInitialised = false;

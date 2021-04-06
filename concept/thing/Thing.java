@@ -118,6 +118,7 @@ public interface Thing extends Concept {
 
     /**
      * Check whether a Has edge to a given attribute instance exists, and that edge is inferred
+     *
      * @param attribute
      * @return
      */

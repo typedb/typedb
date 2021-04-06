@@ -96,7 +96,7 @@ public class Retrievable extends Resolvable<Conjunction> {
                     subgraphs.add(subgraph);
                     extractedVariables.addAll(subgraph.registeredVariables());
                     iterate(subgraph.registeredConstraints).filter(constraint ->
-                        !(constraint.isType() && constraint.asType().isLabel() && constraint.asType().owner().id().isLabel())
+                                                                           !(constraint.isType() && constraint.asType().isLabel() && constraint.asType().owner().id().isLabel())
                     ).forEachRemaining(extractedConstraints::add);
                 }
             });

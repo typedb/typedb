@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 
 import static grakn.core.common.exception.ErrorMessage.Server.ENV_VAR_NOT_FOUND;
@@ -73,7 +74,7 @@ public class Util {
         else return properties;
     }
 
-    public static RunOptions parseCommandLine(Properties properties, String[] args) {
+    public static Optional<RunOptions> parseCommandLine(Properties properties, String[] args) {
         RunOptions.Server serverOptions = new RunOptions.Server();
         RunOptions.DataImport importDataOptions = new RunOptions.DataImport(serverOptions);
         RunOptions.DataExport exportDataOptions = new RunOptions.DataExport(serverOptions);
@@ -86,17 +87,17 @@ public class Util {
             CommandLine.ParseResult parseResult = commandLine.parseArgs(args);
             if (commandLine.isUsageHelpRequested()) {
                 commandLine.usage(commandLine.getOut());
-                return null;
+                return Optional.empty();
             } else if (commandLine.isVersionHelpRequested()) {
                 commandLine.printVersionHelp(commandLine.getOut());
-                return null;
+                return Optional.empty();
             } else {
                 if (parseResult.hasSubcommand()) {
                     assert parseResult.subcommand().asCommandLineList().size() == 1;
-                    return parseResult.subcommand().asCommandLineList().get(0).getCommand();
+                    return Optional.of(parseResult.subcommand().asCommandLineList().get(0).getCommand());
                 } else {
                     assert parseResult.asCommandLineList().size() == 1;
-                    return parseResult.asCommandLineList().get(0).getCommand();
+                    return Optional.of(parseResult.asCommandLineList().get(0).getCommand());
                 }
             }
         } catch (CommandLine.ParameterException ex) {
@@ -104,7 +105,7 @@ public class Util {
             if (!CommandLine.UnmatchedArgumentException.printSuggestions(ex, commandLine.getErr())) {
                 ex.getCommandLine().usage(commandLine.getErr());
             }
-            return null;
+            return Optional.empty();
         }
     }
 }

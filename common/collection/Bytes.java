@@ -21,7 +21,6 @@ package grakn.core.common.collection;
 import grakn.core.common.exception.GraknCheckedException;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.time.Instant;
 import java.time.LocalDateTime;

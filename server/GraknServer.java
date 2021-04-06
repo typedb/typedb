@@ -43,6 +43,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
@@ -216,11 +217,11 @@ public class GraknServer implements AutoCloseable {
     public static void main(String[] args) {
         try {
             printASCIILogo();
-            RunOptions options = parseCommandLine(parseProperties(), args);
-            if (options == null) System.exit(0);
-            else if (options.isServer()) runServer(options.asServer());
-            else if (options.isDataImport()) importData(options.asDataImport());
-            else if (options.isDataExport()) exportData(options.asDataExport());
+            Optional<RunOptions> options = parseCommandLine(parseProperties(), args);
+            if (options.isEmpty()) System.exit(0);
+            else if (options.get().isServer()) runServer(options.get().asServer());
+            else if (options.get().isDataImport()) importData(options.get().asDataImport());
+            else if (options.get().isDataExport()) exportData(options.get().asDataExport());
             else assert false;
         } catch (Exception e) {
             if (e instanceof GraknException) {
