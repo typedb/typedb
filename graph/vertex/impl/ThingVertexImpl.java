@@ -102,7 +102,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     public void setModified() {
         if (!isModified) {
             isModified = true;
-            graph.setModified(iid);
+            graph.setModified();
         }
     }
 
