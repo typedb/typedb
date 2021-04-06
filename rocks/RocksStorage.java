@@ -120,6 +120,11 @@ public abstract class RocksStorage implements Storage {
         throw exception(ILLEGAL_OPERATION);
     }
 
+    @Override
+    public void setModified(byte[] key) {
+        throw exception(ILLEGAL_OPERATION);
+    }
+
     org.rocksdb.RocksIterator getInternalRocksIterator() {
         if (isReadOnly) {
             org.rocksdb.RocksIterator iterator = recycled.poll();
@@ -259,6 +264,19 @@ public abstract class RocksStorage implements Storage {
         }
 
         @Override
+        public void setModified(byte[] key) {
+            try {
+                deleteCloseSchemaWriteLock.readLock().lock();
+                if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
+                storageTransaction.getForUpdate(readOptions, key, false);
+            } catch (RocksDBException e) {
+                throw exception(e);
+            } finally {
+                deleteCloseSchemaWriteLock.readLock().unlock();
+            }
+        }
+
+        @Override
         public <G> FunctionalIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
             RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
             iterators.add(iterator);
@@ -288,7 +306,6 @@ public abstract class RocksStorage implements Storage {
         public void rollback() throws RocksDBException {
             storageTransaction.rollback();
         }
-
     }
 
     public static class Schema extends TransactionBounded implements Storage.Schema {

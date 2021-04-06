@@ -826,4 +826,78 @@ public class BasicTest {
             tx.query().match(Graql.parseQuery("match $x sub thing;").asMatch());
         }
     }
+
+    @Test
+    public void test_write_and_update_isolation_guarantees() throws IOException {
+        Util.resetDirectory(dataDir);
+        reset_directory_and_create_attribute_types();
+
+        try (Grakn grakn = RocksGrakn.open(options)) {
+            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    txn.query().define(Graql.parseQuery("define person sub entity, owns name; name sub attribute, value string;"));
+                    txn.commit();
+                }
+            }
+            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA)) {
+                try (Grakn.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    txn.query().insert(Graql.parseQuery("insert $x isa person, has name \"Alice\";"));
+                    txn.query().insert(Graql.parseQuery("insert $x isa person, has name \"Bob\";"));
+                    txn.commit();
+                }
+
+                /* we expect to be able to concurrent insert the same attribute */
+                Grakn.Transaction txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
+                Grakn.Transaction txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
+
+                txn1.query().insert(Graql.parseQuery("insert $x isa person, has name \"Catherine\";"));
+                txn2.query().insert(Graql.parseQuery("insert $x isa person, has name \"Catherine\";"));
+
+                txn1.commit();
+                txn2.commit();
+                /* we expect to be able to concurrently insert and attribute and append an edge to the attribute safely */
+
+                txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
+                txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
+
+                txn1.query().insert(Graql.parseQuery("match $alice \"Alice\" isa name; insert $x isa person, has $alice;"));
+                txn2.query().insert(Graql.parseQuery("insert $x isa person, has name \"Alice\";"));
+
+                txn1.commit();
+                txn2.commit();
+
+                /* we expect that concurrently deleting and inserting an attribute throws */
+                boolean threw = false;
+                try {
+                    txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
+                    txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
+
+                    txn1.query().insert(Graql.parseQuery("match $alice \"Alice\" isa name; delete $alice;"));
+                    txn2.query().insert(Graql.parseQuery("insert $x isa person, has name \"Alice\";"));
+
+                    txn1.commit();
+                    txn2.commit();
+                } catch (Exception e) {
+                    threw = true;
+                }
+                assertTrue(threw);
+
+                /* we expect that deleting and appending an edge to an attribute throws */
+                threw = false;
+                try {
+                    txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
+                    txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
+
+                    txn1.query().insert(Graql.parseQuery("match $alice \"Alice\" isa name; delete $a;"));
+                    txn2.query().insert(Graql.parseQuery("match $alice \"Alice\" isa name; insert $x isa person, has $a;"));
+
+                    txn1.commit();
+                    txn2.commit();
+                } catch (Exception e) {
+                    threw = true;
+                }
+                assertTrue(threw);
+            }
+        }
+    }
 }

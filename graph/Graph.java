@@ -20,12 +20,15 @@
 package grakn.core.graph;
 
 import grakn.core.graph.common.Storage;
+import grakn.core.graph.iid.IID;
 
 public interface Graph {
 
     Storage storage();
 
-    void setModified();
+    boolean isReadOnly();
+
+    void setModified(IID iid);
 
     boolean isModified();
 
