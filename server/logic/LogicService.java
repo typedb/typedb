@@ -29,6 +29,10 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.pattern.variable.ThingVariable;
 
+import java.util.UUID;
+
+import static grakn.core.server.common.RequestReader.byteStringAsUUID;
+
 public class LogicService {
 
     private final TransactionService transactionSvc;
@@ -41,15 +45,16 @@ public class LogicService {
 
     public void execute(TransactionProto.Transaction.Req req) {
         LogicProto.LogicManager.Req logicManagerReq = req.getLogicManagerReq();
+        UUID reqID = byteStringAsUUID(req.getReqId());
         switch (logicManagerReq.getReqCase()) {
             case GET_RULE_REQ:
-                getRule(logicManagerReq.getGetRuleReq().getLabel(), req);
+                getRule(logicManagerReq.getGetRuleReq().getLabel(), reqID);
                 return;
             case PUT_RULE_REQ:
-                putRule(logicManagerReq.getPutRuleReq(), req);
+                putRule(logicManagerReq.getPutRuleReq(), reqID);
                 return;
             case GET_RULES_REQ:
-                getRules(req);
+                getRules(reqID);
                 return;
             default:
             case REQ_NOT_SET:
@@ -57,20 +62,20 @@ public class LogicService {
         }
     }
 
-    private void putRule(LogicProto.LogicManager.PutRule.Req ruleReq, TransactionProto.Transaction.Req req) {
+    private void putRule(LogicProto.LogicManager.PutRule.Req ruleReq, UUID reqID) {
         Conjunction<? extends Pattern> when = Graql.parsePattern(ruleReq.getWhen()).asConjunction();
         ThingVariable<?> then = Graql.parseVariable(ruleReq.getThen()).asThing();
         grakn.core.logic.Rule rule = logicMgr.putRule(ruleReq.getLabel(), when, then);
-        transactionSvc.respond(ResponseBuilder.LogicManager.putRuleRes(req.getReqId(), rule));
+        transactionSvc.respond(ResponseBuilder.LogicManager.putRuleRes(reqID, rule));
     }
 
-    private void getRule(String label, TransactionProto.Transaction.Req req) {
+    private void getRule(String label, UUID reqID) {
         grakn.core.logic.Rule rule = logicMgr.getRule(label);
-        transactionSvc.respond(ResponseBuilder.LogicManager.getRuleRes(req.getReqId(), rule));
+        transactionSvc.respond(ResponseBuilder.LogicManager.getRuleRes(reqID, rule));
     }
 
-    private void getRules(TransactionProto.Transaction.Req req) {
+    private void getRules(UUID reqID) {
         FunctionalIterator<grakn.core.logic.Rule> rules = logicMgr.rules();
-        transactionSvc.stream(rules, req.getReqId(), r -> ResponseBuilder.LogicManager.getRulesResPart(req.getReqId(), r));
+        transactionSvc.stream(rules, reqID, r -> ResponseBuilder.LogicManager.getRulesResPart(reqID, r));
     }
 }

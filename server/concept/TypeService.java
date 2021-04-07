@@ -32,6 +32,7 @@ import grakn.protocol.TransactionProto.Transaction;
 
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 import static grakn.common.util.Objects.className;
@@ -40,6 +41,7 @@ import static grakn.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
 import static grakn.core.common.exception.ErrorMessage.Server.MISSING_FIELD;
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ILLEGAL_SUPERTYPE_ENCODING;
+import static grakn.core.server.common.RequestReader.byteStringAsUUID;
 import static grakn.core.server.common.RequestReader.valueType;
 import static grakn.core.server.common.ResponseBuilder.Type.AttributeType.getOwnersResPart;
 import static grakn.core.server.common.ResponseBuilder.Type.AttributeType.getRegexRes;
@@ -85,101 +87,102 @@ public class TypeService {
         this.conceptMgr = conceptMgr;
     }
 
-    public void execute(Transaction.Req request) {
-        ConceptProto.Type.Req typeReq = request.getTypeReq();
+    public void execute(Transaction.Req req) {
+        ConceptProto.Type.Req typeReq = req.getTypeReq();
         String label = typeReq.getLabel();
         String scope = typeReq.getScope();
         Type type = scope != null && !scope.isEmpty() ?
                 notNull(conceptMgr.getRelationType(scope)).getRelates(label) :
                 notNull(conceptMgr.getThingType(label));
+        UUID reqID = byteStringAsUUID(req.getReqId());
         switch (typeReq.getReqCase()) {
             case TYPE_DELETE_REQ:
-                delete(type, request);
+                delete(type, reqID);
                 return;
             case TYPE_SET_LABEL_REQ:
-                setLabel(type, typeReq.getTypeSetLabelReq().getLabel(), request);
+                setLabel(type, typeReq.getTypeSetLabelReq().getLabel(), reqID);
                 return;
             case TYPE_IS_ABSTRACT_REQ:
-                isAbstract(type, request);
+                isAbstract(type, reqID);
                 return;
             case TYPE_GET_SUPERTYPE_REQ:
-                getSupertype(type, request);
+                getSupertype(type, reqID);
                 return;
             case TYPE_SET_SUPERTYPE_REQ:
-                setSupertype(type, typeReq.getTypeSetSupertypeReq().getType(), request);
+                setSupertype(type, typeReq.getTypeSetSupertypeReq().getType(), reqID);
                 return;
             case TYPE_GET_SUPERTYPES_REQ:
-                getSupertypes(type, request);
+                getSupertypes(type, reqID);
                 return;
             case TYPE_GET_SUBTYPES_REQ:
-                getSubtypes(type, request);
+                getSubtypes(type, reqID);
                 return;
             case ROLE_TYPE_GET_RELATION_TYPES_REQ:
-                getRelationTypes(type.asRoleType(), request);
+                getRelationTypes(type.asRoleType(), reqID);
                 return;
             case ROLE_TYPE_GET_PLAYERS_REQ:
-                getPlayers(type.asRoleType(), request);
+                getPlayers(type.asRoleType(), reqID);
                 return;
             case THING_TYPE_SET_ABSTRACT_REQ:
-                setAbstract(type.asThingType(), request);
+                setAbstract(type.asThingType(), reqID);
                 return;
             case THING_TYPE_UNSET_ABSTRACT_REQ:
-                unsetAbstract(type.asThingType(), request);
+                unsetAbstract(type.asThingType(), reqID);
                 return;
             case THING_TYPE_SET_OWNS_REQ:
-                setOwns(type.asThingType(), typeReq.getThingTypeSetOwnsReq(), request);
+                setOwns(type.asThingType(), typeReq.getThingTypeSetOwnsReq(), reqID);
                 return;
             case THING_TYPE_SET_PLAYS_REQ:
-                setPlays(type.asThingType(), typeReq.getThingTypeSetPlaysReq(), request);
+                setPlays(type.asThingType(), typeReq.getThingTypeSetPlaysReq(), reqID);
                 return;
             case THING_TYPE_UNSET_OWNS_REQ:
-                unsetOwns(type.asThingType(), typeReq.getThingTypeUnsetOwnsReq().getAttributeType(), request);
+                unsetOwns(type.asThingType(), typeReq.getThingTypeUnsetOwnsReq().getAttributeType(), reqID);
                 return;
             case THING_TYPE_UNSET_PLAYS_REQ:
-                unsetPlays(type.asThingType(), typeReq.getThingTypeUnsetPlaysReq().getRole(), request);
+                unsetPlays(type.asThingType(), typeReq.getThingTypeUnsetPlaysReq().getRole(), reqID);
                 return;
             case THING_TYPE_GET_INSTANCES_REQ:
-                getInstances(type.asThingType(), request);
+                getInstances(type.asThingType(), reqID);
                 return;
             case THING_TYPE_GET_OWNS_REQ:
-                getOwns(type.asThingType(), typeReq, request);
+                getOwns(type.asThingType(), typeReq, reqID);
                 return;
             case THING_TYPE_GET_PLAYS_REQ:
-                getPlays(type.asThingType(), request);
+                getPlays(type.asThingType(), reqID);
                 return;
             case ENTITY_TYPE_CREATE_REQ:
-                create(type.asEntityType(), request);
+                create(type.asEntityType(), reqID);
                 return;
             case RELATION_TYPE_CREATE_REQ:
-                create(type.asRelationType(), request);
+                create(type.asRelationType(), reqID);
                 return;
             case RELATION_TYPE_GET_RELATES_FOR_ROLE_LABEL_REQ:
                 String roleLabel = typeReq.getRelationTypeGetRelatesForRoleLabelReq().getLabel();
-                getRelatesForRoleLabel(type.asRelationType(), roleLabel, request);
+                getRelatesForRoleLabel(type.asRelationType(), roleLabel, reqID);
                 return;
             case RELATION_TYPE_SET_RELATES_REQ:
-                setRelates(type.asRelationType(), typeReq.getRelationTypeSetRelatesReq(), request);
+                setRelates(type.asRelationType(), typeReq.getRelationTypeSetRelatesReq(), reqID);
                 return;
             case RELATION_TYPE_UNSET_RELATES_REQ:
-                unsetRelates(type.asRelationType(), typeReq.getRelationTypeUnsetRelatesReq(), request);
+                unsetRelates(type.asRelationType(), typeReq.getRelationTypeUnsetRelatesReq(), reqID);
                 return;
             case RELATION_TYPE_GET_RELATES_REQ:
-                getRelates(type.asRelationType(), request);
+                getRelates(type.asRelationType(), reqID);
                 return;
             case ATTRIBUTE_TYPE_PUT_REQ:
-                put(type.asAttributeType(), typeReq.getAttributeTypePutReq().getValue(), request);
+                put(type.asAttributeType(), typeReq.getAttributeTypePutReq().getValue(), reqID);
                 return;
             case ATTRIBUTE_TYPE_GET_REQ:
-                get(type.asAttributeType(), typeReq.getAttributeTypeGetReq().getValue(), request);
+                get(type.asAttributeType(), typeReq.getAttributeTypeGetReq().getValue(), reqID);
                 return;
             case ATTRIBUTE_TYPE_GET_REGEX_REQ:
-                getRegex(type.asAttributeType(), request);
+                getRegex(type.asAttributeType(), reqID);
                 return;
             case ATTRIBUTE_TYPE_SET_REGEX_REQ:
-                setRegex(type.asAttributeType(), typeReq.getAttributeTypeSetRegexReq().getRegex(), request);
+                setRegex(type.asAttributeType(), typeReq.getAttributeTypeSetRegexReq().getRegex(), reqID);
                 return;
             case ATTRIBUTE_TYPE_GET_OWNERS_REQ:
-                getOwners(type.asAttributeType(), typeReq.getAttributeTypeGetOwnersReq().getOnlyKey(), request);
+                getOwners(type.asAttributeType(), typeReq.getAttributeTypeGetOwnersReq().getOnlyKey(), reqID);
                 return;
             case REQ_NOT_SET:
             default:
@@ -202,30 +205,30 @@ public class TypeService {
         else return null;
     }
 
-    private void setLabel(Type type, String label, Transaction.Req request) {
+    private void setLabel(Type type, String label, UUID reqID) {
         type.setLabel(label);
-        transactionSvc.respond(setLabelRes(request.getReqId()));
+        transactionSvc.respond(setLabelRes(reqID));
     }
 
-    private void isAbstract(Type type, Transaction.Req request) {
-        transactionSvc.respond(isAbstractRes(request.getReqId(), type.isAbstract()));
+    private void isAbstract(Type type, UUID reqID) {
+        transactionSvc.respond(isAbstractRes(reqID, type.isAbstract()));
     }
 
-    private void setAbstract(ThingType thingType, Transaction.Req req) {
+    private void setAbstract(ThingType thingType, UUID reqID) {
         thingType.setAbstract();
-        transactionSvc.respond(setAbstractRes(req.getReqId()));
+        transactionSvc.respond(setAbstractRes(reqID));
     }
 
-    private void unsetAbstract(ThingType thingType, Transaction.Req req) {
+    private void unsetAbstract(ThingType thingType, UUID reqID) {
         thingType.unsetAbstract();
-        transactionSvc.respond(unsetAbstractRes(req.getReqId()));
+        transactionSvc.respond(unsetAbstractRes(reqID));
     }
 
-    private void getSupertype(Type type, Transaction.Req request) {
-        transactionSvc.respond(getSupertypeRes(request.getReqId(), type.getSupertype()));
+    private void getSupertype(Type type, UUID reqID) {
+        transactionSvc.respond(getSupertypeRes(reqID, type.getSupertype()));
     }
 
-    private void setSupertype(Type type, ConceptProto.Type supertype, Transaction.Req req) {
+    private void setSupertype(Type type, ConceptProto.Type supertype, UUID reqID) {
         Type sup = getThingType(supertype);
 
         if (type.isEntityType()) {
@@ -238,51 +241,51 @@ public class TypeService {
             throw GraknException.of(ILLEGAL_SUPERTYPE_ENCODING, className(type.getClass()));
         }
 
-        transactionSvc.respond(setSupertypeRes(req.getReqId()));
+        transactionSvc.respond(setSupertypeRes(reqID));
     }
 
-    private void getSupertypes(Type type, Transaction.Req req) {
-        transactionSvc.stream(type.getSupertypes().iterator(), req.getReqId(),
-                              types -> getSupertypesResPart(req.getReqId(), types));
+    private void getSupertypes(Type type, UUID reqID) {
+        transactionSvc.stream(type.getSupertypes().iterator(), reqID,
+                              types -> getSupertypesResPart(reqID, types));
     }
 
-    private void getSubtypes(Type type, Transaction.Req req) {
-        transactionSvc.stream(type.getSubtypes().iterator(), req.getReqId(),
-                              types -> getSubtypesResPart(req.getReqId(), types));
+    private void getSubtypes(Type type, UUID reqID) {
+        transactionSvc.stream(type.getSubtypes().iterator(), reqID,
+                              types -> getSubtypesResPart(reqID, types));
     }
 
-    private void getInstances(ThingType thingType, Transaction.Req req) {
-        transactionSvc.stream(thingType.getInstances().iterator(), req.getReqId(),
-                              things -> getInstancesResPart(req.getReqId(), things));
+    private void getInstances(ThingType thingType, UUID reqID) {
+        transactionSvc.stream(thingType.getInstances().iterator(), reqID,
+                              things -> getInstancesResPart(reqID, things));
     }
 
-    private void getOwns(ThingType thingType, ConceptProto.Type.Req typeReq, Transaction.Req req) {
+    private void getOwns(ThingType thingType, ConceptProto.Type.Req typeReq, UUID reqID) {
         if (typeReq.getThingTypeGetOwnsReq().getFilterCase() == VALUE_TYPE) {
             getOwns(thingType, valueType(typeReq.getThingTypeGetOwnsReq().getValueType()),
-                    typeReq.getThingTypeGetOwnsReq().getKeysOnly(), req);
+                    typeReq.getThingTypeGetOwnsReq().getKeysOnly(), reqID);
         } else {
-            getOwns(thingType, typeReq.getThingTypeGetOwnsReq().getKeysOnly(), req);
+            getOwns(thingType, typeReq.getThingTypeGetOwnsReq().getKeysOnly(), reqID);
         }
     }
 
-    private void getOwns(ThingType thingType, boolean keysOnly, Transaction.Req req) {
-        transactionSvc.stream(thingType.getOwns(keysOnly).iterator(), req.getReqId(),
-                              attributeTypes -> getOwnsResPart(req.getReqId(), attributeTypes));
+    private void getOwns(ThingType thingType, boolean keysOnly, UUID reqID) {
+        transactionSvc.stream(thingType.getOwns(keysOnly).iterator(), reqID,
+                              attributeTypes -> getOwnsResPart(reqID, attributeTypes));
     }
 
     private void getOwns(ThingType thingType, AttributeType.ValueType valueType,
-                         boolean keysOnly, Transaction.Req req) {
-        transactionSvc.stream(thingType.getOwns(valueType, keysOnly).iterator(), req.getReqId(),
-                              attributeTypes -> getOwnsResPart(req.getReqId(), attributeTypes));
+                         boolean keysOnly, UUID reqID) {
+        transactionSvc.stream(thingType.getOwns(valueType, keysOnly).iterator(), reqID,
+                              attributeTypes -> getOwnsResPart(reqID, attributeTypes));
     }
 
-    private void getPlays(ThingType thingType, Transaction.Req req) {
-        transactionSvc.stream(thingType.getPlays().iterator(), req.getReqId(),
-                              roleTypes -> getPlaysResPart(req.getReqId(), roleTypes));
+    private void getPlays(ThingType thingType, UUID reqID) {
+        transactionSvc.stream(thingType.getPlays().iterator(), reqID,
+                              roleTypes -> getPlaysResPart(reqID, roleTypes));
     }
 
     private void setOwns(ThingType thingType, ConceptProto.ThingType.SetOwns.Req setOwnsRequest,
-                         Transaction.Req req) {
+                         UUID reqID) {
         AttributeType attributeType = getThingType(setOwnsRequest.getAttributeType()).asAttributeType();
         boolean isKey = setOwnsRequest.getIsKey();
 
@@ -292,11 +295,11 @@ public class TypeService {
         } else {
             thingType.setOwns(attributeType, isKey);
         }
-        transactionSvc.respond(setOwnsRes(req.getReqId()));
+        transactionSvc.respond(setOwnsRes(reqID));
     }
 
     private void setPlays(ThingType thingType, ConceptProto.ThingType.SetPlays.Req setPlaysRequest,
-                          Transaction.Req req) {
+                          UUID reqID) {
         RoleType role = getRoleType(setPlaysRequest.getRole());
         if (setPlaysRequest.hasOverriddenRole()) {
             RoleType overriddenRole = getRoleType(setPlaysRequest.getOverriddenRole());
@@ -304,25 +307,25 @@ public class TypeService {
         } else {
             thingType.setPlays(role);
         }
-        transactionSvc.respond(setPlaysRes(req.getReqId()));
+        transactionSvc.respond(setPlaysRes(reqID));
     }
 
-    private void unsetOwns(ThingType thingType, ConceptProto.Type protoAttributeType, Transaction.Req req) {
+    private void unsetOwns(ThingType thingType, ConceptProto.Type protoAttributeType, UUID reqID) {
         thingType.unsetOwns(getThingType(protoAttributeType).asAttributeType());
-        transactionSvc.respond(unsetOwnsRes(req.getReqId()));
+        transactionSvc.respond(unsetOwnsRes(reqID));
     }
 
-    private void unsetPlays(ThingType thingType, ConceptProto.Type protoRoleType, Transaction.Req req) {
+    private void unsetPlays(ThingType thingType, ConceptProto.Type protoRoleType, UUID reqID) {
         thingType.unsetPlays(notNull(getRoleType(protoRoleType)));
-        transactionSvc.respond(unsetPlaysRes(req.getReqId()));
+        transactionSvc.respond(unsetPlaysRes(reqID));
     }
 
-    private void getOwners(AttributeType attributeType, boolean onlyKey, Transaction.Req req) {
-        transactionSvc.stream(attributeType.getOwners(onlyKey).iterator(), req.getReqId(),
-                              owners -> getOwnersResPart(req.getReqId(), owners));
+    private void getOwners(AttributeType attributeType, boolean onlyKey, UUID reqID) {
+        transactionSvc.stream(attributeType.getOwners(onlyKey).iterator(), reqID,
+                              owners -> getOwnersResPart(reqID, owners));
     }
 
-    private void put(AttributeType attributeType, ConceptProto.Attribute.Value protoValue, Transaction.Req req) {
+    private void put(AttributeType attributeType, ConceptProto.Attribute.Value protoValue, UUID reqID) {
         Attribute attribute;
         switch (protoValue.getValueCase()) {
             case STRING:
@@ -347,10 +350,10 @@ public class TypeService {
                 throw GraknException.of(BAD_VALUE_TYPE, protoValue.getValueCase());
         }
 
-        transactionSvc.respond(putRes(req.getReqId(), attribute));
+        transactionSvc.respond(putRes(reqID, attribute));
     }
 
-    private void get(AttributeType attributeType, ConceptProto.Attribute.Value protoValue, Transaction.Req req) {
+    private void get(AttributeType attributeType, ConceptProto.Attribute.Value protoValue, UUID reqID) {
         Attribute attribute;
         switch (protoValue.getValueCase()) {
             case STRING:
@@ -375,65 +378,65 @@ public class TypeService {
                 throw GraknException.of(BAD_VALUE_TYPE);
         }
 
-        transactionSvc.respond(getRes(req.getReqId(), attribute));
+        transactionSvc.respond(getRes(reqID, attribute));
     }
 
-    private void getRegex(AttributeType attributeType, Transaction.Req req) {
-        transactionSvc.respond(getRegexRes(req.getReqId(), attributeType.asString().getRegex()));
+    private void getRegex(AttributeType attributeType, UUID reqID) {
+        transactionSvc.respond(getRegexRes(reqID, attributeType.asString().getRegex()));
     }
 
-    private void setRegex(AttributeType attributeType, String regex, Transaction.Req req) {
+    private void setRegex(AttributeType attributeType, String regex, UUID reqID) {
         if (regex.isEmpty()) attributeType.asString().setRegex(null);
         else attributeType.asString().setRegex(Pattern.compile(regex));
-        transactionSvc.respond(setRegexRes(req.getReqId()));
+        transactionSvc.respond(setRegexRes(reqID));
     }
 
-    private void getRelates(RelationType relationType, Transaction.Req req) {
-        transactionSvc.stream(relationType.getRelates().iterator(), req.getReqId(),
-                              roleTypes -> getRelatesResPart(req.getReqId(), roleTypes));
+    private void getRelates(RelationType relationType, UUID reqID) {
+        transactionSvc.stream(relationType.getRelates().iterator(), reqID,
+                              roleTypes -> getRelatesResPart(reqID, roleTypes));
     }
 
-    private void getRelatesForRoleLabel(RelationType relationType, String roleLabel, Transaction.Req req) {
-        transactionSvc.respond(getRelatesForRoleLabelRes(req.getReqId(), relationType.getRelates(roleLabel)));
+    private void getRelatesForRoleLabel(RelationType relationType, String roleLabel, UUID reqID) {
+        transactionSvc.respond(getRelatesForRoleLabelRes(reqID, relationType.getRelates(roleLabel)));
     }
 
     private void setRelates(RelationType relationType, ConceptProto.RelationType.SetRelates.Req setRelatesReq,
-                            Transaction.Req req) {
+                            UUID reqID) {
         if (setRelatesReq.getOverriddenCase() == OVERRIDDEN_LABEL) {
             relationType.setRelates(setRelatesReq.getLabel(), setRelatesReq.getOverriddenLabel());
         } else {
             relationType.setRelates(setRelatesReq.getLabel());
         }
-        transactionSvc.respond(setRelatesRes(req.getReqId()));
+        transactionSvc.respond(setRelatesRes(reqID));
     }
 
     private void unsetRelates(RelationType relationType, ConceptProto.RelationType.UnsetRelates.Req unsetRelatesReq,
-                              Transaction.Req req) {
+                              UUID reqID) {
         relationType.unsetRelates(unsetRelatesReq.getLabel());
-        transactionSvc.respond(unsetRelatesRes(req.getReqId()));
+        transactionSvc.respond(unsetRelatesRes(reqID));
     }
 
-    private void getRelationTypes(RoleType roleType, Transaction.Req req) {
-        transactionSvc.stream(roleType.getRelationTypes().iterator(), req.getReqId(),
-                              relationTypes -> getRelationTypesResPart(req.getReqId(), relationTypes));
+    private void getRelationTypes(RoleType roleType, UUID reqID) {
+        transactionSvc.stream(roleType.getRelationTypes().iterator(), reqID,
+                              relationTypes -> getRelationTypesResPart(reqID, relationTypes));
     }
 
-    private void getPlayers(RoleType roleType, Transaction.Req req) {
-        transactionSvc.stream(roleType.getPlayers().iterator(), req.getReqId(),
-                              players -> getPlayersResPart(req.getReqId(), players));
+    private void getPlayers(RoleType roleType, UUID reqID) {
+        transactionSvc.stream(roleType.getPlayers().iterator(), reqID,
+                              players -> getPlayersResPart(reqID, players));
     }
 
-    private void create(EntityType entityType, Transaction.Req req) {
-        transactionSvc.respond(createRes(req.getReqId(), entityType.create()));
+    private void create(EntityType entityType, UUID reqID) {
+        transactionSvc.respond(createRes(reqID, entityType.create()));
     }
 
-    private void create(RelationType relationType, Transaction.Req req) {
-        transactionSvc.respond(createRes(req.getReqId(), relationType.create()));
+    private void create(RelationType relationType, UUID reqID) {
+        transactionSvc.respond(createRes(reqID, relationType.create()));
     }
 
-    private void delete(Type type, Transaction.Req request) {
+    private void delete(Type type, UUID reqID) {
         type.delete();
-        transactionSvc.respond(deleteRes(request.getReqId()));
+        transactionSvc.respond(deleteRes(reqID));
     }
 
 }

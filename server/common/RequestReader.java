@@ -17,6 +17,7 @@
 
 package grakn.core.server.common;
 
+import com.google.protobuf.ByteString;
 import grabl.tracing.client.GrablTracingThreadStatic;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Options;
@@ -27,7 +28,9 @@ import grakn.protocol.TransactionProto;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
+import static grakn.core.common.collection.Bytes.bytesToUUID;
 import static grakn.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
 import static grakn.protocol.OptionsProto.Options.BatchSizeOptCase.BATCH_SIZE;
 import static grakn.protocol.OptionsProto.Options.ExplainOptCase.EXPLAIN;
@@ -39,6 +42,10 @@ import static grakn.protocol.OptionsProto.Options.SessionIdleTimeoutOptCase.SESS
 import static grakn.protocol.OptionsProto.Options.TraceInferenceOptCase.TRACE_INFERENCE;
 
 public class RequestReader {
+
+    public static UUID byteStringAsUUID(ByteString byteString) {
+        return bytesToUUID(byteString.toByteArray());
+    }
 
     public static <T extends Options<?, ?>> T applyDefaultOptions(T options, OptionsProto.Options request) {
         if (request.getInferOptCase().equals(INFER)) {
