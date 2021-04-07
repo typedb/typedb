@@ -320,7 +320,8 @@ public class ResponseBuilder {
         public static ConceptProto.Thing protoThing(grakn.core.concept.thing.Thing thing) {
             ConceptProto.Thing.Builder protoThing = ConceptProto.Thing.newBuilder()
                     .setIid(ByteString.copyFrom(thing.getIID()))
-                    .setType(protoType(thing.getType()));
+                    .setType(protoType(thing.getType()))
+                    .setInferred(thing.isInferred());
             if (thing.isAttribute()) protoThing.setValue(attributeValue(thing.asAttribute()));
             return protoThing.build();
         }
@@ -625,12 +626,6 @@ public class ResponseBuilder {
         public static TransactionProto.Transaction.Res getTypeRes(UUID reqID, ThingType thingType) {
             return thingRes(reqID, ConceptProto.Thing.Res.newBuilder().setThingGetTypeRes(
                     ConceptProto.Thing.GetType.Res.newBuilder().setThingType(protoType(thingType))
-            ));
-        }
-
-        public static TransactionProto.Transaction.Res isInferredRes(UUID reqID, boolean isInferred) {
-            return thingRes(reqID, ConceptProto.Thing.Res.newBuilder().setThingIsInferredRes(
-                    ConceptProto.Thing.IsInferred.Res.newBuilder().setInferred(isInferred)
             ));
         }
 

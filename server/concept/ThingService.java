@@ -53,7 +53,6 @@ import static grakn.core.server.common.ResponseBuilder.Thing.getHasResPart;
 import static grakn.core.server.common.ResponseBuilder.Thing.getPlayingResPart;
 import static grakn.core.server.common.ResponseBuilder.Thing.getRelationsResPart;
 import static grakn.core.server.common.ResponseBuilder.Thing.getTypeRes;
-import static grakn.core.server.common.ResponseBuilder.Thing.isInferredRes;
 import static grakn.core.server.common.ResponseBuilder.Thing.setHasRes;
 import static grakn.core.server.common.ResponseBuilder.Thing.unsetHasRes;
 
@@ -78,9 +77,6 @@ public class ThingService {
                 return;
             case THING_GET_TYPE_REQ:
                 getType(thing, reqID);
-                return;
-            case THING_IS_INFERRED_REQ:
-                isInferred(thing, reqID);
                 return;
             case THING_SET_HAS_REQ:
                 setHas(thing, thingReq.getThingSetHasReq().getAttribute(), reqID);
@@ -143,10 +139,6 @@ public class ThingService {
     private void delete(Thing thing, UUID reqID) {
         thing.delete();
         transactionSvc.respond(deleteRes(reqID));
-    }
-
-    private void isInferred(Thing thing, UUID reqID) {
-        transactionSvc.respond(isInferredRes(reqID, thing.isInferred()));
     }
 
     private void getType(Thing thing, UUID reqID) {
