@@ -37,13 +37,13 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import static grakn.core.common.collection.Bytes.bytesToUUID;
 import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_DELETED;
 import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
 import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Server.SERVER_SHUTDOWN;
 import static grakn.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
 import static grakn.core.server.common.RequestReader.applyDefaultOptions;
+import static grakn.core.server.common.RequestReader.byteStringAsUUID;
 import static grakn.core.server.common.ResponseBuilder.Database.deleteRes;
 import static grakn.core.server.common.ResponseBuilder.Database.schemaRes;
 import static grakn.core.server.common.ResponseBuilder.DatabaseManager.allRes;
@@ -155,9 +155,9 @@ public class GraknService extends GraknCoreGrpc.GraknCoreImplBase {
             Options.Session options = applyDefaultOptions(new Options.Session(), request.getOptions());
             Grakn.Session session = grakn.session(request.getDatabase(), sessionType, options);
             SessionService sessionSvc = new SessionService(this, session, options);
-            sessionServices.put(sessionSvc.session().uuid(), sessionSvc);
+            sessionServices.put(sessionSvc.UUID(), sessionSvc);
             int duration = (int) Duration.between(start, Instant.now()).toMillis();
-            responder.onNext(openRes(sessionSvc, duration));
+            responder.onNext(openRes(sessionSvc.UUID(), duration));
             responder.onCompleted();
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
@@ -169,7 +169,7 @@ public class GraknService extends GraknCoreGrpc.GraknCoreImplBase {
     public void sessionClose(SessionProto.Session.Close.Req request,
                              StreamObserver<SessionProto.Session.Close.Res> responder) {
         try {
-            UUID sessionID = bytesToUUID(request.getSessionId().toByteArray());
+            UUID sessionID = byteStringAsUUID(request.getSessionId());
             SessionService sessionSvc = sessionServices.get(sessionID);
             if (sessionSvc == null) throw GraknException.of(SESSION_NOT_FOUND, sessionID);
             sessionSvc.close();
@@ -185,7 +185,7 @@ public class GraknService extends GraknCoreGrpc.GraknCoreImplBase {
     public void sessionPulse(SessionProto.Session.Pulse.Req request,
                              StreamObserver<SessionProto.Session.Pulse.Res> responder) {
         try {
-            UUID sessionID = bytesToUUID(request.getSessionId().toByteArray());
+            UUID sessionID = byteStringAsUUID(request.getSessionId());
             SessionService sessionSvc = sessionServices.get(sessionID);
             boolean isAlive = sessionSvc != null && sessionSvc.isOpen();
             if (isAlive) sessionSvc.keepAlive();

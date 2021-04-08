@@ -35,11 +35,13 @@ import grakn.protocol.TransactionProto.Transaction;
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.pair;
 import static grakn.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
+import static grakn.core.server.common.RequestReader.byteStringAsUUID;
 import static grakn.core.server.common.ResponseBuilder.Thing.Attribute.getOwnersResPart;
 import static grakn.core.server.common.ResponseBuilder.Thing.Relation.addPlayerRes;
 import static grakn.core.server.common.ResponseBuilder.Thing.Relation.getPlayersByRoleTypeResPart;
@@ -51,7 +53,6 @@ import static grakn.core.server.common.ResponseBuilder.Thing.getHasResPart;
 import static grakn.core.server.common.ResponseBuilder.Thing.getPlayingResPart;
 import static grakn.core.server.common.ResponseBuilder.Thing.getRelationsResPart;
 import static grakn.core.server.common.ResponseBuilder.Thing.getTypeRes;
-import static grakn.core.server.common.ResponseBuilder.Thing.isInferredRes;
 import static grakn.core.server.common.ResponseBuilder.Thing.setHasRes;
 import static grakn.core.server.common.ResponseBuilder.Thing.unsetHasRes;
 
@@ -69,48 +70,46 @@ public class ThingService {
         ConceptProto.Thing.Req thingReq = req.getThingReq();
         assert thingReq != null;
         Thing thing = notNull(conceptMgr.getThing(thingReq.getIid().toByteArray()));
+        UUID reqID = byteStringAsUUID(req.getReqId());
         switch (thingReq.getReqCase()) {
             case THING_DELETE_REQ:
-                delete(thing, req);
+                delete(thing, reqID);
                 return;
             case THING_GET_TYPE_REQ:
-                getType(thing, req);
-                return;
-            case THING_IS_INFERRED_REQ:
-                isInferred(thing, req);
+                getType(thing, reqID);
                 return;
             case THING_SET_HAS_REQ:
-                setHas(thing, thingReq.getThingSetHasReq().getAttribute(), req);
+                setHas(thing, thingReq.getThingSetHasReq().getAttribute(), reqID);
                 return;
             case THING_UNSET_HAS_REQ:
-                unsetHas(thing, thingReq.getThingUnsetHasReq().getAttribute(), req);
+                unsetHas(thing, thingReq.getThingUnsetHasReq().getAttribute(), reqID);
                 return;
             case THING_GET_HAS_REQ:
-                getHas(thing, thingReq.getThingGetHasReq(), req);
+                getHas(thing, thingReq.getThingGetHasReq(), reqID);
                 return;
             case THING_GET_RELATIONS_REQ:
-                getRelations(thing, thingReq.getThingGetRelationsReq().getRoleTypesList(), req);
+                getRelations(thing, thingReq.getThingGetRelationsReq().getRoleTypesList(), reqID);
                 return;
             case THING_GET_PLAYING_REQ:
-                getPlaying(thing, req);
+                getPlaying(thing, reqID);
                 return;
             case RELATION_ADD_PLAYER_REQ:
-                addPlayer(thing.asRelation(), thingReq.getRelationAddPlayerReq(), req);
+                addPlayer(thing.asRelation(), thingReq.getRelationAddPlayerReq(), reqID);
                 return;
             case RELATION_REMOVE_PLAYER_REQ:
-                removePlayer(thing.asRelation(), thingReq.getRelationRemovePlayerReq(), req);
+                removePlayer(thing.asRelation(), thingReq.getRelationRemovePlayerReq(), reqID);
                 return;
             case RELATION_GET_PLAYERS_REQ:
-                getPlayers(thing.asRelation(), thingReq.getRelationGetPlayersReq().getRoleTypesList(), req);
+                getPlayers(thing.asRelation(), thingReq.getRelationGetPlayersReq().getRoleTypesList(), reqID);
                 return;
             case RELATION_GET_PLAYERS_BY_ROLE_TYPE_REQ:
-                getPlayersByRoleType(thing.asRelation(), req);
+                getPlayersByRoleType(thing.asRelation(), reqID);
                 return;
             case RELATION_GET_RELATING_REQ:
-                getRelating(thing.asRelation(), req);
+                getRelating(thing.asRelation(), reqID);
                 break;
             case ATTRIBUTE_GET_OWNERS_REQ:
-                getOwners(thing.asAttribute(), thingReq.getAttributeGetOwnersReq(), req);
+                getOwners(thing.asAttribute(), thingReq.getAttributeGetOwnersReq(), reqID);
                 return;
             case REQ_NOT_SET:
             default:
@@ -137,58 +136,53 @@ public class ThingService {
         else return null;
     }
 
-    private void delete(Thing thing, Transaction.Req req) {
+    private void delete(Thing thing, UUID reqID) {
         thing.delete();
-        transactionSvc.respond(deleteRes(req.getReqId()));
+        transactionSvc.respond(deleteRes(reqID));
     }
 
-    private void isInferred(Thing thing, Transaction.Req req) {
-        String reqID = req.getReqId();
-        transactionSvc.respond(isInferredRes(reqID, thing.isInferred()));
+    private void getType(Thing thing, UUID reqID) {
+        transactionSvc.respond(getTypeRes(reqID, thing.getType()));
     }
 
-    private void getType(Thing thing, Transaction.Req req) {
-        transactionSvc.respond(getTypeRes(req.getReqId(), thing.getType()));
-    }
-
-    private void getHas(Thing thing, ConceptProto.Thing.GetHas.Req getHasRequest, Transaction.Req req) {
+    private void getHas(Thing thing, ConceptProto.Thing.GetHas.Req getHasRequest, UUID reqID) {
         List<ConceptProto.Type> types = getHasRequest.getAttributeTypesList();
         Stream<? extends Attribute> attributes = types.isEmpty()
                 ? thing.getHas(getHasRequest.getKeysOnly())
                 : thing.getHas(types.stream().map(t -> notNull(getThingType(t)).asAttributeType()).toArray(AttributeType[]::new));
-        transactionSvc.stream(attributes.iterator(), req.getReqId(), atts -> getHasResPart(req.getReqId(), atts));
+        transactionSvc.stream(attributes.iterator(), reqID, atts -> getHasResPart(reqID, atts));
     }
 
-    private void getRelations(Thing thing, List<ConceptProto.Type> protoRoleTypes, Transaction.Req req) {
+    private void getRelations(Thing thing, List<ConceptProto.Type> protoRoleTypes, UUID reqID) {
         RoleType[] roleTypes = protoRoleTypes.stream().map(type -> notNull(getRoleType(type))).toArray(RoleType[]::new);
         Stream<? extends Relation> concepts = thing.getRelations(roleTypes);
-        transactionSvc.stream(concepts.iterator(), req.getReqId(), rels -> getRelationsResPart(req.getReqId(), rels));
+        transactionSvc.stream(concepts.iterator(), reqID, rels -> getRelationsResPart(reqID, rels));
     }
 
-    private void getPlaying(Thing thing, Transaction.Req req) {
+    private void getPlaying(Thing thing, UUID reqID) {
         Stream<? extends RoleType> roleTypes = thing.getPlaying();
-        transactionSvc.stream(roleTypes.iterator(), req.getReqId(), rols -> getPlayingResPart(req.getReqId(), rols));
+        transactionSvc.stream(roleTypes.iterator(), reqID, rols -> getPlayingResPart(reqID, rols));
     }
 
-    private void setHas(Thing thing, ConceptProto.Thing protoAttribute, Transaction.Req req) {
+    private void setHas(Thing thing, ConceptProto.Thing protoAttribute, UUID reqID) {
         Attribute attribute = getThing(protoAttribute).asAttribute();
         thing.setHas(attribute);
-        transactionSvc.respond(setHasRes(req.getReqId()));
+        transactionSvc.respond(setHasRes(reqID));
     }
 
-    private void unsetHas(Thing thing, ConceptProto.Thing protoAttribute, Transaction.Req req) {
+    private void unsetHas(Thing thing, ConceptProto.Thing protoAttribute, UUID reqID) {
         Attribute attribute = getThing(protoAttribute).asAttribute();
         thing.unsetHas(attribute);
-        transactionSvc.respond(unsetHasRes(req.getReqId()));
+        transactionSvc.respond(unsetHasRes(reqID));
     }
 
-    private void getPlayers(Relation relation, List<ConceptProto.Type> protoRoleTypes, Transaction.Req req) {
+    private void getPlayers(Relation relation, List<ConceptProto.Type> protoRoleTypes, UUID reqID) {
         RoleType[] roleTypes = protoRoleTypes.stream().map(type -> notNull(getRoleType(type))).toArray(RoleType[]::new);
         Stream<? extends Thing> players = relation.getPlayers(roleTypes);
-        transactionSvc.stream(players.iterator(), req.getReqId(), things -> getPlayersResPart(req.getReqId(), things));
+        transactionSvc.stream(players.iterator(), reqID, things -> getPlayersResPart(reqID, things));
     }
 
-    private void getPlayersByRoleType(Relation relation, Transaction.Req req) {
+    private void getPlayersByRoleType(Relation relation, UUID reqID) {
         // TODO: this should be optimised to actually iterate over role players by role type lazily
         Map<? extends RoleType, ? extends List<? extends Thing>> playersByRole = relation.getPlayersByRoleType();
         Stream.Builder<Pair<RoleType, Thing>> responses = Stream.builder();
@@ -197,26 +191,26 @@ public class ThingService {
                 responses.add(pair(players.getKey(), player));
             }
         }
-        transactionSvc.stream(responses.build().iterator(), req.getReqId(),
-                              players -> getPlayersByRoleTypeResPart(req.getReqId(), players));
+        transactionSvc.stream(responses.build().iterator(), reqID,
+                              players -> getPlayersByRoleTypeResPart(reqID, players));
     }
 
-    private void getRelating(Relation relation, Transaction.Req req) {
-        transactionSvc.stream(relation.getRelating().iterator(), req.getReqId(),
-                              roleTypes -> getRelatingResPart(req.getReqId(), roleTypes));
+    private void getRelating(Relation relation, UUID reqID) {
+        transactionSvc.stream(relation.getRelating().iterator(), reqID,
+                              roleTypes -> getRelatingResPart(reqID, roleTypes));
     }
 
-    private void addPlayer(Relation relation, ConceptProto.Relation.AddPlayer.Req addPlayerReq, Transaction.Req req) {
+    private void addPlayer(Relation relation, ConceptProto.Relation.AddPlayer.Req addPlayerReq, UUID reqID) {
         relation.addPlayer(getRoleType(addPlayerReq.getRoleType()), getThing(addPlayerReq.getPlayer()).asThing());
-        transactionSvc.respond(addPlayerRes(req.getReqId()));
+        transactionSvc.respond(addPlayerRes(reqID));
     }
 
-    private void removePlayer(Relation relation, ConceptProto.Relation.RemovePlayer.Req removePlayerReq, Transaction.Req req) {
+    private void removePlayer(Relation relation, ConceptProto.Relation.RemovePlayer.Req removePlayerReq, UUID reqID) {
         relation.removePlayer(getRoleType(removePlayerReq.getRoleType()), getThing(removePlayerReq.getPlayer()).asThing());
-        transactionSvc.respond(removePlayerRes(req.getReqId()));
+        transactionSvc.respond(removePlayerRes(reqID));
     }
 
-    private void getOwners(Attribute attribute, ConceptProto.Attribute.GetOwners.Req getOwnersReq, Transaction.Req req) {
+    private void getOwners(Attribute attribute, ConceptProto.Attribute.GetOwners.Req getOwnersReq, UUID reqID) {
         Stream<? extends Thing> things;
         switch (getOwnersReq.getFilterCase()) {
             case THING_TYPE:
@@ -227,7 +221,7 @@ public class ThingService {
                 things = attribute.getOwners();
         }
 
-        transactionSvc.stream(things.iterator(), req.getReqId(), owners -> getOwnersResPart(req.getReqId(), owners));
+        transactionSvc.stream(things.iterator(), reqID, owners -> getOwnersResPart(reqID, owners));
     }
 
 }

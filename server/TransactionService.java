@@ -55,7 +55,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static grabl.tracing.client.GrablTracingThreadStatic.continueTraceOnThread;
-import static grakn.core.common.collection.Bytes.bytesToUUID;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static grakn.core.common.exception.ErrorMessage.Server.DUPLICATE_REQUEST;
 import static grakn.core.common.exception.ErrorMessage.Server.EMPTY_TRANSACTION_REQUEST;
@@ -67,6 +66,7 @@ import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_A
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
 import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_NOT_OPENED;
 import static grakn.core.server.common.RequestReader.applyDefaultOptions;
+import static grakn.core.server.common.RequestReader.byteStringAsUUID;
 import static grakn.core.server.common.ResponseBuilder.Transaction.serverMsg;
 import static grakn.protocol.TransactionProto.Transaction.Stream.State.CONTINUE;
 import static grakn.protocol.TransactionProto.Transaction.Stream.State.DONE;
@@ -79,7 +79,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
 
     private final GraknService graknSvc;
     private final StreamObserver<TransactionProto.Transaction.Server> responder;
-    private final ConcurrentMap<String, ResponseStream<?>> streams;
+    private final ConcurrentMap<UUID, ResponseStream<?>> streams;
     private final AtomicBoolean isRPCAlive;
     private final AtomicBoolean isTransactionOpen;
 
@@ -147,13 +147,13 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
 
         switch (req.getReqCase()) {
             case ROLLBACK_REQ:
-                rollback(req.getReqId());
+                rollback(byteStringAsUUID(req.getReqId()));
                 break;
             case COMMIT_REQ:
-                commit(req.getReqId());
+                commit(byteStringAsUUID(req.getReqId()));
                 break;
             case STREAM_REQ:
-                stream(req.getReqId());
+                stream(byteStringAsUUID(req.getReqId()));
                 break;
             case QUERY_MANAGER_REQ:
                 services.query.execute(req);
@@ -186,12 +186,12 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         sessionSvc.register(this);
         transaction = transaction(sessionSvc, openReq);
         services = new Services();
-        respond(ResponseBuilder.Transaction.open(request.getReqId()));
+        respond(ResponseBuilder.Transaction.open(byteStringAsUUID(request.getReqId())));
         isTransactionOpen.set(true);
     }
 
     private static SessionService sessionService(GraknService graknSvc, TransactionProto.Transaction.Open.Req req) {
-        UUID sessionID = bytesToUUID(req.getSessionId().toByteArray());
+        UUID sessionID = byteStringAsUUID(req.getSessionId());
         SessionService sessionSvc = graknSvc.session(sessionID);
         if (sessionSvc == null) throw GraknException.of(SESSION_NOT_FOUND, sessionID);
         return sessionSvc;
@@ -205,15 +205,15 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         return sessionSvc.session().transaction(type, options);
     }
 
-    private void commit(String requestID) {
+    private void commit(UUID requestID) {
         transaction.commit();
         respond(ResponseBuilder.Transaction.commit(requestID));
         close();
     }
 
-    private void rollback(String requestId) {
+    private void rollback(UUID requestID) {
         transaction.rollback();
-        respond(ResponseBuilder.Transaction.rollback(requestId));
+        respond(ResponseBuilder.Transaction.rollback(requestID));
     }
 
     public void respond(TransactionProto.Transaction.Res response) {
@@ -224,18 +224,18 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         responder.onNext(serverMsg(partialResponse));
     }
 
-    public <T> void stream(Iterator<T> iterator, String requestID,
+    public <T> void stream(Iterator<T> iterator, UUID requestID,
                            Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn) {
         int size = transaction.context().options().responseBatchSize();
         stream(iterator, requestID, size, true, resPartFn);
     }
 
-    public <T> void stream(Iterator<T> iterator, String requestID, Options.Query options,
+    public <T> void stream(Iterator<T> iterator, UUID requestID, Options.Query options,
                            Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn) {
         stream(iterator, requestID, options.responseBatchSize(), options.prefetch(), resPartFn);
     }
 
-    private <T> void stream(Iterator<T> iterator, String requestID, int batchSize, boolean prefetch,
+    private <T> void stream(Iterator<T> iterator, UUID requestID, int batchSize, boolean prefetch,
                             Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn) {
         ResponseStream<T> stream = new ResponseStream<>(iterator, requestID, batchSize, resPartFn);
         streams.compute(requestID, (key, oldValue) -> {
@@ -246,7 +246,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         else respond(ResponseBuilder.Transaction.stream(requestID, CONTINUE));
     }
 
-    private void stream(String requestId) {
+    private void stream(UUID requestId) {
         ResponseStream<?> stream = streams.get(requestId);
         if (stream == null) throw GraknException.of(ITERATION_WITH_UNKNOWN_ID, requestId);
         stream.streamResParts();
@@ -300,10 +300,10 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
 
         private final Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn;
         private final Iterator<T> iterator;
-        private final String requestID;
+        private final UUID requestID;
         private final int batchSize;
 
-        ResponseStream(Iterator<T> iterator, String requestID, int batchSize,
+        ResponseStream(Iterator<T> iterator, UUID requestID, int batchSize,
                        Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn) {
             this.iterator = iterator;
             this.requestID = requestID;

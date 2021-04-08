@@ -17,7 +17,6 @@
 
 package grakn.core.server;
 
-import com.google.protobuf.ByteString;
 import grakn.common.collection.ConcurrentSet;
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
@@ -31,8 +30,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.StampedLock;
 
-import static com.google.protobuf.ByteString.copyFrom;
-import static grakn.core.common.collection.Bytes.uuidToBytes;
 import static grakn.core.common.exception.ErrorMessage.Session.SESSION_CLOSED;
 import static grakn.core.concurrent.executor.Executors.scheduled;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -89,10 +86,6 @@ public class SessionService implements AutoCloseable {
 
     public Options.Session options() {
         return options;
-    }
-
-    public ByteString UUIDAsByteString() {
-        return copyFrom(uuidToBytes(session.uuid()));
     }
 
     private void setIdleTimeout() {
