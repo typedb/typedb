@@ -248,14 +248,14 @@ public class QueryTest {
                     Attribute.String email_grabl = transaction.concepts().getAttributeType("email").asString().get("grabl@grakn.ai");
                     assertNotNulls(name_graknlabs, symbol_engineers, email_grabl);
 
-                    Entity organisation_graknlabs = name_graknlabs.getOwners().findAny().get().asEntity();
-                    Entity team_engineers = symbol_engineers.getOwners().findAny().get().asEntity();
-                    Entity user_grabl = email_grabl.getOwners().findAny().get().asEntity();
+                    Entity organisation_graknlabs = name_graknlabs.getOwners().first().get().asEntity();
+                    Entity team_engineers = symbol_engineers.getOwners().first().get().asEntity();
+                    Entity user_grabl = email_grabl.getOwners().first().get().asEntity();
                     assertNotNulls(organisation_graknlabs, team_engineers, user_grabl);
 
-                    assertEquals(organisation_graknlabs.getRelations("org-team:org").findAny().get().getPlayers("team").findAny().get(), team_engineers);
-                    assertEquals(organisation_graknlabs.getRelations("org-member:org").findAny().get().getPlayers("member").findAny().get(), user_grabl);
-                    assertEquals(team_engineers.getRelations("team-member:team").findAny().get().getPlayers("member").findAny().get(), user_grabl);
+                    assertEquals(organisation_graknlabs.getRelations("org-team:org").first().get().getPlayers("team").first().get(), team_engineers);
+                    assertEquals(organisation_graknlabs.getRelations("org-member:org").first().get().getPlayers("member").first().get(), user_grabl);
+                    assertEquals(team_engineers.getRelations("team-member:team").first().get().getPlayers("member").first().get(), user_grabl);
                 }
             }
         }

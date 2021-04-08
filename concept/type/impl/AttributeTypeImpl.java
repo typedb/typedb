@@ -97,7 +97,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     @Override
     public void setAbstract() {
-        if (getInstances().findFirst().isPresent()) {
+        if (getInstances().first().isPresent()) {
             throw exception(GraknException.of(TYPE_HAS_INSTANCES, getLabel()));
         }
         vertex.isAbstract(true);
@@ -776,12 +776,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public void setRegex(Pattern regex) {
             if (regex != null) {
-                // TODO can we do this in parallel?
-                getInstances().parallel().forEach(attribute -> {
+                // TODO can we do this in parallel as it was before?
+                getInstances().forEachRemaining(attribute -> {
                     Matcher matcher = regex.matcher(attribute.getValue());
                     if (!matcher.matches()) {
-                        throw exception(GraknException.of(ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES,
-                                                          getLabel(), regex, attribute.getValue()));
+                        throw exception(GraknException.of(
+                                ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES, getLabel(), regex, attribute.getValue()
+                        ));
                     }
                 });
             }

@@ -98,7 +98,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void setAbstract() {
         validateIsNotDeleted();
-        if (getInstances().findFirst().isPresent()) {
+        if (getInstances().first().isPresent()) {
             throw exception(GraknException.of(TYPE_HAS_INSTANCES, getLabel()));
         }
         vertex.isAbstract(true);
@@ -158,7 +158,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         validateIsNotDeleted();
         TypeEdge edge;
         TypeVertex attVertex = ((AttributeTypeImpl) attributeType).vertex;
-        if (getInstances().anyMatch(thing -> thing.getHas(attributeType).findAny().isPresent())) {
+        if (getInstances().anyMatch(thing -> thing.getHas(attributeType).first().isPresent())) {
             throw exception(GraknException.of(INVALID_UNDEFINE_OWNS_HAS_INSTANCES, vertex.label(), attVertex.label()));
         }
         if ((edge = vertex.outs().edge(OWNS_KEY, attVertex)) != null) edge.delete();
@@ -206,7 +206,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                 throw exception(GraknException.of(OWNS_KEY_PRECONDITION_UNIQUENESS, attVertex.label(), vertex.label()));
             }
             ownsEdge.delete();
-        } else if (getInstances().findAny().isPresent()) {
+        } else if (getInstances().first().isPresent()) {
             throw exception(GraknException.of(OWNS_KEY_PRECONDITION_NO_INSTANCES, vertex.label(), attVertex.label()));
         }
         ownsKeyEdge = vertex.outs().put(OWNS_KEY, attVertex);
@@ -353,7 +353,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                                                   this.getLabel().toString(), roleType.getLabel().toString()));
             }
         }
-        if (getInstances().anyMatch(thing -> thing.getRelations(roleType).findAny().isPresent())) {
+        if (getInstances().anyMatch(thing -> thing.getRelations(roleType).first().isPresent())) {
             throw exception(GraknException.of(INVALID_UNDEFINE_PLAYS_HAS_INSTANCES, vertex.label(), roleType.getLabel().toString()));
         }
         edge.delete();
@@ -399,7 +399,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         super.validateDelete();
         if (getSubtypes().anyMatch(s -> !s.equals(this))) {
             throw exception(GraknException.of(TYPE_HAS_SUBTYPES, getLabel()));
-        } else if (getSubtypes().flatMap(ThingType::getInstances).findFirst().isPresent()) {
+        } else if (getSubtypes().flatMap(ThingType::getInstances).first().isPresent()) {
             throw exception(GraknException.of(TYPE_HAS_INSTANCES, getLabel()));
         }
     }

@@ -245,17 +245,17 @@ public class TypeService {
     }
 
     private void getSupertypes(Type type, UUID reqID) {
-        transactionSvc.stream(type.getSupertypes().iterator(), reqID,
+        transactionSvc.stream(type.getSupertypes(), reqID,
                               types -> getSupertypesResPart(reqID, types));
     }
 
     private void getSubtypes(Type type, UUID reqID) {
-        transactionSvc.stream(type.getSubtypes().iterator(), reqID,
+        transactionSvc.stream(type.getSubtypes(), reqID,
                               types -> getSubtypesResPart(reqID, types));
     }
 
     private void getInstances(ThingType thingType, UUID reqID) {
-        transactionSvc.stream(thingType.getInstances().iterator(), reqID,
+        transactionSvc.stream(thingType.getInstances(), reqID,
                               things -> getInstancesResPart(reqID, things));
     }
 
@@ -269,18 +269,18 @@ public class TypeService {
     }
 
     private void getOwns(ThingType thingType, boolean keysOnly, UUID reqID) {
-        transactionSvc.stream(thingType.getOwns(keysOnly).iterator(), reqID,
+        transactionSvc.stream(thingType.getOwns(keysOnly), reqID,
                               attributeTypes -> getOwnsResPart(reqID, attributeTypes));
     }
 
     private void getOwns(ThingType thingType, AttributeType.ValueType valueType,
                          boolean keysOnly, UUID reqID) {
-        transactionSvc.stream(thingType.getOwns(valueType, keysOnly).iterator(), reqID,
+        transactionSvc.stream(thingType.getOwns(valueType, keysOnly), reqID,
                               attributeTypes -> getOwnsResPart(reqID, attributeTypes));
     }
 
     private void getPlays(ThingType thingType, UUID reqID) {
-        transactionSvc.stream(thingType.getPlays().iterator(), reqID,
+        transactionSvc.stream(thingType.getPlays(), reqID,
                               roleTypes -> getPlaysResPart(reqID, roleTypes));
     }
 
@@ -321,7 +321,7 @@ public class TypeService {
     }
 
     private void getOwners(AttributeType attributeType, boolean onlyKey, UUID reqID) {
-        transactionSvc.stream(attributeType.getOwners(onlyKey).iterator(), reqID,
+        transactionSvc.stream(attributeType.getOwners(onlyKey), reqID,
                               owners -> getOwnersResPart(reqID, owners));
     }
 
@@ -392,7 +392,7 @@ public class TypeService {
     }
 
     private void getRelates(RelationType relationType, UUID reqID) {
-        transactionSvc.stream(relationType.getRelates().iterator(), reqID,
+        transactionSvc.stream(relationType.getRelates(), reqID,
                               roleTypes -> getRelatesResPart(reqID, roleTypes));
     }
 
@@ -417,12 +417,12 @@ public class TypeService {
     }
 
     private void getRelationTypes(RoleType roleType, UUID reqID) {
-        transactionSvc.stream(roleType.getRelationTypes().iterator(), reqID,
+        transactionSvc.stream(roleType.getRelationTypes(), reqID,
                               relationTypes -> getRelationTypesResPart(reqID, relationTypes));
     }
 
     private void getPlayers(RoleType roleType, UUID reqID) {
-        transactionSvc.stream(roleType.getPlayers().iterator(), reqID,
+        transactionSvc.stream(roleType.getPlayers(), reqID,
                               players -> getPlayersResPart(reqID, players));
     }
 

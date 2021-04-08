@@ -20,6 +20,7 @@ package grakn.core.migrator;
 
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
@@ -41,7 +42,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Migrator.FILE_NOT_WRITABLE;
@@ -91,15 +91,15 @@ public class DataExporter implements Migrator {
                 write(outputStream, header);
 
                 List<Runnable> workers = new ArrayList<>();
-                workers.add(() -> tx.concepts().getRootEntityType().getInstances().forEach(entity -> {
+                workers.add(() -> tx.concepts().getRootEntityType().getInstances().forEachRemaining(entity -> {
                     DataProto.Item item = readEntity(entity);
                     write(outputStream, item);
                 }));
-                workers.add(() -> tx.concepts().getRootRelationType().getInstances().forEach(relation -> {
+                workers.add(() -> tx.concepts().getRootRelationType().getInstances().forEachRemaining(relation -> {
                     DataProto.Item item = readRelation(relation);
                     write(outputStream, item);
                 }));
-                workers.add(() -> tx.concepts().getRootAttributeType().getInstances().forEach(attribute -> {
+                workers.add(() -> tx.concepts().getRootAttributeType().getInstances().forEachRemaining(attribute -> {
                     DataProto.Item item = readAttribute(attribute);
                     write(outputStream, item);
                 }));
@@ -131,7 +131,7 @@ public class DataExporter implements Migrator {
         DataProto.Item.Entity.Builder entityBuilder = DataProto.Item.Entity.newBuilder()
                 .setId(new String(entity.getIID()))
                 .setLabel(entity.getType().getLabel().name());
-        readOwnerships(entity).forEach(a -> {
+        readOwnerships(entity).forEachRemaining(a -> {
             ownershipCount.incrementAndGet();
             entityBuilder.addAttribute(a);
         });
@@ -155,7 +155,7 @@ public class DataExporter implements Migrator {
             }
             relationBuilder.addRole(roleBuilder);
         }
-        readOwnerships(relation).forEach(a -> {
+        readOwnerships(relation).forEachRemaining(a -> {
             ownershipCount.incrementAndGet();
             relationBuilder.addAttribute(a);
         });
@@ -168,7 +168,7 @@ public class DataExporter implements Migrator {
                 .setId(new String(attribute.getIID()))
                 .setLabel(attribute.getType().getLabel().name())
                 .setValue(readValue(attribute));
-        readOwnerships(attribute).forEach(a -> {
+        readOwnerships(attribute).forEachRemaining(a -> {
             ownershipCount.incrementAndGet();
             attributeBuilder.addAttribute(a);
         });
@@ -193,7 +193,7 @@ public class DataExporter implements Migrator {
         return valueObject;
     }
 
-    private Stream<DataProto.Item.OwnedAttribute.Builder> readOwnerships(Thing thing) {
+    private FunctionalIterator<DataProto.Item.OwnedAttribute.Builder> readOwnerships(Thing thing) {
         return thing.getHas().map(attribute -> DataProto.Item.OwnedAttribute.newBuilder()
                 .setId(new String(attribute.getIID())));
     }

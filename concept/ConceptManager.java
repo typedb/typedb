@@ -312,7 +312,7 @@ public final class ConceptManager {
         }
 
         private static void writeRelates(StringBuilder builder, RelationType relationType) {
-            relationType.getRelatesExplicit().sorted(comparing(x -> x.getLabel().name()))
+            relationType.getRelatesExplicit().stream().sorted(comparing(x -> x.getLabel().name()))
                     .forEach(roleType -> {
                         builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
                                 .append(String.format("relates %s", roleType.getLabel().name()));

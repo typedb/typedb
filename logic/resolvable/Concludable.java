@@ -59,7 +59,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
@@ -166,7 +165,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
     boolean unificationSatisfiable(TypeVariable concludableTypeVar, TypeVariable conclusionTypeVar, ConceptManager conceptMgr) {
 
         if (!concludableTypeVar.resolvedTypes().isEmpty() && !conclusionTypeVar.resolvedTypes().isEmpty()) {
-            return !Collections.disjoint(subtypeLabels(concludableTypeVar.resolvedTypes(), conceptMgr).collect(toSet()),
+            return !Collections.disjoint(subtypeLabels(concludableTypeVar.resolvedTypes(), conceptMgr).toSet(),
                                          conclusionTypeVar.resolvedTypes());
         } else {
             // if either variable is allowed to be any type (ie empty set), its possible to do unification
@@ -197,11 +196,11 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         return satisfiable;
     }
 
-    Stream<Label> subtypeLabels(Set<Label> labels, ConceptManager conceptMgr) {
-        return labels.stream().flatMap(l -> subtypeLabels(l, conceptMgr));
+    FunctionalIterator<Label> subtypeLabels(Set<Label> labels, ConceptManager conceptMgr) {
+        return iterate(labels).flatMap(l -> subtypeLabels(l, conceptMgr));
     }
 
-    Stream<Label> subtypeLabels(Label label, ConceptManager conceptMgr) {
+    FunctionalIterator<Label> subtypeLabels(Label label, ConceptManager conceptMgr) {
         // TODO: this is cachable, and is a hot code path - analyse and see impact of cache
         if (label.scope().isPresent()) {
             assert conceptMgr.getRelationType(label.scope().get()) != null;
@@ -353,8 +352,8 @@ public abstract class Concludable extends Resolvable<Conjunction> {
 
                     if (concludableRelationType.reference().isLabel()) {
                         // require the unification target type variable satisfies a set of labels
-                        Set<Label> allowedTypes = concludableRelationType.resolvedTypes().stream()
-                                .flatMap(label -> subtypeLabels(label, conceptMgr)).collect(toSet());
+                        Set<Label> allowedTypes = iterate(concludableRelationType.resolvedTypes())
+                                .flatMap(label -> subtypeLabels(label, conceptMgr)).toSet();
                         unifierBuilder.unifiedRequirements().isaExplicit(relationConclusion.relation().owner().id(), allowedTypes);
                         unifierBuilder.requirements().isaExplicit(relation().owner().id(), allowedTypes);
                     } else {
@@ -401,9 +400,9 @@ public abstract class Concludable extends Resolvable<Conjunction> {
                     TypeVariable conjRoleType = conjRP.roleType().get();
                     TypeVariable thenRoleType = thenRP.roleType().get();
                     if (conjRoleType.reference().isLabel()) {
-                        Set<Label> allowedTypes = conjRoleType.resolvedTypes().stream()
+                        Set<Label> allowedTypes = iterate(conjRoleType.resolvedTypes())
                                 .flatMap(roleLabel -> subtypeLabels(roleLabel, conceptMgr))
-                                .collect(toSet());
+                                .toSet();
                         unifierBuilder.unifiedRequirements().roleTypes(thenRoleType.id(), allowedTypes);
                         unifierBuilder.requirements().roleTypes(conjRoleType.id(), allowedTypes);
                     } else {
@@ -548,13 +547,13 @@ public abstract class Concludable extends Resolvable<Conjunction> {
                     // form: $x has age 10 -> require ISA age and PREDICATE =10
                     assert attr.isa().isPresent() && attr.isa().get().type().label().isPresent();
                     Label attrLabel = attr.isa().get().type().label().get().properLabel();
-                    Set<Label> labels = subtypeLabels(attrLabel, conceptMgr).collect(toSet());
+                    Set<Label> labels = subtypeLabels(attrLabel, conceptMgr).toSet();
                     unifierBuilder.unifiedRequirements().isaExplicit(conclusionAttr.id(), labels);
                     unifierBuilder.requirements().isaExplicit(attr.id(), labels);
                 } else if (attr.reference().isName() && attr.isa().isPresent() && attr.isa().get().type().label().isPresent()) {
                     // form: $x has age $a (may also handle $x has $a; $a isa age)   -> require ISA age
                     Label attrLabel = attr.isa().get().type().label().get().properLabel();
-                    Set<Label> labels = subtypeLabels(attrLabel, conceptMgr).collect(toSet());
+                    Set<Label> labels = subtypeLabels(attrLabel, conceptMgr).toSet();
                     unifierBuilder.unifiedRequirements().isaExplicit(conclusionAttr.id(), labels);
                     unifierBuilder.requirements().isaExplicit(attr.id(), labels);
                 }
@@ -663,7 +662,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
             if (unificationSatisfiable(type, isa.isa().type(), conceptMgr)) {
                 if (type.reference().isLabel()) {
                     // form: $r isa friendship -> require type subs(friendship) for anonymous type variable
-                    Set<Label> subtypes = subtypeLabels(type.resolvedTypes(), conceptMgr).collect(toSet());
+                    Set<Label> subtypes = subtypeLabels(type.resolvedTypes(), conceptMgr).toSet();
                     unifierBuilder.unifiedRequirements().isaExplicit(isa.isa().owner().id(), subtypes);
                     unifierBuilder.requirements().isaExplicit(isa().owner().id(), subtypes);
                 } else {

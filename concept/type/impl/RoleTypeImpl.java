@@ -122,7 +122,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     @Override
     void validateDelete() {
         super.validateDelete();
-        if (getInstances().findAny().isPresent()) {
+        if (getInstances().first().isPresent()) {
             throw exception(GraknException.of(INVALID_UNDEFINE_RELATES_HAS_INSTANCES, getLabel()));
         }
     }

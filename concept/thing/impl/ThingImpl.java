@@ -108,9 +108,9 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
         if (getType().getOwns().noneMatch(t -> t.equals(attribute.getType()))) {
             throw exception(GraknException.of(THING_CANNOT_OWN_ATTRIBUTE, attribute.getType().getLabel(), vertex.type().label()));
         } else if (getType().getOwns(true).anyMatch(t -> t.equals(attribute.getType()))) {
-            if (getHas(attribute.getType()).findAny().isPresent()) {
+            if (getHas(attribute.getType()).first().isPresent()) {
                 throw exception(GraknException.of(THING_KEY_OVER, attribute.getType().getLabel(), getType().getLabel()));
-            } else if (attribute.getOwners(getType()).findAny().isPresent()) {
+            } else if (attribute.getOwners(getType()).first().isPresent()) {
                 throw exception(GraknException.of(THING_KEY_TAKEN, attribute.getType().getLabel(), getType().getLabel()));
             }
         }
@@ -127,7 +127,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
 
     @Override
     public FunctionalIterator<AttributeImpl<?>> getHas(boolean onlyKey) {
-        return getHas(getType().getOwns(onlyKey).toArray(AttributeType[]::new));
+        return getHas(getType().getOwns(onlyKey).stream().toArray(AttributeType[]::new));
     }
 
     @Override
@@ -196,7 +196,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
             }
             String[] label = scopedLabel.split(":");
             return RoleTypeImpl.of(vertex.graphs(), vertex.graph().schema().getType(label[1], label[0]));
-        }).toArray(RoleType[]::new));
+        }).stream().toArray(RoleType[]::new));
     }
 
     @Override

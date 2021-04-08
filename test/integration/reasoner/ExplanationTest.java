@@ -281,15 +281,15 @@ public class ExplanationTest {
                 assertFalse(ans.get(2).explainables().isEmpty());
 
                 AttributeType ageInDays = txn.concepts().getAttributeType("age-in-days");
-                if (ans.get(0).get("x").asThing().getHas(ageInDays).findFirst().get().asLong().getValue().equals(15L)) {
+                if (ans.get(0).get("x").asThing().getHas(ageInDays).first().get().asLong().getValue().equals(15L)) {
                     assertSingleExplainableExplanations(ans.get(0), 0, 1, 1, txn);
                 } else assertSingleExplainableExplanations(ans.get(0), 0, 1, 2, txn);
 
-                if (ans.get(1).get("x").asThing().getHas(ageInDays).findFirst().get().asLong().getValue().equals(15L)) {
+                if (ans.get(1).get("x").asThing().getHas(ageInDays).first().get().asLong().getValue().equals(15L)) {
                     assertSingleExplainableExplanations(ans.get(1), 0, 1, 1, txn);
                 } else assertSingleExplainableExplanations(ans.get(1), 0, 1, 2, txn);
 
-                if (ans.get(2).get("x").asThing().getHas(ageInDays).findFirst().get().asLong().getValue().equals(15L)) {
+                if (ans.get(2).get("x").asThing().getHas(ageInDays).first().get().asLong().getValue().equals(15L)) {
                     assertSingleExplainableExplanations(ans.get(2), 0, 1, 1, txn);
                 } else assertSingleExplainableExplanations(ans.get(2), 0, 1, 2, txn);
             }

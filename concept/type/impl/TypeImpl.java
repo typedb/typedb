@@ -108,7 +108,7 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
     }
 
     @Override
-    public abstract FunctionalIterator<? extends Type> getSubtypes();
+    public abstract FunctionalIterator<? extends TypeImpl> getSubtypes();
 
     @Override
     public abstract FunctionalIterator<? extends Type> getSubtypesExplicit();

@@ -72,21 +72,21 @@ public class EntitySteps {
     public void entity_type_get_instance_with_key(String var1, String type, String keyType, long keyValue) {
         put(var1, tx().concepts().getAttributeType(keyType).asLong().get(keyValue).getOwners()
                 .filter(owner -> owner.getType().equals(tx().concepts().getEntityType(type)))
-                .findFirst().orElse(null));
+                .first().orElse(null));
     }
 
     @When("{var} = entity\\( ?{type_label} ?) get instance with key\\( ?{type_label} ?): {word}")
     public void entity_type_get_instance_with_key(String var1, String type, String keyType, String keyValue) {
         put(var1, tx().concepts().getAttributeType(keyType).asString().get(keyValue).getOwners()
                 .filter(owner -> owner.getType().equals(tx().concepts().getEntityType(type)))
-                .findFirst().orElse(null));
+                .first().orElse(null));
     }
 
     @When("{var} = entity\\( ?{type_label} ?) get instance with key\\( ?{type_label} ?): {datetime}")
     public void entity_type_get_instance_with_key(String var1, String type, String keyType, LocalDateTime keyValue) {
         put(var1, tx().concepts().getAttributeType(keyType).asDateTime().get(keyValue).getOwners()
                 .filter(owner -> owner.getType().equals(tx().concepts().getEntityType(type)))
-                .findFirst().orElse(null));
+                .first().orElse(null));
     }
 
     @Then("entity\\( ?{type_label} ?) get instances contain: {var}")

@@ -50,6 +50,11 @@ public class Iterators {
         return new BaseIterator<>(Either.second(collection.iterator()));
     }
 
+    @SafeVarargs
+    public static <T> FunctionalIterator<T> iterate(T... elements) {
+        return new BaseIterator<T>(Either.second(list(elements).iterator()));
+    }
+
     public static <T> FunctionalIterator<T> iterate(Iterator<T> iterator) {
         return new BaseIterator<>(Either.second(iterator));
     }

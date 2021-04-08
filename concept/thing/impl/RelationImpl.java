@@ -33,6 +33,7 @@ import grakn.core.graph.vertex.TypeVertex;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.DELETE_ROLEPLAYER_NOT_PRESENT;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_PLAYER_MISSING;
@@ -110,7 +111,7 @@ public class RelationImpl extends ThingImpl implements Relation {
     public FunctionalIterator<ThingImpl> getPlayers(String roleType, String... roleTypes) {
         return getPlayers(link(single(roleType), iterate(roleTypes))
                                   .map(label -> getType().getRelates(label))
-                                  .toArray(RoleType[]::new));
+                                  .stream().toArray(RoleType[]::new));
     }
 
     @Override

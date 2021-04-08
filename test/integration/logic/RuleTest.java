@@ -49,7 +49,6 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.map;
 import static grakn.common.collection.Collections.pair;
@@ -106,7 +105,7 @@ public class RuleTest {
                     txn.query().insert(Graql.parseQuery("insert $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage;").asInsert());
 
                     EntityType person = conceptMgr.getEntityType("person");
-                    List<Entity> people = person.getInstances().collect(Collectors.toList());
+                    List<? extends Entity> people = person.getInstances().toList();
                     assertEquals(2, people.size());
 
                     Rule rule = txn.logic().getRule("marriage-is-friendship");
@@ -118,9 +117,9 @@ public class RuleTest {
                     assertEquals(5, materialisations.get(0).size());
 
                     RelationType friendship = conceptMgr.getRelationType("friendship");
-                    List<Relation> friendshipInstances = friendship.getInstances().collect(Collectors.toList());
+                    List<? extends Relation> friendshipInstances = friendship.getInstances().toList();
                     assertEquals(1, friendshipInstances.size());
-                    assertEquals(set(people.get(0), people.get(1)), friendshipInstances.get(0).getPlayers().collect(Collectors.toSet()));
+                    assertEquals(set(people.get(0), people.get(1)), friendshipInstances.get(0).getPlayers().toSet());
                 }
             }
         }
@@ -158,11 +157,11 @@ public class RuleTest {
                     txn.query().insert(Graql.parseQuery("insert $x isa person; $y isa person; " +
                                                                 "(spouse: $x, spouse: $y) isa marriage;" +
                                                                 "(friend: $x, friend: $y) isa friendship;").asInsert());
-                    List<Relation> friendshipInstances = friendship.getInstances().collect(Collectors.toList());
+                    List<? extends Relation> friendshipInstances = friendship.getInstances().toList();
                     assertEquals(1, friendshipInstances.size());
 
                     EntityType person = conceptMgr.getEntityType("person");
-                    List<Entity> people = person.getInstances().collect(Collectors.toList());
+                    List<? extends Entity> people = person.getInstances().toList();
                     assertEquals(2, people.size());
 
                     Rule rule = txn.logic().getRule("marriage-is-friendship");
@@ -172,7 +171,7 @@ public class RuleTest {
                     List<Map<Identifier.Variable, Concept>> materialisations = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr).toList();
                     assertEquals(1, materialisations.size());
                     assertEquals(5, materialisations.get(0).size());
-                    friendshipInstances = friendship.getInstances().collect(Collectors.toList());
+                    friendshipInstances = friendship.getInstances().toList();
                     assertEquals(1, friendshipInstances.size());
                     assertEquals(friendshipInstances.get(0), materialisations.get(0).get(Identifier.Variable.anon(0)));
                     assertEquals(friendship, materialisations.get(0).get(Identifier.Variable.label("friendship")));
@@ -220,7 +219,7 @@ public class RuleTest {
                     assertEquals(1, materialisations.size());
                     assertEquals(2, materialisations.get(0).size());
 
-                    List<? extends Attribute> ageInDaysOwned = milkInst.getHas(ageInDays).collect(Collectors.toList());
+                    List<? extends Attribute> ageInDaysOwned = milkInst.getHas(ageInDays).toList();
                     assertEquals(1, ageInDaysOwned.size());
                     assertEquals(ageInDays10, ageInDaysOwned.get(0));
                 }
@@ -267,9 +266,9 @@ public class RuleTest {
                     assertEquals(3, materialisations.get(0).size());
 
                     AttributeType isStillGood = conceptMgr.getAttributeType("is-still-good");
-                    List<? extends Attribute> isStillGoodOwned = milkInst.getHas(isStillGood).collect(Collectors.toList());
+                    List<? extends Attribute> isStillGoodOwned = milkInst.getHas(isStillGood).toList();
                     assertEquals(1, isStillGoodOwned.size());
-                    assertEquals(isStillGood.asBoolean().getInstances().findFirst().get(), isStillGoodOwned.get(0));
+                    assertEquals(isStillGood.asBoolean().getInstances().first().get(), isStillGoodOwned.get(0));
                 }
             }
         }
