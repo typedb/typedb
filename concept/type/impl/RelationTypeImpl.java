@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.RELATION_ABSTRACT_ROLE;
@@ -45,6 +44,7 @@ import static grakn.core.common.exception.ErrorMessage.TypeWrite.RELATION_RELATE
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.RELATION_RELATES_ROLE_NOT_AVAILABLE;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES;
+import static grakn.core.common.iterator.Iterators.link;
 import static grakn.core.graph.common.Encoding.Edge.Type.RELATES;
 import static grakn.core.graph.common.Encoding.Vertex.Type.RELATION_TYPE;
 import static grakn.core.graph.common.Encoding.Vertex.Type.Root.RELATION;
@@ -84,13 +84,13 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     public void setAbstract() {
         if (getInstances().findFirst().isPresent()) throw exception(GraknException.of(TYPE_HAS_INSTANCES, getLabel()));
         vertex.isAbstract(true);
-        declaredRoles().forEach(RoleTypeImpl::setAbstract);
+        declaredRoles().forEachRemaining(RoleTypeImpl::setAbstract);
     }
 
     @Override
     public void unsetAbstract() {
         vertex.isAbstract(false);
-        declaredRoles().forEach(RoleTypeImpl::unsetAbstract);
+        declaredRoles().forEachRemaining(RoleTypeImpl::unsetAbstract);
     }
 
     @Override
@@ -100,17 +100,17 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
-    public Stream<RelationTypeImpl> getSubtypes() {
+    public FunctionalIterator<RelationTypeImpl> getSubtypes() {
         return super.getSubtypes(v -> of(graphMgr, v));
     }
 
     @Override
-    public Stream<RelationTypeImpl> getSubtypesExplicit() {
+    public FunctionalIterator<RelationTypeImpl> getSubtypesExplicit() {
         return super.getSubtypesExplicit(v -> of(graphMgr, v));
     }
 
     @Override
-    public Stream<RelationImpl> getInstances() {
+    public FunctionalIterator<RelationImpl> getInstances() {
         return instances(RelationImpl::of);
     }
 
@@ -156,24 +156,24 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
-    public Stream<RoleTypeImpl> getRelates() {
+    public FunctionalIterator<RoleTypeImpl> getRelates() {
         FunctionalIterator<RoleTypeImpl> roles = vertex.outs().edge(RELATES).to().map(v -> RoleTypeImpl.of(graphMgr, v));
         if (isRoot()) {
-            return roles.stream();
+            return roles;
         } else {
             assert getSupertype() != null;
             Set<RoleTypeImpl> direct = new HashSet<>();
             roles.forEachRemaining(direct::add);
-            return Stream.concat(direct.stream(), getSupertype().asRelationType().getRelates().filter(
+            return link(direct.iterator(), getSupertype().asRelationType().getRelates().filter(
                     role -> overriddenRoles().noneMatch(o -> o.equals(role))
             ));
         }
     }
 
     @Override
-    public Stream<RoleTypeImpl> getRelatesExplicit() {
+    public FunctionalIterator<RoleTypeImpl> getRelatesExplicit() {
         FunctionalIterator<RoleTypeImpl> roles = vertex.outs().edge(RELATES).to().map(v -> RoleTypeImpl.of(graphMgr, v));
-        return roles.stream();
+        return roles;
     }
 
     @Override
@@ -189,12 +189,12 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         return null;
     }
 
-    Stream<RoleTypeImpl> overriddenRoles() {
-        return vertex.outs().edge(RELATES).overridden().filter(Objects::nonNull).map(v -> RoleTypeImpl.of(graphMgr, v)).stream();
+    FunctionalIterator<RoleTypeImpl> overriddenRoles() {
+        return vertex.outs().edge(RELATES).overridden().filter(Objects::nonNull).map(v -> RoleTypeImpl.of(graphMgr, v));
     }
 
-    private Stream<RoleTypeImpl> declaredRoles() {
-        return vertex.outs().edge(RELATES).to().map(v -> RoleTypeImpl.of(graphMgr, v)).stream();
+    private FunctionalIterator<RoleTypeImpl> declaredRoles() {
+        return vertex.outs().edge(RELATES).to().map(v -> RoleTypeImpl.of(graphMgr, v));
     }
 
     /**
@@ -229,17 +229,17 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public void delete() {
         validateDelete();
-        declaredRoles().forEach(RoleTypeImpl::delete);
+        declaredRoles().forEachRemaining(RoleTypeImpl::delete);
         vertex.delete();
     }
 
     @Override
     public List<GraknException> validate() {
         List<GraknException> exceptions = super.validate();
-        if (!isRoot() && !isAbstract() && Streams.compareSize(getRelates().filter(r -> !r.getLabel().name().equals(ROLE.label())), 1) < 0) {
+        if (!isRoot() && !isAbstract() && Streams.compareSize(getRelates().filter(r -> !r.getLabel().name().equals(ROLE.label())).stream(), 1) < 0) {
             exceptions.add(GraknException.of(RELATION_NO_ROLE, this.getLabel()));
         } else if (!isAbstract()) {
-            getRelates().filter(TypeImpl::isAbstract).forEach(roleType -> {
+            getRelates().filter(TypeImpl::isAbstract).forEachRemaining(roleType -> {
                 exceptions.add(GraknException.of(RELATION_ABSTRACT_ROLE, getLabel(), roleType.getLabel()));
             });
         }

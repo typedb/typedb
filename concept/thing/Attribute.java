@@ -18,10 +18,9 @@
 
 package grakn.core.concept.thing;
 
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.ThingType;
-
-import java.util.stream.Stream;
 
 public interface Attribute extends Thing {
 
@@ -34,13 +33,13 @@ public interface Attribute extends Thing {
     AttributeType getType();
 
     /**
-     * Get a stream of all {@code Thing} instances that own this {@code Attribute}.
+     * Get a iterator of all {@code Thing} instances that own this {@code Attribute}.
      *
-     * @return stream of all {@code Thing} instances that own this {@code Attribute}
+     * @return iterator of all {@code Thing} instances that own this {@code Attribute}
      */
-    Stream<? extends Thing> getOwners();
+    FunctionalIterator<? extends Thing> getOwners();
 
-    Stream<? extends Thing> getOwners(ThingType ownerType);
+    FunctionalIterator<? extends Thing> getOwners(ThingType ownerType);
 
     boolean isBoolean();
 

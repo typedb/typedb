@@ -18,12 +18,12 @@
 
 package grakn.core.concept.thing;
 
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.RoleType;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
 public interface Relation extends Thing {
 
@@ -36,12 +36,12 @@ public interface Relation extends Thing {
 
     void removePlayer(RoleType roleType, Thing player);
 
-    Stream<? extends Thing> getPlayers(String roleType, String... roleTypes);
+    FunctionalIterator<? extends Thing> getPlayers(String roleType, String... roleTypes);
 
-    Stream<? extends Thing> getPlayers(RoleType... roleTypes);
+    FunctionalIterator<? extends Thing> getPlayers(RoleType... roleTypes);
 
-    // TODO: This method should just return Stream<Pair<RoleType, Thing>>
+    // TODO: This method should just return FunctionalIterator<Pair<RoleType, Thing>>
     Map<? extends RoleType, ? extends List<? extends Thing>> getPlayersByRoleType();
 
-    Stream<? extends RoleType> getRelating();
+    FunctionalIterator<? extends RoleType> getRelating();
 }

@@ -18,9 +18,8 @@
 
 package grakn.core.concept.type;
 
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concept.thing.Thing;
-
-import java.util.stream.Stream;
 
 public interface ThingType extends Type {
 
@@ -28,15 +27,15 @@ public interface ThingType extends Type {
     ThingType getSupertype();
 
     @Override
-    Stream<? extends ThingType> getSupertypes();
+    FunctionalIterator<? extends ThingType> getSupertypes();
 
     @Override
-    Stream<? extends ThingType> getSubtypes();
+    FunctionalIterator<? extends ThingType> getSubtypes();
 
     @Override
-    Stream<? extends ThingType> getSubtypesExplicit();
+    FunctionalIterator<? extends ThingType> getSubtypesExplicit();
 
-    Stream<? extends Thing> getInstances();
+    FunctionalIterator<? extends Thing> getInstances();
 
     void setAbstract();
 
@@ -52,21 +51,21 @@ public interface ThingType extends Type {
 
     void unsetOwns(AttributeType attributeType);
 
-    Stream<? extends AttributeType> getOwns();
+    FunctionalIterator<? extends AttributeType> getOwns();
 
-    Stream<? extends AttributeType> getOwnsExplicit();
+    FunctionalIterator<? extends AttributeType> getOwnsExplicit();
 
-    Stream<? extends AttributeType> getOwns(boolean onlyKey);
+    FunctionalIterator<? extends AttributeType> getOwns(boolean onlyKey);
 
-    Stream<? extends AttributeType> getOwnsExplicit(boolean onlyKey);
+    FunctionalIterator<? extends AttributeType> getOwnsExplicit(boolean onlyKey);
 
-    Stream<? extends AttributeType> getOwns(AttributeType.ValueType valueType);
+    FunctionalIterator<? extends AttributeType> getOwns(AttributeType.ValueType valueType);
 
-    Stream<? extends AttributeType> getOwnsExplicit(AttributeType.ValueType valueType);
+    FunctionalIterator<? extends AttributeType> getOwnsExplicit(AttributeType.ValueType valueType);
 
-    Stream<? extends AttributeType> getOwns(AttributeType.ValueType valueType, boolean onlyKey);
+    FunctionalIterator<? extends AttributeType> getOwns(AttributeType.ValueType valueType, boolean onlyKey);
 
-    Stream<? extends AttributeType> getOwnsExplicit(AttributeType.ValueType valueType, boolean onlyKey);
+    FunctionalIterator<? extends AttributeType> getOwnsExplicit(AttributeType.ValueType valueType, boolean onlyKey);
 
     AttributeType getOwnsOverridden(AttributeType attributeType);
 
@@ -76,9 +75,9 @@ public interface ThingType extends Type {
 
     void unsetPlays(RoleType roleType);
 
-    Stream<? extends RoleType> getPlays();
+    FunctionalIterator<? extends RoleType> getPlays();
 
-    Stream<? extends RoleType> getPlaysExplicit();
+    FunctionalIterator<? extends RoleType> getPlaysExplicit();
 
     RoleType getPlaysOverridden(RoleType roleType);
 }

@@ -18,20 +18,19 @@
 
 package grakn.core.concept.type;
 
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concept.thing.Entity;
-
-import java.util.stream.Stream;
 
 public interface EntityType extends ThingType {
 
     @Override
-    Stream<? extends EntityType> getSubtypes();
+    FunctionalIterator<? extends EntityType> getSubtypes();
 
     @Override
-    Stream<? extends EntityType> getSubtypesExplicit();
+    FunctionalIterator<? extends EntityType> getSubtypesExplicit();
 
     @Override
-    Stream<? extends Entity> getInstances();
+    FunctionalIterator<? extends Entity> getInstances();
 
     void setSupertype(EntityType superType);
 

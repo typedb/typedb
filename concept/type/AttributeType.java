@@ -18,6 +18,7 @@
 
 package grakn.core.concept.type;
 
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.graph.common.Encoding;
 import graql.lang.common.GraqlArg;
@@ -26,20 +27,19 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import static grakn.core.common.iterator.Iterators.iterate;
 
 public interface AttributeType extends ThingType {
 
     @Override
-    Stream<? extends AttributeType> getSubtypes();
+    FunctionalIterator<? extends AttributeType> getSubtypes();
 
     @Override
-    Stream<? extends AttributeType> getSubtypesExplicit();
+    FunctionalIterator<? extends AttributeType> getSubtypesExplicit();
 
     @Override
-    Stream<? extends Attribute> getInstances();
+    FunctionalIterator<? extends Attribute> getInstances();
 
     void setSupertype(AttributeType superType);
 
@@ -47,9 +47,9 @@ public interface AttributeType extends ThingType {
 
     ValueType getValueType();
 
-    Stream<? extends ThingType> getOwners();
+    FunctionalIterator<? extends ThingType> getOwners();
 
-    Stream<? extends ThingType> getOwners(boolean onlyKey);
+    FunctionalIterator<? extends ThingType> getOwners(boolean onlyKey);
 
     boolean isBoolean();
 
@@ -132,13 +132,13 @@ public interface AttributeType extends ThingType {
     interface Boolean extends AttributeType {
 
         @Override
-        Stream<? extends AttributeType.Boolean> getSubtypes();
+        FunctionalIterator<? extends AttributeType.Boolean> getSubtypes();
 
         @Override
-        Stream<? extends AttributeType.Boolean> getSubtypesExplicit();
+        FunctionalIterator<? extends AttributeType.Boolean> getSubtypesExplicit();
 
         @Override
-        Stream<? extends Attribute.Boolean> getInstances();
+        FunctionalIterator<? extends Attribute.Boolean> getInstances();
 
         Attribute.Boolean put(boolean value);
 
@@ -150,13 +150,13 @@ public interface AttributeType extends ThingType {
     interface Long extends AttributeType {
 
         @Override
-        Stream<? extends AttributeType.Long> getSubtypes();
+        FunctionalIterator<? extends AttributeType.Long> getSubtypes();
 
         @Override
-        Stream<? extends AttributeType.Long> getSubtypesExplicit();
+        FunctionalIterator<? extends AttributeType.Long> getSubtypesExplicit();
 
         @Override
-        Stream<? extends Attribute.Long> getInstances();
+        FunctionalIterator<? extends Attribute.Long> getInstances();
 
         Attribute.Long put(long value);
 
@@ -168,13 +168,13 @@ public interface AttributeType extends ThingType {
     interface Double extends AttributeType {
 
         @Override
-        Stream<? extends AttributeType.Double> getSubtypes();
+        FunctionalIterator<? extends AttributeType.Double> getSubtypes();
 
         @Override
-        Stream<? extends AttributeType.Double> getSubtypesExplicit();
+        FunctionalIterator<? extends AttributeType.Double> getSubtypesExplicit();
 
         @Override
-        Stream<? extends Attribute.Double> getInstances();
+        FunctionalIterator<? extends Attribute.Double> getInstances();
 
         Attribute.Double put(double value);
 
@@ -186,13 +186,13 @@ public interface AttributeType extends ThingType {
     interface String extends AttributeType {
 
         @Override
-        Stream<? extends AttributeType.String> getSubtypes();
+        FunctionalIterator<? extends AttributeType.String> getSubtypes();
 
         @Override
-        Stream<? extends AttributeType.String> getSubtypesExplicit();
+        FunctionalIterator<? extends AttributeType.String> getSubtypesExplicit();
 
         @Override
-        Stream<? extends Attribute.String> getInstances();
+        FunctionalIterator<? extends Attribute.String> getInstances();
 
         void setRegex(Pattern regex);
 
@@ -210,13 +210,13 @@ public interface AttributeType extends ThingType {
     interface DateTime extends AttributeType {
 
         @Override
-        Stream<? extends AttributeType.DateTime> getSubtypes();
+        FunctionalIterator<? extends AttributeType.DateTime> getSubtypes();
 
         @Override
-        Stream<? extends AttributeType.DateTime> getSubtypesExplicit();
+        FunctionalIterator<? extends AttributeType.DateTime> getSubtypesExplicit();
 
         @Override
-        Stream<? extends Attribute.DateTime> getInstances();
+        FunctionalIterator<? extends Attribute.DateTime> getInstances();
 
         Attribute.DateTime put(LocalDateTime value);
 

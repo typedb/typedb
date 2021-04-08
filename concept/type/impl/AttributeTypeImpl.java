@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
@@ -113,13 +112,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     }
 
     @Override
-    public abstract Stream<? extends AttributeTypeImpl> getSubtypes();
+    public abstract FunctionalIterator<? extends AttributeTypeImpl> getSubtypes();
 
     @Override
-    public abstract Stream<? extends AttributeTypeImpl> getSubtypesExplicit();
+    public abstract FunctionalIterator<? extends AttributeTypeImpl> getSubtypesExplicit();
 
     @Override
-    public abstract Stream<? extends AttributeImpl<?>> getInstances();
+    public abstract FunctionalIterator<? extends AttributeImpl<?>> getInstances();
 
     FunctionalIterator<TypeVertex> getSubtypeVertices(Encoding.ValueType valueType) {
         return Iterators.tree(vertex, v -> v.ins().edge(SUB).from().filter(sv -> sv.valueType().equals(valueType)));
@@ -150,27 +149,27 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     public abstract ValueType getValueType();
 
     @Override
-    public Stream<? extends ThingTypeImpl> getOwners() {
+    public FunctionalIterator<? extends ThingTypeImpl> getOwners() {
         return getOwners(false);
     }
 
     @Override
-    public Stream<? extends ThingTypeImpl> getOwners(boolean onlyKey) {
-        if (isRoot()) return Stream.of();
+    public FunctionalIterator<? extends ThingTypeImpl> getOwners(boolean onlyKey) {
+        if (isRoot()) return Iterators.empty();
 
         return directOwners(onlyKey)
                 .flatMap(ThingTypeImpl::getSubtypes)
                 .filter(t -> t.overriddenOwns(onlyKey, true).noneMatch(o -> o.equals(this)));
     }
 
-    private Stream<? extends ThingTypeImpl> directOwners(boolean onlyKey) {
-        if (isRoot()) return Stream.of();
+    private FunctionalIterator<? extends ThingTypeImpl> directOwners(boolean onlyKey) {
+        if (isRoot()) return Iterators.empty();
 
         if (onlyKey) {
-            return vertex.ins().edge(OWNS_KEY).from().map(v -> ThingTypeImpl.of(graphMgr, v)).stream();
+            return vertex.ins().edge(OWNS_KEY).from().map(v -> ThingTypeImpl.of(graphMgr, v));
         } else {
             return link(vertex.ins().edge(OWNS_KEY).from(), vertex.ins().edge(OWNS).from())
-                    .map(v -> ThingTypeImpl.of(graphMgr, v)).stream();
+                    .map(v -> ThingTypeImpl.of(graphMgr, v));
         }
     }
 
@@ -280,7 +279,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public void setSupertype(AttributeType superType) { throw exception(GraknException.of(ROOT_TYPE_MUTATION)); }
 
         @Override
-        public Stream<AttributeTypeImpl> getSubtypes() {
+        public FunctionalIterator<AttributeTypeImpl> getSubtypes() {
             return getSubtypes(v -> {
                 switch (v.valueType()) {
                     case OBJECT:
@@ -303,7 +302,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Stream<AttributeTypeImpl> getSubtypesExplicit() {
+        public FunctionalIterator<AttributeTypeImpl> getSubtypesExplicit() {
             return getSubtypesExplicit(v -> {
                 switch (v.valueType()) {
                     case BOOLEAN:
@@ -323,7 +322,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Stream<AttributeImpl<?>> getInstances() {
+        public FunctionalIterator<AttributeImpl<?>> getInstances() {
             return instances(v -> AttributeImpl.of(v.asAttribute()));
         }
 
@@ -375,17 +374,17 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Stream<AttributeTypeImpl.Boolean> getSubtypes() {
+        public FunctionalIterator<AttributeTypeImpl.Boolean> getSubtypes() {
             return super.getSubtypes(v -> AttributeTypeImpl.Boolean.of(graphMgr, v));
         }
 
         @Override
-        public Stream<AttributeTypeImpl.Boolean> getSubtypesExplicit() {
+        public FunctionalIterator<AttributeTypeImpl.Boolean> getSubtypesExplicit() {
             return super.getSubtypesExplicit(v -> AttributeTypeImpl.Boolean.of(graphMgr, v));
         }
 
         @Override
-        public Stream<AttributeImpl.Boolean> getInstances() {
+        public FunctionalIterator<AttributeImpl.Boolean> getInstances() {
             return instances(v -> new AttributeImpl.Boolean(v.asAttribute().asBoolean()));
         }
 
@@ -428,13 +427,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             public boolean isRoot() { return true; }
 
             @Override
-            public Stream<AttributeTypeImpl.Boolean> getSubtypes() {
-                return super.getSubtypeVertices(BOOLEAN).map(v -> AttributeTypeImpl.Boolean.of(graphMgr, v)).stream();
+            public FunctionalIterator<AttributeTypeImpl.Boolean> getSubtypes() {
+                return super.getSubtypeVertices(BOOLEAN).map(v -> AttributeTypeImpl.Boolean.of(graphMgr, v));
             }
 
             @Override
-            public Stream<AttributeTypeImpl.Boolean> getSubtypesExplicit() {
-                return super.getSubtypeVerticesDirect(BOOLEAN).map(v -> AttributeTypeImpl.Boolean.of(graphMgr, v)).stream();
+            public FunctionalIterator<AttributeTypeImpl.Boolean> getSubtypesExplicit() {
+                return super.getSubtypeVerticesDirect(BOOLEAN).map(v -> AttributeTypeImpl.Boolean.of(graphMgr, v));
             }
 
             @Override
@@ -500,17 +499,17 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Stream<AttributeTypeImpl.Long> getSubtypes() {
+        public FunctionalIterator<AttributeTypeImpl.Long> getSubtypes() {
             return super.getSubtypes(v -> AttributeTypeImpl.Long.of(graphMgr, v));
         }
 
         @Override
-        public Stream<AttributeTypeImpl.Long> getSubtypesExplicit() {
+        public FunctionalIterator<AttributeTypeImpl.Long> getSubtypesExplicit() {
             return super.getSubtypesExplicit(v -> AttributeTypeImpl.Long.of(graphMgr, v));
         }
 
         @Override
-        public Stream<AttributeImpl.Long> getInstances() {
+        public FunctionalIterator<AttributeImpl.Long> getInstances() {
             return instances(v -> new AttributeImpl.Long(v.asAttribute().asLong()));
         }
 
@@ -555,13 +554,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             public boolean isRoot() { return true; }
 
             @Override
-            public Stream<AttributeTypeImpl.Long> getSubtypes() {
-                return super.getSubtypeVertices(LONG).map(v -> AttributeTypeImpl.Long.of(graphMgr, v)).stream();
+            public FunctionalIterator<AttributeTypeImpl.Long> getSubtypes() {
+                return super.getSubtypeVertices(LONG).map(v -> AttributeTypeImpl.Long.of(graphMgr, v));
             }
 
             @Override
-            public Stream<AttributeTypeImpl.Long> getSubtypesExplicit() {
-                return super.getSubtypeVerticesDirect(LONG).map(v -> AttributeTypeImpl.Long.of(graphMgr, v)).stream();
+            public FunctionalIterator<AttributeTypeImpl.Long> getSubtypesExplicit() {
+                return super.getSubtypeVerticesDirect(LONG).map(v -> AttributeTypeImpl.Long.of(graphMgr, v));
             }
 
             @Override
@@ -627,17 +626,17 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Stream<AttributeTypeImpl.Double> getSubtypes() {
+        public FunctionalIterator<AttributeTypeImpl.Double> getSubtypes() {
             return super.getSubtypes(v -> AttributeTypeImpl.Double.of(graphMgr, v));
         }
 
         @Override
-        public Stream<AttributeTypeImpl.Double> getSubtypesExplicit() {
+        public FunctionalIterator<AttributeTypeImpl.Double> getSubtypesExplicit() {
             return super.getSubtypesExplicit(v -> AttributeTypeImpl.Double.of(graphMgr, v));
         }
 
         @Override
-        public Stream<AttributeImpl.Double> getInstances() {
+        public FunctionalIterator<AttributeImpl.Double> getInstances() {
             return instances(v -> new AttributeImpl.Double(v.asAttribute().asDouble()));
         }
 
@@ -682,13 +681,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             public boolean isRoot() { return true; }
 
             @Override
-            public Stream<AttributeTypeImpl.Double> getSubtypes() {
-                return super.getSubtypeVertices(DOUBLE).map(v -> AttributeTypeImpl.Double.of(graphMgr, v)).stream();
+            public FunctionalIterator<AttributeTypeImpl.Double> getSubtypes() {
+                return super.getSubtypeVertices(DOUBLE).map(v -> AttributeTypeImpl.Double.of(graphMgr, v));
             }
 
             @Override
-            public Stream<AttributeTypeImpl.Double> getSubtypesExplicit() {
-                return super.getSubtypeVerticesDirect(DOUBLE).map(v -> AttributeTypeImpl.Double.of(graphMgr, v)).stream();
+            public FunctionalIterator<AttributeTypeImpl.Double> getSubtypesExplicit() {
+                return super.getSubtypeVerticesDirect(DOUBLE).map(v -> AttributeTypeImpl.Double.of(graphMgr, v));
             }
 
             @Override
@@ -754,17 +753,17 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Stream<AttributeTypeImpl.String> getSubtypes() {
+        public FunctionalIterator<AttributeTypeImpl.String> getSubtypes() {
             return super.getSubtypes(v -> AttributeTypeImpl.String.of(graphMgr, v));
         }
 
         @Override
-        public Stream<AttributeTypeImpl.String> getSubtypesExplicit() {
+        public FunctionalIterator<AttributeTypeImpl.String> getSubtypesExplicit() {
             return super.getSubtypesExplicit(v -> AttributeTypeImpl.String.of(graphMgr, v));
         }
 
         @Override
-        public Stream<AttributeImpl.String> getInstances() {
+        public FunctionalIterator<AttributeImpl.String> getInstances() {
             return instances(v -> new AttributeImpl.String(v.asAttribute().asString()));
         }
 
@@ -777,6 +776,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public void setRegex(Pattern regex) {
             if (regex != null) {
+                // TODO can we do this in parallel?
                 getInstances().parallel().forEach(attribute -> {
                     Matcher matcher = regex.matcher(attribute.getValue());
                     if (!matcher.matches()) {
@@ -836,13 +836,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             public boolean isRoot() { return true; }
 
             @Override
-            public Stream<AttributeTypeImpl.String> getSubtypes() {
-                return super.getSubtypeVertices(STRING).map(v -> AttributeTypeImpl.String.of(graphMgr, v)).stream();
+            public FunctionalIterator<AttributeTypeImpl.String> getSubtypes() {
+                return super.getSubtypeVertices(STRING).map(v -> AttributeTypeImpl.String.of(graphMgr, v));
             }
 
             @Override
-            public Stream<AttributeTypeImpl.String> getSubtypesExplicit() {
-                return super.getSubtypeVerticesDirect(STRING).map(v -> AttributeTypeImpl.String.of(graphMgr, v)).stream();
+            public FunctionalIterator<AttributeTypeImpl.String> getSubtypesExplicit() {
+                return super.getSubtypeVerticesDirect(STRING).map(v -> AttributeTypeImpl.String.of(graphMgr, v));
             }
 
             @Override
@@ -918,17 +918,17 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Stream<AttributeTypeImpl.DateTime> getSubtypes() {
+        public FunctionalIterator<AttributeTypeImpl.DateTime> getSubtypes() {
             return super.getSubtypes(v -> AttributeTypeImpl.DateTime.of(graphMgr, v));
         }
 
         @Override
-        public Stream<AttributeTypeImpl.DateTime> getSubtypesExplicit() {
+        public FunctionalIterator<AttributeTypeImpl.DateTime> getSubtypesExplicit() {
             return super.getSubtypesExplicit(v -> AttributeTypeImpl.DateTime.of(graphMgr, v));
         }
 
         @Override
-        public Stream<AttributeImpl.DateTime> getInstances() {
+        public FunctionalIterator<AttributeImpl.DateTime> getInstances() {
             return instances(v -> new AttributeImpl.DateTime(v.asAttribute().asDateTime()));
         }
 
@@ -974,13 +974,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             public boolean isRoot() { return true; }
 
             @Override
-            public Stream<AttributeTypeImpl.DateTime> getSubtypes() {
-                return super.getSubtypeVertices(DATETIME).map(v -> AttributeTypeImpl.DateTime.of(graphMgr, v)).stream();
+            public FunctionalIterator<AttributeTypeImpl.DateTime> getSubtypes() {
+                return super.getSubtypeVertices(DATETIME).map(v -> AttributeTypeImpl.DateTime.of(graphMgr, v));
             }
 
             @Override
-            public Stream<AttributeTypeImpl.DateTime> getSubtypesExplicit() {
-                return super.getSubtypeVerticesDirect(DATETIME).map(v -> AttributeTypeImpl.DateTime.of(graphMgr, v)).stream();
+            public FunctionalIterator<AttributeTypeImpl.DateTime> getSubtypesExplicit() {
+                return super.getSubtypeVerticesDirect(DATETIME).map(v -> AttributeTypeImpl.DateTime.of(graphMgr, v));
             }
 
             @Override

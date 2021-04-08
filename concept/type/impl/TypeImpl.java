@@ -35,7 +35,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
@@ -109,13 +108,13 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
     }
 
     @Override
-    public abstract Stream<? extends TypeImpl> getSubtypes();
+    public abstract FunctionalIterator<? extends Type> getSubtypes();
 
     @Override
-    public abstract Stream<? extends TypeImpl> getSubtypesExplicit();
+    public abstract FunctionalIterator<? extends Type> getSubtypesExplicit();
 
-    <THING> Stream<THING> instances(Function<ThingVertex, THING> thingConstructor) {
-        return getSubtypes().flatMap(t -> graphMgr.data().get(t.vertex).stream()).map(thingConstructor);
+    <THING> FunctionalIterator<THING> instances(Function<ThingVertex, THING> thingConstructor) {
+        return getSubtypes().flatMap(t -> graphMgr.data().get(t.vertex)).map(thingConstructor);
     }
 
     void setSuperTypeVertex(TypeVertex superTypeVertex) {
@@ -137,12 +136,12 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
         }
     }
 
-    <TYPE extends Type> Stream<TYPE> getSubtypes(Function<TypeVertex, TYPE> typeConstructor) {
-        return tree(vertex, v -> v.ins().edge(SUB).from()).map(typeConstructor).stream();
+    <TYPE extends Type> FunctionalIterator<TYPE> getSubtypes(Function<TypeVertex, TYPE> typeConstructor) {
+        return tree(vertex, v -> v.ins().edge(SUB).from()).map(typeConstructor);
     }
 
-    <TYPE extends Type> Stream<TYPE> getSubtypesExplicit(Function<TypeVertex, TYPE> typeConstructor) {
-        return vertex.ins().edge(SUB).from().map(typeConstructor).stream();
+    <TYPE extends Type> FunctionalIterator<TYPE> getSubtypesExplicit(Function<TypeVertex, TYPE> typeConstructor) {
+        return vertex.ins().edge(SUB).from().map(typeConstructor);
     }
 
     void validateDelete() {

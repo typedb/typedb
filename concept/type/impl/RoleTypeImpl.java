@@ -19,6 +19,7 @@
 package grakn.core.concept.type.impl;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.impl.RoleImpl;
 import grakn.core.concept.type.RoleType;
@@ -30,7 +31,6 @@ import grakn.core.graph.vertex.TypeVertex;
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_RELATES_HAS_INSTANCES;
@@ -83,18 +83,18 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     }
 
     @Override
-    public Stream<RoleTypeImpl> getSupertypes() {
+    public FunctionalIterator<RoleTypeImpl> getSupertypes() {
         return loop(vertex, Objects::nonNull, v -> v.outs().edge(SUB).to().firstOrNull())
-                .map(v -> RoleTypeImpl.of(graphMgr, v)).stream();
+                .map(v -> RoleTypeImpl.of(graphMgr, v));
     }
 
     @Override
-    public Stream<RoleTypeImpl> getSubtypes() {
+    public FunctionalIterator<RoleTypeImpl> getSubtypes() {
         return super.getSubtypes(v -> of(graphMgr, v));
     }
 
     @Override
-    public Stream<RoleTypeImpl> getSubtypesExplicit() {
+    public FunctionalIterator<RoleTypeImpl> getSubtypesExplicit() {
         return super.getSubtypesExplicit(v -> of(graphMgr, v));
     }
 
@@ -104,13 +104,13 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     }
 
     @Override
-    public Stream<RelationTypeImpl> getRelationTypes() {
+    public FunctionalIterator<RelationTypeImpl> getRelationTypes() {
         return getRelationType().getSubtypes().filter(r -> r.overriddenRoles().noneMatch(o -> o.equals(this)));
     }
 
     @Override
-    public Stream<ThingTypeImpl> getPlayers() {
-        return vertex.ins().edge(Encoding.Edge.Type.PLAYS).from().map(v -> ThingTypeImpl.of(graphMgr, v)).stream();
+    public FunctionalIterator<ThingTypeImpl> getPlayers() {
+        return vertex.ins().edge(Encoding.Edge.Type.PLAYS).from().map(v -> ThingTypeImpl.of(graphMgr, v));
     }
 
     @Override
@@ -127,7 +127,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         }
     }
 
-    private Stream<RoleImpl> getInstances() {
+    private FunctionalIterator<RoleImpl> getInstances() {
         return instances(RoleImpl::of);
     }
 

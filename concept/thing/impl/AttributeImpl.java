@@ -19,6 +19,7 @@
 package grakn.core.concept.thing.impl;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.impl.AttributeTypeImpl;
@@ -27,7 +28,6 @@ import grakn.core.graph.iid.PrefixIID;
 import grakn.core.graph.vertex.AttributeVertex;
 
 import java.time.LocalDateTime;
-import java.util.stream.Stream;
 
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;
@@ -73,14 +73,14 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
     }
 
     @Override
-    public Stream<ThingImpl> getOwners() {
-        return vertex.ins().edge(HAS).from().stream().map(ThingImpl::of);
+    public FunctionalIterator<ThingImpl> getOwners() {
+        return vertex.ins().edge(HAS).from().map(ThingImpl::of);
     }
 
     @Override
-    public Stream<ThingImpl> getOwners(ThingType ownerType) {
+    public FunctionalIterator<ThingImpl> getOwners(ThingType ownerType) {
         return ownerType.getSubtypes().map(ot -> ((ThingTypeImpl) ot).vertex).flatMap(
-                v -> vertex.ins().edge(HAS, PrefixIID.of(v.encoding().instance()), v.iid()).from().stream()
+                v -> vertex.ins().edge(HAS, PrefixIID.of(v.encoding().instance()), v.iid()).from()
         ).map(ThingImpl::of);
     }
 
