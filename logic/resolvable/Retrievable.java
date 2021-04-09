@@ -141,8 +141,8 @@ public class Retrievable extends Resolvable<Conjunction> {
             }
 
             private void registerLabeled(Variable variable) {
-                variable.constraints().forEach(this::registerConstraint);
-                variable.constraining().forEach(this::registerConstraint);
+                assert variable.id().isLabel() && variable.asType().label().isPresent();
+                registeredConstraints.add(variable.asType().label().get());
             }
 
             private void registerConstraint(Constraint constraint) {
