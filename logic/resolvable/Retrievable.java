@@ -126,8 +126,13 @@ public class Retrievable extends Resolvable<Conjunction> {
             private void registerVariable(Variable variable) {
                 if (!registeredVariables.contains(variable)) {
                     registeredVariables.add(variable);
-                    variable.constraints().forEach(this::registerConstraint);
-                    variable.constraining().forEach(this::registerConstraint);
+                    if (!variable.id().isLabel()) {
+                        variable.constraints().forEach(this::registerConstraint);
+                        variable.constraining().forEach(this::registerConstraint);
+                    } else {
+                        assert variable.asType().label().isPresent();
+                        registeredConstraints.add(variable.asType().label().get());
+                    }
                 }
             }
 
