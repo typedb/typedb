@@ -27,11 +27,6 @@ import java.util.stream.Stream;
 
 public interface Relation extends Thing {
 
-    /**
-     * Get the immediate {@code RelationType} in which this this {@code Relation} is an instance of.
-     *
-     * @return the {@code RelationType} of this {@code Relation}
-     */
     @Override
     RelationType getType();
 

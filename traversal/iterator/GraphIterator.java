@@ -173,9 +173,8 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         if (edge.onlyStartsFromRelation()) {
             assert edge.from().id().isVariable();
             seekStack.addSeeks(scopes.get(edge.from().id().asVariable()).edgeOrders());
-        } else {
-            seekStack.addSeeks(edge.from().dependedEdgeOrders());
         }
+        seekStack.addSeeks(edge.from().dependedEdgeOrders());
     }
 
     private void closureFailure(ProcedureEdge<?, ?> edge) {

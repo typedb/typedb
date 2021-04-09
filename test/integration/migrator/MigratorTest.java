@@ -59,7 +59,7 @@ public class MigratorTest {
             grakn.databases().create(database);
             String savedSchema = new String(Files.readAllBytes(schemaPath), UTF_8);
             runSchema(grakn, savedSchema);
-            String exportedSchema = new SchemaExporter(grakn, database).getSchema();
+            String exportedSchema = grakn.databases().get(database).schema();
             assertEquals(trimSchema(savedSchema), trimSchema(exportedSchema));
         }
     }
@@ -71,10 +71,8 @@ public class MigratorTest {
             grakn.databases().create(database);
             String schema = new String(Files.readAllBytes(schemaPath), UTF_8);
             runSchema(grakn, schema);
-            Importer importer = new Importer(grakn, database, dataPath, new HashMap<>(), Version.VERSION);
-            importer.run();
-            Exporter exporter = new Exporter(grakn, database, exportDataPath, Version.VERSION);
-            exporter.run();
+            new DataImporter(grakn, database, dataPath, new HashMap<>(), Version.VERSION).run();
+            new DataExporter(grakn, database, exportDataPath, Version.VERSION).run();
             assertEquals(getChecksums(dataPath), getChecksums(exportDataPath));
         }
     }

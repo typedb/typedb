@@ -97,6 +97,17 @@ public class RetrievableTest {
     }
 
     @Test
+    public void test_shared_role_between_concludable_and_retrievable() {
+        Set<Concludable> concludables = Concludable.create(parse(
+                "{ $e(employee: $p, employer:$c) isa employment; $p isa person; $c isa company; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse(
+                "{ $e(employee: $p, employer:$c) isa employment; $r (employee: $p) isa employment; $p isa non-inferred-role-player; }"), concludables);
+        assertEquals(3, concludables.size());
+        assertEquals(set(parse("{ $r (employee: $p) isa employment; $p isa non-inferred-role-player; }")),
+                     retrievables.stream().map(Retrievable::pattern).collect(Collectors.toSet()));
+    }
+
+    @Test
     public void test_relation_is_in_retrievable() {
         Set<Concludable> concludables = Concludable.create(parse("{ $p isa person, has name $n; $n \"Alice\"; }"));
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse(

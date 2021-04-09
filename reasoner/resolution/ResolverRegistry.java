@@ -28,11 +28,11 @@ import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Concludable;
 import grakn.core.logic.resolvable.Negated;
 import grakn.core.logic.resolvable.Resolvable;
-import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.equivalence.AlphaEquivalence;
-import grakn.core.reasoner.resolution.answer.AnswerState.Top;
+import grakn.core.reasoner.resolution.answer.AnswerState.Top.Explain;
+import grakn.core.reasoner.resolution.answer.AnswerState.Top.Match;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.resolver.ConcludableResolver;
 import grakn.core.reasoner.resolution.resolver.ConclusionResolver;
@@ -72,19 +72,15 @@ public class ResolverRegistry {
     private final ConcurrentMap<Rule, Actor.Driver<ConditionResolver>> ruleConditions;
     private final ConcurrentMap<Rule, Actor.Driver<ConclusionResolver>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
     private final Set<Actor.Driver<? extends Resolver<?>>> resolvers;
-    private final Actor.Driver<ResolutionRecorder> resolutionRecorder;
     private final TraversalEngine traversalEngine;
     private final Planner planner;
     private final boolean resolutionTracing;
+    private final AtomicBoolean terminated;
     private ActorExecutorGroup executorService;
-    private AtomicBoolean terminated;
-    private boolean explanations;
 
-    public ResolverRegistry(ActorExecutorGroup executorService, Actor.Driver<ResolutionRecorder> resolutionRecorder,
-                            TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
-                            boolean resolutionTracing) {
+    public ResolverRegistry(ActorExecutorGroup executorService, TraversalEngine traversalEngine, ConceptManager conceptMgr,
+                            LogicManager logicMgr, boolean resolutionTracing) {
         this.executorService = executorService;
-        this.resolutionRecorder = resolutionRecorder;
         this.traversalEngine = traversalEngine;
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
@@ -105,11 +101,11 @@ public class ResolverRegistry {
         }
     }
 
-    public Actor.Driver<RootResolver.Conjunction> root(Conjunction conjunction, Consumer<Top> onAnswer,
+    public Actor.Driver<RootResolver.Conjunction> root(Conjunction conjunction, Consumer<Match.Finished> onAnswer,
                                                        Consumer<Integer> onFail, Consumer<Throwable> onException) {
         LOG.debug("Creating Root.Conjunction for: '{}'", conjunction);
         Actor.Driver<RootResolver.Conjunction> resolver = Actor.driver(driver -> new RootResolver.Conjunction(
-                driver, conjunction, onAnswer, onFail, onException, resolutionRecorder, this,
+                driver, conjunction, onAnswer, onFail, onException, this,
                 traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing
         ), executorService);
         resolvers.add(resolver);
@@ -117,27 +113,27 @@ public class ResolverRegistry {
         return resolver;
     }
 
-    public Actor.Driver<RootResolver.Disjunction> root(Disjunction disjunction, Consumer<Top> onAnswer,
+    public Actor.Driver<RootResolver.Disjunction> root(Disjunction disjunction, Consumer<Match.Finished> onAnswer,
                                                        Consumer<Integer> onExhausted, Consumer<Throwable> onException) {
         LOG.debug("Creating Root.Disjunction for: '{}'", disjunction);
         Actor.Driver<RootResolver.Disjunction> resolver = Actor.driver(driver -> new RootResolver.Disjunction(
                 driver, disjunction, onAnswer, onExhausted, onException,
-                resolutionRecorder, this, traversalEngine, conceptMgr, resolutionTracing
+                this, traversalEngine, conceptMgr, resolutionTracing
         ), executorService);
         resolvers.add(resolver);
         if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
     }
 
-    public ResolverView.Filtered negated(Negated negated, Conjunction upstream) {
+    public ResolverView.FilteredNegation negated(Negated negated, Conjunction upstream) {
         LOG.debug("Creating Negation resolver for : {}", negated);
         Actor.Driver<NegationResolver> negatedResolver = Actor.driver(driver -> new NegationResolver(
-                driver, negated, this, traversalEngine, conceptMgr, resolutionRecorder, resolutionTracing
+                driver, negated, this, traversalEngine, conceptMgr, resolutionTracing
         ), executorService);
         resolvers.add(negatedResolver);
         if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         Set<Variable.Retrievable> filter = filter(upstream, negated);
-        return ResolverView.filtered(negatedResolver, filter);
+        return ResolverView.negation(negatedResolver, filter);
     }
 
     private Set<Variable.Retrievable> filter(Conjunction scope, Negated inner) {
@@ -150,7 +146,7 @@ public class ResolverRegistry {
     public Actor.Driver<ConditionResolver> registerCondition(Rule.Condition ruleCondition) {
         LOG.debug("Register retrieval for rule condition actor: '{}'", ruleCondition);
         Actor.Driver<ConditionResolver> resolver = ruleConditions.computeIfAbsent(ruleCondition.rule(), (r) -> Actor.driver(
-                driver -> new ConditionResolver(driver, ruleCondition, resolutionRecorder, this, traversalEngine,
+                driver -> new ConditionResolver(driver, ruleCondition, this, traversalEngine,
                                                 conceptMgr, logicMgr, planner, resolutionTracing), executorService
         ));
         resolvers.add(resolver);
@@ -162,7 +158,7 @@ public class ResolverRegistry {
     public Actor.Driver<ConclusionResolver> registerConclusion(Rule.Conclusion conclusion) {
         LOG.debug("Register retrieval for rule conclusion actor: '{}'", conclusion);
         Actor.Driver<ConclusionResolver> resolver = ruleConclusions.computeIfAbsent(conclusion.rule(), r -> Actor.driver(
-                driver -> new ConclusionResolver(driver, conclusion, this, resolutionRecorder,
+                driver -> new ConclusionResolver(driver, conclusion, this,
                                                  traversalEngine, conceptMgr, resolutionTracing), executorService
         ));
         resolvers.add(resolver);
@@ -179,41 +175,40 @@ public class ResolverRegistry {
         } else throw GraknException.of(ILLEGAL_STATE);
     }
 
-    private ResolverView.Filtered registerRetrievable(Retrievable retrievable) {
+    private ResolverView.FilteredRetrievable registerRetrievable(grakn.core.logic.resolvable.Retrievable retrievable) {
         LOG.debug("Register RetrievableResolver: '{}'", retrievable.pattern());
         Actor.Driver<RetrievableResolver> resolver = Actor.driver(driver -> new RetrievableResolver(
                 driver, retrievable, this, traversalEngine, conceptMgr, resolutionTracing
         ), executorService);
         resolvers.add(resolver);
         if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
-        return ResolverView.filtered(resolver, retrievable.retrieves());
+        return ResolverView.retrievable(resolver, retrievable.retrieves());
     }
 
     // note: must be thread safe. We could move to a ConcurrentHashMap if we create an alpha-equivalence wrapper
-    private synchronized ResolverView.Mapped registerConcludable(Concludable concludable) {
+    private synchronized ResolverView.MappedConcludable registerConcludable(Concludable concludable) {
         LOG.debug("Register ConcludableResolver: '{}'", concludable.pattern());
         for (Map.Entry<Concludable, Actor.Driver<ConcludableResolver>> c : concludableResolvers.entrySet()) {
             // TODO: This needs to be optimised from a linear search to use an alpha hash
             AlphaEquivalence alphaEquality = concludable.alphaEquals(c.getKey());
             if (alphaEquality.isValid()) {
-                return ResolverView.mapped(c.getValue(), alphaEquality.asValid().idMapping());
+                return ResolverView.concludable(c.getValue(), alphaEquality.asValid().idMapping());
             }
         }
         Actor.Driver<ConcludableResolver> resolver = Actor.driver(driver -> new ConcludableResolver(
-                driver, concludable, resolutionRecorder, this, traversalEngine,
+                driver, concludable, this, traversalEngine,
                 conceptMgr, logicMgr, resolutionTracing
         ), executorService);
         concludableResolvers.put(concludable, resolver);
         resolvers.add(resolver);
         if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
-        return ResolverView.mapped(resolver, identity(concludable));
+        return ResolverView.concludable(resolver, identity(concludable));
     }
 
     public Actor.Driver<ConjunctionResolver.Nested> nested(Conjunction conjunction) {
         LOG.debug("Creating Conjunction resolver for : {}", conjunction);
         Actor.Driver<ConjunctionResolver.Nested> resolver = Actor.driver(driver -> new ConjunctionResolver.Nested(
-                driver, conjunction, resolutionRecorder, this, traversalEngine,
-                conceptMgr, logicMgr, planner, resolutionTracing
+                driver, conjunction, this, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing
         ), executorService);
         resolvers.add(resolver);
         if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
@@ -223,12 +218,20 @@ public class ResolverRegistry {
     public Actor.Driver<DisjunctionResolver.Nested> nested(Disjunction disjunction) {
         LOG.debug("Creating Disjunction resolver for : {}", disjunction);
         return Actor.driver(driver -> new DisjunctionResolver.Nested(
-                driver, disjunction, resolutionRecorder, this, traversalEngine, conceptMgr, resolutionTracing
+                driver, disjunction, this, traversalEngine, conceptMgr, resolutionTracing
         ), executorService);
     }
 
     private Map<Variable.Retrievable, Variable.Retrievable> identity(Resolvable<Conjunction> conjunctionResolvable) {
         return conjunctionResolvable.retrieves().stream().collect(toMap(Function.identity(), Function.identity()));
+    }
+
+    public Actor.Driver<RootResolver.Explain> explainer(Conjunction conjunction, Consumer<Explain.Finished> requestAnswered,
+                                                        Consumer<Integer> requestFailed, Consumer<Throwable> exception) {
+        return Actor.driver(driver -> new RootResolver.Explain(
+                driver, conjunction, requestAnswered, requestFailed, exception,
+                this, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing
+        ), executorService);
     }
 
     public void setExecutorService(ActorExecutorGroup executorService) {
@@ -237,33 +240,43 @@ public class ResolverRegistry {
 
     public static abstract class ResolverView {
 
-        public static Mapped mapped(Actor.Driver<ConcludableResolver> resolver, Map<Variable.Retrievable, Variable.Retrievable> mapping) {
-            return new Mapped(resolver, mapping);
+        public static MappedConcludable concludable(Actor.Driver<ConcludableResolver> resolver, Map<Variable.Retrievable, Variable.Retrievable> mapping) {
+            return new MappedConcludable(resolver, mapping);
         }
 
-        public static Filtered filtered(Actor.Driver<? extends Resolver<?>> resolver, Set<Variable.Retrievable> filter) {
-            return new Filtered(resolver, filter);
+        public static FilteredNegation negation(Actor.Driver<NegationResolver> resolver, Set<Variable.Retrievable> filter) {
+            return new FilteredNegation(resolver, filter);
         }
 
-        public abstract boolean isMapped();
-
-        public abstract boolean isFiltered();
-
-        public Mapped asMapped() {
-            throw GraknException.of(ILLEGAL_CAST, getClass(), Mapped.class);
+        public static FilteredRetrievable retrievable(Actor.Driver<RetrievableResolver> resolver, Set<Variable.Retrievable> filter) {
+            return new FilteredRetrievable(resolver, filter);
         }
 
-        public Filtered asFiltered() {
-            throw GraknException.of(ILLEGAL_CAST, getClass(), Mapped.class);
+        public boolean isMappedConcludable() { return false; }
+
+        public boolean isFilteredNegation() { return false; }
+
+        public boolean isFilteredRetrievable() { return false; }
+
+        public MappedConcludable asMappedConcludable() {
+            throw GraknException.of(ILLEGAL_CAST, getClass(), MappedConcludable.class);
+        }
+
+        public FilteredNegation asFilteredNegation() {
+            throw GraknException.of(ILLEGAL_CAST, getClass(), FilteredNegation.class);
+        }
+
+        public FilteredRetrievable asFilteredRetrievable() {
+            throw GraknException.of(ILLEGAL_CAST, getClass(), FilteredRetrievable.class);
         }
 
         public abstract Actor.Driver<? extends Resolver<?>> resolver();
 
-        public static class Mapped extends ResolverView {
+        public static class MappedConcludable extends ResolverView {
             private final Actor.Driver<ConcludableResolver> resolver;
             private final Map<Variable.Retrievable, Variable.Retrievable> mapping;
 
-            public Mapped(Actor.Driver<ConcludableResolver> resolver, Map<Variable.Retrievable, Variable.Retrievable> mapping) {
+            public MappedConcludable(Actor.Driver<ConcludableResolver> resolver, Map<Variable.Retrievable, Variable.Retrievable> mapping) {
                 this.resolver = resolver;
                 this.mapping = mapping;
             }
@@ -273,17 +286,12 @@ public class ResolverRegistry {
             }
 
             @Override
-            public boolean isMapped() {
+            public boolean isMappedConcludable() {
                 return true;
             }
 
             @Override
-            public boolean isFiltered() {
-                return false;
-            }
-
-            @Override
-            public Mapped asMapped() {
+            public MappedConcludable asMappedConcludable() {
                 return this;
             }
 
@@ -293,11 +301,11 @@ public class ResolverRegistry {
             }
         }
 
-        public static class Filtered extends ResolverView {
-            private final Actor.Driver<? extends Resolver<?>> resolver;
+        public static class FilteredNegation extends ResolverView {
+            private final Actor.Driver<NegationResolver> resolver;
             private final Set<Variable.Retrievable> filter;
 
-            public Filtered(Actor.Driver<? extends Resolver<?>> resolver, Set<Variable.Retrievable> filter) {
+            public FilteredNegation(Actor.Driver<NegationResolver> resolver, Set<Variable.Retrievable> filter) {
                 this.resolver = resolver;
                 this.filter = filter;
             }
@@ -307,22 +315,44 @@ public class ResolverRegistry {
             }
 
             @Override
-            public boolean isMapped() {
-                return false;
-            }
-
-            @Override
-            public boolean isFiltered() {
+            public boolean isFilteredNegation() {
                 return true;
             }
 
             @Override
-            public Filtered asFiltered() {
+            public FilteredNegation asFilteredNegation() {
                 return this;
             }
 
             @Override
             public Actor.Driver<? extends Resolver<?>> resolver() {
+                return resolver;
+            }
+        }
+
+        public static class FilteredRetrievable extends ResolverView {
+            private final Actor.Driver<RetrievableResolver> resolver;
+            private Set<Variable.Retrievable> filter;
+
+            public FilteredRetrievable(Actor.Driver<RetrievableResolver> resolver, Set<Variable.Retrievable> filter) {
+                this.resolver = resolver;
+                this.filter = filter;
+            }
+
+            public Set<Variable.Retrievable> filter() {
+                return filter;
+            }
+
+            @Override
+            public boolean isFilteredRetrievable() { return true; }
+
+            @Override
+            public FilteredRetrievable asFilteredRetrievable() {
+                return this;
+            }
+
+            @Override
+            public Actor.Driver<RetrievableResolver> resolver() {
                 return resolver;
             }
         }

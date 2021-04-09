@@ -22,6 +22,7 @@ import grakn.common.collection.Either;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.iterator.Iterators;
+import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Context;
 import grakn.core.common.parameters.Label;
 import grakn.core.common.parameters.Options;
@@ -29,15 +30,15 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.Type;
-import grakn.core.concurrent.actor.Actor;
 import grakn.core.concurrent.producer.Producer;
+import grakn.core.concurrent.producer.Producers;
 import grakn.core.logic.LogicManager;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.pattern.Negation;
 import grakn.core.pattern.variable.Variable;
-import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
+import grakn.core.reasoner.resolution.answer.Explanation;
 import grakn.core.traversal.TraversalEngine;
 import grakn.core.traversal.common.Identifier;
 import graql.lang.pattern.variable.UnboundVariable;
@@ -49,6 +50,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static grakn.common.collection.Collections.list;
 import static grakn.common.collection.Collections.set;
 import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_PATTERN;
 import static grakn.core.common.iterator.Iterators.iterate;
@@ -59,13 +61,14 @@ import static grakn.core.concurrent.executor.Executors.async1;
 import static grakn.core.concurrent.producer.Producers.produce;
 
 public class Reasoner {
+
     private static final Logger LOG = LoggerFactory.getLogger(Reasoner.class);
 
     private final TraversalEngine traversalEng;
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
     private final ResolverRegistry resolverRegistry;
-    private final Actor.Driver<ResolutionRecorder> resolutionRecorder; // for explanations
+    private final ExplainablesManager explainablesManager;
     private final Context.Query defaultContext;
 
     public Reasoner(ConceptManager conceptMgr, LogicManager logicMgr,
@@ -75,9 +78,8 @@ public class Reasoner {
         this.logicMgr = logicMgr;
         this.defaultContext = new Context.Query(context, new Options.Query());
         this.defaultContext.producer(Either.first(EXHAUSTIVE));
-        this.resolutionRecorder = Actor.driver(ResolutionRecorder::new, actor());
-        this.resolverRegistry = new ResolverRegistry(actor(), resolutionRecorder, traversalEng, conceptMgr,
-                                                     logicMgr, this.defaultContext.options().traceInference());
+        this.resolverRegistry = new ResolverRegistry(actor(), traversalEng, conceptMgr, logicMgr, defaultContext.options().traceInference());
+        this.explainablesManager = new ExplainablesManager();
     }
 
     public ResolverRegistry resolverRegistry() {
@@ -136,8 +138,8 @@ public class Reasoner {
     private FunctionalIterator<ConceptMap> executeReasoner(Disjunction disjunction, GraqlMatch.Modifiers modifiers,
                                                            Context.Query context) {
         ReasonerProducer producer = disjunction.conjunctions().size() == 1
-                ? new ReasonerProducer(disjunction.conjunctions().get(0), resolverRegistry, modifiers, context.options())
-                : new ReasonerProducer(disjunction, resolverRegistry, modifiers, context.options());
+                ? new ReasonerProducer(disjunction.conjunctions().get(0), modifiers, context.options(), resolverRegistry, explainablesManager)
+                : new ReasonerProducer(disjunction, modifiers, context.options(), resolverRegistry, explainablesManager);
         return produce(producer, context.producer(), async1());
     }
 
@@ -192,4 +194,13 @@ public class Reasoner {
         return newClone;
     }
 
+    public FunctionalIterator<Explanation> explain(long explainableId, Context.Query defaultContext) {
+        Conjunction explainableConjunction = explainablesManager.getConjunction(explainableId);
+        ConceptMap explainableBounds = explainablesManager.getBounds(explainableId);
+        return Producers.produce(
+                list(new ExplanationProducer(explainableConjunction, explainableBounds, defaultContext.options(), resolverRegistry, explainablesManager)),
+                Either.first(Arguments.Query.Producer.INCREMENTAL),
+                async1()
+        );
+    }
 }

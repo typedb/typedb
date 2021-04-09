@@ -21,7 +21,6 @@ package grakn.core.common.collection;
 import grakn.core.common.exception.GraknCheckedException;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -29,6 +28,7 @@ import java.time.ZoneId;
 import java.util.UUID;
 
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.Arrays.copyOfRange;
 
 public class Bytes {
@@ -128,29 +128,21 @@ public class Bytes {
     }
 
     public static byte[] longToBytes(long num) {
-        ByteBuffer buf = ByteBuffer.allocate(LONG_SIZE).order(ByteOrder.nativeOrder());
-        buf.putLong(num);
-        return buf.array();
+        return ByteBuffer.allocate(LONG_SIZE).order(LITTLE_ENDIAN).putLong(num).array();
     }
 
     public static long bytesToLong(byte[] bytes) {
-        ByteBuffer buf = ByteBuffer.allocate(LONG_SIZE).order(ByteOrder.nativeOrder());
-        buf.put(bytes);
-        buf.flip();
-        return buf.getLong();
+        assert bytes.length == LONG_SIZE;
+        return ByteBuffer.wrap(bytes).order(LITTLE_ENDIAN).getLong();
     }
 
     public static byte[] intToBytes(int num) {
-        ByteBuffer buf = ByteBuffer.allocate(INTEGER_SIZE).order(ByteOrder.nativeOrder());
-        buf.putInt(num);
-        return buf.array();
+        return ByteBuffer.allocate(INTEGER_SIZE).order(LITTLE_ENDIAN).putInt(num).array();
     }
 
     public static int bytesToInt(byte[] bytes) {
-        ByteBuffer buf = ByteBuffer.allocate(INTEGER_SIZE).order(ByteOrder.nativeOrder());
-        buf.put(bytes);
-        buf.flip();
-        return buf.getInt();
+        assert bytes.length == INTEGER_SIZE;
+        return ByteBuffer.wrap(bytes).order(LITTLE_ENDIAN).getInt();
     }
 
     /**

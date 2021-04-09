@@ -24,13 +24,11 @@ import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.LogicManager;
-import grakn.core.logic.resolvable.Concludable;
+import grakn.core.logic.Rule;
 import grakn.core.logic.resolvable.Unifier;
 import grakn.core.pattern.Conjunction;
-import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Unified;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.reasoner.resolution.framework.Response;
@@ -52,27 +50,27 @@ import java.util.Set;
 import static grakn.core.common.iterator.Iterators.iterate;
 
 public class ConcludableResolver extends Resolver<ConcludableResolver> {
+
     private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
 
     private final LinkedHashMap<Driver<ConclusionResolver>, Set<Unifier>> applicableRules;
-    private final Concludable concludable;
+    private final Map<Driver<ConclusionResolver>, Rule> resolverRules;
+    private final grakn.core.logic.resolvable.Concludable concludable;
     private final LogicManager logicMgr;
     private final Map<Driver<? extends Resolver<?>>, RecursionState> recursionStates;
-    private final Driver<ResolutionRecorder> resolutionRecorder;
     private final Map<Request, RequestState> requestStates;
     private final Set<Identifier.Variable.Retrievable> unboundVars;
     private boolean isInitialised;
 
-    public ConcludableResolver(Driver<ConcludableResolver> driver, Concludable concludable,
-                               Driver<ResolutionRecorder> resolutionRecorder, ResolverRegistry registry,
-                               TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
-                               boolean resolutionTracing) {
+    public ConcludableResolver(Driver<ConcludableResolver> driver, grakn.core.logic.resolvable.Concludable concludable,
+                               ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
+                               LogicManager logicMgr, boolean resolutionTracing) {
         super(driver, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.pattern() + ")",
               registry, traversalEngine, conceptMgr, resolutionTracing);
         this.logicMgr = logicMgr;
-        this.resolutionRecorder = resolutionRecorder;
         this.concludable = concludable;
         this.applicableRules = new LinkedHashMap<>();
+        this.resolverRules = new HashMap<>();
         this.recursionStates = new HashMap<>();
         this.requestStates = new HashMap<>();
         this.unboundVars = unboundVars(concludable.pattern());
@@ -104,16 +102,14 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         Request fromUpstream = fromUpstream(toDownstream);
         RequestState requestState = this.requestStates.get(fromUpstream);
 
-        Partial<?> upstreamAnswer = fromDownstream.answer().asMapped().toUpstream();
+        Partial.Compound<?, ?> upstreamAnswer = fromDownstream.answer().asConcludable().toUpstreamInferred();
 
-        if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
+        if (upstreamAnswer.isExplain()) {
+            answerFound(upstreamAnswer, fromUpstream, iteration);
+        } else if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
             requestState.recordProduced(upstreamAnswer.conceptMap());
             answerFound(upstreamAnswer, fromUpstream, iteration);
         } else {
-            if (fromDownstream.answer().recordExplanations()) {
-                LOG.trace("{}: Recording deduplicated answer derivation: {}", name(), upstreamAnswer);
-                resolutionRecorder.execute(actor -> actor.record(upstreamAnswer));
-            }
             nextAnswer(fromUpstream, requestState, iteration);
         }
     }
@@ -126,9 +122,9 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     forward them downstream (to parallelise searching for the single answer), and when the first one finds an answer,
     we respond for all N ahead of time. Then, when the rules actually return an answer to this concludable, we do nothing.
      */
-    private void answerFound(Partial<?> upstreamAnswer, Request fromUpstream, int iteration) {
+    private void answerFound(Partial.Compound<?, ?> upstreamAnswer, Request fromUpstream, int iteration) {
         RequestState requestState = this.requestStates.get(fromUpstream);
-        if (requestState.singleAnswerRequired()) {
+        if (requestState.singleAnswerRequired() && !upstreamAnswer.isExplain()) {
             requestState.clearDownstreamProducers();
         }
         answerToUpstream(upstreamAnswer, fromUpstream, iteration);
@@ -170,6 +166,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
                         Driver<ConclusionResolver> conclusionResolver = registry.registerConclusion(rule.conclusion());
                         applicableRules.putIfAbsent(conclusionResolver, new HashSet<>());
                         applicableRules.get(conclusionResolver).add(unifier);
+                        resolverRules.put(conclusionResolver, rule);
                     } catch (GraknException e) {
                         terminate(e);
                     }
@@ -179,7 +176,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     private void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
         if (requestState.hasUpstreamAnswer()) {
-            Partial<?> upstreamAnswer = requestState.upstreamAnswers().next();
+            Partial.Compound<?, ?> upstreamAnswer = requestState.upstreamAnswers().next();
             requestState.recordProduced(upstreamAnswer.conceptMap());
             answerFound(upstreamAnswer, fromUpstream, iteration);
         } else {
@@ -196,9 +193,8 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             requestStates.put(fromUpstream, requestStateCreate(fromUpstream, iteration));
         } else {
             RequestState requestState = this.requestStates.get(fromUpstream);
-            assert requestState.iteration() == iteration || requestState.iteration() + 1 == iteration;
 
-            if (requestState.iteration() + 1 == iteration) {
+            if (requestState.iteration() < iteration) {
                 // when the same request for the next iteration the first time, re-initialise required state
                 RequestState newRequestState = requestStateCreate(fromUpstream, iteration);
                 this.requestStates.put(fromUpstream, newRequestState);
@@ -216,10 +212,13 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             iterationState.nextIteration(iteration);
         }
 
-        assert fromUpstream.partialAnswer().isMapped();
-        FunctionalIterator<Partial<?>> upstreamAnswers =
+        assert fromUpstream.partialAnswer().isConcludable();
+        FunctionalIterator<Partial.Compound<?, ?>> upstreamAnswers = fromUpstream.partialAnswer().asConcludable().isExplain() ?
+                Iterators.empty() :
                 traversalIterator(concludable.pattern(), fromUpstream.partialAnswer().conceptMap())
-                        .map(conceptMap -> fromUpstream.partialAnswer().asMapped().aggregateToUpstream(conceptMap));
+                        .map(conceptMap -> fromUpstream.partialAnswer().asConcludable().asMatch()
+                                .toUpstreamLookup(conceptMap, concludable.isInferredAnswer(conceptMap))
+                        );
 
         boolean singleAnswerRequired = fromUpstream.partialAnswer().conceptMap().concepts().keySet().containsAll(unboundVars());
         RequestState requestState = new RequestState(upstreamAnswers, iteration, singleAnswerRequired);
@@ -231,10 +230,11 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         // loop termination: when receiving a new request, we check if we have seen it before from this root query
         // if we have, we do not allow rules to be registered as possible downstreams
         if (!recursionState.hasReceived(fromUpstream.partialAnswer().conceptMap())) {
+            Partial.Concludable<?> partialAnswer = fromUpstream.partialAnswer().asConcludable();
             for (Map.Entry<Driver<ConclusionResolver>, Set<Unifier>> entry : applicableRules.entrySet()) {
                 Driver<ConclusionResolver> conclusionResolver = entry.getKey();
                 for (Unifier unifier : entry.getValue()) {
-                    Optional<Unified> unified = fromUpstream.partialAnswer().unifyToDownstream(unifier, conclusionResolver);
+                    Optional<? extends Partial.Conclusion<?, ?>> unified = partialAnswer.toDownstream(unifier, resolverRules.get(conclusionResolver));
                     if (unified.isPresent()) {
                         Request toDownstream = Request.create(driver(), conclusionResolver, unified.get());
                         requestState.addDownstreamProducer(toDownstream);
@@ -261,17 +261,17 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     private static class RequestState {
         private final Set<ConceptMap> produced;
-        private final FunctionalIterator<Partial<?>> newUpstreamAnswers;
+        private final FunctionalIterator<Partial.Compound<?, ?>> newUpstreamAnswers;
         private final LinkedHashSet<Request> downstreamProducer;
         private final int iteration;
         private final boolean singleAnswerRequired;
         private Iterator<Request> downstreamProducerSelector;
 
-        public RequestState(FunctionalIterator<Partial<?>> upstreamAnswers, int iteration, boolean singleAnswerRequired) {
+        public RequestState(FunctionalIterator<Partial.Compound<?, ?>> upstreamAnswers, int iteration, boolean singleAnswerRequired) {
             this(upstreamAnswers, iteration, singleAnswerRequired, new HashSet<>());
         }
 
-        private RequestState(FunctionalIterator<Partial<?>> upstreamAnswers, int iteration, boolean singleAnswerRequired,
+        private RequestState(FunctionalIterator<Partial.Compound<?, ?>> upstreamAnswers, int iteration, boolean singleAnswerRequired,
                              Set<ConceptMap> produced) {
             this.newUpstreamAnswers = upstreamAnswers.filter(partial -> !hasProduced(partial.conceptMap()));
             this.iteration = iteration;
@@ -293,7 +293,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             return newUpstreamAnswers.hasNext();
         }
 
-        public FunctionalIterator<Partial<?>> upstreamAnswers() {
+        public FunctionalIterator<Partial.Compound<?, ?>> upstreamAnswers() {
             return newUpstreamAnswers;
         }
 

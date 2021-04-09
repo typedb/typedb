@@ -46,9 +46,9 @@ import java.util.stream.Stream;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Migrator.FILE_NOT_WRITABLE;
 
-public class Exporter implements Migrator {
+public class DataExporter implements Migrator {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Exporter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DataExporter.class);
     private final Grakn grakn;
     private final String database;
     private final Path filename;
@@ -60,7 +60,7 @@ public class Exporter implements Migrator {
     private final AtomicLong playerCount = new AtomicLong(0);
     private long totalThingCount = 0;
 
-    Exporter(Grakn grakn, String database, Path filename, String version) {
+    DataExporter(Grakn grakn, String database, Path filename, String version) {
         this.grakn = grakn;
         this.database = database;
         this.filename = filename;

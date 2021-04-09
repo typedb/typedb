@@ -53,7 +53,9 @@ import static grakn.core.common.exception.ErrorMessage.Internal.DIRTY_INITIALISA
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
 import static grakn.core.common.exception.ErrorMessage.Session.SCHEMA_ACQUIRE_LOCK_TIMEOUT;
+import static grakn.core.common.parameters.Arguments.Session.Type.DATA;
 import static grakn.core.common.parameters.Arguments.Session.Type.SCHEMA;
+import static grakn.core.common.parameters.Arguments.Transaction.Type.READ;
 import static grakn.core.common.parameters.Arguments.Transaction.Type.WRITE;
 import static java.util.Comparator.reverseOrder;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -256,7 +258,7 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     @Override
-    public Grakn.Session get(UUID sessionID) {
+    public Grakn.Session session(UUID sessionID) {
         if (sessions.containsKey(sessionID)) return sessions.get(sessionID).first();
         else return null;
     }
@@ -264,6 +266,17 @@ public class RocksDatabase implements Grakn.Database {
     @Override
     public Stream<Grakn.Session> sessions() {
         return sessions.values().stream().map(Pair::first);
+    }
+
+    @Override
+    public String schema() {
+        try (Grakn.Session session = grakn.session(name, DATA); Grakn.Transaction tx = session.transaction(READ)) {
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.append("define\n\n");
+            tx.concepts().exportTypes(stringBuilder);
+            tx.logic().exportRules(stringBuilder);
+            return stringBuilder.toString();
+        }
     }
 
     void remove(RocksSession session) {
@@ -429,5 +442,9 @@ public class RocksDatabase implements Grakn.Database {
                 throw GraknException.of(UNEXPECTED_INTERRUPTION);
             }
         }
+    }
+
+    private static class SchemaExporter {
+
     }
 }

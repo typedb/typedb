@@ -22,12 +22,14 @@ import grakn.common.collection.Either;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.FunctionalIterator;
+import grakn.core.common.util.StringBuilders;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.thing.impl.ThingImpl;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
 import grakn.core.concept.type.impl.AttributeTypeImpl;
 import grakn.core.concept.type.impl.EntityTypeImpl;
@@ -47,17 +49,25 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Transaction.UNSUPPORTED_OPERATION;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MISSING;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
+import static grakn.core.concept.ConceptManager.TypeExporter.writeAttributeType;
+import static grakn.core.concept.ConceptManager.TypeExporter.writeEntityType;
+import static grakn.core.concept.ConceptManager.TypeExporter.writeRelationType;
 import static grakn.core.concurrent.executor.Executors.PARALLELISATION_FACTOR;
 import static grakn.core.concurrent.executor.Executors.async1;
 import static grakn.core.concurrent.producer.Producers.async;
 import static grakn.core.concurrent.producer.Producers.produce;
 import static grakn.core.graph.common.Encoding.Vertex.Thing.ROLE;
+import static graql.lang.common.util.Strings.escapeRegex;
+import static graql.lang.common.util.Strings.quoteString;
+import static java.util.Comparator.comparing;
 
 public final class ConceptManager {
 
@@ -201,11 +211,146 @@ public final class ConceptManager {
         }
     }
 
+    public void exportTypes(StringBuilder stringBuilder) {
+        getRootAttributeType().getSubtypesExplicit().sorted(comparing(x -> x.getLabel().name()))
+                .forEach(x -> writeAttributeType(stringBuilder, x));
+        getRootRelationType().getSubtypesExplicit().sorted(comparing(x -> x.getLabel().name()))
+                .forEach(x -> writeRelationType(stringBuilder, x));
+        getRootEntityType().getSubtypesExplicit().sorted(comparing(x -> x.getLabel().name()))
+                .forEach(x -> writeEntityType(stringBuilder, x));
+    }
+
     public GraknException exception(ErrorMessage error) {
         return graphMgr.exception(error);
     }
 
     public GraknException exception(Exception exception) {
         return graphMgr.exception(exception);
+    }
+
+    // TODO: This class should be dissolved and its logic should be moved to the appropriate Types
+    public static class TypeExporter {
+
+        static void writeAttributeType(StringBuilder builder, AttributeType attributeType) {
+            builder.append(String.format("%s sub %s",
+                                         attributeType.getLabel().name(),
+                                         attributeType.getSupertype().getLabel().name()))
+                    .append(StringBuilders.COMMA_NEWLINE_INDENT)
+                    .append(String.format("value %s", getValueTypeString(attributeType.getValueType())));
+            if (attributeType.isString()) {
+                java.util.regex.Pattern regex = attributeType.asString().getRegex();
+                if (regex != null) {
+                    builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
+                            .append(String.format("regex %s", quoteString(escapeRegex(regex.pattern()))));
+                }
+            }
+            writeAbstract(builder, attributeType);
+            writeOwns(builder, attributeType);
+            writePlays(builder, attributeType);
+            builder.append(StringBuilders.SEMICOLON_NEWLINE_X2);
+            attributeType.getSubtypesExplicit()
+                    .sorted(comparing(x -> x.getLabel().name()))
+                    .forEach(x -> writeAttributeType(builder, x));
+        }
+
+        static void writeRelationType(StringBuilder builder, RelationType relationType) {
+            builder.append(String.format("%s sub %s",
+                                         relationType.getLabel().name(),
+                                         relationType.getSupertype().getLabel().name()));
+            writeAbstract(builder, relationType);
+            writeOwns(builder, relationType);
+            writeRelates(builder, relationType);
+            writePlays(builder, relationType);
+            builder.append(StringBuilders.SEMICOLON_NEWLINE_X2);
+            relationType.getSubtypesExplicit()
+                    .sorted(comparing(x -> x.getLabel().name()))
+                    .forEach(x -> writeRelationType(builder, x));
+        }
+
+        static void writeEntityType(StringBuilder builder, EntityType entityType) {
+            builder.append(String.format("%s sub %s",
+                                         entityType.getLabel().name(),
+                                         entityType.getSupertype().getLabel().name()));
+            writeAbstract(builder, entityType);
+            writeOwns(builder, entityType);
+            writePlays(builder, entityType);
+            builder.append(StringBuilders.SEMICOLON_NEWLINE_X2);
+            entityType.getSubtypesExplicit()
+                    .sorted(comparing(x -> x.getLabel().name()))
+                    .forEach(x -> writeEntityType(builder, x));
+        }
+
+        private static void writeAbstract(StringBuilder builder, ThingType thingType) {
+            if (thingType.isAbstract()) {
+                builder.append(StringBuilders.COMMA_NEWLINE_INDENT).append("abstract");
+            }
+        }
+
+        private static void writeOwns(StringBuilder builder, ThingType thingType) {
+            Set<String> keys = thingType.getOwnsExplicit(true).map(x -> x.getLabel().name()).collect(Collectors.toSet());
+            List<AttributeType> attributeTypes = thingType.getOwnsExplicit().collect(Collectors.toList());
+            attributeTypes.stream().filter(x -> keys.contains(x.getLabel().name()))
+                    .sorted(comparing(x -> x.getLabel().name()))
+                    .forEach(attributeType -> {
+                        builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
+                                .append(String.format("owns %s", attributeType.getLabel().name()));
+                        AttributeType overridden = thingType.getOwnsOverridden(attributeType);
+                        if (overridden != null) {
+                            builder.append(String.format(" as %s", overridden.getLabel().name()));
+                        }
+                        builder.append(" @key");
+                    });
+            attributeTypes.stream().filter(x -> !keys.contains(x.getLabel().name()))
+                    .sorted(comparing(x -> x.getLabel().name()))
+                    .forEach(attributeType -> {
+                        builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
+                                .append(String.format("owns %s", attributeType.getLabel().name()));
+                        AttributeType overridden = thingType.getOwnsOverridden(attributeType);
+                        if (overridden != null) {
+                            builder.append(String.format(" as %s", overridden.getLabel().name()));
+                        }
+                    });
+        }
+
+        private static void writeRelates(StringBuilder builder, RelationType relationType) {
+            relationType.getRelatesExplicit().sorted(comparing(x -> x.getLabel().name()))
+                    .forEach(roleType -> {
+                        builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
+                                .append(String.format("relates %s", roleType.getLabel().name()));
+                        RoleType overridden = relationType.getRelatesOverridden(roleType.getLabel().name());
+                        if (overridden != null) {
+                            builder.append(String.format(" as %s", overridden.getLabel().name()));
+                        }
+                    });
+        }
+
+        private static void writePlays(StringBuilder builder, ThingType thingType) {
+            thingType.getPlaysExplicit().sorted(comparing(x -> x.getLabel().scopedName()))
+                    .forEach(roleType -> {
+                        builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
+                                .append(String.format("plays %s", roleType.getLabel().scopedName()));
+                        RoleType overridden = thingType.getPlaysOverridden(roleType);
+                        if (overridden != null) {
+                            builder.append(String.format(" as %s", overridden.getLabel().scopedName()));
+                        }
+                    });
+        }
+
+        private static String getValueTypeString(AttributeType.ValueType valueType) {
+            switch (valueType) {
+                case STRING:
+                    return "string";
+                case LONG:
+                    return "long";
+                case DOUBLE:
+                    return "double";
+                case BOOLEAN:
+                    return "boolean";
+                case DATETIME:
+                    return "datetime";
+                default:
+                    throw GraknException.of(ILLEGAL_STATE);
+            }
+        }
     }
 }

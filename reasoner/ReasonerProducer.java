@@ -25,8 +25,9 @@ import grakn.core.concurrent.producer.Producer;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Disjunction;
 import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Identity;
-import grakn.core.reasoner.resolution.answer.AnswerState.Top;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Compound.Root;
+import grakn.core.reasoner.resolution.answer.AnswerState.Top.Match.Finished;
+import grakn.core.reasoner.resolution.answer.AnswerStateImpl.TopImpl.MatchImpl.InitialImpl;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.ResolutionTracer;
 import grakn.core.reasoner.resolution.framework.Resolver;
@@ -53,45 +54,47 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private final AtomicInteger required;
     private final AtomicInteger processing;
     private final Options.Query options;
+    private final ExplainablesManager explainablesManager;
     private final Request resolveRequest;
-    private final boolean recordExplanations = false; // TODO: make settable
     private final int computeSize;
     private boolean requiresReiteration;
     private boolean done;
     private int iteration;
     private Queue<ConceptMap> queue;
 
-    // TODO: this class should be be a Producer implement a different async processing mechanism
-    public ReasonerProducer(Conjunction conjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers,
-                            Options.Query options) {
-        if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
-        this.rootResolver = resolverRegistry.root(conjunction, this::requestAnswered, this::requestFailed, this::exception);
+    // TODO: this class should not be a Producer, it implements a different async processing mechanism
+    public ReasonerProducer(Conjunction conjunction, GraqlMatch.Modifiers modifiers, Options.Query options,
+                            ResolverRegistry resolverRegistry, ExplainablesManager explainablesManager) {
         this.options = options;
-        Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver).toDownstream();
-        this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
-        assert computeSize > 0;
-        this.resolveRequest = Request.create(rootResolver, downstream);
+        this.explainablesManager = explainablesManager;
         this.queue = null;
         this.iteration = 0;
         this.done = false;
         this.required = new AtomicInteger();
         this.processing = new AtomicInteger();
+        this.rootResolver = resolverRegistry.root(conjunction, this::requestAnswered, this::requestFailed, this::exception);
+        this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
+        assert computeSize > 0;
+        Root<?, ?> downstream = InitialImpl.create(filter(modifiers.filter()), new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
+        this.resolveRequest = Request.create(rootResolver, downstream);
+        if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
-    public ReasonerProducer(Disjunction disjunction, ResolverRegistry resolverRegistry, GraqlMatch.Modifiers modifiers,
-                            Options.Query options) {
-        if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
-        this.rootResolver = resolverRegistry.root(disjunction, this::requestAnswered, this::requestFailed, this::exception);
+    public ReasonerProducer(Disjunction disjunction, GraqlMatch.Modifiers modifiers, Options.Query options,
+                            ResolverRegistry resolverRegistry, ExplainablesManager explainablesManager) {
         this.options = options;
-        Identity downstream = Top.initial(filter(modifiers.filter()), recordExplanations, this.rootResolver).toDownstream();
-        this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
-        assert computeSize > 0;
-        this.resolveRequest = Request.create(rootResolver, downstream);
+        this.explainablesManager = explainablesManager;
         this.queue = null;
         this.iteration = 0;
         this.done = false;
         this.required = new AtomicInteger();
         this.processing = new AtomicInteger();
+        this.rootResolver = resolverRegistry.root(disjunction, this::requestAnswered, this::requestFailed, this::exception);
+        this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
+        assert computeSize > 0;
+        Root<?, ?> downstream = InitialImpl.create(filter(modifiers.filter()), new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
+        this.resolveRequest = Request.create(rootResolver, downstream);
+        if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
     @Override
@@ -108,17 +111,22 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     @Override
-    public void recycle() {}
+    public void recycle() {
+    }
 
     private Set<Identifier.Variable.Name> filter(List<UnboundVariable> filter) {
         return iterate(filter).map(v -> Identifier.Variable.of(v.reference().asName())).toSet();
     }
 
-    // note: root resolver calls this single-threaded, so is threads safe
-    private void requestAnswered(Top resolutionAnswer) {
+    // note: root resolver calls this single-threaded, so is thread safe
+    private void requestAnswered(Finished answer) {
         if (options.traceInference()) ResolutionTracer.get().finish();
-        if (resolutionAnswer.requiresReiteration()) requiresReiteration = true;
-        queue.put(resolutionAnswer.conceptMap());
+        if (answer.requiresReiteration()) requiresReiteration = true;
+        ConceptMap conceptMap = answer.conceptMap();
+        if (options.explain() && !conceptMap.explainables().isEmpty()) {
+            explainablesManager.setAndRecordExplainables(conceptMap);
+        }
+        queue.put(conceptMap);
         if (required.decrementAndGet() > 0) requestAnswer();
         else processing.decrementAndGet();
     }

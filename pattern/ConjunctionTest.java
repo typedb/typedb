@@ -59,16 +59,13 @@ public class ConjunctionTest {
         Conjunction conjunction = parse(
                 "{ $p isa person, has $n; $n \"Alice\" isa name; $e(employee: $p) isa employment; }");
 
-        Set<String> variableStrings = conjunction.variables().stream().map(Variable::toString).collect(Collectors.toSet());
-        Set<String> expectedVariableStrings = set(
-                "$p", "$_person", "$n", "$_name", "$e", "$_employment", "$_employment:employee");
+        Set<String> variableStrings = conjunction.variables().stream().filter(v -> !v.id().isLabel()).map(Variable::toString).collect(Collectors.toSet());
+        Set<String> expectedVariableStrings = set("$p", "$n", "$e");
         assertEquals(expectedVariableStrings, variableStrings);
 
-        Set<String> expectedConstraintStrings = set("$p isa $_person", "$_person type person", "$p has $n",
-                                                    "$n isa $_name", "$_name type name", "$n = \"Alice\"",
-                                                    "$e ($_employment:employee:$p)", "$e isa $_employment",
-                                                    "$_employment type employment",
-                                                    "$_employment:employee type employment:employee");
+        Set<String> expectedConstraintStrings = set("$p isa person", "$p has $n",
+                                                    "$n isa name", "$n = \"Alice\"",
+                                                    "$e (employee:$p)", "$e isa employment");
         String conjunctionString = conjunction.toString();
         assertEquals(expectedNewlines(expectedConstraintStrings), newlinesIn(conjunctionString));
         assertEquals(expectedConstraintStrings, conjunctionStringToStatementStrings(conjunctionString));
@@ -78,12 +75,11 @@ public class ConjunctionTest {
     public void test_conjunction_with_attribute_syntactic_sugar() {
         Conjunction conjunction = parse("{ $p isa person, has name $n; }");
 
-        Set<String> variableStrings = conjunction.variables().stream().map(Variable::toString).collect(Collectors.toSet());
-        Set<String> expectedVariableStrings = Stream.of("$n", "$p", "$_name", "$_person").collect(Collectors.toSet());
+        Set<String> variableStrings = conjunction.variables().stream().filter(v -> !v.id().isLabel()).map(Variable::toString).collect(Collectors.toSet());
+        Set<String> expectedVariableStrings = Stream.of("$n", "$p").collect(Collectors.toSet());
         assertEquals(expectedVariableStrings, variableStrings);
 
-        Set<String> expectedConstraintStrings = set("$p isa $_person", "$_person type person", "$p has $n",
-                                                    "$n isa $_name", "$_name type name");
+        Set<String> expectedConstraintStrings = set("$p isa person", "$p has $n", "$n isa name");
         String conjunctionString = conjunction.toString();
         assertEquals(expectedNewlines(expectedConstraintStrings), newlinesIn(conjunctionString));
         assertEquals(expectedConstraintStrings, conjunctionStringToStatementStrings(conjunctionString));
@@ -93,13 +89,13 @@ public class ConjunctionTest {
     public void test_schema_conjunction() {
         Conjunction conjunction = parse("{ $p sub person, plays $r; $e sub employment, relates $r; }");
 
-        Set<String> variableStrings = conjunction.variables().stream().map(Variable::toString).collect(Collectors.toSet());
-        Set<String> expectedVariableStrings = set("$p", "$_person", "$r", "$e", "$_employment");
+        Set<String> variableStrings = conjunction.variables().stream().filter(v -> !v.id().isLabel()).map(Variable::toString).collect(Collectors.toSet());
+        Set<String> expectedVariableStrings = set("$p", "$r", "$e");
         assertEquals(expectedVariableStrings, variableStrings);
 
         Set<String> expectedConstraintStrings = set(
-                "$p sub $_person", "$_person type person", "$p plays $r", "$e sub $_employment",
-                "$_employment type employment", "$e relates $r");
+                "$p sub person", "$p plays $r", "$e sub employment",
+                "$e relates $r");
         String conjunctionString = conjunction.toString();
         assertEquals(expectedNewlines(expectedConstraintStrings), newlinesIn(conjunctionString));
         assertEquals(expectedConstraintStrings, conjunctionStringToStatementStrings(conjunctionString));

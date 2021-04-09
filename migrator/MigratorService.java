@@ -27,6 +27,7 @@ import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -46,28 +47,15 @@ public class MigratorService extends MigratorGrpc.MigratorImplBase {
 
     @Override
     public void exportData(MigratorProto.ExportData.Req request, StreamObserver<MigratorProto.Job.Res> responseObserver) {
-        Exporter exporter = new Exporter(grakn, request.getDatabase(), Paths.get(request.getFilename()), version);
+        DataExporter exporter = new DataExporter(grakn, request.getDatabase(), Paths.get(request.getFilename()), version);
         runMigrator(exporter, responseObserver);
     }
 
     @Override
     public void importData(MigratorProto.ImportData.Req request, StreamObserver<MigratorProto.Job.Res> responseObserver) {
-        Importer importer = new Importer(grakn, request.getDatabase(), Paths.get(request.getFilename()),
-                                         request.getRemapLabelsMap(), version);
+        Path file = Paths.get(request.getFilename());
+        DataImporter importer = new DataImporter(grakn, request.getDatabase(), file, request.getRemapLabelsMap(), version);
         runMigrator(importer, responseObserver);
-    }
-
-    @Override
-    public void getSchema(MigratorProto.GetSchema.Req request, StreamObserver<MigratorProto.GetSchema.Res> responseObserver) {
-        try {
-            String schema = new SchemaExporter(grakn, request.getDatabase()).getSchema();
-            MigratorProto.GetSchema.Res res = MigratorProto.GetSchema.Res.newBuilder().setSchema(schema).build();
-            responseObserver.onNext(res);
-            responseObserver.onCompleted();
-        } catch (GraknException e) {
-            LOG.error(e.getMessage(), e);
-            responseObserver.onError(exception(e));
-        }
     }
 
     private void runMigrator(Migrator migrator, StreamObserver<MigratorProto.Job.Res> responseObserver) {

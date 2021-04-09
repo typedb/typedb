@@ -30,7 +30,6 @@ import grakn.core.logic.resolvable.Retrievable;
 import grakn.core.pattern.Conjunction;
 import grakn.core.pattern.Negation;
 import grakn.core.reasoner.resolution.Planner;
-import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
@@ -64,10 +63,9 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
     final Plans plans;
     final Map<Resolvable<?>, ResolverRegistry.ResolverView> downstreamResolvers;
 
-    public ConjunctionResolver(Driver<RESOLVER> driver, String name, Driver<ResolutionRecorder> resolutionRecorder,
-                               ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                               LogicManager logicMgr, Planner planner, boolean resolutionTracing) {
-        super(driver, name, registry, traversalEngine, conceptMgr, resolutionTracing, resolutionRecorder);
+    public ConjunctionResolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry, TraversalEngine traversalEngine,
+                               ConceptManager conceptMgr, LogicManager logicMgr, Planner planner, boolean resolutionTracing) {
+        super(driver, name, registry, traversalEngine, conceptMgr, resolutionTracing);
         this.logicMgr = logicMgr;
         this.planner = planner;
         this.resolvables = new HashSet<>();
@@ -82,7 +80,9 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
 
     protected abstract void nextAnswer(Request fromUpstream, RequestState requestState, int iteration);
 
-    abstract Optional<AnswerState> toUpstreamAnswer(Partial<?> fromDownstream);
+    abstract Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?, ?> fromDownstream);
+
+    abstract boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration);
 
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
@@ -100,8 +100,9 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         // TODO: this could be either implemented with a different response type: FinalAnswer, or splitting Request into ReusableRequest vs SingleRequest
         if (plan.get(toDownstream.planIndex()).isNegated()) requestState.removeDownstreamProducer(toDownstream);
 
+        Partial.Compound<?, ?> partialAnswer = fromDownstream.answer().asCompound();
         if (plan.isLast(fromDownstream.planIndex())) {
-            Optional<AnswerState> upstreamAnswer = toUpstreamAnswer(fromDownstream.answer());
+            Optional<AnswerState> upstreamAnswer = toUpstreamAnswer(partialAnswer);
             boolean answerAccepted = upstreamAnswer.isPresent() && tryAcceptUpstreamAnswer(upstreamAnswer.get(), fromUpstream, iteration);
             if (!answerAccepted) nextAnswer(fromUpstream, requestState, iteration);
         } else {
@@ -109,24 +110,17 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         }
     }
 
-    private boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
-        RequestState requestState = requestStates.get(fromUpstream);
-        if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
-            requestState.recordProduced(upstreamAnswer.conceptMap());
-            answerToUpstream(upstreamAnswer, fromUpstream, iteration);
-            return true;
-        } else {
-            return false;
-        }
-    }
-
     private void toNextChild(Response.Answer fromDownstream, int iteration, Request fromUpstream, RequestState requestState, Plans.Plan plan) {
         int nextResolverIndex = fromDownstream.planIndex() + 1;
-        ResolverRegistry.ResolverView nextPlannedDownstream = downstreamResolvers.get(plan.get(nextResolverIndex));
-        Partial<?> downstream = forDownstreamResolver(nextPlannedDownstream, fromDownstream.answer());
+        Resolvable<?> nextResolvable = plan.get(nextResolverIndex);
+        ResolverRegistry.ResolverView nextPlannedDownstream = downstreamResolvers.get(nextResolvable);
+        final Partial<?> downstream = toDownstream(fromDownstream.answer().asCompound(), nextPlannedDownstream, nextResolvable);
         Request downstreamRequest = Request.create(driver(), nextPlannedDownstream.resolver(), downstream, nextResolverIndex);
-        requestState.addDownstreamProducer(downstreamRequest);
         requestFromDownstream(downstreamRequest, fromUpstream, iteration);
+        // negated requests can be used twice in a parallel setting, and return the same answer twice
+        if (!nextResolvable.isNegated() || (nextResolvable.isNegated() && !requestState.containsDownstream(downstreamRequest))) {
+            requestState.addDownstreamProducer(downstreamRequest);
+        }
     }
 
     @Override
@@ -178,13 +172,9 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
     protected RequestState requestStateCreate(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new RequestState for request: {}", name(), fromUpstream);
         Plans.Plan plan = plans.getOrCreate(fromUpstream.partialAnswer().conceptMap().concepts().keySet(), resolvables, negateds);
-        assert !plan.isEmpty();
-
+        assert !plan.isEmpty() && fromUpstream.partialAnswer().isCompound();
         RequestState requestState = requestStateNew(iteration);
-        ResolverRegistry.ResolverView childResolver = downstreamResolvers.get(plan.get(0));
-        Partial<?> downstream = forDownstreamResolver(childResolver, fromUpstream.partialAnswer());
-        Request toDownstream = Request.create(driver(), childResolver.resolver(), downstream, 0);
-        requestState.addDownstreamProducer(toDownstream);
+        initialiseRequestState(requestState, fromUpstream.partialAnswer().asCompound(), plan);
         return requestState;
     }
 
@@ -194,29 +184,35 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         assert newIteration > requestStatePrior.iteration();
         LOG.debug("{}: Updating RequestState for iteration '{}'", name(), newIteration);
         Plans.Plan plan = plans.getOrCreate(fromUpstream.partialAnswer().conceptMap().concepts().keySet(), resolvables, negateds);
-
-        assert !plan.isEmpty();
+        assert !plan.isEmpty() && fromUpstream.partialAnswer().isCompound();
         RequestState requestStateNextIteration = requestStateForIteration(requestStatePrior, newIteration);
-        ResolverRegistry.ResolverView childResolver = downstreamResolvers.get(plan.get(0));
-        Partial<?> downstream = forDownstreamResolver(childResolver, fromUpstream.partialAnswer());
-        Request toDownstream = Request.create(driver(), childResolver.resolver(), downstream, 0);
-        requestStateNextIteration.addDownstreamProducer(toDownstream);
+        initialiseRequestState(requestStateNextIteration, fromUpstream.partialAnswer().asCompound(), plan);
         return requestStateNextIteration;
+    }
+
+    private void initialiseRequestState(RequestState requestState, Partial.Compound<?, ?> partialAnswer, Plans.Plan plan) {
+        ResolverRegistry.ResolverView childResolver = downstreamResolvers.get(plan.get(0));
+        Partial<?> downstream = toDownstream(partialAnswer, childResolver, plan.get(0));
+        Request toDownstream = Request.create(driver(), childResolver.resolver(), downstream, 0);
+        requestState.addDownstreamProducer(toDownstream);
+    }
+
+    private Partial<?> toDownstream(Partial.Compound<?, ?> partialAnswer, ResolverRegistry.ResolverView nextDownstream, Resolvable<?> nextResolvable) {
+        assert downstreamResolvers.get(nextResolvable).equals(nextDownstream);
+        if (nextDownstream.isMappedConcludable()) {
+            return partialAnswer.toDownstream(Mapping.of(nextDownstream.asMappedConcludable().mapping()), nextResolvable.asConcludable());
+        } else if (nextDownstream.isFilteredNegation()) {
+            return partialAnswer.filterToNestable(nextDownstream.asFilteredNegation().filter());
+        } else if (nextDownstream.isFilteredRetrievable()) {
+            return partialAnswer.filterToRetrievable(nextDownstream.asFilteredRetrievable().filter());
+        } else {
+            throw GraknException.of(ILLEGAL_STATE);
+        }
     }
 
     abstract RequestState requestStateNew(int iteration);
 
     abstract RequestState requestStateForIteration(RequestState requestStatePrior, int iteration);
-
-    Partial<?> forDownstreamResolver(ResolverRegistry.ResolverView resolver, Partial<?> partialAnswer) {
-        if (resolver.isMapped()) {
-            return partialAnswer.mapToDownstream(Mapping.of(resolver.asMapped().mapping()), resolver.resolver());
-        } else if (resolver.isFiltered()) {
-            return partialAnswer.filterToDownstream(resolver.asFiltered().filter(), resolver.resolver());
-        } else {
-            throw GraknException.of(ILLEGAL_STATE);
-        }
-    }
 
     public static class RequestState extends CompoundResolver.RequestState {
 
@@ -242,11 +238,15 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         public Set<ConceptMap> produced() {
             return produced;
         }
+
+        public boolean containsDownstream(Request downstream) {
+            return downstreamProducer.contains(downstream);
+        }
     }
 
     class Plans {
 
-        Map<Set<Variable.Retrievable>, Plan> plans;
+        final Map<Set<Variable.Retrievable>, Plan> plans;
 
         public Plans() { this.plans = new HashMap<>(); }
 
@@ -264,16 +264,13 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         }
 
         public class Plan {
-            List<Resolvable<?>> plan;
+
+            final List<Resolvable<?>> plan;
 
             private Plan(List<Resolvable<?>> plan) { this.plan = plan; }
 
             public Resolvable<?> get(int index) {
                 return plan.get(index);
-            }
-
-            public Resolvable<?> next(int index) {
-                return plan.get(index + 1);
             }
 
             public boolean isLast(int index) {
@@ -288,17 +285,12 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
 
         private final Conjunction conjunction;
 
-        public Nested(Driver<Nested> driver, Conjunction conjunction, Driver<ResolutionRecorder> resolutionRecorder,
+        public Nested(Driver<Nested> driver, Conjunction conjunction,
                       ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
                       LogicManager logicMgr, Planner planner, boolean resolutionTracing) {
             super(driver, Nested.class.getSimpleName() + "(pattern: " + conjunction + ")",
-                  resolutionRecorder, registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
+                  registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
             this.conjunction = conjunction;
-        }
-
-        @Override
-        public Conjunction conjunction() {
-            return conjunction;
         }
 
         @Override
@@ -306,6 +298,11 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
             return Iterators.iterate(Concludable.create(conjunction))
                     .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext())
                     .toSet();
+        }
+
+        @Override
+        Conjunction conjunction() {
+            return conjunction;
         }
 
         @Override
@@ -318,8 +315,20 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         }
 
         @Override
-        protected Optional<AnswerState> toUpstreamAnswer(Partial<?> fromDownstream) {
-            return Optional.of(fromDownstream.asFiltered().toUpstream());
+        protected Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?, ?> partialAnswer) {
+            return Optional.of(partialAnswer.asNestable().toUpstream());
+        }
+
+        @Override
+        boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
+            ConjunctionResolver.RequestState requestState = requestStates.get(fromUpstream);
+            if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
+                requestState.recordProduced(upstreamAnswer.conceptMap());
+                answerToUpstream(upstreamAnswer, fromUpstream, iteration);
+                return true;
+            } else {
+                return false;
+            }
         }
 
         @Override

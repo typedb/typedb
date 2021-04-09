@@ -23,10 +23,9 @@ import grakn.core.concept.ConceptManager;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.logic.resolvable.Negated;
 import grakn.core.pattern.Disjunction;
-import grakn.core.reasoner.resolution.ResolutionRecorder;
 import grakn.core.reasoner.resolution.ResolverRegistry;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Filtered;
+import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Compound;
 import grakn.core.reasoner.resolution.framework.Request;
 import grakn.core.reasoner.resolution.framework.Resolver;
 import grakn.core.traversal.TraversalEngine;
@@ -44,7 +43,6 @@ public class NegationResolver extends Resolver<NegationResolver> {
 
     private static final Logger LOG = LoggerFactory.getLogger(NegationResolver.class);
 
-    private final Driver<ResolutionRecorder> resolutionRecorder;
     private final Negated negated;
     private final Map<ConceptMap, BoundsState> boundsStates;
     private boolean isInitialised;
@@ -52,11 +50,10 @@ public class NegationResolver extends Resolver<NegationResolver> {
 
     public NegationResolver(Driver<NegationResolver> driver, Negated negated, ResolverRegistry registry,
                             TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                            Driver<ResolutionRecorder> resolutionRecorder, boolean resolutionTracing) {
+                            boolean resolutionTracing) {
         super(driver, NegationResolver.class.getSimpleName() + "(pattern: " + negated.pattern() + ")",
               registry, traversalEngine, conceptMgr, resolutionTracing);
         this.negated = negated;
-        this.resolutionRecorder = resolutionRecorder;
         this.boundsStates = new HashMap<>();
         this.isInitialised = false;
     }
@@ -110,7 +107,8 @@ public class NegationResolver extends Resolver<NegationResolver> {
               the toplevel root with the negation iterations, which we cannot allow. So, we must use THIS resolver
               as a sort of new root!
         */
-        Filtered downstreamPartial = fromUpstream.partialAnswer().filterToDownstream(negated.retrieves(), downstream);
+        assert fromUpstream.partialAnswer().isCompound();
+        Compound.Nestable downstreamPartial = fromUpstream.partialAnswer().asCompound().filterToNestable(negated.retrieves());
         Request request = Request.create(driver(), this.downstream, downstreamPartial);
         requestFromDownstream(request, fromUpstream, 0);
         boundsState.setRequested();
@@ -148,18 +146,13 @@ public class NegationResolver extends Resolver<NegationResolver> {
     }
 
     private Partial<?> upstreamAnswer(Request fromUpstream) {
-        assert fromUpstream.partialAnswer().isFiltered();
-        Partial<?> upstreamAnswer = fromUpstream.partialAnswer().asFiltered().toUpstream();
-
-        if (fromUpstream.partialAnswer().recordExplanations()) {
-            resolutionRecorder.execute(state -> state.record(fromUpstream.partialAnswer()));
-        }
-        return upstreamAnswer;
+        assert fromUpstream.partialAnswer().isCompound() && fromUpstream.partialAnswer().asCompound().isNestable();
+        return fromUpstream.partialAnswer().asCompound().asNestable().toUpstream();
     }
 
     private static class BoundsState {
 
-        List<Awaiting> awaiting;
+        final List<Awaiting> awaiting;
         Status status;
 
         public BoundsState() {

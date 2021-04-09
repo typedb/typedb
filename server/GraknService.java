@@ -21,9 +21,9 @@ import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.parameters.Arguments;
 import grakn.core.common.parameters.Options;
-import grakn.core.server.common.ResponseBuilder;
-import grakn.protocol.DatabaseProto;
-import grakn.protocol.GraknGrpc;
+import grakn.protocol.CoreDatabaseProto.CoreDatabase;
+import grakn.protocol.CoreDatabaseProto.CoreDatabaseManager;
+import grakn.protocol.GraknCoreGrpc;
 import grakn.protocol.SessionProto;
 import grakn.protocol.TransactionProto;
 import io.grpc.stub.StreamObserver;
@@ -37,17 +37,25 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import static grakn.core.common.collection.Bytes.bytesToUUID;
 import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_DELETED;
 import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
 import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Server.SERVER_SHUTDOWN;
 import static grakn.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
 import static grakn.core.server.common.RequestReader.applyDefaultOptions;
+import static grakn.core.server.common.RequestReader.byteStringAsUUID;
+import static grakn.core.server.common.ResponseBuilder.Database.deleteRes;
+import static grakn.core.server.common.ResponseBuilder.Database.schemaRes;
+import static grakn.core.server.common.ResponseBuilder.DatabaseManager.allRes;
+import static grakn.core.server.common.ResponseBuilder.DatabaseManager.containsRes;
+import static grakn.core.server.common.ResponseBuilder.DatabaseManager.createRes;
+import static grakn.core.server.common.ResponseBuilder.Session.closeRes;
+import static grakn.core.server.common.ResponseBuilder.Session.openRes;
+import static grakn.core.server.common.ResponseBuilder.Session.pulseRes;
 import static grakn.core.server.common.ResponseBuilder.exception;
 import static java.util.stream.Collectors.toList;
 
-public class GraknService extends GraknGrpc.GraknImplBase {
+public class GraknService extends GraknCoreGrpc.GraknCoreImplBase {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraknService.class);
 
@@ -60,11 +68,11 @@ public class GraknService extends GraknGrpc.GraknImplBase {
     }
 
     @Override
-    public void databaseContains(DatabaseProto.Database.Contains.Req request,
-                                 StreamObserver<DatabaseProto.Database.Contains.Res> responder) {
+    public void databasesContains(CoreDatabaseManager.Contains.Req request,
+                                  StreamObserver<CoreDatabaseManager.Contains.Res> responder) {
         try {
             boolean contains = grakn.databases().contains(request.getName());
-            responder.onNext(ResponseBuilder.Database.contains(contains));
+            responder.onNext(containsRes(contains));
             responder.onCompleted();
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
@@ -73,14 +81,14 @@ public class GraknService extends GraknGrpc.GraknImplBase {
     }
 
     @Override
-    public void databaseCreate(DatabaseProto.Database.Create.Req request,
-                               StreamObserver<DatabaseProto.Database.Create.Res> responder) {
+    public void databasesCreate(CoreDatabaseManager.Create.Req request,
+                                StreamObserver<CoreDatabaseManager.Create.Res> responder) {
         try {
             if (grakn.databases().contains(request.getName())) {
                 throw GraknException.of(DATABASE_EXISTS, request.getName());
             }
             grakn.databases().create(request.getName());
-            responder.onNext(ResponseBuilder.Database.create());
+            responder.onNext(createRes());
             responder.onCompleted();
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
@@ -89,11 +97,11 @@ public class GraknService extends GraknGrpc.GraknImplBase {
     }
 
     @Override
-    public void databaseAll(DatabaseProto.Database.All.Req request,
-                            StreamObserver<DatabaseProto.Database.All.Res> responder) {
+    public void databasesAll(CoreDatabaseManager.All.Req request,
+                             StreamObserver<CoreDatabaseManager.All.Res> responder) {
         try {
             List<String> databaseNames = grakn.databases().all().stream().map(Grakn.Database::name).collect(toList());
-            responder.onNext(ResponseBuilder.Database.all(databaseNames));
+            responder.onNext(allRes(databaseNames));
             responder.onCompleted();
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
@@ -102,8 +110,19 @@ public class GraknService extends GraknGrpc.GraknImplBase {
     }
 
     @Override
-    public void databaseDelete(DatabaseProto.Database.Delete.Req request,
-                               StreamObserver<DatabaseProto.Database.Delete.Res> responder) {
+    public void databaseSchema(CoreDatabase.Schema.Req request, StreamObserver<CoreDatabase.Schema.Res> responder) {
+        try {
+            String schema = grakn.databases().get(request.getName()).schema();
+            responder.onNext(schemaRes(schema));
+            responder.onCompleted();
+        } catch (GraknException e) {
+            LOG.error(e.getMessage(), e);
+            responder.onError(exception(e));
+        }
+    }
+
+    @Override
+    public void databaseDelete(CoreDatabase.Delete.Req request, StreamObserver<CoreDatabase.Delete.Res> responder) {
         try {
             String databaseName = request.getName();
             if (!grakn.databases().contains(databaseName)) {
@@ -112,14 +131,14 @@ public class GraknService extends GraknGrpc.GraknImplBase {
             Grakn.Database database = grakn.databases().get(databaseName);
             database.sessions().parallel().forEach(session -> {
                 UUID sessionId = session.uuid();
-                SessionService sessionSrv = sessionServices.get(sessionId);
-                if (sessionSrv != null) {
-                    sessionSrv.close(GraknException.of(DATABASE_DELETED, databaseName));
+                SessionService sessionSvc = sessionServices.get(sessionId);
+                if (sessionSvc != null) {
+                    sessionSvc.close(GraknException.of(DATABASE_DELETED, databaseName));
                     sessionServices.remove(sessionId);
                 }
             });
             database.delete();
-            responder.onNext(ResponseBuilder.Database.delete());
+            responder.onNext(deleteRes());
             responder.onCompleted();
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
@@ -135,10 +154,10 @@ public class GraknService extends GraknGrpc.GraknImplBase {
             Arguments.Session.Type sessionType = Arguments.Session.Type.of(request.getType().getNumber());
             Options.Session options = applyDefaultOptions(new Options.Session(), request.getOptions());
             Grakn.Session session = grakn.session(request.getDatabase(), sessionType, options);
-            SessionService sessionSrv = new SessionService(this, session, options);
-            sessionServices.put(sessionSrv.session().uuid(), sessionSrv);
+            SessionService sessionSvc = new SessionService(this, session, options);
+            sessionServices.put(sessionSvc.UUID(), sessionSvc);
             int duration = (int) Duration.between(start, Instant.now()).toMillis();
-            responder.onNext(ResponseBuilder.Session.open(sessionSrv, duration));
+            responder.onNext(openRes(sessionSvc.UUID(), duration));
             responder.onCompleted();
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
@@ -150,11 +169,11 @@ public class GraknService extends GraknGrpc.GraknImplBase {
     public void sessionClose(SessionProto.Session.Close.Req request,
                              StreamObserver<SessionProto.Session.Close.Res> responder) {
         try {
-            UUID sessionID = bytesToUUID(request.getSessionId().toByteArray());
-            SessionService sessionSrv = sessionServices.get(sessionID);
-            if (sessionSrv == null) throw GraknException.of(SESSION_NOT_FOUND, sessionID);
-            sessionSrv.close();
-            responder.onNext(ResponseBuilder.Session.close());
+            UUID sessionID = byteStringAsUUID(request.getSessionId());
+            SessionService sessionSvc = sessionServices.get(sessionID);
+            if (sessionSvc == null) throw GraknException.of(SESSION_NOT_FOUND, sessionID);
+            sessionSvc.close();
+            responder.onNext(closeRes());
             responder.onCompleted();
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
@@ -166,11 +185,11 @@ public class GraknService extends GraknGrpc.GraknImplBase {
     public void sessionPulse(SessionProto.Session.Pulse.Req request,
                              StreamObserver<SessionProto.Session.Pulse.Res> responder) {
         try {
-            UUID sessionID = bytesToUUID(request.getSessionId().toByteArray());
-            SessionService sessionSrv = sessionServices.get(sessionID);
-            boolean isAlive = sessionSrv != null && sessionSrv.isOpen();
-            if (isAlive) sessionSrv.keepAlive();
-            responder.onNext(ResponseBuilder.Session.pulse(isAlive));
+            UUID sessionID = byteStringAsUUID(request.getSessionId());
+            SessionService sessionSvc = sessionServices.get(sessionID);
+            boolean isAlive = sessionSvc != null && sessionSvc.isOpen();
+            if (isAlive) sessionSvc.keepAlive();
+            responder.onNext(pulseRes(isAlive));
             responder.onCompleted();
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
@@ -188,8 +207,8 @@ public class GraknService extends GraknGrpc.GraknImplBase {
         return sessionServices.get(uuid);
     }
 
-    public void remove(SessionService sessionSrv) {
-        sessionServices.remove(sessionSrv.UUID());
+    public void remove(SessionService sessionSvc) {
+        sessionServices.remove(sessionSvc.UUID());
     }
 
     public void close() {

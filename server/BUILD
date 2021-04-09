@@ -77,6 +77,7 @@ native_java_libraries(
         "//logic:logic",
         "//query:query",
         "//rocks:rocks",
+        "//reasoner:reasoner",
         "//migrator:migrator",
     ],
     runtime_deps = [
@@ -91,9 +92,18 @@ java_binary(
     main_class = "grakn.core.server.GraknServer",
     runtime_deps = [":server-mac"],
     tags = ["maven_coordinates=io.grakn.core:grakn-server-bin:{pom_version}"],
-    resources = [ "//server/conf:logback.xml" ],
-    data = [ "//server/conf:grakn-properties" ],
-    resource_strip_prefix = "server/conf/"
+    classpath_resources = [
+        "//server/conf:logback.xml",
+        "//server/conf:grakn-properties"
+    ],
+    data = [ "//server/conf:grakn-properties" ], # Separately needed for grakn.core.server.common.Util
+)
+
+java_binary( # TODO: this target should not be needed if :server-deps-mac can depend directly on :server-mac (lib)
+    name = "server-bin-deps-mac",
+    main_class = "grakn.core.server.GraknServer",
+    runtime_deps = [":server-mac"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-server-bin-deps:{pom_version}"],
 )
 
 java_binary(
@@ -101,9 +111,18 @@ java_binary(
     main_class = "grakn.core.server.GraknServer",
     runtime_deps = [":server-linux"],
     tags = ["maven_coordinates=io.grakn.core:grakn-server-bin:{pom_version}"],
-    resources = [ "//server/conf:logback.xml" ],
-    data = [ "//server/conf:grakn-properties" ],
-    resource_strip_prefix = "server/conf/"
+    classpath_resources = [
+        "//server/conf:logback.xml",
+        "//server/conf:grakn-properties"
+    ],
+    data = [ "//server/conf:grakn-properties" ], # Separately needed for grakn.core.server.common.Util
+)
+
+java_binary( # TODO: this target should not be needed if :server-deps-linux can depend directly on :server-linux (lib)
+    name = "server-bin-deps-linux",
+    main_class = "grakn.core.server.GraknServer",
+    runtime_deps = [":server-linux"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-server-bin-deps:{pom_version}"],
 )
 
 java_binary(
@@ -111,14 +130,23 @@ java_binary(
     main_class = "grakn.core.server.GraknServer",
     runtime_deps = [":server-windows"],
     tags = ["maven_coordinates=io.grakn.core:grakn-server-bin:{pom_version}"],
-    resources = [ "//server/conf:logback.xml" ],
-    data = [ "//server/conf:grakn-properties" ],
-    resource_strip_prefix = "server/conf/"
+    classpath_resources = [
+        "//server/conf:logback.xml",
+        "//server/conf:grakn-properties"
+    ],
+    data = [ "//server/conf:grakn-properties" ], # Separately needed for grakn.core.server.common.Util
+)
+
+java_binary( # TODO: this target should not be needed if :server-deps-windows can depend directly on :server-windows (lib)
+    name = "server-bin-deps-windows",
+    main_class = "grakn.core.server.GraknServer",
+    runtime_deps = [":server-windows"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-server-bin-deps:{pom_version}"],
 )
 
 java_deps(
     name = "server-deps-mac",
-    target = ":server-bin-mac",
+    target = ":server-bin-deps-mac",
     java_deps_root = "server/lib/common/",
     java_deps_root_overrides = {
         "rocksdbjni-dev-*": "server/lib/dev/",
@@ -129,7 +157,7 @@ java_deps(
 
 java_deps(
     name = "server-deps-linux",
-    target = ":server-bin-linux",
+    target = ":server-bin-deps-linux",
     java_deps_root = "server/lib/common/",
 #    java_deps_root_overrides = {
 #        "rocksdbjni-dev-*": "server/lib/dev/",
@@ -140,7 +168,7 @@ java_deps(
 
 java_deps(
     name = "server-deps-windows",
-    target = ":server-bin-windows",
+    target = ":server-bin-deps-windows",
     java_deps_root = "server/lib/common/",
 #    java_deps_root_overrides = {
 #        "rocksdbjni-dev-*": "server/lib/dev/",

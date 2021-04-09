@@ -22,6 +22,8 @@ import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.iterator.Iterators;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.ConceptManager;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.Type;
 import grakn.core.graph.common.Encoding;
@@ -119,6 +121,8 @@ public abstract class Concludable extends Resolvable<Conjunction> {
     abstract Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr);
 
     abstract FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr);
+
+    public abstract boolean isInferredAnswer(ConceptMap conceptMap);
 
     public abstract AlphaEquivalence alphaEquals(Concludable that);
 
@@ -271,6 +275,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
     }
 
+
     /**
      * Relation handles these concludable patterns, where `$role` and `$relation` could be labelled, and there could
      * be any number of rolePlayers:
@@ -325,6 +330,11 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
             if (conclusion.isRelation()) return unify(conclusion.asRelation(), conceptMgr);
             return Iterators.empty();
+        }
+
+        @Override
+        public boolean isInferredAnswer(ConceptMap conceptMap) {
+            return conceptMap.get(generating().get().id()).asThing().isInferred();
         }
 
         public FunctionalIterator<Unifier> unify(Rule.Conclusion.Relation relationConclusion, ConceptManager conceptMgr) {
@@ -490,6 +500,14 @@ public abstract class Concludable extends Resolvable<Conjunction> {
             return new Has(cloner.conjunction(), cloner.getClone(has).asThing().asHas(), clonedIsa, valueIt.toSet());
         }
 
+        public ThingVariable owner() {
+            return has.owner();
+        }
+
+        public ThingVariable attribute() {
+            return has.attribute();
+        }
+
         public HasConstraint has() {
             return has;
         }
@@ -507,6 +525,13 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
             if (conclusion.isHas()) return unify(conclusion.asHas(), conceptMgr);
             return Iterators.empty();
+        }
+
+        @Override
+        public boolean isInferredAnswer(ConceptMap conceptMap) {
+            Thing owner = conceptMap.get(has.owner().id()).asThing();
+            grakn.core.concept.thing.Attribute attribute = conceptMap.get(has.attribute().id()).asAttribute();
+            return owner.hasInferred(attribute);
         }
 
         public FunctionalIterator<Unifier> unify(Rule.Conclusion.Has hasConclusion, ConceptManager conceptMgr) {
@@ -623,6 +648,11 @@ public abstract class Concludable extends Resolvable<Conjunction> {
             return Iterators.empty();
         }
 
+        @Override
+        public boolean isInferredAnswer(ConceptMap conceptMap) {
+            return conceptMap.get(generating().get().id()).asThing().isInferred();
+        }
+
         FunctionalIterator<Unifier> unify(Rule.Conclusion.Isa isa, ConceptManager conceptMgr) {
             Unifier.Builder unifierBuilder = Unifier.builder();
             if (unificationSatisfiable(isa().owner(), isa.isa().owner())) {
@@ -711,8 +741,10 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         public static Attribute of(ThingVariable attribute) {
-            return new Attribute(attribute.clone().isa(TypeVariable.of(Identifier.Variable.of(
-                    Reference.label(GraqlToken.Type.ATTRIBUTE.toString()))), false));
+            TypeVariable typeVar = TypeVariable.of(Identifier.Variable.of(Reference.label(GraqlToken.Type.ATTRIBUTE.toString())));
+            typeVar.label(Label.of(GraqlToken.Type.ATTRIBUTE.toString()));
+            typeVar.setResolvedTypes(attribute.resolvedTypes());
+            return new Attribute(attribute.clone().isa(typeVar, false));
         }
 
         public static Attribute of(ThingVariable attribute, Set<ValueConstraint<?>> values) {
@@ -732,6 +764,11 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
             if (conclusion.isValue()) return unify(conclusion.asValue());
             return Iterators.empty();
+        }
+
+        @Override
+        public boolean isInferredAnswer(ConceptMap conceptMap) {
+            return conceptMap.get(generating().get().id()).asThing().isInferred();
         }
 
         FunctionalIterator<Unifier> unify(Rule.Conclusion.Value value) {

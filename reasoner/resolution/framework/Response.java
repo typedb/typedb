@@ -21,6 +21,8 @@ package grakn.core.reasoner.resolution.framework;
 import grakn.core.common.exception.GraknException;
 import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
 
+import java.util.Objects;
+
 import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
@@ -86,6 +88,20 @@ public interface Response {
                     "\nsourceRequest=" + sourceRequest +
                     ",\nanswer=" + answer +
                     "\n}\n";
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            final Answer that = (Answer) o;
+            return Objects.equals(sourceRequest, that.sourceRequest) &&
+                    Objects.equals(answer, that.answer);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(sourceRequest, answer);
         }
     }
 

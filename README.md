@@ -38,18 +38,18 @@ Grakn’s query language performs distributed [Pregel](https://kowshik.github.io
 
 With the expressivity of the schema, inference through OLTP, and distributed algorithms through OLAP, Grakn provides a strong abstraction over low-level data constructs and complicated relationships through its query language. The language provides a higher-level schema, OLTP, and OLAP query language, which makes working with complex data a lot easier. When developers can achieve more by writing less code, the productivity rate increases by orders of magnitude.
 
-## Download and Running Grakn Core
+## Download and Run Grakn Core
 
-To run Grakn Core (which you can download from the [Download Centre](https://grakn.ai/download) or [GitHub Releases](https://github.com/graknlabs/grakn/releases)), you need to have Java 8 (OpenJDK or Oracle Java) installed.
+To run Grakn Core (which you can download from the [Download Centre](https://grakn.ai/download) or [GitHub Releases](https://github.com/graknlabs/grakn/releases)), you need to have Java 11 or higher (OpenJDK or Oracle Java) installed.
 
 You can visit the [Setup Guide](https://dev.grakn.ai/docs/running-grakn/install-and-run) to help your installation.
 
 ## Compiling Grakn Core from Source
 
-> Note: You don't need to compile Grakn Core from the source if you just want to use Grakn. See the _"Download and Running Grakn Core"_ section above.
+> Note: You don't need to compile Grakn Core from the source if you just want to use Grakn. See the _"Download and Run Grakn Core"_ section above.
 
 1. Make sure you have the following dependencies installed on your machine:
-    - Java 8 or higher
+    - Java JDK 11 or higher
     - Python 3 and Pip 18.1 or higher
     - [Bazel 3.3.1 or higher](http://bazel.build/). We use [Bazelisk](https://github.com/bazelbuild/bazelisk) to manage Bazel versions which runs the build with the Bazel version specified in [`.bazelversion`](https://github.com/graknlabs/grakn/blob/master/.bazelversion). In order to install it, follow the platform-specific guide:
         - macOS (Darwin): `brew install bazelbuild/tap/bazelisk`

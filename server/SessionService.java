@@ -17,7 +17,6 @@
 
 package grakn.core.server;
 
-import com.google.protobuf.ByteString;
 import grakn.common.collection.ConcurrentSet;
 import grakn.core.Grakn;
 import grakn.core.common.exception.GraknException;
@@ -31,8 +30,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.StampedLock;
 
-import static com.google.protobuf.ByteString.copyFrom;
-import static grakn.core.common.collection.Bytes.uuidToBytes;
 import static grakn.core.common.exception.ErrorMessage.Session.SESSION_CLOSED;
 import static grakn.core.concurrent.executor.Executors.scheduled;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -42,7 +39,7 @@ public class SessionService implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(SessionService.class);
 
     private final ConcurrentSet<TransactionService> transactionServices;
-    private final GraknService graknSrv;
+    private final GraknService graknSvc;
     private final Options.Session options;
     private final Grakn.Session session;
     private final ReadWriteLock accessLock;
@@ -50,8 +47,8 @@ public class SessionService implements AutoCloseable {
     private final long idleTimeoutMillis;
     private ScheduledFuture<?> idleTimeoutTask;
 
-    public SessionService(GraknService graknSrv, Grakn.Session session, Options.Session options) {
-        this.graknSrv = graknSrv;
+    public SessionService(GraknService graknSvc, Grakn.Session session, Options.Session options) {
+        this.graknSvc = graknSvc;
         this.session = session;
         this.options = options;
         this.accessLock = new StampedLock().asReadWriteLock();
@@ -61,18 +58,18 @@ public class SessionService implements AutoCloseable {
         setIdleTimeout();
     }
 
-    void register(TransactionService transactionSrv) {
+    void register(TransactionService transactionSvc) {
         try {
             accessLock.readLock().lock();
-            if (isOpen.get()) transactionServices.add(transactionSrv);
+            if (isOpen.get()) transactionServices.add(transactionSvc);
             else throw GraknException.of(SESSION_CLOSED);
         } finally {
             accessLock.readLock().unlock();
         }
     }
 
-    void remove(TransactionService transactionSrv) {
-        transactionServices.remove(transactionSrv);
+    void remove(TransactionService transactionSvc) {
+        transactionServices.remove(transactionSvc);
     }
 
     public boolean isOpen() {
@@ -89,10 +86,6 @@ public class SessionService implements AutoCloseable {
 
     public Options.Session options() {
         return options;
-    }
-
-    public ByteString UUIDAsByteString() {
-        return copyFrom(uuidToBytes(session.uuid()));
     }
 
     private void setIdleTimeout() {
@@ -121,7 +114,7 @@ public class SessionService implements AutoCloseable {
             if (isOpen.compareAndSet(true, false)) {
                 transactionServices.forEach(TransactionService::close);
                 session.close();
-                graknSrv.remove(this);
+                graknSvc.remove(this);
             }
         } finally {
             accessLock.writeLock().unlock();
@@ -134,7 +127,7 @@ public class SessionService implements AutoCloseable {
             if (isOpen.compareAndSet(true, false)) {
                 transactionServices.forEach(tr -> tr.close(error));
                 session.close();
-                graknSrv.remove(this);
+                graknSvc.remove(this);
             }
         } finally {
             accessLock.writeLock().unlock();

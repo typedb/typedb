@@ -26,30 +26,34 @@ import grakn.protocol.TransactionProto.Transaction;
 
 import javax.annotation.Nullable;
 
+import java.util.UUID;
+
 import static grakn.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
 import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
-import static grakn.core.server.common.ResponseBuilder.Rule.deleteRes;
-import static grakn.core.server.common.ResponseBuilder.Rule.setLabelRes;
+import static grakn.core.server.common.RequestReader.byteStringAsUUID;
+import static grakn.core.server.common.ResponseBuilder.Logic.Rule.deleteRes;
+import static grakn.core.server.common.ResponseBuilder.Logic.Rule.setLabelRes;
 
 public class RuleService {
 
-    private final TransactionService transactionSrv;
+    private final TransactionService transactionSvc;
     private final LogicManager logicMgr;
 
-    public RuleService(TransactionService transactionSrv, LogicManager logicMgr) {
-        this.transactionSrv = transactionSrv;
+    public RuleService(TransactionService transactionSvc, LogicManager logicMgr) {
+        this.transactionSvc = transactionSvc;
         this.logicMgr = logicMgr;
     }
 
-    public void execute(Transaction.Req request) {
-        LogicProto.Rule.Req ruleReq = request.getRuleReq();
+    public void execute(Transaction.Req req) {
+        LogicProto.Rule.Req ruleReq = req.getRuleReq();
         Rule rule = notNull(logicMgr.getRule(ruleReq.getLabel()));
+        UUID reqID = byteStringAsUUID(req.getReqId());
         switch (ruleReq.getReqCase()) {
             case RULE_DELETE_REQ:
-                delete(rule, request);
+                delete(rule, reqID);
                 return;
             case RULE_SET_LABEL_REQ:
-                setLabel(rule, ruleReq.getRuleSetLabelReq().getLabel(), request);
+                setLabel(rule, ruleReq.getRuleSetLabelReq().getLabel(), reqID);
                 return;
             case REQ_NOT_SET:
             default:
@@ -57,14 +61,14 @@ public class RuleService {
         }
     }
 
-    private void setLabel(Rule rule, String label, Transaction.Req request) {
+    private void setLabel(Rule rule, String label, UUID reqID) {
         rule.setLabel(label);
-        transactionSrv.respond(setLabelRes(request.getReqId()));
+        transactionSvc.respond(setLabelRes(reqID));
     }
 
-    private void delete(Rule rule, Transaction.Req request) {
+    private void delete(Rule rule, UUID reqID) {
         rule.delete();
-        transactionSrv.respond(deleteRes(request.getReqId()));
+        transactionSvc.respond(deleteRes(reqID));
     }
 
     private static Rule notNull(@Nullable Rule rule) {
