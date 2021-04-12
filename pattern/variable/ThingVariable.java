@@ -44,13 +44,14 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.ILLEGAL_DERIVED_THING_CONSTRAINT_ISA;
 import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_THING_CONSTRAINT_IID;
 import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_THING_CONSTRAINT_ISA;
+import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_THING_CONSTRAINT_RELATION;
 
 public class ThingVariable extends Variable implements AlphaEquivalent<ThingVariable> {
 
     private IIDConstraint iidConstraint;
     private IsaConstraint isaConstraint;
+    private RelationConstraint relationConstraint;
     private final Set<IsConstraint> isConstraints;
-    private final Set<RelationConstraint> relationConstraints;
     private final Set<HasConstraint> hasConstraints;
     private final Set<ValueConstraint<?>> valueConstraints;
     private final Set<ThingConstraint> constraints;
@@ -60,7 +61,6 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         super(identifier);
         this.isConstraints = new HashSet<>();
         this.valueConstraints = new HashSet<>();
-        this.relationConstraints = new HashSet<>();
         this.hasConstraints = new HashSet<>();
         this.constraints = new HashSet<>();
         this.constraining = new HashSet<>();
@@ -121,8 +121,12 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
                 throw GraknException.of(MULTIPLE_THING_CONSTRAINT_ISA, id(), constraint.asIsa().type(), isaConstraint.type());
             }
             isaConstraint = constraint.asIsa();
+        } else if (constraint.isRelation()) {
+            if (relationConstraint != null && !relationConstraint.equals(constraint)) {
+                throw GraknException.of(MULTIPLE_THING_CONSTRAINT_RELATION, id());
+            }
+            relationConstraint = constraint.asRelation();
         } else if (constraint.isIs()) isConstraints.add(constraint.asIs());
-        else if (constraint.isRelation()) relationConstraints.add(constraint.asRelation());
         else if (constraint.isHas()) hasConstraints.add(constraint.asHas());
         else if (constraint.isValue()) valueConstraints.add(constraint.asValue());
         else throw GraknException.of(ILLEGAL_STATE);
@@ -145,6 +149,10 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
 
     public Optional<IsaConstraint> isa() {
         return Optional.ofNullable(isaConstraint);
+    }
+
+    public Optional<RelationConstraint> relation() {
+        return Optional.ofNullable(relationConstraint);
     }
 
     public IsaConstraint isa(TypeVariable type, boolean isExplicit) {
@@ -203,11 +211,6 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         return valueVarConstraint;
     }
 
-    public Set<RelationConstraint> relation() {
-        return relationConstraints;
-    }
-    // TODO: why is this method never called?
-
     public RelationConstraint relation(LinkedHashSet<RelationConstraint.RolePlayer> rolePlayers) {
         RelationConstraint relationConstraint = new RelationConstraint(this, rolePlayers);
         constrain(relationConstraint);
@@ -250,7 +253,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
                 .validIf(id().isName() == that.id().isName())
                 .validIf(this.resolvedTypes().equals(that.resolvedTypes()))
                 .validIfAlphaEqual(this.isaConstraint, that.isaConstraint)
-                .validIfAlphaEqual(this.relationConstraints, that.relationConstraints)
+                .validIfAlphaEqual(this.relationConstraint, that.relationConstraint)
                 .validIfAlphaEqual(this.hasConstraints, that.hasConstraints)
                 .validIfAlphaEqual(this.valueConstraints, that.valueConstraints)
                 .addMapping(this, that);

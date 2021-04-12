@@ -204,18 +204,20 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Pattern(8, "The thing variable '%s' has multiple 'iid' constraints.");
         public static final Pattern MULTIPLE_THING_CONSTRAINT_ISA =
                 new Pattern(9, "The thing variable '%s' has multiple 'isa' constraints, '%s' and '%s'.");
+        public static final Pattern MULTIPLE_THING_CONSTRAINT_RELATION =
+                new Pattern(10, "The thing variable '%s' has multiple 'relation' constraints");
         public static final Pattern ILLEGAL_DERIVED_THING_CONSTRAINT_ISA =
-                new Pattern(10, "The thing variable '%s' has a derived 'isa' constraint, in a query that does not allow it.");
+                new Pattern(11, "The thing variable '%s' has a derived 'isa' constraint, in a query that does not allow it.");
         public static final Pattern MULTIPLE_TYPE_CONSTRAINT_SUB =
-                new Pattern(11, "The type variable '%s' has multiple 'sub' constraints.");
+                new Pattern(12, "The type variable '%s' has multiple 'sub' constraints.");
         public static final Pattern MULTIPLE_TYPE_CONSTRAINT_LABEL =
-                new Pattern(12, "The type variable '%s' has multiple 'label' constraints.");
+                new Pattern(13, "The type variable '%s' has multiple 'label' constraints.");
         public static final Pattern MULTIPLE_TYPE_CONSTRAINT_VALUE_TYPE =
-                new Pattern(13, "Tye type variable '%s' has multiple 'value' constraints.");
+                new Pattern(14, "Tye type variable '%s' has multiple 'value' constraints.");
         public static final Pattern MULTIPLE_TYPE_CONSTRAINT_REGEX =
-                new Pattern(14, "The type variable '%s' has multiple 'regex' constraints.");
+                new Pattern(15, "The type variable '%s' has multiple 'regex' constraints.");
         public static final Pattern UNSATISFIABLE_PATTERN =
-                new Pattern(15, "The pattern '%s' can never be satisfied the current schema, specifically due to '%s'.");
+                new Pattern(16, "The pattern '%s' can never be satisfied the current schema, specifically due to '%s'.");
 
         private static final String codePrefix = "QRY";
         private static final String messagePrefix = "Invalid Query Pattern";

@@ -102,8 +102,7 @@ public abstract class AlphaEquivalence {
             for (Map.Entry<Variable, Variable> e : toMerge.entrySet()) {
                 Variable var = toMerge.get(e.getKey());
                 if (existing.containsKey(e.getKey())) {
-                    if (!var.equals(e.getValue()))
-                        return Optional.empty();
+                    if (!var.equals(e.getValue())) return Optional.empty();
                 } else {
                     existing.put(e.getKey(), var);
                 }
@@ -123,7 +122,7 @@ public abstract class AlphaEquivalence {
 
         @Override
         public <T extends AlphaEquivalent<T>> AlphaEquivalence validIfAlphaEqual(@Nullable T member1, @Nullable T member2) {
-            if (member1 == null && member2 == null) return Valid.create();
+            if (member1 == null && member2 == null) return this;
             if (member1 != null && member2 != null) return addOrInvalidate(member1.alphaEquals(member2));
             return AlphaEquivalence.invalid();
         }
@@ -233,8 +232,7 @@ public abstract class AlphaEquivalence {
 
         @Override
         public AlphaEquivalence alphaEquals(EquivalenceSet<T> that) { // TODO: Should be able to accept a set not an alpha set?
-            if (that.size() != size())
-                return AlphaEquivalence.invalid();
+            if (that.size() != size()) return AlphaEquivalence.invalid();
             try {
                 return containsAll(that);
             } catch (NullPointerException unused) {
@@ -252,24 +250,21 @@ public abstract class AlphaEquivalence {
 
         private AlphaEquivalence containsAll(EquivalenceSet<T> c) {
             AlphaEquivalence alphaMap = Valid.create();
-            for (T e : c.set())
-                alphaMap = alphaMap.addOrInvalidate(contains(e));
-            if (!alphaMap.isValid())
-                return alphaMap;
+            for (T e : c.set()) alphaMap = alphaMap.addOrInvalidate(contains(e));
+            if (!alphaMap.isValid()) return alphaMap;
             return alphaMap;
         }
 
         private AlphaEquivalence contains(T o) {
             Iterator<T> it = iterator();
             if (o == null) {
-                while (it.hasNext())
-                    if (it.next() == null)
-                        return Valid.create();
+                while (it.hasNext()) {
+                    if (it.next() == null) return Valid.create();
+                }
             } else {
                 while (it.hasNext()) {
                     AlphaEquivalence alphaMap = it.next().alphaEquals(o);
-                    if (alphaMap.isValid())
-                        return Valid.create(alphaMap.asValid().variableMapping());
+                    if (alphaMap.isValid()) return Valid.create(alphaMap.asValid().variableMapping());
                 }
             }
             return AlphaEquivalence.invalid();
