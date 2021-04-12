@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static grakn.core.common.exception.ErrorMessage.Migrator.FILE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Migrator.FILE_NOT_READABLE;
 import static grakn.core.common.exception.ErrorMessage.Migrator.INVALID_DATA;
 import static grakn.core.common.exception.ErrorMessage.Migrator.TYPE_NOT_FOUND;
@@ -77,6 +78,7 @@ public class DataImporter implements Migrator {
     private Grakn.Transaction tx;
 
     DataImporter(Grakn grakn, String database, Path filename, Map<String, String> remapLabels, String version) {
+        if (!Files.exists(filename)) throw GraknException.of(FILE_NOT_FOUND, filename);
         this.session = grakn.session(database, Arguments.Session.Type.DATA);
         this.filename = filename;
         this.remapLabels = remapLabels;
