@@ -205,7 +205,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         public static final Pattern MULTIPLE_THING_CONSTRAINT_ISA =
                 new Pattern(9, "The thing variable '%s' has multiple 'isa' constraints, '%s' and '%s'.");
         public static final Pattern MULTIPLE_THING_CONSTRAINT_RELATION =
-                new Pattern(10, "The thing variable '%s' has multiple 'relation' constraints");
+                new Pattern(10, "The relation variable '%s' has multiple 'relation' constraints");
         public static final Pattern ILLEGAL_DERIVED_THING_CONSTRAINT_ISA =
                 new Pattern(11, "The thing variable '%s' has a derived 'isa' constraint, in a query that does not allow it.");
         public static final Pattern MULTIPLE_TYPE_CONSTRAINT_SUB =
