@@ -149,16 +149,10 @@ public class RetrievableTest {
     }
 
     @Test
-    public void test_retrievables_split_by_concludables_are_separated() {
-        Set<Concludable> concludables = Concludable.create(parse("{ $r1 (sharedWith: $user, sharedObj: $parent_pt) isa shareitRelation; " +
-                                                                         "$r2 (sharedWith: $user, sharedObj: $pt) isa shareitRelation; }"));
-        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $user isa user, has objID \"3816c3cfaa8f460d93623561f0948456\";" +
-                                                                              "        $pt isa priority_theme;" +
-                                                                              "        $parent_pt isa priority_theme, has objID $parent_objID;" +
-                                                                              "        $r1 (sharedWith: $user, sharedObj: $parent_pt) isa shareitRelation;" +
-                                                                              "        $r2 (sharedWith: $user, sharedObj: $pt) isa shareitRelation; }"), concludables);
-        assertEquals(2, concludables.size());
-        assertEquals(3, retrievables.size());
+    public void test_retrievables_split_by_labelled_type_are_separated() {
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $r1 (sharedWith: $user1, sharedObj: $obj1) isa shareitRelation;" +
+                                                                      "  $r2 (sharedWith: $user2, sharedObj: $obj2) isa shareitRelation; }"), set());
+        assertEquals(2, retrievables.size());
     }
 
     @Test
