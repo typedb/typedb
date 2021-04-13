@@ -337,10 +337,9 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         public FunctionalIterator<Unifier> unify(Rule.Conclusion.Relation relationConclusion, ConceptManager conceptMgr) {
-            if (this.relation().players().size() > relationConclusion.relation().players().size())
-                return Iterators.empty();
-            Unifier.Builder unifierBuilder = Unifier.builder();
+            if (relation().players().size() > relationConclusion.relation().players().size()) return Iterators.empty();
 
+            Unifier.Builder unifierBuilder = Unifier.builder();
             if (unificationSatisfiable(relation().owner(), relationConclusion.relation().owner())) {
                 unifierBuilder.add(relation().owner().id(), relationConclusion.relation().owner().id());
             } else return Iterators.empty();

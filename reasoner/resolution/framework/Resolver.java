@@ -81,7 +81,7 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
                 return;
             }
         }
-        LOG.error("Actor exception: {}", e.getMessage());
+        LOG.error("Actor exception", e);
         registry.terminateResolvers(e);
     }
 
