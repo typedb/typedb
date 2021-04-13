@@ -19,6 +19,7 @@
 package grakn.core.concept.type.impl;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.impl.EntityImpl;
 import grakn.core.concept.type.AttributeType;
@@ -29,7 +30,6 @@ import grakn.core.graph.vertex.ThingVertex;
 import grakn.core.graph.vertex.TypeVertex;
 
 import java.util.List;
-import java.util.stream.Stream;
 
 import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
@@ -68,17 +68,17 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     }
 
     @Override
-    public Stream<EntityTypeImpl> getSubtypes() {
+    public FunctionalIterator<EntityTypeImpl> getSubtypes() {
         return super.getSubtypes(v -> of(graphMgr, v));
     }
 
     @Override
-    public Stream<EntityTypeImpl> getSubtypesExplicit() {
+    public FunctionalIterator<EntityTypeImpl> getSubtypesExplicit() {
         return super.getSubtypesExplicit(v -> of(graphMgr, v));
     }
 
     @Override
-    public Stream<EntityImpl> getInstances() {
+    public FunctionalIterator<EntityImpl> getInstances() {
         return instances(EntityImpl::of);
     }
 

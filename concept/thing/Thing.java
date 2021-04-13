@@ -18,12 +18,11 @@
 
 package grakn.core.concept.thing;
 
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concept.Concept;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RoleType;
 import grakn.core.concept.type.ThingType;
-
-import java.util.stream.Stream;
 
 public interface Thing extends Concept {
 
@@ -90,19 +89,19 @@ public interface Thing extends Concept {
     /**
      * Get all {@code Attribute} instances owned by this {@code Thing}.
      *
-     * @return a stream of {@code Attribute} instances owned by this {@code Thing}
+     * @return an iterator of {@code Attribute} instances owned by this {@code Thing}
      */
-    Stream<? extends Attribute> getHas(boolean onlyKey);
+    FunctionalIterator<? extends Attribute> getHas(boolean onlyKey);
 
-    Stream<? extends Attribute.Boolean> getHas(AttributeType.Boolean attributeType);
+    FunctionalIterator<? extends Attribute.Boolean> getHas(AttributeType.Boolean attributeType);
 
-    Stream<? extends Attribute.Long> getHas(AttributeType.Long attributeType);
+    FunctionalIterator<? extends Attribute.Long> getHas(AttributeType.Long attributeType);
 
-    Stream<? extends Attribute.Double> getHas(AttributeType.Double attributeType);
+    FunctionalIterator<? extends Attribute.Double> getHas(AttributeType.Double attributeType);
 
-    Stream<? extends Attribute.String> getHas(AttributeType.String attributeType);
+    FunctionalIterator<? extends Attribute.String> getHas(AttributeType.String attributeType);
 
-    Stream<? extends Attribute.DateTime> getHas(AttributeType.DateTime attributeType);
+    FunctionalIterator<? extends Attribute.DateTime> getHas(AttributeType.DateTime attributeType);
 
     /**
      * Get all {@code Attribute} instances owned by this {@code Thing} filtered
@@ -112,9 +111,9 @@ public interface Thing extends Concept {
      * owned by this {@code Thing} include {@code Attribute} instances that
      * serve as key {@code Attributes}.
      *
-     * @return a stream of {@code Attribute} instances owned by this {@code Thing}
+     * @return an iterator of {@code Attribute} instances owned by this {@code Thing}
      */
-    Stream<? extends Attribute> getHas(AttributeType... attributeType);
+    FunctionalIterator<? extends Attribute> getHas(AttributeType... attributeType);
 
     /**
      * Check whether a Has edge to a given attribute instance exists, and that edge is inferred
@@ -127,27 +126,27 @@ public interface Thing extends Concept {
     /**
      * Get all {@code RoleType} types this {@code Thing} is playing in a {@code Relation}.
      *
-     * @return a stream of {@code RoleType} types that this {@code Thing} plays.
+     * @return an iterator stream of {@code RoleType} types that this {@code Thing} plays.
      */
-    Stream<? extends RoleType> getPlaying();
+    FunctionalIterator<? extends RoleType> getPlaying();
 
     /**
      * Get all {@code Relation} instances that this {@code Thing} is playing any of the specified roles in.
      * If no roles are specified, all Relations are retrieved regardless of role.
      *
      * @param roleTypes The role types that this {@code Thing} can play
-     * @return a stream of {@code Relation} that this {@code Thing} plays a specified role in
+     * @return an iterator of {@code Relation} that this {@code Thing} plays a specified role in
      */
-    Stream<? extends Relation> getRelations(String roleType, String... roleTypes);
+    FunctionalIterator<? extends Relation> getRelations(String roleType, String... roleTypes);
 
     /**
      * Get all {@code Relation} instances that this {@code Thing} is playing any of the specified roles in.
      * If no roles are specified, all Relations are retrieved regardless of role.
      *
      * @param roleTypes The role types that this {@code Thing} can play
-     * @return a stream of {@code Relation} that this {@code Thing} plays a specified role in
+     * @return an iterator of {@code Relation} that this {@code Thing} plays a specified role in
      */
-    Stream<? extends Relation> getRelations(RoleType... roleTypes);
+    FunctionalIterator<? extends Relation> getRelations(RoleType... roleTypes);
 
     /**
      * Returns true if this {@code Thing} has been deleted.

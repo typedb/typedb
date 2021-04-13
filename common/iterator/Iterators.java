@@ -46,6 +46,11 @@ public class Iterators {
         return iterate(set(item));
     }
 
+    @SafeVarargs
+    public static <T> FunctionalIterator<T> iterate(T... elements) {
+        return iterate(list(elements));
+    }
+
     public static <T> FunctionalIterator<T> iterate(Collection<T> collection) {
         return new BaseIterator<>(Either.second(collection.iterator()));
     }
@@ -98,5 +103,15 @@ public class Iterators {
 
     public static <T> Stream<T> stream(Iterator<T> iterator) {
         return StreamSupport.stream(spliteratorUnknownSize(iterator, ORDERED | IMMUTABLE), false);
+    }
+
+    public static int compareSize(Iterator<?> iterator, int size) {
+        long count = 0L;
+        while (iterator.hasNext()) {
+            iterator.next();
+            count++;
+            if (count > size) return 1;
+        }
+        return count == size ? 0 : -1;
     }
 }

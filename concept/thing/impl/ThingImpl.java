@@ -20,6 +20,8 @@ package grakn.core.concept.thing.impl;
 
 import grakn.common.collection.Bytes;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.FunctionalIterator;
+import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptImpl;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Thing;
@@ -37,7 +39,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static grakn.common.collection.Collections.list;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
@@ -48,13 +49,12 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_HAS_BEEN
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_OVER;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_TAKEN;
+import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.common.iterator.Iterators.link;
+import static grakn.core.common.iterator.Iterators.single;
 import static grakn.core.graph.common.Encoding.Edge.Thing.HAS;
 import static grakn.core.graph.common.Encoding.Edge.Thing.PLAYING;
 import static grakn.core.graph.common.Encoding.Edge.Thing.ROLEPLAYER;
-import static java.util.Arrays.stream;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
-import static java.util.stream.Stream.concat;
 
 public abstract class ThingImpl extends ConceptImpl implements Thing {
 
@@ -108,9 +108,9 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
         if (getType().getOwns().noneMatch(t -> t.equals(attribute.getType()))) {
             throw exception(GraknException.of(THING_CANNOT_OWN_ATTRIBUTE, attribute.getType().getLabel(), vertex.type().label()));
         } else if (getType().getOwns(true).anyMatch(t -> t.equals(attribute.getType()))) {
-            if (getHas(attribute.getType()).findAny().isPresent()) {
+            if (getHas(attribute.getType()).first().isPresent()) {
                 throw exception(GraknException.of(THING_KEY_OVER, attribute.getType().getLabel(), getType().getLabel()));
-            } else if (attribute.getOwners(getType()).findAny().isPresent()) {
+            } else if (attribute.getOwners(getType()).first().isPresent()) {
                 throw exception(GraknException.of(THING_KEY_TAKEN, attribute.getType().getLabel(), getType().getLabel()));
             }
         }
@@ -126,53 +126,53 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     }
 
     @Override
-    public Stream<AttributeImpl<?>> getHas(boolean onlyKey) {
-        return getHas(getType().getOwns(onlyKey).toArray(AttributeType[]::new));
+    public FunctionalIterator<AttributeImpl<?>> getHas(boolean onlyKey) {
+        return getHas(getType().getOwns(onlyKey).stream().toArray(AttributeType[]::new));
     }
 
     @Override
-    public Stream<AttributeImpl.Boolean> getHas(AttributeType.Boolean attributeType) {
+    public FunctionalIterator<AttributeImpl.Boolean> getHas(AttributeType.Boolean attributeType) {
         return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(v).asBoolean());
     }
 
     @Override
-    public Stream<AttributeImpl.Long> getHas(AttributeType.Long attributeType) {
+    public FunctionalIterator<AttributeImpl.Long> getHas(AttributeType.Long attributeType) {
         return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(v).asLong());
     }
 
     @Override
-    public Stream<AttributeImpl.Double> getHas(AttributeType.Double attributeType) {
+    public FunctionalIterator<AttributeImpl.Double> getHas(AttributeType.Double attributeType) {
         return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(v).asDouble());
     }
 
     @Override
-    public Stream<AttributeImpl.String> getHas(AttributeType.String attributeType) {
+    public FunctionalIterator<AttributeImpl.String> getHas(AttributeType.String attributeType) {
         return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(v).asString());
     }
 
     @Override
-    public Stream<AttributeImpl.DateTime> getHas(AttributeType.DateTime attributeType) {
+    public FunctionalIterator<AttributeImpl.DateTime> getHas(AttributeType.DateTime attributeType) {
         return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(v).asDateTime());
     }
 
     @Override
-    public Stream<AttributeImpl<?>> getHas(AttributeType... attributeTypes) {
+    public FunctionalIterator<AttributeImpl<?>> getHas(AttributeType... attributeTypes) {
         if (attributeTypes.length == 0) {
-            return getAttributeVertices(getType().getOwns().collect(toList())).map(AttributeImpl::of);
+            return getAttributeVertices(getType().getOwns().toList()).map(AttributeImpl::of);
         }
         return getAttributeVertices(Arrays.asList(attributeTypes)).map(AttributeImpl::of);
     }
 
-    private Stream<? extends AttributeVertex<?>> getAttributeVertices(List<? extends AttributeType> attributeTypes) {
+    private FunctionalIterator<? extends AttributeVertex<?>> getAttributeVertices(List<? extends AttributeType> attributeTypes) {
         if (!attributeTypes.isEmpty()) {
-            return attributeTypes.stream()
+            return iterate(attributeTypes)
                     .flatMap(AttributeType::getSubtypes).distinct()
                     .map(t -> ((TypeImpl) t).vertex)
                     .flatMap(type -> vertex.outs().edge(
                             HAS, PrefixIID.of(type.encoding().instance()), type.iid()
-                    ).to().stream()).map(ThingVertex::asAttribute);
+                    ).to()).map(ThingVertex::asAttribute);
         } else {
-            return vertex.outs().edge(HAS).to().map(ThingVertex::asAttribute).stream();
+            return vertex.outs().edge(HAS).to().map(ThingVertex::asAttribute);
         }
     }
 
@@ -183,29 +183,29 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     }
 
     @Override
-    public Stream<? extends RoleType> getPlaying() {
+    public FunctionalIterator<? extends RoleType> getPlaying() {
         return vertex.outs().edge(PLAYING).to().map(ThingVertex::type)
-                .map(v -> RoleTypeImpl.of(vertex.graphs(), v)).stream();
+                .map(v -> RoleTypeImpl.of(vertex.graphs(), v));
     }
 
     @Override
-    public Stream<RelationImpl> getRelations(String roleType, String... roleTypes) {
-        return getRelations(concat(Stream.of(roleType), stream(roleTypes)).map(scopedLabel -> {
+    public FunctionalIterator<RelationImpl> getRelations(String roleType, String... roleTypes) {
+        return getRelations(link(single(roleType), iterate(roleTypes)).map(scopedLabel -> {
             if (!scopedLabel.contains(":")) {
                 throw exception(GraknException.of(INVALID_ROLE_TYPE_LABEL, scopedLabel));
             }
             String[] label = scopedLabel.split(":");
             return RoleTypeImpl.of(vertex.graphs(), vertex.graph().schema().getType(label[1], label[0]));
-        }).toArray(RoleType[]::new));
+        }).stream().toArray(RoleType[]::new));
     }
 
     @Override
-    public Stream<RelationImpl> getRelations(RoleType... roleTypes) {
+    public FunctionalIterator<RelationImpl> getRelations(RoleType... roleTypes) {
         if (roleTypes.length == 0) {
-            return vertex.ins().edge(ROLEPLAYER).from().map(RelationImpl::of).stream();
+            return vertex.ins().edge(ROLEPLAYER).from().map(RelationImpl::of);
         } else {
-            return stream(roleTypes).flatMap(RoleType::getSubtypes).distinct().flatMap(
-                    rt -> vertex.ins().edge(ROLEPLAYER, ((RoleTypeImpl) rt).vertex.iid()).from().stream()
+            return iterate(roleTypes).flatMap(RoleType::getSubtypes).distinct().flatMap(
+                    rt -> vertex.ins().edge(ROLEPLAYER, ((RoleTypeImpl) rt).vertex.iid()).from()
             ).map(RelationImpl::of);
         }
     }
@@ -222,8 +222,8 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     public void validate() {
         long requiredKeys = getType().getOwns(true).count();
         if (requiredKeys > 0 && getHas(true).map(Attribute::getType).count() < requiredKeys) {
-            Set<AttributeType> missing = getType().getOwns(true).collect(toSet());
-            missing.removeAll(getHas(true).map(Attribute::getType).collect(toSet()));
+            Set<AttributeType> missing = getType().getOwns(true).map(Concept::asAttributeType).toSet();
+            missing.removeAll(getHas(true).map(Attribute::getType).toSet());
             throw exception(GraknException.of(THING_KEY_MISSING, getType().getLabel(), printTypeSet(missing)));
         }
     }

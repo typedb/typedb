@@ -292,7 +292,7 @@ public class DataImporter implements Migrator {
     }
 
     private Map<String, RoleType> getScopedRoleTypes(RelationType relationType) {
-        return relationType.getRelates().collect(
+        return relationType.getRelates().stream().collect(
                 Collectors.toMap(x -> x.getLabel().scopedName(), x -> x));
     }
 

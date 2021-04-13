@@ -254,7 +254,7 @@ public class Definer {
                 if (plays.overridden().isPresent()) {
                     String overriddenLabelName = plays.overridden().get().label().get().properLabel().name();
                     Optional<? extends RoleType> overriddenType = roleType.getSupertypes()
-                            .filter(rt -> rt.getLabel().name().equals(overriddenLabelName)).findFirst();
+                            .filter(rt -> rt.getLabel().name().equals(overriddenLabelName)).first();
                     if (overriddenType.isPresent()) {
                         thingType.setPlays(roleType, overriddenType.get());
 

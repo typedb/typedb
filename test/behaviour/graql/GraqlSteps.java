@@ -631,7 +631,7 @@ public class GraqlSteps {
         public boolean check(Concept concept) {
             if (!concept.isThing()) { return false; }
 
-            Set<Attribute> keys = concept.asThing().getHas(true).collect(Collectors.toSet());
+            Set<? extends Attribute> keys = concept.asThing().getHas(true).toSet();
 
             HashMap<String, String> keyMap = new HashMap<>();
 

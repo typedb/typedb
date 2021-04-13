@@ -18,20 +18,19 @@
 
 package grakn.core.concept.type;
 
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concept.thing.Relation;
-
-import java.util.stream.Stream;
 
 public interface RelationType extends ThingType {
 
     @Override
-    Stream<? extends RelationType> getSubtypes();
+    FunctionalIterator<? extends RelationType> getSubtypes();
 
     @Override
-    Stream<? extends RelationType> getSubtypesExplicit();
+    FunctionalIterator<? extends RelationType> getSubtypesExplicit();
 
     @Override
-    Stream<? extends Relation> getInstances();
+    FunctionalIterator<? extends Relation> getInstances();
 
     void setSupertype(RelationType superType);
 
@@ -41,9 +40,9 @@ public interface RelationType extends ThingType {
 
     void unsetRelates(String roleLabel);
 
-    Stream<? extends RoleType> getRelates();
+    FunctionalIterator<? extends RoleType> getRelates();
 
-    Stream<? extends RoleType> getRelatesExplicit();
+    FunctionalIterator<? extends RoleType> getRelatesExplicit();
 
     RoleType getRelates(String roleLabel);
 

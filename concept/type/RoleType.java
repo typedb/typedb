@@ -18,7 +18,7 @@
 
 package grakn.core.concept.type;
 
-import java.util.stream.Stream;
+import grakn.core.common.iterator.FunctionalIterator;
 
 public interface RoleType extends Type {
 
@@ -26,17 +26,17 @@ public interface RoleType extends Type {
     RoleType getSupertype();
 
     @Override
-    Stream<? extends RoleType> getSupertypes();
+    FunctionalIterator<? extends RoleType> getSupertypes();
 
     @Override
-    Stream<? extends RoleType> getSubtypes();
+    FunctionalIterator<? extends RoleType> getSubtypes();
 
     @Override
-    Stream<? extends RoleType> getSubtypesExplicit();
+    FunctionalIterator<? extends RoleType> getSubtypesExplicit();
 
     RelationType getRelationType();
 
-    Stream<? extends RelationType> getRelationTypes();
+    FunctionalIterator<? extends RelationType> getRelationTypes();
 
-    Stream<? extends ThingType> getPlayers();
+    FunctionalIterator<? extends ThingType> getPlayers();
 }

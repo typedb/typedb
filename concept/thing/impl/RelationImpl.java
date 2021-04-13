@@ -20,6 +20,7 @@ package grakn.core.concept.thing.impl;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.FunctionalIterator;
+import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.RoleType;
@@ -38,13 +39,13 @@ import static grakn.core.common.exception.ErrorMessage.ThingWrite.DELETE_ROLEPLA
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_PLAYER_MISSING;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_ROLE_UNRELATED;
 import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ROLE_UNPLAYED;
+import static grakn.core.common.iterator.Iterators.iterate;
+import static grakn.core.common.iterator.Iterators.link;
+import static grakn.core.common.iterator.Iterators.single;
 import static grakn.core.graph.common.Encoding.Edge.Thing.PLAYING;
 import static grakn.core.graph.common.Encoding.Edge.Thing.RELATING;
 import static grakn.core.graph.common.Encoding.Edge.Thing.ROLEPLAYER;
 import static grakn.core.graph.common.Encoding.Vertex.Thing.ROLE;
-import static java.util.Arrays.stream;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Stream.concat;
 
 public class RelationImpl extends ThingImpl implements Relation {
 
@@ -107,39 +108,39 @@ public class RelationImpl extends ThingImpl implements Relation {
     }
 
     @Override
-    public Stream<ThingImpl> getPlayers(String roleType, String... roleTypes) {
-        return getPlayers(concat(Stream.of(roleType), stream(roleTypes))
+    public FunctionalIterator<ThingImpl> getPlayers(String roleType, String... roleTypes) {
+        return getPlayers(link(single(roleType), iterate(roleTypes))
                                   .map(label -> getType().getRelates(label))
-                                  .toArray(RoleType[]::new));
+                                  .stream().toArray(RoleType[]::new));
     }
 
     @Override
-    public Stream<ThingImpl> getPlayers(RoleType... roleTypes) {
+    public FunctionalIterator<ThingImpl> getPlayers(RoleType... roleTypes) {
         if (roleTypes.length == 0) {
-            return vertex.outs().edge(ROLEPLAYER).to().stream().map(ThingImpl::of);
+            return vertex.outs().edge(ROLEPLAYER).to().map(ThingImpl::of);
         }
-        return getPlayers(stream(roleTypes).flatMap(RoleType::getSubtypes).distinct().map(rt -> ((RoleTypeImpl) rt).vertex));
+        return getPlayers(iterate(roleTypes).flatMap(RoleType::getSubtypes).distinct().map(rt -> ((RoleTypeImpl) rt).vertex));
     }
 
-    private Stream<ThingImpl> getPlayers(Stream<TypeVertex> roleTypeVertices) {
-        return roleTypeVertices.flatMap(v -> vertex.outs().edge(ROLEPLAYER, v.iid()).to().stream()).map(ThingImpl::of);
+    private FunctionalIterator<ThingImpl> getPlayers(FunctionalIterator<TypeVertex> roleTypeVertices) {
+        return roleTypeVertices.flatMap(v -> vertex.outs().edge(ROLEPLAYER, v.iid()).to()).map(ThingImpl::of);
     }
 
     @Override
     public Map<RoleTypeImpl, ? extends List<ThingImpl>> getPlayersByRoleType() {
         Map<RoleTypeImpl, List<ThingImpl>> playersByRole = new HashMap<>();
-        getType().getRelates().forEach(rt -> {
-            List<ThingImpl> players = getPlayers(rt).collect(toList());
+        getType().getRelates().forEachRemaining(rt -> {
+            List<ThingImpl> players = getPlayers(rt).toList();
             if (!players.isEmpty()) playersByRole.put(rt, players);
         });
         return playersByRole;
     }
 
     @Override
-    public Stream<? extends RoleType> getRelating() {
+    public FunctionalIterator<? extends RoleType> getRelating() {
         return vertex.outs().edge(RELATING).to().map(ThingVertex::type)
                 .map(v -> RoleTypeImpl.of(vertex.graphs(), v))
-                .distinct().stream();
+                .distinct();
     }
 
     @Override

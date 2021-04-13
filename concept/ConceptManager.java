@@ -50,7 +50,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Transaction.UNSUPPORTED_OPERATION;
@@ -212,11 +211,11 @@ public final class ConceptManager {
     }
 
     public void exportTypes(StringBuilder stringBuilder) {
-        getRootAttributeType().getSubtypesExplicit().sorted(comparing(x -> x.getLabel().name()))
+        getRootAttributeType().getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name()))
                 .forEach(x -> writeAttributeType(stringBuilder, x));
-        getRootRelationType().getSubtypesExplicit().sorted(comparing(x -> x.getLabel().name()))
+        getRootRelationType().getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name()))
                 .forEach(x -> writeRelationType(stringBuilder, x));
-        getRootEntityType().getSubtypesExplicit().sorted(comparing(x -> x.getLabel().name()))
+        getRootEntityType().getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name()))
                 .forEach(x -> writeEntityType(stringBuilder, x));
     }
 
@@ -248,7 +247,7 @@ public final class ConceptManager {
             writeOwns(builder, attributeType);
             writePlays(builder, attributeType);
             builder.append(StringBuilders.SEMICOLON_NEWLINE_X2);
-            attributeType.getSubtypesExplicit()
+            attributeType.getSubtypesExplicit().stream()
                     .sorted(comparing(x -> x.getLabel().name()))
                     .forEach(x -> writeAttributeType(builder, x));
         }
@@ -262,7 +261,7 @@ public final class ConceptManager {
             writeRelates(builder, relationType);
             writePlays(builder, relationType);
             builder.append(StringBuilders.SEMICOLON_NEWLINE_X2);
-            relationType.getSubtypesExplicit()
+            relationType.getSubtypesExplicit().stream()
                     .sorted(comparing(x -> x.getLabel().name()))
                     .forEach(x -> writeRelationType(builder, x));
         }
@@ -275,7 +274,7 @@ public final class ConceptManager {
             writeOwns(builder, entityType);
             writePlays(builder, entityType);
             builder.append(StringBuilders.SEMICOLON_NEWLINE_X2);
-            entityType.getSubtypesExplicit()
+            entityType.getSubtypesExplicit().stream()
                     .sorted(comparing(x -> x.getLabel().name()))
                     .forEach(x -> writeEntityType(builder, x));
         }
@@ -287,8 +286,8 @@ public final class ConceptManager {
         }
 
         private static void writeOwns(StringBuilder builder, ThingType thingType) {
-            Set<String> keys = thingType.getOwnsExplicit(true).map(x -> x.getLabel().name()).collect(Collectors.toSet());
-            List<AttributeType> attributeTypes = thingType.getOwnsExplicit().collect(Collectors.toList());
+            Set<String> keys = thingType.getOwnsExplicit(true).map(x -> x.getLabel().name()).toSet();
+            List<? extends AttributeType> attributeTypes = thingType.getOwnsExplicit().toList();
             attributeTypes.stream().filter(x -> keys.contains(x.getLabel().name()))
                     .sorted(comparing(x -> x.getLabel().name()))
                     .forEach(attributeType -> {
@@ -313,7 +312,7 @@ public final class ConceptManager {
         }
 
         private static void writeRelates(StringBuilder builder, RelationType relationType) {
-            relationType.getRelatesExplicit().sorted(comparing(x -> x.getLabel().name()))
+            relationType.getRelatesExplicit().stream().sorted(comparing(x -> x.getLabel().name()))
                     .forEach(roleType -> {
                         builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
                                 .append(String.format("relates %s", roleType.getLabel().name()));
@@ -325,7 +324,7 @@ public final class ConceptManager {
         }
 
         private static void writePlays(StringBuilder builder, ThingType thingType) {
-            thingType.getPlaysExplicit().sorted(comparing(x -> x.getLabel().scopedName()))
+            thingType.getPlaysExplicit().stream().sorted(comparing(x -> x.getLabel().scopedName()))
                     .forEach(roleType -> {
                         builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
                                 .append(String.format("plays %s", roleType.getLabel().scopedName()));

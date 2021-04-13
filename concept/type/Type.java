@@ -19,11 +19,11 @@
 package grakn.core.concept.type;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.common.parameters.Label;
 import grakn.core.concept.Concept;
 
 import java.util.List;
-import java.util.stream.Stream;
 
 public interface Type extends Concept {
 
@@ -39,11 +39,11 @@ public interface Type extends Concept {
 
     Type getSupertype();
 
-    Stream<? extends Type> getSupertypes();
+    FunctionalIterator<? extends Type> getSupertypes();
 
-    Stream<? extends Type> getSubtypes();
+    FunctionalIterator<? extends Type> getSubtypes();
 
-    Stream<? extends Type> getSubtypesExplicit();
+    FunctionalIterator<? extends Type> getSubtypesExplicit();
 
     List<GraknException> validate();
 }

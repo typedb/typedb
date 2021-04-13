@@ -19,6 +19,7 @@ package grakn.core.server.concept;
 
 import grakn.common.collection.Pair;
 import grakn.core.common.exception.GraknException;
+import grakn.core.common.iterator.FunctionalIterator;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptManager;
 import grakn.core.concept.thing.Attribute;
@@ -147,21 +148,21 @@ public class ThingService {
 
     private void getHas(Thing thing, ConceptProto.Thing.GetHas.Req getHasRequest, UUID reqID) {
         List<ConceptProto.Type> types = getHasRequest.getAttributeTypesList();
-        Stream<? extends Attribute> attributes = types.isEmpty()
+        FunctionalIterator<? extends Attribute> attributes = types.isEmpty()
                 ? thing.getHas(getHasRequest.getKeysOnly())
                 : thing.getHas(types.stream().map(t -> notNull(getThingType(t)).asAttributeType()).toArray(AttributeType[]::new));
-        transactionSvc.stream(attributes.iterator(), reqID, atts -> getHasResPart(reqID, atts));
+        transactionSvc.stream(attributes, reqID, atts -> getHasResPart(reqID, atts));
     }
 
     private void getRelations(Thing thing, List<ConceptProto.Type> protoRoleTypes, UUID reqID) {
         RoleType[] roleTypes = protoRoleTypes.stream().map(type -> notNull(getRoleType(type))).toArray(RoleType[]::new);
-        Stream<? extends Relation> concepts = thing.getRelations(roleTypes);
-        transactionSvc.stream(concepts.iterator(), reqID, rels -> getRelationsResPart(reqID, rels));
+        FunctionalIterator<? extends Relation> concepts = thing.getRelations(roleTypes);
+        transactionSvc.stream(concepts, reqID, rels -> getRelationsResPart(reqID, rels));
     }
 
     private void getPlaying(Thing thing, UUID reqID) {
-        Stream<? extends RoleType> roleTypes = thing.getPlaying();
-        transactionSvc.stream(roleTypes.iterator(), reqID, rols -> getPlayingResPart(reqID, rols));
+        FunctionalIterator<? extends RoleType> roleTypes = thing.getPlaying();
+        transactionSvc.stream(roleTypes, reqID, rols -> getPlayingResPart(reqID, rols));
     }
 
     private void setHas(Thing thing, ConceptProto.Thing protoAttribute, UUID reqID) {
@@ -178,8 +179,8 @@ public class ThingService {
 
     private void getPlayers(Relation relation, List<ConceptProto.Type> protoRoleTypes, UUID reqID) {
         RoleType[] roleTypes = protoRoleTypes.stream().map(type -> notNull(getRoleType(type))).toArray(RoleType[]::new);
-        Stream<? extends Thing> players = relation.getPlayers(roleTypes);
-        transactionSvc.stream(players.iterator(), reqID, things -> getPlayersResPart(reqID, things));
+        FunctionalIterator<? extends Thing> players = relation.getPlayers(roleTypes);
+        transactionSvc.stream(players, reqID, things -> getPlayersResPart(reqID, things));
     }
 
     private void getPlayersByRoleType(Relation relation, UUID reqID) {
@@ -191,13 +192,11 @@ public class ThingService {
                 responses.add(pair(players.getKey(), player));
             }
         }
-        transactionSvc.stream(responses.build().iterator(), reqID,
-                              players -> getPlayersByRoleTypeResPart(reqID, players));
+        transactionSvc.stream(responses.build().iterator(), reqID, players -> getPlayersByRoleTypeResPart(reqID, players));
     }
 
     private void getRelating(Relation relation, UUID reqID) {
-        transactionSvc.stream(relation.getRelating().iterator(), reqID,
-                              roleTypes -> getRelatingResPart(reqID, roleTypes));
+        transactionSvc.stream(relation.getRelating(), reqID, roleTypes -> getRelatingResPart(reqID, roleTypes));
     }
 
     private void addPlayer(Relation relation, ConceptProto.Relation.AddPlayer.Req addPlayerReq, UUID reqID) {
@@ -211,7 +210,7 @@ public class ThingService {
     }
 
     private void getOwners(Attribute attribute, ConceptProto.Attribute.GetOwners.Req getOwnersReq, UUID reqID) {
-        Stream<? extends Thing> things;
+        FunctionalIterator<? extends Thing> things;
         switch (getOwnersReq.getFilterCase()) {
             case THING_TYPE:
                 things = attribute.getOwners(getThingType(getOwnersReq.getThingType()).asThingType());
@@ -221,7 +220,7 @@ public class ThingService {
                 things = attribute.getOwners();
         }
 
-        transactionSvc.stream(things.iterator(), reqID, owners -> getOwnersResPart(reqID, owners));
+        transactionSvc.stream(things, reqID, owners -> getOwnersResPart(reqID, owners));
     }
 
 }

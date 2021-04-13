@@ -43,7 +43,7 @@ public class Util {
     public static RoleType getRoleType(Relation relation, Thing player, RelationConstraint.RolePlayer rolePlayer) {
         try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "get_role_type")) {
             RoleType roleType;
-            Set<RoleType> inferred;
+            Set<? extends RoleType> inferred;
             if (rolePlayer.roleType().isPresent()) {
                 RelationType relationType = relation.getType();
                 TypeVariable var = rolePlayer.roleType().get();
@@ -52,7 +52,7 @@ public class Util {
                 }
             } else if ((inferred = player.getType().getPlays()
                     .filter(rt -> rt.getRelationType().equals(relation.getType()))
-                    .collect(toSet())).size() == 1) {
+                    .toSet()).size() == 1) {
                 roleType = inferred.iterator().next();
             } else if (inferred.size() > 1) {
                 throw GraknException.of(ROLE_TYPE_AMBIGUOUS, rolePlayer.player().reference());
