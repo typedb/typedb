@@ -23,9 +23,9 @@ import graql.lang.Graql;
 import org.junit.Test;
 
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static grakn.common.collection.Collections.set;
+import static grakn.core.common.iterator.Iterators.iterate;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 
@@ -41,7 +41,7 @@ public class RetrievableTest {
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $p isa person; $p has $n; $n isa name; }"), concludables);
         assertEquals(1, concludables.size());
         assertEquals(set(parse("{ $p isa person; }"), parse("{ $n isa name; }")),
-                     retrievables.stream().map(Retrievable::pattern).collect(Collectors.toSet()));
+                     iterate(retrievables).map(Retrievable::pattern).toSet());
     }
 
     @Test
@@ -50,7 +50,7 @@ public class RetrievableTest {
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $p isa person; $p has $n; $n isa name; }"), concludables);
         assertEquals(1, concludables.size());
         assertEquals(set(parse("{ $p has $n; $n isa name; }")),
-                     retrievables.stream().map(Retrievable::pattern).collect(Collectors.toSet()));
+                     iterate(retrievables).map(Retrievable::pattern).toSet());
     }
 
     @Test
@@ -61,7 +61,7 @@ public class RetrievableTest {
         assertEquals(1, concludables.size());
         assertEquals(set(parse("{ $p has $n; $n isa name; }"),
                          parse("{ $pt type person; }")),
-                     retrievables.stream().map(Retrievable::pattern).collect(Collectors.toSet()));
+                     iterate(retrievables).map(Retrievable::pattern).toSet());
     }
 
     @Test
@@ -71,7 +71,7 @@ public class RetrievableTest {
                 "{ $p isa $pt; $pt sub person; $p has $n; $n isa name; }"), concludables);
         assertEquals(1, concludables.size());
         assertEquals(set(parse("{ $p has $n; $n isa name; }"), parse("{ $pt sub person; }")),
-                     retrievables.stream().map(Retrievable::pattern).collect(Collectors.toSet()));
+                     iterate(retrievables).map(Retrievable::pattern).toSet());
     }
 
     @Test
@@ -82,7 +82,7 @@ public class RetrievableTest {
         assertEquals(1, concludables.size());
         assertEquals(set(parse("{ $p isa person, has name \"Alice\"; }"),
                          parse("{ $c isa company; }")),
-                     retrievables.stream().map(Retrievable::pattern).collect(Collectors.toSet()));
+                     iterate(retrievables).map(Retrievable::pattern).toSet());
     }
 
     @Test
@@ -93,7 +93,7 @@ public class RetrievableTest {
                 "{ $e(employee: $p, employer:$c) isa employment; $p isa person, has name \"Alice\"; $c isa company; }"), concludables);
         assertEquals(3, concludables.size());
         assertEquals(set(parse("{ $p has name \"Alice\"; }")),
-                     retrievables.stream().map(Retrievable::pattern).collect(Collectors.toSet()));
+                     iterate(retrievables).map(Retrievable::pattern).toSet());
     }
 
     @Test
@@ -104,7 +104,7 @@ public class RetrievableTest {
                 "{ $e(employee: $p, employer:$c) isa employment; $r (employee: $p) isa employment; $p isa non-inferred-role-player; }"), concludables);
         assertEquals(3, concludables.size());
         assertEquals(set(parse("{ $r (employee: $p) isa employment; $p isa non-inferred-role-player; }")),
-                     retrievables.stream().map(Retrievable::pattern).collect(Collectors.toSet()));
+                     iterate(retrievables).map(Retrievable::pattern).toSet());
     }
 
     @Test
@@ -114,21 +114,21 @@ public class RetrievableTest {
                 "{ $e(employee: $p, employer:$c) isa employment; $p isa person, has name $n; $n \"Alice\"; $c isa company; }"), concludables);
         assertEquals(2, concludables.size());
         assertEquals(set(parse("{ $e(employee: $p, employer:$c) isa employment; $c isa company; }")),
-                     retrievables.stream().map(Retrievable::pattern).collect(Collectors.toSet()));
+                     iterate(retrievables).map(Retrievable::pattern).toSet());
     }
 
     @Test
     public void test_termination_building_retrievable_with_a_has_cycle() {
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a has $b; $b has $a; }"), set());
         assertEquals(set(parse("{ $a has $b; $b has $a; }")),
-                     retrievables.stream().map(Retrievable::pattern).collect(Collectors.toSet()));
+                     iterate(retrievables).map(Retrievable::pattern).toSet());
     }
 
     @Test
     public void test_termination_building_retrievable_with_a_relation_cycle() {
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a($b); $b($a); }"), set());
         assertEquals(set(parse("{ $a($b); $b($a); }")),
-                     retrievables.stream().map(Retrievable::pattern).collect(Collectors.toSet()));
+                     iterate(retrievables).map(Retrievable::pattern).toSet());
     }
 
     @Test
@@ -137,15 +137,24 @@ public class RetrievableTest {
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a has $b; $b > 5; $b < 10; }"), concludables);
         assertEquals(1, concludables.size());
         assertEquals(set(parse("{ $b > 5; $b < 10; }")),
-                     retrievables.stream().map(Retrievable::pattern).collect(Collectors.toSet()));
+                     iterate(retrievables).map(Retrievable::pattern).toSet());
     }
 
     @Test
-    public void test_disconnected_conjunction_in_retrievable() {
+    public void test_only_disconnected_retrievables_are_separated() {
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a = 7; $b > 5; $b < 10; }"), set());
         assertEquals(set(parse("{ $b > 5; $b < 10; }"),
                          parse("{ $a = 7; }")),
-                     retrievables.stream().map(Retrievable::pattern).collect(Collectors.toSet()));
+                     iterate(retrievables).map(Retrievable::pattern).toSet());
+    }
+
+    @Test
+    public void test_retrievables_split_by_labelled_type_are_separated() {
+        Set<Retrievable> retrievables = Retrievable.extractFrom(
+                parse("{ $r1 (employer: $c1, employee: $p1) isa employment; $r2 (employer: $c2, employee: $p2) isa employment; }"),
+                set()
+        );
+        assertEquals(2, retrievables.size());
     }
 
     @Test
@@ -153,14 +162,14 @@ public class RetrievableTest {
         Set<Concludable> concludables = Concludable.create(parse("{ $a has $b; $b > 5; $b < 10; }"));
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a has $b; $b > 5; $b < 10; }"), concludables);
         assertEquals(set(parse("{ $b > 5; $b < 10; }")),
-                     retrievables.stream().map(Retrievable::pattern).collect(Collectors.toSet()));
+                     iterate(retrievables).map(Retrievable::pattern).toSet());
     }
 
     @Test
-    public void test_has_with_anonymous_atribute_value_constraints_are_in_retrievable_and_concludable() {
+    public void test_has_with_anonymous_attribute_value_constraints_are_in_retrievable_and_concludable() {
         Set<Concludable> concludables = Concludable.create(parse("{ $x has age 30; }"));
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $x has age 30; }"), concludables);
-        assertEquals(set(), retrievables.stream().map(Retrievable::pattern).collect(Collectors.toSet()));
+        assertEquals(set(), iterate(retrievables).map(Retrievable::pattern).toSet());
     }
 
     @Test
@@ -168,7 +177,7 @@ public class RetrievableTest {
         Set<Concludable> concludables = Concludable.create(parse("{ $a isa $b; $a > 5; $a < 10; }"));
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a isa $b; $a > 5; $a < 10; }"), concludables);
         assertEquals(set(parse("{ $a > 5; $a < 10; }")),
-                     retrievables.stream().map(Retrievable::pattern).collect(Collectors.toSet()));
+                     iterate(retrievables).map(Retrievable::pattern).toSet());
     }
 
     @Test
@@ -176,7 +185,7 @@ public class RetrievableTest {
         Set<Concludable> concludables = Concludable.create(parse("{ $a > 5; $a < 10; }"));
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a > 5; $a < 10; }"), concludables);
         assertEquals(set(parse("{ $a > 5; $a < 10; }")),
-                     retrievables.stream().map(Retrievable::pattern).collect(Collectors.toSet()));
+                     iterate(retrievables).map(Retrievable::pattern).toSet());
     }
 
     @Test
@@ -184,7 +193,7 @@ public class RetrievableTest {
         Set<Concludable> concludables = Concludable.create(parse("{ $x > $y; }"));
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $x > $y; }"), concludables);
         assertEquals(set(parse("{ $x > $y; }")),
-                     retrievables.stream().map(Retrievable::pattern).collect(Collectors.toSet()));
+                     iterate(retrievables).map(Retrievable::pattern).toSet());
     }
 
     @Test
@@ -192,14 +201,14 @@ public class RetrievableTest {
         Set<Concludable> concludables = Concludable.create(parse("{ $x = $y; }"));
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $x = $y; }"), concludables);
         assertEquals(set(parse("{ $x = $y; }")),
-                     retrievables.stream().map(Retrievable::pattern).collect(Collectors.toSet()));
+                     iterate(retrievables).map(Retrievable::pattern).toSet());
     }
 
     @Test
     public void test_equals_constraint_only_present_in_concludable() {
         Set<Concludable> concludables = Concludable.create(parse("{ $x has $a; $a = $b; }"));
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $x has $a; $a = $b; }"), concludables);
-        assertEquals(set(parse("{ $a = $b; }")), retrievables.stream().map(Retrievable::pattern).collect(Collectors.toSet()));
+        assertEquals(set(parse("{ $a = $b; }")), iterate(retrievables).map(Retrievable::pattern).toSet());
     }
 
     @Test

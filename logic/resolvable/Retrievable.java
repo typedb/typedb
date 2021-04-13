@@ -86,7 +86,9 @@ public class Retrievable extends Resolvable<Conjunction> {
         public Set<Retrievable> extract() {
             concludables.forEach(concludable ->
                                          iterate(concludable.concludableConstraints())
-                                                 .filter(constraint -> !(constraint.isType() && constraint.asType().isLabel() && constraint.asType().owner().id().isLabel())
+                                                 .filter(constraint ->
+                                                                 !(constraint.isType() && constraint.asType().isLabel()
+                                                                         && constraint.asType().owner().id().isLabel())
                                                  ).forEachRemaining(extractedConstraints::add)
             );
             iterate(conjunction.variables()).filter(var -> var.id().isRetrievable()).forEachRemaining(var -> {
@@ -96,7 +98,8 @@ public class Retrievable extends Resolvable<Conjunction> {
                     subgraphs.add(subgraph);
                     extractedVariables.addAll(subgraph.registeredVariables());
                     iterate(subgraph.registeredConstraints).filter(constraint ->
-                                                                           !(constraint.isType() && constraint.asType().isLabel() && constraint.asType().owner().id().isLabel())
+                                                                           !(constraint.isType() && constraint.asType().isLabel()
+                                                                                   && constraint.asType().owner().id().isLabel())
                     ).forEachRemaining(extractedConstraints::add);
                 }
             });
@@ -126,9 +129,20 @@ public class Retrievable extends Resolvable<Conjunction> {
             private void registerVariable(Variable variable) {
                 if (!registeredVariables.contains(variable)) {
                     registeredVariables.add(variable);
-                    variable.constraints().forEach(this::registerConstraint);
-                    variable.constraining().forEach(this::registerConstraint);
+                    if (variable.id().isRetrievable()) registerRetrievable(variable);
+                    else registerLabeled(variable);
                 }
+            }
+
+            private void registerRetrievable(Variable variable) {
+                assert variable.id().isRetrievable();
+                variable.constraints().forEach(this::registerConstraint);
+                variable.constraining().forEach(this::registerConstraint);
+            }
+
+            private void registerLabeled(Variable variable) {
+                assert variable.id().isLabel() && variable.asType().label().isPresent();
+                registeredConstraints.add(variable.asType().label().get());
             }
 
             private void registerConstraint(Constraint constraint) {

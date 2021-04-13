@@ -88,6 +88,7 @@ host_compatible_java_test(
     test_class = "grakn.core.logic.resolvable.RetrievableTest",
     deps = [
         # Internal dependencies
+        "//common",
 
         # External dependencies from Grakn Labs
         "@graknlabs_common//:common",
