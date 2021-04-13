@@ -188,7 +188,7 @@ public class Inserter {
                 assert thing != null;
 
                 inserted.put(id, thing);
-                if (!var.relation().isEmpty()) insertRolePlayers(thing.asRelation(), var);
+                if (var.relation().isPresent()) insertRolePlayers(thing.asRelation(), var);
                 if (!var.has().isEmpty()) insertHas(thing, var.has());
                 return thing;
             }
@@ -221,7 +221,7 @@ public class Inserter {
                 if (thingType.isEntityType()) {
                     return thingType.asEntityType().create();
                 } else if (thingType.isRelationType()) {
-                    if (!var.relation().isEmpty()) return thingType.asRelationType().create();
+                    if (var.relation().isPresent()) return thingType.asRelationType().create();
                     else throw GraknException.of(RELATION_CONSTRAINT_MISSING, var.reference());
                 } else if (thingType.isAttributeType()) {
                     return insertAttribute(thingType.asAttributeType(), var);
@@ -264,10 +264,10 @@ public class Inserter {
         }
 
         private void insertRolePlayers(Relation relation, ThingVariable var) {
-            assert !var.relation().isEmpty();
+            assert var.relation().isPresent();
             try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "extend_relation")) {
-                if (var.relation().size() == 1) {
-                    var.relation().iterator().next().players().forEach(rolePlayer -> {
+                if (var.relation().isPresent()) {
+                    var.relation().get().players().forEach(rolePlayer -> {
                         Thing player = insert(rolePlayer.player());
                         RoleType roleType = getRoleType(relation, player, rolePlayer);
                         relation.addPlayer(roleType, player);

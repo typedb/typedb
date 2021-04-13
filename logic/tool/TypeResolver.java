@@ -337,8 +337,8 @@ public class TypeResolver {
             var.isa().ifPresent(constraint -> registerIsa(resolver, constraint));
             var.is().forEach(constraint -> registerIsThing(resolver, constraint));
             var.has().forEach(constraint -> registerHas(resolver, constraint));
-            if (insertable) var.relation().forEach(constraint -> registerInsertableRelation(resolver, constraint));
-            else var.relation().forEach(constraint -> registerRelation(resolver, constraint));
+            if (insertable) var.relation().ifPresent(constraint -> registerInsertableRelation(resolver, constraint));
+            else var.relation().ifPresent(constraint -> registerRelation(resolver, constraint));
             var.iid().ifPresent(constraint -> registerIID(resolver, constraint));
             return resolver;
         }

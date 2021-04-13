@@ -116,7 +116,7 @@ public class Deleter {
                 validate(var);
                 Thing thing = matched.get(var.reference().asName()).asThing();
                 if (!var.has().isEmpty()) deleteHas(var, thing);
-                if (!var.relation().isEmpty()) deleteRelation(var, thing.asRelation());
+                if (var.relation().isPresent()) deleteRelation(var, thing.asRelation());
                 detached.put(var, thing);
             }
         }
@@ -124,7 +124,7 @@ public class Deleter {
         private void validate(ThingVariable var) {
             try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "validate")) {
                 if (!var.reference().isName()) {
-                    ErrorMessage.ThingWrite msg = !var.relation().isEmpty()
+                    ErrorMessage.ThingWrite msg = var.relation().isPresent()
                             ? ILLEGAL_ANONYMOUS_RELATION_IN_DELETE
                             : ILLEGAL_ANONYMOUS_VARIABLE_IN_DELETE;
                     throw GraknException.of(msg, var);
@@ -149,8 +149,8 @@ public class Deleter {
 
         private void deleteRelation(ThingVariable var, Relation relation) {
             try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete_relation")) {
-                if (var.relation().size() == 1) {
-                    var.relation().iterator().next().players().forEach(rolePlayer -> {
+                if (var.relation().isPresent()) {
+                    var.relation().get().players().forEach(rolePlayer -> {
                         Thing player = matched.get(rolePlayer.player().reference().asName()).asThing();
                         RoleType roleType = getRoleType(relation, player, rolePlayer);
                         relation.removePlayer(roleType, player);

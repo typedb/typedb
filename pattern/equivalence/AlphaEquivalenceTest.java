@@ -57,9 +57,9 @@ public class AlphaEquivalenceTest {
         Set<Variable> anonVariables = parseAnonymousThingVariables(graqlVariables);
         return anonVariables.stream()
                 .filter(Variable::isThing)
-                .filter(variable -> variable.asThing().relation().size() > 0)
+                .filter(variable -> variable.asThing().relation().isPresent())
                 .findFirst()
-                .get().asThing().relation().iterator().next().owner();
+                .get().asThing().relation().get().owner();
     }
 
     private Set<Variable> parseAnonymousThingVariables(String... graqlVariables) {

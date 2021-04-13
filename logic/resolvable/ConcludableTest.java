@@ -165,16 +165,6 @@ public class ConcludableTest {
     }
 
     @Test
-    public void test_conjunction_multiple_relations_are_built() {
-        String conjunction = "{ $a($x); $a($y); }";
-        Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
-        assertEquals(0, isaConcludablesCount(concludables));
-        assertEquals(0, hasConcludablesCount(concludables));
-        assertEquals(2, relationConcludablesCount(concludables));
-        assertEquals(0, attributeConcludablesCount(concludables));
-    }
-
-    @Test
     public void test_conjunction_isa_and_has_are_built() {
         String conjunction = "{ $p isa person, has name $n; $n \"Alice\"; }";
         Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
