@@ -528,14 +528,16 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
     }
 
     public static class Migrator extends ErrorMessage {
+        public static final Migrator FILE_NOT_FOUND =
+                new Migrator(1, "The specified file path '%s' could not be found.");
         public static final Migrator FILE_NOT_READABLE =
-                new Migrator(1, "The specified file '%s' cannot be opened for read.");
+                new Migrator(2, "The specified file '%s' cannot be opened for read.");
         public static final Migrator FILE_NOT_WRITABLE =
-                new Migrator(2, "The specified file '%s' cannot be opened for write.");
+                new Migrator(3, "The specified file '%s' cannot be opened for write.");
         public static final Migrator TYPE_NOT_FOUND =
-                new Migrator(3, "The type '%s' (originally '%s') is not defined in the schema.");
+                new Migrator(4, "The type '%s' (originally '%s') is not defined in the schema.");
         public static final Migrator INVALID_DATA =
-                new Migrator(4, "The data being imported is invalid.");
+                new Migrator(5, "The data being imported is invalid.");
 
         private static final String codePrefix = "MIG";
         private static final String messagePrefix = "Migrator failure";
