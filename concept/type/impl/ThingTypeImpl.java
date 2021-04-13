@@ -39,9 +39,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Stream;
 
-import static grakn.core.common.collection.Streams.compareSize;
+import static grakn.core.common.iterator.Iterators.compareSize;
 import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_OWNS;
 import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_PLAYS;
@@ -200,9 +199,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
         if ((ownsEdge = vertex.outs().edge(OWNS, attVertex)) != null) {
             // TODO: These ownership and uniqueness checks should be parallelised to scale better
-            if (getInstances().anyMatch(thing -> compareSize(thing.getHas(attributeType).stream(), 1) != 0)) {
+            if (getInstances().anyMatch(thing -> compareSize(thing.getHas(attributeType), 1) != 0)) {
                 throw exception(GraknException.of(OWNS_KEY_PRECONDITION_OWNERSHIP, vertex.label(), attVertex.label()));
-            } else if (attributeType.getInstances().anyMatch(att -> compareSize(att.getOwners(this).stream(), 1) != 0)) {
+            } else if (attributeType.getInstances().anyMatch(att -> compareSize(att.getOwners(this), 1) != 0)) {
                 throw exception(GraknException.of(OWNS_KEY_PRECONDITION_UNIQUENESS, attVertex.label(), vertex.label()));
             }
             ownsEdge.delete();

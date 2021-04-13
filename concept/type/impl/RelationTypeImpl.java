@@ -18,9 +18,9 @@
 
 package grakn.core.concept.type.impl;
 
-import grakn.core.common.collection.Streams;
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.FunctionalIterator;
+import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.impl.RelationImpl;
 import grakn.core.concept.type.AttributeType;
@@ -141,7 +141,10 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         Optional<RoleTypeImpl> inherited;
         assert getSupertype() != null;
         if (declaredRoles().anyMatch(r -> r.getLabel().name().equals(overriddenLabel)) ||
-                !(inherited = getSupertype().asRelationType().getRelates().filter(role -> role.getLabel().name().equals(overriddenLabel)).first()).isPresent()) {
+                !(inherited = getSupertype().asRelationType().getRelates()
+                        .filter(role -> role.getLabel().name().equals(overriddenLabel)).first()
+                ).isPresent()
+        ) {
             throw exception(GraknException.of(RELATION_RELATES_ROLE_NOT_AVAILABLE, roleLabel, overriddenLabel));
         }
 
@@ -236,12 +239,12 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public List<GraknException> validate() {
         List<GraknException> exceptions = super.validate();
-        if (!isRoot() && !isAbstract() && Streams.compareSize(getRelates().filter(r -> !r.getLabel().name().equals(ROLE.label())).stream(), 1) < 0) {
+        if (!isRoot() && !isAbstract() && Iterators.compareSize(getRelates().filter(r -> !r.getLabel().name().equals(ROLE.label())), 1) < 0) {
             exceptions.add(GraknException.of(RELATION_NO_ROLE, this.getLabel()));
         } else if (!isAbstract()) {
-            getRelates().filter(TypeImpl::isAbstract).forEachRemaining(roleType -> {
-                exceptions.add(GraknException.of(RELATION_ABSTRACT_ROLE, getLabel(), roleType.getLabel()));
-            });
+            getRelates().filter(TypeImpl::isAbstract).forEachRemaining(roleType ->
+                exceptions.add(GraknException.of(RELATION_ABSTRACT_ROLE, getLabel(), roleType.getLabel()))
+            );
         }
         return exceptions;
     }
