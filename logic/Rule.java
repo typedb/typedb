@@ -65,9 +65,9 @@ import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.INVALID_NEGATION_CONTAINS_DISJUNCTION;
-import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CAN_IMPLY_UNINSERTABLE_CONCLUSION;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CAN_HAVE_UNINSERTABLE_CONCLUSION;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_CANNOT_BE_SATISFIED;
-import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_INVALID_VALUE_CONVERSION;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_INVALID_VALUE_ASSIGNMENT;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CANNOT_BE_SATISFIED;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static graql.lang.common.GraqlToken.Char.COLON;
@@ -400,7 +400,7 @@ public class Rule {
 
             whenCombinations.forEachRemaining(nameLabelMap -> {
                 if (allowedThenCombinations.stream().noneMatch(thenMap -> nameLabelMap.entrySet().containsAll(thenMap.entrySet())))
-                    throw GraknException.of(RULE_CAN_IMPLY_UNINSERTABLE_CONCLUSION, rule.structure.label(), nameLabelMap.toString());
+                    throw GraknException.of(RULE_CAN_HAVE_UNINSERTABLE_CONCLUSION, rule.structure.label(), nameLabelMap.toString());
             });
         }
 
@@ -659,29 +659,19 @@ public class Rule {
                 @Override
                 public void validate(LogicManager logicMgr, ConceptManager conceptMgr) {
                     super.validate(logicMgr, conceptMgr);
-                    validateCompatibleValues(conceptMgr);
+                    validateAssignableValue(conceptMgr);
                 }
 
-                private void validateCompatibleValues(ConceptManager conceptMgr) {
+                private void validateAssignableValue(ConceptManager conceptMgr) {
                     Label attributeTypeLabel = isa().type().label().get().properLabel();
                     AttributeType attributeType = conceptMgr.getAttributeType(attributeTypeLabel.name());
                     assert attributeType != null;
+                    AttributeType.ValueType attrTypeValueType = attributeType.getValueType();
                     ValueConstraint<?> value = has().attribute().value().iterator().next();
-                    try {
-                        if (attributeType.isDateTime()) value.asDateTime();
-                        else if (attributeType.isBoolean()) value.asBoolean();
-                        else if (attributeType.isDouble()) value.asDouble();
-                        else if (attributeType.isLong()) value.asLong();
-                        else if (attributeType.isString()) value.asString();
-                        else throw GraknException.of(ILLEGAL_STATE);
-                    } catch (GraknException e) {
-                        if (e.code().isPresent() && e.code().get().equals(INVALID_CASTING.code())) {
-                            throw GraknException.of(RULE_THEN_INVALID_VALUE_CONVERSION, rule().getLabel(),
-                                                    value.value().getClass().getSimpleName(),
-                                                    attributeType.getValueType().getValueClass().getSimpleName());
-                        } else {
-                            throw e;
-                        }
+                    if (!AttributeType.ValueType.of(value.value().getClass()).assignableInto().contains(attrTypeValueType)) {
+                        throw GraknException.of(RULE_THEN_INVALID_VALUE_ASSIGNMENT, rule().getLabel(),
+                                                value.value().getClass().getSimpleName(),
+                                                attributeType.getValueType().getValueClass().getSimpleName());
                     }
                 }
 
