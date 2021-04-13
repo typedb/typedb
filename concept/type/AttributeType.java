@@ -19,6 +19,7 @@
 package grakn.core.concept.type;
 
 import grakn.core.common.iterator.FunctionalIterator;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.graph.common.Encoding;
 import graql.lang.common.GraqlArg;
@@ -127,6 +128,11 @@ public interface AttributeType extends ThingType {
         public Set<ValueType> comparables() {
             return iterate(encoding.comparables()).map(ValueType::of).toSet();
         }
+
+        public Set<ValueType> assignables() {
+            return iterate(encoding.assignables()).map(ValueType::of).toSet();
+        }
+
     }
 
     interface Boolean extends AttributeType {

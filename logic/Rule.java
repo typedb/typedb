@@ -65,8 +65,9 @@ import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.INVALID_NEGATION_CONTAINS_DISJUNCTION;
-import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CAN_IMPLY_UNINSERTABLE_RESULTS;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CAN_HAVE_INVALID_CONCLUSION;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_CANNOT_BE_SATISFIED;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_INVALID_VALUE_ASSIGNMENT;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CANNOT_BE_SATISFIED;
 import static grakn.core.common.iterator.Iterators.iterate;
 import static graql.lang.common.GraqlToken.Char.COLON;
@@ -91,7 +92,7 @@ public class Rule {
     private final Conclusion conclusion;
     private final Condition condition;
 
-    private Rule(LogicManager logicMgr, RuleStructure structure) {
+    private Rule(RuleStructure structure, LogicManager logicMgr) {
         this.structure = structure;
         this.then = thenPattern(structure.then(), logicMgr);
         this.when = whenPattern(structure.when(), structure.then(), logicMgr);
@@ -100,26 +101,17 @@ public class Rule {
         this.condition = Condition.create(this);
     }
 
-    private Rule(GraphManager graphMgr, LogicManager logicMgr, String label,
-                 graql.lang.pattern.Conjunction<? extends Pattern> when, graql.lang.pattern.variable.ThingVariable<?> then) {
-        this.structure = graphMgr.schema().rules().create(label, when, then);
-        this.then = thenPattern(structure.then(), logicMgr);
-        this.when = whenPattern(structure.when(), structure.then(), logicMgr);
-        pruneThenResolvedTypes();
-        validateSatisfiable();
-        validateInsertable(logicMgr);
-        this.conclusion = Conclusion.create(this);
-        this.conclusion.index();
-        this.condition = Condition.create(this);
-    }
-
     public static Rule of(LogicManager logicMgr, RuleStructure structure) {
-        return new Rule(logicMgr, structure);
+        return new Rule(structure, logicMgr);
     }
 
-    public static Rule of(GraphManager graphMgr, LogicManager logicMgr, String label,
-                          graql.lang.pattern.Conjunction<? extends Pattern> when, graql.lang.pattern.variable.ThingVariable<?> then) {
-        return new Rule(graphMgr, logicMgr, label, when, then);
+    public static Rule of(String label, graql.lang.pattern.Conjunction<? extends Pattern> when, graql.lang.pattern.variable.ThingVariable<?> then,
+                          GraphManager graphMgr, ConceptManager conceptMgr, LogicManager logicMgr) {
+        RuleStructure structure = graphMgr.schema().rules().create(label, when, then);
+        Rule rule = new Rule(structure, logicMgr);
+        rule.conclusion().index();
+        rule.validate(logicMgr, conceptMgr);
+        return rule;
     }
 
     public Conclusion conclusion() {
@@ -177,20 +169,16 @@ public class Rule {
         return structure.hashCode(); // does not need caching
     }
 
-    public void validateSatisfiable() {
+    public void validate(LogicManager logicMgr, ConceptManager conceptMgr) {
+        validateSatisfiable();
+        this.conclusion.validate(logicMgr, conceptMgr);
+    }
+
+    private void validateSatisfiable() {
         if (!when.isCoherent()) throw GraknException.of(RULE_WHEN_CANNOT_BE_SATISFIED, structure.label(), when);
         if (!then.isCoherent()) throw GraknException.of(RULE_THEN_CANNOT_BE_SATISFIED, structure.label(), then);
     }
 
-    public void validateInsertable(LogicManager logicMgr) {
-        FunctionalIterator<Map<Identifier.Variable.Name, Label>> whenCombinations = logicMgr.typeResolver().namedCombinations(when, false);
-        Set<Map<Identifier.Variable.Name, Label>> allowedThenCombinations = logicMgr.typeResolver().namedCombinations(then, true).toSet();
-
-        whenCombinations.forEachRemaining(nameLabelMap -> {
-            if (allowedThenCombinations.stream().noneMatch(thenMap -> nameLabelMap.entrySet().containsAll(thenMap.entrySet())))
-                throw GraknException.of(RULE_CAN_IMPLY_UNINSERTABLE_RESULTS, structure.label(), nameLabelMap.toString());
-        });
-    }
 
     /**
      * Remove type hints in the `then` pattern that are not valid in the `when` pattern
@@ -318,11 +306,11 @@ public class Rule {
         }
 
         public static Conclusion create(Rule rule) {
-            Optional<Relation> r = Relation.of(rule.then(), rule);
+            Optional<Relation> r = Relation.of(rule);
             if ((r).isPresent()) return r.get();
-            Optional<Has.Explicit> e = Has.Explicit.of(rule.then(), rule);
+            Optional<Has.Explicit> e = Has.Explicit.of(rule);
             if (e.isPresent()) return e.get();
-            Optional<Has.Variable> v = Has.Variable.of(rule.then(), rule);
+            Optional<Has.Variable> v = Has.Variable.of(rule);
             if (v.isPresent()) return v.get();
             throw GraknException.of(ILLEGAL_STATE);
         }
@@ -402,6 +390,20 @@ public class Rule {
             throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Has.Explicit.class));
         }
 
+        public void validate(LogicManager logicMgr, ConceptManager conceptMgr) {
+            validateInsertable(logicMgr);
+        }
+
+        private void validateInsertable(LogicManager logicMgr) {
+            FunctionalIterator<Map<Identifier.Variable.Name, Label>> whenCombinations = logicMgr.typeResolver().namedCombinations(rule.when, false);
+            Set<Map<Identifier.Variable.Name, Label>> allowedThenCombinations = logicMgr.typeResolver().namedCombinations(rule.then, true).toSet();
+
+            whenCombinations.forEachRemaining(nameLabelMap -> {
+                if (allowedThenCombinations.stream().noneMatch(thenMap -> nameLabelMap.entrySet().containsAll(thenMap.entrySet())))
+                    throw GraknException.of(RULE_CAN_HAVE_INVALID_CONCLUSION, rule.structure.label(), nameLabelMap.toString());
+            });
+        }
+
         public interface Isa {
             IsaConstraint isa();
         }
@@ -439,8 +441,8 @@ public class Rule {
                 this.isa = isa;
             }
 
-            public static Optional<Relation> of(Conjunction conjunction, Rule rule) {
-                return iterate(conjunction.variables()).filter(Variable::isThing).map(Variable::asThing)
+            public static Optional<Relation> of(Rule rule) {
+                return iterate(rule.then().variables()).filter(Variable::isThing).map(Variable::asThing)
                         .flatMap(variable -> iterate(variable.constraints())
                                 .filter(ThingConstraint::isRelation)
                                 .map(constraint -> {
@@ -639,8 +641,8 @@ public class Rule {
                     this.value = value;
                 }
 
-                public static Optional<Explicit> of(Conjunction conjunction, Rule rule) {
-                    return iterate(conjunction.variables()).filter(grakn.core.pattern.variable.Variable::isThing)
+                public static Optional<Explicit> of(Rule rule) {
+                    return iterate(rule.then().variables()).filter(grakn.core.pattern.variable.Variable::isThing)
                             .map(grakn.core.pattern.variable.Variable::asThing)
                             .flatMap(variable -> iterate(variable.constraints()).filter(ThingConstraint::isHas)
                                     .filter(constraint -> constraint.asHas().attribute().id().reference().isAnonymous())
@@ -655,19 +657,38 @@ public class Rule {
                 }
 
                 @Override
+                public void validate(LogicManager logicMgr, ConceptManager conceptMgr) {
+                    super.validate(logicMgr, conceptMgr);
+                    validateAssignableValue(conceptMgr);
+                }
+
+                private void validateAssignableValue(ConceptManager conceptMgr) {
+                    Label attributeTypeLabel = isa().type().label().get().properLabel();
+                    AttributeType attributeType = conceptMgr.getAttributeType(attributeTypeLabel.name());
+                    assert attributeType != null;
+                    AttributeType.ValueType attrTypeValueType = attributeType.getValueType();
+                    ValueConstraint<?> value = has().attribute().value().iterator().next();
+                    if (!AttributeType.ValueType.of(value.value().getClass()).assignables().contains(attrTypeValueType)) {
+                        throw GraknException.of(RULE_THEN_INVALID_VALUE_ASSIGNMENT, rule().getLabel(),
+                                                value.value().getClass().getSimpleName(),
+                                                attributeType.getValueType().getValueClass().getSimpleName());
+                    }
+                }
+
+                @Override
                 public FunctionalIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
                                                                                          ConceptManager conceptMgr) {
                     Identifier.Variable.Retrievable ownerId = has().owner().id();
                     assert whenConcepts.contains(ownerId) && whenConcepts.get(ownerId).isThing();
                     Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
                     Thing owner = whenConcepts.get(ownerId.reference().asName()).asThing();
-                    Attribute attribute = getOrCreateAttribute(conceptMgr);
+                    Attribute attribute = putAttribute(conceptMgr);
                     owner.setHas(attribute, true);
                     TypeVariable declaredType = has().attribute().isa().get().type();
-                    Identifier.Variable declaredTypeIdentifier = declaredType.id();
+                    Identifier.Variable declaredTypeId = declaredType.id();
                     AttributeType attrType = conceptMgr.getAttributeType(declaredType.label().get().properLabel().name());
                     assert attrType.equals(attribute.getType());
-                    thenConcepts.put(declaredTypeIdentifier, attrType);
+                    thenConcepts.put(declaredTypeId, attrType);
                     thenConcepts.put(has().attribute().id(), attribute);
                     thenConcepts.put(has().owner().id(), owner);
                     return Iterators.single(thenConcepts);
@@ -738,22 +759,20 @@ public class Rule {
                     return value;
                 }
 
-
-                private Attribute getOrCreateAttribute(ConceptManager conceptMgr) {
+                private Attribute putAttribute(ConceptManager conceptMgr) {
                     assert has().attribute().isa().isPresent()
                             && has().attribute().isa().get().type().label().isPresent()
                             && has().attribute().value().size() == 1
                             && has().attribute().value().iterator().next().isValueIdentity();
-                    Label attributeTypeLabel = has().attribute().isa().get().type().label().get().properLabel();
-                    AttributeType attributeType = conceptMgr.getAttributeType(attributeTypeLabel.name());
-                    assert attributeType != null;
+                    Label attributeTypeLabel = isa().type().label().get().properLabel();
+                    AttributeType attrType = conceptMgr.getAttributeType(attributeTypeLabel.name());
+                    assert attrType != null;
                     ValueConstraint<?> value = has().attribute().value().iterator().next();
-                    if (value.isBoolean()) return attributeType.asBoolean().put(value.asBoolean().value(), true);
-                    else if (value.isDateTime())
-                        return attributeType.asDateTime().put(value.asDateTime().value(), true);
-                    else if (value.isDouble()) return attributeType.asDouble().put(value.asDouble().value(), true);
-                    else if (value.isLong()) return attributeType.asLong().put(value.asLong().value(), true);
-                    else if (value.isString()) return attributeType.asString().put(value.asString().value(), true);
+                    if (attrType.isDateTime()) return attrType.asDateTime().put(value.asDateTime().value(), true);
+                    else if (attrType.isBoolean()) return attrType.asBoolean().put(value.asBoolean().value(), true);
+                    else if (attrType.isDouble()) return attrType.asDouble().put(value.asDouble().value(), true);
+                    else if (attrType.isLong()) return attrType.asLong().put(value.asLong().value(), true);
+                    else if (attrType.isString()) return attrType.asString().put(value.asString().value(), true);
                     else throw GraknException.of(ILLEGAL_STATE);
                 }
 
@@ -765,8 +784,8 @@ public class Rule {
                     super(hasConstraint, rule);
                 }
 
-                public static Optional<Variable> of(Conjunction conjunction, Rule rule) {
-                    return iterate(conjunction.variables()).filter(grakn.core.pattern.variable.Variable::isThing)
+                public static Optional<Variable> of(Rule rule) {
+                    return iterate(rule.then().variables()).filter(grakn.core.pattern.variable.Variable::isThing)
                             .map(grakn.core.pattern.variable.Variable::asThing)
                             .flatMap(variable -> iterate(variable.constraints()).filter(ThingConstraint::isHas)
                                     .filter(constraint -> constraint.asHas().attribute().id().isName())

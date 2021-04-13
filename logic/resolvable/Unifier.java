@@ -193,7 +193,7 @@ public class Unifier {
         Record constraint-based requirements that may be used to fail a unification
 
         Allowed requirements we may impose:
-        1. a type variable may be required to within a set of allowed types
+        1. a role type variable may be required to within a set of allowed role types
         2. a thing variable may be required to be an explicit instance of a set of allowed types
         3. a thing variable may have to satisfy a specific predicate (ie when it's an attribute)
 
@@ -235,16 +235,14 @@ public class Unifier {
             }
 
             public boolean contradicts(ConceptMap conceptMap) {
-                boolean satisfies = true;
                 for (Map.Entry<Retrievable, ? extends Concept> identifiedConcept : conceptMap.concepts().entrySet()) {
                     Retrievable id = identifiedConcept.getKey();
                     Concept concept = identifiedConcept.getValue();
                     if (!(typesSatisfied(id, concept) && isaExplicitSatisfied(id, concept) && predicatesSatisfied(id, concept))) {
-                        satisfies = false;
-                        break;
+                        return true;
                     }
                 }
-                return !satisfies;
+                return false;
             }
 
             private boolean typesSatisfied(Variable id, Concept concept) {

@@ -76,7 +76,7 @@ public class LogicManager {
             structure.delete();
             logicCache.rule().invalidate(label);
         }
-        return logicCache.rule().get(label, l -> Rule.of(graphMgr, this, label, when, then));
+        return logicCache.rule().get(label, l -> Rule.of(label, when, then, graphMgr, conceptMgr, this));
     }
 
     public Rule getRule(String label) {
@@ -112,8 +112,8 @@ public class LogicManager {
     public void revalidateAndReindexRules() {
         logicCache.rule().clear();
 
-        // validate all rules are valid and satisfiable
-        rules().forEachRemaining(Rule::validateSatisfiable);
+        // re-validate all rules are valid
+        rules().forEachRemaining(rule -> rule.validate(this, conceptMgr));
 
         // re-index if rules are valid and satisfiable
         if (graphMgr.schema().rules().conclusions().isOutdated()) {
