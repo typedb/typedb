@@ -150,8 +150,10 @@ public class RetrievableTest {
 
     @Test
     public void test_retrievables_split_by_labelled_type_are_separated() {
-        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $r1 (sharedWith: $user1, sharedObj: $obj1) isa shareitRelation;" +
-                                                                      "  $r2 (sharedWith: $user2, sharedObj: $obj2) isa shareitRelation; }"), set());
+        Set<Retrievable> retrievables = Retrievable.extractFrom(
+                parse("{ $r1 (employer: $c1, employee: $p1) isa employment; $r2 (employer: $c2, employee: $p2) isa employment; }"),
+                set()
+        );
         assertEquals(2, retrievables.size());
     }
 
