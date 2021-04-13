@@ -65,7 +65,7 @@ import static grakn.common.util.Objects.className;
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.INVALID_NEGATION_CONTAINS_DISJUNCTION;
-import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CAN_HAVE_UNINSERTABLE_CONCLUSION;
+import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CAN_HAVE_INVALID_CONCLUSION;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_CANNOT_BE_SATISFIED;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_INVALID_VALUE_ASSIGNMENT;
 import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CANNOT_BE_SATISFIED;
@@ -400,7 +400,7 @@ public class Rule {
 
             whenCombinations.forEachRemaining(nameLabelMap -> {
                 if (allowedThenCombinations.stream().noneMatch(thenMap -> nameLabelMap.entrySet().containsAll(thenMap.entrySet())))
-                    throw GraknException.of(RULE_CAN_HAVE_UNINSERTABLE_CONCLUSION, rule.structure.label(), nameLabelMap.toString());
+                    throw GraknException.of(RULE_CAN_HAVE_INVALID_CONCLUSION, rule.structure.label(), nameLabelMap.toString());
             });
         }
 
@@ -668,7 +668,7 @@ public class Rule {
                     assert attributeType != null;
                     AttributeType.ValueType attrTypeValueType = attributeType.getValueType();
                     ValueConstraint<?> value = has().attribute().value().iterator().next();
-                    if (!AttributeType.ValueType.of(value.value().getClass()).assignableInto().contains(attrTypeValueType)) {
+                    if (!AttributeType.ValueType.of(value.value().getClass()).assignables().contains(attrTypeValueType)) {
                         throw GraknException.of(RULE_THEN_INVALID_VALUE_ASSIGNMENT, rule().getLabel(),
                                                 value.value().getClass().getSimpleName(),
                                                 attributeType.getValueType().getValueClass().getSimpleName());

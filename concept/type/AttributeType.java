@@ -129,7 +129,7 @@ public interface AttributeType extends ThingType {
             return iterate(encoding.comparables()).map(ValueType::of).toSet();
         }
 
-        public Set<ValueType> assignableInto() {
+        public Set<ValueType> assignables() {
             return iterate(encoding.assignables()).map(ValueType::of).toSet();
         }
 

@@ -488,7 +488,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new RuleWrite(2, "A cycle containing negation(s) that can cause inference contradictions has been detected in rules: %s");
         public static final RuleWrite INVALID_NEGATION_CONTAINS_DISJUNCTION =
                 new RuleWrite(3, "The rule '%s' contains a negation containing a disjunction, which is currently unsupported");
-        public static final RuleWrite RULE_CAN_HAVE_UNINSERTABLE_CONCLUSION =
+        public static final RuleWrite RULE_CAN_HAVE_INVALID_CONCLUSION =
                 new RuleWrite(4, "The rule '%s''s conclusion may insert types '%s', which is not allowed in the current schema.");
         public static final RuleWrite RULE_WHEN_CANNOT_BE_SATISFIED =
                 new RuleWrite(5, "The rule '%s' has a when clause '%s' that can never be satisfied in the current schema.");
