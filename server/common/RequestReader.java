@@ -32,11 +32,11 @@ import java.util.UUID;
 
 import static grakn.core.common.collection.Bytes.bytesToUUID;
 import static grakn.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
-import static grakn.protocol.OptionsProto.Options.BatchSizeOptCase.BATCH_SIZE;
 import static grakn.protocol.OptionsProto.Options.ExplainOptCase.EXPLAIN;
 import static grakn.protocol.OptionsProto.Options.InferOptCase.INFER;
 import static grakn.protocol.OptionsProto.Options.ParallelOptCase.PARALLEL;
 import static grakn.protocol.OptionsProto.Options.PrefetchOptCase.PREFETCH;
+import static grakn.protocol.OptionsProto.Options.PrefetchSizeOptCase.PREFETCH_SIZE;
 import static grakn.protocol.OptionsProto.Options.SchemaLockAcquireTimeoutOptCase.SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS;
 import static grakn.protocol.OptionsProto.Options.SessionIdleTimeoutOptCase.SESSION_IDLE_TIMEOUT_MILLIS;
 import static grakn.protocol.OptionsProto.Options.TraceInferenceOptCase.TRACE_INFERENCE;
@@ -60,8 +60,8 @@ public class RequestReader {
         if (request.getParallelOptCase().equals(PARALLEL)) {
             options.parallel(request.getParallel());
         }
-        if (request.getBatchSizeOptCase().equals(BATCH_SIZE)) {
-            options.responseBatchSize(request.getBatchSize());
+        if (request.getPrefetchSizeOptCase().equals(PREFETCH_SIZE)) {
+            options.prefetchSize(request.getPrefetchSize());
         }
         if (request.getSessionIdleTimeoutOptCase().equals(SESSION_IDLE_TIMEOUT_MILLIS)) {
             options.sessionIdleTimeoutMillis(request.getSessionIdleTimeoutMillis());

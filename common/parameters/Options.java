@@ -29,7 +29,7 @@ import static grakn.core.common.exception.ErrorMessage.Reasoner.REASONING_CANNOT
 
 public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options<?, ?>> {
 
-    public static final int DEFAULT_RESPONSE_BATCH_SIZE = 50;
+    public static final int DEFAULT_PREFETCH_SIZE = 50;
     public static final int DEFAULT_SESSION_IDLE_TIMEOUT_MILLIS = 10_000;
     public static final int DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS = 10_000;
     public static final boolean DEFAULT_INFER = false;
@@ -44,16 +44,15 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     private Boolean infer = null;
     private Boolean traceInference = null;
     private Boolean explain = null;
-    private Integer batchSize = null;
     private Boolean parallel = null;
+    private Integer prefetchSize = null;
     private Integer sessionIdlTimeoutMillis = null;
     private Integer schemaLockAcquireTimeoutMillis = null;
     private Boolean readAnyReplica = null;
-
+    protected Boolean prefetch = null;
     protected Path graknDir = null;
     protected Path dataDir = null;
     protected Path logsDir = null;
-    protected Boolean prefetch = null;
 
     abstract SELF getThis();
 
@@ -95,14 +94,14 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         return getThis();
     }
 
-    public int responseBatchSize() {
-        if (batchSize != null) return batchSize;
-        else if (parent != null) return parent.responseBatchSize();
-        else return DEFAULT_RESPONSE_BATCH_SIZE;
+    public int prefetchSize() {
+        if (prefetchSize != null) return prefetchSize;
+        else if (parent != null) return parent.prefetchSize();
+        else return DEFAULT_PREFETCH_SIZE;
     }
 
-    public SELF responseBatchSize(int batchSize) {
-        this.batchSize = batchSize;
+    public SELF prefetchSize(int prefetchSize) {
+        this.prefetchSize = prefetchSize;
         return getThis();
     }
 

@@ -226,18 +226,18 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
 
     public <T> void stream(Iterator<T> iterator, UUID requestID,
                            Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn) {
-        int size = transaction.context().options().responseBatchSize();
+        int size = transaction.context().options().prefetchSize();
         stream(iterator, requestID, size, true, resPartFn);
     }
 
     public <T> void stream(Iterator<T> iterator, UUID requestID, Options.Query options,
                            Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn) {
-        stream(iterator, requestID, options.responseBatchSize(), options.prefetch(), resPartFn);
+        stream(iterator, requestID, options.prefetchSize(), options.prefetch(), resPartFn);
     }
 
-    private <T> void stream(Iterator<T> iterator, UUID requestID, int batchSize, boolean prefetch,
+    private <T> void stream(Iterator<T> iterator, UUID requestID, int prefetchSize, boolean prefetch,
                             Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn) {
-        ResponseStream<T> stream = new ResponseStream<>(iterator, requestID, batchSize, resPartFn);
+        ResponseStream<T> stream = new ResponseStream<>(iterator, requestID, prefetchSize, resPartFn);
         streams.compute(requestID, (key, oldValue) -> {
             if (oldValue == null) return stream;
             else throw GraknException.of(DUPLICATE_REQUEST, requestID);
@@ -301,18 +301,18 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         private final Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn;
         private final Iterator<T> iterator;
         private final UUID requestID;
-        private final int batchSize;
+        private final int prefetchSize;
 
-        ResponseStream(Iterator<T> iterator, UUID requestID, int batchSize,
+        ResponseStream(Iterator<T> iterator, UUID requestID, int prefetchSize,
                        Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn) {
             this.iterator = iterator;
             this.requestID = requestID;
-            this.batchSize = batchSize;
+            this.prefetchSize = prefetchSize;
             this.resPartFn = resPartFn;
         }
 
         private void streamResParts() {
-            streamResPartsWhile(i -> i < batchSize && iterator.hasNext());
+            streamResPartsWhile(i -> i < prefetchSize && iterator.hasNext());
             if (mayClose()) return;
 
             respondStreamState(CONTINUE);
