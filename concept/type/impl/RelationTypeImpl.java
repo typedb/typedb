@@ -20,7 +20,6 @@ package grakn.core.concept.type.impl;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.iterator.Iterators;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.impl.RelationImpl;
 import grakn.core.concept.type.AttributeType;
@@ -165,11 +164,9 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
             return roles;
         } else {
             assert getSupertype() != null;
-            Set<RoleTypeImpl> direct = new HashSet<>();
-            roles.forEachRemaining(direct::add);
-            return link(direct.iterator(), getSupertype().asRelationType().getRelates().filter(
-                    role -> overriddenRoles().noneMatch(o -> o.equals(role))
-            ));
+            Set<RoleTypeImpl> overridden = new HashSet<>();
+            overriddenRoles().forEachRemaining(overridden::add);
+            return link(roles, getSupertype().asRelationType().getRelates().filter(role -> !overridden.contains(role)));
         }
     }
 
@@ -239,11 +236,11 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public List<GraknException> validate() {
         List<GraknException> exceptions = super.validate();
-        if (!isRoot() && !isAbstract() && Iterators.compareSize(getRelates().filter(r -> !r.getLabel().name().equals(ROLE.label())), 1) < 0) {
+        if (!isRoot() && !isAbstract() && !getRelates().filter(r -> !r.getLabel().equals(ROLE.properLabel())).hasNext()) {
             exceptions.add(GraknException.of(RELATION_NO_ROLE, this.getLabel()));
         } else if (!isAbstract()) {
-            getRelates().filter(TypeImpl::isAbstract).forEachRemaining(roleType ->
-                exceptions.add(GraknException.of(RELATION_ABSTRACT_ROLE, getLabel(), roleType.getLabel()))
+            getRelates().filter(TypeImpl::isAbstract).forEachRemaining(
+                    rt -> exceptions.add(GraknException.of(RELATION_ABSTRACT_ROLE, getLabel(), rt.getLabel()))
             );
         }
         return exceptions;
