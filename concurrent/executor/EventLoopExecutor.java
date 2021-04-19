@@ -45,12 +45,12 @@ public abstract class EventLoopExecutor<E> implements AutoCloseable {
     private final ReadWriteLock accessLock;
     private volatile boolean isOpen;
 
-    protected EventLoopExecutor(int executors, int queuePerExecutor, NamedThreadFactory threadFactory) {
+    protected EventLoopExecutor(int executors, NamedThreadFactory threadFactory) {
         this.executors = new ArrayList<>(executors);
         this.executorIndex = new AtomicInteger(0);
         this.accessLock = new StampedLock().asReadWriteLock();
         this.isOpen = true;
-        for (int i = 0; i < executors; i++) this.executors.add(new EventLoop(queuePerExecutor, threadFactory));
+        for (int i = 0; i < executors; i++) this.executors.add(new EventLoop(threadFactory));
     }
 
     private EventLoop next() {
@@ -110,8 +110,8 @@ public abstract class EventLoopExecutor<E> implements AutoCloseable {
 
         private final BlockingQueue<Either<Event<E>, Shutdown>> queue;
 
-        private EventLoop(int queueSize, NamedThreadFactory threadFactory) {
-            this.queue = new LinkedBlockingQueue<>(queueSize);
+        private EventLoop(NamedThreadFactory threadFactory) {
+            this.queue = new LinkedBlockingQueue<>();
             threadFactory.newThread(this::run).start();
         }
 
@@ -133,19 +133,18 @@ public abstract class EventLoopExecutor<E> implements AutoCloseable {
 
         private void run() {
             while (true) {
-                Either<Event<E>, Shutdown> event;
                 try {
-                    event = queue.take();
+                    Either<Event<E>, Shutdown> event = queue.take();
+                    if (event.isFirst()) {
+                        try {
+                            onEvent(event.first().value());
+                        } catch (Throwable e) {
+                            onException(event.first().value(), e);
+                        }
+                    } else break;
                 } catch (InterruptedException e) {
                     throw GraknException.of(UNEXPECTED_INTERRUPTION);
                 }
-                if (event.isFirst()) {
-                    try {
-                        onEvent(event.first().value());
-                    } catch (Throwable e) {
-                        onException(event.first().value(), e);
-                    }
-                } else break;
             }
         }
     }
