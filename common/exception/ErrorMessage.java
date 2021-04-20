@@ -412,8 +412,10 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new TypeWrite(20, "The attribute type '%s' has been inherited or overridden, and cannot be redeclared as a key.");
         public static final TypeWrite OWNS_KEY_VALUE_TYPE =
                 new TypeWrite(21, "The attribute type '%s' has value type '%s', and cannot and cannot be used as a type key.");
-        public static final TypeWrite OWNS_KEY_PRECONDITION_OWNERSHIP =
-                new TypeWrite(22, "The instances of type '%s' do not have exactly one attribute of type '%s' to convert to key.");
+        public static final TypeWrite OWS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY =
+                new TypeWrite(22, "Some instances of type '%s' have zero attributes of type '%s' to convert to key.");
+        public static final TypeWrite OWS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING =
+                new TypeWrite(22, "Some instances of type '%s' have more than one attribute of type '%s' to convert to key.");
         public static final TypeWrite OWNS_KEY_PRECONDITION_UNIQUENESS =
                 new TypeWrite(23, "The attributes of type '%s' are not uniquely owned by instances of type '%s' to convert to key.");
         public static final TypeWrite OWNS_KEY_PRECONDITION_NO_INSTANCES =

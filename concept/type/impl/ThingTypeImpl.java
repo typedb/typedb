@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.concept.type.impl;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
+import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.impl.AttributeImpl;
 import com.vaticle.typedb.core.concept.thing.impl.EntityImpl;
 import com.vaticle.typedb.core.concept.thing.impl.RelationImpl;
@@ -53,7 +54,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OW
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ATT_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_NO_INSTANCES;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_OWNERSHIP;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_UNIQUENESS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_VALUE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ABSTRACT_ROLE_TYPE;
@@ -200,18 +202,21 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
         if ((ownsEdge = vertex.outs().edge(OWNS, attVertex)) != null) {
             // TODO: These ownership and uniqueness checks should be parallelised to scale better
-            if (getInstances().anyMatch(thing -> compareSize(thing.getHas(attributeType), 1) != 0)) {
-                throw exception(TypeDBException.of(OWNS_KEY_PRECONDITION_OWNERSHIP, vertex.label(), attVertex.label()));
-            } else if (attributeType.getInstances().anyMatch(att -> compareSize(att.getOwners(this), 1) != 0)) {
-                throw exception(TypeDBException.of(OWNS_KEY_PRECONDITION_UNIQUENESS, attVertex.label(), vertex.label()));
-            }
+            getInstances().forEachRemaining(thing -> {
+                FunctionalIterator<? extends Attribute> attrs = thing.getHas(attributeType);
+                if (!attrs.hasNext()) throw exception(TypeDBException.of(OWS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY, vertex.label(), attVertex.label()));
+                Attribute attr = attrs.next();
+                if (attrs.hasNext()) throw exception(TypeDBException.of(OWS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING, vertex.label(), attVertex.label()));
+                else if (compareSize(attr.getOwners(this), 1) != 0) {
+                    throw exception(TypeDBException.of(OWNS_KEY_PRECONDITION_UNIQUENESS, attVertex.label(), vertex.label()));
+                }
+            });
             ownsEdge.delete();
         } else if (getInstances().first().isPresent()) {
             throw exception(TypeDBException.of(OWNS_KEY_PRECONDITION_NO_INSTANCES, vertex.label(), attVertex.label()));
         }
         ownsKeyEdge = vertex.outs().put(OWNS_KEY, attVertex);
-        if (getSupertype().declaredOwns(false).anyMatch(a -> a.equals(attributeType)))
-            ownsKeyEdge.overridden(attVertex);
+        if (getSupertype().declaredOwns(false).anyMatch(attributeType::equals)) ownsKeyEdge.overridden(attVertex);
     }
 
     private void ownsKey(AttributeTypeImpl attributeType, AttributeTypeImpl overriddenType) {
