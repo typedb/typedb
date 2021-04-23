@@ -1,5 +1,5 @@
-[![Grabl](https://grabl.io/api/status/graknlabs/grakn/badge.svg)](https://grabl.io/graknlabs/grakn)
-[![CircleCI](https://circleci.com/gh/graknlabs/grakn/tree/master.svg?style=shield)](https://circleci.com/gh/graknlabs/grakn/tree/master)
+[![Grabl](https://grabl.io/api/status/vaticle/typedb/badge.svg)](https://grabl.io/vaticle/typedb)
+[![CircleCI](https://circleci.com/gh/vaticle/typedb/tree/master.svg?style=shield)](https://circleci.com/gh/vaticle/typedb/tree/master)
 [![GitHub release](https://img.shields.io/github/release/graknlabs/grakn.svg)](https://github.com/graknlabs/grakn/releases/latest)
 [![Discord](https://img.shields.io/discord/665254494820368395?color=7389D8&label=chat&logo=discord&logoColor=ffffff)](https://grakn.ai/discord)
 [![Discussion Forum](https://img.shields.io/discourse/https/discuss.grakn.ai/topics.svg)](https://discuss.grakn.ai)
