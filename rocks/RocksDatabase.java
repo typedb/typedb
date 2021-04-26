@@ -37,11 +37,17 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -74,6 +80,7 @@ public class RocksDatabase implements TypeDB.Database {
     protected final KeyGenerator.Data.Persisted dataKeyGenerator;
     private final StampedLock schemaLock;
     private final RocksTypeDB typedb;
+    private final WriteConsistencyManager writesManager;
     private final AtomicInteger schemaLockWriteRequests;
     private Cache cache;
 
@@ -99,6 +106,7 @@ public class RocksDatabase implements TypeDB.Database {
             throw TypeDBException.of(e);
         }
         isOpen = new AtomicBoolean(true);
+        this.writesManager = new WriteConsistencyManager();
     }
 
     static RocksDatabase createAndOpen(RocksTypeDB typedb, String name, Factory.Session sessionFactory) {
@@ -234,6 +242,10 @@ public class RocksDatabase implements TypeDB.Database {
         return dataKeyGenerator;
     }
 
+    public WriteConsistencyManager writesManager() {
+        return writesManager;
+    }
+
     /**
      * Get the lock that guarantees that the schema is not modified at the same
      * time as data being written to the database. When a schema session is
@@ -313,6 +325,178 @@ public class RocksDatabase implements TypeDB.Database {
         } catch (IOException e) {
             throw TypeDBException.of(e);
         }
+    }
+
+    /*
+    In the consistency manager, we aim to only completely synchronize on commit. However,
+    because we use multiple data structures, tracking and recording without synchronized is non-atomic. To avoid this,
+    we move records first, then delete them -- this means intermediate readers may see a storage in two states. We
+    avoid this causing issues by deduplicating into sets where otherwise we may have used iterators.
+    This is preferable to intermediate readers not seeing the storage at all, possibly causing consistency violations
+     */
+    public static class WriteConsistencyManager {
+
+        ConcurrentNavigableMap<Long, ConcurrentMap<RocksDataStorage, EventType>> events;
+        ConcurrentSet<RocksDataStorage> open;
+        ConcurrentSet<RocksDataStorage> optimisticallyCommitted;
+
+        WriteConsistencyManager() {
+            this.events = new ConcurrentSkipListMap<>();
+            this.open = new ConcurrentSet<>();
+            this.optimisticallyCommitted = new ConcurrentSet<>();
+        }
+
+        void register(RocksDataStorage storage) {
+            long snapshotStart = storage.snapshotStart();
+            events.compute(snapshotStart, (snapshot, events) -> {
+                if (events == null) events = new ConcurrentHashMap<>();
+                assert !events.containsKey(storage);
+                events.put(storage, EventType.OPEN);
+                return events;
+            });
+            open.add(storage);
+        }
+
+        synchronized void optimisticCommit(RocksDataStorage storage) throws GraknCheckedException {
+            assert open.contains(storage);
+            for (RocksDataStorage committed : concurrentCommitted(storage)) {
+                // TODO can be optimised by scanning the smaller of the two sets in the loop
+                for (FunctionalIterator<ByteBuffer> modifiedKeys = storage.modifiedKeysToValidate(); modifiedKeys.hasNext(); ) {
+                    ByteBuffer modified = modifiedKeys.next();
+                    if (committed.deletedKeys().contains(modified)) {
+                        throw GraknCheckedException.of(TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION);
+                    }
+                }
+                for (ByteBuffer deleted : storage.deletedKeys()) {
+                    if (committed.modifiedKeys().contains(deleted)) {
+                        throw GraknCheckedException.of(TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION);
+                    }
+                }
+                for (ByteBuffer exclusive : storage.exclusiveInsertKeys()) {
+                    if (committed.exclusiveInsertKeys().contains(exclusive)) {
+                        throw GraknCheckedException.of(TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION);
+                    }
+                }
+            }
+            // note: put, then delete to avoid race conditions. Side effect: concurrent readers my see it in both
+            optimisticallyCommitted.add(storage);
+            open.remove(storage);
+        }
+
+        public void committed(RocksDataStorage storage) {
+            assert optimisticallyCommitted.contains(storage) && storage.snapshotEnd() != null;
+            events.compute(storage.snapshotEnd(), (snapshot, events) -> {
+                if (events == null) events = new ConcurrentHashMap<>();
+                events.put(storage, EventType.COMMIT);
+                return events;
+            });
+            optimisticallyCommitted.remove(storage);
+        }
+
+        public void closed(RocksDataStorage rocksDataStorage) {
+            if (open.contains(rocksDataStorage)) {
+                delete(rocksDataStorage);
+            } else if (optimisticallyCommitted.contains(rocksDataStorage)) {
+                optimisticallyCommitted.remove(rocksDataStorage);
+                delete(rocksDataStorage);
+            } else {
+                Map<RocksDataStorage, EventType> events = this.events.get(rocksDataStorage.snapshotEnd());
+                assert events == null || events.get(rocksDataStorage) == null || events.get(rocksDataStorage) == EventType.COMMIT;
+                if (events != null && events.get(rocksDataStorage) != null && isCommittedDeletable(rocksDataStorage)) {
+                    delete(rocksDataStorage);
+                }
+            }
+        }
+
+        private boolean isCommittedDeletable(RocksDataStorage rocksDataStorage) {
+            assert rocksDataStorage.snapshotEnd() != null || optimisticallyCommitted.contains(rocksDataStorage);
+            if (optimisticallyCommitted.contains(rocksDataStorage)) return false;
+            // check for: open transactions that were opened before this one was committed
+            Map<Long, ConcurrentMap<RocksDataStorage, EventType>> beforeCommitted = events.headMap(rocksDataStorage.snapshotEnd());
+            for (RocksDataStorage storage : open) {
+                ConcurrentMap<RocksDataStorage, EventType> events = beforeCommitted.get(storage.snapshotStart());
+                if (events != null && events.containsKey(storage) && events.get(storage) == EventType.OPEN) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private void delete(RocksDataStorage rocksDataStorage) {
+            if (rocksDataStorage.snapshotEnd() != null) {
+                events.compute(rocksDataStorage.snapshotEnd(), (snapshot, events) -> {
+                    if (events != null) {
+                        events.remove(rocksDataStorage);
+                        if (!events.isEmpty()) return events;
+                    }
+                    return null;
+                });
+            }
+            events.compute(rocksDataStorage.snapshotStart(), (snapshot, events) -> {
+                if (events != null) {
+                    events.remove(rocksDataStorage);
+                    if (!events.isEmpty()) return events;
+                }
+                return null;
+            });
+            concurrentCommitted(rocksDataStorage).forEach(concurrentCommitted -> {
+                if (isCommittedDeletable(concurrentCommitted)) delete(concurrentCommitted);
+            });
+        }
+
+        private Set<RocksDataStorage> concurrentCommitted(RocksDataStorage storage) {
+            if (storage.snapshotEnd() == null) return concurrentCommittedWithOpen(storage);
+            else return concurrentCommittedWithCommitted(storage);
+        }
+
+        private Set<RocksDataStorage> concurrentCommittedWithCommitted(RocksDataStorage storage) {
+            assert storage.snapshotEnd() != null;
+            Set<RocksDataStorage> concurrentCommitted = new HashSet<>();
+            // any storage opened or closed between sourceStorage's open-closed range
+            events.subMap(storage.snapshotStart(), storage.snapshotEnd()).forEach((snapshot, events) -> {
+                events.forEach((evtStorage, eventType) -> {
+                    if ((eventType == EventType.OPEN || snapshot != evtStorage.snapshotStart()) &&
+                            evtStorage.snapshotEnd() != null) {
+                        concurrentCommitted.add(evtStorage);
+                    }
+                });
+            });
+            // any storage committed after sourceStorage is committed and opened before it is opened
+            events.tailMap(storage.snapshotEnd()).forEach((snapshot, events) -> {
+                events.forEach((evtStorage, eventType) -> {
+                    if (eventType == EventType.COMMIT && evtStorage.snapshotStart() <= storage.snapshotStart()) {
+                        concurrentCommitted.add(evtStorage);
+                    }
+                });
+            });
+            return concurrentCommitted;
+        }
+
+        private Set<RocksDataStorage> concurrentCommittedWithOpen(RocksDataStorage storage) {
+            assert storage.snapshotEnd() == null;
+            Set<RocksDataStorage> concurrentCommitted = new HashSet<>(optimisticallyCommitted);
+            events.tailMap(storage.snapshotStart() + 1).forEach((snapshot, events) -> {
+                events.forEach((s, type) -> {
+                    if (type == EventType.COMMIT) concurrentCommitted.add(s);
+                });
+            });
+            return concurrentCommitted;
+        }
+
+        enum EventType {
+            OPEN, COMMIT
+        }
+
+        public int recordedCommittedEvents() {
+            Set<RocksDataStorage> recorded = new HashSet<>();
+            this.events.forEach((snapshot, events) -> {
+                events.forEach((storage, type) -> {
+                    if (type == EventType.COMMIT) recorded.add(storage);
+                });
+            });
+            return recorded.size();
+        }
+
     }
 
     static class Cache {

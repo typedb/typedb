@@ -41,10 +41,6 @@ public interface Storage {
 
     void put(byte[] key, byte[] value);
 
-    void putUntracked(byte[] key);
-
-    void putUntracked(byte[] key, byte[] value);
-
     void mergeUntracked(byte[] key, byte[] value);
 
     <G> FunctionalIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor);
@@ -73,5 +69,12 @@ public interface Storage {
     interface Data extends Storage {
 
         KeyGenerator.Data dataKeyGenerator();
+
+        void put(byte[] key, byte[] value, boolean checkConsistency);
+
+        void setModified(byte[] bytes, boolean checkConsistency);
+
+        void setExclusiveCreate(byte[] key);
+
     }
 }

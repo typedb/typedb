@@ -105,6 +105,10 @@ public class ThingGraph implements Graph {
         return storage;
     }
 
+    public void exclusiveHasKey(TypeVertex ownerType, AttributeVertex<?> attribute) {
+        storage.setExclusiveCreate(Bytes.join(ownerType.iid().bytes(), attribute.iid().bytes()));
+    }
+
     public TypeGraph type() {
         return typeGraph;
     }
@@ -408,9 +412,10 @@ public class ThingGraph implements Graph {
         } else delete(vertex.asAttribute());
     }
 
-    public void setModified() {
+    public void setModified(IID iid) {
         assert storage.isOpen();
         if (!isModified) isModified = true;
+        storage.setModified(iid.bytes(), true);
     }
 
     public boolean isModified() {
@@ -437,17 +442,17 @@ public class ThingGraph implements Graph {
      */
     @Override
     public void commit() {
-        Map<VertexIID.Thing, VertexIID.Thing> IIDMap = new HashMap<>();
+        Map<VertexIID.Thing, VertexIID.Thing> uncommittedToPersistedIIDs = new HashMap<>();
         iterate(thingsByIID.values()).filter(v -> v.status().equals(BUFFERED) && !v.isInferred()).forEachRemaining(
                 vertex -> {
                     VertexIID.Thing newIID = generate(storage.dataKeyGenerator(), vertex.type().iid(), vertex.type().properLabel());
-                    IIDMap.put(vertex.iid(), newIID);
+                    uncommittedToPersistedIIDs.put(vertex.iid(), newIID);
                     vertex.iid(newIID);
                 }
         ); // thingsByIID no longer contains valid mapping from IID to TypeVertex
         thingsByIID.values().stream().filter(v -> !v.isInferred()).forEach(Vertex::commit);
         attributesByIID.valuesIterator().forEachRemaining(Vertex::commit);
-        statistics.commit(IIDMap);
+        statistics.commit(uncommittedToPersistedIIDs);
 
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Thing to be used again
     }
@@ -537,10 +542,10 @@ public class ThingGraph implements Graph {
         private final ConcurrentMap<Pair<VertexIID.Thing, VertexIID.Attribute<?>>, Encoding.Statistics.JobOperation> hasEdgeCountJobs;
         private boolean needsBackgroundCounting;
         private final TypeGraph typeGraph;
-        private final Storage storage;
+        private final Storage.Data storage;
         private final long snapshot;
 
-        public Statistics(TypeGraph typeGraph, Storage storage) {
+        public Statistics(TypeGraph typeGraph, Storage.Data storage) {
             persistedVertexCount = new ConcurrentHashMap<>();
             persistedVertexTransitiveCount = new ConcurrentHashMap<>();
             deltaVertexCount = new ConcurrentHashMap<>();
@@ -728,11 +733,11 @@ public class ThingGraph implements Graph {
                     storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootRoleType().iid()), longToBytes(delta));
                 }
             });
-            attributeVertexCountJobs.forEach((attIID, countWorkValue) -> storage.putUntracked(
-                    attributeCountJobKey(attIID), countWorkValue.bytes()
+            attributeVertexCountJobs.forEach((attIID, countWorkValue) -> storage.put(
+                    attributeCountJobKey(attIID), countWorkValue.bytes(), false
             ));
-            hasEdgeCountJobs.forEach((hasEdge, countWorkValue) -> storage.putUntracked(
-                    hasEdgeCountJobKey(IIDMap.getOrDefault(hasEdge.first(), hasEdge.first()), hasEdge.second()), countWorkValue.bytes()
+            hasEdgeCountJobs.forEach((hasEdge, countWorkValue) -> storage.put(
+                    hasEdgeCountJobKey(IIDMap.getOrDefault(hasEdge.first(), hasEdge.first()), hasEdge.second()), countWorkValue.bytes(), false
             ));
             if (!deltaVertexCount.isEmpty()) {
                 storage.mergeUntracked(snapshotKey(), longToBytes(1));

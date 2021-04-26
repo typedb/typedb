@@ -345,7 +345,7 @@ public class TypeGraph implements Graph {
         }
     }
 
-    public void setModified() {
+    public void setModified(IID iid) {
         if (!isModified) isModified = true;
     }
 

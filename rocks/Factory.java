@@ -62,6 +62,6 @@ public interface Factory {
 
         RocksStorage.Schema storageSchema(RocksDatabase database, RocksTransaction.Schema transaction);
 
-        RocksStorage.Data storageData(RocksDatabase database, RocksTransaction transaction);
+        RocksDataStorage storageData(RocksDatabase database, RocksTransaction transaction);
     }
 }

@@ -97,7 +97,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
     public void setModified() {
         if (!isModified) {
             isModified = true;
-            graph.setModified();
+            graph.setModified(iid);
         }
     }
 

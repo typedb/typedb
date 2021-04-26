@@ -94,7 +94,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
     public void setModified() {
         if (!isModified) {
             isModified = true;
-            graph.setModified();
+            graph.setModified(iid);
         }
     }
 

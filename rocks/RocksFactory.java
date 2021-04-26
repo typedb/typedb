@@ -104,14 +104,15 @@ public final class RocksFactory implements Factory {
     private synchronized Factory.Storage storageFactory() {
         if (storageFactory == null) {
             storageFactory = new Storage() {
+
                 @Override
                 public RocksStorage.Schema storageSchema(RocksDatabase database, RocksTransaction.Schema transaction) {
                     return new RocksStorage.Schema(database, transaction);
                 }
 
                 @Override
-                public RocksStorage.Data storageData(RocksDatabase database, RocksTransaction transaction) {
-                    return new RocksStorage.Data(database, transaction);
+                public RocksDataStorage storageData(RocksDatabase database, RocksTransaction transaction) {
+                    return new RocksDataStorage(database, transaction);
                 }
             };
         }

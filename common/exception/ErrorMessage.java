@@ -165,16 +165,22 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Transaction(7, "Attempted schema writes when transaction type does not allow.");
         public static final Transaction TRANSACTION_DATA_READ_VIOLATION =
                 new Transaction(8, "Attempted data writes when transaction type does not allow.");
+        public static final Transaction TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION =
+                new Transaction(9, "The transaction modifies a key that has been concurrently deleted.");
+        public static final Transaction TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION =
+                new Transaction(10, "The transaction deletes a key that is concurrently modified.");
+        public static final Transaction TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION =
+                new Transaction(11, "The transaction fails to exclusively create a key that is concurrently created.");
         public static final Transaction SESSION_DATA_VIOLATION =
-                new Transaction(9, "Attempted schema writes when session type does not allow.");
+                new Transaction(12, "Attempted schema writes when session type does not allow.");
         public static final Transaction SESSION_SCHEMA_VIOLATION =
-                new Transaction(10, "Attempted data writes when session type does not allow.");
+                new Transaction(13, "Attempted data writes when session type does not allow.");
         public static final Transaction MISSING_TRANSACTION =
-                new Transaction(11, "Transaction can not be null.");
+                new Transaction(14, "Transaction can not be null.");
         public static final Transaction BAD_TRANSACTION_TYPE =
-                new Transaction(12, "The transaction type '%s' was not recognised.");
+                new Transaction(15, "The transaction type '%s' was not recognised.");
         public static final Transaction DATA_ACQUIRE_LOCK_TIMEOUT =
-                new Transaction(13, "Could not acquire lock for data transaction. A schema session may have been left open.");
+                new Transaction(16, "Could not acquire lock for data transaction. A schema session may have been left open.");
 
         private static final String codePrefix = "TXN";
         private static final String messagePrefix = "Invalid Transaction Operation";

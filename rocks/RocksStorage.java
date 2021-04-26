@@ -106,16 +106,6 @@ public abstract class RocksStorage implements Storage {
     }
 
     @Override
-    public void putUntracked(byte[] key) {
-        putUntracked(key, EMPTY_ARRAY);
-    }
-
-    @Override
-    public void putUntracked(byte[] key, byte[] value) {
-        throw exception(ILLEGAL_OPERATION);
-    }
-
-    @Override
     public void mergeUntracked(byte[] key, byte[] value) {
         throw exception(ILLEGAL_OPERATION);
     }
@@ -248,7 +238,7 @@ public abstract class RocksStorage implements Storage {
                 if (!isOpen() || (!transaction.isOpen() && transaction.isData())) {
                     throw TypeDBException.of(RESOURCE_CLOSED);
                 }
-                storageTransaction.delete(key);
+                storageTransaction.deleteUntracked(key);
             } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
@@ -264,6 +254,7 @@ public abstract class RocksStorage implements Storage {
             return iterator;
         }
 
+
         @Override
         public TypeDBException exception(ErrorMessage errorMessage) {
             transaction.close();
@@ -276,7 +267,7 @@ public abstract class RocksStorage implements Storage {
             return super.exception(exception);
         }
 
-        public void commit() throws RocksDBException {
+        public void commit() throws RocksDBException, GraknCheckedException {
             // We disable RocksDB indexing of uncommitted writes, as we're only about to write and never again reading
             // TODO: We should benchmark this
             storageTransaction.disableIndexing();
@@ -313,87 +304,11 @@ public abstract class RocksStorage implements Storage {
                     obtainedWriteLock = true;
                 }
                 if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
-                storageTransaction.put(key, value);
-            } catch (RocksDBException e) {
-                throw exception(e);
-            } finally {
-                if (obtainedWriteLock) deleteCloseSchemaWriteLock.writeLock().unlock();
-            }
-        }
-
-        @Override
-        public void putUntracked(byte[] key, byte[] value) {
-            assert isOpen() && !isReadOnly;
-            boolean obtainedWriteLock = false;
-            try {
-                if (transaction.isOpen()) {
-                    deleteCloseSchemaWriteLock.writeLock().lock();
-                    obtainedWriteLock = true;
-                }
-                if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
                 storageTransaction.putUntracked(key, value);
             } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
                 if (obtainedWriteLock) deleteCloseSchemaWriteLock.writeLock().unlock();
-            }
-        }
-    }
-
-    @NotThreadSafe
-    public static class Data extends TransactionBounded implements Storage.Data {
-
-        private final KeyGenerator.Data dataKeyGenerator;
-
-        public Data(RocksDatabase database, RocksTransaction transaction) {
-            super(database.rocksData, transaction);
-            this.dataKeyGenerator = database.dataKeyGenerator();
-        }
-
-        @Override
-        public KeyGenerator.Data dataKeyGenerator() {
-            return dataKeyGenerator;
-        }
-
-        @Override
-        public void put(byte[] key, byte[] value) {
-            assert isOpen() && !isReadOnly;
-            try {
-                deleteCloseSchemaWriteLock.readLock().lock();
-                if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
-                storageTransaction.put(key, value);
-            } catch (RocksDBException e) {
-                throw exception(e);
-            } finally {
-                deleteCloseSchemaWriteLock.readLock().unlock();
-            }
-        }
-
-        @Override
-        public void putUntracked(byte[] key, byte[] value) {
-            assert isOpen() && !isReadOnly;
-            try {
-                deleteCloseSchemaWriteLock.readLock().lock();
-                if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
-                storageTransaction.putUntracked(key, value);
-            } catch (RocksDBException e) {
-                throw exception(e);
-            } finally {
-                deleteCloseSchemaWriteLock.readLock().unlock();
-            }
-        }
-
-        @Override
-        public void mergeUntracked(byte[] key, byte[] value) {
-            assert isOpen() && !isReadOnly;
-            try {
-                deleteCloseSchemaWriteLock.readLock().lock();
-                if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
-                storageTransaction.mergeUntracked(key, value);
-            } catch (RocksDBException e) {
-                throw exception(e);
-            } finally {
-                deleteCloseSchemaWriteLock.readLock().unlock();
             }
         }
     }

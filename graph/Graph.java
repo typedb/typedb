@@ -20,12 +20,13 @@
 package com.vaticle.typedb.core.graph;
 
 import com.vaticle.typedb.core.graph.common.Storage;
+import com.vaticle.typedb.core.graph.iid.IID;
 
 public interface Graph {
 
     Storage storage();
 
-    void setModified();
+    void setModified(IID iid);
 
     boolean isModified();
 

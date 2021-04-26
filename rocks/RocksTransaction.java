@@ -143,7 +143,7 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
     public static class Schema extends RocksTransaction {
 
         protected final RocksStorage.Schema schemaStorage;
-        protected final RocksStorage.Data dataStorage;
+        protected final RocksDataStorage dataStorage;
 
         protected Schema(RocksSession.Schema session, Arguments.Transaction.Type type,
                          Options.Transaction options, Factory.Storage storageFactory) {
@@ -178,7 +178,7 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
             return schemaStorage;
         }
 
-        RocksStorage.Data dataStorage() {
+        RocksDataStorage dataStorage() {
             if (!isOpen.get()) throw TypeDBException.of(TRANSACTION_CLOSED);
             return dataStorage;
         }
@@ -215,6 +215,8 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
                 } catch (RocksDBException e) {
                     rollback();
                     throw TypeDBException.of(e);
+                } catch (GraknCheckedException e) {
+                    throw GraknException.of(e);
                 } finally {
                     graphMgr.clear();
                     closeResources();
@@ -243,7 +245,7 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
 
     public static class Data extends RocksTransaction {
 
-        protected final RocksStorage.Data dataStorage;
+        protected final RocksDataStorage dataStorage;
         private final RocksDatabase.Cache cache;
 
         public Data(RocksSession.Data session, Arguments.Transaction.Type type,
@@ -299,6 +301,8 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
                 } catch (RocksDBException e) {
                     rollback();
                     throw TypeDBException.of(e);
+                } catch (GraknCheckedException e) {
+                    throw GraknException.of(e);
                 } finally {
                     graphMgr.data().clear();
                     closeResources();
