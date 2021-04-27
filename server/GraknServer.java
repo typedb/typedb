@@ -101,7 +101,7 @@ public class GraknServer implements AutoCloseable {
     private void configureAndVerifyJavaVersion() {
         int majorVersion = Java.getMajorVersion();
         if (majorVersion == Java.UNKNOWN_VERSION) {
-            LOG.warn("Could not detect Java version from version string '{}'. Will start Grakn Core Server anyway.", System.getProperty("java.version"));
+            LOG.warn("Could not detect Java version from version string '{}'. Will start {} anyway.", System.getProperty("java.version"), name());
         } else if (majorVersion < 11) {
             throw GraknException.of(INCOMPATIBLE_JAVA_RUNTIME, majorVersion);
         }
@@ -207,7 +207,7 @@ public class GraknServer implements AutoCloseable {
             server.awaitTermination();
             grakn.close();
             System.runFinalization();
-            LOG.info("Grakn Core Server has been shutdown");
+            LOG.info("{} has been shutdown", name());
         } catch (InterruptedException e) {
             LOG.error(FAILED_AT_STOPPING.message(), e);
             Thread.currentThread().interrupt();
