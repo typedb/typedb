@@ -54,6 +54,7 @@ import static grakn.core.common.exception.ErrorMessage.Server.EXITED_WITH_ERROR;
 import static grakn.core.common.exception.ErrorMessage.Server.FAILED_AT_STOPPING;
 import static grakn.core.common.exception.ErrorMessage.Server.INCOMPATIBLE_JAVA_RUNTIME;
 import static grakn.core.common.exception.ErrorMessage.Server.UNCAUGHT_EXCEPTION;
+import static grakn.core.concurrent.executor.Executors.MAX_THREADS;
 import static grakn.core.server.common.Util.parseCommandLine;
 import static grakn.core.server.common.Util.parseProperties;
 import static grakn.core.server.common.Util.printASCIILogo;
@@ -74,6 +75,7 @@ public class GraknServer implements AutoCloseable {
     }
 
     protected GraknServer(RunOptions.Server command, Factory factory) {
+        if (!Executors.isInitialised()) Executors.initialise(MAX_THREADS);
         this.command = command;
         configureAndVerifyJavaVersion();
         configureAndVerifyDataDir();

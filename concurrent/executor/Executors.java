@@ -25,6 +25,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
@@ -32,6 +33,7 @@ import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATIO
 
 public class Executors {
 
+    public static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
     public static int PARALLELISATION_FACTOR = -1;
 
     private static final Logger LOG = LoggerFactory.getLogger(Executors.class);
@@ -52,26 +54,31 @@ public class Executors {
     private final NioEventLoopGroup networkExecutorService;
     private final ScheduledThreadPoolExecutor scheduledThreadPool;
 
-    private Executors(int parallelisation) {
+    private Executors(int parallelisation, @Nullable String prefix) {
         if (parallelisation <= 0) throw GraknException.of(ILLEGAL_ARGUMENT);
-        serviceExecutorService = new ParallelThreadPoolExecutor(parallelisation, threadFactory(GRAKN_CORE_SERVICE_THREAD_NAME));
-        asyncExecutorService1 = new ParallelThreadPoolExecutor(parallelisation, threadFactory(GRAKN_CORE_ASYNC_THREAD_1_NAME));
-        asyncExecutorService2 = new ParallelThreadPoolExecutor(parallelisation, threadFactory(GRAKN_CORE_ASYNC_THREAD_2_NAME));
-        actorExecutorService = new ActorExecutorGroup(parallelisation, threadFactory(GRAKN_CORE_ACTOR_THREAD_NAME));
-        networkExecutorService = new NioEventLoopGroup(parallelisation, threadFactory(GRAKN_CORE_NETWORK_THREAD_NAME));
+        serviceExecutorService = new ParallelThreadPoolExecutor(parallelisation, threadFactory(prefix, GRAKN_CORE_SERVICE_THREAD_NAME));
+        asyncExecutorService1 = new ParallelThreadPoolExecutor(parallelisation, threadFactory(prefix, GRAKN_CORE_ASYNC_THREAD_1_NAME));
+        asyncExecutorService2 = new ParallelThreadPoolExecutor(parallelisation, threadFactory(prefix, GRAKN_CORE_ASYNC_THREAD_2_NAME));
+        actorExecutorService = new ActorExecutorGroup(parallelisation, threadFactory(prefix, GRAKN_CORE_ACTOR_THREAD_NAME));
+        networkExecutorService = new NioEventLoopGroup(parallelisation, threadFactory(prefix, GRAKN_CORE_NETWORK_THREAD_NAME));
         scheduledThreadPool = new ScheduledThreadPoolExecutor(GRAKN_CORE_SCHEDULED_THREAD_SIZE,
-                                                              threadFactory(GRAKN_CORE_SCHEDULED_THREAD_NAME));
+                                                              threadFactory(prefix, GRAKN_CORE_SCHEDULED_THREAD_NAME));
         scheduledThreadPool.setRemoveOnCancelPolicy(true);
     }
 
-    private NamedThreadFactory threadFactory(String threadNamePrefix) {
-        return NamedThreadFactory.create(threadNamePrefix);
+    private NamedThreadFactory threadFactory(@Nullable String commonPrefix, String threadNamePrefix) {
+        System.out.println(commonPrefix + ":" + threadNamePrefix + ":::HHEHEHEHE");
+        return NamedThreadFactory.create(commonPrefix != null ? commonPrefix + "::" + threadNamePrefix : threadNamePrefix);
     }
 
     public static synchronized void initialise(int parallelisationFactor) {
+        initialise(parallelisationFactor, null);
+    }
+
+    public static synchronized void initialise(int parallelisationFactor, @Nullable String prefix) {
         if (isInitialised()) throw GraknException.of(ILLEGAL_OPERATION);
         PARALLELISATION_FACTOR = parallelisationFactor;
-        singleton = new Executors(parallelisationFactor);
+        singleton = new Executors(parallelisationFactor, prefix);
     }
 
     public static boolean isInitialised() {
