@@ -39,12 +39,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
 import static grakn.core.common.exception.ErrorMessage.Internal.GRAKN_CLOSED;
-import static grakn.core.concurrent.executor.Executors.MAX_THREADS;
 import static java.lang.Math.max;
 
 public class RocksGrakn implements Grakn {
 
     private static final Logger LOG = LoggerFactory.getLogger(RocksGrakn.class);
+    private static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
 
     static {
         RocksDB.loadLibrary();
@@ -58,6 +58,7 @@ public class RocksGrakn implements Grakn {
     private final AtomicBoolean isOpen;
 
     protected RocksGrakn(Options.Database options, Factory.DatabaseManager databaseMgrFactory) {
+        if (!Executors.isInitialised()) Executors.initialise(MAX_THREADS);
         this.graknDBOptions = options;
         this.rocksDBOptions = initRocksDBOptions();
         this.databaseMgr = databaseMgrFactory.databaseManager(this);
