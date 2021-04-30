@@ -172,7 +172,10 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     private void branchFailure(ProcedureEdge<?, ?> edge) {
         if (edge.onlyStartsFromRelation()) {
             assert edge.from().id().isVariable();
-            seekStack.addSeeks(scopes.get(edge.from().id().asVariable()).edgeOrders());
+            scopes.get(edge.from().id().asVariable()).edgeOrders().forEach(pos -> {
+                if (!procedure.edge(pos).isClosureEdge()) seekStack.addSeek(pos);
+            });
+//            seekStack.addSeeks(scopes.get(edge.from().id().asVariable()).edgeOrders());
         }
         seekStack.addSeeks(edge.from().dependedEdgeOrders());
     }
@@ -427,6 +430,10 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         private void addSeeks(Collection<Integer> seeks) {
             seeks.forEach(this::setSeek);
+        }
+
+        public void addSeek(Integer pos) {
+            setSeek(pos);
         }
 
         private void setSeek(int pos) {
