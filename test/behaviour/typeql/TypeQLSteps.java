@@ -505,6 +505,17 @@ public class TypeQLSteps {
         }
     }
 
+    @Then("each answer does not satisfy")
+    public void each_answer_does_not_satisfy(String templatedGraqlQuery) {
+        String templatedQuery = String.join("\n", templatedGraqlQuery);
+        for (ConceptMap answer : answers) {
+            String query = applyQueryTemplate(templatedQuery, answer);
+            GraqlMatch graqlQuery = Graql.parseQuery(query).asMatch();
+            long answerSize = tx().query().match(graqlQuery).toList().size();
+            assertEquals(0, answerSize);
+        }
+    }
+
     private String applyQueryTemplate(String template, ConceptMap templateFiller) {
         // find shortest matching strings between <>
         Pattern pattern = Pattern.compile("<.+?>");
