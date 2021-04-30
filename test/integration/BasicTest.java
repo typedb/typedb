@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -134,6 +135,222 @@ public class BasicTest {
         for (int i = 0; i < 100; i++) {
             System.out.println(i + " ---- ");
             write_types_concurrently();
+        }
+    }
+
+    @Test
+    public void test() throws IOException {
+        Util.resetDirectory(dataDir);
+
+        String schema = "define\n" +
+                "device sub entity,\n" +
+                "    owns id @key,\n" +
+                "    plays additional-property:item,\n" +
+                "    plays contains:in,\n" +
+                "    plays contains:item,\n" +
+                "    plays placed:item,\n" +
+                "    plays sim-rank:this,\n" +
+                "    plays sim-rank:other;\n" +
+                "location sub entity,\n" +
+                "    owns id @key,\n" +
+                "    plays additional-property:item,\n" +
+                "    plays placed:on,\n" +
+                "    plays sim-rank:this,\n" +
+                "    plays sim-rank:other;\n" +
+                "property sub entity,\n" +
+                "    owns id @key,\n" +
+                "    plays additional-property:property;\n" +
+                "value sub entity,\n" +
+                "    owns data @key,\n" +
+                "    plays additional-property:value;\n" +
+                "additional-property sub relation,\n" +
+                "    relates item,\n" +
+                "    relates property,\n" +
+                "    relates value;\n" +
+                "contains sub relation,\n" +
+                "    relates in,\n" +
+                "    relates item;\n" +
+                "sim-rank sub relation,\n" +
+                "    owns coefficient,\n" +
+                "    relates this,\n" +
+                "    relates other;\n" +
+                "placed sub relation,\n" +
+                "    relates on,\n" +
+                "    relates item;\n" +
+                "coefficient sub attribute,\n" +
+                "    value double;\n" +
+                "data sub attribute,\n" +
+                "    value string;\n" +
+                "id sub attribute,\n" +
+                "    value string;\n";
+
+        String dataQueries = "insert $d isa device; $d has id \"Dev1\";\n" +
+                "insert $d isa device; $d has id \"Dev2\";\n" +
+                "insert $d isa device; $d has id \"Dev3\";\n" +
+                "insert $d isa device; $d has id \"Dev4\";\n" +
+                "insert $d isa device; $d has id \"Dev5\";\n" +
+                "insert $d isa device; $d has id \"Dev6\";\n" +
+                "insert $d isa device; $d has id \"Dev7\";\n" +
+                "insert $d isa device; $d has id \"Dev8\";\n" +
+                "insert $p isa property; $p has id \"Att1\";\n" +
+                "insert $p isa property; $p has id \"Att2\";\n" +
+                "insert $p isa property; $p has id \"Att3\";\n" +
+                "insert $p isa property; $p has id \"Att4\";\n" +
+                "insert $p isa property; $p has id \"Att5\";\n" +
+                "insert $p isa property; $p has id \"Att6\";\n" +
+                "insert $v isa value; $v has data \"Val1\";\n" +
+                "insert $v isa value; $v has data \"Val2\";\n" +
+                "insert $v isa value; $v has data \"Val3\";\n" +
+                "insert $v isa value; $v has data \"Val4\";\n" +
+                "insert $v isa value; $v has data \"Val5\";\n" +
+                "insert $v isa value; $v has data \"Val6\";\n" +
+                "insert $v isa value; $v has data \"Val7\";\n" +
+                "match\n" +
+                "    $in isa device, has id \"Dev1\";\n" +
+                "    $item isa device, has id \"Dev2\";\n" +
+                "insert\n" +
+                "    (in: $in, item: $item) isa contains;\n" +
+                "match\n" +
+                "    $in isa device, has id \"Dev3\";\n" +
+                "    $item isa device, has id \"Dev4\";\n" +
+                "insert\n" +
+                "    (in: $in, item: $item) isa contains;\n" +
+                "match\n" +
+                "    $in isa device, has id \"Dev3\";\n" +
+                "    $item isa device, has id \"Dev5\";\n" +
+                "insert\n" +
+                "    (in: $in, item: $item) isa contains;\n" +
+                "match\n" +
+                "    $in isa device, has id \"Dev5\";\n" +
+                "    $item isa device, has id \"Dev6\";\n" +
+                "insert\n" +
+                "    (in: $in, item: $item) isa contains;\n" +
+                "match\n" +
+                "    $in isa device, has id \"Dev7\";\n" +
+                "    $item isa device, has id \"Dev8\";\n" +
+                "insert\n" +
+                "    (in: $in, item: $item) isa contains;\n" +
+                "match\n" +
+                "    $d isa device, has id \"Dev1\";\n" +
+                "    $p isa property, has id \"Att1\";\n" +
+                "    $v isa value, has data \"Val1\";\n" +
+                "insert\n" +
+                "    (item: $d, property: $p, value: $v) isa additional-property;\n" +
+                "match\n" +
+                "    $d isa device, has id \"Dev1\";\n" +
+                "    $p isa property, has id \"Att2\";\n" +
+                "    $v isa value, has data \"Val2\";\n" +
+                "insert\n" +
+                "    (item: $d,property: $p, value: $v) isa additional-property;\n" +
+                "match\n" +
+                "    $d isa device, has id \"Dev2\";\n" +
+                "    $p isa property, has id \"Att3\";\n" +
+                "    $v isa value, has data \"Val3\";\n" +
+                "insert\n" +
+                "    (item: $d,property: $p, value: $v) isa additional-property;\n" +
+                "match\n" +
+                "    $d isa device, has id \"Dev2\";\n" +
+                "    $p isa property, has id \"Att4\";\n" +
+                "    $v isa value, has data \"Val4\";\n" +
+                "insert\n" +
+                "    (item: $d,property: $p, value: $v) isa additional-property;\n" +
+                "match\n" +
+                "    $d isa device, has id \"Dev3\";\n" +
+                "    $p isa property, has id \"Att1\";\n" +
+                "    $v isa value, has data \"Val1\";\n" +
+                "insert\n" +
+                "    (item: $d,property: $p, value: $v) isa additional-property;\n" +
+                "match\n" +
+                "    $d isa device, has id \"Dev3\";\n" +
+                "    $p isa property, has id \"Att2\";\n" +
+                "    $v isa value, has data \"Val2\";\n" +
+                "insert\n" +
+                "    (item: $d,property: $p, value: $v) isa additional-property;\n" +
+                "match\n" +
+                "    $d isa device, has id \"Dev4\";\n" +
+                "    $p isa property, has id \"Att3\";\n" +
+                "    $v isa value, has data \"Val3\";\n" +
+                "insert\n" +
+                "    (item: $d,property: $p, value: $v) isa additional-property;\n" +
+                "match\n" +
+                "    $d isa device, has id \"Dev4\";\n" +
+                "    $p isa property, has id \"Att4\";\n" +
+                "    $v isa value, has data \"Val5\";\n" +
+                "insert\n" +
+                "    (item: $d,property: $p, value: $v) isa additional-property;\n" +
+                "match\n" +
+                "    $d isa device, has id \"Dev4\";\n" +
+                "    $p isa property, has id \"Att5\";\n" +
+                "    $v isa value, has data \"Val6\";\n" +
+                "insert\n" +
+                "    (item: $d,property: $p, value: $v) isa additional-property;\n" +
+                "match\n" +
+                "    $d isa device, has id \"Dev5\";\n" +
+                "    $p isa property, has id \"Att5\";\n" +
+                "    $v isa value, has data \"Val6\";\n" +
+                "insert\n" +
+                "    (item: $d,property: $p, value: $v) isa additional-property;\n" +
+                "match\n" +
+                "    $d isa device, has id \"Dev6\";\n" +
+                "    $p isa property, has id \"Att6\";\n" +
+                "    $v isa value, has data \"Val7\";\n" +
+                "insert\n" +
+                "    (item: $d,property: $p, value: $v) isa additional-property;\n" +
+                "match\n" +
+                "    $d isa device, has id \"Dev7\";\n" +
+                "    $p isa property, has id \"Att1\";\n" +
+                "    $v isa value, has data \"Val1\";\n" +
+                "insert\n" +
+                "    (item: $d,property: $p, value: $v) isa additional-property;\n" +
+                "match\n" +
+                "    $d isa device, has id \"Dev7\";\n" +
+                "    $p isa property, has id \"Att2\";\n" +
+                "    $v isa value, has data \"Val2\";\n" +
+                "insert\n" +
+                "    (item: $d,property: $p, value: $v) isa additional-property;\n" +
+                "match\n" +
+                "    $d isa device, has id \"Dev8\";\n" +
+                "    $p isa property, has id \"Att3\";\n" +
+                "    $v isa value, has data \"Val3\";\n" +
+                "insert\n" +
+                "    (item: $d,property: $p, value: $v) isa additional-property;\n" +
+                "match\n" +
+                "    $d isa device, has id \"Dev8\";\n" +
+                "    $p isa property, has id \"Att4\";\n" +
+                "    $v isa value, has data \"Val4\";\n" +
+                "insert\n" +
+                "    (item: $d,property: $p, value: $v) isa additional-property;";
+
+        try (Grakn grakn = RocksGrakn.open(options)) {
+            grakn.databases().create(database);
+
+            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    tx.query().define(Graql.parseQuery(schema));
+                    tx.commit();
+                }
+            }
+
+            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA)) {
+                try (Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    Stream<GraqlQuery> queries = Graql.parseQueries(dataQueries);
+                    queries.forEach(q -> tx.query().insert(q.asInsert()));
+                    tx.commit();
+                }
+                System.out.println("Done initialising");
+                String query = "match\n" +
+                        "    $this isa device, has id \"Dev7\";\n" +
+                        "    $other isa device, has id \"Dev1\";\n" +
+                        "    $l (item: $this, property: $p, value: $v) isa additional-property;\n" +
+                        "    $o (item: $other, property: $p, value: $v) isa additional-property;\n" +
+                        "get $l, $o;";
+                try (Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    List<ConceptMap> match = tx.query().match(Graql.parseQuery(query).asMatch()).toList();
+                    assertEquals(2, match.size());
+                }
+            }
+
+
         }
     }
 
