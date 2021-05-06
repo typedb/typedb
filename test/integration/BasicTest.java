@@ -130,7 +130,7 @@ public class BasicTest {
     }
 
     @Test
-    public void write_types_concurrently_repeatedly() throws IOException {
+    public void write_types_concurrently_repeatedly() throws IOException, InterruptedException {
         for (int i = 0; i < 100; i++) {
             System.out.println(i + " ---- ");
             write_types_concurrently();
@@ -138,22 +138,25 @@ public class BasicTest {
     }
 
     @Test
-    public void write_types_concurrently() throws IOException {
+    public void write_types_concurrently() throws IOException, InterruptedException {
         Util.resetDirectory(dataDir);
-
+        System.out.println("1");
         try (TypeDB typedb = RocksTypeDB.open(options)) {
             typedb.databases().create(database);
+            System.out.println("2");
 
             assertTrue(typedb.isOpen());
             assertEquals(1, typedb.databases().all().size());
             assertEquals(database, typedb.databases().all().iterator().next().name());
 
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
+                System.out.println("3");
 
                 assertTrue(session.isOpen());
                 assertEquals(database, session.database().name());
 
                 try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
+                    System.out.println("4");
                     assertTrue(transaction.isOpen());
                     assertTrue(transaction.type().isRead());
 
@@ -769,14 +772,21 @@ public class BasicTest {
                 name(txn1).put("alice");
                 name(txn2).get("alice").delete();
 
-                txn2.commit(); // delete before write
-                txn1.commit();
+                txn2.commit();
+                try {
+                    txn1.commit();
+                    fail("put and delete should conflict in any order.");
+                } catch (GraknException e) {
+                    assertTrue(true);
+                }
 
                 try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
-                    assertEquals("alice", name(txn).get("alice").getValue());
-                    assertEquals(1, name(txn).getInstances().count());
-                    assertTrue(name(txn).getInstances().anyMatch(att -> att.getValue().equals("alice")));
+                    assertEquals(0, name(txn).getInstances().count());
                 }
+
+                txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
+                name(txn1).put("alice");
+                txn1.commit();
 
                 txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
                 txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
@@ -784,13 +794,8 @@ public class BasicTest {
                 name(txn1).get("alice").delete();
                 name(txn2).get("alice").delete();
 
-                txn1.commit(); // delete concurrently
-                try {
-                    txn2.commit();
-                    fail("The second delete operation in TX2 is not supposed to succeed");
-                } catch (Exception ignored) {
-                    assertTrue(true);
-                }
+                txn1.commit(); // delete concurrently is not a conflict
+                txn2.commit();
 
                 try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     assertNull(name(txn).get("alice"));

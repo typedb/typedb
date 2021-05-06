@@ -111,8 +111,8 @@ public class RocksDataStorage extends RocksStorage.TransactionBounded implements
     }
 
     @Override
-    public void commit() throws RocksDBException, GraknCheckedException {
-        database.writesManager().optimisticCommit(this);
+    public void commit() throws RocksDBException {
+        database.writesManager().tryOptimisticCommit(this);
         super.commit();
         snapshotEnd = database.rocksData.getLatestSequenceNumber();
         database.writesManager().committed(this);
@@ -150,12 +150,16 @@ public class RocksDataStorage extends RocksStorage.TransactionBounded implements
         return deletedKeys;
     }
 
-    public FunctionalIterator<ByteBuffer> modifiedKeysToValidate() {
+    public FunctionalIterator<ByteBuffer> modifiedValidatedKeys() {
         return Iterators.iterate(modifiedKeys.entrySet()).filter(Map.Entry::getValue).map(Map.Entry::getKey);
     }
 
     public Set<ByteBuffer> modifiedKeys() {
         return modifiedKeys.keySet();
+    }
+
+    public boolean isModifiedValidatedKey(ByteBuffer key) {
+        return modifiedKeys.getOrDefault(key, false);
     }
 
     public Set<ByteBuffer> exclusiveInsertKeys() {

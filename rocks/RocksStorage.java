@@ -267,7 +267,7 @@ public abstract class RocksStorage implements Storage {
             return super.exception(exception);
         }
 
-        public void commit() throws RocksDBException, GraknCheckedException {
+        public void commit() throws RocksDBException {
             // We disable RocksDB indexing of uncommitted writes, as we're only about to write and never again reading
             // TODO: We should benchmark this
             storageTransaction.disableIndexing();

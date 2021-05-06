@@ -357,30 +357,45 @@ public class RocksDatabase implements TypeDB.Database {
             open.add(storage);
         }
 
-        synchronized void optimisticCommit(RocksDataStorage storage) throws GraknCheckedException {
+        synchronized void tryOptimisticCommit(RocksDataStorage storage) {
             assert open.contains(storage);
             for (RocksDataStorage committed : concurrentCommitted(storage)) {
-                // TODO can be optimised by scanning the smaller of the two sets in the loop
-                for (FunctionalIterator<ByteBuffer> modifiedKeys = storage.modifiedKeysToValidate(); modifiedKeys.hasNext(); ) {
-                    ByteBuffer modified = modifiedKeys.next();
-                    if (committed.deletedKeys().contains(modified)) {
-                        throw GraknCheckedException.of(TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION);
-                    }
-                }
-                for (ByteBuffer deleted : storage.deletedKeys()) {
-                    if (committed.modifiedKeys().contains(deleted)) {
-                        throw GraknCheckedException.of(TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION);
-                    }
-                }
-                for (ByteBuffer exclusive : storage.exclusiveInsertKeys()) {
-                    if (committed.exclusiveInsertKeys().contains(exclusive)) {
-                        throw GraknCheckedException.of(TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION);
-                    }
-                }
+                validateModifiedKeys(storage, committed);
+                requireEmptyIntersection(storage.deletedKeys(), committed.modifiedKeys(), TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION);
+                requireEmptyIntersection(storage.exclusiveInsertKeys(), committed.exclusiveInsertKeys(), TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION);
             }
             // note: put, then delete to avoid race conditions. Side effect: concurrent readers my see it in both
             optimisticallyCommitted.add(storage);
             open.remove(storage);
+        }
+
+        private void validateModifiedKeys(RocksDataStorage storage, RocksDataStorage committed) {
+            if (storage.modifiedKeys().size() < committed.deletedKeys().size()) {
+                for (FunctionalIterator<ByteBuffer> modifiedKeys = storage.modifiedValidatedKeys(); modifiedKeys.hasNext(); ) {
+                    ByteBuffer modified = modifiedKeys.next();
+                    if (committed.deletedKeys().contains(modified)) {
+                        throw GraknException.of(TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION);
+                    }
+                }
+            } else {
+                for (ByteBuffer key : committed.deletedKeys()) {
+                    if (storage.isModifiedValidatedKey(key)) {
+                        throw GraknException.of(TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION);
+                    }
+                }
+            }
+        }
+
+        private void requireEmptyIntersection(Set<ByteBuffer> set1, Set<ByteBuffer> set2, ErrorMessage error) {
+            if (set1.size() < set2.size()) {
+                for (ByteBuffer key : set1) {
+                    if (set2.contains(key)) throw GraknException.of(error);
+                }
+            } else {
+                for (ByteBuffer key : set2) {
+                    if (set1.contains(key)) throw GraknException.of(error);
+                }
+            }
         }
 
         public void committed(RocksDataStorage storage) {
