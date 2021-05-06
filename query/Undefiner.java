@@ -254,7 +254,7 @@ public class Undefiner {
             }
             com.vaticle.typedb.core.logic.Rule r = logicMgr.getRule(rule.label());
             if (r == null) throw TypeDBException.of(RULE_NOT_FOUND, rule.label());
-            r.delete();
+            logicMgr.deleteAndInvalidateRule(r);
         }
     }
 }

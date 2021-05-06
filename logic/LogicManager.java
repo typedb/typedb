@@ -62,19 +62,20 @@ public class LogicManager {
         this.typeResolver = new TypeResolver(logicCache, traversalEng, conceptMgr);
     }
 
-
     GraphManager graph() { return graphMgr; }
 
     public TypeResolver typeResolver() {
         return typeResolver;
     }
 
+    public void deleteAndInvalidateRule(Rule rule) {
+        rule.delete();
+        logicCache.rule().invalidate(rule.getLabel());
+    }
+
     public Rule putRule(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
         Rule rule = getRule(label);
-        if (rule != null) {
-            rule.delete();
-            logicCache.rule().invalidate(label);
-        }
+        if (rule != null) deleteAndInvalidateRule(rule);
         return logicCache.rule().get(label, l -> Rule.of(label, when, then, graphMgr, conceptMgr, this));
     }
 
