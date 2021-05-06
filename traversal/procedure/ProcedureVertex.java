@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,22 +16,22 @@
  *
  */
 
-package grakn.core.traversal.procedure;
+package com.vaticle.typedb.core.traversal.procedure;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.parameters.Label;
-import grakn.core.graph.GraphManager;
-import grakn.core.graph.common.Encoding;
-import grakn.core.graph.edge.ThingEdge;
-import grakn.core.graph.vertex.AttributeVertex;
-import grakn.core.graph.vertex.ThingVertex;
-import grakn.core.graph.vertex.TypeVertex;
-import grakn.core.graph.vertex.Vertex;
-import grakn.core.traversal.Traversal;
-import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.graph.TraversalVertex;
-import grakn.core.traversal.predicate.Predicate;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.edge.ThingEdge;
+import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
+import com.vaticle.typedb.core.graph.vertex.ThingVertex;
+import com.vaticle.typedb.core.graph.vertex.TypeVertex;
+import com.vaticle.typedb.core.graph.vertex.Vertex;
+import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
+import com.vaticle.typedb.core.traversal.predicate.Predicate;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -42,20 +42,20 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-import static grakn.common.collection.Collections.set;
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_ATTRIBUTE_TYPE;
-import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.iterator.Iterators.link;
-import static grakn.core.common.iterator.Iterators.single;
-import static grakn.core.common.iterator.Iterators.tree;
-import static grakn.core.graph.common.Encoding.Edge.Type.SUB;
-import static grakn.core.graph.common.Encoding.ValueType.STRING;
-import static grakn.core.graph.common.Encoding.Vertex.Thing.ROLE;
-import static grakn.core.traversal.predicate.PredicateOperator.Equality.EQ;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_ATTRIBUTE_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.link;
+import static com.vaticle.typedb.core.common.iterator.Iterators.single;
+import static com.vaticle.typedb.core.common.iterator.Iterators.tree;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ROLE;
+import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.EQ;
 
 public abstract class ProcedureVertex<
         VERTEX extends Vertex<?, ?>,
@@ -100,17 +100,17 @@ public abstract class ProcedureVertex<
     }
 
     public ProcedureVertex.Thing asThing() {
-        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(ProcedureVertex.Thing.class));
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(ProcedureVertex.Thing.class));
     }
 
     public ProcedureVertex.Type asType() {
-        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(ProcedureVertex.Type.class));
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(ProcedureVertex.Type.class));
     }
 
     static TypeVertex assertTypeNotNull(TypeVertex type, Label label) {
         // TODO: replace this with assertions once query validation is implemented
         // TODO: what happens to the state of transaction if we throw in a traversal/match?
-        if (type == null) throw GraknException.of(TYPE_NOT_FOUND, label);
+        if (type == null) throw TypeDBException.of(TYPE_NOT_FOUND, label);
         else return type;
     }
 
@@ -148,7 +148,7 @@ public abstract class ProcedureVertex<
             else if (mustBeRelation()) return iterateFromAll(graphMgr, graphMgr.schema().rootRelationType());
             else if (mustBeRole()) return iterateFromAll(graphMgr, graphMgr.schema().rootRoleType());
             else if (mustBeThing()) return iterateFromAll(graphMgr, graphMgr.schema().rootThingType());
-            else throw GraknException.of(ILLEGAL_STATE);
+            else throw TypeDBException.of(ILLEGAL_STATE);
         }
 
         FunctionalIterator<? extends ThingVertex> filter(FunctionalIterator<? extends ThingVertex> iterator,
@@ -293,7 +293,7 @@ public abstract class ProcedureVertex<
                     .map(l -> graphMgr.schema().getType(l)).noNulls()
                     .map(t -> {
                         if (t.isAttributeType()) return t;
-                        else throw GraknException.of(TYPE_NOT_ATTRIBUTE_TYPE, t.properLabel());
+                        else throw TypeDBException.of(TYPE_NOT_ATTRIBUTE_TYPE, t.properLabel());
                     }).filter(t -> eq.valueType().assignables().contains(t.valueType()));
             return iteratorOfAttributes(graphMgr, attributeTypes, params, eq);
         }
@@ -323,7 +323,7 @@ public abstract class ProcedureVertex<
                 case DATETIME:
                     return graphMgr.data().get(type, value.getDateTime());
                 default:
-                    throw GraknException.of(ILLEGAL_STATE);
+                    throw TypeDBException.of(ILLEGAL_STATE);
             }
         }
 

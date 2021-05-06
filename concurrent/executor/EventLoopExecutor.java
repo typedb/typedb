@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,11 +16,11 @@
  *
  */
 
-package grakn.core.concurrent.executor;
+package com.vaticle.typedb.core.concurrent.executor;
 
-import grakn.common.collection.Either;
-import grakn.common.concurrent.NamedThreadFactory;
-import grakn.core.common.exception.GraknException;
+import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.common.concurrent.NamedThreadFactory;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,8 +32,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.StampedLock;
 
-import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
-import static grakn.core.common.exception.ErrorMessage.Server.SERVER_SHUTDOWN;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.SERVER_SHUTDOWN;
 
 public abstract class EventLoopExecutor<E> implements AutoCloseable {
 
@@ -68,7 +68,7 @@ public abstract class EventLoopExecutor<E> implements AutoCloseable {
     public void submit(E event) {
         try {
             accessLock.readLock().lock();
-            if (!isOpen) throw GraknException.of(SERVER_SHUTDOWN);
+            if (!isOpen) throw TypeDBException.of(SERVER_SHUTDOWN);
             next().submit(event);
         } finally {
             accessLock.readLock().unlock();
@@ -119,7 +119,7 @@ public abstract class EventLoopExecutor<E> implements AutoCloseable {
             try {
                 queue.put(Either.first(new Event<>(event)));
             } catch (InterruptedException e) {
-                throw GraknException.of(UNEXPECTED_INTERRUPTION);
+                throw TypeDBException.of(UNEXPECTED_INTERRUPTION);
             }
         }
 
@@ -127,7 +127,7 @@ public abstract class EventLoopExecutor<E> implements AutoCloseable {
             try {
                 queue.put(Either.second(SHUTDOWN_SIGNAL));
             } catch (InterruptedException e) {
-                throw GraknException.of(UNEXPECTED_INTERRUPTION);
+                throw TypeDBException.of(UNEXPECTED_INTERRUPTION);
             }
         }
 
@@ -143,7 +143,7 @@ public abstract class EventLoopExecutor<E> implements AutoCloseable {
                         }
                     } else break;
                 } catch (InterruptedException e) {
-                    throw GraknException.of(UNEXPECTED_INTERRUPTION);
+                    throw TypeDBException.of(UNEXPECTED_INTERRUPTION);
                 }
             }
         }

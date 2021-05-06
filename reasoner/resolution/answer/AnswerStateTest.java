@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,16 +15,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner.resolution.answer;
+package com.vaticle.typedb.core.reasoner.resolution.answer;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptImpl;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Concludable;
-import grakn.core.reasoner.resolution.answer.AnswerStateImpl.TopImpl.MatchImpl.InitialImpl;
-import grakn.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.concept.Concept;
+import com.vaticle.typedb.core.concept.ConceptImpl;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Concludable;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateImpl.TopImpl.MatchImpl.InitialImpl;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.set;
+import static com.vaticle.typedb.common.collection.Collections.set;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -138,7 +138,7 @@ public class AnswerStateTest {
         }
 
         @Override
-        public GraknException exception(GraknException exception) {
+        public TypeDBException exception(TypeDBException exception) {
             return exception;
         }
 

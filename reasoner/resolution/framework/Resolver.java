@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,26 +16,26 @@
  *
  */
 
-package grakn.core.reasoner.resolution.framework;
+package com.vaticle.typedb.core.reasoner.resolution.framework;
 
-import grakn.common.collection.Either;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.iterator.Iterators;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptManager;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concurrent.actor.Actor;
-import grakn.core.concurrent.producer.Producer;
-import grakn.core.concurrent.producer.Producers;
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.variable.Variable;
-import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState;
-import grakn.core.reasoner.resolution.framework.Response.Answer;
-import grakn.core.traversal.Traversal;
-import grakn.core.traversal.TraversalEngine;
-import grakn.core.traversal.common.Identifier.Variable.Retrievable;
+import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
+import com.vaticle.typedb.core.concept.Concept;
+import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concurrent.actor.Actor;
+import com.vaticle.typedb.core.concurrent.producer.Producer;
+import com.vaticle.typedb.core.concurrent.producer.Producers;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.variable.Variable;
+import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Answer;
+import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.TraversalEngine;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,9 +44,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
-import static grakn.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
+import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
 
 public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Actor<RESOLVER> {
     private static final Logger LOG = LoggerFactory.getLogger(Resolver.class);
@@ -73,8 +73,8 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
 
     @Override
     protected void exception(Throwable e) {
-        if (e instanceof GraknException && ((GraknException) e).code().isPresent()) {
-            String code = ((GraknException) e).code().get();
+        if (e instanceof TypeDBException && ((TypeDBException) e).code().isPresent()) {
+            String code = ((TypeDBException) e).code().get();
             if (code.equals(RESOURCE_CLOSED.code())) {
                 LOG.debug("Resolver interrupted by resource close: {}", e.getMessage());
                 registry.terminateResolvers(e);
@@ -167,7 +167,7 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
                     return Optional.empty();
                 }
             } else {
-                throw GraknException.of(ILLEGAL_STATE);
+                throw TypeDBException.of(ILLEGAL_STATE);
             }
         }
         return Optional.of(new ConceptMap(newBounds));

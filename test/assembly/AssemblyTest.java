@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,10 +16,10 @@
  *
  */
 
-package grakn.core.test.assembly;
+package com.vaticle.typedb.core.test.assembly;
 
-import grakn.common.test.console.ConsoleRunner;
-import grakn.common.test.server.GraknCoreRunner;
+import com.vaticle.typedb.common.test.console.TypeDBConsoleRunner;
+import com.vaticle.typedb.common.test.server.TypeDBCoreRunner;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -30,7 +30,7 @@ public class AssemblyTest {
 
     @Test
     public void bootup() throws InterruptedException, TimeoutException, IOException {
-        GraknCoreRunner server = new GraknCoreRunner();
+        TypeDBCoreRunner server = new TypeDBCoreRunner();
         try {
             server.start();
         } finally {
@@ -40,10 +40,10 @@ public class AssemblyTest {
 
     @Test
     public void console() throws InterruptedException, TimeoutException, IOException {
-        GraknCoreRunner server = new GraknCoreRunner();
+        TypeDBCoreRunner server = new TypeDBCoreRunner();
         try {
             server.start();
-            ConsoleRunner console = new ConsoleRunner();
+            TypeDBConsoleRunner console = new TypeDBConsoleRunner();
             int exitCode = console.run(server.address(), false, Paths.get("test/assembly/console-script"));
             assert exitCode == 0;
         } finally {

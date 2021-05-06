@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -17,14 +17,14 @@
  */
 
 
-package grakn.core.logic.resolvable;
+package com.vaticle.typedb.core.logic.resolvable;
 
-import grakn.core.logic.LogicManager;
-import grakn.core.logic.Rule;
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.Disjunction;
-import grakn.core.traversal.common.Identifier;
-import graql.lang.Graql;
+import com.vaticle.typedb.core.logic.LogicManager;
+import com.vaticle.typedb.core.logic.Rule;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typeql.lang.TypeQL;
 
 import java.util.Map;
 import java.util.Set;
@@ -33,15 +33,15 @@ import java.util.stream.Collectors;
 public class Util {
 
     public static Conjunction resolvedConjunction(String query, LogicManager logicMgr) {
-        Disjunction disjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise());
+        Disjunction disjunction = Disjunction.create(TypeQL.parsePattern(query).asConjunction().normalise());
         assert disjunction.conjunctions().size() == 1;
         logicMgr.typeResolver().resolve(disjunction);
         return disjunction.conjunctions().get(0);
     }
 
     public static Rule createRule(String label, String whenConjunctionPattern, String thenPattern, LogicManager logicMgr) {
-        Rule rule = logicMgr.putRule(label, Graql.parsePattern(whenConjunctionPattern).asConjunction(),
-                                     Graql.parseVariable(thenPattern).asThing());
+        Rule rule = logicMgr.putRule(label, TypeQL.parsePattern(whenConjunctionPattern).asConjunction(),
+                                     TypeQL.parseVariable(thenPattern).asThing());
         return rule;
     }
 

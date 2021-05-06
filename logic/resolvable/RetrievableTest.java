@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,24 +15,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.logic.resolvable;
+package com.vaticle.typedb.core.logic.resolvable;
 
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.Disjunction;
-import graql.lang.Graql;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typeql.lang.TypeQL;
 import org.junit.Test;
 
 import java.util.Set;
 
-import static grakn.common.collection.Collections.set;
-import static grakn.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 
 public class RetrievableTest {
 
     private Conjunction parse(String query) {
-        return Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
+        return Disjunction.create(TypeQL.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
     }
 
     @Test
@@ -215,7 +215,7 @@ public class RetrievableTest {
     public void test_is_constraint_is_a_retrievable() {
         Set<Concludable> concludables = Concludable.create(parse("{ $x is $y; $x isa thing; $y isa thing; }"));
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $x is $y; $x isa thing; $y isa thing; }"), concludables);
-        // We can't build the conjunction { $x is $y; } using Graql (without binding the variables)
+        // We can't build the conjunction { $x is $y; } using TypeQL (without binding the variables)
         assertEquals(1, retrievables.size());
         assertEquals(2, retrievables.iterator().next().pattern().variables().size());
         assertTrue(retrievables.iterator().next().pattern().variables().stream().filter(

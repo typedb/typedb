@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,19 +16,19 @@
  *
  */
 
-package grakn.core.concept.type.impl;
+package com.vaticle.typedb.core.concept.type.impl;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.parameters.Label;
-import grakn.core.concept.ConceptImpl;
-import grakn.core.concept.type.Type;
-import grakn.core.graph.GraphManager;
-import grakn.core.graph.common.Encoding;
-import grakn.core.graph.structure.RuleStructure;
-import grakn.core.graph.vertex.ThingVertex;
-import grakn.core.graph.vertex.TypeVertex;
-import graql.lang.Graql;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.concept.ConceptImpl;
+import com.vaticle.typedb.core.concept.type.Type;
+import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.structure.RuleStructure;
+import com.vaticle.typedb.core.graph.vertex.ThingVertex;
+import com.vaticle.typedb.core.graph.vertex.TypeVertex;
+import com.vaticle.typeql.lang.TypeQL;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -36,14 +36,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
-import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_BEEN_DELETED;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_REFERENCED_IN_RULES;
-import static grakn.core.common.iterator.Iterators.tree;
-import static grakn.core.graph.common.Encoding.Edge.Type.SUB;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_BEEN_DELETED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_REFERENCED_IN_RULES;
+import static com.vaticle.typedb.core.common.iterator.Iterators.tree;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
 
 public abstract class TypeImpl extends ConceptImpl implements Type {
 
@@ -60,7 +60,7 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
     }
 
     TypeImpl(GraphManager graphMgr, String label, Encoding.Vertex.Type encoding, String scope) {
-        label = Graql.parseLabel(label);
+        label = TypeQL.parseLabel(label);
         this.graphMgr = graphMgr;
         this.vertex = graphMgr.schema().create(encoding, label, scope);
         TypeVertex superTypeVertex = graphMgr.schema().getType(encoding.root().label(), encoding.root().scope());
@@ -131,7 +131,7 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
             assert type.getSupertype() != null;
             type = (TypeImpl) type.getSupertype();
             if (!hierarchy.add(type.vertex.scopedLabel())) {
-                throw exception(GraknException.of(CYCLIC_TYPE_HIERARCHY, hierarchy));
+                throw exception(TypeDBException.of(CYCLIC_TYPE_HIERARCHY, hierarchy));
             }
         }
     }
@@ -148,12 +148,12 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
         TypeVertex type = graphMgr.schema().getType(getLabel());
         FunctionalIterator<RuleStructure> rules = graphMgr.schema().rules().references().get(type);
         if (rules.hasNext()) {
-            throw exception(GraknException.of(TYPE_REFERENCED_IN_RULES, getLabel(), rules.toList()));
+            throw exception(TypeDBException.of(TYPE_REFERENCED_IN_RULES, getLabel(), rules.toList()));
         }
     }
 
     @Override
-    public List<GraknException> validate() {
+    public List<TypeDBException> validate() {
         return new ArrayList<>();
     }
 
@@ -166,18 +166,18 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
     void validateCanHaveInstances(Class<?> instanceClass) {
         validateIsNotDeleted();
         if (vertex.status().equals(Encoding.Status.BUFFERED)) {
-            throw exception(GraknException.of(SESSION_SCHEMA_VIOLATION));
+            throw exception(TypeDBException.of(SESSION_SCHEMA_VIOLATION));
         } else if (isAbstract()) {
-            throw exception(GraknException.of(ILLEGAL_ABSTRACT_WRITE, instanceClass.getSimpleName(), getLabel()));
+            throw exception(TypeDBException.of(ILLEGAL_ABSTRACT_WRITE, instanceClass.getSimpleName(), getLabel()));
         }
     }
 
     void validateIsNotDeleted() {
-        if (vertex.isDeleted()) throw exception(GraknException.of(TYPE_HAS_BEEN_DELETED, getLabel()));
+        if (vertex.isDeleted()) throw exception(TypeDBException.of(TYPE_HAS_BEEN_DELETED, getLabel()));
     }
 
     @Override
-    public GraknException exception(GraknException exception) {
+    public TypeDBException exception(TypeDBException exception) {
         return graphMgr.exception(exception);
     }
 

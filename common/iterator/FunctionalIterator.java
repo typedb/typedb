@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,9 +16,9 @@
  *
  */
 
-package grakn.core.common.iterator;
+package com.vaticle.typedb.core.common.iterator;
 
-import grakn.core.common.exception.GraknException;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -81,7 +81,7 @@ public interface FunctionalIterator<T> extends Iterator<T> {
 
     FunctionalIterator<T> onConsumed(Runnable function);
 
-    FunctionalIterator<T> onError(Function<Exception, GraknException> exceptionFn);
+    FunctionalIterator<T> onError(Function<Exception, TypeDBException> exceptionFn);
 
     FunctionalIterator<T> onFinalise(Runnable function);
 

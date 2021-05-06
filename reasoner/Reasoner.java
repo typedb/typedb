@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,33 +16,33 @@
  *
  */
 
-package grakn.core.reasoner;
+package com.vaticle.typedb.core.reasoner;
 
-import grakn.common.collection.Either;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.iterator.Iterators;
-import grakn.core.common.parameters.Arguments;
-import grakn.core.common.parameters.Context;
-import grakn.core.common.parameters.Label;
-import grakn.core.common.parameters.Options;
-import grakn.core.concept.ConceptManager;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.Type;
-import grakn.core.concurrent.producer.Producer;
-import grakn.core.concurrent.producer.Producers;
-import grakn.core.logic.LogicManager;
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.Disjunction;
-import grakn.core.pattern.Negation;
-import grakn.core.pattern.variable.Variable;
-import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.Explanation;
-import grakn.core.traversal.TraversalEngine;
-import grakn.core.traversal.common.Identifier;
-import graql.lang.pattern.variable.UnboundVariable;
-import graql.lang.query.GraqlMatch;
+import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Context;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concept.thing.Thing;
+import com.vaticle.typedb.core.concept.type.Type;
+import com.vaticle.typedb.core.concurrent.producer.Producer;
+import com.vaticle.typedb.core.concurrent.producer.Producers;
+import com.vaticle.typedb.core.logic.LogicManager;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.pattern.Negation;
+import com.vaticle.typedb.core.pattern.variable.Variable;
+import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
+import com.vaticle.typedb.core.traversal.TraversalEngine;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
+import com.vaticle.typeql.lang.query.TypeQLMatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,15 +50,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.list;
-import static grakn.common.collection.Collections.set;
-import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_PATTERN;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
-import static grakn.core.concurrent.executor.Executors.PARALLELISATION_FACTOR;
-import static grakn.core.concurrent.executor.Executors.actor;
-import static grakn.core.concurrent.executor.Executors.async1;
-import static grakn.core.concurrent.producer.Producers.produce;
+import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_PATTERN;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
+import static com.vaticle.typedb.core.concurrent.executor.Executors.PARALLELISATION_FACTOR;
+import static com.vaticle.typedb.core.concurrent.executor.Executors.actor;
+import static com.vaticle.typedb.core.concurrent.executor.Executors.async1;
+import static com.vaticle.typedb.core.concurrent.producer.Producers.produce;
 
 public class Reasoner {
 
@@ -107,20 +107,20 @@ public class Reasoner {
         return logicMgr.rulesConcluding(type).hasNext() || logicMgr.rulesConcludingHas(type).hasNext();
     }
 
-    public FunctionalIterator<ConceptMap> execute(Disjunction disjunction, GraqlMatch.Modifiers modifiers, Context.Query context) {
+    public FunctionalIterator<ConceptMap> execute(Disjunction disjunction, TypeQLMatch.Modifiers modifiers, Context.Query context) {
         logicMgr.typeResolver().resolve(disjunction);
 
         if (!disjunction.isCoherent()) {
             Set<Conjunction> causes = incoherentConjunctions(disjunction);
-            throw GraknException.of(UNSATISFIABLE_PATTERN, disjunction, causes);
+            throw TypeDBException.of(UNSATISFIABLE_PATTERN, disjunction, causes);
         }
 
         if (mayReason(disjunction, context)) return executeReasoner(disjunction, modifiers, context);
         else return executeTraversal(disjunction, context, filter(modifiers.filter()));
     }
 
-    private Set<Identifier.Variable.Name> filter(List<UnboundVariable> graqlVars) {
-        return iterate(graqlVars).map(v -> v.reference().asName()).map(Identifier.Variable::of).toSet();
+    private Set<Identifier.Variable.Name> filter(List<UnboundVariable> typeQLVars) {
+        return iterate(typeQLVars).map(v -> v.reference().asName()).map(Identifier.Variable::of).toSet();
     }
 
     private Set<Conjunction> incoherentConjunctions(Disjunction disjunction) {
@@ -135,7 +135,7 @@ public class Reasoner {
         return causes;
     }
 
-    private FunctionalIterator<ConceptMap> executeReasoner(Disjunction disjunction, GraqlMatch.Modifiers modifiers,
+    private FunctionalIterator<ConceptMap> executeReasoner(Disjunction disjunction, TypeQLMatch.Modifiers modifiers,
                                                            Context.Query context) {
         ReasonerProducer producer = disjunction.conjunctions().size() == 1
                 ? new ReasonerProducer(disjunction.conjunctions().get(0), modifiers, context.options(), resolverRegistry, explainablesManager)

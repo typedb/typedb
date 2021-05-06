@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,10 +16,10 @@
  *
  */
 
-package grakn.core.server.common;
+package com.vaticle.typedb.core.server.common;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.server.Version;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.server.Version;
 import picocli.CommandLine;
 
 import java.net.URI;
@@ -28,7 +28,7 @@ import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
 public abstract class RunOptions {
 
@@ -37,7 +37,7 @@ public abstract class RunOptions {
     }
 
     public Server asServer() {
-        throw GraknException.of(ILLEGAL_CAST, RunOptions.class, Server.class);
+        throw TypeDBException.of(ILLEGAL_CAST, RunOptions.class, Server.class);
     }
 
     public boolean isDataImport() {
@@ -45,7 +45,7 @@ public abstract class RunOptions {
     }
 
     public DataImport asDataImport() {
-        throw GraknException.of(ILLEGAL_CAST, RunOptions.class, DataImport.class);
+        throw TypeDBException.of(ILLEGAL_CAST, RunOptions.class, DataImport.class);
     }
 
     public boolean isDataExport() {
@@ -53,14 +53,14 @@ public abstract class RunOptions {
     }
 
     public DataExport asDataExport() {
-        throw GraknException.of(ILLEGAL_CAST, RunOptions.class, DataExport.class);
+        throw TypeDBException.of(ILLEGAL_CAST, RunOptions.class, DataExport.class);
     }
 
     public boolean isPrintSchema() {
         return false;
     }
 
-    @CommandLine.Command(name = "grakn server", mixinStandardHelpOptions = true, version = {Version.VERSION})
+    @CommandLine.Command(name = "typedb server", mixinStandardHelpOptions = true, version = {Version.VERSION})
     public static class Server extends RunOptions {
 
         @CommandLine.Option(descriptionKey = "server.data",
@@ -79,27 +79,27 @@ public abstract class RunOptions {
                 description = "Port number of database server in which GRPC clients will connect to")
         private int port;
 
-        @CommandLine.Option(descriptionKey = "grabl.trace",
-                names = {"--grabl-trace"},
+        @CommandLine.Option(descriptionKey = "vaticle.factory.trace",
+                names = {"--vaticle-factory-trace"},
                 negatable = true,
                 defaultValue = "false",
-                description = "Enable Grabl performance tracing")
-        private boolean grablTrace;
+                description = "Enable Vaticle Factory performance tracing")
+        private boolean factoryTrace;
 
-        @CommandLine.Option(descriptionKey = "grabl.uri",
-                names = {"--grabl-uri"},
-                description = "Grabl tracing server URI")
-        private URI grablURI;
+        @CommandLine.Option(descriptionKey = "vaticle.factory.uri",
+                names = {"--vaticle-factory-uri"},
+                description = "Vaticle Factory tracing server URI")
+        private URI factoryURI;
 
-        @CommandLine.Option(descriptionKey = "grabl.username",
-                names = {"--grabl-username"},
-                description = "Grabl username")
-        private String grablUsername;
+        @CommandLine.Option(descriptionKey = "vaticle.factory.username",
+                names = {"--vaticle-factory-username"},
+                description = "Vaticle Factory username")
+        private String factoryUsername;
 
-        @CommandLine.Option(descriptionKey = "grabl.token",
-                names = {"--grabl-token"},
-                description = "Grabl account access token")
-        private String grablToken;
+        @CommandLine.Option(descriptionKey = "vaticle.factory.token",
+                names = {"--vaticle-factory-token"},
+                description = "Vaticle Factory account access token")
+        private String factoryToken;
 
         @CommandLine.Option(descriptionKey = "debug",
                 names = {"--debug"},
@@ -110,14 +110,14 @@ public abstract class RunOptions {
             if (data == null) return ServerDefaults.DATA_DIR;
             return Paths.get(data).isAbsolute()
                     ? Paths.get(data)
-                    : ServerDefaults.GRAKN_DIR.resolve(data);
+                    : ServerDefaults.TYPEDB_DIR.resolve(data);
         }
 
         public Path logsDir() {
             if (logs == null) return ServerDefaults.LOGS_DIR;
             return Paths.get(logs).isAbsolute()
                     ? Paths.get(logs)
-                    : ServerDefaults.GRAKN_DIR.resolve(logs);
+                    : ServerDefaults.TYPEDB_DIR.resolve(logs);
         }
 
         public int port() {
@@ -128,20 +128,20 @@ public abstract class RunOptions {
             return debug;
         }
 
-        public boolean grablTrace() {
-            return grablTrace;
+        public boolean factoryTrace() {
+            return factoryTrace;
         }
 
-        public URI grablURI() {
-            return grablURI;
+        public URI factoryURI() {
+            return factoryURI;
         }
 
-        public String grablUsername() {
-            return grablUsername;
+        public String factoryUsername() {
+            return factoryUsername;
         }
 
-        public String grablToken() {
-            return grablToken;
+        public String factoryToken() {
+            return factoryToken;
         }
 
         @Override

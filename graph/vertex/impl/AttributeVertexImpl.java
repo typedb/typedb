@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,23 +16,23 @@
  *
  */
 
-package grakn.core.graph.vertex.impl;
+package com.vaticle.typedb.core.graph.vertex.impl;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.graph.DataGraph;
-import grakn.core.graph.adjacency.ThingAdjacency;
-import grakn.core.graph.adjacency.impl.ThingAdjacencyImpl;
-import grakn.core.graph.common.Encoding;
-import grakn.core.graph.iid.EdgeIID;
-import grakn.core.graph.iid.IndexIID;
-import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.vertex.AttributeVertex;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.graph.DataGraph;
+import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
+import com.vaticle.typedb.core.graph.adjacency.impl.ThingAdjacencyImpl;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.iid.EdgeIID;
+import com.vaticle.typedb.core.graph.iid.IndexIID;
+import com.vaticle.typedb.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 
 import java.time.LocalDateTime;
 
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_VERTEX_CASTING;
-import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_VERTEX_CASTING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
 
 public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl implements AttributeVertex<VALUE> {
 
@@ -120,7 +120,7 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
      */
     @Override
     public void commit() {
-        if (isInferred) throw GraknException.of(ILLEGAL_OPERATION);
+        if (isInferred) throw TypeDBException.of(ILLEGAL_OPERATION);
         commitVertex();
         commitEdges();
     }
@@ -155,27 +155,27 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
 
     @Override
     public AttributeVertexImpl.Boolean asBoolean() {
-        throw GraknException.of(INVALID_THING_VERTEX_CASTING, className(Boolean.class));
+        throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(Boolean.class));
     }
 
     @Override
     public AttributeVertexImpl.Long asLong() {
-        throw GraknException.of(INVALID_THING_VERTEX_CASTING, className(Long.class));
+        throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(Long.class));
     }
 
     @Override
     public AttributeVertexImpl.Double asDouble() {
-        throw GraknException.of(INVALID_THING_VERTEX_CASTING, className(Double.class));
+        throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(Double.class));
     }
 
     @Override
     public AttributeVertexImpl.String asString() {
-        throw GraknException.of(INVALID_THING_VERTEX_CASTING, className(String.class));
+        throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(String.class));
     }
 
     @Override
     public AttributeVertexImpl.DateTime asDateTime() {
-        throw GraknException.of(INVALID_THING_VERTEX_CASTING, className(DateTime.class));
+        throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(DateTime.class));
     }
 
     public static class Boolean extends AttributeVertexImpl<java.lang.Boolean> {

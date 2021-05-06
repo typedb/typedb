@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,22 +16,22 @@
  *
  */
 
-package grakn.core.pattern;
+package com.vaticle.typedb.core.pattern;
 
-import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
-import grakn.core.pattern.variable.VariableRegistry;
-import graql.lang.pattern.Conjunctable;
+import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.ThreadTrace;
+import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
+import com.vaticle.typeql.lang.pattern.Conjunctable;
 
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Objects;
 
-import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static graql.lang.common.GraqlToken.Char.CURLY_CLOSE;
-import static graql.lang.common.GraqlToken.Char.CURLY_OPEN;
-import static graql.lang.common.GraqlToken.Char.NEW_LINE;
-import static graql.lang.common.GraqlToken.Operator.OR;
+import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.traceOnThread;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.CURLY_CLOSE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.CURLY_OPEN;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.NEW_LINE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Operator.OR;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
@@ -47,15 +47,15 @@ public class Disjunction implements Pattern, Cloneable {
     }
 
     public static Disjunction create(
-            graql.lang.pattern.Disjunction<graql.lang.pattern.Conjunction<Conjunctable>> graql) {
-        return create(graql, null);
+            com.vaticle.typeql.lang.pattern.Disjunction<com.vaticle.typeql.lang.pattern.Conjunction<Conjunctable>> typeql) {
+        return create(typeql, null);
     }
 
     public static Disjunction create(
-            graql.lang.pattern.Disjunction<graql.lang.pattern.Conjunction<Conjunctable>> graql,
+            com.vaticle.typeql.lang.pattern.Disjunction<com.vaticle.typeql.lang.pattern.Conjunction<Conjunctable>> typeql,
             @Nullable VariableRegistry bounds) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            return new Disjunction(graql.patterns().stream().map(
+            return new Disjunction(typeql.patterns().stream().map(
                     conjunction -> Conjunction.create(conjunction, bounds)
             ).collect(toList()));
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,14 +16,14 @@
  *
  */
 
-package grakn.core.common.parameters;
+package com.vaticle.typedb.core.common.parameters;
 
-import grakn.common.collection.Either;
-import graql.lang.query.GraqlQuery;
+import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typeql.lang.query.TypeQLQuery;
 
 import javax.annotation.Nullable;
 
-import static grakn.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
+import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
 
 public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>> {
 
@@ -87,7 +87,7 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
             super(context, options.parent(context.options()));
         }
 
-        public Query(Transaction context, Options.Query options, GraqlQuery query) {
+        public Query(Transaction context, Options.Query options, TypeQLQuery query) {
             super(context, options.parent(context.options()));
             options.query(query);
         }

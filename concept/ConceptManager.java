@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,34 +16,34 @@
  *
  */
 
-package grakn.core.concept;
+package com.vaticle.typedb.core.concept;
 
-import grakn.common.collection.Either;
-import grakn.core.common.exception.ErrorMessage;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.util.StringBuilders;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.thing.impl.ThingImpl;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.RoleType;
-import grakn.core.concept.type.ThingType;
-import grakn.core.concept.type.impl.AttributeTypeImpl;
-import grakn.core.concept.type.impl.EntityTypeImpl;
-import grakn.core.concept.type.impl.RelationTypeImpl;
-import grakn.core.concept.type.impl.ThingTypeImpl;
-import grakn.core.concept.type.impl.TypeImpl;
-import grakn.core.concurrent.producer.ProducerIterator;
-import grakn.core.graph.GraphManager;
-import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.vertex.ThingVertex;
-import grakn.core.graph.vertex.TypeVertex;
-import grakn.core.graph.vertex.Vertex;
-import grakn.core.traversal.common.Identifier.Variable.Retrievable;
-import grakn.core.traversal.common.VertexMap;
+import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.core.common.exception.ErrorMessage;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.util.StringBuilders;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concept.thing.Thing;
+import com.vaticle.typedb.core.concept.thing.impl.ThingImpl;
+import com.vaticle.typedb.core.concept.type.AttributeType;
+import com.vaticle.typedb.core.concept.type.EntityType;
+import com.vaticle.typedb.core.concept.type.RelationType;
+import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.concept.type.ThingType;
+import com.vaticle.typedb.core.concept.type.impl.AttributeTypeImpl;
+import com.vaticle.typedb.core.concept.type.impl.EntityTypeImpl;
+import com.vaticle.typedb.core.concept.type.impl.RelationTypeImpl;
+import com.vaticle.typedb.core.concept.type.impl.ThingTypeImpl;
+import com.vaticle.typedb.core.concept.type.impl.TypeImpl;
+import com.vaticle.typedb.core.concurrent.producer.ProducerIterator;
+import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.graph.vertex.ThingVertex;
+import com.vaticle.typedb.core.graph.vertex.TypeVertex;
+import com.vaticle.typedb.core.graph.vertex.Vertex;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
+import com.vaticle.typedb.core.traversal.common.VertexMap;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,21 +51,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Transaction.UNSUPPORTED_OPERATION;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MISSING;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
-import static grakn.core.concept.ConceptManager.TypeExporter.writeAttributeType;
-import static grakn.core.concept.ConceptManager.TypeExporter.writeEntityType;
-import static grakn.core.concept.ConceptManager.TypeExporter.writeRelationType;
-import static grakn.core.concurrent.executor.Executors.PARALLELISATION_FACTOR;
-import static grakn.core.concurrent.executor.Executors.async1;
-import static grakn.core.concurrent.producer.Producers.async;
-import static grakn.core.concurrent.producer.Producers.produce;
-import static grakn.core.graph.common.Encoding.Vertex.Thing.ROLE;
-import static graql.lang.common.util.Strings.escapeRegex;
-import static graql.lang.common.util.Strings.quoteString;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.UNSUPPORTED_OPERATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MISSING;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
+import static com.vaticle.typedb.core.concept.ConceptManager.TypeExporter.writeAttributeType;
+import static com.vaticle.typedb.core.concept.ConceptManager.TypeExporter.writeEntityType;
+import static com.vaticle.typedb.core.concept.ConceptManager.TypeExporter.writeRelationType;
+import static com.vaticle.typedb.core.concurrent.executor.Executors.PARALLELISATION_FACTOR;
+import static com.vaticle.typedb.core.concurrent.executor.Executors.async1;
+import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
+import static com.vaticle.typedb.core.concurrent.producer.Producers.produce;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ROLE;
+import static com.vaticle.typeql.lang.common.util.Strings.escapeRegex;
+import static com.vaticle.typeql.lang.common.util.Strings.quoteString;
 import static java.util.Comparator.comparing;
 
 public final class ConceptManager {
@@ -87,7 +87,7 @@ public final class ConceptManager {
         vertexMap.forEach((id, vertex) -> {
             if (vertex.isThing()) map.put(id, ThingImpl.of(vertex.asThing()));
             else if (vertex.isType()) map.put(id, TypeImpl.of(graphMgr, vertex.asType()));
-            else throw exception(GraknException.of(ILLEGAL_STATE));
+            else throw exception(TypeDBException.of(ILLEGAL_STATE));
         });
         return new ConceptMap(map);
     }
@@ -95,25 +95,25 @@ public final class ConceptManager {
     public ThingType getRootThingType() {
         TypeVertex vertex = graphMgr.schema().rootThingType();
         if (vertex != null) return new ThingTypeImpl.Root(graphMgr, vertex);
-        else throw exception(GraknException.of(ILLEGAL_STATE));
+        else throw exception(TypeDBException.of(ILLEGAL_STATE));
     }
 
     public EntityType getRootEntityType() {
         TypeVertex vertex = graphMgr.schema().rootEntityType();
         if (vertex != null) return EntityTypeImpl.of(graphMgr, vertex);
-        else throw exception(GraknException.of(ILLEGAL_STATE));
+        else throw exception(TypeDBException.of(ILLEGAL_STATE));
     }
 
     public RelationType getRootRelationType() {
         TypeVertex vertex = graphMgr.schema().rootRelationType();
         if (vertex != null) return RelationTypeImpl.of(graphMgr, vertex);
-        else throw exception(GraknException.of(ILLEGAL_STATE));
+        else throw exception(TypeDBException.of(ILLEGAL_STATE));
     }
 
     public AttributeType getRootAttributeType() {
         TypeVertex vertex = graphMgr.schema().rootAttributeType();
         if (vertex != null) return AttributeTypeImpl.of(graphMgr, vertex);
-        else throw exception(GraknException.of(ILLEGAL_STATE));
+        else throw exception(TypeDBException.of(ILLEGAL_STATE));
     }
 
     public EntityType putEntityType(String label) {
@@ -141,8 +141,8 @@ public final class ConceptManager {
     }
 
     public AttributeType putAttributeType(String label, AttributeType.ValueType valueType) {
-        if (valueType == null) throw exception(GraknException.of(ATTRIBUTE_VALUE_TYPE_MISSING, label));
-        if (!valueType.isWritable()) throw exception(GraknException.of(UNSUPPORTED_OPERATION));
+        if (valueType == null) throw exception(TypeDBException.of(ATTRIBUTE_VALUE_TYPE_MISSING, label));
+        if (!valueType.isWritable()) throw exception(TypeDBException.of(UNSUPPORTED_OPERATION));
 
         TypeVertex vertex = graphMgr.schema().getType(label);
         switch (valueType) {
@@ -162,7 +162,7 @@ public final class ConceptManager {
                 if (vertex != null) return AttributeTypeImpl.DateTime.of(graphMgr, vertex);
                 else return new AttributeTypeImpl.DateTime(graphMgr, label);
             default:
-                throw exception(GraknException.of(UNSUPPORTED_OPERATION, "putAttributeType", valueType.name()));
+                throw exception(TypeDBException.of(UNSUPPORTED_OPERATION, "putAttributeType", valueType.name()));
         }
     }
 
@@ -185,11 +185,11 @@ public final class ConceptManager {
     }
 
     public void validateTypes() {
-        List<GraknException> exceptions = graphMgr.schema().bufferedTypes().parallel()
+        List<TypeDBException> exceptions = graphMgr.schema().bufferedTypes().parallel()
                 .filter(Vertex::isModified)
                 .map(v -> TypeImpl.of(graphMgr, v).validate())
                 .collect(ArrayList::new, ArrayList::addAll, ArrayList::addAll);
-        if (!exceptions.isEmpty()) throw exception(GraknException.of(exceptions));
+        if (!exceptions.isEmpty()) throw exception(TypeDBException.of(exceptions));
     }
 
     public void validateThings() {
@@ -219,11 +219,11 @@ public final class ConceptManager {
                 .forEach(x -> writeEntityType(stringBuilder, x));
     }
 
-    public GraknException exception(ErrorMessage error) {
+    public TypeDBException exception(ErrorMessage error) {
         return graphMgr.exception(error);
     }
 
-    public GraknException exception(Exception exception) {
+    public TypeDBException exception(Exception exception) {
         return graphMgr.exception(exception);
     }
 
@@ -348,7 +348,7 @@ public final class ConceptManager {
                 case DATETIME:
                     return "datetime";
                 default:
-                    throw GraknException.of(ILLEGAL_STATE);
+                    throw TypeDBException.of(ILLEGAL_STATE);
             }
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,24 +15,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.logic;
+package com.vaticle.typedb.core.server.logic;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.logic.LogicManager;
-import grakn.core.logic.Rule;
-import grakn.core.server.TransactionService;
-import grakn.protocol.LogicProto;
-import grakn.protocol.TransactionProto.Transaction;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.logic.LogicManager;
+import com.vaticle.typedb.core.logic.Rule;
+import com.vaticle.typedb.core.server.TransactionService;
+import com.vaticle.typedb.protocol.LogicProto;
+import com.vaticle.typedb.protocol.TransactionProto.Transaction;
 
 import javax.annotation.Nullable;
-
 import java.util.UUID;
 
-import static grakn.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
-import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
-import static grakn.core.server.common.RequestReader.byteStringAsUUID;
-import static grakn.core.server.common.ResponseBuilder.Logic.Rule.deleteRes;
-import static grakn.core.server.common.ResponseBuilder.Logic.Rule.setLabelRes;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
+import static com.vaticle.typedb.core.server.common.RequestReader.byteStringAsUUID;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Logic.Rule.deleteRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Logic.Rule.setLabelRes;
 
 public class RuleService {
 
@@ -57,7 +56,7 @@ public class RuleService {
                 return;
             case REQ_NOT_SET:
             default:
-                throw GraknException.of(UNKNOWN_REQUEST_TYPE);
+                throw TypeDBException.of(UNKNOWN_REQUEST_TYPE);
         }
     }
 
@@ -72,7 +71,7 @@ public class RuleService {
     }
 
     private static Rule notNull(@Nullable Rule rule) {
-        if (rule == null) throw GraknException.of(MISSING_CONCEPT);
+        if (rule == null) throw TypeDBException.of(MISSING_CONCEPT);
         return rule;
     }
 }

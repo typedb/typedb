@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,13 +16,13 @@
  *
  */
 
-package grakn.core.graph.common;
+package com.vaticle.typedb.core.graph.common;
 
-import grakn.common.collection.Pair;
-import grakn.core.common.collection.Bytes;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Label;
-import graql.lang.common.GraqlArg;
+import com.vaticle.typedb.common.collection.Pair;
+import com.vaticle.typedb.core.common.collection.Bytes;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typeql.lang.common.TypeQLArg;
 
 import javax.annotation.Nullable;
 import java.nio.charset.Charset;
@@ -34,14 +34,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.map;
-import static grakn.common.collection.Collections.pair;
-import static grakn.common.collection.Collections.set;
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.collection.Bytes.signedByte;
-import static grakn.core.common.collection.Bytes.unsignedByte;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
+import static com.vaticle.typedb.common.collection.Collections.map;
+import static com.vaticle.typedb.common.collection.Collections.pair;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.collection.Bytes.signedByte;
+import static com.vaticle.typedb.core.common.collection.Bytes.unsignedByte;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Encoding {
@@ -202,7 +202,7 @@ public class Encoding {
 
         public static Prefix of(byte key) {
             Prefix prefix = prefixByKey.get(key);
-            if (prefix == null) throw GraknException.of(UNRECOGNISED_VALUE);
+            if (prefix == null) throw TypeDBException.of(UNRECOGNISED_VALUE);
             else return prefix;
         }
 
@@ -321,7 +321,7 @@ public class Encoding {
 
         public static Infix of(byte key) {
             Infix infix = infixByKey.get(key); // already unsigned??
-            if (infix == null) throw GraknException.of(UNRECOGNISED_VALUE);
+            if (infix == null) throw TypeDBException.of(UNRECOGNISED_VALUE);
             else return infix;
         }
 
@@ -367,11 +367,11 @@ public class Encoding {
      */
     public enum ValueType {
         OBJECT(0, Object.class, false, false, null),
-        BOOLEAN(10, Boolean.class, true, false, GraqlArg.ValueType.BOOLEAN),
-        LONG(20, Long.class, true, true, GraqlArg.ValueType.LONG),
-        DOUBLE(30, Double.class, true, false, GraqlArg.ValueType.DOUBLE),
-        STRING(40, String.class, true, true, GraqlArg.ValueType.STRING),
-        DATETIME(50, LocalDateTime.class, true, true, GraqlArg.ValueType.DATETIME);
+        BOOLEAN(10, Boolean.class, true, false, TypeQLArg.ValueType.BOOLEAN),
+        LONG(20, Long.class, true, true, TypeQLArg.ValueType.LONG),
+        DOUBLE(30, Double.class, true, false, TypeQLArg.ValueType.DOUBLE),
+        STRING(40, String.class, true, true, TypeQLArg.ValueType.STRING),
+        DATETIME(50, LocalDateTime.class, true, true, TypeQLArg.ValueType.DATETIME);
         public static final ZoneId TIME_ZONE_ID = ZoneId.of("Z");
         public static final Charset STRING_ENCODING = UTF_8;
         public static final int STRING_SIZE_ENCODING = Bytes.SHORT_SIZE;
@@ -409,22 +409,22 @@ public class Encoding {
         private final boolean isKeyable;
         private final boolean isWritable;
 
-        private final GraqlArg.ValueType graqlValueType;
+        private final TypeQLArg.ValueType typeQLValueType;
         private final byte[] bytes;
 
         ValueType(int key, Class<?> valueClass, boolean isWritable, boolean isKeyable,
-                  @Nullable GraqlArg.ValueType graqlValueType) {
+                  @Nullable TypeQLArg.ValueType typeQLValueType) {
             this.key = unsignedByte(key);
             this.bytes = new byte[]{this.key};
             this.valueClass = valueClass;
             this.isWritable = isWritable;
             this.isKeyable = isKeyable;
-            this.graqlValueType = graqlValueType;
+            this.typeQLValueType = typeQLValueType;
         }
 
         public static ValueType of(byte value) {
             ValueType valueType = valueTypeByKey.get(value);
-            if (valueType == null) throw GraknException.of(UNRECOGNISED_VALUE);
+            if (valueType == null) throw TypeDBException.of(UNRECOGNISED_VALUE);
             else return valueType;
         }
 
@@ -435,17 +435,17 @@ public class Encoding {
             else if (valueClass == DOUBLE.valueClass) return DOUBLE;
             else if (valueClass == STRING.valueClass) return STRING;
             else if (valueClass == DATETIME.valueClass) return DATETIME;
-            else throw GraknException.of(UNRECOGNISED_VALUE);
+            else throw TypeDBException.of(UNRECOGNISED_VALUE);
         }
 
-        public static ValueType of(GraqlArg.ValueType graqlValueType) {
-            if (graqlValueType == OBJECT.graqlValueType) return OBJECT;
-            else if (graqlValueType == BOOLEAN.graqlValueType) return BOOLEAN;
-            else if (graqlValueType == LONG.graqlValueType) return LONG;
-            else if (graqlValueType == DOUBLE.graqlValueType) return DOUBLE;
-            else if (graqlValueType == STRING.graqlValueType) return STRING;
-            else if (graqlValueType == DATETIME.graqlValueType) return DATETIME;
-            else throw GraknException.of(UNRECOGNISED_VALUE);
+        public static ValueType of(TypeQLArg.ValueType typeQLValueType) {
+            if (typeQLValueType == OBJECT.typeQLValueType) return OBJECT;
+            else if (typeQLValueType == BOOLEAN.typeQLValueType) return BOOLEAN;
+            else if (typeQLValueType == LONG.typeQLValueType) return LONG;
+            else if (typeQLValueType == DOUBLE.typeQLValueType) return DOUBLE;
+            else if (typeQLValueType == STRING.typeQLValueType) return STRING;
+            else if (typeQLValueType == DATETIME.typeQLValueType) return DATETIME;
+            else throw TypeDBException.of(UNRECOGNISED_VALUE);
         }
 
         public byte[] bytes() {
@@ -476,8 +476,8 @@ public class Encoding {
             return COMPARABLES.get(this).contains(valueType);
         }
 
-        public GraqlArg.ValueType graqlValueType() {
-            return graqlValueType;
+        public TypeQLArg.ValueType typeQLValueType() {
+            return typeQLValueType;
         }
 
     }
@@ -535,7 +535,7 @@ public class Encoding {
 
             public static Type of(byte prefix) {
                 Type type = typeVertexByKey.get(prefix);
-                if (type == null) throw GraknException.of(UNRECOGNISED_VALUE);
+                if (type == null) throw TypeDBException.of(UNRECOGNISED_VALUE);
                 else return type;
             }
 
@@ -545,7 +545,7 @@ public class Encoding {
                 else if (Objects.equals(thing, ATTRIBUTE_TYPE.instance)) return ATTRIBUTE_TYPE;
                 else if (Objects.equals(thing, RELATION_TYPE.instance)) return RELATION_TYPE;
                 else if (Objects.equals(thing, ROLE_TYPE.instance)) return ROLE_TYPE;
-                else throw GraknException.of(UNRECOGNISED_VALUE);
+                else throw TypeDBException.of(UNRECOGNISED_VALUE);
             }
 
             /**
@@ -627,7 +627,7 @@ public class Encoding {
 
             public static Thing of(byte prefix) {
                 Thing thing = thingVertexByKey.get(prefix);
-                if (thing == null) throw GraknException.of(UNRECOGNISED_VALUE);
+                if (thing == null) throw TypeDBException.of(UNRECOGNISED_VALUE);
                 else return thing;
             }
 
@@ -663,11 +663,11 @@ public class Encoding {
         }
 
         default Type asType() {
-            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.class));
+            throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.class));
         }
 
         default Thing asThing() {
-            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.class));
+            throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.class));
         }
 
         Edge ISA = new Edge() {
@@ -714,7 +714,7 @@ public class Encoding {
                 else if (infix == OWNS_KEY.in.key || infix == OWNS_KEY.out.key) return OWNS_KEY;
                 else if (infix == PLAYS.in.key || infix == PLAYS.out.key) return PLAYS;
                 else if (infix == RELATES.in.key || infix == RELATES.out.key) return RELATES;
-                else throw GraknException.of(UNRECOGNISED_VALUE);
+                else throw TypeDBException.of(UNRECOGNISED_VALUE);
             }
 
             @Override
@@ -776,7 +776,7 @@ public class Encoding {
                 } else if ((ROLEPLAYER.out != null && ROLEPLAYER.out.key == infix) || (ROLEPLAYER.in != null && ROLEPLAYER.in.key == infix)) {
                     return ROLEPLAYER;
                 } else {
-                    throw GraknException.of(UNRECOGNISED_VALUE);
+                    throw TypeDBException.of(UNRECOGNISED_VALUE);
                 }
             }
 
@@ -856,7 +856,7 @@ public class Encoding {
                 if (key[0] == CONTAINED_TYPE.key) return CONTAINED_TYPE;
                 else if (key[0] == CONCLUDED_VERTEX.key) return CONCLUDED_VERTEX;
                 else if (key[0] == CONCLUDED_EDGE_TO.key) return CONCLUDED_EDGE_TO;
-                else throw GraknException.of(UNRECOGNISED_VALUE);
+                else throw TypeDBException.of(UNRECOGNISED_VALUE);
             }
 
             public byte[] bytes() { return bytes; }
@@ -884,9 +884,9 @@ public class Encoding {
                 if (key.length == 1) {
                     if (key[0] == ATTRIBUTE_VERTEX.key) return ATTRIBUTE_VERTEX;
                     else if (key[0] == HAS_EDGE.key) return HAS_EDGE;
-                    else throw GraknException.of(UNRECOGNISED_VALUE);
+                    else throw TypeDBException.of(UNRECOGNISED_VALUE);
                 }
-                throw GraknException.of(UNRECOGNISED_VALUE);
+                throw TypeDBException.of(UNRECOGNISED_VALUE);
             }
 
             public byte key() {
@@ -917,9 +917,9 @@ public class Encoding {
                 if (key.length == 1) {
                     if (key[0] == CREATED.key) return CREATED;
                     else if (key[0] == DELETED.key) return DELETED;
-                    else throw GraknException.of(UNRECOGNISED_VALUE);
+                    else throw TypeDBException.of(UNRECOGNISED_VALUE);
                 }
-                throw GraknException.of(UNRECOGNISED_VALUE);
+                throw TypeDBException.of(UNRECOGNISED_VALUE);
             }
 
             public byte key() {

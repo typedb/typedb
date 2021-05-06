@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -15,17 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
+load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
 host_compatible_java_test(
     name = "test-reasoner",
     srcs = ["ReasonerTest.java"],
-    test_class = "grakn.core.reasoner.ReasonerTest",
+    test_class = "com.vaticle.typedb.core.reasoner.ReasonerTest",
     native_libraries_deps = [
         "//rocks:rocks",
         "//logic:logic",
-        "//:grakn",
+        "//:typedb",
         "//concept:concept",
     ],
     deps = [
@@ -34,9 +34,9 @@ host_compatible_java_test(
         "//common:common",
         "//concurrent:concurrent",
 
-        # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
-        "@graknlabs_graql//java:graql",
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java:typeql",
     ],
     resources = [
         "//common/test:logback-test"
@@ -47,14 +47,14 @@ host_compatible_java_test(
 host_compatible_java_test(
     name = "test-explanation",
     srcs = ["ExplanationTest.java"],
-    test_class = "grakn.core.reasoner.ExplanationTest",
+    test_class = "com.vaticle.typedb.core.reasoner.ExplanationTest",
     native_libraries_deps = [
         "//concept:concept",
         "//logic:logic",
         "//reasoner:reasoner",
         "//rocks:rocks",
         "//traversal:traversal",
-        "//:grakn",
+        "//:typedb",
     ],
     deps = [
         # Internal dependencies
@@ -62,9 +62,9 @@ host_compatible_java_test(
         "//common:common",
         "//concurrent:concurrent",
 
-        # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
-        "@graknlabs_graql//java:graql",
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java:typeql",
     ],
     resources = [
         "//common/test:logback-test"
@@ -75,7 +75,7 @@ host_compatible_java_test(
 host_compatible_java_test(
     name = "test-resolution",
     srcs = ["resolution/ResolutionTest.java", "resolution/Util.java"],
-    test_class = "grakn.core.reasoner.resolution.ResolutionTest",
+    test_class = "com.vaticle.typedb.core.reasoner.resolution.ResolutionTest",
     native_libraries_deps = [
         "//concept:concept",
         "//logic:logic",
@@ -83,7 +83,7 @@ host_compatible_java_test(
         "//reasoner:reasoner",
         "//rocks:rocks",
         "//traversal:traversal",
-        "//:grakn",
+        "//:typedb",
     ],
     deps = [
         # Internal dependencies
@@ -91,9 +91,9 @@ host_compatible_java_test(
         "//concurrent:concurrent",
         "//test/integration/util",
 
-        # External dependencies from Grakn Labs
-        "@graknlabs_graql//java:graql",
-        "@graknlabs_common//:common",
+        # External dependencies from Vaticle
+        "@vaticle_typeql//java:typeql",
+        "@vaticle_typedb_common//:common",
     ],
     resource_strip_prefix = "common/test",
     resources = [
@@ -104,7 +104,7 @@ host_compatible_java_test(
 host_compatible_java_test(
     name = "test-reiteration",
     srcs = ["resolution/ReiterationTest.java", "resolution/Util.java"],
-    test_class = "grakn.core.reasoner.resolution.ReiterationTest",
+    test_class = "com.vaticle.typedb.core.reasoner.resolution.ReiterationTest",
     native_libraries_deps = [
         "//concept:concept",
         "//logic:logic",
@@ -112,7 +112,7 @@ host_compatible_java_test(
         "//reasoner:reasoner",
         "//rocks:rocks",
         "//traversal:traversal",
-        "//:grakn",
+        "//:typedb",
     ],
     deps = [
         # Internal dependencies
@@ -120,9 +120,9 @@ host_compatible_java_test(
         "//concurrent:concurrent",
         "//test/integration/util",
 
-        # External dependencies from Grakn Labs
-        "@graknlabs_graql//java:graql",
-        "@graknlabs_common//:common",
+        # External dependencies from Vaticle
+        "@vaticle_typeql//java:typeql",
+        "@vaticle_typedb_common//:common",
     ],
     resource_strip_prefix = "common/test",
     resources = [
@@ -134,10 +134,10 @@ host_compatible_java_test(
 host_compatible_java_test(
     name = "test-resolution-planner",
     srcs = ["resolution/PlannerTest.java", "resolution/Util.java"],
-    test_class = "grakn.core.reasoner.resolution.PlannerTest",
+    test_class = "com.vaticle.typedb.core.reasoner.resolution.PlannerTest",
     native_libraries_deps = [
         "//rocks:rocks",
-        "//:grakn",
+        "//:typedb",
         "//concept:concept",
         "//pattern:pattern",
         "//logic:logic",
@@ -148,9 +148,9 @@ host_compatible_java_test(
         "//test/integration/util",
         "//common",
 
-        # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
-        "@graknlabs_graql//java:graql",
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java:typeql",
     ],
 )
 

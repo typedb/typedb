@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,62 +16,62 @@
  *
  */
 
-package grakn.core.traversal.procedure;
+package com.vaticle.typedb.core.traversal.procedure;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.parameters.Label;
-import grakn.core.graph.GraphManager;
-import grakn.core.graph.SchemaGraph;
-import grakn.core.graph.common.Encoding;
-import grakn.core.graph.edge.ThingEdge;
-import grakn.core.graph.edge.TypeEdge;
-import grakn.core.graph.iid.PrefixIID;
-import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.vertex.AttributeVertex;
-import grakn.core.graph.vertex.ThingVertex;
-import grakn.core.graph.vertex.TypeVertex;
-import grakn.core.graph.vertex.Vertex;
-import grakn.core.traversal.Traversal;
-import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.graph.TraversalEdge;
-import grakn.core.traversal.iterator.GraphIterator;
-import grakn.core.traversal.planner.PlannerEdge;
-import graql.lang.common.GraqlToken;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.SchemaGraph;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.edge.ThingEdge;
+import com.vaticle.typedb.core.graph.edge.TypeEdge;
+import com.vaticle.typedb.core.graph.iid.PrefixIID;
+import com.vaticle.typedb.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
+import com.vaticle.typedb.core.graph.vertex.ThingVertex;
+import com.vaticle.typedb.core.graph.vertex.TypeVertex;
+import com.vaticle.typedb.core.graph.vertex.Vertex;
+import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.graph.TraversalEdge;
+import com.vaticle.typedb.core.traversal.iterator.GraphIterator;
+import com.vaticle.typedb.core.traversal.planner.PlannerEdge;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
-import static grakn.core.common.iterator.Iterators.empty;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.iterator.Iterators.link;
-import static grakn.core.common.iterator.Iterators.loop;
-import static grakn.core.common.iterator.Iterators.single;
-import static grakn.core.common.iterator.Iterators.tree;
-import static grakn.core.graph.common.Encoding.Direction.Edge.BACKWARD;
-import static grakn.core.graph.common.Encoding.Direction.Edge.FORWARD;
-import static grakn.core.graph.common.Encoding.Edge.ISA;
-import static grakn.core.graph.common.Encoding.Edge.Thing.HAS;
-import static grakn.core.graph.common.Encoding.Edge.Thing.PLAYING;
-import static grakn.core.graph.common.Encoding.Edge.Thing.RELATING;
-import static grakn.core.graph.common.Encoding.Edge.Thing.ROLEPLAYER;
-import static grakn.core.graph.common.Encoding.Edge.Type.OWNS;
-import static grakn.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
-import static grakn.core.graph.common.Encoding.Edge.Type.PLAYS;
-import static grakn.core.graph.common.Encoding.Edge.Type.RELATES;
-import static grakn.core.graph.common.Encoding.Edge.Type.SUB;
-import static grakn.core.graph.common.Encoding.Prefix.VERTEX_ATTRIBUTE;
-import static grakn.core.graph.common.Encoding.Prefix.VERTEX_ROLE;
-import static grakn.core.graph.common.Encoding.Vertex.Thing.RELATION;
-import static grakn.core.traversal.predicate.PredicateOperator.Equality.EQ;
-import static grakn.core.traversal.procedure.ProcedureVertex.Thing.filterAttributes;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.link;
+import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
+import static com.vaticle.typedb.core.common.iterator.Iterators.single;
+import static com.vaticle.typedb.core.common.iterator.Iterators.tree;
+import static com.vaticle.typedb.core.graph.common.Encoding.Direction.Edge.BACKWARD;
+import static com.vaticle.typedb.core.graph.common.Encoding.Direction.Edge.FORWARD;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.ISA;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.HAS;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.PLAYING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.RELATING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.ROLEPLAYER;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.PLAYS;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.RELATES;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
+import static com.vaticle.typedb.core.graph.common.Encoding.Prefix.VERTEX_ATTRIBUTE;
+import static com.vaticle.typedb.core.graph.common.Encoding.Prefix.VERTEX_ROLE;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.RELATION;
+import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.EQ;
+import static com.vaticle.typedb.core.traversal.procedure.ProcedureVertex.Thing.filterAttributes;
 
 public abstract class ProcedureEdge<
         VERTEX_FROM extends ProcedureVertex<?, ?>, VERTEX_TO extends ProcedureVertex<?, ?>
@@ -97,7 +97,7 @@ public abstract class ProcedureEdge<
         } else if (plannerEdge.isNative()) {
             return Native.of(from, to, plannerEdge.asNative());
         } else {
-            throw GraknException.of(UNRECOGNISED_VALUE);
+            throw TypeDBException.of(UNRECOGNISED_VALUE);
         }
     }
 
@@ -136,7 +136,7 @@ public abstract class ProcedureEdge<
     public boolean isRolePlayer() { return false; }
 
     public Native.Thing.RolePlayer asRolePlayer() {
-        throw GraknException.of(ILLEGAL_CAST, className(getClass()), className(Native.Thing.RolePlayer.class));
+        throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Native.Thing.RolePlayer.class));
     }
 
     @Override
@@ -152,7 +152,7 @@ public abstract class ProcedureEdge<
 
         private Equal(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to,
                       int order, Encoding.Direction.Edge direction) {
-            super(from, to, order, direction, GraqlToken.Predicate.Equality.EQ.toString());
+            super(from, to, order, direction, TypeQLToken.Predicate.Equality.EQ.toString());
         }
 
         @Override
@@ -165,7 +165,7 @@ public abstract class ProcedureEdge<
                 if (to.isThing()) return empty();
                 else return to.asType().filter(single(fromVertex.asType()));
             } else {
-                throw GraknException.of(ILLEGAL_STATE);
+                throw TypeDBException.of(ILLEGAL_STATE);
             }
         }
 
@@ -179,10 +179,10 @@ public abstract class ProcedureEdge<
 
     static class Predicate extends ProcedureEdge<ProcedureVertex.Thing, ProcedureVertex.Thing> {
 
-        private final grakn.core.traversal.predicate.Predicate.Variable predicate;
+        private final com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate;
 
         private Predicate(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
-                          Encoding.Direction.Edge direction, grakn.core.traversal.predicate.Predicate.Variable predicate) {
+                          Encoding.Direction.Edge direction, com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate) {
             super(from, to, order, direction, predicate.toString());
             this.predicate = predicate;
         }
@@ -249,7 +249,7 @@ public abstract class ProcedureEdge<
             } else if (edge.isThing()) {
                 return Native.Thing.of(from.asThing(), to.asThing(), edge.asThing());
             } else {
-                throw GraknException.of(UNRECOGNISED_VALUE);
+                throw TypeDBException.of(UNRECOGNISED_VALUE);
             }
         }
 
@@ -358,7 +358,7 @@ public abstract class ProcedureEdge<
                     if (isForward) return new Relates.Forward(from, to, orderNumber);
                     else return new Relates.Backward(from, to, orderNumber);
                 } else {
-                    throw GraknException.of(UNRECOGNISED_VALUE);
+                    throw TypeDBException.of(UNRECOGNISED_VALUE);
                 }
             }
 
@@ -698,7 +698,7 @@ public abstract class ProcedureEdge<
                     if (isForward) return new RolePlayer.Forward(from, to, orderNumber, rp.roleTypes());
                     else return new RolePlayer.Backward(from, to, orderNumber, rp.roleTypes());
                 } else {
-                    throw GraknException.of(UNRECOGNISED_VALUE);
+                    throw TypeDBException.of(UNRECOGNISED_VALUE);
                 }
             }
 
@@ -743,7 +743,7 @@ public abstract class ProcedureEdge<
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isThing();
                         FunctionalIterator<? extends AttributeVertex<?>> iter;
-                        grakn.core.traversal.predicate.Predicate.Value<?> eq = null;
+                        com.vaticle.typedb.core.traversal.predicate.Predicate.Value<?> eq = null;
                         ThingVertex owner = fromVertex.asThing();
                         if (to.props().hasIID()) {
                             assert to.id().isVariable();
@@ -981,13 +981,13 @@ public abstract class ProcedureEdge<
                 @Override
                 public FunctionalIterator<? extends Vertex<?, ?>> branch(
                         GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
-                    throw GraknException.of(ILLEGAL_OPERATION);
+                    throw TypeDBException.of(ILLEGAL_OPERATION);
                 }
 
                 @Override
                 public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex,
                                          Vertex<?, ?> toVertex, Traversal.Parameters params) {
-                    throw GraknException.of(ILLEGAL_OPERATION);
+                    throw TypeDBException.of(ILLEGAL_OPERATION);
                 }
 
                 @Override

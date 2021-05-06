@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,20 +16,20 @@
  *
  */
 
-package grakn.core.traversal;
+package com.vaticle.typedb.core.traversal;
 
-import grakn.common.collection.Either;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.parameters.Arguments;
-import grakn.core.concurrent.producer.FunctionalProducer;
-import grakn.core.graph.GraphManager;
-import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.VertexMap;
-import grakn.core.traversal.procedure.GraphProcedure;
+import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.concurrent.producer.FunctionalProducer;
+import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.VertexMap;
+import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 
 import java.util.Set;
 
-import static grakn.common.collection.Collections.set;
+import static com.vaticle.typedb.common.collection.Collections.set;
 
 public class TraversalEngine {
 

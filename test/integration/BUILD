@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -15,16 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
+load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
 host_compatible_java_test(
     name = "test-basic",
     srcs = ["BasicTest.java"],
-    test_class = "grakn.core.test.integration.BasicTest",
+    test_class = "com.vaticle.typedb.core.test.integration.BasicTest",
     native_libraries_deps = [
         "//rocks:rocks",
-        "//:grakn",
+        "//:typedb",
         "//concept:concept",
         "//logic:logic",
     ],
@@ -33,9 +33,9 @@ host_compatible_java_test(
         "//test/integration/util:util",
         "//common:common",
 
-        # External dependencies from Grakn Labs
-        "@graknlabs_graql//java/pattern:pattern",
-        "@graknlabs_graql//java:graql",
+        # External dependencies from Vaticle
+        "@vaticle_typeql//java/pattern:pattern",
+        "@vaticle_typeql//java:typeql",
     ],
     resources = [
         "//common/test:logback-test"
@@ -47,10 +47,10 @@ host_compatible_java_test(
 host_compatible_java_test(
     name = "test-query",
     srcs = ["QueryTest.java"],
-    test_class = "grakn.core.test.integration.QueryTest",
+    test_class = "com.vaticle.typedb.core.test.integration.QueryTest",
     native_libraries_deps = [
         "//rocks:rocks",
-        "//:grakn",
+        "//:typedb",
         "//concept:concept",
     ],
     deps = [
@@ -58,9 +58,9 @@ host_compatible_java_test(
         "//test/integration/util:util",
         "//common:common",
 
-        # External dependencies from Grakn Labs
-        "@graknlabs_graql//java/query:query",
-        "@graknlabs_graql//java:graql",
+        # External dependencies from Vaticle
+        "@vaticle_typeql//java/query:query",
+        "@vaticle_typeql//java:typeql",
     ],
     data = [":schema.gql"],
     resources = [

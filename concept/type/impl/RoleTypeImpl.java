@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,29 +16,29 @@
  *
  */
 
-package grakn.core.concept.type.impl;
+package com.vaticle.typedb.core.concept.type.impl;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.concept.thing.Entity;
-import grakn.core.concept.thing.impl.RoleImpl;
-import grakn.core.concept.type.RoleType;
-import grakn.core.graph.GraphManager;
-import grakn.core.graph.common.Encoding;
-import grakn.core.graph.vertex.ThingVertex;
-import grakn.core.graph.vertex.TypeVertex;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.concept.thing.Entity;
+import com.vaticle.typedb.core.concept.thing.impl.RoleImpl;
+import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.vertex.ThingVertex;
+import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Objects;
 
-import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_RELATES_HAS_INSTANCES;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
-import static grakn.core.common.iterator.Iterators.loop;
-import static grakn.core.graph.common.Encoding.Edge.Type.SUB;
-import static grakn.core.graph.common.Encoding.Vertex.Type.ROLE_TYPE;
-import static grakn.core.graph.common.Encoding.Vertex.Type.Root.ROLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_RELATES_HAS_INSTANCES;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
+import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ROLE_TYPE;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.Root.ROLE;
 
 public class RoleTypeImpl extends TypeImpl implements RoleType {
 
@@ -46,8 +46,8 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         super(graphMgr, vertex);
         assert vertex.encoding() == ROLE_TYPE;
         if (vertex.encoding() != ROLE_TYPE) {
-            throw exception(GraknException.of(TYPE_ROOT_MISMATCH, vertex.label(),
-                                              ROLE_TYPE.root().label(), vertex.encoding().root().label()));
+            throw exception(TypeDBException.of(TYPE_ROOT_MISMATCH, vertex.label(),
+                                               ROLE_TYPE.root().label(), vertex.encoding().root().label()));
         }
     }
 
@@ -123,7 +123,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     void validateDelete() {
         super.validateDelete();
         if (getInstances().first().isPresent()) {
-            throw exception(GraknException.of(INVALID_UNDEFINE_RELATES_HAS_INSTANCES, getLabel()));
+            throw exception(TypeDBException.of(INVALID_UNDEFINE_RELATES_HAS_INSTANCES, getLabel()));
         }
     }
 
@@ -132,7 +132,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     }
 
     @Override
-    public List<GraknException> validate() {
+    public List<TypeDBException> validate() {
         return super.validate();
     }
 
@@ -163,12 +163,12 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         public boolean isRoot() { return true; }
 
         @Override
-        public void setLabel(String label) { throw exception(GraknException.of(ROOT_TYPE_MUTATION)); }
+        public void setLabel(String label) { throw exception(TypeDBException.of(ROOT_TYPE_MUTATION)); }
 
         @Override
-        void unsetAbstract() { throw exception(GraknException.of(ROOT_TYPE_MUTATION)); }
+        void unsetAbstract() { throw exception(TypeDBException.of(ROOT_TYPE_MUTATION)); }
 
         @Override
-        void sup(RoleType superType) { throw exception(GraknException.of(ROOT_TYPE_MUTATION)); }
+        void sup(RoleType superType) { throw exception(TypeDBException.of(ROOT_TYPE_MUTATION)); }
     }
 }

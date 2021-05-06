@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -16,14 +16,14 @@
 #
 
 package(default_visibility = ["//test/behaviour:__subpackages__"])
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "test",
     srcs = [
         "RelationInferenceTest.java",
     ],
-    test_class = "grakn.core.test.behaviour.resolution.tests.relation_inference.RelationInferenceTest",
+    test_class = "com.vaticle.typedb.core.test.behaviour.resolution.tests.relation_inference.RelationInferenceTest",
     deps = [
         # External dependencies from Maven
         "@maven//:io_cucumber_cucumber_junit",
@@ -35,7 +35,7 @@ java_test(
         "//test/behaviour/resolution:steps",
     ],
     data = [
-        "@graknlabs_behaviour//graql/reasoner:relation-inference.feature",
+        "@vaticle_typedb_behaviour//typeql/reasoner:relation-inference.feature",
     ],
     resources = [
         "//common/test:logback-test"

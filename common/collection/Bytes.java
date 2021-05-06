@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,9 +16,9 @@
  *
  */
 
-package grakn.core.common.collection;
+package com.vaticle.typedb.core.common.collection;
 
-import grakn.core.common.exception.GraknCheckedException;
+import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -27,7 +27,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.UUID;
 
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.Arrays.copyOfRange;
 
@@ -185,10 +185,10 @@ public class Bytes {
         return ByteBuffer.wrap(bytes).getDouble();
     }
 
-    public static byte[] stringToBytes(String value, Charset encoding) throws GraknCheckedException {
+    public static byte[] stringToBytes(String value, Charset encoding) throws TypeDBCheckedException {
         byte[] bytes = value.getBytes(encoding);
         if (bytes.length > SHORT_UNSIGNED_MAX_VALUE) {
-            throw GraknCheckedException.of(ILLEGAL_STRING_SIZE, SHORT_UNSIGNED_MAX_VALUE);
+            throw TypeDBCheckedException.of(ILLEGAL_STRING_SIZE, SHORT_UNSIGNED_MAX_VALUE);
         }
         return join(unsignedShortToBytes(bytes.length), bytes);
     }

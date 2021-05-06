@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,46 +16,46 @@
  *
  */
 
-package grakn.core.query;
+package com.vaticle.typedb.core.query;
 
-import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Context;
-import grakn.core.concept.ConceptManager;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.RoleType;
-import grakn.core.concept.type.ThingType;
-import grakn.core.concept.type.Type;
-import grakn.core.logic.LogicManager;
-import grakn.core.pattern.constraint.type.LabelConstraint;
-import grakn.core.pattern.constraint.type.OwnsConstraint;
-import grakn.core.pattern.constraint.type.PlaysConstraint;
-import grakn.core.pattern.constraint.type.RegexConstraint;
-import grakn.core.pattern.constraint.type.RelatesConstraint;
-import grakn.core.pattern.constraint.type.SubConstraint;
-import grakn.core.pattern.variable.TypeVariable;
-import grakn.core.pattern.variable.VariableRegistry;
-import graql.lang.query.GraqlUndefine;
+import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.ThreadTrace;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.parameters.Context;
+import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.concept.type.AttributeType;
+import com.vaticle.typedb.core.concept.type.RelationType;
+import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.concept.type.ThingType;
+import com.vaticle.typedb.core.concept.type.Type;
+import com.vaticle.typedb.core.logic.LogicManager;
+import com.vaticle.typedb.core.pattern.constraint.type.LabelConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.OwnsConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.PlaysConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.RegexConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.RelatesConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.SubConstraint;
+import com.vaticle.typedb.core.pattern.variable.TypeVariable;
+import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
+import com.vaticle.typeql.lang.query.TypeQLUndefine;
 
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
-import static grakn.core.common.exception.ErrorMessage.RuleRead.RULE_NOT_FOUND;
-import static grakn.core.common.exception.ErrorMessage.RuleWrite.INVALID_UNDEFINE_RULE_BODY;
-import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_UNDEFINED;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_OWNS_KEY;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_OWNS_OVERRIDE;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_PLAYS_OVERRIDE;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_RELATES_OVERRIDE;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_SUB;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROLE_DEFINED_OUTSIDE_OF_RELATION;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_CONSTRAINT_UNACCEPTED;
-import static graql.lang.common.GraqlToken.Constraint.IS;
+import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.traceOnThread;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleRead.RULE_NOT_FOUND;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.INVALID_UNDEFINE_RULE_BODY;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_UNDEFINED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_OWNS_KEY;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_OWNS_OVERRIDE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_PLAYS_OVERRIDE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_RELATES_OVERRIDE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_SUB;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROLE_DEFINED_OUTSIDE_OF_RELATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_CONSTRAINT_UNACCEPTED;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.IS;
 
 public class Undefiner {
 
@@ -66,10 +66,10 @@ public class Undefiner {
     private final LinkedList<TypeVariable> variables;
     private final Context.Query context;
     private final Set<TypeVariable> undefined;
-    private final List<graql.lang.pattern.schema.Rule> rules;
+    private final List<com.vaticle.typeql.lang.pattern.schema.Rule> rules;
 
     private Undefiner(ConceptManager conceptMgr, LogicManager logicMgr, Set<TypeVariable> variables,
-                      List<graql.lang.pattern.schema.Rule> rules, Context.Query context) {
+                      List<com.vaticle.typeql.lang.pattern.schema.Rule> rules, Context.Query context) {
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
         this.rules = rules;
@@ -84,7 +84,7 @@ public class Undefiner {
     }
 
     public static Undefiner create(ConceptManager conceptMgr, LogicManager logicMgr,
-                                   GraqlUndefine query, Context.Query context) {
+                                   TypeQLUndefine query, Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             Set<TypeVariable> types = VariableRegistry.createFromTypes(query.variables()).types();
             return new Undefiner(conceptMgr, logicMgr, types, query.rules(), context);
@@ -113,9 +113,9 @@ public class Undefiner {
             LabelConstraint labelConstraint = variable.label().get();
 
             if (labelConstraint.scope().isPresent() && variable.constraints().size() > 1) {
-                throw GraknException.of(ROLE_DEFINED_OUTSIDE_OF_RELATION, labelConstraint.scopedLabel());
+                throw TypeDBException.of(ROLE_DEFINED_OUTSIDE_OF_RELATION, labelConstraint.scopedLabel());
             } else if (!variable.is().isEmpty()) {
-                throw GraknException.of(TYPE_CONSTRAINT_UNACCEPTED, IS);
+                throw TypeDBException.of(TYPE_CONSTRAINT_UNACCEPTED, IS);
             } else if (labelConstraint.scope().isPresent()) return; // do nothing
             else if (undefined.contains(variable)) return; // do nothing
 
@@ -132,9 +132,9 @@ public class Undefiner {
 
             if (variable.sub().isPresent()) undefineSub(type, variable.sub().get());
             else if (variable.valueType().isPresent()) {
-                throw GraknException.of(ATTRIBUTE_VALUE_TYPE_UNDEFINED,
-                                        variable.valueType().get().valueType().name(),
-                                        variable.label().get().label());
+                throw TypeDBException.of(ATTRIBUTE_VALUE_TYPE_UNDEFINED,
+                                         variable.valueType().get().valueType().name(),
+                                         variable.label().get().label());
             }
 
             undefined.add(variable);
@@ -161,13 +161,13 @@ public class Undefiner {
     private void undefineSub(ThingType thingType, SubConstraint subConstraint) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefine_sub")) {
             if (thingType.isRoleType()) {
-                throw GraknException.of(ROLE_DEFINED_OUTSIDE_OF_RELATION, thingType.getLabel());
+                throw TypeDBException.of(ROLE_DEFINED_OUTSIDE_OF_RELATION, thingType.getLabel());
             }
             ThingType supertype = getThingType(subConstraint.type().label().get());
             if (supertype == null) {
-                throw GraknException.of(TYPE_NOT_FOUND, subConstraint.type().label().get());
+                throw TypeDBException.of(TYPE_NOT_FOUND, subConstraint.type().label().get());
             } else if (thingType.getSupertypes().noneMatch(t -> t.equals(supertype))) {
-                throw GraknException.of(INVALID_UNDEFINE_SUB, thingType.getLabel(), supertype.getLabel());
+                throw TypeDBException.of(INVALID_UNDEFINE_SUB, thingType.getLabel(), supertype.getLabel());
             }
             if (thingType.isRelationType()) {
                 variables.stream().filter(v -> v.label().isPresent() && v.label().get().scope().isPresent() &&
@@ -196,11 +196,11 @@ public class Undefiner {
             relatesConstraints.forEach(relates -> {
                 String roleTypeLabel = relates.role().label().get().label();
                 if (roleTypeLabel == null) {
-                    throw GraknException.of(TYPE_NOT_FOUND, relates.role().label().get().label());
+                    throw TypeDBException.of(TYPE_NOT_FOUND, relates.role().label().get().label());
                 } else if (relates.overridden().isPresent()) {
-                    throw GraknException.of(INVALID_UNDEFINE_RELATES_OVERRIDE,
-                                            relates.overridden().get().label().get().label(),
-                                            relates.role().label().get());
+                    throw TypeDBException.of(INVALID_UNDEFINE_RELATES_OVERRIDE,
+                                             relates.overridden().get().label().get().label(),
+                                             relates.role().label().get());
                 } else {
                     relationType.unsetRelates(roleTypeLabel);
                     undefined.add(relates.role());
@@ -214,15 +214,15 @@ public class Undefiner {
             ownsConstraints.forEach(owns -> {
                 Type attributeType = getThingType(owns.attribute().label().get());
                 if (attributeType == null && !undefined.contains(owns.attribute())) {
-                    throw GraknException.of(TYPE_NOT_FOUND, owns.attribute().label().get().label());
+                    throw TypeDBException.of(TYPE_NOT_FOUND, owns.attribute().label().get().label());
                 } else if (owns.overridden().isPresent()) {
-                    throw GraknException.of(INVALID_UNDEFINE_OWNS_OVERRIDE,
-                                            owns.overridden().get().label().get().label(),
-                                            owns.attribute().label().get());
+                    throw TypeDBException.of(INVALID_UNDEFINE_OWNS_OVERRIDE,
+                                             owns.overridden().get().label().get().label(),
+                                             owns.attribute().label().get());
                 } else if (owns.isKey()) {
-                    throw GraknException.of(INVALID_UNDEFINE_OWNS_KEY,
-                                            owns.attribute().label().get(),
-                                            owns.attribute().label().get());
+                    throw TypeDBException.of(INVALID_UNDEFINE_OWNS_KEY,
+                                             owns.attribute().label().get(),
+                                             owns.attribute().label().get());
                 } else if (attributeType != null) {
                     thingType.unsetOwns(attributeType.asAttributeType());
                 }
@@ -235,11 +235,11 @@ public class Undefiner {
             playsConstraints.forEach(plays -> {
                 Type roleType = getRoleType(plays.role().label().get());
                 if (roleType == null && !undefined.contains(plays.role())) {
-                    throw GraknException.of(TYPE_NOT_FOUND, plays.role().label().get().label());
+                    throw TypeDBException.of(TYPE_NOT_FOUND, plays.role().label().get().label());
                 } else if (plays.overridden().isPresent()) {
-                    throw GraknException.of(INVALID_UNDEFINE_PLAYS_OVERRIDE,
-                                            plays.overridden().get().label().get().label(),
-                                            plays.role().label().get());
+                    throw TypeDBException.of(INVALID_UNDEFINE_PLAYS_OVERRIDE,
+                                             plays.overridden().get().label().get().label(),
+                                             plays.role().label().get());
                 } else if (roleType != null) {
                     thingType.unsetPlays(roleType.asRoleType());
                 }
@@ -247,13 +247,13 @@ public class Undefiner {
         }
     }
 
-    private void undefine(graql.lang.pattern.schema.Rule rule) {
+    private void undefine(com.vaticle.typeql.lang.pattern.schema.Rule rule) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefine_plays")) {
             if (rule.when() != null || rule.then() != null) {
-                throw GraknException.of(INVALID_UNDEFINE_RULE_BODY, rule.label());
+                throw TypeDBException.of(INVALID_UNDEFINE_RULE_BODY, rule.label());
             }
-            grakn.core.logic.Rule r = logicMgr.getRule(rule.label());
-            if (r == null) throw GraknException.of(RULE_NOT_FOUND, rule.label());
+            com.vaticle.typedb.core.logic.Rule r = logicMgr.getRule(rule.label());
+            if (r == null) throw TypeDBException.of(RULE_NOT_FOUND, rule.label());
             r.delete();
         }
     }

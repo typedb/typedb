@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,45 +15,45 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.query;
+package com.vaticle.typedb.core.query;
 
-import grabl.tracing.client.GrablTracingThreadStatic;
-import grakn.common.collection.Either;
-import grakn.core.common.exception.ErrorMessage;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Context;
-import grakn.core.common.parameters.Label;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Relation;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.RoleType;
-import grakn.core.concept.type.ThingType;
-import grakn.core.pattern.constraint.thing.HasConstraint;
-import grakn.core.pattern.variable.ThingVariable;
-import grakn.core.pattern.variable.VariableRegistry;
-import grakn.core.reasoner.Reasoner;
-import graql.lang.pattern.variable.Reference;
-import graql.lang.query.GraqlDelete;
+import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic;
+import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.core.common.exception.ErrorMessage;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.parameters.Context;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.thing.Relation;
+import com.vaticle.typedb.core.concept.thing.Thing;
+import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.concept.type.ThingType;
+import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
+import com.vaticle.typedb.core.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
+import com.vaticle.typedb.core.reasoner.Reasoner;
+import com.vaticle.typeql.lang.pattern.variable.Reference;
+import com.vaticle.typeql.lang.query.TypeQLDelete;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.DELETE_RELATION_CONSTRAINT_TOO_MANY;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ANONYMOUS_RELATION_IN_DELETE;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ANONYMOUS_VARIABLE_IN_DELETE;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_IS_CONSTRAINT;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_DELETE;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE_HAS;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE_THING;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE_THING_DIRECT;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_IID_NOT_INSERTABLE;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
-import static grakn.core.query.common.Util.getRoleType;
+import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.traceOnThread;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.DELETE_RELATION_CONSTRAINT_TOO_MANY;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ANONYMOUS_RELATION_IN_DELETE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ANONYMOUS_VARIABLE_IN_DELETE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_IS_CONSTRAINT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_DELETE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE_HAS;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE_THING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE_THING_DIRECT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_IID_NOT_INSERTABLE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
+import static com.vaticle.typedb.core.query.common.Util.getRoleType;
 
 public class Deleter {
 
@@ -70,11 +70,11 @@ public class Deleter {
         this.context.producer(Either.first(EXHAUSTIVE));
     }
 
-    public static Deleter create(Reasoner reasoner, GraqlDelete query, Context.Query context) {
-        try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
+    public static Deleter create(Reasoner reasoner, TypeQLDelete query, Context.Query context) {
+        try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             VariableRegistry registry = VariableRegistry.createFromThings(query.variables(), false);
             iterate(registry.types()).filter(t -> !t.reference().isLabel()).forEachRemaining(t -> {
-                throw GraknException.of(ILLEGAL_TYPE_VARIABLE_IN_DELETE, t.reference());
+                throw TypeDBException.of(ILLEGAL_TYPE_VARIABLE_IN_DELETE, t.reference());
             });
 
             assert query.match().namedVariablesUnbound().containsAll(query.namedVariablesUnbound());
@@ -84,7 +84,7 @@ public class Deleter {
     }
 
     public void execute() {
-        try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
+        try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
             List<ConceptMap> matches = matcher.execute(context).toList();
             matches.forEach(matched -> new Operation(matched, variables).execute());
         }
@@ -105,14 +105,14 @@ public class Deleter {
         }
 
         void execute() {
-            try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
+            try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
                 variables.forEach(this::delete);
                 variables.forEach(this::deleteIsa);
             }
         }
 
         private void delete(ThingVariable var) {
-            try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete")) {
+            try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete")) {
                 validate(var);
                 Thing thing = matched.get(var.reference().asName()).asThing();
                 if (!var.has().isEmpty()) deleteHas(var, thing);
@@ -122,33 +122,33 @@ public class Deleter {
         }
 
         private void validate(ThingVariable var) {
-            try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "validate")) {
+            try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "validate")) {
                 if (!var.reference().isName()) {
                     ErrorMessage.ThingWrite msg = var.relation().isPresent()
                             ? ILLEGAL_ANONYMOUS_RELATION_IN_DELETE
                             : ILLEGAL_ANONYMOUS_VARIABLE_IN_DELETE;
-                    throw GraknException.of(msg, var);
+                    throw TypeDBException.of(msg, var);
                 } else if (var.iid().isPresent()) {
-                    throw GraknException.of(THING_IID_NOT_INSERTABLE, var.reference(), var.iid().get());
+                    throw TypeDBException.of(THING_IID_NOT_INSERTABLE, var.reference(), var.iid().get());
                 } else if (!var.is().isEmpty()) {
-                    throw GraknException.of(ILLEGAL_IS_CONSTRAINT, var, var.is().iterator().next());
+                    throw TypeDBException.of(ILLEGAL_IS_CONSTRAINT, var, var.is().iterator().next());
                 }
             }
         }
 
         private void deleteHas(ThingVariable var, Thing thing) {
-            try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete_has")) {
+            try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete_has")) {
                 for (HasConstraint hasConstraint : var.has()) {
                     Reference.Name attRef = hasConstraint.attribute().reference().asName();
                     Attribute att = matched.get(attRef).asAttribute();
                     if (thing.getHas(att.getType()).anyMatch(a -> a.equals(att))) thing.unsetHas(att);
-                    else throw GraknException.of(INVALID_DELETE_HAS, var.reference(), attRef);
+                    else throw TypeDBException.of(INVALID_DELETE_HAS, var.reference(), attRef);
                 }
             }
         }
 
         private void deleteRelation(ThingVariable var, Relation relation) {
-            try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete_relation")) {
+            try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete_relation")) {
                 if (var.relation().isPresent()) {
                     var.relation().get().players().forEach(rolePlayer -> {
                         Thing player = matched.get(rolePlayer.player().reference().asName()).asThing();
@@ -156,23 +156,23 @@ public class Deleter {
                         relation.removePlayer(roleType, player);
                     });
                 } else {
-                    throw GraknException.of(DELETE_RELATION_CONSTRAINT_TOO_MANY, var.reference());
+                    throw TypeDBException.of(DELETE_RELATION_CONSTRAINT_TOO_MANY, var.reference());
                 }
             }
         }
 
         private void deleteIsa(ThingVariable var) {
-            try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete_isa")) {
+            try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete_isa")) {
                 Thing thing = detached.get(var);
                 ThingType type = thing.getType();
                 if (var.isa().isPresent() && !thing.isDeleted()) {
                     Label typeLabel = var.isa().get().type().label().get().properLabel();
                     if (var.isa().get().isExplicit()) {
                         if (type.getLabel().equals(typeLabel)) thing.delete();
-                        else throw GraknException.of(INVALID_DELETE_THING_DIRECT, var.reference(), typeLabel);
+                        else throw TypeDBException.of(INVALID_DELETE_THING_DIRECT, var.reference(), typeLabel);
                     } else {
                         if (type.getSupertypes().anyMatch(t -> t.getLabel().equals(typeLabel))) thing.delete();
-                        else throw GraknException.of(INVALID_DELETE_THING, var.reference(), typeLabel);
+                        else throw TypeDBException.of(INVALID_DELETE_THING, var.reference(), typeLabel);
                     }
                 }
             }

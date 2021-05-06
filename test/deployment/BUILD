@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -15,21 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_common//test:rules.bzl", "native_grakn_artifact")
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-
-native_grakn_artifact(
-    name = "native-grakn-artifact",
-    mac_artifact = "//server:assemble-mac-zip",
-    linux_artifact = "//server:assemble-linux-targz",
-    windows_artifact = "//server:assemble-windows-zip",
-    output = "grakn-core-server-native.tar.gz",
-    visibility = ["//test:__subpackages__"],
-)
+load("@vaticle_typedb_common//test:rules.bzl", "native_typedb_artifact")
+load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "apt",
-    test_class = "grakn.core.test.deployment.AptTest",
+    test_class = "com.vaticle.typedb.core.test.deployment.AptTest",
     srcs = ["AptTest.java"],
     deps = [
         "@maven//:org_slf4j_slf4j_api",
@@ -39,7 +30,7 @@ java_test(
     runtime_deps = [
         "@maven//:ch_qos_logback_logback_classic",
     ],
-    data = ["@graknlabs_grakn_core_workspace_refs//:refs.json", "//:VERSION"],
+    data = ["@vaticle_typedb_workspace_refs//:refs.json", "//:VERSION"],
     tags = ["no-sandbox"],
 )
 

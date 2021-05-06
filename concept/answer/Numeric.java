@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,16 +16,16 @@
  *
  */
 
-package grakn.core.concept.answer;
+package com.vaticle.typedb.core.concept.answer;
 
-import grakn.core.common.exception.GraknException;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 
 import javax.annotation.Nullable;
 
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.ThingRead.NUMERIC_IS_NOT_NUMBER;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.NUMERIC_IS_NOT_NUMBER;
 
 /**
  * A type of Answer object that contains a Number. Will either be a long or a double
@@ -68,31 +68,31 @@ public class Numeric implements Answer, Comparable<Numeric> {
 
     public long asLong() {
         if (isLong()) return longValue;
-        else throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Long.class));
+        else throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Long.class));
     }
 
     public double asDouble() {
         if (isDouble()) return doubleValue;
-        else throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Double.class));
+        else throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Double.class));
     }
 
     public Number asNumber() {
         if (isLong()) return longValue;
         else if (isDouble()) return doubleValue;
-        else if (isNaN()) throw GraknException.of(NUMERIC_IS_NOT_NUMBER);
-        else throw GraknException.of(ILLEGAL_STATE);
+        else if (isNaN()) throw TypeDBException.of(NUMERIC_IS_NOT_NUMBER);
+        else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     public Class<?> getValueClass() {
         if (isLong()) return Long.class;
         else if (isDouble()) return Double.class;
         else if (isNaN()) return null;
-        else throw GraknException.of(ILLEGAL_STATE);
+        else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     @Override
     public int compareTo(Numeric o) {
-        if (isNaN() || o.isNaN()) throw GraknException.of(NUMERIC_IS_NOT_NUMBER);
+        if (isNaN() || o.isNaN()) throw TypeDBException.of(NUMERIC_IS_NOT_NUMBER);
         if (isLong() && o.isLong()) return longValue.compareTo(o.longValue);
         else return doubleValue.compareTo(o.doubleValue);
     }

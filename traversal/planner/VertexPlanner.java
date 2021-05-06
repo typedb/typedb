@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,12 +16,12 @@
  *
  */
 
-package grakn.core.traversal.planner;
+package com.vaticle.typedb.core.traversal.planner;
 
-import grakn.core.traversal.procedure.VertexProcedure;
-import grakn.core.traversal.structure.Structure;
-import grakn.core.traversal.structure.StructureEdge;
-import grakn.core.traversal.structure.StructureVertex;
+import com.vaticle.typedb.core.traversal.procedure.VertexProcedure;
+import com.vaticle.typedb.core.traversal.structure.Structure;
+import com.vaticle.typedb.core.traversal.structure.StructureEdge;
+import com.vaticle.typedb.core.traversal.structure.StructureVertex;
 
 public class VertexPlanner implements Planner {
 

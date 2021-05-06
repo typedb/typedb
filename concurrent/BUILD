@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -15,8 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
+load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 package(default_visibility = ["//visibility:public"])
 
 
@@ -27,15 +27,15 @@ java_library(
         # Internal Repository Dependencies
         "//common:common",
 
-        # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
 
         # External Maven Dependencies
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:io_netty_netty_all",
         "@maven//:org_slf4j_slf4j_api",
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-concurrent:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-concurrent:{pom_version}"],
 )
 
 checkstyle_test(

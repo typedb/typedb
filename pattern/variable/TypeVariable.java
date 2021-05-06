@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,27 +16,27 @@
  *
  */
 
-package grakn.core.pattern.variable;
+package com.vaticle.typedb.core.pattern.variable;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Label;
-import grakn.core.pattern.constraint.Constraint;
-import grakn.core.pattern.constraint.type.AbstractConstraint;
-import grakn.core.pattern.constraint.type.IsConstraint;
-import grakn.core.pattern.constraint.type.LabelConstraint;
-import grakn.core.pattern.constraint.type.OwnsConstraint;
-import grakn.core.pattern.constraint.type.PlaysConstraint;
-import grakn.core.pattern.constraint.type.RegexConstraint;
-import grakn.core.pattern.constraint.type.RelatesConstraint;
-import grakn.core.pattern.constraint.type.SubConstraint;
-import grakn.core.pattern.constraint.type.TypeConstraint;
-import grakn.core.pattern.constraint.type.ValueTypeConstraint;
-import grakn.core.pattern.equivalence.AlphaEquivalence;
-import grakn.core.pattern.equivalence.AlphaEquivalent;
-import grakn.core.traversal.Traversal;
-import grakn.core.traversal.common.Identifier;
-import graql.lang.common.GraqlArg;
-import graql.lang.pattern.constraint.ConceptConstraint;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.pattern.constraint.Constraint;
+import com.vaticle.typedb.core.pattern.constraint.type.AbstractConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.IsConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.LabelConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.OwnsConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.PlaysConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.RegexConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.RelatesConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.SubConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.TypeConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.ValueTypeConstraint;
+import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
+import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalent;
+import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typeql.lang.common.TypeQLArg;
+import com.vaticle.typeql.lang.pattern.constraint.ConceptConstraint;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
@@ -45,11 +45,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_TYPE_CONSTRAINT_LABEL;
-import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_TYPE_CONSTRAINT_REGEX;
-import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_TYPE_CONSTRAINT_SUB;
-import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_TYPE_CONSTRAINT_VALUE_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.MULTIPLE_TYPE_CONSTRAINT_LABEL;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.MULTIPLE_TYPE_CONSTRAINT_REGEX;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.MULTIPLE_TYPE_CONSTRAINT_SUB;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.MULTIPLE_TYPE_CONSTRAINT_VALUE_TYPE;
 
 public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariable> {
 
@@ -90,7 +90,7 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         return this;
     }
 
-    TypeVariable constrainType(List<graql.lang.pattern.constraint.TypeConstraint> constraints, VariableRegistry register) {
+    TypeVariable constrainType(List<com.vaticle.typeql.lang.pattern.constraint.TypeConstraint> constraints, VariableRegistry register) {
         constraints.forEach(constraint -> this.constrain(TypeConstraint.of(this, constraint, register)));
         return this;
     }
@@ -103,30 +103,30 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         constraints.add(constraint);
         if (constraint.isLabel()) {
             if (labelConstraint != null && !labelConstraint.equals(constraint)) {
-                throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_LABEL, id());
+                throw TypeDBException.of(MULTIPLE_TYPE_CONSTRAINT_LABEL, id());
             }
             labelConstraint = constraint.asLabel();
         } else if (constraint.isValueType()) {
             if (valueTypeConstraint != null && !valueTypeConstraint.equals(constraint)) {
-                throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_VALUE_TYPE, id());
+                throw TypeDBException.of(MULTIPLE_TYPE_CONSTRAINT_VALUE_TYPE, id());
             }
             valueTypeConstraint = constraint.asValueType();
         } else if (constraint.isRegex()) {
             if (regexConstraint != null && !regexConstraint.equals(constraint)) {
-                throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_REGEX, id());
+                throw TypeDBException.of(MULTIPLE_TYPE_CONSTRAINT_REGEX, id());
             }
             regexConstraint = constraint.asRegex();
         } else if (constraint.isAbstract()) abstractConstraint = constraint.asAbstract();
         else if (constraint.isSub()) {
             if (subConstraint != null && !subConstraint.equals(constraint)) {
-                throw GraknException.of(MULTIPLE_TYPE_CONSTRAINT_SUB, id());
+                throw TypeDBException.of(MULTIPLE_TYPE_CONSTRAINT_SUB, id());
             }
             subConstraint = constraint.asSub();
         } else if (constraint.isOwns()) ownsConstraints.add(constraint.asOwns());
         else if (constraint.isPlays()) playsConstraints.add(constraint.asPlays());
         else if (constraint.isRelates()) relatesConstraints.add(constraint.asRelates());
         else if (constraint.isIs()) isConstraints.add(constraint.asIs());
-        else throw GraknException.of(ILLEGAL_STATE);
+        else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     @Override
@@ -158,7 +158,7 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         return Optional.ofNullable(valueTypeConstraint);
     }
 
-    public ValueTypeConstraint valueType(GraqlArg.ValueType valueType) {
+    public ValueTypeConstraint valueType(TypeQLArg.ValueType valueType) {
         ValueTypeConstraint valueTypeConstraint = new ValueTypeConstraint(this, valueType);
         constrain(valueTypeConstraint);
         return valueTypeConstraint;

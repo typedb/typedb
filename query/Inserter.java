@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,33 +16,33 @@
  *
  */
 
-package grakn.core.query;
+package com.vaticle.typedb.core.query;
 
-import grabl.tracing.client.GrablTracingThreadStatic;
-import grakn.common.collection.Either;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.parameters.Context;
-import grakn.core.concept.ConceptManager;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Relation;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.RoleType;
-import grakn.core.concept.type.ThingType;
-import grakn.core.pattern.constraint.thing.HasConstraint;
-import grakn.core.pattern.constraint.thing.IsaConstraint;
-import grakn.core.pattern.constraint.thing.ValueConstraint;
-import grakn.core.pattern.constraint.type.LabelConstraint;
-import grakn.core.pattern.variable.ThingVariable;
-import grakn.core.pattern.variable.VariableRegistry;
-import grakn.core.reasoner.Reasoner;
-import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.Identifier.Variable.Retrievable;
-import graql.lang.pattern.variable.UnboundVariable;
-import graql.lang.query.GraqlInsert;
-import graql.lang.query.GraqlMatch;
+import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic;
+import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Context;
+import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.thing.Relation;
+import com.vaticle.typedb.core.concept.thing.Thing;
+import com.vaticle.typedb.core.concept.type.AttributeType;
+import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.concept.type.ThingType;
+import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.IsaConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.ValueConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.LabelConstraint;
+import com.vaticle.typedb.core.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
+import com.vaticle.typedb.core.reasoner.Reasoner;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
+import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
+import com.vaticle.typeql.lang.query.TypeQLInsert;
+import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -51,27 +51,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_MISSING;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_TOO_MANY;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_IS_CONSTRAINT;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_INSERT;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.INSERT_RELATION_CONSTRAINT_TOO_MANY;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_CONSTRAINT_MISSING;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_IID_NOT_INSERTABLE;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_MISSING;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_REINSERTION;
-import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.iterator.Iterators.single;
-import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
-import static grakn.core.concurrent.executor.Executors.PARALLELISATION_FACTOR;
-import static grakn.core.concurrent.executor.Executors.async1;
-import static grakn.core.concurrent.producer.Producers.async;
-import static grakn.core.concurrent.producer.Producers.produce;
-import static grakn.core.query.QueryManager.PARALLELISATION_SPLIT_MIN;
-import static grakn.core.query.common.Util.getRoleType;
+import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.traceOnThread;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_MISSING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_TOO_MANY;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_IS_CONSTRAINT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_INSERT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.INSERT_RELATION_CONSTRAINT_TOO_MANY;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.RELATION_CONSTRAINT_MISSING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_IID_NOT_INSERTABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_MISSING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_REINSERTION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.single;
+import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
+import static com.vaticle.typedb.core.concurrent.executor.Executors.PARALLELISATION_FACTOR;
+import static com.vaticle.typedb.core.concurrent.executor.Executors.async1;
+import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
+import static com.vaticle.typedb.core.concurrent.producer.Producers.produce;
+import static com.vaticle.typedb.core.query.QueryManager.PARALLELISATION_SPLIT_MIN;
+import static com.vaticle.typedb.core.query.common.Util.getRoleType;
 
 public class Inserter {
 
@@ -91,16 +91,16 @@ public class Inserter {
         this.context.producer(Either.first(EXHAUSTIVE));
     }
 
-    public static Inserter create(Reasoner reasoner, ConceptManager conceptMgr, GraqlInsert query, Context.Query context) {
-        try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
+    public static Inserter create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLInsert query, Context.Query context) {
+        try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             VariableRegistry registry = VariableRegistry.createFromThings(query.variables());
             iterate(registry.types()).filter(t -> !t.reference().isLabel()).forEachRemaining(t -> {
-                throw GraknException.of(ILLEGAL_TYPE_VARIABLE_IN_INSERT, t.reference());
+                throw TypeDBException.of(ILLEGAL_TYPE_VARIABLE_IN_INSERT, t.reference());
             });
 
             Matcher matcher = null;
             if (query.match().isPresent()) {
-                GraqlMatch.Unfiltered match = query.match().get();
+                TypeQLMatch.Unfiltered match = query.match().get();
                 List<UnboundVariable> filter = new ArrayList<>(match.namedVariablesUnbound());
                 filter.retainAll(query.namedVariablesUnbound());
                 assert !filter.isEmpty();
@@ -112,7 +112,7 @@ public class Inserter {
     }
 
     public FunctionalIterator<ConceptMap> execute() {
-        try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
+        try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
             if (matcher != null) return context.options().parallel() ? executeParallel() : executeSerial();
             else return single(new Operation(conceptMgr, new ConceptMap(), variables).execute());
         }
@@ -153,7 +153,7 @@ public class Inserter {
         }
 
         public ConceptMap execute() {
-            try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
+            try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
                 variables.forEach(this::insert);
                 matched.forEach((id, concept) -> inserted.putIfAbsent(id, concept.asThing()));
                 return new ConceptMap(inserted);
@@ -169,7 +169,7 @@ public class Inserter {
         }
 
         private Thing insert(ThingVariable var) {
-            try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
+            try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
                 assert var.id().isRetrievable(); // thing variables are always retrieved
                 Thing thing;
                 Retrievable id = var.id();
@@ -181,10 +181,10 @@ public class Inserter {
                 if (matchedContains(var)) {
                     thing = matchedGet(var);
                     if (var.isa().isPresent() && !thing.getType().equals(getThingType(var.isa().get().type().label().get()))) {
-                        throw GraknException.of(THING_ISA_REINSERTION, id, var.isa().get().type());
+                        throw TypeDBException.of(THING_ISA_REINSERTION, id, var.isa().get().type());
                     }
                 } else if (var.isa().isPresent()) thing = insertIsa(var.isa().get(), var);
-                else throw GraknException.of(THING_ISA_MISSING, id);
+                else throw TypeDBException.of(THING_ISA_MISSING, id);
                 assert thing != null;
 
                 inserted.put(id, thing);
@@ -195,26 +195,26 @@ public class Inserter {
         }
 
         private void validate(ThingVariable var) {
-            try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "validate")) {
+            try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "validate")) {
                 Identifier id = var.id();
                 if (var.iid().isPresent()) {
-                    throw GraknException.of(THING_IID_NOT_INSERTABLE, id, var.iid().get());
+                    throw TypeDBException.of(THING_IID_NOT_INSERTABLE, id, var.iid().get());
                 } else if (!var.is().isEmpty()) {
-                    throw GraknException.of(ILLEGAL_IS_CONSTRAINT, var, var.is().iterator().next());
+                    throw TypeDBException.of(ILLEGAL_IS_CONSTRAINT, var, var.is().iterator().next());
                 }
             }
         }
 
         public ThingType getThingType(LabelConstraint labelConstraint) {
-            try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "get_thing_type")) {
+            try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "get_thing_type")) {
                 ThingType thingType = conceptMgr.getThingType(labelConstraint.label());
-                if (thingType == null) throw GraknException.of(TYPE_NOT_FOUND, labelConstraint.label());
+                if (thingType == null) throw TypeDBException.of(TYPE_NOT_FOUND, labelConstraint.label());
                 else return thingType.asThingType();
             }
         }
 
         private Thing insertIsa(IsaConstraint isaConstraint, ThingVariable var) {
-            try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_isa")) {
+            try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_isa")) {
                 assert isaConstraint.type().label().isPresent();
                 ThingType thingType = getThingType(isaConstraint.type().label().get());
 
@@ -222,11 +222,11 @@ public class Inserter {
                     return thingType.asEntityType().create();
                 } else if (thingType.isRelationType()) {
                     if (var.relation().isPresent()) return thingType.asRelationType().create();
-                    else throw GraknException.of(RELATION_CONSTRAINT_MISSING, var.reference());
+                    else throw TypeDBException.of(RELATION_CONSTRAINT_MISSING, var.reference());
                 } else if (thingType.isAttributeType()) {
                     return insertAttribute(thingType.asAttributeType(), var);
                 } else if (thingType.isThingType() && thingType.isRoot()) {
-                    throw GraknException.of(ILLEGAL_ABSTRACT_WRITE, Thing.class.getSimpleName(), thingType.getLabel());
+                    throw TypeDBException.of(ILLEGAL_ABSTRACT_WRITE, Thing.class.getSimpleName(), thingType.getLabel());
                 } else {
                     assert false;
                     return null;
@@ -235,11 +235,11 @@ public class Inserter {
         }
 
         private Attribute insertAttribute(AttributeType attributeType, ThingVariable var) {
-            try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_attribute")) {
+            try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_attribute")) {
                 ValueConstraint<?> valueConstraint;
 
                 if (var.value().size() > 1) {
-                    throw GraknException.of(ATTRIBUTE_VALUE_TOO_MANY, var.reference(), attributeType.getLabel());
+                    throw TypeDBException.of(ATTRIBUTE_VALUE_TOO_MANY, var.reference(), attributeType.getLabel());
                 } else if (!var.value().isEmpty() &&
                         (valueConstraint = var.value().iterator().next()).isValueIdentity()) {
                     switch (attributeType.getValueType()) {
@@ -258,14 +258,14 @@ public class Inserter {
                             return null;
                     }
                 } else {
-                    throw GraknException.of(ATTRIBUTE_VALUE_MISSING, var.reference(), attributeType.getLabel());
+                    throw TypeDBException.of(ATTRIBUTE_VALUE_MISSING, var.reference(), attributeType.getLabel());
                 }
             }
         }
 
         private void insertRolePlayers(Relation relation, ThingVariable var) {
             assert var.relation().isPresent();
-            try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "extend_relation")) {
+            try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "extend_relation")) {
                 if (var.relation().isPresent()) {
                     var.relation().get().players().forEach(rolePlayer -> {
                         Thing player = insert(rolePlayer.player());
@@ -273,13 +273,13 @@ public class Inserter {
                         relation.addPlayer(roleType, player);
                     });
                 } else { // var.relation().size() > 1
-                    throw GraknException.of(INSERT_RELATION_CONSTRAINT_TOO_MANY, var.reference());
+                    throw TypeDBException.of(INSERT_RELATION_CONSTRAINT_TOO_MANY, var.reference());
                 }
             }
         }
 
         private void insertHas(Thing thing, Set<HasConstraint> hasConstraints) {
-            try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_has")) {
+            try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_has")) {
                 hasConstraints.forEach(has -> thing.setHas(insert(has.attribute()).asAttribute()));
             }
         }

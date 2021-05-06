@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,14 +16,14 @@
  *
  */
 
-package grakn.core.pattern.variable;
+package com.vaticle.typedb.core.pattern.variable;
 
-import grabl.tracing.client.GrablTracingThreadStatic;
-import grakn.core.common.exception.GraknException;
-import grakn.core.traversal.common.Identifier;
-import graql.lang.pattern.variable.BoundVariable;
-import graql.lang.pattern.variable.ConceptVariable;
-import graql.lang.pattern.variable.Reference;
+import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typeql.lang.pattern.variable.BoundVariable;
+import com.vaticle.typeql.lang.pattern.variable.ConceptVariable;
+import com.vaticle.typeql.lang.pattern.variable.Reference;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -34,13 +34,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
-import static grakn.common.collection.Collections.set;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Pattern.ANONYMOUS_CONCEPT_VARIABLE;
-import static grakn.core.common.exception.ErrorMessage.Pattern.ANONYMOUS_TYPE_VARIABLE;
-import static grakn.core.common.exception.ErrorMessage.Pattern.UNBOUNDED_CONCEPT_VARIABLE;
-import static grakn.core.common.exception.ErrorMessage.Pattern.VARIABLE_CONTRADICTION;
+import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.traceOnThread;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.ANONYMOUS_CONCEPT_VARIABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.ANONYMOUS_TYPE_VARIABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNBOUNDED_CONCEPT_VARIABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.VARIABLE_CONTRADICTION;
 import static java.util.Collections.unmodifiableSet;
 
 public class VariableRegistry {
@@ -65,20 +65,20 @@ public class VariableRegistry {
         anonymous = new HashSet<>();
     }
 
-    public static VariableRegistry createFromTypes(List<graql.lang.pattern.variable.TypeVariable> variables) {
-        try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "types")) {
+    public static VariableRegistry createFromTypes(List<com.vaticle.typeql.lang.pattern.variable.TypeVariable> variables) {
+        try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "types")) {
             VariableRegistry registry = new VariableRegistry(null);
             variables.forEach(registry::register);
             return registry;
         }
     }
 
-    public static VariableRegistry createFromThings(List<graql.lang.pattern.variable.ThingVariable<?>> variables) {
+    public static VariableRegistry createFromThings(List<com.vaticle.typeql.lang.pattern.variable.ThingVariable<?>> variables) {
         return createFromThings(variables, true);
     }
 
-    public static VariableRegistry createFromThings(List<graql.lang.pattern.variable.ThingVariable<?>> variables, boolean allowDerived) {
-        try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "things")) {
+    public static VariableRegistry createFromThings(List<com.vaticle.typeql.lang.pattern.variable.ThingVariable<?>> variables, boolean allowDerived) {
+        try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "things")) {
             return createFromVariables(variables, null, allowDerived);
         }
     }
@@ -90,61 +90,61 @@ public class VariableRegistry {
 
     public static VariableRegistry createFromVariables(List<? extends BoundVariable> variables,
                                                        @Nullable VariableRegistry bounds, boolean allowDerived) {
-        try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "variables")) {
+        try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "variables")) {
             List<ConceptVariable> unboundedVariables = new ArrayList<>();
             VariableRegistry registry = new VariableRegistry(bounds, allowDerived);
-            variables.forEach(graqlVar -> {
-                if (graqlVar.isConcept()) unboundedVariables.add(graqlVar.asConcept());
-                else registry.register(graqlVar);
+            variables.forEach(typeQLVar -> {
+                if (typeQLVar.isConcept()) unboundedVariables.add(typeQLVar.asConcept());
+                else registry.register(typeQLVar);
             });
             unboundedVariables.forEach(registry::register);
             return registry;
         }
     }
 
-    private Variable register(graql.lang.pattern.variable.BoundVariable graqlVar) {
-        if (graqlVar.isThing()) return register(graqlVar.asThing());
-        else if (graqlVar.isType()) return register(graqlVar.asType());
-        else if (graqlVar.isConcept()) return register(graqlVar.asConcept());
-        else throw GraknException.of(ILLEGAL_STATE);
+    private Variable register(com.vaticle.typeql.lang.pattern.variable.BoundVariable typeQLVar) {
+        if (typeQLVar.isThing()) return register(typeQLVar.asThing());
+        else if (typeQLVar.isType()) return register(typeQLVar.asType());
+        else if (typeQLVar.isConcept()) return register(typeQLVar.asConcept());
+        else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    public Variable register(ConceptVariable graqlVar) {
-        if (graqlVar.reference().isAnonymous()) throw GraknException.of(ANONYMOUS_CONCEPT_VARIABLE);
-        if (things.containsKey(graqlVar.reference())) {
-            return things.get(graqlVar.reference()).constrainConcept(graqlVar.constraints(), this);
-        } else if (types.containsKey(graqlVar.reference())) {
-            return types.get(graqlVar.reference()).constrainConcept(graqlVar.constraints(), this);
-        } else if (bounds != null && bounds.contains(graqlVar.reference())) {
-            Reference.Referable ref = graqlVar.reference().asReferable();
-            if (bounds.get(graqlVar.reference()).isThing()) {
+    public Variable register(ConceptVariable typeQLVar) {
+        if (typeQLVar.reference().isAnonymous()) throw TypeDBException.of(ANONYMOUS_CONCEPT_VARIABLE);
+        if (things.containsKey(typeQLVar.reference())) {
+            return things.get(typeQLVar.reference()).constrainConcept(typeQLVar.constraints(), this);
+        } else if (types.containsKey(typeQLVar.reference())) {
+            return types.get(typeQLVar.reference()).constrainConcept(typeQLVar.constraints(), this);
+        } else if (bounds != null && bounds.contains(typeQLVar.reference())) {
+            Reference.Referable ref = typeQLVar.reference().asReferable();
+            if (bounds.get(typeQLVar.reference()).isThing()) {
                 things.put(ref, new ThingVariable(Identifier.Variable.of(ref)));
-                return things.get(ref).constrainConcept(graqlVar.constraints(), this);
+                return things.get(ref).constrainConcept(typeQLVar.constraints(), this);
             } else {
                 types.put(ref, new TypeVariable(Identifier.Variable.of(ref)));
-                return types.get(ref).constrainConcept(graqlVar.constraints(), this);
+                return types.get(ref).constrainConcept(typeQLVar.constraints(), this);
             }
         } else {
-            throw GraknException.of(UNBOUNDED_CONCEPT_VARIABLE, graqlVar.reference());
+            throw TypeDBException.of(UNBOUNDED_CONCEPT_VARIABLE, typeQLVar.reference());
         }
     }
 
-    public TypeVariable register(graql.lang.pattern.variable.TypeVariable graqlVar) {
-        if (graqlVar.reference().isAnonymous()) throw GraknException.of(ANONYMOUS_TYPE_VARIABLE);
+    public TypeVariable register(com.vaticle.typeql.lang.pattern.variable.TypeVariable typeQLVar) {
+        if (typeQLVar.reference().isAnonymous()) throw TypeDBException.of(ANONYMOUS_TYPE_VARIABLE);
         return computeTypeIfAbsent(
-                graqlVar.reference(), ref -> new TypeVariable(Identifier.Variable.of(ref.asReferable()))
-        ).constrainType(graqlVar.constraints(), this);
+                typeQLVar.reference(), ref -> new TypeVariable(Identifier.Variable.of(ref.asReferable()))
+        ).constrainType(typeQLVar.constraints(), this);
     }
 
-    public ThingVariable register(graql.lang.pattern.variable.ThingVariable<?> graqlVar) {
-        ThingVariable graknVar;
-        if (graqlVar.reference().isAnonymous()) {
-            graknVar = new ThingVariable(Identifier.Variable.of(graqlVar.reference().asAnonymous(), anonymousCounter()));
-            anonymous.add(graknVar);
+    public ThingVariable register(com.vaticle.typeql.lang.pattern.variable.ThingVariable<?> typeQLVar) {
+        ThingVariable typeDBVar;
+        if (typeQLVar.reference().isAnonymous()) {
+            typeDBVar = new ThingVariable(Identifier.Variable.of(typeQLVar.reference().asAnonymous(), anonymousCounter()));
+            anonymous.add(typeDBVar);
         } else {
-            graknVar = computeThingIfAbsent(graqlVar.reference(), r -> new ThingVariable(Identifier.Variable.of(r.asReferable())));
+            typeDBVar = computeThingIfAbsent(typeQLVar.reference(), r -> new ThingVariable(Identifier.Variable.of(r.asReferable())));
         }
-        return graknVar.constrainThing(graqlVar.constraints(), this);
+        return typeDBVar.constrainThing(typeQLVar.constraints(), this);
     }
 
     public int anonymousCounter() {
@@ -183,12 +183,12 @@ public class VariableRegistry {
 
     public TypeVariable computeTypeIfAbsent(Reference reference, Function<Reference, TypeVariable> constructor) {
         if (things.containsKey(reference)) {
-            throw GraknException.of(VARIABLE_CONTRADICTION, reference);
+            throw TypeDBException.of(VARIABLE_CONTRADICTION, reference);
         } else return types.computeIfAbsent(reference, constructor);
     }
 
     public ThingVariable computeThingIfAbsent(Reference reference, Function<Reference, ThingVariable> constructor) {
-        if (types.containsKey(reference)) throw GraknException.of(VARIABLE_CONTRADICTION, reference);
+        if (types.containsKey(reference)) throw TypeDBException.of(VARIABLE_CONTRADICTION, reference);
         else return things.computeIfAbsent(reference, constructor);
     }
 }

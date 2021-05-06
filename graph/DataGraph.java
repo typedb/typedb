@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,27 +16,27 @@
  *
  */
 
-package grakn.core.graph;
+package com.vaticle.typedb.core.graph;
 
-import grakn.common.collection.ConcurrentSet;
-import grakn.common.collection.Pair;
-import grakn.core.common.exception.GraknCheckedException;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.parameters.Label;
-import grakn.core.graph.common.Encoding;
-import grakn.core.graph.common.KeyGenerator;
-import grakn.core.graph.common.StatisticsBytes;
-import grakn.core.graph.common.Storage;
-import grakn.core.graph.iid.EdgeIID;
-import grakn.core.graph.iid.PrefixIID;
-import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.vertex.AttributeVertex;
-import grakn.core.graph.vertex.ThingVertex;
-import grakn.core.graph.vertex.TypeVertex;
-import grakn.core.graph.vertex.Vertex;
-import grakn.core.graph.vertex.impl.AttributeVertexImpl;
-import grakn.core.graph.vertex.impl.ThingVertexImpl;
+import com.vaticle.typedb.common.collection.ConcurrentSet;
+import com.vaticle.typedb.common.collection.Pair;
+import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.common.KeyGenerator;
+import com.vaticle.typedb.core.graph.common.StatisticsBytes;
+import com.vaticle.typedb.core.graph.common.Storage;
+import com.vaticle.typedb.core.graph.iid.EdgeIID;
+import com.vaticle.typedb.core.graph.iid.PrefixIID;
+import com.vaticle.typedb.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
+import com.vaticle.typedb.core.graph.vertex.ThingVertex;
+import com.vaticle.typedb.core.graph.vertex.TypeVertex;
+import com.vaticle.typedb.core.graph.vertex.Vertex;
+import com.vaticle.typedb.core.graph.vertex.impl.AttributeVertexImpl;
+import com.vaticle.typedb.core.graph.vertex.impl.ThingVertexImpl;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -47,37 +47,37 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static grakn.common.collection.Collections.list;
-import static grakn.common.collection.Collections.pair;
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.collection.Bytes.bytesToLong;
-import static grakn.core.common.collection.Bytes.join;
-import static grakn.core.common.collection.Bytes.longToBytes;
-import static grakn.core.common.collection.Bytes.stripPrefix;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.iterator.Iterators.link;
-import static grakn.core.common.iterator.Iterators.tree;
-import static grakn.core.graph.common.Encoding.Edge.Type.SUB;
-import static grakn.core.graph.common.Encoding.Prefix.VERTEX_ATTRIBUTE_TYPE;
-import static grakn.core.graph.common.Encoding.Prefix.VERTEX_ENTITY_TYPE;
-import static grakn.core.graph.common.Encoding.Prefix.VERTEX_RELATION_TYPE;
-import static grakn.core.graph.common.Encoding.Statistics.JobOperation.CREATED;
-import static grakn.core.graph.common.Encoding.Statistics.JobOperation.DELETED;
-import static grakn.core.graph.common.Encoding.Status.BUFFERED;
-import static grakn.core.graph.common.Encoding.ValueType.STRING_MAX_SIZE;
-import static grakn.core.graph.common.Encoding.Vertex.Thing.ATTRIBUTE;
-import static grakn.core.graph.common.StatisticsBytes.attributeCountJobKey;
-import static grakn.core.graph.common.StatisticsBytes.attributeCountedKey;
-import static grakn.core.graph.common.StatisticsBytes.hasEdgeCountJobKey;
-import static grakn.core.graph.common.StatisticsBytes.hasEdgeCountKey;
-import static grakn.core.graph.common.StatisticsBytes.hasEdgeCountedKey;
-import static grakn.core.graph.common.StatisticsBytes.hasEdgeTotalCountKey;
-import static grakn.core.graph.common.StatisticsBytes.snapshotKey;
-import static grakn.core.graph.common.StatisticsBytes.vertexCountKey;
-import static grakn.core.graph.common.StatisticsBytes.vertexTransitiveCountKey;
-import static grakn.core.graph.iid.VertexIID.Thing.generate;
+import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.common.collection.Collections.pair;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.collection.Bytes.bytesToLong;
+import static com.vaticle.typedb.core.common.collection.Bytes.join;
+import static com.vaticle.typedb.core.common.collection.Bytes.longToBytes;
+import static com.vaticle.typedb.core.common.collection.Bytes.stripPrefix;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.link;
+import static com.vaticle.typedb.core.common.iterator.Iterators.tree;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
+import static com.vaticle.typedb.core.graph.common.Encoding.Prefix.VERTEX_ATTRIBUTE_TYPE;
+import static com.vaticle.typedb.core.graph.common.Encoding.Prefix.VERTEX_ENTITY_TYPE;
+import static com.vaticle.typedb.core.graph.common.Encoding.Prefix.VERTEX_RELATION_TYPE;
+import static com.vaticle.typedb.core.graph.common.Encoding.Statistics.JobOperation.CREATED;
+import static com.vaticle.typedb.core.graph.common.Encoding.Statistics.JobOperation.DELETED;
+import static com.vaticle.typedb.core.graph.common.Encoding.Status.BUFFERED;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_MAX_SIZE;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ATTRIBUTE;
+import static com.vaticle.typedb.core.graph.common.StatisticsBytes.attributeCountJobKey;
+import static com.vaticle.typedb.core.graph.common.StatisticsBytes.attributeCountedKey;
+import static com.vaticle.typedb.core.graph.common.StatisticsBytes.hasEdgeCountJobKey;
+import static com.vaticle.typedb.core.graph.common.StatisticsBytes.hasEdgeCountKey;
+import static com.vaticle.typedb.core.graph.common.StatisticsBytes.hasEdgeCountedKey;
+import static com.vaticle.typedb.core.graph.common.StatisticsBytes.hasEdgeTotalCountKey;
+import static com.vaticle.typedb.core.graph.common.StatisticsBytes.snapshotKey;
+import static com.vaticle.typedb.core.graph.common.StatisticsBytes.vertexCountKey;
+import static com.vaticle.typedb.core.graph.common.StatisticsBytes.vertexTransitiveCountKey;
+import static com.vaticle.typedb.core.graph.iid.VertexIID.Thing.generate;
 
 public class DataGraph implements Graph {
 
@@ -240,9 +240,9 @@ public class DataGraph implements Graph {
         VertexIID.Attribute.String attIID;
         try {
             attIID = new VertexIID.Attribute.String(type.iid(), value);
-        } catch (GraknCheckedException e) {
+        } catch (TypeDBCheckedException e) {
             if (e.code().isPresent() && e.code().get().equals(ILLEGAL_STRING_SIZE.code())) return null;
-            else throw storage().exception(GraknException.of(e));
+            else throw storage().exception(TypeDBException.of(e));
         }
 
         return getOrReadFromStorage(
@@ -340,11 +340,11 @@ public class DataGraph implements Graph {
         VertexIID.Attribute.String attIID;
         try {
             attIID = new VertexIID.Attribute.String(type.iid(), value);
-        } catch (GraknCheckedException e) {
+        } catch (TypeDBCheckedException e) {
             if (e.code().isPresent() && e.code().get().equals(ILLEGAL_STRING_SIZE.code())) {
-                throw storage().exception(GraknException.of(ILLEGAL_STRING_SIZE, STRING_MAX_SIZE));
+                throw storage().exception(TypeDBException.of(ILLEGAL_STRING_SIZE, STRING_MAX_SIZE));
             } else {
-                throw storage().exception(GraknException.of(e));
+                throw storage().exception(TypeDBException.of(e));
             }
         }
 
@@ -880,11 +880,11 @@ public class DataGraph implements Graph {
             }
 
             public Attribute asAttribute() {
-                throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Attribute.class));
+                throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Attribute.class));
             }
 
             public HasEdge asHasEdge() {
-                throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(HasEdge.class));
+                throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(HasEdge.class));
             }
 
             public static class Attribute extends CountJob {

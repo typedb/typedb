@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,18 +16,18 @@
  *
  */
 
-package grakn.core.pattern.variable;
+package com.vaticle.typedb.core.pattern.variable;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.pattern.Conjunction;
-import grakn.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.set;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public class VariableCloner {
 
@@ -46,7 +46,7 @@ public class VariableCloner {
     public Variable clone(Variable variable) {
         if (variable.isThing()) return clone(variable.asThing());
         else if (variable.isType()) return clone(variable.asType());
-        else throw GraknException.of(ILLEGAL_STATE);
+        else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     public ThingVariable clone(ThingVariable variable) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,28 +15,28 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner;
+package com.vaticle.typedb.core.reasoner;
 
-import grakn.common.collection.Pair;
-import grakn.common.concurrent.NamedThreadFactory;
-import grakn.core.common.parameters.Arguments;
-import grakn.core.common.parameters.Options;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptManager;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concurrent.actor.ActorExecutorGroup;
-import grakn.core.logic.LogicManager;
-import grakn.core.reasoner.resolution.answer.Explanation;
-import grakn.core.rocks.RocksGrakn;
-import grakn.core.rocks.RocksSession;
-import grakn.core.rocks.RocksTransaction;
-import grakn.core.test.integration.util.Util;
-import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.Identifier.Variable.Retrievable;
-import graql.lang.Graql;
+import com.vaticle.typedb.common.collection.Pair;
+import com.vaticle.typedb.common.concurrent.NamedThreadFactory;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.concept.Concept;
+import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concept.type.AttributeType;
+import com.vaticle.typedb.core.concept.type.EntityType;
+import com.vaticle.typedb.core.concept.type.RelationType;
+import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
+import com.vaticle.typedb.core.logic.LogicManager;
+import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
+import com.vaticle.typedb.core.rocks.RocksSession;
+import com.vaticle.typedb.core.rocks.RocksTransaction;
+import com.vaticle.typedb.core.rocks.RocksTypeDB;
+import com.vaticle.typedb.core.test.integration.util.Util;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
+import com.vaticle.typeql.lang.TypeQL;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -49,8 +49,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.concept.answer.ConceptMap.Explainable.NOT_IDENTIFIED;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.concept.answer.ConceptMap.Explainable.NOT_IDENTIFIED;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -63,7 +63,7 @@ public class ExplanationTest {
     private static final Path logDir = dataDir.resolve("logs");
     private static final Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logDir);
     private static final String database = "explanation-test";
-    private static RocksGrakn grakn;
+    private static RocksTypeDB typedb;
 
     private RocksTransaction singleThreadElgTransaction(RocksSession session, Arguments.Transaction.Type transactionType) {
         return singleThreadElgTransaction(session, transactionType, new Options.Transaction().infer(true));
@@ -71,7 +71,7 @@ public class ExplanationTest {
 
     private RocksTransaction singleThreadElgTransaction(RocksSession session, Arguments.Transaction.Type transactionType, Options.Transaction options) {
         RocksTransaction transaction = session.transaction(transactionType, options.infer(true));
-        ActorExecutorGroup service = new ActorExecutorGroup(1, new NamedThreadFactory("grakn-core-actor"));
+        ActorExecutorGroup service = new ActorExecutorGroup(1, new NamedThreadFactory("typedb-actor"));
         transaction.reasoner().resolverRegistry().setExecutorService(service);
         return transaction;
     }
@@ -79,18 +79,18 @@ public class ExplanationTest {
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        grakn = RocksGrakn.open(options);
-        grakn.databases().create(database);
+        typedb = RocksTypeDB.open(options);
+        typedb.databases().create(database);
     }
 
     @After
     public void tearDown() {
-        grakn.close();
+        typedb.close();
     }
 
     @Test
     public void test_disjunction_explainable() {
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
@@ -108,18 +108,18 @@ public class ExplanationTest {
                 person.setPlays(marriage.getRelates("wife"));
                 logicMgr.putRule(
                         "marriage-is-friendship",
-                        Graql.parsePattern("{ $x isa person; $y isa person; (husband: $x, wife: $y) isa marriage; }").asConjunction(),
-                        Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
+                        TypeQL.parsePattern("{ $x isa person; $y isa person; (husband: $x, wife: $y) isa marriage; }").asConjunction(),
+                        TypeQL.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
                 txn.commit();
             }
         }
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
-                txn.query().insert(Graql.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (husband: $x, wife: $y) isa marriage;").asInsert());
+                txn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (husband: $x, wife: $y) isa marriage;").asInsert());
                 txn.commit();
             }
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
-                List<ConceptMap> ans = txn.query().match(Graql.parseQuery(
+                List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery(
                         "match $p1 isa person; { (friend: $p1, friend: $p2) isa friendship;} or { $p1 has name 'Zack'; }; "
                 ).asMatch()).toList();
                 assertEquals(3, ans.size());
@@ -153,7 +153,7 @@ public class ExplanationTest {
 
     @Test
     public void test_relation_explainable() {
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
@@ -171,18 +171,18 @@ public class ExplanationTest {
                 person.setPlays(marriage.getRelates("wife"));
                 logicMgr.putRule(
                         "marriage-is-friendship",
-                        Graql.parsePattern("{ $x isa person; $y isa person; (husband: $x, wife: $y) isa marriage; }").asConjunction(),
-                        Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
+                        TypeQL.parsePattern("{ $x isa person; $y isa person; (husband: $x, wife: $y) isa marriage; }").asConjunction(),
+                        TypeQL.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
                 txn.commit();
             }
         }
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
-                txn.query().insert(Graql.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (husband: $x, wife: $y) isa marriage;").asInsert());
+                txn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (husband: $x, wife: $y) isa marriage;").asInsert());
                 txn.commit();
             }
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
-                List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;").asMatch()).toList();
+                List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;").asMatch()).toList();
                 assertEquals(2, ans.size());
 
                 assertFalse(ans.get(0).explainables().isEmpty());
@@ -196,7 +196,7 @@ public class ExplanationTest {
 
     @Test
     public void test_relation_explainable_multiple_ways() {
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
@@ -214,22 +214,22 @@ public class ExplanationTest {
                 person.setPlays(marriage.getRelates("wife"));
                 logicMgr.putRule(
                         "marriage-is-friendship",
-                        Graql.parsePattern("{ $x isa person; $y isa person; (husband: $x, wife: $y) isa marriage; }").asConjunction(),
-                        Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
+                        TypeQL.parsePattern("{ $x isa person; $y isa person; (husband: $x, wife: $y) isa marriage; }").asConjunction(),
+                        TypeQL.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
                 logicMgr.putRule(
                         "everyone-is-friends",
-                        Graql.parsePattern("{ $x isa person; $y isa person; not { $x is $y; }; }").asConjunction(),
-                        Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
+                        TypeQL.parsePattern("{ $x isa person; $y isa person; not { $x is $y; }; }").asConjunction(),
+                        TypeQL.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
                 txn.commit();
             }
         }
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
-                txn.query().insert(Graql.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (husband: $x, wife: $y) isa marriage;").asInsert());
+                txn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (husband: $x, wife: $y) isa marriage;").asInsert());
                 txn.commit();
             }
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
-                List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;").asMatch()).toList();
+                List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;").asMatch()).toList();
                 assertEquals(2, ans.size());
 
                 assertFalse(ans.get(0).explainables().isEmpty());
@@ -243,7 +243,7 @@ public class ExplanationTest {
 
     @Test
     public void test_has_explicit_explainable_two_ways() {
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
@@ -255,25 +255,25 @@ public class ExplanationTest {
                 milk.setOwns(isStillGood);
                 logicMgr.putRule(
                         "old-milk-is-not-good",
-                        Graql.parsePattern("{ $x isa milk, has age-in-days <= 10; }").asConjunction(),
-                        Graql.parseVariable("$x has is-still-good true").asThing());
+                        TypeQL.parsePattern("{ $x isa milk, has age-in-days <= 10; }").asConjunction(),
+                        TypeQL.parseVariable("$x has is-still-good true").asThing());
                 logicMgr.putRule(
                         "all-milk-is-good",
-                        Graql.parsePattern("{ $x isa milk; }").asConjunction(),
-                        Graql.parseVariable("$x has is-still-good true").asThing());
+                        TypeQL.parsePattern("{ $x isa milk; }").asConjunction(),
+                        TypeQL.parseVariable("$x has is-still-good true").asThing());
                 txn.commit();
             }
         }
 
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
-                txn.query().insert(Graql.parseQuery("insert $x isa milk, has age-in-days 5;").asInsert());
-                txn.query().insert(Graql.parseQuery("insert $x isa milk, has age-in-days 10;").asInsert());
-                txn.query().insert(Graql.parseQuery("insert $x isa milk, has age-in-days 15;").asInsert());
+                txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 5;").asInsert());
+                txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 10;").asInsert());
+                txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 15;").asInsert());
                 txn.commit();
             }
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
-                List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $x has is-still-good $a;").asMatch()).toList();
+                List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $x has is-still-good $a;").asMatch()).toList();
                 assertEquals(3, ans.size());
 
                 assertFalse(ans.get(0).explainables().isEmpty());
@@ -298,48 +298,48 @@ public class ExplanationTest {
 
     @Test
     public void test_has_variable_explainable_two_ways() {
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 LogicManager logicMgr = txn.logic();
-                txn.query().define(Graql.parseQuery("define " +
-                                                            "user sub entity, " +
-                                                            "  plays group-membership:member, " +
-                                                            "  owns permission; " +
-                                                            "user-group sub entity," +
-                                                            "  plays group-membership:user-group," +
-                                                            "  owns permission," +
-                                                            "  owns name; " +
-                                                            "group-membership sub relation," +
-                                                            "  relates member," +
-                                                            "  relates user-group; " +
-                                                            "permission sub attribute, value string;" +
-                                                            "name sub attribute, value string;"
+                txn.query().define(TypeQL.parseQuery("define " +
+                                                             "user sub entity, " +
+                                                             "  plays group-membership:member, " +
+                                                             "  owns permission; " +
+                                                             "user-group sub entity," +
+                                                             "  plays group-membership:user-group," +
+                                                             "  owns permission," +
+                                                             "  owns name; " +
+                                                             "group-membership sub relation," +
+                                                             "  relates member," +
+                                                             "  relates user-group; " +
+                                                             "permission sub attribute, value string;" +
+                                                             "name sub attribute, value string;"
                 ).asDefine());
                 logicMgr.putRule(
                         "admin-group-gives-permissions",
-                        Graql.parsePattern("{ $x isa user; ($x, $g) isa group-membership; $g isa user-group, has name \"admin\", has permission $p; }").asConjunction(),
-                        Graql.parseVariable("$x has $p").asThing());
+                        TypeQL.parsePattern("{ $x isa user; ($x, $g) isa group-membership; $g isa user-group, has name \"admin\", has permission $p; }").asConjunction(),
+                        TypeQL.parseVariable("$x has $p").asThing());
                 logicMgr.putRule(
                         "writer-group-gives-permissions",
-                        Graql.parsePattern("{ $x isa user; ($x, $g) isa group-membership; $g isa user-group, has name \"write\", has permission $p; }").asConjunction(),
-                        Graql.parseVariable("$x has $p").asThing());
+                        TypeQL.parsePattern("{ $x isa user; ($x, $g) isa group-membership; $g isa user-group, has name \"write\", has permission $p; }").asConjunction(),
+                        TypeQL.parseVariable("$x has $p").asThing());
                 txn.commit();
             }
         }
 
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
-                txn.query().insert(Graql.parseQuery("insert " +
-                                                            "$x isa user; " +
-                                                            "$wg isa user-group, has name \"write\", has permission \"write\";" +
-                                                            "(member: $x, user-group: $wg) isa group-membership;" +
-                                                            "$admin isa user-group, has name \"admin\", has permission \"write\", has permission \"delete\";" +
-                                                            "(member: $x, user-group: $admin) isa group-membership;"
+                txn.query().insert(TypeQL.parseQuery("insert " +
+                                                             "$x isa user; " +
+                                                             "$wg isa user-group, has name \"write\", has permission \"write\";" +
+                                                             "(member: $x, user-group: $wg) isa group-membership;" +
+                                                             "$admin isa user-group, has name \"admin\", has permission \"write\", has permission \"delete\";" +
+                                                             "(member: $x, user-group: $admin) isa group-membership;"
                 ).asInsert());
                 txn.commit();
             }
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
-                List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $x isa user, has permission \"write\";").asMatch()).toList();
+                List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $x isa user, has permission \"write\";").asMatch()).toList();
                 assertEquals(1, ans.size());
 
                 assertFalse(ans.get(0).explainables().isEmpty());
@@ -350,41 +350,41 @@ public class ExplanationTest {
 
     @Test
     public void test_all_transitive_explanations() {
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 LogicManager logicMgr = txn.logic();
-                txn.query().define(Graql.parseQuery("define " +
-                                                            "location sub entity, " +
-                                                            "  plays location-hierarchy:superior, " +
-                                                            "  plays location-hierarchy:subordinate; " +
-                                                            "location-hierarchy sub relation," +
-                                                            "  relates superior," +
-                                                            "  relates subordinate;"
+                txn.query().define(TypeQL.parseQuery("define " +
+                                                             "location sub entity, " +
+                                                             "  plays location-hierarchy:superior, " +
+                                                             "  plays location-hierarchy:subordinate; " +
+                                                             "location-hierarchy sub relation," +
+                                                             "  relates superior," +
+                                                             "  relates subordinate;"
                 ).asDefine());
                 logicMgr.putRule(
                         "transitive-location",
-                        Graql.parsePattern("{ (subordinate: $x, superior: $y) isa location-hierarchy;" +
-                                                   "(subordinate: $y, superior: $z) isa location-hierarchy; }").asConjunction(),
-                        Graql.parseVariable("(subordinate: $x, superior: $z) isa location-hierarchy").asThing());
+                        TypeQL.parsePattern("{ (subordinate: $x, superior: $y) isa location-hierarchy;" +
+                                                    "(subordinate: $y, superior: $z) isa location-hierarchy; }").asConjunction(),
+                        TypeQL.parseVariable("(subordinate: $x, superior: $z) isa location-hierarchy").asThing());
                 txn.commit();
             }
         }
 
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
-                txn.query().insert(Graql.parseQuery("insert " +
-                                                            "(subordinate: $a, superior: $b) isa location-hierarchy; " +
-                                                            "(subordinate: $b, superior: $c) isa location-hierarchy; " +
-                                                            "(subordinate: $c, superior: $d) isa location-hierarchy; " +
-                                                            "(subordinate: $d, superior: $e) isa location-hierarchy; " +
-                                                            "$a isa location; $b isa location; $c isa location;" +
-                                                            "$d isa location; $e isa location;"
+                txn.query().insert(TypeQL.parseQuery("insert " +
+                                                             "(subordinate: $a, superior: $b) isa location-hierarchy; " +
+                                                             "(subordinate: $b, superior: $c) isa location-hierarchy; " +
+                                                             "(subordinate: $c, superior: $d) isa location-hierarchy; " +
+                                                             "(subordinate: $d, superior: $e) isa location-hierarchy; " +
+                                                             "$a isa location; $b isa location; $c isa location;" +
+                                                             "$d isa location; $e isa location;"
 
                 ).asInsert());
                 txn.commit();
             }
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
-                List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $r isa location-hierarchy;").asMatch()).toList();
+                List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $r isa location-hierarchy;").asMatch()).toList();
                 assertEquals(10, ans.size());
 
                 List<ConceptMap> explainableMaps = iterate(ans).filter(answer -> !answer.explainables().isEmpty()).toList();
@@ -417,7 +417,7 @@ public class ExplanationTest {
 
     @Test
     public void test_nested_explanations() {
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
@@ -446,29 +446,29 @@ public class ExplanationTest {
 
                 logicMgr.putRule(
                         "wedding-implies-marriage",
-                        Graql.parsePattern("{ $x isa person, has gender \"male\"; $y isa person, has gender \"female\"; " +
-                                                   "$l isa city; (male: $x, female: $y, location: $l) isa wedding; }").asConjunction(),
-                        Graql.parseVariable("(husband: $x, wife: $y) isa marriage").asThing());
+                        TypeQL.parsePattern("{ $x isa person, has gender \"male\"; $y isa person, has gender \"female\"; " +
+                                                    "$l isa city; (male: $x, female: $y, location: $l) isa wedding; }").asConjunction(),
+                        TypeQL.parseVariable("(husband: $x, wife: $y) isa marriage").asThing());
                 logicMgr.putRule(
                         "marriage-is-friendship",
-                        Graql.parsePattern("{ $a isa person; $b isa person; (husband: $a, wife: $b) isa marriage; }").asConjunction(),
-                        Graql.parseVariable("(friend: $a, friend: $b) isa friendship").asThing());
+                        TypeQL.parsePattern("{ $a isa person; $b isa person; (husband: $a, wife: $b) isa marriage; }").asConjunction(),
+                        TypeQL.parseVariable("(friend: $a, friend: $b) isa friendship").asThing());
                 txn.commit();
             }
         }
 
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
-                txn.query().insert(Graql.parseQuery("insert " +
-                                                            "(male: $x, female: $y, location: $l) isa wedding;" +
-                                                            "$x isa person, has gender \"male\";" +
-                                                            "$y isa person, has gender \"female\";" +
-                                                            "$l isa city;"
+                txn.query().insert(TypeQL.parseQuery("insert " +
+                                                             "(male: $x, female: $y, location: $l) isa wedding;" +
+                                                             "$x isa person, has gender \"male\";" +
+                                                             "$y isa person, has gender \"female\";" +
+                                                             "$l isa city;"
                 ).asInsert());
                 txn.commit();
             }
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
-                List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match ($x) isa friendship;").asMatch()).toList();
+                List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match ($x) isa friendship;").asMatch()).toList();
                 assertEquals(2, ans.size());
 
                 assertFalse(ans.get(0).explainables().isEmpty());

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,28 +16,28 @@
  *
  */
 
-package grakn.core.traversal;
+package com.vaticle.typedb.core.traversal;
 
-import grakn.common.collection.Either;
-import grakn.common.collection.Pair;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.parameters.Arguments;
-import grakn.core.common.parameters.Label;
-import grakn.core.concurrent.producer.FunctionalProducer;
-import grakn.core.graph.GraphManager;
-import grakn.core.graph.common.Encoding;
-import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.vertex.Vertex;
-import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.Identifier.Variable.Retrievable;
-import grakn.core.traversal.common.VertexMap;
-import grakn.core.traversal.planner.Planner;
-import grakn.core.traversal.predicate.Predicate;
-import grakn.core.traversal.predicate.PredicateArgument;
-import grakn.core.traversal.structure.Structure;
-import graql.lang.common.GraqlArg;
-import graql.lang.common.GraqlToken;
+import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.common.collection.Pair;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.concurrent.producer.FunctionalProducer;
+import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.graph.vertex.Vertex;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
+import com.vaticle.typedb.core.traversal.common.VertexMap;
+import com.vaticle.typedb.core.traversal.planner.Planner;
+import com.vaticle.typedb.core.traversal.predicate.Predicate;
+import com.vaticle.typedb.core.traversal.predicate.PredicateArgument;
+import com.vaticle.typedb.core.traversal.structure.Structure;
+import com.vaticle.typeql.lang.common.TypeQLArg;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -48,29 +48,29 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import static grakn.common.collection.Collections.pair;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.iterator.Iterators.cartesian;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
-import static grakn.core.concurrent.executor.Executors.async2;
-import static grakn.core.concurrent.producer.Producers.async;
-import static grakn.core.concurrent.producer.Producers.produce;
-import static grakn.core.graph.common.Encoding.Edge.ISA;
-import static grakn.core.graph.common.Encoding.Edge.Thing.HAS;
-import static grakn.core.graph.common.Encoding.Edge.Thing.PLAYING;
-import static grakn.core.graph.common.Encoding.Edge.Thing.RELATING;
-import static grakn.core.graph.common.Encoding.Edge.Type.OWNS;
-import static grakn.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
-import static grakn.core.graph.common.Encoding.Edge.Type.PLAYS;
-import static grakn.core.graph.common.Encoding.Edge.Type.RELATES;
-import static grakn.core.graph.common.Encoding.Edge.Type.SUB;
-import static grakn.core.graph.common.Encoding.ValueType.BOOLEAN;
-import static grakn.core.graph.common.Encoding.ValueType.DATETIME;
-import static grakn.core.graph.common.Encoding.ValueType.DOUBLE;
-import static grakn.core.graph.common.Encoding.ValueType.LONG;
-import static grakn.core.graph.common.Encoding.ValueType.STRING;
-import static graql.lang.common.GraqlToken.Predicate.SubString.LIKE;
+import static com.vaticle.typedb.common.collection.Collections.pair;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.cartesian;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
+import static com.vaticle.typedb.core.concurrent.executor.Executors.async2;
+import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
+import static com.vaticle.typedb.core.concurrent.producer.Producers.produce;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.ISA;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.HAS;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.PLAYING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.RELATING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.PLAYS;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.RELATES;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.BOOLEAN;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DATETIME;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DOUBLE;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.LONG;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Predicate.SubString.LIKE;
 import static java.util.stream.Collectors.toList;
 
 public class Traversal {
@@ -245,12 +245,12 @@ public class Traversal {
         structure.typeVertex(type).props().regex(regex);
     }
 
-    public void valueType(Identifier.Variable attributeType, GraqlArg.ValueType valueType) {
+    public void valueType(Identifier.Variable attributeType, TypeQLArg.ValueType valueType) {
         assert modifiable;
         structure.typeVertex(attributeType).props().valueType(Encoding.ValueType.of(valueType));
     }
 
-    public void predicate(Identifier.Variable attribute, GraqlToken.Predicate token, String value) {
+    public void predicate(Identifier.Variable attribute, TypeQLToken.Predicate token, String value) {
         assert modifiable;
         Predicate.Value.String predicate = Predicate.Value.String.of(token);
         structure.thingVertex(attribute).props().predicate(predicate);
@@ -258,21 +258,21 @@ public class Traversal {
         else parameters.pushValue(attribute, predicate, new Parameters.Value(value));
     }
 
-    public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality token, Boolean value) {
+    public void predicate(Identifier.Variable attribute, TypeQLToken.Predicate.Equality token, Boolean value) {
         assert modifiable;
         Predicate.Value.Numerical predicate = Predicate.Value.Numerical.of(token, PredicateArgument.Value.BOOLEAN);
         parameters.pushValue(attribute, predicate, new Parameters.Value(value));
         structure.thingVertex(attribute).props().predicate(predicate);
     }
 
-    public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality token, Long value) {
+    public void predicate(Identifier.Variable attribute, TypeQLToken.Predicate.Equality token, Long value) {
         assert modifiable;
         Predicate.Value.Numerical predicate = Predicate.Value.Numerical.of(token, PredicateArgument.Value.LONG);
         parameters.pushValue(attribute, predicate, new Parameters.Value(value));
         structure.thingVertex(attribute).props().predicate(predicate);
     }
 
-    public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality token, Double value) {
+    public void predicate(Identifier.Variable attribute, TypeQLToken.Predicate.Equality token, Double value) {
         assert modifiable;
         long longValue = Math.round(value);
         if (Predicate.compareDoubles(value, longValue) == 0) {
@@ -284,14 +284,14 @@ public class Traversal {
         }
     }
 
-    public void predicate(Identifier.Variable attribute, GraqlToken.Predicate.Equality token, LocalDateTime value) {
+    public void predicate(Identifier.Variable attribute, TypeQLToken.Predicate.Equality token, LocalDateTime value) {
         assert modifiable;
         Predicate.Value.Numerical predicate = Predicate.Value.Numerical.of(token, PredicateArgument.Value.DATETIME);
         parameters.pushValue(attribute, predicate, new Parameters.Value(value));
         structure.thingVertex(attribute).props().predicate(predicate);
     }
 
-    public void predicate(Identifier.Variable att1, GraqlToken.Predicate.Equality token, Identifier.Variable att2) {
+    public void predicate(Identifier.Variable att1, TypeQLToken.Predicate.Equality token, Identifier.Variable att2) {
         assert modifiable;
         Predicate.Variable predicate = Predicate.Variable.of(token);
         structure.predicateEdge(structure.thingVertex(att1), structure.thingVertex(att2), predicate);
@@ -457,7 +457,7 @@ public class Traversal {
                 else if (isDateTime()) return "datetime: " + dateTimeVal;
                 else if (isString()) return "string: " + stringVal;
                 else if (isRegex()) return "regex: " + regexPattern.pattern();
-                else throw GraknException.of(ILLEGAL_STATE);
+                else throw TypeDBException.of(ILLEGAL_STATE);
             }
 
             @Override

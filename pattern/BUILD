@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -15,9 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
-load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
+load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
+load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
 package(
     default_visibility = [
@@ -45,11 +45,11 @@ native_java_libraries(
         # Internal dependencies
         "//common:common",
 
-        # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
-        "@graknlabs_grabl_tracing//client:client",
-        "@graknlabs_graql//java/common:common",
-        "@graknlabs_graql//java/pattern:pattern",
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_factory_tracing//client:client",
+        "@vaticle_typeql//java/common:common",
+        "@vaticle_typeql//java/pattern:pattern",
 
         # External dependencies from Maven
         "@maven//:com_google_code_findbugs_jsr305",
@@ -57,7 +57,7 @@ native_java_libraries(
     native_libraries_deps = [
         "//traversal:traversal",
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-query-pattern:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-query-pattern:{pom_version}"],
 )
 
 host_compatible_java_test(
@@ -65,15 +65,15 @@ host_compatible_java_test(
     srcs = [
         "equivalence/AlphaEquivalenceTest.java",
     ],
-    test_class = "grakn.core.pattern.equivalence.AlphaEquivalenceTest",
+    test_class = "com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalenceTest",
     native_libraries_deps = [
         "//pattern:pattern",
     ],
     deps = [
-        # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
-        "@graknlabs_graql//java/pattern",
-        "@graknlabs_graql//java:graql",
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java/pattern",
+        "@vaticle_typeql//java:typeql",
     ],
 )
 
@@ -82,14 +82,14 @@ host_compatible_java_test(
     srcs = [
         "ConjunctionTest.java",
     ],
-    test_class = "grakn.core.pattern.ConjunctionTest",
+    test_class = "com.vaticle.typedb.core.pattern.ConjunctionTest",
     native_libraries_deps = [
         "//pattern:pattern",
     ],
     deps = [
-        # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
-        "@graknlabs_graql//java:graql",
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java:typeql",
     ],
 )
 

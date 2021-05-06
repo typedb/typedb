@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 package(
     default_visibility = [
         "//concept:__pkg__",
@@ -29,21 +29,21 @@ java_library(
     name = "graph",
     srcs = glob(["*.java", "*/*.java", "*/*/*.java"]),
     deps = [
-        # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
 
         # Internal dependencies
         "//common:common",
 
-        # External dependencies from Grakn Labs
-        "@graknlabs_graql//java:graql",
-        "@graknlabs_graql//java/common:common",
-        "@graknlabs_graql//java/pattern:pattern",
+        # External dependencies from Vaticle
+        "@vaticle_typeql//java:typeql",
+        "@vaticle_typeql//java/common:common",
+        "@vaticle_typeql//java/pattern:pattern",
 
         # External Maven Dependencies
         "@maven//:com_google_code_findbugs_jsr305",
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-graph:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-graph:{pom_version}"],
     visibility = ["//visibility:public"],
 )
 

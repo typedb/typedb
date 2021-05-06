@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,25 +15,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner.resolution.answer;
+package com.vaticle.typedb.core.reasoner.resolution.answer;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.concept.Concept;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concurrent.actor.Actor;
-import grakn.core.logic.Rule;
-import grakn.core.logic.resolvable.Unifier;
-import grakn.core.pattern.Conjunction;
-import grakn.core.reasoner.resolution.framework.Resolver;
-import grakn.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.concept.Concept;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concurrent.actor.Actor;
+import com.vaticle.typedb.core.logic.Rule;
+import com.vaticle.typedb.core.logic.resolvable.Unifier;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
 public interface AnswerState {
 
@@ -51,11 +51,11 @@ public interface AnswerState {
 
     default boolean isTop() { return false; }
 
-    default Top asTop() { throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Top.class)); }
+    default Top asTop() { throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Top.class)); }
 
     default boolean isPartial() { return false; }
 
-    default Partial<?> asPartial() { throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Partial.class)); }
+    default Partial<?> asPartial() { throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Partial.class)); }
 
     interface Top extends AnswerState {
 
@@ -65,11 +65,11 @@ public interface AnswerState {
 
         default boolean isMatch() { return false; }
 
-        default Match asMatch() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Match.class); }
+        default Match asMatch() { throw TypeDBException.of(ILLEGAL_CAST, this.getClass(), Match.class); }
 
         default boolean isExplain() { return false; }
 
-        default Explain asExplain() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Explain.class); }
+        default Explain asExplain() { throw TypeDBException.of(ILLEGAL_CAST, this.getClass(), Explain.class); }
 
         interface Match extends Top, Explainable {
 
@@ -87,7 +87,7 @@ public interface AnswerState {
 
             default boolean isFinished() { return false; }
 
-            default Finished asFinished() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Finished.class); }
+            default Finished asFinished() { throw TypeDBException.of(ILLEGAL_CAST, this.getClass(), Finished.class); }
 
             interface Initial extends Match {
 
@@ -119,7 +119,7 @@ public interface AnswerState {
 
             default boolean isFinished() { return false; }
 
-            default Finished asFinished() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Finished.class); }
+            default Finished asFinished() { throw TypeDBException.of(ILLEGAL_CAST, this.getClass(), Finished.class); }
 
             interface Initial extends Explain {
 
@@ -162,26 +162,26 @@ public interface AnswerState {
         default boolean isRetrievable() { return false; }
 
         default Compound<?, ?> asCompound() {
-            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Compound.class));
+            throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Compound.class));
         }
 
         default Concludable<?> asConcludable() {
-            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Concludable.class));
+            throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Concludable.class));
         }
 
         default Conclusion<?, ?> asConclusion() {
-            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Conclusion.class));
+            throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Conclusion.class));
         }
 
         default Retrievable<?> asRetrievable() {
-            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Retrievable.class));
+            throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Retrievable.class));
         }
 
         interface Compound<SLF extends Compound<SLF, PRNT>, PRNT extends AnswerState> extends Partial<PRNT> {
 
             SLF with(ConceptMap extension, boolean requiresReiteration);
 
-            Concludable<SLF> toDownstream(Mapping mapping, grakn.core.logic.resolvable.Concludable concludable);
+            Concludable<SLF> toDownstream(Mapping mapping, com.vaticle.typedb.core.logic.resolvable.Concludable concludable);
 
             Nestable filterToNestable(Set<Identifier.Variable.Retrievable> filter);
 
@@ -195,15 +195,15 @@ public interface AnswerState {
 
             default boolean isRoot() { return false; }
 
-            default Root<?, ?> asRoot() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Root.class); }
+            default Root<?, ?> asRoot() { throw TypeDBException.of(ILLEGAL_CAST, this.getClass(), Root.class); }
 
             default boolean isCondition() { return false; }
 
-            default Condition<?, ?> asCondition() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Condition.class); }
+            default Condition<?, ?> asCondition() { throw TypeDBException.of(ILLEGAL_CAST, this.getClass(), Condition.class); }
 
             default boolean isNestable() { return false; }
 
-            default Nestable asNestable() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Nestable.class); }
+            default Nestable asNestable() { throw TypeDBException.of(ILLEGAL_CAST, this.getClass(), Nestable.class); }
 
             default boolean isExplain() { return false; }
 
@@ -216,7 +216,7 @@ public interface AnswerState {
                 Partial.Compound<?, ?> toUpstream();
 
                 @Override
-                Concludable.Match<Nestable> toDownstream(Mapping mapping, grakn.core.logic.resolvable.Concludable concludable);
+                Concludable.Match<Nestable> toDownstream(Mapping mapping, com.vaticle.typedb.core.logic.resolvable.Concludable concludable);
 
                 @Override
                 default boolean isNestable() { return true; }
@@ -234,14 +234,14 @@ public interface AnswerState {
                 @Override
                 default Root<?, P> asRoot() { return this; }
 
-                default Match asMatch() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Match.class); }
+                default Match asMatch() { throw TypeDBException.of(ILLEGAL_CAST, this.getClass(), Match.class); }
 
-                default Explain asExplain() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Explain.class); }
+                default Explain asExplain() { throw TypeDBException.of(ILLEGAL_CAST, this.getClass(), Explain.class); }
 
                 interface Match extends Root<Match, Top.Match.Initial>, Explainable {
 
                     @Override
-                    Concludable.Match<Match> toDownstream(Mapping mapping, grakn.core.logic.resolvable.Concludable concludable);
+                    Concludable.Match<Match> toDownstream(Mapping mapping, com.vaticle.typedb.core.logic.resolvable.Concludable concludable);
 
                     Top.Match.Finished toFinishedTop(Conjunction conjunctionAnswered);
 
@@ -258,7 +258,7 @@ public interface AnswerState {
                     Explain with(ConceptMap extension, boolean requiresReiteration, Explanation explanation);
 
                     @Override
-                    Concludable.Explain toDownstream(Mapping mapping, grakn.core.logic.resolvable.Concludable concludable);
+                    Concludable.Explain toDownstream(Mapping mapping, com.vaticle.typedb.core.logic.resolvable.Concludable concludable);
 
                     Top.Explain.Finished toFinishedTop();
 
@@ -274,7 +274,7 @@ public interface AnswerState {
             interface Condition<S extends Condition<S, P>, P extends Conclusion<P, ?>> extends Compound<S, P> {
 
                 // merge point where Match and Explain all become Match states
-                Concludable.Match<S> toDownstream(Mapping mapping, grakn.core.logic.resolvable.Concludable concludable);
+                Concludable.Match<S> toDownstream(Mapping mapping, com.vaticle.typedb.core.logic.resolvable.Concludable concludable);
 
                 Conclusion<?, ?> toUpstream();
 
@@ -284,9 +284,9 @@ public interface AnswerState {
                 @Override
                 default Condition<?, P> asCondition() { return this; }
 
-                default Match asMatch() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Root.Match.class); }
+                default Match asMatch() { throw TypeDBException.of(ILLEGAL_CAST, this.getClass(), Root.Match.class); }
 
-                default Explain asExplain() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Root.Explain.class); }
+                default Explain asExplain() { throw TypeDBException.of(ILLEGAL_CAST, this.getClass(), Root.Explain.class); }
 
                 interface Match extends Condition<Match, Conclusion.Match> {
 
@@ -332,11 +332,11 @@ public interface AnswerState {
 
             default boolean isMatch() { return false; }
 
-            default Match<?> asMatch() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Match.class); }
+            default Match<?> asMatch() { throw TypeDBException.of(ILLEGAL_CAST, this.getClass(), Match.class); }
 
             default boolean isExplain() { return false; }
 
-            default Explain asExplain() { throw GraknException.of(ILLEGAL_CAST, this.getClass(), Explain.class); }
+            default Explain asExplain() { throw TypeDBException.of(ILLEGAL_CAST, this.getClass(), Explain.class); }
 
             interface Match<P extends Compound<P, ?>> extends Concludable<P>, Explainable {
 

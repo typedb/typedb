@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -15,12 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
-load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip")
-load("@graknlabs_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_dependencies//distribution:deployment.bzl", "deployment")
-load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
+load("@vaticle_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
+load("@vaticle_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip")
+load("@vaticle_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
+load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
+load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
 load("@stackb_rules_proto//java:java_grpc_compile.bzl", "java_grpc_compile")
 
 
@@ -46,10 +46,10 @@ native_java_libraries(
         # Internal dependencies
         "//common:common",
 
-        # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
-        "@graknlabs_graql//java/pattern:pattern",
-        "@graknlabs_graql//java/common:common",
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java/pattern:pattern",
+        "@vaticle_typeql//java/common:common",
 
         # External dependencies from Maven
         "@maven//:com_google_guava_guava",
@@ -61,11 +61,11 @@ native_java_libraries(
         "@maven//:org_slf4j_slf4j_api",
     ],
     native_libraries_deps = [
-        "//:grakn",
+        "//:typedb",
         "//concept:concept",
         "//logic:logic"
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-migrator:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-migrator:{pom_version}"],
     visibility = ["//visibility:public"],
 )
 

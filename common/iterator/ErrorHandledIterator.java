@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,18 +16,18 @@
  *
  */
 
-package grakn.core.common.iterator;
+package com.vaticle.typedb.core.common.iterator;
 
-import grakn.core.common.exception.GraknException;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 
 import java.util.function.Function;
 
 class ErrorHandledIterator<T> extends AbstractFunctionalIterator<T> {
 
     private final FunctionalIterator<T> iterator;
-    private final Function<Exception, GraknException> exceptionFn;
+    private final Function<Exception, TypeDBException> exceptionFn;
 
-    public ErrorHandledIterator(FunctionalIterator<T> iterator, Function<Exception, GraknException> exceptionFn) {
+    public ErrorHandledIterator(FunctionalIterator<T> iterator, Function<Exception, TypeDBException> exceptionFn) {
         this.iterator = iterator;
         this.exceptionFn = exceptionFn;
     }

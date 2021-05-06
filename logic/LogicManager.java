@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,20 +16,20 @@
  *
  */
 
-package grakn.core.logic;
+package com.vaticle.typedb.core.logic;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.parameters.Label;
-import grakn.core.common.util.StringBuilders;
-import grakn.core.concept.ConceptManager;
-import grakn.core.graph.GraphManager;
-import grakn.core.graph.structure.RuleStructure;
-import grakn.core.logic.tool.TypeResolver;
-import grakn.core.traversal.TraversalEngine;
-import graql.lang.pattern.Conjunction;
-import graql.lang.pattern.Pattern;
-import graql.lang.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.common.util.StringBuilders;
+import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.structure.RuleStructure;
+import com.vaticle.typedb.core.logic.tool.TypeResolver;
+import com.vaticle.typedb.core.traversal.TraversalEngine;
+import com.vaticle.typeql.lang.pattern.Conjunction;
+import com.vaticle.typeql.lang.pattern.Pattern;
+import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -40,12 +40,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.common.collection.Collections.list;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.RuleWrite.CONTRADICTORY_RULE_CYCLE;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.iterator.Iterators.link;
-import static grakn.core.logic.LogicManager.RuleExporter.writeRule;
+import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.CONTRADICTORY_RULE_CYCLE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.link;
+import static com.vaticle.typedb.core.logic.LogicManager.RuleExporter.writeRule;
 import static java.util.Comparator.comparing;
 
 public class LogicManager {
@@ -144,7 +144,7 @@ public class LogicManager {
                 if (negationRule.equals(dependency.recursiveRule)) {
                     List<Rule> cycle = findCycle(dependency, visitedDependentRules);
                     String readableCycle = cycle.stream().map(Rule::getLabel).collect(Collectors.joining(" -> \n", "\n", "\n"));
-                    throw GraknException.of(CONTRADICTORY_RULE_CYCLE, readableCycle);
+                    throw TypeDBException.of(CONTRADICTORY_RULE_CYCLE, readableCycle);
                 } else {
                     visitedDependentRules.put(dependency.recursiveRule, dependency);
                     Set<RuleDependency> recursive = ruleDependencies(dependency.recursiveRule, conceptMgr, logicMgr);
@@ -241,7 +241,7 @@ public class LogicManager {
             } else if (pattern.isNegation()) {
                 return StringBuilders.indent(indent) + "not\n" + getPatternString(wrapConjunction(pattern.asNegation().pattern()), indent);
             } else {
-                throw GraknException.of(ILLEGAL_STATE);
+                throw TypeDBException.of(ILLEGAL_STATE);
             }
         }
 

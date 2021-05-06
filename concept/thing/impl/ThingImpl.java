@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,45 +16,45 @@
  *
  */
 
-package grakn.core.concept.thing.impl;
+package com.vaticle.typedb.core.concept.thing.impl;
 
-import grakn.common.collection.Bytes;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptImpl;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.RoleType;
-import grakn.core.concept.type.Type;
-import grakn.core.concept.type.impl.RoleTypeImpl;
-import grakn.core.concept.type.impl.TypeImpl;
-import grakn.core.graph.edge.ThingEdge;
-import grakn.core.graph.iid.PrefixIID;
-import grakn.core.graph.vertex.AttributeVertex;
-import grakn.core.graph.vertex.ThingVertex;
+import com.vaticle.typedb.common.collection.Bytes;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.concept.Concept;
+import com.vaticle.typedb.core.concept.ConceptImpl;
+import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.thing.Thing;
+import com.vaticle.typedb.core.concept.type.AttributeType;
+import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.concept.type.Type;
+import com.vaticle.typedb.core.concept.type.impl.RoleTypeImpl;
+import com.vaticle.typedb.core.concept.type.impl.TypeImpl;
+import com.vaticle.typedb.core.graph.edge.ThingEdge;
+import com.vaticle.typedb.core.graph.iid.PrefixIID;
+import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
+import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.list;
-import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
-import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_ROLE_TYPE_LABEL;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE_HAS;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_CANNOT_OWN_ATTRIBUTE;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_HAS_BEEN_DELETED;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_MISSING;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_OVER;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_TAKEN;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.iterator.Iterators.link;
-import static grakn.core.common.iterator.Iterators.single;
-import static grakn.core.graph.common.Encoding.Edge.Thing.HAS;
-import static grakn.core.graph.common.Encoding.Edge.Thing.PLAYING;
-import static grakn.core.graph.common.Encoding.Edge.Thing.ROLEPLAYER;
+import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.INVALID_ROLE_TYPE_LABEL;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE_HAS;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_CANNOT_OWN_ATTRIBUTE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_HAS_BEEN_DELETED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_MISSING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_OVER;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_TAKEN;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.link;
+import static com.vaticle.typedb.core.common.iterator.Iterators.single;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.HAS;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.PLAYING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.ROLEPLAYER;
 
 public abstract class ThingImpl extends ConceptImpl implements Thing {
 
@@ -73,7 +73,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
             case RELATION:
                 return RelationImpl.of(vertex);
             default:
-                throw vertex.graphs().exception(GraknException.of(UNRECOGNISED_VALUE));
+                throw vertex.graphs().exception(TypeDBException.of(UNRECOGNISED_VALUE));
         }
     }
 
@@ -106,12 +106,12 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     public void setHas(Attribute attribute, boolean isInferred) {
         validateIsNotDeleted();
         if (getType().getOwns().noneMatch(t -> t.equals(attribute.getType()))) {
-            throw exception(GraknException.of(THING_CANNOT_OWN_ATTRIBUTE, attribute.getType().getLabel(), vertex.type().label()));
+            throw exception(TypeDBException.of(THING_CANNOT_OWN_ATTRIBUTE, attribute.getType().getLabel(), vertex.type().label()));
         } else if (getType().getOwns(true).anyMatch(t -> t.equals(attribute.getType()))) {
             if (getHas(attribute.getType()).first().isPresent()) {
-                throw exception(GraknException.of(THING_KEY_OVER, attribute.getType().getLabel(), getType().getLabel()));
+                throw exception(TypeDBException.of(THING_KEY_OVER, attribute.getType().getLabel(), getType().getLabel()));
             } else if (attribute.getOwners(getType()).first().isPresent()) {
-                throw exception(GraknException.of(THING_KEY_TAKEN, attribute.getType().getLabel(), getType().getLabel()));
+                throw exception(TypeDBException.of(THING_KEY_TAKEN, attribute.getType().getLabel(), getType().getLabel()));
             }
         }
         vertex.outs().put(HAS, ((AttributeImpl<?>) attribute).vertex, isInferred);
@@ -121,7 +121,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     public void unsetHas(Attribute attribute) {
         validateIsNotDeleted();
         ThingEdge hasEdge = vertex.outs().edge(HAS, ((AttributeImpl<?>) attribute).vertex);
-        if (hasEdge == null) throw exception(GraknException.of(INVALID_DELETE_HAS, this, attribute));
+        if (hasEdge == null) throw exception(TypeDBException.of(INVALID_DELETE_HAS, this, attribute));
         hasEdge.delete();
     }
 
@@ -192,7 +192,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     public FunctionalIterator<RelationImpl> getRelations(String roleType, String... roleTypes) {
         return getRelations(link(single(roleType), iterate(roleTypes)).map(scopedLabel -> {
             if (!scopedLabel.contains(":")) {
-                throw exception(GraknException.of(INVALID_ROLE_TYPE_LABEL, scopedLabel));
+                throw exception(TypeDBException.of(INVALID_ROLE_TYPE_LABEL, scopedLabel));
             }
             String[] label = scopedLabel.split(":");
             return RoleTypeImpl.of(vertex.graphs(), vertex.graph().schema().getType(label[1], label[0]));
@@ -224,12 +224,12 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
         if (requiredKeys > 0 && getHas(true).map(Attribute::getType).count() < requiredKeys) {
             Set<AttributeType> missing = getType().getOwns(true).map(Concept::asAttributeType).toSet();
             missing.removeAll(getHas(true).map(Attribute::getType).toSet());
-            throw exception(GraknException.of(THING_KEY_MISSING, getType().getLabel(), printTypeSet(missing)));
+            throw exception(TypeDBException.of(THING_KEY_MISSING, getType().getLabel(), printTypeSet(missing)));
         }
     }
 
     void validateIsNotDeleted() {
-        if (vertex.isDeleted()) throw exception(GraknException.of(THING_HAS_BEEN_DELETED, getIIDForPrinting()));
+        if (vertex.isDeleted()) throw exception(TypeDBException.of(THING_HAS_BEEN_DELETED, getIIDForPrinting()));
     }
 
     @Override
@@ -249,7 +249,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     }
 
     @Override
-    public GraknException exception(GraknException exception) {
+    public TypeDBException exception(TypeDBException exception) {
         return vertex.graphs().exception(exception);
     }
 

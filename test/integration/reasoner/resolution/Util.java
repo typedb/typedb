@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,17 +15,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner.resolution;
+package com.vaticle.typedb.core.reasoner.resolution;
 
-import grakn.core.logic.LogicManager;
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.Disjunction;
-import graql.lang.Graql;
+import com.vaticle.typedb.core.logic.LogicManager;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typeql.lang.TypeQL;
 
 public class Util {
 
     public static Disjunction resolvedDisjunction(String query, LogicManager logicMgr) {
-        Disjunction disjunction = Disjunction.create(Graql.parsePattern(query).asConjunction().normalise());
+        Disjunction disjunction = Disjunction.create(TypeQL.parsePattern(query).asConjunction().normalise());
         logicMgr.typeResolver().resolve(disjunction);
         return disjunction;
     }

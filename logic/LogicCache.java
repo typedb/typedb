@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,12 +16,12 @@
  *
  */
 
-package grakn.core.logic;
+package com.vaticle.typedb.core.logic;
 
-import grakn.core.common.cache.CommonCache;
-import grakn.core.common.parameters.Label;
-import grakn.core.traversal.Traversal;
-import grakn.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.common.cache.CommonCache;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.Map;
 import java.util.Set;

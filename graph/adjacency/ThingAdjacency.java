@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,13 +16,13 @@
  *
  */
 
-package grakn.core.graph.adjacency;
+package com.vaticle.typedb.core.graph.adjacency;
 
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.graph.common.Encoding;
-import grakn.core.graph.edge.ThingEdge;
-import grakn.core.graph.iid.IID;
-import grakn.core.graph.vertex.ThingVertex;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.edge.ThingEdge;
+import com.vaticle.typedb.core.graph.iid.IID;
+import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 
 public interface ThingAdjacency {
 

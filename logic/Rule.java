@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,40 +16,40 @@
  *
  */
 
-package grakn.core.logic;
+package com.vaticle.typedb.core.logic;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.iterator.Iterators;
-import grakn.core.common.parameters.Label;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptManager;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.RoleType;
-import grakn.core.graph.GraphManager;
-import grakn.core.graph.structure.RuleStructure;
-import grakn.core.logic.resolvable.Concludable;
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.Disjunction;
-import grakn.core.pattern.Negation;
-import grakn.core.pattern.constraint.thing.HasConstraint;
-import grakn.core.pattern.constraint.thing.IsaConstraint;
-import grakn.core.pattern.constraint.thing.RelationConstraint;
-import grakn.core.pattern.constraint.thing.ThingConstraint;
-import grakn.core.pattern.constraint.thing.ValueConstraint;
-import grakn.core.pattern.variable.ThingVariable;
-import grakn.core.pattern.variable.TypeVariable;
-import grakn.core.pattern.variable.Variable;
-import grakn.core.pattern.variable.VariableRegistry;
-import grakn.core.traversal.Traversal;
-import grakn.core.traversal.TraversalEngine;
-import grakn.core.traversal.common.Identifier;
-import graql.lang.pattern.Pattern;
-import graql.lang.pattern.variable.Reference;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.concept.Concept;
+import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.thing.Thing;
+import com.vaticle.typedb.core.concept.type.AttributeType;
+import com.vaticle.typedb.core.concept.type.RelationType;
+import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.structure.RuleStructure;
+import com.vaticle.typedb.core.logic.resolvable.Concludable;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.pattern.Negation;
+import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.IsaConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.ThingConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.ValueConstraint;
+import com.vaticle.typedb.core.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.pattern.variable.TypeVariable;
+import com.vaticle.typedb.core.pattern.variable.Variable;
+import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
+import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.TraversalEngine;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typeql.lang.pattern.Pattern;
+import com.vaticle.typeql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,26 +59,26 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.list;
-import static grakn.common.collection.Collections.set;
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
-import static grakn.core.common.exception.ErrorMessage.RuleWrite.INVALID_NEGATION_CONTAINS_DISJUNCTION;
-import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_CAN_HAVE_INVALID_CONCLUSION;
-import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_CANNOT_BE_SATISFIED;
-import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_INVALID_VALUE_ASSIGNMENT;
-import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CANNOT_BE_SATISFIED;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static graql.lang.common.GraqlToken.Char.COLON;
-import static graql.lang.common.GraqlToken.Char.CURLY_CLOSE;
-import static graql.lang.common.GraqlToken.Char.CURLY_OPEN;
-import static graql.lang.common.GraqlToken.Char.NEW_LINE;
-import static graql.lang.common.GraqlToken.Char.SEMICOLON;
-import static graql.lang.common.GraqlToken.Char.SPACE;
-import static graql.lang.common.GraqlToken.Schema.RULE;
-import static graql.lang.common.GraqlToken.Schema.THEN;
-import static graql.lang.common.GraqlToken.Schema.WHEN;
+import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.INVALID_NEGATION_CONTAINS_DISJUNCTION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_CAN_HAVE_INVALID_CONCLUSION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_CANNOT_BE_SATISFIED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_INVALID_VALUE_ASSIGNMENT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CANNOT_BE_SATISFIED;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.COLON;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.CURLY_CLOSE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.CURLY_OPEN;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.NEW_LINE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SEMICOLON;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SPACE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Schema.RULE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Schema.THEN;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Schema.WHEN;
 
 
 public class Rule {
@@ -105,7 +105,7 @@ public class Rule {
         return new Rule(structure, logicMgr);
     }
 
-    public static Rule of(String label, graql.lang.pattern.Conjunction<? extends Pattern> when, graql.lang.pattern.variable.ThingVariable<?> then,
+    public static Rule of(String label, com.vaticle.typeql.lang.pattern.Conjunction<? extends Pattern> when, com.vaticle.typeql.lang.pattern.variable.ThingVariable<?> then,
                           GraphManager graphMgr, ConceptManager conceptMgr, LogicManager logicMgr) {
         RuleStructure structure = graphMgr.schema().rules().create(label, when, then);
         Rule rule = new Rule(structure, logicMgr);
@@ -147,11 +147,11 @@ public class Rule {
         structure.delete();
     }
 
-    public graql.lang.pattern.variable.ThingVariable<?> getThenPreNormalised() {
+    public com.vaticle.typeql.lang.pattern.variable.ThingVariable<?> getThenPreNormalised() {
         return structure.then();
     }
 
-    public graql.lang.pattern.Conjunction<? extends Pattern> getWhenPreNormalised() {
+    public com.vaticle.typeql.lang.pattern.Conjunction<? extends Pattern> getWhenPreNormalised() {
         return structure.when();
     }
 
@@ -175,8 +175,8 @@ public class Rule {
     }
 
     private void validateSatisfiable() {
-        if (!when.isCoherent()) throw GraknException.of(RULE_WHEN_CANNOT_BE_SATISFIED, structure.label(), when);
-        if (!then.isCoherent()) throw GraknException.of(RULE_THEN_CANNOT_BE_SATISFIED, structure.label(), then);
+        if (!when.isCoherent()) throw TypeDBException.of(RULE_WHEN_CANNOT_BE_SATISFIED, structure.label(), when);
+        if (!then.isCoherent()) throw TypeDBException.of(RULE_THEN_CANNOT_BE_SATISFIED, structure.label(), then);
     }
 
 
@@ -192,20 +192,20 @@ public class Rule {
                 });
     }
 
-    private Conjunction whenPattern(graql.lang.pattern.Conjunction<? extends Pattern> conjunction,
-                                    graql.lang.pattern.variable.ThingVariable<?> then, LogicManager logicMgr) {
+    private Conjunction whenPattern(com.vaticle.typeql.lang.pattern.Conjunction<? extends Pattern> conjunction,
+                                    com.vaticle.typeql.lang.pattern.variable.ThingVariable<?> then, LogicManager logicMgr) {
         Disjunction when = Disjunction.create(conjunction.normalise(), VariableRegistry.createFromThings(list(then)));
         assert when.conjunctions().size() == 1;
 
         if (iterate(when.conjunctions().get(0).negations()).filter(neg -> neg.disjunction().conjunctions().size() != 1).hasNext()) {
-            throw GraknException.of(INVALID_NEGATION_CONTAINS_DISJUNCTION, getLabel());
+            throw TypeDBException.of(INVALID_NEGATION_CONTAINS_DISJUNCTION, getLabel());
         }
 
         logicMgr.typeResolver().resolve(when);
         return when.conjunctions().get(0);
     }
 
-    private Conjunction thenPattern(graql.lang.pattern.variable.ThingVariable<?> thenVariable, LogicManager logicMgr) {
+    private Conjunction thenPattern(com.vaticle.typeql.lang.pattern.variable.ThingVariable<?> thenVariable, LogicManager logicMgr) {
         Conjunction conj = new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
         logicMgr.typeResolver().resolveVariables(conj, true);
         return conj;
@@ -312,7 +312,7 @@ public class Rule {
             if (e.isPresent()) return e.get();
             Optional<Has.Variable> v = Has.Variable.of(rule);
             if (v.isPresent()) return v.get();
-            throw GraknException.of(ILLEGAL_STATE);
+            throw TypeDBException.of(ILLEGAL_STATE);
         }
 
         public Conjunction conjunction() {
@@ -367,27 +367,27 @@ public class Rule {
         }
 
         public Relation asRelation() {
-            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Relation.class));
+            throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Relation.class));
         }
 
         public Has asHas() {
-            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Has.class));
+            throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Has.class));
         }
 
         public Isa asIsa() {
-            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Isa.class));
+            throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Isa.class));
         }
 
         public Value asValue() {
-            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Value.class));
+            throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Value.class));
         }
 
         public Has.Variable asVariableHas() {
-            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Has.Variable.class));
+            throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Has.Variable.class));
         }
 
         public Has.Explicit asExplicitHas() {
-            throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Has.Explicit.class));
+            throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Has.Explicit.class));
         }
 
         public void validate(LogicManager logicMgr, ConceptManager conceptMgr) {
@@ -400,7 +400,7 @@ public class Rule {
 
             whenCombinations.forEachRemaining(nameLabelMap -> {
                 if (allowedThenCombinations.stream().noneMatch(thenMap -> nameLabelMap.entrySet().containsAll(thenMap.entrySet())))
-                    throw GraknException.of(RULE_CAN_HAVE_INVALID_CONCLUSION, rule.structure.label(), nameLabelMap.toString());
+                    throw TypeDBException.of(RULE_CAN_HAVE_INVALID_CONCLUSION, rule.structure.label(), nameLabelMap.toString());
             });
         }
 
@@ -472,7 +472,7 @@ public class Rule {
                 RelationType relationType = relationType(whenConcepts, conceptMgr);
                 Set<RolePlayer> players = new HashSet<>();
                 relation().players().forEach(rp -> players.add(new RolePlayer(rp, relationType, whenConcepts)));
-                FunctionalIterator<grakn.core.concept.thing.Relation> existingRelations = matchRelation(
+                FunctionalIterator<com.vaticle.typedb.core.concept.thing.Relation> existingRelations = matchRelation(
                         relationType, players, traversalEng, conceptMgr
                 );
 
@@ -490,7 +490,7 @@ public class Rule {
                 } else {
                     Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
                     thenConcepts.put(relationTypeIdentifier, relationType);
-                    grakn.core.concept.thing.Relation relation = insertRelation(relationType, players);
+                    com.vaticle.typedb.core.concept.thing.Relation relation = insertRelation(relationType, players);
                     thenConcepts.put(isa().owner().id(), relation);
                     players.forEach(rp -> {
                         thenConcepts.putIfAbsent(rp.roleTypeIdentifier, rp.roleType);
@@ -547,14 +547,14 @@ public class Rule {
                 return this;
             }
 
-            private grakn.core.concept.thing.Relation insertRelation(RelationType relationType, Set<RolePlayer> players) {
-                grakn.core.concept.thing.Relation relation = relationType.create(true);
+            private com.vaticle.typedb.core.concept.thing.Relation insertRelation(RelationType relationType, Set<RolePlayer> players) {
+                com.vaticle.typedb.core.concept.thing.Relation relation = relationType.create(true);
                 players.forEach(rp -> relation.addPlayer(rp.roleType, rp.player, true));
                 return relation;
             }
 
-            private FunctionalIterator<grakn.core.concept.thing.Relation> matchRelation(RelationType relationType, Set<RolePlayer> players,
-                                                                                        TraversalEngine traversalEng, ConceptManager conceptMgr) {
+            private FunctionalIterator<com.vaticle.typedb.core.concept.thing.Relation> matchRelation(RelationType relationType, Set<RolePlayer> players,
+                                                                                                     TraversalEngine traversalEng, ConceptManager conceptMgr) {
                 Traversal traversal = new Traversal();
                 Identifier.Variable.Retrievable relationId = relation().owner().id();
                 traversal.types(relationId, set(relationType.getLabel()));
@@ -642,8 +642,8 @@ public class Rule {
                 }
 
                 public static Optional<Explicit> of(Rule rule) {
-                    return iterate(rule.then().variables()).filter(grakn.core.pattern.variable.Variable::isThing)
-                            .map(grakn.core.pattern.variable.Variable::asThing)
+                    return iterate(rule.then().variables()).filter(com.vaticle.typedb.core.pattern.variable.Variable::isThing)
+                            .map(com.vaticle.typedb.core.pattern.variable.Variable::asThing)
                             .flatMap(variable -> iterate(variable.constraints()).filter(ThingConstraint::isHas)
                                     .filter(constraint -> constraint.asHas().attribute().id().reference().isAnonymous())
                                     .map(constraint -> {
@@ -669,9 +669,9 @@ public class Rule {
                     AttributeType.ValueType attrTypeValueType = attributeType.getValueType();
                     ValueConstraint<?> value = has().attribute().value().iterator().next();
                     if (!AttributeType.ValueType.of(value.value().getClass()).assignables().contains(attrTypeValueType)) {
-                        throw GraknException.of(RULE_THEN_INVALID_VALUE_ASSIGNMENT, rule().getLabel(),
-                                                value.value().getClass().getSimpleName(),
-                                                attributeType.getValueType().getValueClass().getSimpleName());
+                        throw TypeDBException.of(RULE_THEN_INVALID_VALUE_ASSIGNMENT, rule().getLabel(),
+                                                 value.value().getClass().getSimpleName(),
+                                                 attributeType.getValueType().getValueClass().getSimpleName());
                     }
                 }
 
@@ -701,7 +701,7 @@ public class Rule {
 
                 @Override
                 void index() {
-                    grakn.core.pattern.variable.Variable attribute = has().attribute();
+                    com.vaticle.typedb.core.pattern.variable.Variable attribute = has().attribute();
                     Set<Label> possibleAttributeHas = attribute.resolvedTypes();
                     possibleAttributeHas.forEach(label -> {
                         rule().structure.indexConcludesVertex(label);
@@ -711,7 +711,7 @@ public class Rule {
 
                 @Override
                 void unindex() {
-                    grakn.core.pattern.variable.Variable attribute = has().attribute();
+                    com.vaticle.typedb.core.pattern.variable.Variable attribute = has().attribute();
                     Set<Label> possibleAttributeHas = attribute.resolvedTypes();
                     possibleAttributeHas.forEach(label -> {
                         rule().structure.unindexConcludesVertex(label);
@@ -773,7 +773,7 @@ public class Rule {
                     else if (attrType.isDouble()) return attrType.asDouble().put(value.asDouble().value(), true);
                     else if (attrType.isLong()) return attrType.asLong().put(value.asLong().value(), true);
                     else if (attrType.isString()) return attrType.asString().put(value.asString().value(), true);
-                    else throw GraknException.of(ILLEGAL_STATE);
+                    else throw TypeDBException.of(ILLEGAL_STATE);
                 }
 
             }
@@ -785,8 +785,8 @@ public class Rule {
                 }
 
                 public static Optional<Variable> of(Rule rule) {
-                    return iterate(rule.then().variables()).filter(grakn.core.pattern.variable.Variable::isThing)
-                            .map(grakn.core.pattern.variable.Variable::asThing)
+                    return iterate(rule.then().variables()).filter(com.vaticle.typedb.core.pattern.variable.Variable::isThing)
+                            .map(com.vaticle.typedb.core.pattern.variable.Variable::asThing)
                             .flatMap(variable -> iterate(variable.constraints()).filter(ThingConstraint::isHas)
                                     .filter(constraint -> constraint.asHas().attribute().id().isName())
                                     .map(constraint -> {
@@ -819,14 +819,14 @@ public class Rule {
 
                 @Override
                 void index() {
-                    grakn.core.pattern.variable.Variable attribute = has().attribute();
+                    com.vaticle.typedb.core.pattern.variable.Variable attribute = has().attribute();
                     Set<Label> possibleAttributeHas = attribute.resolvedTypes();
                     possibleAttributeHas.forEach(rule().structure::indexConcludesEdgeTo);
                 }
 
                 @Override
                 void unindex() {
-                    grakn.core.pattern.variable.Variable attribute = has().attribute();
+                    com.vaticle.typedb.core.pattern.variable.Variable attribute = has().attribute();
                     Set<Label> possibleAttributeHas = attribute.resolvedTypes();
                     possibleAttributeHas.forEach(rule().structure::unindexConcludesEdgeTo);
                 }

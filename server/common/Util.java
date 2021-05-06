@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,9 +16,9 @@
  *
  */
 
-package grakn.core.server.common;
+package com.vaticle.typedb.core.server.common;
 
-import grakn.core.common.exception.GraknException;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -31,11 +31,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 
-import static grakn.core.common.exception.ErrorMessage.Server.ENV_VAR_NOT_FOUND;
-import static grakn.core.common.exception.ErrorMessage.Server.FAILED_PARSE_PROPERTIES;
-import static grakn.core.common.exception.ErrorMessage.Server.PROPERTIES_FILE_NOT_FOUND;
-import static grakn.core.server.common.ServerDefaults.ASCII_LOGO_FILE;
-import static grakn.core.server.common.ServerDefaults.PROPERTIES_FILE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.ENV_VAR_NOT_FOUND;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.FAILED_PARSE_PROPERTIES;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.PROPERTIES_FILE_NOT_FOUND;
+import static com.vaticle.typedb.core.server.common.ServerDefaults.ASCII_LOGO_FILE;
+import static com.vaticle.typedb.core.server.common.ServerDefaults.PROPERTIES_FILE;
 
 public class Util {
     private static final Logger LOG = LoggerFactory.getLogger(Util.class);
@@ -70,7 +70,7 @@ public class Util {
             }
         }
 
-        if (error) throw GraknException.of(FAILED_PARSE_PROPERTIES);
+        if (error) throw TypeDBException.of(FAILED_PARSE_PROPERTIES);
         else return properties;
     }
 

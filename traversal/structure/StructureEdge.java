@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,20 +16,20 @@
  *
  */
 
-package grakn.core.traversal.structure;
+package com.vaticle.typedb.core.traversal.structure;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Label;
-import grakn.core.graph.common.Encoding;
-import grakn.core.traversal.graph.TraversalEdge;
-import graql.lang.common.GraqlToken;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.traversal.graph.TraversalEdge;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.util.Objects;
 import java.util.Set;
 
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static grakn.core.graph.common.Encoding.Edge.Thing.ROLEPLAYER;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.ROLEPLAYER;
 
 public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERTEX_TO extends StructureVertex<?>>
         extends TraversalEdge<VERTEX_FROM, VERTEX_TO> {
@@ -51,15 +51,15 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
     }
 
     public Equal asEqual() {
-        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Equal.class));
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Equal.class));
     }
 
     public Predicate asPredicate() {
-        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Predicate.class));
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Predicate.class));
     }
 
     public Native<?, ?> asNative() {
-        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Native.class));
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Native.class));
     }
 
     public static class Equal extends StructureEdge<StructureVertex<?>, StructureVertex<?>> {
@@ -67,7 +67,7 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
         private final int hash;
 
         Equal(StructureVertex<?> from, StructureVertex<?> to) {
-            super(from, to, GraqlToken.Predicate.Equality.EQ.toString());
+            super(from, to, TypeQLToken.Predicate.Equality.EQ.toString());
             this.hash = Objects.hash(getClass(), from, to);
         }
 
@@ -94,16 +94,16 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
 
     public static class Predicate extends StructureEdge<StructureVertex.Thing, StructureVertex.Thing> {
 
-        private final grakn.core.traversal.predicate.Predicate.Variable predicate;
+        private final com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate;
         private final int hash;
 
-        Predicate(StructureVertex.Thing from, StructureVertex.Thing to, grakn.core.traversal.predicate.Predicate.Variable predicate) {
+        Predicate(StructureVertex.Thing from, StructureVertex.Thing to, com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate) {
             super(from, to, predicate.toString());
             this.predicate = predicate;
             this.hash = Objects.hash(getClass(), from, to, this.predicate);
         }
 
-        public grakn.core.traversal.predicate.Predicate.Variable predicate() {
+        public com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate() {
             return predicate;
         }
 
@@ -161,7 +161,7 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
         public boolean isRolePlayer() { return false; }
 
         public RolePlayer asRolePlayer() {
-            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(RolePlayer.class));
+            throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(RolePlayer.class));
         }
 
         @Override

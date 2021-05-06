@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,16 +16,16 @@
  *
  */
 
-package grakn.core.traversal.predicate;
+package com.vaticle.typedb.core.traversal.predicate;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.graph.common.Encoding;
-import grakn.core.graph.vertex.AttributeVertex;
-import grakn.core.traversal.Traversal;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
+import com.vaticle.typedb.core.traversal.Traversal;
 
 import java.time.LocalDateTime;
 
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public abstract class PredicateArgument {
 
@@ -101,7 +101,7 @@ public abstract class PredicateArgument {
                 if (vertex.isLong()) return operator.apply(vertex.asLong().value().compareTo(value));
                 else if (vertex.isDouble())
                     return operator.apply(Predicate.compareDoubles(vertex.asDouble().value(), value));
-                else throw GraknException.of(ILLEGAL_STATE);
+                else throw TypeDBException.of(ILLEGAL_STATE);
             }
         };
 
@@ -120,7 +120,7 @@ public abstract class PredicateArgument {
                 double vertexValue;
                 if (vertex.isLong()) vertexValue = vertex.asLong().value();
                 else if (vertex.isDouble()) vertexValue = vertex.asDouble().value();
-                else throw GraknException.of(ILLEGAL_STATE);
+                else throw TypeDBException.of(ILLEGAL_STATE);
                 return operator.apply(Predicate.compareDoubles(vertexValue, value));
             }
         };
@@ -182,7 +182,7 @@ public abstract class PredicateArgument {
                 case DATETIME:
                     return Value.DATETIME.apply(operator, from, to.asDateTime().value());
                 default:
-                    throw GraknException.of(ILLEGAL_STATE);
+                    throw TypeDBException.of(ILLEGAL_STATE);
             }
         }
     }

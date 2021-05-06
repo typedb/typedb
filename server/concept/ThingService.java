@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,23 +15,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.concept;
+package com.vaticle.typedb.core.server.concept;
 
-import grakn.common.collection.Pair;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptManager;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Relation;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.RoleType;
-import grakn.core.concept.type.ThingType;
-import grakn.core.server.TransactionService;
-import grakn.protocol.ConceptProto;
-import grakn.protocol.TransactionProto.Transaction;
+import com.vaticle.typedb.common.collection.Pair;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.concept.Concept;
+import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.thing.Relation;
+import com.vaticle.typedb.core.concept.thing.Thing;
+import com.vaticle.typedb.core.concept.type.AttributeType;
+import com.vaticle.typedb.core.concept.type.RelationType;
+import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.concept.type.ThingType;
+import com.vaticle.typedb.core.server.TransactionService;
+import com.vaticle.typedb.protocol.ConceptProto;
+import com.vaticle.typedb.protocol.TransactionProto.Transaction;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -39,23 +39,23 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static grakn.common.collection.Collections.pair;
-import static grakn.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
-import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
-import static grakn.core.server.common.RequestReader.byteStringAsUUID;
-import static grakn.core.server.common.ResponseBuilder.Thing.Attribute.getOwnersResPart;
-import static grakn.core.server.common.ResponseBuilder.Thing.Relation.addPlayerRes;
-import static grakn.core.server.common.ResponseBuilder.Thing.Relation.getPlayersByRoleTypeResPart;
-import static grakn.core.server.common.ResponseBuilder.Thing.Relation.getPlayersResPart;
-import static grakn.core.server.common.ResponseBuilder.Thing.Relation.getRelatingResPart;
-import static grakn.core.server.common.ResponseBuilder.Thing.Relation.removePlayerRes;
-import static grakn.core.server.common.ResponseBuilder.Thing.deleteRes;
-import static grakn.core.server.common.ResponseBuilder.Thing.getHasResPart;
-import static grakn.core.server.common.ResponseBuilder.Thing.getPlayingResPart;
-import static grakn.core.server.common.ResponseBuilder.Thing.getRelationsResPart;
-import static grakn.core.server.common.ResponseBuilder.Thing.getTypeRes;
-import static grakn.core.server.common.ResponseBuilder.Thing.setHasRes;
-import static grakn.core.server.common.ResponseBuilder.Thing.unsetHasRes;
+import static com.vaticle.typedb.common.collection.Collections.pair;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
+import static com.vaticle.typedb.core.server.common.RequestReader.byteStringAsUUID;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Attribute.getOwnersResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Relation.addPlayerRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Relation.getPlayersByRoleTypeResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Relation.getPlayersResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Relation.getRelatingResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Relation.removePlayerRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.deleteRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.getHasResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.getPlayingResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.getRelationsResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.getTypeRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.setHasRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.unsetHasRes;
 
 public class ThingService {
 
@@ -114,12 +114,12 @@ public class ThingService {
                 return;
             case REQ_NOT_SET:
             default:
-                throw GraknException.of(UNKNOWN_REQUEST_TYPE);
+                throw TypeDBException.of(UNKNOWN_REQUEST_TYPE);
         }
     }
 
     private static <T extends Concept> T notNull(@Nullable T concept) {
-        if (concept == null) throw GraknException.of(MISSING_CONCEPT);
+        if (concept == null) throw TypeDBException.of(MISSING_CONCEPT);
         return concept;
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,15 +16,15 @@
  *
  */
 
-package grakn.core.test.behaviour.logic.rule;
+package com.vaticle.typedb.core.test.behaviour.logic.rule;
 
-import grakn.core.logic.Rule;
+import com.vaticle.typedb.core.logic.Rule;
 import io.cucumber.java.en.Then;
 
 import java.util.List;
 import java.util.Set;
 
-import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
+import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.tx;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 

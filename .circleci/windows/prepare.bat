@@ -1,6 +1,6 @@
 @echo off
 REM
-REM Copyright (C) 2021 Grakn Labs
+REM Copyright (C) 2021 Vaticle
 REM
 REM This program is free software: you can redistribute it and/or modify
 REM it under the terms of the GNU Affero General Public License as
@@ -33,6 +33,6 @@ REM permanently set variables for Bazel build
 SETX BAZEL_SH "C:\Program Files\Git\usr\bin\bash.exe"
 SETX BAZEL_PYTHON C:\Python37\python.exe
 
-REM TODO: https://github.com/graknlabs/grakn/issues/6200
+REM TODO: https://github.com/vaticle/typedb/issues/6200
 REM temporary workaround around "AsAbsoluteWindowsPath failed: Unix-style paths are unsupported" error
 DEL .bazelrc

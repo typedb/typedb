@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,38 +15,38 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.logic.resolvable;
+package com.vaticle.typedb.core.logic.resolvable;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.iterator.Iterators;
-import grakn.core.common.parameters.Label;
-import grakn.core.concept.ConceptManager;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.RoleType;
-import grakn.core.concept.type.Type;
-import grakn.core.graph.common.Encoding;
-import grakn.core.logic.LogicManager;
-import grakn.core.logic.Rule;
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.constraint.Constraint;
-import grakn.core.pattern.constraint.thing.HasConstraint;
-import grakn.core.pattern.constraint.thing.IsaConstraint;
-import grakn.core.pattern.constraint.thing.RelationConstraint;
-import grakn.core.pattern.constraint.thing.RelationConstraint.RolePlayer;
-import grakn.core.pattern.constraint.thing.ThingConstraint;
-import grakn.core.pattern.constraint.thing.ValueConstraint;
-import grakn.core.pattern.constraint.type.LabelConstraint;
-import grakn.core.pattern.equivalence.AlphaEquivalence;
-import grakn.core.pattern.variable.ThingVariable;
-import grakn.core.pattern.variable.TypeVariable;
-import grakn.core.pattern.variable.Variable;
-import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.Identifier.Variable.Retrievable;
-import grakn.core.traversal.predicate.Predicate;
-import graql.lang.common.GraqlToken;
-import graql.lang.pattern.variable.Reference;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concept.thing.Thing;
+import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.concept.type.Type;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.logic.LogicManager;
+import com.vaticle.typedb.core.logic.Rule;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.constraint.Constraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.IsaConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint.RolePlayer;
+import com.vaticle.typedb.core.pattern.constraint.thing.ThingConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.ValueConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.LabelConstraint;
+import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
+import com.vaticle.typedb.core.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.pattern.variable.TypeVariable;
+import com.vaticle.typedb.core.pattern.variable.Variable;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
+import com.vaticle.typedb.core.traversal.predicate.Predicate;
+import com.vaticle.typeql.lang.common.TypeQLToken;
+import com.vaticle.typeql.lang.pattern.variable.Reference;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
@@ -60,14 +60,14 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static grakn.common.collection.Collections.list;
-import static grakn.common.collection.Collections.set;
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.iterator.Iterators.single;
-import static graql.lang.common.GraqlToken.Predicate.Equality.EQ;
+import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.single;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Predicate.Equality.EQ;
 import static java.util.stream.Collectors.toSet;
 
 public abstract class Concludable extends Resolvable<Conjunction> {
@@ -97,7 +97,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
 
     public abstract Set<Constraint> concludableConstraints();
 
-    public static Set<Concludable> create(grakn.core.pattern.Conjunction conjunction) {
+    public static Set<Concludable> create(com.vaticle.typedb.core.pattern.Conjunction conjunction) {
         return new Extractor(conjunction).concludables();
     }
 
@@ -134,19 +134,19 @@ public abstract class Concludable extends Resolvable<Conjunction> {
     public boolean isAttribute() { return false; }
 
     public Relation asRelation() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Relation.class));
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Relation.class));
     }
 
     public Has asHas() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Has.class));
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Has.class));
     }
 
     public Isa asIsa() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Isa.class));
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Isa.class));
     }
 
     public Attribute asAttribute() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Attribute.class));
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Attribute.class));
     }
 
     <T, V> Map<T, Set<V>> cloneMapping(Map<T, Set<V>> mapping) {
@@ -215,8 +215,8 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         return iterate(values).filter(v -> v.predicate().equals(EQ)).filter(v -> !v.isVariable()).toSet();
     }
 
-    private static Function<grakn.core.concept.thing.Attribute, Boolean> valueEqualsFunction(ValueConstraint<?> value) {
-        Function<grakn.core.concept.thing.Attribute, Boolean> predicateFn;
+    private static Function<com.vaticle.typedb.core.concept.thing.Attribute, Boolean> valueEqualsFunction(ValueConstraint<?> value) {
+        Function<com.vaticle.typedb.core.concept.thing.Attribute, Boolean> predicateFn;
         if (value.isLong()) {
             predicateFn = (a) -> {
                 if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
@@ -227,7 +227,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
                     return value.asLong().value().compareTo(a.asLong().getValue()) == 0;
                 else if (a.getType().isDouble())
                     return Predicate.compareDoubles(a.asDouble().getValue(), value.asLong().value()) == 0;
-                else throw GraknException.of(ILLEGAL_STATE);
+                else throw TypeDBException.of(ILLEGAL_STATE);
             };
         } else if (value.isDouble()) {
             predicateFn = (a) -> {
@@ -239,7 +239,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
                     return Predicate.compareDoubles(a.asLong().getValue(), value.asDouble().value()) == 0;
                 else if (a.getType().isDouble())
                     return Predicate.compareDoubles(a.asDouble().getValue(), value.asDouble().value()) == 0;
-                else throw GraknException.of(ILLEGAL_STATE);
+                else throw TypeDBException.of(ILLEGAL_STATE);
             };
         } else if (value.isBoolean()) {
             predicateFn = (a) -> {
@@ -262,7 +262,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
                 assert a.getType().isDateTime();
                 return a.asDateTime().getValue().compareTo(value.asDateTime().value()) == 0;
             };
-        } else throw GraknException.of(ILLEGAL_STATE);
+        } else throw TypeDBException.of(ILLEGAL_STATE);
         return predicateFn;
     }
 
@@ -528,7 +528,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         @Override
         public boolean isInferredAnswer(ConceptMap conceptMap) {
             Thing owner = conceptMap.get(has.owner().id()).asThing();
-            grakn.core.concept.thing.Attribute attribute = conceptMap.get(has.attribute().id()).asAttribute();
+            com.vaticle.typedb.core.concept.thing.Attribute attribute = conceptMap.get(has.attribute().id()).asAttribute();
             return owner.hasInferred(attribute);
         }
 
@@ -739,8 +739,8 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         public static Attribute of(ThingVariable attribute) {
-            TypeVariable typeVar = TypeVariable.of(Identifier.Variable.of(Reference.label(GraqlToken.Type.ATTRIBUTE.toString())));
-            typeVar.label(Label.of(GraqlToken.Type.ATTRIBUTE.toString()));
+            TypeVariable typeVar = TypeVariable.of(Identifier.Variable.of(Reference.label(TypeQLToken.Type.ATTRIBUTE.toString())));
+            typeVar.label(Label.of(TypeQLToken.Type.ATTRIBUTE.toString()));
             typeVar.setResolvedTypes(attribute.resolvedTypes());
             return new Attribute(attribute.clone().isa(typeVar, false));
         }

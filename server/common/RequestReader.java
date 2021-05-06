@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,31 +15,31 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.common;
+package com.vaticle.typedb.core.server.common;
 
 import com.google.protobuf.ByteString;
-import grabl.tracing.client.GrablTracingThreadStatic;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Options;
-import grakn.core.concept.type.AttributeType.ValueType;
-import grakn.protocol.ConceptProto;
-import grakn.protocol.OptionsProto;
-import grakn.protocol.TransactionProto;
+import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.concept.type.AttributeType.ValueType;
+import com.vaticle.typedb.protocol.ConceptProto;
+import com.vaticle.typedb.protocol.OptionsProto;
+import com.vaticle.typedb.protocol.TransactionProto;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import static grakn.core.common.collection.Bytes.bytesToUUID;
-import static grakn.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
-import static grakn.protocol.OptionsProto.Options.ExplainOptCase.EXPLAIN;
-import static grakn.protocol.OptionsProto.Options.InferOptCase.INFER;
-import static grakn.protocol.OptionsProto.Options.ParallelOptCase.PARALLEL;
-import static grakn.protocol.OptionsProto.Options.PrefetchOptCase.PREFETCH;
-import static grakn.protocol.OptionsProto.Options.PrefetchSizeOptCase.PREFETCH_SIZE;
-import static grakn.protocol.OptionsProto.Options.SchemaLockAcquireTimeoutOptCase.SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS;
-import static grakn.protocol.OptionsProto.Options.SessionIdleTimeoutOptCase.SESSION_IDLE_TIMEOUT_MILLIS;
-import static grakn.protocol.OptionsProto.Options.TraceInferenceOptCase.TRACE_INFERENCE;
+import static com.vaticle.typedb.core.common.collection.Bytes.bytesToUUID;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
+import static com.vaticle.typedb.protocol.OptionsProto.Options.ExplainOptCase.EXPLAIN;
+import static com.vaticle.typedb.protocol.OptionsProto.Options.InferOptCase.INFER;
+import static com.vaticle.typedb.protocol.OptionsProto.Options.ParallelOptCase.PARALLEL;
+import static com.vaticle.typedb.protocol.OptionsProto.Options.PrefetchOptCase.PREFETCH;
+import static com.vaticle.typedb.protocol.OptionsProto.Options.PrefetchSizeOptCase.PREFETCH_SIZE;
+import static com.vaticle.typedb.protocol.OptionsProto.Options.SchemaLockAcquireTimeoutOptCase.SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS;
+import static com.vaticle.typedb.protocol.OptionsProto.Options.SessionIdleTimeoutOptCase.SESSION_IDLE_TIMEOUT_MILLIS;
+import static com.vaticle.typedb.protocol.OptionsProto.Options.TraceInferenceOptCase.TRACE_INFERENCE;
 
 public class RequestReader {
 
@@ -97,12 +97,12 @@ public class RequestReader {
                 return ValueType.DATETIME;
             case UNRECOGNIZED:
             default:
-                throw GraknException.of(BAD_VALUE_TYPE, valueType);
+                throw TypeDBException.of(BAD_VALUE_TYPE, valueType);
         }
     }
 
     public static Optional<TracingData> getTracingData(TransactionProto.Transaction.Req request) {
-        if (GrablTracingThreadStatic.isTracingEnabled()) {
+        if (FactoryTracingThreadStatic.isTracingEnabled()) {
             Map<String, String> metadata = request.getMetadataMap();
             String rootID = metadata.get("traceRootId");
             String parentID = metadata.get("traceParentId");

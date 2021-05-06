@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,10 +15,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.pattern;
+package com.vaticle.typedb.core.pattern;
 
-import grakn.core.pattern.variable.Variable;
-import graql.lang.Graql;
+import com.vaticle.typedb.core.pattern.variable.Variable;
+import com.vaticle.typeql.lang.TypeQL;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -27,14 +27,14 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.common.collection.Collections.set;
+import static com.vaticle.typedb.common.collection.Collections.set;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 
 public class ConjunctionTest {
 
     private Conjunction parse(String query) {
-        return Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
+        return Disjunction.create(TypeQL.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
     }
 
     private Set<String> conjunctionStringToStatementStrings(String conjunctionString) {

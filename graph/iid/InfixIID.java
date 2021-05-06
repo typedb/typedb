@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,13 +16,13 @@
  *
  */
 
-package grakn.core.graph.iid;
+package com.vaticle.typedb.core.graph.iid;
 
-import grakn.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.common.Encoding;
 
 import java.util.Arrays;
 
-import static grakn.core.common.collection.Bytes.join;
+import static com.vaticle.typedb.core.common.collection.Bytes.join;
 import static java.util.Arrays.copyOfRange;
 
 public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID {

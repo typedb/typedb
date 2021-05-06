@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,23 +16,23 @@
  *
  */
 
-package grakn.core.migrator;
+package com.vaticle.typedb.core.migrator;
 
 import com.google.protobuf.Parser;
-import grakn.common.collection.Pair;
-import grakn.core.Grakn;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Arguments;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Entity;
-import grakn.core.concept.thing.Relation;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.RoleType;
-import grakn.core.migrator.proto.DataProto;
-import grakn.core.migrator.proto.MigratorProto;
+import com.vaticle.typedb.common.collection.Pair;
+import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.thing.Entity;
+import com.vaticle.typedb.core.concept.thing.Relation;
+import com.vaticle.typedb.core.concept.thing.Thing;
+import com.vaticle.typedb.core.concept.type.AttributeType;
+import com.vaticle.typedb.core.concept.type.EntityType;
+import com.vaticle.typedb.core.concept.type.RelationType;
+import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.migrator.proto.DataProto;
+import com.vaticle.typedb.core.migrator.proto.MigratorProto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,17 +50,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static grakn.core.common.exception.ErrorMessage.Migrator.FILE_NOT_FOUND;
-import static grakn.core.common.exception.ErrorMessage.Migrator.FILE_NOT_READABLE;
-import static grakn.core.common.exception.ErrorMessage.Migrator.INVALID_DATA;
-import static grakn.core.common.exception.ErrorMessage.Migrator.TYPE_NOT_FOUND;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.FILE_NOT_FOUND;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.FILE_NOT_READABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.INVALID_DATA;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.TYPE_NOT_FOUND;
 
 public class DataImporter implements Migrator {
 
     private static final Logger LOG = LoggerFactory.getLogger(DataImporter.class);
     private static final Parser<DataProto.Item> ITEM_PARSER = DataProto.Item.parser();
     private static final int BATCH_SIZE = 20_000;
-    private final Grakn.Session session;
+    private final TypeDB.Session session;
     private final Path filename;
     private final Map<String, String> remapLabels;
 
@@ -75,11 +75,11 @@ public class DataImporter implements Migrator {
     private long ownershipCount = 0;
     private long playerCount = 0;
     private int txWriteCount = 0;
-    private Grakn.Transaction tx;
+    private TypeDB.Transaction tx;
 
-    DataImporter(Grakn grakn, String database, Path filename, Map<String, String> remapLabels, String version) {
-        if (!Files.exists(filename)) throw GraknException.of(FILE_NOT_FOUND, filename);
-        this.session = grakn.session(database, Arguments.Session.Type.DATA);
+    DataImporter(TypeDB typedb, String database, Path filename, Map<String, String> remapLabels, String version) {
+        if (!Files.exists(filename)) throw TypeDBException.of(FILE_NOT_FOUND, filename);
+        this.session = typedb.session(database, Arguments.Session.Type.DATA);
         this.filename = filename;
         this.remapLabels = remapLabels;
         this.version = version;
@@ -109,7 +109,7 @@ public class DataImporter implements Migrator {
                 }
             }
         } catch (IOException e) {
-            throw GraknException.of(FILE_NOT_READABLE, filename.toString());
+            throw TypeDBException.of(FILE_NOT_READABLE, filename.toString());
         }
 
         tx = session.transaction(Arguments.Transaction.Type.WRITE);
@@ -119,9 +119,9 @@ public class DataImporter implements Migrator {
                 switch (item.getItemCase()) {
                     case HEADER:
                         DataProto.Item.Header header = item.getHeader();
-                        LOG.info("Importing {} from Grakn {} to {} in Grakn {}",
+                        LOG.info("Importing {} from TypeDB {} to {} in TypeDB {}",
                                  header.getOriginalDatabase(),
-                                 header.getGraknVersion(),
+                                 header.getTypedbVersion(),
                                  session.database().name(),
                                  version);
                         break;
@@ -137,7 +137,7 @@ public class DataImporter implements Migrator {
                 }
             }
         } catch (IOException e) {
-            throw GraknException.of(FILE_NOT_READABLE, filename.toString());
+            throw TypeDBException.of(FILE_NOT_READABLE, filename.toString());
         }
 
         insertMissingOwnerships();
@@ -163,7 +163,7 @@ public class DataImporter implements Migrator {
             entityCount++;
             mayCommit();
         } else {
-            throw GraknException.of(TYPE_NOT_FOUND, relabel(entityMsg.getLabel()), entityMsg.getLabel());
+            throw TypeDBException.of(TYPE_NOT_FOUND, relabel(entityMsg.getLabel()), entityMsg.getLabel());
         }
     }
 
@@ -191,7 +191,7 @@ public class DataImporter implements Migrator {
                     }
                     missingRolePlayers.add(new Pair<>(relabel(roleMsg.getLabel()), missingPlayers));
                 } else {
-                    throw GraknException.of(TYPE_NOT_FOUND, relabel(roleMsg.getLabel()), roleMsg.getLabel());
+                    throw TypeDBException.of(TYPE_NOT_FOUND, relabel(roleMsg.getLabel()), roleMsg.getLabel());
                 }
             }
             this.missingRolePlayers.add(new Pair<>(relation.getIID(), missingRolePlayers));
@@ -199,7 +199,7 @@ public class DataImporter implements Migrator {
             relationCount++;
             mayCommit();
         } else {
-            throw GraknException.of(TYPE_NOT_FOUND, relabel(relationMsg.getLabel()), relationMsg.getLabel());
+            throw TypeDBException.of(TYPE_NOT_FOUND, relabel(relationMsg.getLabel()), relationMsg.getLabel());
         }
     }
 
@@ -226,14 +226,14 @@ public class DataImporter implements Migrator {
                             Instant.ofEpochMilli(valueMsg.getDatetime()).atZone(ZoneId.of("Z")).toLocalDateTime());
                     break;
                 default:
-                    throw GraknException.of(INVALID_DATA);
+                    throw TypeDBException.of(INVALID_DATA);
             }
             idMap.put(attributeMsg.getId(), attribute.getIID());
             insertOwnedAttributesThatExist(attribute, attributeMsg.getAttributeList());
             attributeCount++;
             mayCommit();
         } else {
-            throw GraknException.of(TYPE_NOT_FOUND, relabel(attributeMsg.getLabel()), attributeMsg.getLabel());
+            throw TypeDBException.of(TYPE_NOT_FOUND, relabel(attributeMsg.getLabel()), attributeMsg.getLabel());
         }
     }
 
