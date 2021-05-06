@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,13 +16,13 @@
  *
  */
 
-package grakn.core.common.iterator;
+package com.vaticle.typedb.core.common.iterator;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import static grakn.common.collection.Collections.list;
+import static com.vaticle.typedb.common.collection.Collections.list;
 
 class CartesianIterator<T> extends AbstractFunctionalIterator<List<T>> {
 

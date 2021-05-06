@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,16 +16,16 @@
  *
  */
 
-package grakn.core.traversal.common;
+package com.vaticle.typedb.core.traversal.common;
 
-import grakn.core.common.exception.GraknException;
-import graql.lang.pattern.variable.Reference;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typeql.lang.pattern.variable.Reference;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
 
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
 public abstract class Identifier {
 
@@ -42,11 +42,11 @@ public abstract class Identifier {
     public boolean isLabel() { return false; }
 
     public Scoped asScoped() {
-        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Scoped.class));
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Scoped.class));
     }
 
     public Variable asVariable() {
-        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Variable.class));
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Variable.class));
     }
 
     @Override
@@ -162,19 +162,19 @@ public abstract class Identifier {
         public Variable asVariable() { return this; }
 
         public Retrievable asRetrievable() {
-            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Retrievable.class));
+            throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Retrievable.class));
         }
 
         public Variable.Name asName() {
-            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Variable.Name.class));
+            throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Variable.Name.class));
         }
 
         public Variable.Anonymous asAnonymous() {
-            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Variable.Anonymous.class));
+            throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Variable.Anonymous.class));
         }
 
         public Variable.Label asLabel() {
-            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Variable.Label.class));
+            throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Variable.Label.class));
         }
 
         @Override

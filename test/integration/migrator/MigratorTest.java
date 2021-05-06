@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,18 +16,18 @@
  *
  */
 
-package grakn.core.migrator;
+package com.vaticle.typedb.core.migrator;
 
 import com.google.protobuf.Parser;
-import grakn.core.Grakn;
-import grakn.core.common.parameters.Arguments;
-import grakn.core.common.parameters.Options.Database;
-import grakn.core.migrator.proto.DataProto;
-import grakn.core.rocks.RocksGrakn;
-import grakn.core.server.Version;
-import grakn.core.test.integration.util.Util;
-import graql.lang.Graql;
-import graql.lang.query.GraqlDefine;
+import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Options.Database;
+import com.vaticle.typedb.core.migrator.proto.DataProto;
+import com.vaticle.typedb.core.rocks.RocksTypeDB;
+import com.vaticle.typedb.core.server.Version;
+import com.vaticle.typedb.core.test.integration.util.Util;
+import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.query.TypeQLDefine;
 import org.junit.Test;
 
 import java.io.BufferedInputStream;
@@ -47,19 +47,19 @@ public class MigratorTest {
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("migrator-test");
     private static final Path logDir = dataDir.resolve("logs");
     private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
-    private static final String database = "grabl";
+    private static final String database = "typedb";
     private static final Path schemaPath = Paths.get("test/integration/migrator/schema.gql");
-    private final Path dataPath = Paths.get("test/integration/migrator/data.grakn");
-    private final Path exportDataPath = Paths.get("test/integration/migrator/exported-data.grakn");
+    private final Path dataPath = Paths.get("test/integration/migrator/data.typedb");
+    private final Path exportDataPath = Paths.get("test/integration/migrator/exported-data.typedb");
 
     @Test
     public void test_import_export_schema() throws IOException {
         Util.resetDirectory(dataDir);
-        try (Grakn grakn = RocksGrakn.open(options)) {
-            grakn.databases().create(database);
+        try (TypeDB typedb = RocksTypeDB.open(options)) {
+            typedb.databases().create(database);
             String savedSchema = new String(Files.readAllBytes(schemaPath), UTF_8);
-            runSchema(grakn, savedSchema);
-            String exportedSchema = grakn.databases().get(database).schema();
+            runSchema(typedb, savedSchema);
+            String exportedSchema = typedb.databases().get(database).schema();
             assertEquals(trimSchema(savedSchema), trimSchema(exportedSchema));
         }
     }
@@ -67,20 +67,20 @@ public class MigratorTest {
     @Test
     public void test_import_export_data() throws IOException {
         Util.resetDirectory(dataDir);
-        try (Grakn grakn = RocksGrakn.open(options)) {
-            grakn.databases().create(database);
+        try (TypeDB typedb = RocksTypeDB.open(options)) {
+            typedb.databases().create(database);
             String schema = new String(Files.readAllBytes(schemaPath), UTF_8);
-            runSchema(grakn, schema);
-            new DataImporter(grakn, database, dataPath, new HashMap<>(), Version.VERSION).run();
-            new DataExporter(grakn, database, exportDataPath, Version.VERSION).run();
+            runSchema(typedb, schema);
+            new DataImporter(typedb, database, dataPath, new HashMap<>(), Version.VERSION).run();
+            new DataExporter(typedb, database, exportDataPath, Version.VERSION).run();
             assertEquals(getChecksums(dataPath), getChecksums(exportDataPath));
         }
     }
 
-    private void runSchema(Grakn grakn, String schema) {
-        try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
-            try (Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                GraqlDefine query = Graql.parseQuery(schema);
+    private void runSchema(TypeDB typedb, String schema) {
+        try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                TypeQLDefine query = TypeQL.parseQuery(schema);
                 tx.query().define(query);
                 tx.commit();
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,11 +16,11 @@
  *
  */
 
-package grakn.core.concurrent.producer;
+package com.vaticle.typedb.core.concurrent.producer;
 
-import grakn.common.collection.ConcurrentSet;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.common.collection.ConcurrentSet;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.concurrent.CompletableFuture;
@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
 @ThreadSafe
@@ -102,9 +102,9 @@ public class AsyncProducer<T> implements FunctionalProducer<T> {
             if (runningJobs.remove(iterator) != null && iterators.hasNext()) compensate(queue, unfulfilled, executor);
             else if (!runningJobs.isEmpty() && unfulfilled > 0) distribute(queue, unfulfilled, executor);
             else if (runningJobs.isEmpty()) done(queue);
-            else if (unfulfilled != 0) throw GraknException.of(ILLEGAL_STATE);
+            else if (unfulfilled != 0) throw TypeDBException.of(ILLEGAL_STATE);
         } else {
-            if (unfulfilled != 0) throw GraknException.of(ILLEGAL_STATE);
+            if (unfulfilled != 0) throw TypeDBException.of(ILLEGAL_STATE);
         }
     }
 

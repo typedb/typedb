@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,19 +16,19 @@
  *
  */
 
-package grakn.core.pattern.constraint.thing;
+package com.vaticle.typedb.core.pattern.constraint.thing;
 
-import grakn.core.common.iterator.Iterators;
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.equivalence.AlphaEquivalence;
-import grakn.core.pattern.equivalence.AlphaEquivalent;
-import grakn.core.pattern.variable.ThingVariable;
-import grakn.core.pattern.variable.TypeVariable;
-import grakn.core.pattern.variable.Variable;
-import grakn.core.pattern.variable.VariableCloner;
-import grakn.core.pattern.variable.VariableRegistry;
-import grakn.core.traversal.Traversal;
-import grakn.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.common.iterator.Iterators;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
+import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalent;
+import com.vaticle.typedb.core.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.pattern.variable.TypeVariable;
+import com.vaticle.typedb.core.pattern.variable.Variable;
+import com.vaticle.typedb.core.pattern.variable.VariableCloner;
+import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
+import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
@@ -39,12 +39,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.common.iterator.Iterators.iterate;
-import static graql.lang.common.GraqlToken.Char.COLON;
-import static graql.lang.common.GraqlToken.Char.COMMA;
-import static graql.lang.common.GraqlToken.Char.PARAN_CLOSE;
-import static graql.lang.common.GraqlToken.Char.PARAN_OPEN;
-import static graql.lang.common.GraqlToken.Char.SPACE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.COLON;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.COMMA;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.PARAN_CLOSE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.PARAN_OPEN;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SPACE;
 
 public class RelationConstraint extends ThingConstraint implements AlphaEquivalent<RelationConstraint> {
 
@@ -62,7 +62,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
         }
     }
 
-    static RelationConstraint of(ThingVariable owner, graql.lang.pattern.constraint.ThingConstraint.Relation constraint,
+    static RelationConstraint of(ThingVariable owner, com.vaticle.typeql.lang.pattern.constraint.ThingConstraint.Relation constraint,
                                  VariableRegistry register) {
         return new RelationConstraint(
                 owner, iterate(constraint.players()).map(rp -> RolePlayer.of(rp, register)).toLinkedSet()
@@ -127,7 +127,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
     }
 
     private static Set<Variable> rolePlayerVariables(Set<RolePlayer> rolePlayers) {
-        Set<grakn.core.pattern.variable.Variable> variables = new HashSet<>();
+        Set<com.vaticle.typedb.core.pattern.variable.Variable> variables = new HashSet<>();
         rolePlayers.forEach(player -> {
             variables.add(player.player());
             if (player.roleType().isPresent()) variables.add(player.roleType().get());
@@ -168,7 +168,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
             this.hash = Objects.hash(this.roleType, this.player, this.repetition);
         }
 
-        public static RolePlayer of(graql.lang.pattern.constraint.ThingConstraint.Relation.RolePlayer constraint,
+        public static RolePlayer of(com.vaticle.typeql.lang.pattern.constraint.ThingConstraint.Relation.RolePlayer constraint,
                                     VariableRegistry registry) {
             return new RolePlayer(
                     constraint.roleType().map(registry::register).orElse(null),

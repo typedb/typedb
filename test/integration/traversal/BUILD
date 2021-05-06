@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -15,18 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
+load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
 
 host_compatible_java_test(
     name = "test-traversal",
     srcs = ["TraversalTest.java"],
-    test_class = "grakn.core.traversal.TraversalTest",
+    test_class = "com.vaticle.typedb.core.traversal.TraversalTest",
     size = "large",
     native_libraries_deps = [
         "//rocks:rocks",
-        "//:grakn",
+        "//:typedb",
         "//traversal",
         "//concept:concept",
     ],
@@ -35,11 +35,11 @@ host_compatible_java_test(
         "//test/integration/util:util",
         "//common:common",
 
-        # External dependencies from Grakn Labs
-        "@graknlabs_graql//java/query:query",
-        "@graknlabs_graql//java:graql",
-        "@graknlabs_graql//java/common",
-        "@graknlabs_common//:common"
+        # External dependencies from Vaticle
+        "@vaticle_typeql//java/query:query",
+        "@vaticle_typeql//java:typeql",
+        "@vaticle_typeql//java/common",
+        "@vaticle_typedb_common//:common"
     ],
     resources = [
         "//common/test:logback-test"

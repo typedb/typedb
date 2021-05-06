@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,17 +16,17 @@
  *
  */
 
-package grakn.core.concurrent.producer;
+package com.vaticle.typedb.core.concurrent.producer;
 
-import grakn.common.collection.Either;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.iterator.Iterators;
-import grakn.core.common.parameters.Arguments;
+import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
+import com.vaticle.typedb.core.common.parameters.Arguments;
 
 import java.util.List;
 import java.util.concurrent.Executor;
 
-import static grakn.common.collection.Collections.list;
+import static com.vaticle.typedb.common.collection.Collections.list;
 
 public class Producers {
 

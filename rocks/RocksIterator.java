@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,16 +16,16 @@
  *
  */
 
-package grakn.core.rocks;
+package com.vaticle.typedb.core.rocks;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.AbstractFunctionalIterator;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.AbstractFunctionalIterator;
 
 import java.util.NoSuchElementException;
 import java.util.function.BiFunction;
 
-import static grakn.core.common.collection.Bytes.bytesHavePrefix;
-import static grakn.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
+import static com.vaticle.typedb.core.common.collection.Bytes.bytesHavePrefix;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
 public final class RocksIterator<T> extends AbstractFunctionalIterator<T> implements AutoCloseable {
 
@@ -49,7 +49,7 @@ public final class RocksIterator<T> extends AbstractFunctionalIterator<T> implem
 
     public final T peek() {
         if (!hasNext()) {
-            if (isClosed) throw GraknException.of(RESOURCE_CLOSED);
+            if (isClosed) throw TypeDBException.of(RESOURCE_CLOSED);
             else throw new NoSuchElementException();
         }
 
@@ -59,7 +59,7 @@ public final class RocksIterator<T> extends AbstractFunctionalIterator<T> implem
     @Override
     public synchronized final T next() {
         if (!hasNext()) {
-            if (isClosed) throw GraknException.of(RESOURCE_CLOSED);
+            if (isClosed) throw TypeDBException.of(RESOURCE_CLOSED);
             else throw new NoSuchElementException();
         }
         state = State.EMPTY;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,11 +16,11 @@
  *
  */
 
-package grakn.core.graph.vertex.impl;
+package com.vaticle.typedb.core.graph.vertex.impl;
 
-import grakn.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.graph.iid.VertexIID;
 
-import static grakn.common.util.Objects.className;
+import static com.vaticle.typedb.common.util.Objects.className;
 
 public abstract class VertexImpl<VERTEX_IID extends VertexIID> {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,9 +15,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner.resolution.framework;
+package com.vaticle.typedb.core.reasoner.resolution.framework;
 
-import grakn.core.common.exception.GraknException;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,10 +28,10 @@ import java.io.UnsupportedEncodingException;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_CALL_TO_FINISH_BEFORE_START;
-import static grakn.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_CALL_TO_WRITE_BEFORE_START;
-import static grakn.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_HAS_NOT_BEEN_INITIALISED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_CALL_TO_FINISH_BEFORE_START;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_CALL_TO_WRITE_BEFORE_START;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_HAS_NOT_BEEN_INITIALISED;
 
 public final class ResolutionTracer {
 
@@ -50,7 +50,7 @@ public final class ResolutionTracer {
 
     public static void initialise(Path logDir) {
         if (ResolutionTracer.logDir != null && !ResolutionTracer.logDir.equals(logDir)) {
-            throw GraknException.of(ILLEGAL_STATE);
+            throw TypeDBException.of(ILLEGAL_STATE);
         }
         if (INSTANCE == null) {
             INSTANCE = new ResolutionTracer(logDir);
@@ -58,7 +58,7 @@ public final class ResolutionTracer {
     }
 
     public static ResolutionTracer get() {
-        if (INSTANCE == null) throw GraknException.of(REASONER_TRACING_HAS_NOT_BEEN_INITIALISED);
+        if (INSTANCE == null) throw TypeDBException.of(REASONER_TRACING_HAS_NOT_BEEN_INITIALISED);
         return INSTANCE;
     }
 
@@ -131,12 +131,12 @@ public final class ResolutionTracer {
     }
 
     private void write(String toWrite) {
-        if (writer == null) throw GraknException.of(REASONER_TRACING_CALL_TO_WRITE_BEFORE_START);
+        if (writer == null) throw TypeDBException.of(REASONER_TRACING_CALL_TO_WRITE_BEFORE_START);
         writer.println(toWrite);
     }
 
     public synchronized void finish() {
-        if (path.get() == null) throw GraknException.of(REASONER_TRACING_CALL_TO_FINISH_BEFORE_START);
+        if (path.get() == null) throw TypeDBException.of(REASONER_TRACING_CALL_TO_FINISH_BEFORE_START);
         endFile();
         try {
             LOG.debug("Resolution traces written to {}", path.get().toAbsolutePath());

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,19 +15,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.logic.resolvable;
+package com.vaticle.typedb.core.logic.resolvable;
 
-import grakn.core.pattern.Disjunction;
-import grakn.core.pattern.Negation;
-import grakn.core.pattern.variable.ThingVariable;
-import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.Identifier.Variable.Retrievable;
+import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.pattern.Negation;
+import com.vaticle.typedb.core.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class Negated extends Resolvable<Disjunction> {
 

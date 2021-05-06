@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,22 +15,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner;
+package com.vaticle.typedb.core.reasoner;
 
-import grakn.core.common.parameters.Options;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concurrent.actor.Actor;
-import grakn.core.concurrent.executor.Executors;
-import grakn.core.concurrent.producer.Producer;
-import grakn.core.pattern.Conjunction;
-import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Compound.Root;
-import grakn.core.reasoner.resolution.answer.AnswerState.Top.Explain;
-import grakn.core.reasoner.resolution.answer.AnswerStateImpl;
-import grakn.core.reasoner.resolution.answer.Explanation;
-import grakn.core.reasoner.resolution.framework.Request;
-import grakn.core.reasoner.resolution.framework.ResolutionTracer;
-import grakn.core.reasoner.resolution.resolver.RootResolver;
+import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concurrent.actor.Actor;
+import com.vaticle.typedb.core.concurrent.executor.Executors;
+import com.vaticle.typedb.core.concurrent.producer.Producer;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Compound.Root;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Explain;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateImpl;
+import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
+import com.vaticle.typedb.core.reasoner.resolution.resolver.RootResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,34 +16,34 @@
  *
  */
 
-package grakn.core.reasoner.resolution;
+package com.vaticle.typedb.core.reasoner.resolution;
 
-import grakn.common.collection.ConcurrentSet;
-import grakn.core.common.exception.GraknException;
-import grakn.core.concept.ConceptManager;
-import grakn.core.concurrent.actor.Actor;
-import grakn.core.concurrent.actor.ActorExecutorGroup;
-import grakn.core.logic.LogicManager;
-import grakn.core.logic.Rule;
-import grakn.core.logic.resolvable.Concludable;
-import grakn.core.logic.resolvable.Negated;
-import grakn.core.logic.resolvable.Resolvable;
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.Disjunction;
-import grakn.core.pattern.equivalence.AlphaEquivalence;
-import grakn.core.reasoner.resolution.answer.AnswerState.Top.Explain;
-import grakn.core.reasoner.resolution.answer.AnswerState.Top.Match;
-import grakn.core.reasoner.resolution.framework.Resolver;
-import grakn.core.reasoner.resolution.resolver.ConcludableResolver;
-import grakn.core.reasoner.resolution.resolver.ConclusionResolver;
-import grakn.core.reasoner.resolution.resolver.ConditionResolver;
-import grakn.core.reasoner.resolution.resolver.ConjunctionResolver;
-import grakn.core.reasoner.resolution.resolver.DisjunctionResolver;
-import grakn.core.reasoner.resolution.resolver.NegationResolver;
-import grakn.core.reasoner.resolution.resolver.RetrievableResolver;
-import grakn.core.reasoner.resolution.resolver.RootResolver;
-import grakn.core.traversal.TraversalEngine;
-import grakn.core.traversal.common.Identifier.Variable;
+import com.vaticle.typedb.common.collection.ConcurrentSet;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.concurrent.actor.Actor;
+import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
+import com.vaticle.typedb.core.logic.LogicManager;
+import com.vaticle.typedb.core.logic.Rule;
+import com.vaticle.typedb.core.logic.resolvable.Concludable;
+import com.vaticle.typedb.core.logic.resolvable.Negated;
+import com.vaticle.typedb.core.logic.resolvable.Resolvable;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Explain;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
+import com.vaticle.typedb.core.reasoner.resolution.resolver.ConcludableResolver;
+import com.vaticle.typedb.core.reasoner.resolution.resolver.ConclusionResolver;
+import com.vaticle.typedb.core.reasoner.resolution.resolver.ConditionResolver;
+import com.vaticle.typedb.core.reasoner.resolution.resolver.ConjunctionResolver;
+import com.vaticle.typedb.core.reasoner.resolution.resolver.DisjunctionResolver;
+import com.vaticle.typedb.core.reasoner.resolution.resolver.NegationResolver;
+import com.vaticle.typedb.core.reasoner.resolution.resolver.RetrievableResolver;
+import com.vaticle.typedb.core.reasoner.resolution.resolver.RootResolver;
+import com.vaticle.typedb.core.traversal.TraversalEngine;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,9 +57,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Reasoner.RESOLUTION_TERMINATED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.RESOLUTION_TERMINATED;
 import static java.util.stream.Collectors.toMap;
 
 public class ResolverRegistry {
@@ -109,7 +109,7 @@ public class ResolverRegistry {
                 traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing
         ), executorService);
         resolvers.add(resolver);
-        if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
     }
 
@@ -121,7 +121,7 @@ public class ResolverRegistry {
                 this, traversalEngine, conceptMgr, resolutionTracing
         ), executorService);
         resolvers.add(resolver);
-        if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
     }
 
@@ -131,7 +131,7 @@ public class ResolverRegistry {
                 driver, negated, this, traversalEngine, conceptMgr, resolutionTracing
         ), executorService);
         resolvers.add(negatedResolver);
-        if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         Set<Variable.Retrievable> filter = filter(upstream, negated);
         return ResolverView.negation(negatedResolver, filter);
     }
@@ -150,7 +150,7 @@ public class ResolverRegistry {
                                                 conceptMgr, logicMgr, planner, resolutionTracing), executorService
         ));
         resolvers.add(resolver);
-        if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
 
     }
@@ -162,7 +162,7 @@ public class ResolverRegistry {
                                                  traversalEngine, conceptMgr, resolutionTracing), executorService
         ));
         resolvers.add(resolver);
-        if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
 
     }
@@ -172,16 +172,16 @@ public class ResolverRegistry {
             return registerRetrievable(resolvable.asRetrievable());
         } else if (resolvable.isConcludable()) {
             return registerConcludable(resolvable.asConcludable());
-        } else throw GraknException.of(ILLEGAL_STATE);
+        } else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    private ResolverView.FilteredRetrievable registerRetrievable(grakn.core.logic.resolvable.Retrievable retrievable) {
+    private ResolverView.FilteredRetrievable registerRetrievable(com.vaticle.typedb.core.logic.resolvable.Retrievable retrievable) {
         LOG.debug("Register RetrievableResolver: '{}'", retrievable.pattern());
         Actor.Driver<RetrievableResolver> resolver = Actor.driver(driver -> new RetrievableResolver(
                 driver, retrievable, this, traversalEngine, conceptMgr, resolutionTracing
         ), executorService);
         resolvers.add(resolver);
-        if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return ResolverView.retrievable(resolver, retrievable.retrieves());
     }
 
@@ -201,7 +201,7 @@ public class ResolverRegistry {
         ), executorService);
         concludableResolvers.put(concludable, resolver);
         resolvers.add(resolver);
-        if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return ResolverView.concludable(resolver, identity(concludable));
     }
 
@@ -211,7 +211,7 @@ public class ResolverRegistry {
                 driver, conjunction, this, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing
         ), executorService);
         resolvers.add(resolver);
-        if (terminated.get()) throw GraknException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
     }
 
@@ -259,15 +259,15 @@ public class ResolverRegistry {
         public boolean isFilteredRetrievable() { return false; }
 
         public MappedConcludable asMappedConcludable() {
-            throw GraknException.of(ILLEGAL_CAST, getClass(), MappedConcludable.class);
+            throw TypeDBException.of(ILLEGAL_CAST, getClass(), MappedConcludable.class);
         }
 
         public FilteredNegation asFilteredNegation() {
-            throw GraknException.of(ILLEGAL_CAST, getClass(), FilteredNegation.class);
+            throw TypeDBException.of(ILLEGAL_CAST, getClass(), FilteredNegation.class);
         }
 
         public FilteredRetrievable asFilteredRetrievable() {
-            throw GraknException.of(ILLEGAL_CAST, getClass(), FilteredRetrievable.class);
+            throw TypeDBException.of(ILLEGAL_CAST, getClass(), FilteredRetrievable.class);
         }
 
         public abstract Actor.Driver<? extends Resolver<?>> resolver();

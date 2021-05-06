@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,9 +15,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.concurrent.actor;
+package com.vaticle.typedb.core.concurrent.actor;
 
-import grakn.core.common.exception.GraknException;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,8 +33,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
-import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @ThreadSafe
@@ -70,7 +70,7 @@ public class ActorExecutor {
                     task = submittedTasks.poll(scheduledTasks.timeToNext(), MILLISECONDS);
                     if (task != null) task.run();
                 } catch (InterruptedException e) {
-                    throw GraknException.of(UNEXPECTED_INTERRUPTION);
+                    throw TypeDBException.of(UNEXPECTED_INTERRUPTION);
                 }
             }
         }
@@ -121,7 +121,7 @@ public class ActorExecutor {
         }
 
         private void run() {
-            if (isCancelled) throw GraknException.of(ILLEGAL_OPERATION);
+            if (isCancelled) throw TypeDBException.of(ILLEGAL_OPERATION);
             isRan = true;
             try {
                 runnable.run();
@@ -135,7 +135,7 @@ public class ActorExecutor {
         }
 
         private void cancel() {
-            if (isRan) throw GraknException.of(ILLEGAL_OPERATION);
+            if (isRan) throw TypeDBException.of(ILLEGAL_OPERATION);
             isCancelled = true;
         }
 

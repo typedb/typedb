@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,33 +16,33 @@
  *
  */
 
-package grakn.core.concept.type.impl;
+package com.vaticle.typedb.core.concept.type.impl;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.concept.thing.Entity;
-import grakn.core.concept.thing.impl.EntityImpl;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RoleType;
-import grakn.core.graph.GraphManager;
-import grakn.core.graph.vertex.ThingVertex;
-import grakn.core.graph.vertex.TypeVertex;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.concept.thing.Entity;
+import com.vaticle.typedb.core.concept.thing.impl.EntityImpl;
+import com.vaticle.typedb.core.concept.type.AttributeType;
+import com.vaticle.typedb.core.concept.type.EntityType;
+import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.vertex.ThingVertex;
+import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
 import java.util.List;
 
-import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
-import static grakn.core.graph.common.Encoding.Vertex.Type.ENTITY_TYPE;
-import static grakn.core.graph.common.Encoding.Vertex.Type.Root.ENTITY;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ENTITY_TYPE;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.Root.ENTITY;
 
 public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     private EntityTypeImpl(GraphManager graphMgr, TypeVertex vertex) {
         super(graphMgr, vertex);
         if (vertex.encoding() != ENTITY_TYPE) {
-            throw exception(GraknException.of(TYPE_ROOT_MISMATCH, vertex.label(),
-                                              ENTITY_TYPE.root().label(), vertex.encoding().root().label()));
+            throw exception(TypeDBException.of(TYPE_ROOT_MISMATCH, vertex.label(),
+                                               ENTITY_TYPE.root().label(), vertex.encoding().root().label()));
         }
     }
 
@@ -83,7 +83,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     }
 
     @Override
-    public List<GraknException> validate() {
+    public List<TypeDBException> validate() {
         return super.validate();
     }
 
@@ -117,42 +117,42 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
         @Override
         public void setLabel(String label) {
-            throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
         public void unsetAbstract() {
-            throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
         public void setSupertype(EntityType superType) {
-            throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
         public void setOwns(AttributeType attributeType, boolean isKey) {
-            throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
         public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-            throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
         public void setPlays(RoleType roleType) {
-            throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
         public void setPlays(RoleType roleType, RoleType overriddenType) {
-            throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
         public void unsetPlays(RoleType roleType) {
-            throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
     }
 }

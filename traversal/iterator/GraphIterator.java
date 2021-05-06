@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,20 +16,20 @@
  *
  */
 
-package grakn.core.traversal.iterator;
+package com.vaticle.typedb.core.traversal.iterator;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.AbstractFunctionalIterator;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.graph.GraphManager;
-import grakn.core.graph.vertex.ThingVertex;
-import grakn.core.graph.vertex.Vertex;
-import grakn.core.traversal.Traversal;
-import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.Identifier.Variable.Retrievable;
-import grakn.core.traversal.common.VertexMap;
-import grakn.core.traversal.procedure.GraphProcedure;
-import grakn.core.traversal.procedure.ProcedureEdge;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.AbstractFunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.vertex.ThingVertex;
+import com.vaticle.typedb.core.graph.vertex.Vertex;
+import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
+import com.vaticle.typedb.core.traversal.common.VertexMap;
+import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
+import com.vaticle.typedb.core.traversal.procedure.ProcedureEdge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,8 +41,8 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeMap;
 
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 import static java.util.stream.Collectors.toMap;
 
 public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
@@ -99,13 +99,13 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 if (computeNext(edgeCount)) state = State.FETCHED;
                 else state = State.COMPLETED;
             } else {
-                throw GraknException.of(ILLEGAL_STATE);
+                throw TypeDBException.of(ILLEGAL_STATE);
             }
             return state == State.FETCHED;
         } catch (Throwable e) {
             // note: catching runtime exception until we can gracefully interrupt running queries on tx close
-            if (e instanceof GraknException && ((GraknException) e).code().isPresent() &&
-                    ((GraknException) e).code().get().equals(RESOURCE_CLOSED.code())) {
+            if (e instanceof TypeDBException && ((TypeDBException) e).code().isPresent() &&
+                    ((TypeDBException) e).code().get().equals(RESOURCE_CLOSED.code())) {
                 LOG.debug("Transaction was closed during graph iteration");
             } else {
                 LOG.error("Parameters: " + params.toString());

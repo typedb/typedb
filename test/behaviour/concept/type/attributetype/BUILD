@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -16,8 +16,8 @@
 #
 
 package(default_visibility = ["//test/behaviour:__subpackages__"])
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_library")
+load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_library")
 
 host_compatible_java_library(
     name = "steps",
@@ -43,7 +43,7 @@ java_test(
     srcs = [
         "AttributeTypeTest.java"
     ],
-    test_class = "grakn.core.test.behaviour.concept.type.attributetype.AttributeTypeTest",
+    test_class = "com.vaticle.typedb.core.test.behaviour.concept.type.attributetype.AttributeTypeTest",
     deps = [
         # External Maven Dependencies
         "@maven//:io_cucumber_cucumber_junit",
@@ -58,7 +58,7 @@ java_test(
         "//test/behaviour/connection/transaction:steps",
     ],
     data = [
-        "@graknlabs_behaviour//concept/type:attributetype.feature",
+        "@vaticle_typedb_behaviour//concept/type:attributetype.feature",
     ],
     size = "small",
     resources = [

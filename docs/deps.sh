@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -22,7 +22,7 @@ popd > /dev/null
 OUT_DIR=$(cd "$(dirname "${path}")" && pwd -P)
 pushd "$OUT_DIR" > /dev/null
 
-bazel query "filter('^(?!(//dependencies|@graknlabs|//test|//common).*$).*', kind(java_library, deps($1)))" --output graph > "$2".dot
+bazel query "filter('^(?!(//dependencies|@vaticle|//test|//common).*$).*', kind(java_library, deps($1)))" --output graph > "$2".dot
 dot -Tpng < "$2".dot > "$2".png
 open "$2".png
 

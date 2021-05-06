@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,16 +16,16 @@
  *
  */
 
-package grakn.core.graph.common;
+package com.vaticle.typedb.core.graph.common;
 
-import grakn.core.common.exception.ErrorMessage;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.exception.ErrorMessage;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 
 import java.util.function.BiFunction;
 
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
 public interface Storage {
 
@@ -49,16 +49,16 @@ public interface Storage {
 
     <G> FunctionalIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor);
 
-    GraknException exception(ErrorMessage error);
+    TypeDBException exception(ErrorMessage error);
 
-    GraknException exception(Exception exception);
+    TypeDBException exception(Exception exception);
 
     void close();
 
     default boolean isSchema() { return false; }
 
     default Schema asSchema() {
-        throw exception(GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Schema.class)));
+        throw exception(TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Schema.class)));
     }
 
     interface Schema extends Storage {

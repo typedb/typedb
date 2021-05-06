@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,26 +16,26 @@
  *
  */
 
-package grakn.core.graph;
+package com.vaticle.typedb.core.graph;
 
-import grakn.common.collection.Pair;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.parameters.Label;
-import grakn.core.graph.common.Encoding;
-import grakn.core.graph.common.KeyGenerator;
-import grakn.core.graph.common.Storage;
-import grakn.core.graph.iid.IndexIID;
-import grakn.core.graph.iid.IndexIID.Type.Rule;
-import grakn.core.graph.iid.StructureIID;
-import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.structure.RuleStructure;
-import grakn.core.graph.structure.impl.RuleStructureImpl;
-import grakn.core.graph.vertex.TypeVertex;
-import grakn.core.graph.vertex.impl.TypeVertexImpl;
-import graql.lang.pattern.Conjunction;
-import graql.lang.pattern.Pattern;
-import graql.lang.pattern.variable.ThingVariable;
+import com.vaticle.typedb.common.collection.Pair;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.common.KeyGenerator;
+import com.vaticle.typedb.core.graph.common.Storage;
+import com.vaticle.typedb.core.graph.iid.IndexIID;
+import com.vaticle.typedb.core.graph.iid.IndexIID.Type.Rule;
+import com.vaticle.typedb.core.graph.iid.StructureIID;
+import com.vaticle.typedb.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.graph.structure.RuleStructure;
+import com.vaticle.typedb.core.graph.structure.impl.RuleStructureImpl;
+import com.vaticle.typedb.core.graph.vertex.TypeVertex;
+import com.vaticle.typedb.core.graph.vertex.impl.TypeVertexImpl;
+import com.vaticle.typeql.lang.pattern.Conjunction;
+import com.vaticle.typeql.lang.pattern.Pattern;
+import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
@@ -48,33 +48,33 @@ import java.util.concurrent.locks.StampedLock;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import static grakn.common.collection.Collections.list;
-import static grakn.common.collection.Collections.pair;
-import static grakn.common.collection.Collections.set;
-import static grakn.core.common.collection.Bytes.stripPrefix;
-import static grakn.core.common.exception.ErrorMessage.SchemaGraph.INVALID_SCHEMA_WRITE;
-import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_SCHEMA_READ_VIOLATION;
-import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.iterator.Iterators.link;
-import static grakn.core.common.iterator.Iterators.loop;
-import static grakn.core.common.iterator.Iterators.tree;
-import static grakn.core.graph.common.Encoding.Edge.Type.OWNS;
-import static grakn.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
-import static grakn.core.graph.common.Encoding.Edge.Type.RELATES;
-import static grakn.core.graph.common.Encoding.Edge.Type.SUB;
-import static grakn.core.graph.common.Encoding.ValueType.OBJECT;
-import static grakn.core.graph.common.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
-import static grakn.core.graph.common.Encoding.Vertex.Type.ENTITY_TYPE;
-import static grakn.core.graph.common.Encoding.Vertex.Type.RELATION_TYPE;
-import static grakn.core.graph.common.Encoding.Vertex.Type.ROLE_TYPE;
-import static grakn.core.graph.common.Encoding.Vertex.Type.Root.ATTRIBUTE;
-import static grakn.core.graph.common.Encoding.Vertex.Type.Root.ENTITY;
-import static grakn.core.graph.common.Encoding.Vertex.Type.Root.RELATION;
-import static grakn.core.graph.common.Encoding.Vertex.Type.Root.ROLE;
-import static grakn.core.graph.common.Encoding.Vertex.Type.Root.THING;
-import static grakn.core.graph.common.Encoding.Vertex.Type.THING_TYPE;
-import static grakn.core.graph.common.Encoding.Vertex.Type.scopedLabel;
+import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.common.collection.Collections.pair;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.collection.Bytes.stripPrefix;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.SchemaGraph.INVALID_SCHEMA_WRITE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_SCHEMA_READ_VIOLATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.link;
+import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
+import static com.vaticle.typedb.core.common.iterator.Iterators.tree;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.RELATES;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.OBJECT;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ENTITY_TYPE;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.RELATION_TYPE;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ROLE_TYPE;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.Root.ATTRIBUTE;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.Root.ENTITY;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.Root.RELATION;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.Root.ROLE;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.Root.THING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.THING_TYPE;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.scopedLabel;
 import static java.lang.Math.toIntExact;
 
 public class SchemaGraph implements Graph {
@@ -141,11 +141,11 @@ public class SchemaGraph implements Graph {
         return isReadOnly;
     }
 
-    public boolean isInitialised() throws GraknException {
+    public boolean isInitialised() throws TypeDBException {
         return rootThingType() != null;
     }
 
-    public void initialise() throws GraknException {
+    public void initialise() throws TypeDBException {
         TypeVertex rootThingType = create(THING_TYPE, THING.label()).isAbstract(true);
         TypeVertex rootEntityType = create(ENTITY_TYPE, ENTITY.label()).isAbstract(true);
         TypeVertex rootAttributeType = create(ATTRIBUTE_TYPE, ATTRIBUTE.label()).isAbstract(true).valueType(OBJECT);
@@ -222,7 +222,7 @@ public class SchemaGraph implements Graph {
         assert scopedLabel.scope().isPresent();
         Supplier<Set<Label>> fn = () -> {
             TypeVertex relationType = getType(scopedLabel.scope().get());
-            if (relationType == null) throw GraknException.of(TYPE_NOT_FOUND, scopedLabel.scope().get());
+            if (relationType == null) throw TypeDBException.of(TYPE_NOT_FOUND, scopedLabel.scope().get());
             else return link(
                     loop(relationType, Objects::nonNull, r -> r.outs().edge(SUB).to().firstOrNull())
                             .flatMap(rel -> rel.outs().edge(RELATES).to())
@@ -295,7 +295,7 @@ public class SchemaGraph implements Graph {
 
     public TypeVertex create(Encoding.Vertex.Type encoding, String label, @Nullable String scope) {
         assert storage.isOpen();
-        if (isReadOnly) throw GraknException.of(TRANSACTION_SCHEMA_READ_VIOLATION);
+        if (isReadOnly) throw TypeDBException.of(TRANSACTION_SCHEMA_READ_VIOLATION);
         String scopedLabel = scopedLabel(label, scope);
         try { // we intentionally use READ on multiLabelLock, as put() only concerns one label
             multiLabelLock.readLock().lock();
@@ -315,13 +315,13 @@ public class SchemaGraph implements Graph {
 
     public TypeVertex update(TypeVertex vertex, String oldLabel, @Nullable String oldScope, String newLabel, @Nullable String newScope) {
         assert storage.isOpen();
-        if (isReadOnly) throw GraknException.of(TRANSACTION_SCHEMA_READ_VIOLATION);
+        if (isReadOnly) throw TypeDBException.of(TRANSACTION_SCHEMA_READ_VIOLATION);
         String oldScopedLabel = scopedLabel(oldLabel, oldScope);
         String newScopedLabel = scopedLabel(newLabel, newScope);
         try {
             TypeVertex type = getType(newLabel, newScope);
             multiLabelLock.writeLock().lock();
-            if (type != null) throw GraknException.of(INVALID_SCHEMA_WRITE, newScopedLabel);
+            if (type != null) throw TypeDBException.of(INVALID_SCHEMA_WRITE, newScopedLabel);
             typesByLabel.remove(oldScopedLabel);
             typesByLabel.put(newScopedLabel, vertex);
             return vertex;
@@ -332,7 +332,7 @@ public class SchemaGraph implements Graph {
 
     public void delete(TypeVertex vertex) {
         assert storage.isOpen();
-        if (isReadOnly) throw GraknException.of(TRANSACTION_SCHEMA_READ_VIOLATION);
+        if (isReadOnly) throw TypeDBException.of(TRANSACTION_SCHEMA_READ_VIOLATION);
         try { // we intentionally use READ on multiLabelLock, as delete() only concerns one label
             multiLabelLock.readLock().lock();
             singleLabelLocks.computeIfAbsent(vertex.scopedLabel(), x -> newReadWriteLock()).writeLock().lock();
@@ -473,7 +473,7 @@ public class SchemaGraph implements Graph {
             try {
                 RuleStructure rule = get(newLabel);
                 multiLabelLock.writeLock().lock();
-                if (rule != null) throw GraknException.of(INVALID_SCHEMA_WRITE, newLabel);
+                if (rule != null) throw TypeDBException.of(INVALID_SCHEMA_WRITE, newLabel);
                 rulesByLabel.remove(oldLabel);
                 rulesByLabel.put(newLabel, vertex);
                 return vertex;

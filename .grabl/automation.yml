@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -19,50 +19,50 @@ config:
   version-candidate: VERSION
   dependencies:
     dependencies: [build]
-    common: [build, release]
-    graql: [build, release]
-    protocol: [build, release]
-    grabl-tracing: [build, release]
-    behaviour: [build]
+    typeql: [build, release]
+    typedb-common: [build, release]
+    typedb-protocol: [build, release]
+    typedb-behaviour: [build]
+    factory-tracing: [build, release]
 
 build:
   quality:
     filter:
-      owner: graknlabs
+      owner: vaticle
       branch: master
     build-analysis:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       command: |
         SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
-          bazel run @graknlabs_dependencies//tool/sonarcloud:code-analysis -- \
-          --project-key=graknlabs_grakn_core \
+          bazel run @vaticle_dependencies//tool/sonarcloud:code-analysis -- \
+          --project-key=vaticle_typedb \
           --branch=$GRABL_BRANCH --commit-id=$GRABL_COMMIT
     dependency-analysis:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       command: |
-        bazel run @graknlabs_dependencies//grabl/analysis:dependency-analysis
+        bazel run @vaticle_dependencies//factory/analysis:dependency-analysis
   correctness:
     build:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       command: |
         bazel build //...
-        bazel run @graknlabs_dependencies//tool/checkstyle:test-coverage
+        bazel run @vaticle_dependencies//tool/checkstyle:test-coverage
         bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=streamed
     build-dependency:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       command: |
         dependencies/maven/update.sh
         git diff --exit-code dependencies/maven/artifacts.snapshot
-        bazel run @graknlabs_dependencies//tool/unuseddeps:unused-deps -- list
+        bazel run @vaticle_dependencies//tool/unuseddeps:unused-deps -- list
     test-unit:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       command: |
         bazel test //common/... --test_output=streamed
         bazel test //pattern/... --test_output=streamed
         bazel test //logic/... --test_output=streamed
         bazel test //reasoner/... --test_output=streamed
     test-integration:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       command: |
         bazel test //test/integration:test-basic --test_output=streamed
         bazel test //test/integration:test-query --test_output=streamed
@@ -72,32 +72,32 @@ build:
         bazel test //test/integration/statistics/... --test_output=streamed
         bazel test //test/integration/traversal/... --test_output=streamed
     test-behaviour-connection:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       command: |
         bazel test //test/behaviour/connection/... --test_output=streamed
     test-behaviour-concept:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       command: |
         bazel test //test/behaviour/concept/... --test_output=streamed
     test-behaviour-match:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       command: |
-        bazel test //test/behaviour/graql/language/match/... --test_output=streamed
-        bazel test //test/behaviour/graql/language/get/... --test_output=streamed
+        bazel test //test/behaviour/typeql/language/match/... --test_output=streamed
+        bazel test //test/behaviour/typeql/language/get/... --test_output=streamed
     test-behaviour-writable:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       command: |
-        bazel test //test/behaviour/graql/language/insert/... --test_output=streamed
-        bazel test //test/behaviour/graql/language/delete/... --test_output=streamed
-        bazel test //test/behaviour/graql/language/update/... --test_output=streamed
+        bazel test //test/behaviour/typeql/language/insert/... --test_output=streamed
+        bazel test //test/behaviour/typeql/language/delete/... --test_output=streamed
+        bazel test //test/behaviour/typeql/language/update/... --test_output=streamed
     test-behaviour-definable:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       command: |
-        bazel test //test/behaviour/graql/language/define/... --test_output=streamed
-        bazel test //test/behaviour/graql/language/undefine/... --test_output=streamed
-        bazel test //test/behaviour/graql/language/rule_validation/... --test_output=streamed
+        bazel test //test/behaviour/typeql/language/define/... --test_output=streamed
+        bazel test //test/behaviour/typeql/language/undefine/... --test_output=streamed
+        bazel test //test/behaviour/typeql/language/rule_validation/... --test_output=streamed
     test-behaviour-reasoner:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       command: |
         bazel test //test/behaviour/resolution/tests/attribute_attachment:test --test_output=streamed
         bazel test //test/behaviour/resolution/tests/compound_queries:test --test_output=streamed
@@ -113,40 +113,40 @@ build:
         # bazel test //test/behaviour/resolution/tests/variable_roles:test --test_output=streamed
         # bazel test //test/behaviour/resolution/tests/concept_inequality:test --test_output=streamed
     test-assembly-linux-targz:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       filter:
-        owner: graknlabs
+        owner: vaticle
         branch: master
       dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour-connection, test-behaviour-concept, test-behaviour-match, test-behaviour-writable, test-behaviour-definable, test-behaviour-reasoner]
       command: |
-        export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
-        export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
+        export DEPLOY_APT_USERNAME=$REPO_VATICLE_USERNAME
+        export DEPLOY_APT_PASSWORD=$REPO_VATICLE_PASSWORD
         bazel test //test/assembly:assembly --test_output=streamed
     test-assembly-docker:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       filter:
-        owner: graknlabs
+        owner: vaticle
         branch: master
       dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour-connection, test-behaviour-concept, test-behaviour-match, test-behaviour-writable, test-behaviour-definable, test-behaviour-reasoner]
       command: |
         bazel test //test/assembly:docker --test_output=streamed
     deploy-artifact-snapshot:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       command: |
-        export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
-        export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
+        export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
+        export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
         bazel run --define version=$(git rev-parse HEAD) //server:deploy-linux-targz -- snapshot
         bazel run --define version=$(git rev-parse HEAD) //server:deploy-mac-zip -- snapshot
         bazel run --define version=$(git rev-parse HEAD) //server:deploy-windows-zip -- snapshot
     deploy-apt-snapshot:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       filter:
-        owner: graknlabs
+        owner: vaticle
         branch: master
       dependencies: [test-assembly-linux-targz]
       command: |
-        export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
-        export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
+        export DEPLOY_APT_USERNAME=$REPO_VATICLE_USERNAME
+        export DEPLOY_APT_PASSWORD=$REPO_VATICLE_PASSWORD
         pyenv install 3.7.9
         pyenv global 3.7.9
         sudo unlink /usr/bin/python3
@@ -155,40 +155,41 @@ build:
         bazel run --define version=$(git rev-parse HEAD) //server:deploy-apt -- snapshot
         bazel run --define version=$(git rev-parse HEAD) //:deploy-apt -- snapshot
     test-deployment-apt:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       filter:
-        owner: graknlabs
+        owner: vaticle
         branch: master
       dependencies: [deploy-apt-snapshot]
       command: |
-        bazel test //test/deployment:apt --action_env=GRABL_COMMIT --test_output=streamed
+        export TEST_DEPLOYMENT_APT_COMMIT=$GRABL_COMMIT
+        bazel test //test/deployment:apt --action_env=TEST_DEPLOYMENT_APT_COMMIT --test_output=streamed
 release:
   filter:
-    owner: graknlabs
+    owner: vaticle
     branch: master
   validation:
     validate-dependencies:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       command: bazel test //:release-validate-deps --test_output=streamed
   deployment:
     deploy-github:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       filter:
-        owner: graknlabs
+        owner: vaticle
         branch: master
       command: |
         pyenv install -s 3.6.10
         pyenv global 3.6.10 system
         pip install certifi
         export RELEASE_NOTES_TOKEN=$REPO_GITHUB_TOKEN
-        bazel run @graknlabs_dependencies//tool/release:create-notes -- grakn $(cat VERSION) ./RELEASE_TEMPLATE.md
+        bazel run @vaticle_dependencies//tool/release:create-notes -- typedb $(cat VERSION) ./RELEASE_TEMPLATE.md
         export DEPLOY_GITHUB_TOKEN=$REPO_GITHUB_TOKEN
         bazel run --define version=$(cat VERSION) //:deploy-github -- $GRABL_COMMIT
     deploy-brew:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       dependencies: [deploy-github]
       filter:
-        owner: graknlabs
+        owner: vaticle
         branch: master
       command: |
         pyenv install -s 3.6.10
@@ -196,9 +197,9 @@ release:
         export DEPLOY_BREW_TOKEN=$REPO_GITHUB_TOKEN
         bazel run --define version=$(cat VERSION) //:deploy-brew -- release
     deploy-apt-release:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       filter:
-        owner: graknlabs
+        owner: vaticle
         branch: master
       dependencies: [deploy-github]
       command: |
@@ -207,28 +208,28 @@ release:
         sudo unlink /usr/bin/python3
         sudo ln -s $(which python3) /usr/bin/python3
         sudo ln -s /usr/share/pyshared/lsb_release.py /opt/pyenv/versions/3.7.9/lib/python3.7/site-packages/lsb_release.py
-        export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
-        export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
+        export DEPLOY_APT_USERNAME=$REPO_VATICLE_USERNAME
+        export DEPLOY_APT_PASSWORD=$REPO_VATICLE_PASSWORD
         bazel run --define version=$(cat VERSION) //server:deploy-apt -- release
         bazel run --define version=$(cat VERSION) //:deploy-apt -- release
     deploy-docker:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       filter:
-        owner: graknlabs
+        owner: vaticle
         branch: master
       dependencies: [deploy-github]
       command: |
         docker login -u $REPO_DOCKER_USERNAME -p $REPO_DOCKER_PASSWORD
         bazel run //:deploy-docker
     deploy-artifact-release:
-      image: graknlabs-ubuntu-20.04
+      image: vaticle-ubuntu-20.04
       filter:
-        owner: graknlabs
+        owner: vaticle
         branch: master
       dependencies: [deploy-github]
       command: |
-        export DEPLOY_ARTIFACT_USERNAME=$REPO_GRAKN_USERNAME
-        export DEPLOY_ARTIFACT_PASSWORD=$REPO_GRAKN_PASSWORD
+        export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
+        export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
         bazel run --define version=$(cat VERSION) //server:deploy-linux-targz -- release
         bazel run --define version=$(cat VERSION) //server:deploy-mac-zip -- release
         bazel run --define version=$(cat VERSION) //server:deploy-windows-zip -- release

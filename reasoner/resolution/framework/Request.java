@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,10 +16,10 @@
  *
  */
 
-package grakn.core.reasoner.resolution.framework;
+package com.vaticle.typedb.core.reasoner.resolution.framework;
 
-import grakn.core.concurrent.actor.Actor;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
+import com.vaticle.typedb.core.concurrent.actor.Actor;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 
 import javax.annotation.Nullable;
 import java.util.Objects;

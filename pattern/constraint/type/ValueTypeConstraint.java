@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,34 +16,34 @@
  *
  */
 
-package grakn.core.pattern.constraint.type;
+package com.vaticle.typedb.core.pattern.constraint.type;
 
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.equivalence.AlphaEquivalence;
-import grakn.core.pattern.equivalence.AlphaEquivalent;
-import grakn.core.pattern.variable.TypeVariable;
-import grakn.core.traversal.Traversal;
-import graql.lang.common.GraqlArg;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
+import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalent;
+import com.vaticle.typedb.core.pattern.variable.TypeVariable;
+import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typeql.lang.common.TypeQLArg;
 
 import java.util.Objects;
 
-import static grakn.common.collection.Collections.set;
-import static graql.lang.common.GraqlToken.Char.SPACE;
-import static graql.lang.common.GraqlToken.Constraint.VALUE_TYPE;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SPACE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.VALUE_TYPE;
 
 public class ValueTypeConstraint extends TypeConstraint implements AlphaEquivalent<ValueTypeConstraint> {
 
-    private final GraqlArg.ValueType valueType;
+    private final TypeQLArg.ValueType valueType;
     private final int hash;
 
-    public ValueTypeConstraint(TypeVariable owner, GraqlArg.ValueType valueType) {
+    public ValueTypeConstraint(TypeVariable owner, TypeQLArg.ValueType valueType) {
         super(owner, set());
         this.valueType = valueType;
         this.hash = Objects.hash(ValueTypeConstraint.class, this.owner, this.valueType);
     }
 
     static ValueTypeConstraint of(TypeVariable owner,
-                                  graql.lang.pattern.constraint.TypeConstraint.ValueType constraint) {
+                                  com.vaticle.typeql.lang.pattern.constraint.TypeConstraint.ValueType constraint) {
         return new ValueTypeConstraint(owner, constraint.valueType());
     }
 
@@ -51,7 +51,7 @@ public class ValueTypeConstraint extends TypeConstraint implements AlphaEquivale
         return new ValueTypeConstraint(owner, clone.valueType());
     }
 
-    public GraqlArg.ValueType valueType() {
+    public TypeQLArg.ValueType valueType() {
         return valueType;
     }
 

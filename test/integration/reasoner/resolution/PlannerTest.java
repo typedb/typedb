@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,22 +15,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner.resolution;
+package com.vaticle.typedb.core.reasoner.resolution;
 
-import grakn.core.common.parameters.Arguments;
-import grakn.core.common.parameters.Options.Database;
-import grakn.core.concept.ConceptManager;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.logic.LogicManager;
-import grakn.core.logic.resolvable.Concludable;
-import grakn.core.logic.resolvable.Resolvable;
-import grakn.core.logic.resolvable.Retrievable;
-import grakn.core.rocks.RocksGrakn;
-import grakn.core.rocks.RocksSession;
-import grakn.core.rocks.RocksTransaction;
-import grakn.core.test.integration.util.Util;
-import graql.lang.Graql;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Options.Database;
+import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.concept.type.AttributeType;
+import com.vaticle.typedb.core.concept.type.EntityType;
+import com.vaticle.typedb.core.logic.LogicManager;
+import com.vaticle.typedb.core.logic.resolvable.Concludable;
+import com.vaticle.typedb.core.logic.resolvable.Resolvable;
+import com.vaticle.typedb.core.logic.resolvable.Retrievable;
+import com.vaticle.typedb.core.rocks.RocksSession;
+import com.vaticle.typedb.core.rocks.RocksTransaction;
+import com.vaticle.typedb.core.rocks.RocksTypeDB;
+import com.vaticle.typedb.core.test.integration.util.Util;
+import com.vaticle.typeql.lang.TypeQL;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,9 +41,9 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.list;
-import static grakn.common.collection.Collections.set;
-import static grakn.core.reasoner.resolution.Util.resolvedConjunction;
+import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.reasoner.resolution.Util.resolvedConjunction;
 import static junit.framework.TestCase.assertEquals;
 
 public class PlannerTest {
@@ -52,7 +52,7 @@ public class PlannerTest {
     private static final Path logDir = dataDir.resolve("logs");
     private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
     private static final String database = "resolver-manager-test";
-    private static RocksGrakn grakn;
+    private static RocksTypeDB typedb;
     private static RocksSession session;
     private static RocksTransaction rocksTransaction;
     private static ConceptManager conceptMgr;
@@ -61,19 +61,19 @@ public class PlannerTest {
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        grakn = RocksGrakn.open(options);
-        grakn.databases().create(database);
+        typedb = RocksTypeDB.open(options);
+        typedb.databases().create(database);
         initialise(Arguments.Session.Type.SCHEMA, Arguments.Transaction.Type.WRITE);
-        rocksTransaction.query().define(Graql.parseQuery("define person sub entity, plays friendship:friend, owns name; " +
-                                                                 "friendship sub relation, relates friend;" +
-                                                                 "name sub attribute, value string;"));
+        rocksTransaction.query().define(TypeQL.parseQuery("define person sub entity, plays friendship:friend, owns name; " +
+                                                                  "friendship sub relation, relates friend;" +
+                                                                  "name sub attribute, value string;"));
         rocksTransaction.commit();
         session.close();
         initialise(Arguments.Session.Type.SCHEMA, Arguments.Transaction.Type.WRITE);
     }
 
     private void initialise(Arguments.Session.Type schema, Arguments.Transaction.Type write) {
-        session = grakn.session(database, schema);
+        session = typedb.session(database, schema);
         rocksTransaction = session.transaction(write);
         conceptMgr = rocksTransaction.concepts();
         logicMgr = rocksTransaction.logic();
@@ -83,7 +83,7 @@ public class PlannerTest {
     public void tearDown() {
         rocksTransaction.close();
         session.close();
-        grakn.close();
+        typedb.close();
     }
 
     @Test
@@ -109,14 +109,14 @@ public class PlannerTest {
 
     @Test
     public void test_planner_prioritises_largest_retrievable_without_dependencies() {
-        rocksTransaction.query().undefine(Graql.parseQuery("undefine person owns name;"));
-        rocksTransaction.query().define(Graql.parseQuery("define company sub entity, owns company-name;" +
-                                                                 "name sub attribute, value string, abstract;" +
-                                                                 "first-name sub name;" +
-                                                                 "surname sub name;" +
-                                                                 "company-name sub name;" +
-                                                                 "age sub attribute, value long;" +
-                                                                 "person owns first-name, owns surname;"));
+        rocksTransaction.query().undefine(TypeQL.parseQuery("undefine person owns name;"));
+        rocksTransaction.query().define(TypeQL.parseQuery("define company sub entity, owns company-name;" +
+                                                                  "name sub attribute, value string, abstract;" +
+                                                                  "first-name sub name;" +
+                                                                  "surname sub name;" +
+                                                                  "company-name sub name;" +
+                                                                  "age sub attribute, value long;" +
+                                                                  "person owns first-name, owns surname;"));
         rocksTransaction.commit();
         session.close();
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
@@ -134,14 +134,14 @@ public class PlannerTest {
 
     @Test
     public void test_planner_prioritises_largest_named_variables_retrievable_without_dependencies() {
-        rocksTransaction.query().undefine(Graql.parseQuery("undefine person owns name;"));
-        rocksTransaction.query().define(Graql.parseQuery("define company sub entity, owns company-name;" +
-                                                                 "name sub attribute, value string, abstract;" +
-                                                                 "first-name sub name;" +
-                                                                 "surname sub name;" +
-                                                                 "company-name sub name;" +
-                                                                 "age sub attribute, value long;" +
-                                                                 "person owns first-name, owns surname, owns age;"));
+        rocksTransaction.query().undefine(TypeQL.parseQuery("undefine person owns name;"));
+        rocksTransaction.query().define(TypeQL.parseQuery("define company sub entity, owns company-name;" +
+                                                                  "name sub attribute, value string, abstract;" +
+                                                                  "first-name sub name;" +
+                                                                  "surname sub name;" +
+                                                                  "company-name sub name;" +
+                                                                  "age sub attribute, value long;" +
+                                                                  "person owns first-name, owns surname, owns age;"));
         rocksTransaction.commit();
         session.close();
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
@@ -170,9 +170,9 @@ public class PlannerTest {
 
     @Test
     public void test_planner_multiple_dependencies() {
-        rocksTransaction.query().define(Graql.parseQuery("define employment sub relation, relates employee, relates employer;" +
-                                                                 "person plays employment:employee;" +
-                                                                 "company sub entity, plays employment:employer, owns name;"));
+        rocksTransaction.query().define(TypeQL.parseQuery("define employment sub relation, relates employee, relates employer;" +
+                                                                  "person plays employment:employee;" +
+                                                                  "company sub entity, plays employment:employer, owns name;"));
         rocksTransaction.commit();
         session.close();
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
@@ -233,15 +233,15 @@ public class PlannerTest {
 
     @Test
     public void test_planner_prioritises_concludable_with_least_applicable_rules() {
-        rocksTransaction.query().define(Graql.parseQuery("define  " +
-                                                                 "marriage sub relation, relates spouse;" +
-                                                                 "person plays marriage:spouse, owns age;" +
-                                                                 "age sub attribute, value long;" +
-                                                                 "rule marriage-is-friendship: when {" +
-                                                                 "$x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; " +
-                                                                 "} then {" +
-                                                                 "(friend: $x, friend: $y) isa friendship;" +
-                                                                 "};"));
+        rocksTransaction.query().define(TypeQL.parseQuery("define  " +
+                                                                  "marriage sub relation, relates spouse;" +
+                                                                  "person plays marriage:spouse, owns age;" +
+                                                                  "age sub attribute, value long;" +
+                                                                  "rule marriage-is-friendship: when {" +
+                                                                  "$x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; " +
+                                                                  "} then {" +
+                                                                  "(friend: $x, friend: $y) isa friendship;" +
+                                                                  "};"));
         rocksTransaction.commit();
         session.close();
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);

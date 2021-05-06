@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,20 +16,20 @@
  *
  */
 
-package grakn.core.traversal.planner;
+package com.vaticle.typedb.core.traversal.planner;
 
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPVariable;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Label;
-import grakn.core.graph.GraphManager;
-import grakn.core.graph.SchemaGraph;
-import grakn.core.graph.common.Encoding;
-import grakn.core.graph.vertex.TypeVertex;
-import grakn.core.traversal.graph.TraversalEdge;
-import grakn.core.traversal.predicate.PredicateOperator;
-import grakn.core.traversal.structure.StructureEdge;
-import graql.lang.common.GraqlToken;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.SchemaGraph;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.vertex.TypeVertex;
+import com.vaticle.typedb.core.traversal.graph.TraversalEdge;
+import com.vaticle.typedb.core.traversal.predicate.PredicateOperator;
+import com.vaticle.typedb.core.traversal.structure.StructureEdge;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -39,26 +39,26 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static grakn.common.collection.Collections.pair;
-import static grakn.common.collection.Collections.set;
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.iterator.Iterators.tree;
-import static grakn.core.graph.common.Encoding.Direction.Edge.BACKWARD;
-import static grakn.core.graph.common.Encoding.Direction.Edge.FORWARD;
-import static grakn.core.graph.common.Encoding.Edge.ISA;
-import static grakn.core.graph.common.Encoding.Edge.Thing.HAS;
-import static grakn.core.graph.common.Encoding.Edge.Thing.PLAYING;
-import static grakn.core.graph.common.Encoding.Edge.Thing.RELATING;
-import static grakn.core.graph.common.Encoding.Edge.Thing.ROLEPLAYER;
-import static grakn.core.graph.common.Encoding.Edge.Type.OWNS;
-import static grakn.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
-import static grakn.core.graph.common.Encoding.Edge.Type.PLAYS;
-import static grakn.core.graph.common.Encoding.Edge.Type.RELATES;
-import static grakn.core.graph.common.Encoding.Edge.Type.SUB;
+import static com.vaticle.typedb.common.collection.Collections.pair;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.tree;
+import static com.vaticle.typedb.core.graph.common.Encoding.Direction.Edge.BACKWARD;
+import static com.vaticle.typedb.core.graph.common.Encoding.Direction.Edge.FORWARD;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.ISA;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.HAS;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.PLAYING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.RELATING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.ROLEPLAYER;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.PLAYS;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.RELATES;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
 import static java.util.stream.Collectors.toSet;
 
 public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_TO extends PlannerVertex<?>>
@@ -85,7 +85,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         if (edge.isEqual()) return new PlannerEdge.Equal(from, to);
         else if (edge.isPredicate()) return new Predicate(from.asThing(), to.asThing(), edge.asPredicate().predicate());
         else if (edge.isNative()) return PlannerEdge.Native.of(from, to, edge.asNative());
-        else throw GraknException.of(ILLEGAL_STATE);
+        else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     Directional<VERTEX_FROM, VERTEX_TO> forward() {
@@ -332,15 +332,15 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         public boolean isNative() { return false; }
 
         public Equal.Directional asEqual() {
-            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Equal.Directional.class));
+            throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Equal.Directional.class));
         }
 
         public Predicate.Directional asPredicate() {
-            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Predicate.Directional.class));
+            throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Predicate.Directional.class));
         }
 
         public Native.Directional<?, ?> asNative() {
-            throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Native.Directional.class));
+            throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Native.Directional.class));
         }
 
         @Override
@@ -353,7 +353,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
     public static class Equal extends PlannerEdge<PlannerVertex<?>, PlannerVertex<?>> {
 
         Equal(PlannerVertex<?> from, PlannerVertex<?> to) {
-            super(from, to, GraqlToken.Predicate.Equality.EQ.toString());
+            super(from, to, TypeQLToken.Predicate.Equality.EQ.toString());
         }
 
         @Override
@@ -365,7 +365,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         public static class Directional extends PlannerEdge.Directional<PlannerVertex<?>, PlannerVertex<?>> {
 
             Directional(PlannerVertex<?> from, PlannerVertex<?> to, Encoding.Direction.Edge direction) {
-                super(from, to, direction, GraqlToken.Predicate.Equality.EQ.toString());
+                super(from, to, direction, TypeQLToken.Predicate.Equality.EQ.toString());
             }
 
             @Override
@@ -383,10 +383,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
     public static class Predicate extends PlannerEdge<PlannerVertex.Thing, PlannerVertex.Thing> {
 
-        private final grakn.core.traversal.predicate.Predicate.Variable predicate;
+        private final com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate;
 
         Predicate(PlannerVertex.Thing from, PlannerVertex.Thing to,
-                  grakn.core.traversal.predicate.Predicate.Variable predicate) {
+                  com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate) {
             super(from, to, predicate.toString(), false);
             this.predicate = predicate;
             initialiseDirectionalEdges();
@@ -400,15 +400,15 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
         public static class Directional extends PlannerEdge.Directional<PlannerVertex.Thing, PlannerVertex.Thing> {
 
-            private final grakn.core.traversal.predicate.Predicate.Variable predicate;
+            private final com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate;
 
             Directional(PlannerVertex.Thing from, PlannerVertex.Thing to, Encoding.Direction.Edge direction,
-                        grakn.core.traversal.predicate.Predicate.Variable predicate) {
+                        com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate) {
                 super(from, to, direction, predicate.toString());
                 this.predicate = predicate;
             }
 
-            public grakn.core.traversal.predicate.Predicate.Variable predicate() {
+            public com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate() {
                 return predicate;
             }
 
@@ -468,7 +468,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             } else if (structureEdge.encoding().isThing()) {
                 return Thing.of(from.asThing(), to.asThing(), structureEdge);
             } else {
-                throw GraknException.of(ILLEGAL_STATE);
+                throw TypeDBException.of(ILLEGAL_STATE);
             }
         }
 
@@ -493,15 +493,15 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             public boolean isThing() { return false; }
 
             public Isa.Directional<?, ?> asIsa() {
-                throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Isa.Directional.class));
+                throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Isa.Directional.class));
             }
 
             public Type.Directional asType() {
-                throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.Directional.class));
+                throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.Directional.class));
             }
 
             public Thing.Directional asThing() {
-                throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.Directional.class));
+                throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.Directional.class));
             }
         }
 
@@ -615,7 +615,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     case RELATES:
                         return new Type.Relates(from.asType(), to.asType());
                     default:
-                        throw GraknException.of(UNRECOGNISED_VALUE);
+                        throw TypeDBException.of(UNRECOGNISED_VALUE);
                 }
             }
 
@@ -645,19 +645,19 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 public boolean isRelates() { return false; }
 
                 public Type.Sub.Directional asSub() {
-                    throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.Sub.Directional.class));
+                    throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.Sub.Directional.class));
                 }
 
                 public Type.Owns.Directional asOwns() {
-                    throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.Owns.Directional.class));
+                    throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.Owns.Directional.class));
                 }
 
                 public Type.Plays.Directional asPlays() {
-                    throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.Plays.Directional.class));
+                    throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.Plays.Directional.class));
                 }
 
                 public Type.Relates.Directional asRelates() {
-                    throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.Relates.Directional.class));
+                    throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.Relates.Directional.class));
                 }
             }
 
@@ -985,7 +985,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     case ROLEPLAYER:
                         return new RolePlayer(from, to, structureEdge.asRolePlayer().types());
                     default:
-                        throw GraknException.of(UNRECOGNISED_VALUE);
+                        throw TypeDBException.of(UNRECOGNISED_VALUE);
                 }
             }
 
@@ -1011,19 +1011,19 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 public boolean isRolePlayer() { return false; }
 
                 public Thing.Has.Directional asHas() {
-                    throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.Has.Directional.class));
+                    throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.Has.Directional.class));
                 }
 
                 public Thing.Playing.Directional asPlaying() {
-                    throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.Playing.Directional.class));
+                    throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.Playing.Directional.class));
                 }
 
                 public Thing.Relating.Directional asRelating() {
-                    throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.Relating.Directional.class));
+                    throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.Relating.Directional.class));
                 }
 
                 public Thing.RolePlayer.Directional asRolePlayer() {
-                    throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.RolePlayer.Directional.class));
+                    throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.RolePlayer.Directional.class));
                 }
             }
 

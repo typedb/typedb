@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,36 +16,34 @@
  *
  */
 
-package grakn.core.concept.thing.impl;
+package com.vaticle.typedb.core.concept.thing.impl;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.iterator.Iterators;
-import grakn.core.concept.thing.Relation;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.RoleType;
-import grakn.core.concept.type.impl.RelationTypeImpl;
-import grakn.core.concept.type.impl.RoleTypeImpl;
-import grakn.core.graph.iid.PrefixIID;
-import grakn.core.graph.vertex.ThingVertex;
-import grakn.core.graph.vertex.TypeVertex;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.concept.thing.Relation;
+import com.vaticle.typedb.core.concept.thing.Thing;
+import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.concept.type.impl.RelationTypeImpl;
+import com.vaticle.typedb.core.concept.type.impl.RoleTypeImpl;
+import com.vaticle.typedb.core.graph.iid.PrefixIID;
+import com.vaticle.typedb.core.graph.vertex.ThingVertex;
+import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.DELETE_ROLEPLAYER_NOT_PRESENT;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_PLAYER_MISSING;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.RELATION_ROLE_UNRELATED;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.THING_ROLE_UNPLAYED;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.iterator.Iterators.link;
-import static grakn.core.common.iterator.Iterators.single;
-import static grakn.core.graph.common.Encoding.Edge.Thing.PLAYING;
-import static grakn.core.graph.common.Encoding.Edge.Thing.RELATING;
-import static grakn.core.graph.common.Encoding.Edge.Thing.ROLEPLAYER;
-import static grakn.core.graph.common.Encoding.Vertex.Thing.ROLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.DELETE_ROLEPLAYER_NOT_PRESENT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.RELATION_PLAYER_MISSING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.RELATION_ROLE_UNRELATED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_ROLE_UNPLAYED;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.link;
+import static com.vaticle.typedb.core.common.iterator.Iterators.single;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.PLAYING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.RELATING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.ROLEPLAYER;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ROLE;
 
 public class RelationImpl extends ThingImpl implements Relation {
 
@@ -72,9 +70,9 @@ public class RelationImpl extends ThingImpl implements Relation {
         assert isInferred() == isInferred;
         validateIsNotDeleted();
         if (this.getType().getRelates().noneMatch(t -> t.equals(roleType))) {
-            throw exception(GraknException.of(RELATION_ROLE_UNRELATED, this.getType().getLabel(), roleType.getLabel()));
+            throw exception(TypeDBException.of(RELATION_ROLE_UNRELATED, this.getType().getLabel(), roleType.getLabel()));
         } else if (player.getType().getPlays().noneMatch(t -> t.equals(roleType))) {
-            throw exception(GraknException.of(THING_ROLE_UNPLAYED, player.getType().getLabel(), roleType.getLabel().toString()));
+            throw exception(TypeDBException.of(THING_ROLE_UNPLAYED, player.getType().getLabel(), roleType.getLabel().toString()));
         }
 
         RoleImpl role = ((RoleTypeImpl) roleType).create(isInferred);
@@ -93,7 +91,7 @@ public class RelationImpl extends ThingImpl implements Relation {
             RoleImpl.of(role.next()).delete();
             deleteIfNoPlayer();
         } else {
-            throw exception(GraknException.of(DELETE_ROLEPLAYER_NOT_PRESENT, player.getType().getLabel(), roleType.getLabel().toString()));
+            throw exception(TypeDBException.of(DELETE_ROLEPLAYER_NOT_PRESENT, player.getType().getLabel(), roleType.getLabel().toString()));
         }
     }
 
@@ -147,7 +145,7 @@ public class RelationImpl extends ThingImpl implements Relation {
     public void validate() {
         super.validate();
         if (!vertex.outs().edge(RELATING).to().hasNext()) {
-            throw exception(GraknException.of(RELATION_PLAYER_MISSING, getType().getLabel()));
+            throw exception(TypeDBException.of(RELATION_PLAYER_MISSING, getType().getLabel()));
         }
     }
 

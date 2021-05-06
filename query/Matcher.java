@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,26 +16,26 @@
  *
  */
 
-package grakn.core.query;
+package com.vaticle.typedb.core.query;
 
-import grakn.common.collection.Either;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.parameters.Arguments;
-import grakn.core.common.parameters.Context;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.ConceptMapGroup;
-import grakn.core.concept.answer.Numeric;
-import grakn.core.concept.answer.NumericGroup;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.pattern.Disjunction;
-import grakn.core.reasoner.Reasoner;
-import graql.lang.common.GraqlArg;
-import graql.lang.common.GraqlToken;
-import graql.lang.pattern.variable.Reference;
-import graql.lang.pattern.variable.UnboundVariable;
-import graql.lang.query.GraqlMatch;
-import graql.lang.query.builder.Sortable;
+import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Context;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concept.answer.ConceptMapGroup;
+import com.vaticle.typedb.core.concept.answer.Numeric;
+import com.vaticle.typedb.core.concept.answer.NumericGroup;
+import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.reasoner.Reasoner;
+import com.vaticle.typeql.lang.common.TypeQLArg;
+import com.vaticle.typeql.lang.common.TypeQLToken;
+import com.vaticle.typeql.lang.pattern.variable.Reference;
+import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
+import com.vaticle.typeql.lang.query.TypeQLMatch;
+import com.vaticle.typeql.lang.query.builder.Sortable;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -51,40 +51,40 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 
-import static grakn.common.collection.Collections.set;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
-import static grakn.core.common.exception.ErrorMessage.ThingRead.AGGREGATE_ATTRIBUTE_NOT_NUMBER;
-import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;
-import static grakn.core.common.exception.ErrorMessage.ThingRead.SORT_ATTRIBUTE_NOT_COMPARABLE;
-import static grakn.core.common.exception.ErrorMessage.ThingRead.SORT_VARIABLE_NOT_ATTRIBUTE;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
-import static grakn.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
-import static grakn.core.query.Matcher.Aggregator.aggregator;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.AGGREGATE_ATTRIBUTE_NOT_NUMBER;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.SORT_ATTRIBUTE_NOT_COMPARABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.SORT_VARIABLE_NOT_ATTRIBUTE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
+import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
+import static com.vaticle.typedb.core.query.Matcher.Aggregator.aggregator;
 import static java.lang.Math.sqrt;
 import static java.util.stream.Collectors.groupingBy;
 
 public class Matcher {
 
     private final Reasoner reasoner;
-    private final GraqlMatch query;
+    private final TypeQLMatch query;
     private final Disjunction disjunction;
     private final Context.Query context;
 
-    public Matcher(Reasoner reasoner, GraqlMatch query) {
+    public Matcher(Reasoner reasoner, TypeQLMatch query) {
         this(reasoner, query, null);
     }
 
-    public Matcher(Reasoner reasoner, GraqlMatch query, @Nullable Context.Query context) {
+    public Matcher(Reasoner reasoner, TypeQLMatch query, @Nullable Context.Query context) {
         this.reasoner = reasoner;
         this.query = query;
         this.disjunction = Disjunction.create(query.conjunction().normalise());
         this.context = context;
         if (context != null) {
             Either<Arguments.Query.Producer, Long> prodCtx;
-            GraqlMatch.Modifiers mods = query.modifiers();
+            TypeQLMatch.Modifiers mods = query.modifiers();
             if (mods.sort().isPresent()) prodCtx = Either.first(EXHAUSTIVE); // TODO: remove this once sort is optimised
             else if (mods.limit().isPresent()) prodCtx = Either.second(mods.offset().orElse(0L) + mods.limit().get());
             else prodCtx = Either.first(INCREMENTAL);
@@ -92,25 +92,25 @@ public class Matcher {
         }
     }
 
-    public static Matcher create(Reasoner reasoner, GraqlMatch query) {
+    public static Matcher create(Reasoner reasoner, TypeQLMatch query) {
         return new Matcher(reasoner, query);
     }
 
-    public static Matcher create(Reasoner reasoner, GraqlMatch query, Context.Query context) {
+    public static Matcher create(Reasoner reasoner, TypeQLMatch query, Context.Query context) {
         return new Matcher(reasoner, query, context);
     }
 
-    public static Matcher.Aggregator create(Reasoner reasoner, GraqlMatch.Aggregate query, Context.Query context) {
+    public static Matcher.Aggregator create(Reasoner reasoner, TypeQLMatch.Aggregate query, Context.Query context) {
         Matcher matcher = new Matcher(reasoner, query.match());
         return new Aggregator(matcher, query, context);
     }
 
-    public static Matcher.Group create(Reasoner reasoner, GraqlMatch.Group query, Context.Query context) {
+    public static Matcher.Group create(Reasoner reasoner, TypeQLMatch.Group query, Context.Query context) {
         Matcher matcher = new Matcher(reasoner, query.match());
         return new Group(matcher, query, context);
     }
 
-    public static Matcher.Group.Aggregator create(Reasoner reasoner, GraqlMatch.Group.Aggregate query, Context.Query context) {
+    public static Matcher.Group.Aggregator create(Reasoner reasoner, TypeQLMatch.Group.Aggregate query, Context.Query context) {
         Matcher matcher = new Matcher(reasoner, query.group().match());
         Group group = new Group(matcher, query.group(), context);
         return new Group.Aggregator(group, query);
@@ -131,23 +131,23 @@ public class Matcher {
     }
 
     private FunctionalIterator<ConceptMap> sort(FunctionalIterator<ConceptMap> answers, Sortable.Sorting sorting) {
-        // TODO: Replace this temporary implementation of Graql Match Sort query with a native sorting traversal
+        // TODO: Replace this temporary implementation of TypeQL Match Sort query with a native sorting traversal
         Reference.Name var = sorting.var().reference().asName();
         Comparator<ConceptMap> comparator = (answer1, answer2) -> {
             Attribute att1, att2;
             try {
                 att1 = answer1.get(var).asAttribute();
                 att2 = answer2.get(var).asAttribute();
-            } catch (GraknException e) {
+            } catch (TypeDBException e) {
                 if (e.code().isPresent() || e.code().get().equals(INVALID_THING_CASTING.code())) {
-                    throw GraknException.of(SORT_VARIABLE_NOT_ATTRIBUTE, var);
+                    throw TypeDBException.of(SORT_VARIABLE_NOT_ATTRIBUTE, var);
                 } else {
                     throw e;
                 }
             }
 
             if (!att1.getType().getValueType().comparables().contains(att2.getType().getValueType())) {
-                throw GraknException.of(SORT_ATTRIBUTE_NOT_COMPARABLE, var);
+                throw TypeDBException.of(SORT_ATTRIBUTE_NOT_COMPARABLE, var);
             }
             if (att1.isString()) {
                 return att1.asString().getValue().compareToIgnoreCase(att2.asString().getValue());
@@ -162,20 +162,20 @@ public class Matcher {
             } else if (att1.isDateTime()) {
                 return (att1.asDateTime().getValue()).compareTo(att2.asDateTime().getValue());
             } else {
-                throw GraknException.of(ILLEGAL_STATE);
+                throw TypeDBException.of(ILLEGAL_STATE);
             }
         };
-        comparator = (sorting.order() == GraqlArg.Order.DESC) ? comparator.reversed() : comparator;
+        comparator = (sorting.order() == TypeQLArg.Order.DESC) ? comparator.reversed() : comparator;
         return iterate(answers.stream().sorted(comparator).iterator());
     }
 
     public static class Aggregator {
 
         private final Matcher matcher;
-        private final GraqlMatch.Aggregate query;
+        private final TypeQLMatch.Aggregate query;
         private final Context.Query context;
 
-        public Aggregator(Matcher matcher, GraqlMatch.Aggregate query, Context.Query context) {
+        public Aggregator(Matcher matcher, TypeQLMatch.Aggregate query, Context.Query context) {
             this.matcher = matcher;
             this.query = query;
             this.context = context;
@@ -184,17 +184,17 @@ public class Matcher {
 
         public Numeric execute() {
             FunctionalIterator<ConceptMap> answers = matcher.execute(context);
-            GraqlToken.Aggregate.Method method = query.method();
+            TypeQLToken.Aggregate.Method method = query.method();
             UnboundVariable var = query.var();
             return aggregate(answers, method, var);
         }
 
         static Numeric aggregate(FunctionalIterator<ConceptMap> answers,
-                                 GraqlToken.Aggregate.Method method, UnboundVariable var) {
+                                 TypeQLToken.Aggregate.Method method, UnboundVariable var) {
             return answers.stream().collect(aggregator(method, var));
         }
 
-        static Collector<ConceptMap, ?, Numeric> aggregator(GraqlToken.Aggregate.Method method, UnboundVariable var) {
+        static Collector<ConceptMap, ?, Numeric> aggregator(TypeQLToken.Aggregate.Method method, UnboundVariable var) {
             Collector<ConceptMap, ?, Numeric> aggregator;
             switch (method) {
                 case COUNT:
@@ -219,7 +219,7 @@ public class Matcher {
                     aggregator = sum(var);
                     break;
                 default:
-                    throw GraknException.of(UNRECOGNISED_VALUE);
+                    throw TypeDBException.of(UNRECOGNISED_VALUE);
             }
             return aggregator;
         }
@@ -348,7 +348,7 @@ public class Matcher {
 
                 @Override
                 public BinaryOperator<MedianCalculator> combiner() {
-                    return (t, u) -> { throw GraknException.of(ILLEGAL_OPERATION); };
+                    return (t, u) -> { throw TypeDBException.of(ILLEGAL_OPERATION); };
                 }
 
                 @Override
@@ -414,7 +414,7 @@ public class Matcher {
 
                 @Override
                 public BinaryOperator<STDCalculator> combiner() {
-                    return (t, u) -> { throw GraknException.of(ILLEGAL_OPERATION); };
+                    return (t, u) -> { throw TypeDBException.of(ILLEGAL_OPERATION); };
                 }
 
                 @Override
@@ -469,7 +469,7 @@ public class Matcher {
             Attribute attribute = answer.get(var).asAttribute();
             if (attribute.isLong()) return Numeric.ofLong(attribute.asLong().getValue());
             else if (attribute.isDouble()) return Numeric.ofDouble(attribute.asDouble().getValue());
-            else throw GraknException.of(AGGREGATE_ATTRIBUTE_NOT_NUMBER, var);
+            else throw TypeDBException.of(AGGREGATE_ATTRIBUTE_NOT_NUMBER, var);
         }
 
         private static Numeric sum(Numeric x, Numeric y) {
@@ -589,10 +589,10 @@ public class Matcher {
     public static class Group {
 
         private final Matcher matcher;
-        private final GraqlMatch.Group query;
+        private final TypeQLMatch.Group query;
         private final Context.Query context;
 
-        public Group(Matcher matcher, GraqlMatch.Group query, Context.Query context) {
+        public Group(Matcher matcher, TypeQLMatch.Group query, Context.Query context) {
             this.matcher = matcher;
             this.query = query;
             this.context = context;
@@ -600,7 +600,7 @@ public class Matcher {
         }
 
         public FunctionalIterator<ConceptMapGroup> execute() {
-            // TODO: Replace this temporary implementation of Graql Match Group query with a native grouping traversal
+            // TODO: Replace this temporary implementation of TypeQL Match Group query with a native grouping traversal
             List<ConceptMapGroup> answerGroups = new ArrayList<>();
             matcher.execute(context).stream().collect(groupingBy(a -> a.get(query.var())))
                     .forEach((o, cm) -> answerGroups.add(new ConceptMapGroup(o, cm)));
@@ -610,15 +610,15 @@ public class Matcher {
         public static class Aggregator {
 
             private final Group group;
-            private final GraqlMatch.Group.Aggregate query;
+            private final TypeQLMatch.Group.Aggregate query;
 
-            public Aggregator(Group group, GraqlMatch.Group.Aggregate query) {
+            public Aggregator(Group group, TypeQLMatch.Group.Aggregate query) {
                 this.group = group;
                 this.query = query;
             }
 
             public FunctionalIterator<NumericGroup> execute() {
-                // TODO: Replace this temporary implementation of Graql Match Group query with a native grouping traversal
+                // TODO: Replace this temporary implementation of TypeQL Match Group query with a native grouping traversal
                 List<NumericGroup> numericGroups = new ArrayList<>();
                 group.matcher.execute(group.context).stream()
                         .collect(groupingBy(a -> a.get(query.group().var()), aggregator(query.method(), query.var())))

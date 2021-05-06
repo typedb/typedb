@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,25 +16,25 @@
  *
  */
 
-package grakn.core.reasoner.resolution.resolver;
+package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.iterator.Iterators;
-import grakn.core.concept.ConceptManager;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.logic.LogicManager;
-import grakn.core.logic.Rule;
-import grakn.core.logic.resolvable.Unifier;
-import grakn.core.pattern.Conjunction;
-import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
-import grakn.core.reasoner.resolution.framework.Request;
-import grakn.core.reasoner.resolution.framework.Resolver;
-import grakn.core.reasoner.resolution.framework.Response;
-import grakn.core.reasoner.resolution.framework.Response.Answer;
-import grakn.core.traversal.TraversalEngine;
-import grakn.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
+import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.logic.LogicManager;
+import com.vaticle.typedb.core.logic.Rule;
+import com.vaticle.typedb.core.logic.resolvable.Unifier;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Answer;
+import com.vaticle.typedb.core.traversal.TraversalEngine;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +47,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
@@ -55,14 +55,14 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     private final LinkedHashMap<Driver<ConclusionResolver>, Set<Unifier>> applicableRules;
     private final Map<Driver<ConclusionResolver>, Rule> resolverRules;
-    private final grakn.core.logic.resolvable.Concludable concludable;
+    private final com.vaticle.typedb.core.logic.resolvable.Concludable concludable;
     private final LogicManager logicMgr;
     private final Map<Driver<? extends Resolver<?>>, RecursionState> recursionStates;
     private final Map<Request, RequestState> requestStates;
     private final Set<Identifier.Variable.Retrievable> unboundVars;
     private boolean isInitialised;
 
-    public ConcludableResolver(Driver<ConcludableResolver> driver, grakn.core.logic.resolvable.Concludable concludable,
+    public ConcludableResolver(Driver<ConcludableResolver> driver, com.vaticle.typedb.core.logic.resolvable.Concludable concludable,
                                ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
                                LogicManager logicMgr, boolean resolutionTracing) {
         super(driver, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.pattern() + ")",
@@ -167,7 +167,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
                         applicableRules.putIfAbsent(conclusionResolver, new HashSet<>());
                         applicableRules.get(conclusionResolver).add(unifier);
                         resolverRules.put(conclusionResolver, rule);
-                    } catch (GraknException e) {
+                    } catch (TypeDBException e) {
                         terminate(e);
                     }
                 }));

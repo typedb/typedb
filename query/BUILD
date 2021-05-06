@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -15,8 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
+load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
 
 package(
     default_visibility = [
@@ -36,13 +36,13 @@ native_java_libraries(
         "//common:common",
         "//concurrent:concurrent",
 
-        # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
-        "@graknlabs_grabl_tracing//client:client",
-        "@graknlabs_graql//java/common:common",
-        "@graknlabs_graql//java:graql",
-        "@graknlabs_graql//java/pattern:pattern",
-        "@graknlabs_graql//java/query:query",
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_factory_tracing//client:client",
+        "@vaticle_typeql//java/common:common",
+        "@vaticle_typeql//java:typeql",
+        "@vaticle_typeql//java/pattern:pattern",
+        "@vaticle_typeql//java/query:query",
 
         # External dependencies from Maven
         "@maven//:com_google_code_findbugs_jsr305",
@@ -55,7 +55,7 @@ native_java_libraries(
         "//reasoner:reasoner",
         "//traversal:traversal",
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-query:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-query:{pom_version}"],
     visibility = ["//visibility:public"],
 )
 

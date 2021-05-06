@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,19 +16,19 @@
  *
  */
 
-package grakn.core.migrator;
+package com.vaticle.typedb.core.migrator;
 
-import grakn.core.Grakn;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.parameters.Arguments;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Entity;
-import grakn.core.concept.thing.Relation;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.RoleType;
-import grakn.core.migrator.proto.DataProto;
-import grakn.core.migrator.proto.MigratorProto;
+import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.thing.Entity;
+import com.vaticle.typedb.core.concept.thing.Relation;
+import com.vaticle.typedb.core.concept.thing.Thing;
+import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.migrator.proto.DataProto;
+import com.vaticle.typedb.core.migrator.proto.MigratorProto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,13 +43,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Migrator.FILE_NOT_WRITABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.FILE_NOT_WRITABLE;
 
 public class DataExporter implements Migrator {
 
     private static final Logger LOG = LoggerFactory.getLogger(DataExporter.class);
-    private final Grakn grakn;
+    private final TypeDB typedb;
     private final String database;
     private final Path filename;
     private final String version;
@@ -60,8 +60,8 @@ public class DataExporter implements Migrator {
     private final AtomicLong playerCount = new AtomicLong(0);
     private long totalThingCount = 0;
 
-    DataExporter(Grakn grakn, String database, Path filename, String version) {
-        this.grakn = grakn;
+    DataExporter(TypeDB typedb, String database, Path filename, String version) {
+        this.typedb = typedb;
         this.database = database;
         this.filename = filename;
         this.version = version;
@@ -78,14 +78,14 @@ public class DataExporter implements Migrator {
 
     @Override
     public void run() {
-        LOG.info("Exporting {} from Grakn {}", database, version);
+        LOG.info("Exporting {} from TypeDB {}", database, version);
         try (OutputStream outputStream = new BufferedOutputStream(Files.newOutputStream(filename))) {
-            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA);
-                 Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
+            try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.DATA);
+                 TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 totalThingCount = tx.concepts().getRootThingType().getInstancesCount();
                 DataProto.Item header = DataProto.Item.newBuilder().setHeader(
                         DataProto.Item.Header.newBuilder()
-                                .setGraknVersion(version)
+                                .setTypedbVersion(version)
                                 .setOriginalDatabase(session.database().name())
                 ).build();
                 write(outputStream, header);
@@ -116,7 +116,7 @@ public class DataExporter implements Migrator {
                 write(outputStream, checksums);
             }
         } catch (IOException e) {
-            throw GraknException.of(FILE_NOT_WRITABLE, filename.toString());
+            throw TypeDBException.of(FILE_NOT_WRITABLE, filename.toString());
         }
         LOG.info("Exported {} entities, {} attributes, {} relations ({} roles), {} ownerships",
                  entityCount.get(),
@@ -188,7 +188,7 @@ public class DataExporter implements Migrator {
         } else if (attribute.isDateTime()) {
             valueObject.setDatetime(attribute.asDateTime().getValue().atZone(ZoneId.of("Z")).toInstant().toEpochMilli());
         } else {
-            throw GraknException.of(ILLEGAL_STATE);
+            throw TypeDBException.of(ILLEGAL_STATE);
         }
         return valueObject;
     }
@@ -202,7 +202,7 @@ public class DataExporter implements Migrator {
         try {
             item.writeDelimitedTo(outputStream);
         } catch (IOException e) {
-            throw GraknException.of(FILE_NOT_WRITABLE, filename.toString());
+            throw TypeDBException.of(FILE_NOT_WRITABLE, filename.toString());
         }
     }
 }

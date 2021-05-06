@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,20 +16,19 @@
  *
  */
 
-package grakn.core.concept.type;
+package com.vaticle.typedb.core.concept.type;
 
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.graph.common.Encoding;
-import graql.lang.common.GraqlArg;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typeql.lang.common.TypeQLArg;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import static grakn.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public interface AttributeType extends ThingType {
 
@@ -95,9 +94,9 @@ public interface AttributeType extends ThingType {
             return null;
         }
 
-        public static ValueType of(GraqlArg.ValueType valueType) {
+        public static ValueType of(TypeQLArg.ValueType valueType) {
             for (ValueType vt : ValueType.values()) {
-                if (Objects.equals(vt.encoding.graqlValueType(), valueType)) {
+                if (Objects.equals(vt.encoding.typeQLValueType(), valueType)) {
                     return vt;
                 }
             }

@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -15,14 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
+load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
 host_compatible_java_test(
     name = "test-rule",
     srcs = ["RuleTest.java"],
     native_libraries_deps = [
-        "//:grakn",
+        "//:typedb",
         "//concept:concept",
         "//logic:logic",
         "//pattern:pattern",
@@ -33,7 +33,7 @@ host_compatible_java_test(
     resources = [
         "//common/test:logback-test",
     ],
-    test_class = "grakn.core.logic.RuleTest",
+    test_class = "com.vaticle.typedb.core.logic.RuleTest",
     deps = [
         # Internal dependencies
         "//common",
@@ -41,20 +41,20 @@ host_compatible_java_test(
         "//graph",
         "//test/integration/util",
 
-        # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
-        "@graknlabs_graql//java:graql",
-        "@graknlabs_graql//java/pattern:pattern",
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java:typeql",
+        "@vaticle_typeql//java/pattern:pattern",
     ],
 )
 
 host_compatible_java_test(
     name = "test-type-resolver",
     srcs = ["TypeResolverTest.java"],
-    test_class = "grakn.core.logic.TypeResolverTest",
+    test_class = "com.vaticle.typedb.core.logic.TypeResolverTest",
     native_libraries_deps = [
         "//concept:concept",
-        "//:grakn",
+        "//:typedb",
         "//logic:logic",
         "//pattern:pattern",
         "//rocks:rocks",
@@ -65,10 +65,10 @@ host_compatible_java_test(
         "//common/test:util",
         "//test/integration/util",
 
-        # External dependencies from Grakn Labs
-        "@graknlabs_graql//java/query",
-        "@graknlabs_graql//java:graql",
-        "@graknlabs_common//:common",
+        # External dependencies from Vaticle
+        "@vaticle_typeql//java/query",
+        "@vaticle_typeql//java:typeql",
+        "@vaticle_typedb_common//:common",
     ],
     data = [":basic-schema.gql", ":test-type-resolution.gql"],
     resources = [
@@ -82,21 +82,21 @@ host_compatible_java_test(
     srcs = ["resolvable/UnifyRelationConcludableTest.java", "resolvable/Util.java"],
     native_libraries_deps = [
         "//rocks:rocks",
-        "//:grakn",
+        "//:typedb",
         "//concept:concept",
         "//logic:logic",
         "//pattern:pattern",
         "//traversal:traversal",
     ],
-    test_class = "grakn.core.logic.resolvable.UnifyRelationConcludableTest",
+    test_class = "com.vaticle.typedb.core.logic.resolvable.UnifyRelationConcludableTest",
     deps = [
         # Internal dependencies
         "//test/integration/util",
         "//common",
 
-        # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
-        "@graknlabs_graql//java:graql",
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java:typeql",
     ],
 )
 
@@ -105,21 +105,21 @@ host_compatible_java_test(
     srcs = ["resolvable/UnifyHasConcludableTest.java", "resolvable/Util.java"],
     native_libraries_deps = [
         "//rocks:rocks",
-        "//:grakn",
+        "//:typedb",
         "//concept:concept",
         "//logic:logic",
         "//pattern:pattern",
         "//traversal:traversal",
     ],
-    test_class = "grakn.core.logic.resolvable.UnifyHasConcludableTest",
+    test_class = "com.vaticle.typedb.core.logic.resolvable.UnifyHasConcludableTest",
     deps = [
         # Internal dependencies
         "//test/integration/util",
         "//common",
 
-        # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
-        "@graknlabs_graql//java:graql",
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java:typeql",
     ],
 )
 
@@ -128,21 +128,21 @@ host_compatible_java_test(
     srcs = ["resolvable/UnifyIsaConcludableTest.java", "resolvable/Util.java"],
     native_libraries_deps = [
         "//rocks:rocks",
-        "//:grakn",
+        "//:typedb",
         "//concept:concept",
         "//logic:logic",
         "//pattern:pattern",
         "//traversal:traversal",
     ],
-    test_class = "grakn.core.logic.resolvable.UnifyIsaConcludableTest",
+    test_class = "com.vaticle.typedb.core.logic.resolvable.UnifyIsaConcludableTest",
     deps = [
         # Internal dependencies
         "//test/integration/util",
         "//common",
 
-        # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
-        "@graknlabs_graql//java:graql",
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java:typeql",
     ],
     resources = [
         "//common/test:logback-test"
@@ -155,21 +155,21 @@ host_compatible_java_test(
     srcs = ["resolvable/UnifyAttributeConcludableTest.java", "resolvable/Util.java"],
     native_libraries_deps = [
         "//rocks:rocks",
-        "//:grakn",
+        "//:typedb",
         "//concept:concept",
         "//logic:logic",
         "//pattern:pattern",
         "//traversal:traversal",
     ],
-    test_class = "grakn.core.logic.resolvable.UnifyAttributeConcludableTest",
+    test_class = "com.vaticle.typedb.core.logic.resolvable.UnifyAttributeConcludableTest",
     deps = [
         # Internal dependencies
         "//test/integration/util",
         "//common",
 
-        # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
-        "@graknlabs_graql//java:graql",
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java:typeql",
     ],
     resources = [
         "//common/test:logback-test"

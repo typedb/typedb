@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,23 +16,23 @@
  *
  */
 
-package grakn.core.pattern.constraint.type;
+package com.vaticle.typedb.core.pattern.constraint.type;
 
-import grakn.core.common.parameters.Label;
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.variable.TypeVariable;
-import grakn.core.pattern.variable.VariableCloner;
-import grakn.core.pattern.variable.VariableRegistry;
-import grakn.core.traversal.Traversal;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.variable.TypeVariable;
+import com.vaticle.typedb.core.pattern.variable.VariableCloner;
+import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
+import com.vaticle.typedb.core.traversal.Traversal;
 
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.set;
-import static graql.lang.common.GraqlToken.Char.SPACE;
-import static graql.lang.common.GraqlToken.Constraint.SUB;
-import static graql.lang.common.GraqlToken.Constraint.SUBX;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SPACE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.SUB;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.SUBX;
 
 public class SubConstraint extends TypeConstraint {
 
@@ -51,7 +51,7 @@ public class SubConstraint extends TypeConstraint {
         type.constraining(this);
     }
 
-    static SubConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Sub constraint,
+    static SubConstraint of(TypeVariable owner, com.vaticle.typeql.lang.pattern.constraint.TypeConstraint.Sub constraint,
                             VariableRegistry registry) {
         return new SubConstraint(owner, registry.register(constraint.type()), constraint.isExplicit());
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,22 +16,22 @@
  *
  */
 
-package grakn.core.pattern.variable;
+package com.vaticle.typedb.core.pattern.variable;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Label;
-import grakn.core.pattern.Pattern;
-import grakn.core.pattern.constraint.Constraint;
-import grakn.core.traversal.Traversal;
-import grakn.core.traversal.common.Identifier;
-import graql.lang.pattern.variable.Reference;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.pattern.Pattern;
+import com.vaticle.typedb.core.pattern.constraint.Constraint;
+import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typeql.lang.pattern.variable.Reference;
 
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
 public abstract class Variable implements Pattern {
 
@@ -68,11 +68,11 @@ public abstract class Variable implements Pattern {
     }
 
     public TypeVariable asType() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(TypeVariable.class));
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(TypeVariable.class));
     }
 
     public ThingVariable asThing() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(ThingVariable.class));
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(ThingVariable.class));
     }
 
     public void addResolvedType(Label label) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,26 +16,26 @@
  *
  */
 
-package grakn.core.graph.vertex.impl;
+package com.vaticle.typedb.core.graph.vertex.impl;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.graph.DataGraph;
-import grakn.core.graph.GraphManager;
-import grakn.core.graph.adjacency.ThingAdjacency;
-import grakn.core.graph.adjacency.impl.ThingAdjacencyImpl;
-import grakn.core.graph.common.Encoding;
-import grakn.core.graph.iid.EdgeIID;
-import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.vertex.AttributeVertex;
-import grakn.core.graph.vertex.ThingVertex;
-import grakn.core.graph.vertex.TypeVertex;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.graph.DataGraph;
+import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
+import com.vaticle.typedb.core.graph.adjacency.impl.ThingAdjacencyImpl;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.iid.EdgeIID;
+import com.vaticle.typedb.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
+import com.vaticle.typedb.core.graph.vertex.ThingVertex;
+import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_VERTEX_CASTING;
-import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
-import static grakn.core.graph.common.Encoding.Vertex.Thing.ATTRIBUTE;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_VERTEX_CASTING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ATTRIBUTE;
 
 public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implements ThingVertex {
 
@@ -136,7 +136,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
     @Override
     public AttributeVertexImpl<?> asAttribute() {
-        throw GraknException.of(INVALID_THING_VERTEX_CASTING, className(AttributeVertex.class));
+        throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(AttributeVertex.class));
     }
 
     void deleteEdges() {
@@ -177,7 +177,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
         @Override
         public void commit() {
-            if (isInferred) throw GraknException.of(ILLEGAL_OPERATION);
+            if (isInferred) throw TypeDBException.of(ILLEGAL_OPERATION);
             commitVertex();
             commitEdges();
         }
@@ -209,7 +209,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
         @Override
         public void isInferred(boolean isInferred) {
-            throw GraknException.of(ILLEGAL_OPERATION);
+            throw TypeDBException.of(ILLEGAL_OPERATION);
         }
 
         @Override

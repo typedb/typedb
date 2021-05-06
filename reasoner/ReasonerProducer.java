@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,25 +15,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner;
+package com.vaticle.typedb.core.reasoner;
 
-import grakn.core.common.parameters.Options;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concurrent.actor.Actor;
-import grakn.core.concurrent.executor.Executors;
-import grakn.core.concurrent.producer.Producer;
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.Disjunction;
-import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Compound.Root;
-import grakn.core.reasoner.resolution.answer.AnswerState.Top.Match.Finished;
-import grakn.core.reasoner.resolution.answer.AnswerStateImpl.TopImpl.MatchImpl.InitialImpl;
-import grakn.core.reasoner.resolution.framework.Request;
-import grakn.core.reasoner.resolution.framework.ResolutionTracer;
-import grakn.core.reasoner.resolution.framework.Resolver;
-import grakn.core.traversal.common.Identifier;
-import graql.lang.pattern.variable.UnboundVariable;
-import graql.lang.query.GraqlMatch;
+import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concurrent.actor.Actor;
+import com.vaticle.typedb.core.concurrent.executor.Executors;
+import com.vaticle.typedb.core.concurrent.producer.Producer;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Compound.Root;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match.Finished;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateImpl.TopImpl.MatchImpl.InitialImpl;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
+import com.vaticle.typeql.lang.query.TypeQLMatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +43,7 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static grakn.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 @ThreadSafe
 public class ReasonerProducer implements Producer<ConceptMap> {
@@ -63,7 +63,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private Queue<ConceptMap> queue;
 
     // TODO: this class should not be a Producer, it implements a different async processing mechanism
-    public ReasonerProducer(Conjunction conjunction, GraqlMatch.Modifiers modifiers, Options.Query options,
+    public ReasonerProducer(Conjunction conjunction, TypeQLMatch.Modifiers modifiers, Options.Query options,
                             ResolverRegistry resolverRegistry, ExplainablesManager explainablesManager) {
         this.options = options;
         this.explainablesManager = explainablesManager;
@@ -80,7 +80,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
-    public ReasonerProducer(Disjunction disjunction, GraqlMatch.Modifiers modifiers, Options.Query options,
+    public ReasonerProducer(Disjunction disjunction, TypeQLMatch.Modifiers modifiers, Options.Query options,
                             ResolverRegistry resolverRegistry, ExplainablesManager explainablesManager) {
         this.options = options;
         this.explainablesManager = explainablesManager;

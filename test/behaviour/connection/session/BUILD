@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -16,8 +16,8 @@
 #
 
 package(default_visibility = ["//test/behaviour:__subpackages__"])
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_library")
+load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_library")
 
 host_compatible_java_library(
     name = "steps",
@@ -30,14 +30,14 @@ host_compatible_java_library(
         "//test/behaviour/connection:steps",
 
         # Internal Repository Dependencies
-        "@graknlabs_common//:common",
+        "@vaticle_typedb_common//:common",
 
         # External Maven Dependencies
         "@maven//:junit_junit",
         "@maven//:io_cucumber_cucumber_java",
     ],
     native_libraries_deps = [
-        "//:grakn",
+        "//:typedb",
     ],
 )
 
@@ -46,7 +46,7 @@ java_test(
     srcs = [
         "SessionTest.java"
     ],
-    test_class = "grakn.core.test.behaviour.connection.session.SessionTest",
+    test_class = "com.vaticle.typedb.core.test.behaviour.connection.session.SessionTest",
     deps = [
         # External Maven Dependencies
         "@maven//:io_cucumber_cucumber_junit",
@@ -56,10 +56,10 @@ java_test(
         "//test/behaviour/config:parameters",
         "//test/behaviour/connection/database:steps",
         "//test/behaviour/connection/transaction:steps",
-        "//test/behaviour/graql:steps",
+        "//test/behaviour/typeql:steps",
     ],
     data = [
-        "@graknlabs_behaviour//connection:session.feature",
+        "@vaticle_typedb_behaviour//connection:session.feature",
     ],
     size = "medium",
     resources = [

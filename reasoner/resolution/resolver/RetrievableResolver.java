@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,26 +15,26 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner.resolution.resolver;
+package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.concept.ConceptManager;
-import grakn.core.logic.resolvable.Retrievable;
-import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
-import grakn.core.reasoner.resolution.framework.Request;
-import grakn.core.reasoner.resolution.framework.Resolver;
-import grakn.core.reasoner.resolution.framework.Response;
-import grakn.core.reasoner.resolution.framework.Response.Answer;
-import grakn.core.traversal.TraversalEngine;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.logic.resolvable.Retrievable;
+import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Answer;
+import com.vaticle.typedb.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public class RetrievableResolver extends Resolver<RetrievableResolver> {
 
@@ -68,17 +68,17 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
 
     @Override
     protected void receiveAnswer(Answer fromDownstream, int iteration) {
-        throw GraknException.of(ILLEGAL_STATE);
+        throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     @Override
     protected void receiveFail(Response.Fail fromDownstream, int iteration) {
-        throw GraknException.of(ILLEGAL_STATE);
+        throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     @Override
     protected void initialiseDownstreamResolvers() {
-        throw GraknException.of(ILLEGAL_STATE);
+        throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     private RequestStates getOrUpdateRequestState(Request fromUpstream, int iteration) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.common.parameters;
+package com.vaticle.typedb.core.common.parameters;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
@@ -34,13 +34,13 @@ public class Label {
     /**
      * TODO:
      *
-     * Note that in Graql, you declare "scoped labels/types" by writing the scope first: var("x").type("marriage", "husband") or var("x").plays("marriage", "husband").
+     * Note that in TypeQL, you declare "scoped labels/types" by writing the scope first: var("x").type("marriage", "husband") or var("x").plays("marriage", "husband").
      *
-     * Meanwhile, in Grakn, you declare "scoped labels/types" by writing the label first: graph.getType(label, scope), and Label.of(label, scope).
+     * Meanwhile, in TypeDB, you declare "scoped labels/types" by writing the label first: graph.getType(label, scope), and Label.of(label, scope).
      *
      * This is is not good and needs to be fixed so we don't get tripped up (which we have).
      *
-     * I think Graql wins, as it is closer to "native Graql", and therefore would be most intuitive for our users. E.g.
+     * I think TypeQL wins, as it is closer to "native TypeQL", and therefore would be most intuitive for our users. E.g.
      * person sub entity, plays marriage:husband; is symmetrical to
      * type("person").sub("entity").plays("marriage", "husband");
      *

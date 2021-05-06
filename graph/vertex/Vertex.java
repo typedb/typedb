@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,14 +16,14 @@
  *
  */
 
-package grakn.core.graph.vertex;
+package com.vaticle.typedb.core.graph.vertex;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.graph.common.Encoding;
-import grakn.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.iid.VertexIID;
 
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
 public interface Vertex<VERTEX_IID extends VertexIID, VERTEX_ENCODING extends Encoding.Vertex> {
 
@@ -48,11 +48,11 @@ public interface Vertex<VERTEX_IID extends VertexIID, VERTEX_ENCODING extends En
     default boolean isType() { return false; }
 
     default ThingVertex asThing() {
-        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(ThingVertex.class));
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(ThingVertex.class));
     }
 
     default TypeVertex asType() {
-        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(TypeVertex.class));
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(TypeVertex.class));
     }
 
     /**

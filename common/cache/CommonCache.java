@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.common.cache;
+package com.vaticle.typedb.core.common.cache;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 
@@ -26,7 +26,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class CommonCache<KEY, VALUE> {
 
-    private static final int CACHE_SIZE = 10_000; // TODO: parameterise this through grakn.properties
+    private static final int CACHE_SIZE = 10_000; // TODO: parameterise this through typedb.properties
     private static final int CACHE_TIMEOUT_MINUTES = 1_440;
     private final com.github.benmanes.caffeine.cache.Cache<KEY, VALUE> cache;
 

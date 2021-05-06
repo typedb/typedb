@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,10 +16,10 @@
  *
  */
 
-package grakn.core.rocks;
+package com.vaticle.typedb.core.rocks;
 
-import grakn.core.common.parameters.Arguments;
-import grakn.core.common.parameters.Options;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Options;
 
 public final class RocksFactory implements Factory {
     private DatabaseManager databaseManagerFactory;
@@ -30,13 +30,13 @@ public final class RocksFactory implements Factory {
     private Storage storageFactory;
 
     @Override
-    public RocksGrakn grakn(Options.Database options) {
-        return new RocksGrakn(options, databaseManagerFactory());
+    public RocksTypeDB typedb(Options.Database options) {
+        return new RocksTypeDB(options, databaseManagerFactory());
     }
 
     private synchronized DatabaseManager databaseManagerFactory() {
         if (databaseManagerFactory == null) {
-            databaseManagerFactory = grakn -> new RocksDatabaseManager(grakn, databaseFactory());
+            databaseManagerFactory = typedb -> new RocksDatabaseManager(typedb, databaseFactory());
         }
         return databaseManagerFactory;
     }
@@ -45,13 +45,13 @@ public final class RocksFactory implements Factory {
         if (databaseFactory == null) {
             databaseFactory = new Database() {
                 @Override
-                public RocksDatabase databaseCreateAndOpen(RocksGrakn grakn, String name) {
-                    return RocksDatabase.createAndOpen(grakn, name, sessionFactory());
+                public RocksDatabase databaseCreateAndOpen(RocksTypeDB typedb, String name) {
+                    return RocksDatabase.createAndOpen(typedb, name, sessionFactory());
                 }
 
                 @Override
-                public RocksDatabase databaseLoadAndOpen(RocksGrakn grakn, String name) {
-                    return RocksDatabase.loadAndOpen(grakn, name, sessionFactory());
+                public RocksDatabase databaseLoadAndOpen(RocksTypeDB typedb, String name) {
+                    return RocksDatabase.loadAndOpen(typedb, name, sessionFactory());
                 }
             };
         }

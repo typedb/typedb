@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,27 +16,27 @@
  *
  */
 
-package grakn.core.test.behaviour.concept.type.thingtype;
+package com.vaticle.typedb.core.test.behaviour.concept.type.thingtype;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Label;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.RoleType;
-import grakn.core.concept.type.ThingType;
-import grakn.core.concept.type.Type;
-import grakn.core.test.behaviour.config.Parameters;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.concept.type.AttributeType;
+import com.vaticle.typedb.core.concept.type.EntityType;
+import com.vaticle.typedb.core.concept.type.RelationType;
+import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.concept.type.ThingType;
+import com.vaticle.typedb.core.concept.type.Type;
+import com.vaticle.typedb.core.test.behaviour.config.Parameters;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
 import java.util.List;
 import java.util.Set;
 
-import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
-import static grakn.core.common.test.Util.assertThrows;
-import static grakn.core.test.behaviour.config.Parameters.RootLabel;
-import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
+import static com.vaticle.typedb.core.common.test.Util.assertThrows;
+import static com.vaticle.typedb.core.test.behaviour.config.Parameters.RootLabel;
+import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.tx;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -56,7 +56,7 @@ public class ThingTypeSteps {
             case RELATION:
                 return tx().concepts().getRelationType(typeLabel);
             default:
-                throw GraknException.of(UNRECOGNISED_VALUE);
+                throw TypeDBException.of(UNRECOGNISED_VALUE);
         }
     }
 
@@ -98,7 +98,7 @@ public class ThingTypeSteps {
                 tx().concepts().putRelationType(typeLabel);
                 break;
             default:
-                throw GraknException.of(UNRECOGNISED_VALUE);
+                throw TypeDBException.of(UNRECOGNISED_VALUE);
         }
     }
 

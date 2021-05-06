@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,21 +16,21 @@
  *
  */
 
-package grakn.core.pattern.constraint.thing;
+package com.vaticle.typedb.core.pattern.constraint.thing;
 
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.equivalence.AlphaEquivalence;
-import grakn.core.pattern.equivalence.AlphaEquivalent;
-import grakn.core.pattern.variable.ThingVariable;
-import grakn.core.pattern.variable.VariableCloner;
-import grakn.core.pattern.variable.VariableRegistry;
-import grakn.core.traversal.Traversal;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
+import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalent;
+import com.vaticle.typedb.core.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.pattern.variable.VariableCloner;
+import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
+import com.vaticle.typedb.core.traversal.Traversal;
 
 import java.util.Objects;
 
-import static grakn.common.collection.Collections.set;
-import static graql.lang.common.GraqlToken.Char.SPACE;
-import static graql.lang.common.GraqlToken.Constraint.HAS;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SPACE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.HAS;
 
 public class HasConstraint extends ThingConstraint implements AlphaEquivalent<HasConstraint> {
 
@@ -45,7 +45,7 @@ public class HasConstraint extends ThingConstraint implements AlphaEquivalent<Ha
         attribute.constraining(this);
     }
 
-    static HasConstraint of(ThingVariable owner, graql.lang.pattern.constraint.ThingConstraint.Has constraint,
+    static HasConstraint of(ThingVariable owner, com.vaticle.typeql.lang.pattern.constraint.ThingConstraint.Has constraint,
                             VariableRegistry register) {
         return new HasConstraint(owner, register.register(constraint.attribute()));
     }

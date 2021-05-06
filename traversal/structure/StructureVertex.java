@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,14 +16,14 @@
  *
  */
 
-package grakn.core.traversal.structure;
+package com.vaticle.typedb.core.traversal.structure;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.graph.TraversalVertex;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
 
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
 public abstract class StructureVertex<PROPERTY extends TraversalVertex.Properties>
         extends TraversalVertex<StructureEdge<?, ?>, PROPERTY> {
@@ -36,11 +36,11 @@ public abstract class StructureVertex<PROPERTY extends TraversalVertex.Propertie
     }
 
     public StructureVertex.Thing asThing() {
-        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(StructureVertex.Thing.class));
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(StructureVertex.Thing.class));
     }
 
     public StructureVertex.Type asType() {
-        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(StructureVertex.Type.class));
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(StructureVertex.Type.class));
     }
 
     public static class Thing extends StructureVertex<TraversalVertex.Properties.Thing> {

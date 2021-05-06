@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,18 +16,18 @@
  *
  */
 
-package grakn.core.test.behaviour.concept.thing.attribute;
+package com.vaticle.typedb.core.test.behaviour.concept.thing.attribute;
 
-import grakn.core.concept.type.AttributeType;
+import com.vaticle.typedb.core.concept.type.AttributeType;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
 import java.time.LocalDateTime;
 
-import static grakn.core.common.test.Util.assertThrows;
-import static grakn.core.test.behaviour.concept.thing.ThingSteps.get;
-import static grakn.core.test.behaviour.concept.thing.ThingSteps.put;
-import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
+import static com.vaticle.typedb.core.common.test.Util.assertThrows;
+import static com.vaticle.typedb.core.test.behaviour.concept.thing.ThingSteps.get;
+import static com.vaticle.typedb.core.test.behaviour.concept.thing.ThingSteps.put;
+import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.tx;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

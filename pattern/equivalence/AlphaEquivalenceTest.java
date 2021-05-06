@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,14 +15,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.pattern.equivalence;
+package com.vaticle.typedb.core.pattern.equivalence;
 
-import grakn.common.collection.Collections;
-import grakn.common.collection.Pair;
-import grakn.core.pattern.variable.ThingVariable;
-import grakn.core.pattern.variable.Variable;
-import graql.lang.Graql;
-import graql.lang.pattern.variable.Reference;
+import com.vaticle.typedb.common.collection.Collections;
+import com.vaticle.typedb.common.collection.Pair;
+import com.vaticle.typedb.core.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.pattern.variable.Variable;
+import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.pattern.variable.Reference;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -35,26 +35,26 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.common.collection.Collections.list;
-import static grakn.common.collection.Collections.map;
-import static grakn.core.pattern.variable.VariableRegistry.createFromVariables;
+import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.common.collection.Collections.map;
+import static com.vaticle.typedb.core.pattern.variable.VariableRegistry.createFromVariables;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 
 public class AlphaEquivalenceTest {
 
-    private Variable parseVariable(String variableName, String graqlVariable) {
-        return createFromVariables(list(Graql.parseVariable(graqlVariable)), null).get(Reference.name(variableName));
+    private Variable parseVariable(String variableName, String typeQLVariable) {
+        return createFromVariables(list(TypeQL.parseVariable(typeQLVariable)), null).get(Reference.name(variableName));
     }
 
-    private Variable parseVariables(String variableName, String... graqlVariables) {
+    private Variable parseVariables(String variableName, String... typeQLVariables) {
         return createFromVariables(
-                Arrays.stream(graqlVariables).map(Graql::parseVariable).collect(Collectors.toList()), null)
+                Arrays.stream(typeQLVariables).map(TypeQL::parseVariable).collect(Collectors.toList()), null)
                 .get(Reference.name(variableName));
     }
 
-    private Variable parseAnonymousRelationVariable(String... graqlVariables) {
-        Set<Variable> anonVariables = parseAnonymousThingVariables(graqlVariables);
+    private Variable parseAnonymousRelationVariable(String... typeQLVariables) {
+        Set<Variable> anonVariables = parseAnonymousThingVariables(typeQLVariables);
         return anonVariables.stream()
                 .filter(Variable::isThing)
                 .filter(variable -> variable.asThing().relation().isPresent())
@@ -62,10 +62,10 @@ public class AlphaEquivalenceTest {
                 .get().asThing().relation().get().owner();
     }
 
-    private Set<Variable> parseAnonymousThingVariables(String... graqlVariables) {
+    private Set<Variable> parseAnonymousThingVariables(String... typeQLVariables) {
         return createFromVariables(
-                Arrays.stream(graqlVariables)
-                        .map(Graql::parseVariable)
+                Arrays.stream(typeQLVariables)
+                        .map(TypeQL::parseVariable)
                         .collect(Collectors.toList()), null)
                 .variables().stream()
                 .filter(variable -> !variable.id().isName())

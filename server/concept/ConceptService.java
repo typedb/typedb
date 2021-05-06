@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,27 +15,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.concept;
+package com.vaticle.typedb.core.server.concept;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.concept.ConceptManager;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.server.TransactionService;
-import grakn.core.server.common.ResponseBuilder;
-import grakn.protocol.ConceptProto;
-import grakn.protocol.TransactionProto.Transaction;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.concept.type.AttributeType;
+import com.vaticle.typedb.core.concept.type.EntityType;
+import com.vaticle.typedb.core.concept.type.RelationType;
+import com.vaticle.typedb.core.server.TransactionService;
+import com.vaticle.typedb.core.server.common.ResponseBuilder;
+import com.vaticle.typedb.protocol.ConceptProto;
+import com.vaticle.typedb.protocol.TransactionProto.Transaction;
 
 import java.util.UUID;
 
-import static grakn.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
-import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
-import static grakn.core.server.common.RequestReader.byteStringAsUUID;
-import static grakn.core.server.common.ResponseBuilder.ConceptManager.getThingRes;
-import static grakn.core.server.common.ResponseBuilder.ConceptManager.putAttributeTypeRes;
-import static grakn.core.server.common.ResponseBuilder.ConceptManager.putEntityTypeRes;
-import static grakn.core.server.common.ResponseBuilder.ConceptManager.putRelationTypeRes;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
+import static com.vaticle.typedb.core.server.common.RequestReader.byteStringAsUUID;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.ConceptManager.getThingRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.ConceptManager.putAttributeTypeRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.ConceptManager.putEntityTypeRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.ConceptManager.putRelationTypeRes;
 
 public class ConceptService {
 
@@ -68,7 +68,7 @@ public class ConceptService {
                 return;
             default:
             case REQ_NOT_SET:
-                throw GraknException.of(UNKNOWN_REQUEST_TYPE);
+                throw TypeDBException.of(UNKNOWN_REQUEST_TYPE);
         }
     }
 
@@ -107,7 +107,7 @@ public class ConceptService {
             case OBJECT:
             case UNRECOGNIZED:
             default:
-                throw GraknException.of(BAD_VALUE_TYPE, valueTypeProto);
+                throw TypeDBException.of(BAD_VALUE_TYPE, valueTypeProto);
         }
         AttributeType attributeType = conceptMgr.putAttributeType(attributeTypeReq.getLabel(), valueType);
         transactionSvc.respond(putAttributeTypeRes(reqID, attributeType));

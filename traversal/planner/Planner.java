@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,15 +16,15 @@
  *
  */
 
-package grakn.core.traversal.planner;
+package com.vaticle.typedb.core.traversal.planner;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.graph.GraphManager;
-import grakn.core.traversal.procedure.Procedure;
-import grakn.core.traversal.structure.Structure;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.traversal.procedure.Procedure;
+import com.vaticle.typedb.core.traversal.structure.Structure;
 
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
 public interface Planner {
 
@@ -44,10 +44,10 @@ public interface Planner {
     default boolean isGraph() { return false; }
 
     default VertexPlanner asVertex() {
-        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(VertexPlanner.class));
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(VertexPlanner.class));
     }
 
     default GraphPlanner asGraph() {
-        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(GraphPlanner.class));
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(GraphPlanner.class));
     }
 }

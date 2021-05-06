@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,15 +16,15 @@
  *
  */
 
-package grakn.core.reasoner.resolution.framework;
+package com.vaticle.typedb.core.reasoner.resolution.framework;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 
 import java.util.Objects;
 
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
 public interface Response {
     Request sourceRequest();
@@ -34,11 +34,11 @@ public interface Response {
     boolean isFail();
 
     default Answer asAnswer() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Answer.class));
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Answer.class));
     }
 
     default Fail asFail() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Fail.class));
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Fail.class));
     }
 
     class Answer implements Response {

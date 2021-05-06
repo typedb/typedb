@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,20 +16,20 @@
  *
  */
 
-package grakn.core.graph.adjacency.impl;
+package com.vaticle.typedb.core.graph.adjacency.impl;
 
-import grakn.common.collection.ConcurrentSet;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.graph.adjacency.ThingAdjacency;
-import grakn.core.graph.common.Encoding;
-import grakn.core.graph.edge.Edge;
-import grakn.core.graph.edge.ThingEdge;
-import grakn.core.graph.edge.impl.ThingEdgeImpl;
-import grakn.core.graph.iid.EdgeIID;
-import grakn.core.graph.iid.IID;
-import grakn.core.graph.iid.InfixIID;
-import grakn.core.graph.iid.SuffixIID;
-import grakn.core.graph.vertex.ThingVertex;
+import com.vaticle.typedb.common.collection.ConcurrentSet;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.edge.Edge;
+import com.vaticle.typedb.core.graph.edge.ThingEdge;
+import com.vaticle.typedb.core.graph.edge.impl.ThingEdgeImpl;
+import com.vaticle.typedb.core.graph.iid.EdgeIID;
+import com.vaticle.typedb.core.graph.iid.IID;
+import com.vaticle.typedb.core.graph.iid.InfixIID;
+import com.vaticle.typedb.core.graph.iid.SuffixIID;
+import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -37,10 +37,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Predicate;
 
-import static grakn.core.common.collection.Bytes.join;
-import static grakn.core.common.iterator.Iterators.empty;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.iterator.Iterators.link;
+import static com.vaticle.typedb.core.common.collection.Bytes.join;
+import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static java.util.Arrays.copyOfRange;
 
 public abstract class ThingAdjacencyImpl implements ThingAdjacency {

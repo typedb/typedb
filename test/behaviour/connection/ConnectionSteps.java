@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,12 +16,12 @@
  *
  */
 
-package grakn.core.test.behaviour.connection;
+package com.vaticle.typedb.core.test.behaviour.connection;
 
-import grakn.core.Grakn;
-import grakn.core.common.parameters.Options;
-import grakn.core.rocks.RocksDatabase;
-import grakn.core.rocks.RocksGrakn;
+import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.rocks.RocksDatabase;
+import com.vaticle.typedb.core.rocks.RocksTypeDB;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
@@ -50,17 +50,17 @@ public class ConnectionSteps {
     public static int THREAD_POOL_SIZE = 32;
     public static ExecutorService threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 
-    public static RocksGrakn grakn;
-    public static Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("grakn");
+    public static RocksTypeDB typedb;
+    public static Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("typedb");
     public static Path logsDir = dataDir.resolve("logs");
     public static Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logsDir);
-    public static List<Grakn.Session> sessions = new ArrayList<>();
-    public static List<CompletableFuture<Grakn.Session>> sessionsParallel = new ArrayList<>();
-    public static Map<Grakn.Session, List<Grakn.Transaction>> sessionsToTransactions = new HashMap<>();
-    public static Map<Grakn.Session, List<CompletableFuture<Grakn.Transaction>>> sessionsToTransactionsParallel = new HashMap<>();
-    public static Map<CompletableFuture<Grakn.Session>, List<CompletableFuture<Grakn.Transaction>>> sessionsParallelToTransactionsParallel = new HashMap<>();
+    public static List<TypeDB.Session> sessions = new ArrayList<>();
+    public static List<CompletableFuture<TypeDB.Session>> sessionsParallel = new ArrayList<>();
+    public static Map<TypeDB.Session, List<TypeDB.Transaction>> sessionsToTransactions = new HashMap<>();
+    public static Map<TypeDB.Session, List<CompletableFuture<TypeDB.Transaction>>> sessionsToTransactionsParallel = new HashMap<>();
+    public static Map<CompletableFuture<TypeDB.Session>, List<CompletableFuture<TypeDB.Transaction>>> sessionsParallelToTransactionsParallel = new HashMap<>();
 
-    public static Grakn.Transaction tx() {
+    public static TypeDB.Transaction tx() {
         assertFalse("There is no open session", sessions.isEmpty());
         assertFalse("There is no open transaction", sessionsToTransactions.get(sessions.get(0)).isEmpty());
         return sessionsToTransactions.get(sessions.get(0)).get(0);
@@ -68,27 +68,27 @@ public class ConnectionSteps {
 
     @Given("connection has been opened")
     public void connection_has_been_opened() {
-        assertNotNull(grakn);
-        assertTrue(grakn.isOpen());
+        assertNotNull(typedb);
+        assertTrue(typedb.isOpen());
     }
 
     @Given("connection does not have any database")
     public void connection_does_not_have_any_database() {
-        assertTrue(grakn.databases().all().isEmpty());
+        assertTrue(typedb.databases().all().isEmpty());
     }
 
     @Before
     public synchronized void before() throws IOException {
-        assertNull(grakn);
+        assertNull(typedb);
         resetDirectory();
-        System.out.println("Connecting to Grakn ...");
-        grakn = RocksGrakn.open(options);
+        System.out.println("Connecting to TypeDB ...");
+        typedb = RocksTypeDB.open(options);
     }
 
     @After
     public synchronized void after() {
         System.out.println("ConnectionSteps.after");
-        sessionsToTransactions.values().forEach(l -> l.forEach(Grakn.Transaction::close));
+        sessionsToTransactions.values().forEach(l -> l.forEach(TypeDB.Transaction::close));
         sessionsToTransactions.clear();
         sessionsToTransactionsParallel.values().forEach(l -> l.forEach(c -> {
             try { c.get().close(); } catch (Exception e) { e.printStackTrace(); }
@@ -98,14 +98,14 @@ public class ConnectionSteps {
             try { c.get().close(); } catch (Exception e) { e.printStackTrace(); }
         }));
         sessionsParallelToTransactionsParallel.clear();
-        sessions.forEach(Grakn.Session::close);
+        sessions.forEach(TypeDB.Session::close);
         sessions.clear();
-        sessionsParallel.forEach(c -> c.thenAccept(Grakn.Session::close));
+        sessionsParallel.forEach(c -> c.thenAccept(TypeDB.Session::close));
         sessionsParallel.clear();
-        grakn.databases().all().forEach(RocksDatabase::delete);
-        grakn.close();
-        assertFalse(grakn.isOpen());
-        grakn = null;
+        typedb.databases().all().forEach(RocksDatabase::delete);
+        typedb.close();
+        assertFalse(typedb.isOpen());
+        typedb = null;
     }
 
     private static void resetDirectory() throws IOException {

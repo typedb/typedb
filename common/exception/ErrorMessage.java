@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,9 +16,9 @@
  *
  */
 
-package grakn.core.common.exception;
+package com.vaticle.typedb.core.common.exception;
 
-public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
+public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.ErrorMessage {
 
     private ErrorMessage(String codePrefix, int codeNumber, String messagePrefix, String messageBody) {
         super(codePrefix, codeNumber, messagePrefix, messageBody);
@@ -29,7 +29,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
             try {
                 Class.forName(innerClass.getName(), true, innerClass.getClassLoader());
             } catch (ClassNotFoundException e) {
-                throw GraknException.of(e);
+                throw TypeDBException.of(e);
             }
         }
     }
@@ -52,7 +52,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         public static final Server ENV_VAR_NOT_FOUND =
                 new Server(8, "Environment variable '%s' is not defined.");
         public static final Server SERVER_SHUTDOWN =
-                new Server(9, "Grakn Core server has been shutdown.");
+                new Server(9, "TypeDB server has been shutdown.");
         public static final Server MISSING_FIELD =
                 new Server(10, "The request message does not contain the required field '%s'.");
         public static final Server MISSING_CONCEPT =
@@ -68,7 +68,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         public static final Server DUPLICATE_REQUEST =
                 new Server(16, "The request with ID '%s' is a duplicate.");
         public static final Server ALREADY_RUNNING =
-                new Server(17, "Another instance of Grakn Core server is already running at this port: '%s'.");
+                new Server(17, "Another instance of TypeDB server is already running at this port: '%s'.");
         public static final Server INCOMPATIBLE_JAVA_RUNTIME =
                 new Server(18, "Incompatible Java runtime version: '%s'. Please use Java 11 or above.");
 
@@ -95,8 +95,8 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
                 new Internal(6, "Unrecognised encoding value!");
         public static final Internal DIRTY_INITIALISATION =
                 new Internal(7, "Invalid Database Initialisation.");
-        public static final Internal GRAKN_CLOSED =
-                new Internal(8, "Attempted to open a session on a closed Grakn backend.");
+        public static final Internal TYPEDB_CLOSED =
+                new Internal(8, "Attempted to open a session on a closed TypeDB.");
         public static final Internal OUT_OF_BOUNDS =
                 new Internal(9, "Resource out of bounds.");
         public static final Internal UNEXPECTED_INTERRUPTION =
@@ -357,7 +357,7 @@ public abstract class ErrorMessage extends grakn.common.exception.ErrorMessage {
         public static final TypeRead VALUE_TYPE_MISMATCH =
                 new TypeRead(7, "Attempted to retrieve '%s' as AttributeType of ValueType '%s', while it actually has ValueType '%s'.");
         public static final TypeRead OVERRIDDEN_TYPES_IN_TRAVERSAL =
-                new TypeRead(8, "Attempted to query for an overridden type through a traversal. Overridden types cannot be queried via Graql Match.");
+                new TypeRead(8, "Attempted to query for an overridden type through a traversal. Overridden types cannot be queried via TypeQL Match.");
         public static final TypeRead ROLE_TYPE_SCOPE_IS_NOT_RELATION_TYPE =
                 new TypeRead(9, "The role type '%s' has scope '%s' that is not a relation type.");
 

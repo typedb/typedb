@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,25 +16,25 @@
  *
  */
 
-package grakn.core.pattern.constraint.type;
+package com.vaticle.typedb.core.pattern.constraint.type;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.variable.TypeVariable;
-import grakn.core.pattern.variable.VariableCloner;
-import grakn.core.pattern.variable.VariableRegistry;
-import grakn.core.traversal.Traversal;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.variable.TypeVariable;
+import com.vaticle.typedb.core.pattern.variable.VariableCloner;
+import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
+import com.vaticle.typedb.core.traversal.Traversal;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.set;
-import static grakn.core.common.exception.ErrorMessage.TypeRead.OVERRIDDEN_TYPES_IN_TRAVERSAL;
-import static graql.lang.common.GraqlToken.Char.SPACE;
-import static graql.lang.common.GraqlToken.Constraint.AS;
-import static graql.lang.common.GraqlToken.Constraint.RELATES;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.OVERRIDDEN_TYPES_IN_TRAVERSAL;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SPACE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.AS;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.RELATES;
 
 public class RelatesConstraint extends TypeConstraint {
 
@@ -56,7 +56,7 @@ public class RelatesConstraint extends TypeConstraint {
         if (overriddenRoleType != null) overriddenRoleType.constraining(this);
     }
 
-    static RelatesConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Relates constraint,
+    static RelatesConstraint of(TypeVariable owner, com.vaticle.typeql.lang.pattern.constraint.TypeConstraint.Relates constraint,
                                 VariableRegistry registry) {
         TypeVariable roleType = registry.register(constraint.role());
         TypeVariable overriddenRoleType = constraint.overridden().map(registry::register).orElse(null);
@@ -79,7 +79,7 @@ public class RelatesConstraint extends TypeConstraint {
 
     @Override
     public void addTo(Traversal traversal) {
-        if (overridden().isPresent()) throw GraknException.of(OVERRIDDEN_TYPES_IN_TRAVERSAL);
+        if (overridden().isPresent()) throw TypeDBException.of(OVERRIDDEN_TYPES_IN_TRAVERSAL);
         traversal.relates(owner.id(), roleType.id());
     }
 

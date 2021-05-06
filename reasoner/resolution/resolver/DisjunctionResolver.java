@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,19 +15,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner.resolution.resolver;
+package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.concept.ConceptManager;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.pattern.Disjunction;
-import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Compound;
-import grakn.core.reasoner.resolution.framework.Request;
-import grakn.core.reasoner.resolution.framework.Response;
-import grakn.core.traversal.TraversalEngine;
-import grakn.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Compound;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
+import com.vaticle.typedb.core.traversal.TraversalEngine;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,17 +36,17 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static grakn.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<RESOLVER>>
         extends CompoundResolver<RESOLVER, DisjunctionResolver.RequestState> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Disjunction.class);
 
-    final Map<Driver<ConjunctionResolver.Nested>, grakn.core.pattern.Conjunction> downstreamResolvers;
-    final grakn.core.pattern.Disjunction disjunction;
+    final Map<Driver<ConjunctionResolver.Nested>, com.vaticle.typedb.core.pattern.Conjunction> downstreamResolvers;
+    final com.vaticle.typedb.core.pattern.Disjunction disjunction;
 
-    public DisjunctionResolver(Driver<RESOLVER> driver, String name, grakn.core.pattern.Disjunction disjunction,
+    public DisjunctionResolver(Driver<RESOLVER> driver, String name, com.vaticle.typedb.core.pattern.Disjunction disjunction,
                                ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
                                boolean resolutionTracing) {
         super(driver, name, registry, traversalEngine, conceptMgr, resolutionTracing);
@@ -76,10 +76,10 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
     @Override
     protected void initialiseDownstreamResolvers() {
         LOG.debug("{}: initialising downstream resolvers", name());
-        for (grakn.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
+        for (com.vaticle.typedb.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
             try {
                 downstreamResolvers.put(registry.nested(conjunction), conjunction);
-            } catch (GraknException e) {
+            } catch (TypeDBException e) {
                 terminate(e);
                 return;
             }

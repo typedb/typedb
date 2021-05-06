@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,46 +15,46 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.query;
+package com.vaticle.typedb.core.server.query;
 
-import grabl.tracing.client.GrablTracingThreadStatic;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.parameters.Context;
-import grakn.core.common.parameters.Options;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.ConceptMapGroup;
-import grakn.core.concept.answer.NumericGroup;
-import grakn.core.query.QueryManager;
-import grakn.core.reasoner.resolution.answer.Explanation;
-import grakn.core.server.TransactionService;
-import grakn.protocol.QueryProto;
-import grakn.protocol.TransactionProto;
-import graql.lang.Graql;
-import graql.lang.query.GraqlDefine;
-import graql.lang.query.GraqlDelete;
-import graql.lang.query.GraqlInsert;
-import graql.lang.query.GraqlMatch;
-import graql.lang.query.GraqlUndefine;
-import graql.lang.query.GraqlUpdate;
+import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Context;
+import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concept.answer.ConceptMapGroup;
+import com.vaticle.typedb.core.concept.answer.NumericGroup;
+import com.vaticle.typedb.core.query.QueryManager;
+import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
+import com.vaticle.typedb.core.server.TransactionService;
+import com.vaticle.typedb.protocol.QueryProto;
+import com.vaticle.typedb.protocol.TransactionProto;
+import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.query.TypeQLDefine;
+import com.vaticle.typeql.lang.query.TypeQLDelete;
+import com.vaticle.typeql.lang.query.TypeQLInsert;
+import com.vaticle.typeql.lang.query.TypeQLMatch;
+import com.vaticle.typeql.lang.query.TypeQLUndefine;
+import com.vaticle.typeql.lang.query.TypeQLUpdate;
 
 import java.util.UUID;
 
-import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
-import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
-import static grakn.core.server.common.RequestReader.applyDefaultOptions;
-import static grakn.core.server.common.RequestReader.applyQueryOptions;
-import static grakn.core.server.common.RequestReader.byteStringAsUUID;
-import static grakn.core.server.common.ResponseBuilder.QueryManager.defineRes;
-import static grakn.core.server.common.ResponseBuilder.QueryManager.deleteRes;
-import static grakn.core.server.common.ResponseBuilder.QueryManager.explainResPart;
-import static grakn.core.server.common.ResponseBuilder.QueryManager.insertResPart;
-import static grakn.core.server.common.ResponseBuilder.QueryManager.matchAggregateRes;
-import static grakn.core.server.common.ResponseBuilder.QueryManager.matchGroupAggregateResPart;
-import static grakn.core.server.common.ResponseBuilder.QueryManager.matchGroupResPart;
-import static grakn.core.server.common.ResponseBuilder.QueryManager.matchResPart;
-import static grakn.core.server.common.ResponseBuilder.QueryManager.undefineRes;
-import static grakn.core.server.common.ResponseBuilder.QueryManager.updateResPart;
+import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.traceOnThread;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
+import static com.vaticle.typedb.core.server.common.RequestReader.applyDefaultOptions;
+import static com.vaticle.typedb.core.server.common.RequestReader.applyQueryOptions;
+import static com.vaticle.typedb.core.server.common.RequestReader.byteStringAsUUID;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.defineRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.deleteRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.explainResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.insertResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.matchAggregateRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.matchGroupAggregateResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.matchGroupResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.matchResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.undefineRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.updateResPart;
 
 public class QueryService {
 
@@ -67,7 +67,7 @@ public class QueryService {
     }
 
     public void execute(TransactionProto.Transaction.Req req) {
-        try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread("query")) {
+        try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread("query")) {
             QueryProto.QueryManager.Req queryReq = req.getQueryManagerReq();
             Options.Query options = new Options.Query();
             applyDefaultOptions(options, queryReq.getOptions());
@@ -106,68 +106,68 @@ public class QueryService {
                     return;
                 case REQ_NOT_SET:
                 default:
-                    throw GraknException.of(UNKNOWN_REQUEST_TYPE);
+                    throw TypeDBException.of(UNKNOWN_REQUEST_TYPE);
             }
         }
     }
 
     private void define(String queryStr, Options.Query options, UUID reqID) {
-        GraqlDefine query = Graql.parseQuery(queryStr).asDefine();
+        TypeQLDefine query = TypeQL.parseQuery(queryStr).asDefine();
         Context.Query context = new Context.Query(transactionSvc.context(), options.query(query), query);
         queryMgr.define(query, context);
         transactionSvc.respond(defineRes(reqID));
     }
 
     private void undefine(String queryStr, Options.Query options, UUID reqID) {
-        GraqlUndefine query = Graql.parseQuery(queryStr).asUndefine();
+        TypeQLUndefine query = TypeQL.parseQuery(queryStr).asUndefine();
         Context.Query context = new Context.Query(transactionSvc.context(), options.query(query), query);
         queryMgr.undefine(query, context);
         transactionSvc.respond(undefineRes(reqID));
     }
 
     private void match(String queryStr, Options.Query options, UUID reqID) {
-        GraqlMatch query = Graql.parseQuery(queryStr).asMatch();
+        TypeQLMatch query = TypeQL.parseQuery(queryStr).asMatch();
         Context.Query context = new Context.Query(transactionSvc.context(), options.query(query), query);
         FunctionalIterator<ConceptMap> answers = queryMgr.match(query, context);
         transactionSvc.stream(answers, reqID, context.options(), a -> matchResPart(reqID, a));
     }
 
     private void matchAggregate(String queryStr, Options.Query options, UUID reqID) {
-        GraqlMatch.Aggregate query = Graql.parseQuery(queryStr).asMatchAggregate();
+        TypeQLMatch.Aggregate query = TypeQL.parseQuery(queryStr).asMatchAggregate();
         Context.Query context = new Context.Query(transactionSvc.context(), options.query(query), query);
         transactionSvc.respond(matchAggregateRes(reqID, queryMgr.match(query, context)));
     }
 
     private void matchGroup(String queryStr, Options.Query options, UUID reqID) {
-        GraqlMatch.Group query = Graql.parseQuery(queryStr).asMatchGroup();
+        TypeQLMatch.Group query = TypeQL.parseQuery(queryStr).asMatchGroup();
         Context.Query context = new Context.Query(transactionSvc.context(), options.query(query), query);
         FunctionalIterator<ConceptMapGroup> answers = queryMgr.match(query, context);
         transactionSvc.stream(answers, reqID, context.options(), a -> matchGroupResPart(reqID, a));
     }
 
     private void matchGroupAggregate(String queryStr, Options.Query options, UUID reqID) {
-        GraqlMatch.Group.Aggregate query = Graql.parseQuery(queryStr).asMatchGroupAggregate();
+        TypeQLMatch.Group.Aggregate query = TypeQL.parseQuery(queryStr).asMatchGroupAggregate();
         Context.Query context = new Context.Query(transactionSvc.context(), options.query(query), query);
         FunctionalIterator<NumericGroup> answers = queryMgr.match(query, context);
         transactionSvc.stream(answers, reqID, context.options(), a -> matchGroupAggregateResPart(reqID, a));
     }
 
     private void insert(String queryStr, Options.Query options, UUID reqID) {
-        GraqlInsert query = Graql.parseQuery(queryStr).asInsert();
+        TypeQLInsert query = TypeQL.parseQuery(queryStr).asInsert();
         Context.Query context = new Context.Query(transactionSvc.context(), options.query(query), query);
         FunctionalIterator<ConceptMap> answers = queryMgr.insert(query, context);
         transactionSvc.stream(answers, reqID, context.options(), a -> insertResPart(reqID, a));
     }
 
     private void delete(String queryStr, Options.Query options, UUID reqID) {
-        GraqlDelete query = Graql.parseQuery(queryStr).asDelete();
+        TypeQLDelete query = TypeQL.parseQuery(queryStr).asDelete();
         Context.Query context = new Context.Query(transactionSvc.context(), options.query(query), query);
         queryMgr.delete(query, context);
         transactionSvc.respond(deleteRes(reqID));
     }
 
     private void update(String queryStr, Options.Query options, UUID reqID) {
-        GraqlUpdate query = Graql.parseQuery(queryStr).asUpdate();
+        TypeQLUpdate query = TypeQL.parseQuery(queryStr).asUpdate();
         Context.Query context = new Context.Query(transactionSvc.context(), options.query(query), query);
         FunctionalIterator<ConceptMap> answers = queryMgr.update(query, context);
         transactionSvc.stream(answers, reqID, context.options(), a -> updateResPart(reqID, a));

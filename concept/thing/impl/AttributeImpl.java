@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,27 +16,27 @@
  *
  */
 
-package grakn.core.concept.thing.impl;
+package com.vaticle.typedb.core.concept.thing.impl;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.type.ThingType;
-import grakn.core.concept.type.impl.AttributeTypeImpl;
-import grakn.core.concept.type.impl.ThingTypeImpl;
-import grakn.core.graph.iid.PrefixIID;
-import grakn.core.graph.vertex.AttributeVertex;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.type.ThingType;
+import com.vaticle.typedb.core.concept.type.impl.AttributeTypeImpl;
+import com.vaticle.typedb.core.concept.type.impl.ThingTypeImpl;
+import com.vaticle.typedb.core.graph.iid.PrefixIID;
+import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 
 import java.time.LocalDateTime;
 
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;
-import static grakn.core.graph.common.Encoding.Edge.Thing.HAS;
-import static grakn.core.graph.common.Encoding.ValueType.BOOLEAN;
-import static grakn.core.graph.common.Encoding.ValueType.DATETIME;
-import static grakn.core.graph.common.Encoding.ValueType.DOUBLE;
-import static grakn.core.graph.common.Encoding.ValueType.LONG;
-import static grakn.core.graph.common.Encoding.ValueType.STRING;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.HAS;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.BOOLEAN;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DATETIME;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DOUBLE;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.LONG;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
 
 public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribute {
 
@@ -131,27 +131,27 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     @Override
     public AttributeImpl.Boolean asBoolean() {
-        throw exception(GraknException.of(INVALID_THING_CASTING, className(this.getClass()), className(Attribute.Boolean.class)));
+        throw exception(TypeDBException.of(INVALID_THING_CASTING, className(this.getClass()), className(Attribute.Boolean.class)));
     }
 
     @Override
     public AttributeImpl.Long asLong() {
-        throw exception(GraknException.of(INVALID_THING_CASTING, className(this.getClass()), className(Attribute.Long.class)));
+        throw exception(TypeDBException.of(INVALID_THING_CASTING, className(this.getClass()), className(Attribute.Long.class)));
     }
 
     @Override
     public AttributeImpl.Double asDouble() {
-        throw exception(GraknException.of(INVALID_THING_CASTING, className(this.getClass()), className(Attribute.Double.class)));
+        throw exception(TypeDBException.of(INVALID_THING_CASTING, className(this.getClass()), className(Attribute.Double.class)));
     }
 
     @Override
     public AttributeImpl.String asString() {
-        throw exception(GraknException.of(INVALID_THING_CASTING, className(this.getClass()), className(Attribute.String.class)));
+        throw exception(TypeDBException.of(INVALID_THING_CASTING, className(this.getClass()), className(Attribute.String.class)));
     }
 
     @Override
     public AttributeImpl.DateTime asDateTime() {
-        throw exception(GraknException.of(INVALID_THING_CASTING, className(this.getClass()), className(Attribute.DateTime.class)));
+        throw exception(TypeDBException.of(INVALID_THING_CASTING, className(this.getClass()), className(Attribute.DateTime.class)));
     }
 
     public static class Boolean extends AttributeImpl<java.lang.Boolean> implements Attribute.Boolean {

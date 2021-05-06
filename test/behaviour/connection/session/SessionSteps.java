@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,10 +16,10 @@
  *
  */
 
-package grakn.core.test.behaviour.connection.session;
+package com.vaticle.typedb.core.test.behaviour.connection.session;
 
-import grakn.core.Grakn;
-import grakn.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.parameters.Arguments;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -28,12 +28,12 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
-import static grakn.common.collection.Collections.list;
-import static grakn.core.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
-import static grakn.core.test.behaviour.connection.ConnectionSteps.grakn;
-import static grakn.core.test.behaviour.connection.ConnectionSteps.sessions;
-import static grakn.core.test.behaviour.connection.ConnectionSteps.sessionsParallel;
-import static grakn.core.test.behaviour.connection.ConnectionSteps.threadPool;
+import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
+import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.sessions;
+import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.sessionsParallel;
+import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.threadPool;
+import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.typedb;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -53,14 +53,14 @@ public class SessionSteps {
     @When("connection open schema session(s) for database(s):")
     public void connection_open_schema_sessions_for_databases(List<String> names) {
         for (String name : names) {
-            sessions.add(grakn.session(name, Arguments.Session.Type.SCHEMA));
+            sessions.add(typedb.session(name, Arguments.Session.Type.SCHEMA));
         }
     }
 
     @When("connection open (data )session(s) for database(s):")
     public void connection_open_data_sessions_for_databases(List<String> names) {
         for (String name : names) {
-            sessions.add(grakn.session(name, Arguments.Session.Type.DATA));
+            sessions.add(typedb.session(name, Arguments.Session.Type.DATA));
         }
     }
 
@@ -70,14 +70,14 @@ public class SessionSteps {
 
         for (String name : names) {
             sessionsParallel.add(CompletableFuture.supplyAsync(
-                    () -> grakn.session(name, Arguments.Session.Type.DATA), threadPool)
+                    () -> typedb.session(name, Arguments.Session.Type.DATA), threadPool)
             );
         }
     }
 
     @When("connection close all sessions")
     public void connection_close_all_sessions() {
-        for (Grakn.Session session : sessions) {
+        for (TypeDB.Session session : sessions) {
             session.close();
         }
         sessions.clear();
@@ -85,14 +85,14 @@ public class SessionSteps {
 
     @Then("session(s) is/are null: {bool}")
     public void sessions_are_null(Boolean isNull) {
-        for (Grakn.Session session : sessions) {
+        for (TypeDB.Session session : sessions) {
             assertEquals(isNull, isNull(session));
         }
     }
 
     @Then("session(s) is/are open: {bool}")
     public void sessions_are_open(Boolean isOpen) {
-        for (Grakn.Session session : sessions) {
+        for (TypeDB.Session session : sessions) {
             assertEquals(isOpen, session.isOpen());
         }
     }
@@ -127,7 +127,7 @@ public class SessionSteps {
     @Then("session(s) has/have database(s):")
     public void sessions_have_databases(List<String> names) {
         assertEquals(names.size(), sessions.size());
-        Iterator<Grakn.Session> sessionIter = sessions.iterator();
+        Iterator<TypeDB.Session> sessionIter = sessions.iterator();
 
         for (String name : names) {
             assertEquals(name, sessionIter.next().database().name());
@@ -137,7 +137,7 @@ public class SessionSteps {
     @Then("sessions in parallel have databases:")
     public void sessions_in_parallel_have_databases(List<String> names) {
         assertEquals(names.size(), sessionsParallel.size());
-        Iterator<CompletableFuture<Grakn.Session>> futureSessionIter = sessionsParallel.iterator();
+        Iterator<CompletableFuture<TypeDB.Session>> futureSessionIter = sessionsParallel.iterator();
         CompletableFuture<?>[] assertions = new CompletableFuture<?>[names.size()];
 
         int i = 0;

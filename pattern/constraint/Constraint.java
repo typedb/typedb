@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,19 +16,19 @@
  *
  */
 
-package grakn.core.pattern.constraint;
+package com.vaticle.typedb.core.pattern.constraint;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.constraint.thing.ThingConstraint;
-import grakn.core.pattern.constraint.type.TypeConstraint;
-import grakn.core.pattern.variable.Variable;
-import grakn.core.traversal.Traversal;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.constraint.thing.ThingConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.TypeConstraint;
+import com.vaticle.typedb.core.pattern.variable.Variable;
+import com.vaticle.typedb.core.traversal.Traversal;
 
 import java.util.Set;
 
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
 public abstract class Constraint {
 
@@ -47,11 +47,11 @@ public abstract class Constraint {
     }
 
     public TypeConstraint asType() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(TypeConstraint.class));
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(TypeConstraint.class));
     }
 
     public ThingConstraint asThing() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(ThingConstraint.class));
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(ThingConstraint.class));
     }
 
     @Override

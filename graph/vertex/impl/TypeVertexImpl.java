@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,39 +16,39 @@
  *
  */
 
-package grakn.core.graph.vertex.impl;
+package com.vaticle.typedb.core.graph.vertex.impl;
 
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.parameters.Label;
-import grakn.core.graph.SchemaGraph;
-import grakn.core.graph.adjacency.TypeAdjacency;
-import grakn.core.graph.adjacency.impl.TypeAdjacencyImpl;
-import grakn.core.graph.common.Encoding;
-import grakn.core.graph.common.StatisticsBytes;
-import grakn.core.graph.iid.IndexIID;
-import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.vertex.TypeVertex;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.graph.SchemaGraph;
+import com.vaticle.typedb.core.graph.adjacency.TypeAdjacency;
+import com.vaticle.typedb.core.graph.adjacency.impl.TypeAdjacencyImpl;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.common.StatisticsBytes;
+import com.vaticle.typedb.core.graph.iid.IndexIID;
+import com.vaticle.typedb.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
-import static grakn.core.common.collection.Bytes.join;
-import static grakn.core.common.iterator.Iterators.link;
-import static grakn.core.graph.common.Encoding.Edge.Type.OWNS;
-import static grakn.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
-import static grakn.core.graph.common.Encoding.Edge.Type.PLAYS;
-import static grakn.core.graph.common.Encoding.Edge.Type.RELATES;
-import static grakn.core.graph.common.Encoding.Property.ABSTRACT;
-import static grakn.core.graph.common.Encoding.Property.LABEL;
-import static grakn.core.graph.common.Encoding.Property.REGEX;
-import static grakn.core.graph.common.Encoding.Property.SCOPE;
-import static grakn.core.graph.common.Encoding.Property.VALUE_TYPE;
-import static grakn.core.graph.common.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
-import static grakn.core.graph.common.Encoding.Vertex.Type.ENTITY_TYPE;
-import static grakn.core.graph.common.Encoding.Vertex.Type.RELATION_TYPE;
-import static grakn.core.graph.common.Encoding.Vertex.Type.ROLE_TYPE;
+import static com.vaticle.typedb.core.common.collection.Bytes.join;
+import static com.vaticle.typedb.core.common.iterator.Iterators.link;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.PLAYS;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.RELATES;
+import static com.vaticle.typedb.core.graph.common.Encoding.Property.ABSTRACT;
+import static com.vaticle.typedb.core.graph.common.Encoding.Property.LABEL;
+import static com.vaticle.typedb.core.graph.common.Encoding.Property.REGEX;
+import static com.vaticle.typedb.core.graph.common.Encoding.Property.SCOPE;
+import static com.vaticle.typedb.core.graph.common.Encoding.Property.VALUE_TYPE;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ENTITY_TYPE;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.RELATION_TYPE;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ROLE_TYPE;
 import static java.lang.Math.toIntExact;
 
 public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implements TypeVertex {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,17 +16,17 @@
  *
  */
 
-package grakn.core.pattern.constraint.type;
+package com.vaticle.typedb.core.pattern.constraint.type;
 
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.variable.TypeVariable;
-import grakn.core.traversal.Traversal;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.variable.TypeVariable;
+import com.vaticle.typedb.core.traversal.Traversal;
 
 import java.util.Objects;
 
-import static grakn.common.collection.Collections.set;
-import static graql.lang.common.GraqlToken.Char.SPACE;
-import static graql.lang.common.GraqlToken.Predicate.SubString.LIKE;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SPACE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Predicate.SubString.LIKE;
 
 public class RegexConstraint extends TypeConstraint {
 
@@ -39,7 +39,7 @@ public class RegexConstraint extends TypeConstraint {
         this.hash = Objects.hash(RegexConstraint.class, this.owner, this.regex.pattern());
     }
 
-    static RegexConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Regex constraint) {
+    static RegexConstraint of(TypeVariable owner, com.vaticle.typeql.lang.pattern.constraint.TypeConstraint.Regex constraint) {
         return new RegexConstraint(owner, constraint.regex());
     }
 

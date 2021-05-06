@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,18 +15,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner.resolution.answer;
+package com.vaticle.typedb.core.reasoner.resolution.answer;
 
-import grakn.common.collection.Pair;
-import grakn.core.common.exception.GraknException;
-import grakn.core.concept.Concept;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concurrent.actor.Actor;
-import grakn.core.logic.Rule;
-import grakn.core.logic.resolvable.Unifier;
-import grakn.core.pattern.Conjunction;
-import grakn.core.reasoner.resolution.framework.Resolver;
-import grakn.core.traversal.common.Identifier;
+import com.vaticle.typedb.common.collection.Pair;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.concept.Concept;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concurrent.actor.Actor;
+import com.vaticle.typedb.core.logic.Rule;
+import com.vaticle.typedb.core.logic.resolvable.Unifier;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -36,8 +36,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public abstract class AnswerStateImpl implements AnswerState {
 
@@ -300,7 +300,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                 }
 
                 @Override
-                public Concludable.Match<Nestable> toDownstream(Mapping mapping, grakn.core.logic.resolvable.Concludable concludable) {
+                public Concludable.Match<Nestable> toDownstream(Mapping mapping, com.vaticle.typedb.core.logic.resolvable.Concludable concludable) {
                     return ConcludableImpl.MatchImpl.childOf(mapping, concludable, this, explainable);
                 }
 
@@ -372,7 +372,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                     }
 
                     @Override
-                    public Concludable.Match<Match> toDownstream(Mapping mapping, grakn.core.logic.resolvable.Concludable concludable) {
+                    public Concludable.Match<Match> toDownstream(Mapping mapping, com.vaticle.typedb.core.logic.resolvable.Concludable concludable) {
                         return ConcludableImpl.MatchImpl.childOf(mapping, concludable, this, explainable());
                     }
 
@@ -427,7 +427,7 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                     @Override
                     public Explain with(ConceptMap extension, boolean requiresReiteration) {
-                        throw GraknException.of(ILLEGAL_STATE);
+                        throw TypeDBException.of(ILLEGAL_STATE);
                     }
 
                     @Override
@@ -437,7 +437,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                     }
 
                     @Override
-                    public Concludable.Explain toDownstream(Mapping mapping, grakn.core.logic.resolvable.Concludable concludable) {
+                    public Concludable.Explain toDownstream(Mapping mapping, com.vaticle.typedb.core.logic.resolvable.Concludable concludable) {
                         // note: we implement the method to conform to API, but do not use the conjunction when explaining
                         return ConcludableImpl.ExplainImpl.childOf(mapping, this);
                     }
@@ -517,7 +517,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                     }
 
                     @Override
-                    public Concludable.Match<Match> toDownstream(Mapping mapping, grakn.core.logic.resolvable.Concludable concludable) {
+                    public Concludable.Match<Match> toDownstream(Mapping mapping, com.vaticle.typedb.core.logic.resolvable.Concludable concludable) {
                         return ConcludableImpl.MatchImpl.childOf(mapping, concludable, this, false);
                     }
 
@@ -568,12 +568,12 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                     @Override
                     public Conclusion.Explain toUpstream() {
-                        if (conceptMap().concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
+                        if (conceptMap().concepts().isEmpty()) throw TypeDBException.of(ILLEGAL_STATE);
                         return parent().with(conceptMap(), requiresReiteration() || parent().requiresReiteration());
                     }
 
                     @Override
-                    public Concludable.Match<Explain> toDownstream(Mapping mapping, grakn.core.logic.resolvable.Concludable concludable) {
+                    public Concludable.Match<Explain> toDownstream(Mapping mapping, com.vaticle.typedb.core.logic.resolvable.Concludable concludable) {
                         return ConcludableImpl.MatchImpl.childOf(mapping, concludable, this, true); // record recursive explanations
                     }
 
@@ -619,11 +619,11 @@ public abstract class AnswerStateImpl implements AnswerState {
 
             public static class MatchImpl<P extends Compound<P, ?>> extends ConcludableImpl<P> implements Match<P> {
 
-                private final grakn.core.logic.resolvable.Concludable concludable;
+                private final com.vaticle.typedb.core.logic.resolvable.Concludable concludable;
                 private final boolean explainable;
                 private final int hash;
 
-                private MatchImpl(Mapping mapping, grakn.core.logic.resolvable.Concludable concludable, P parent, ConceptMap conceptMap,
+                private MatchImpl(Mapping mapping, com.vaticle.typedb.core.logic.resolvable.Concludable concludable, P parent, ConceptMap conceptMap,
                                   Actor.Driver<? extends Resolver<?>> root, boolean requiresReiteration, boolean explainable) {
                     super(mapping, parent, conceptMap, root, requiresReiteration);
                     this.concludable = concludable;
@@ -631,7 +631,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                     this.hash = Objects.hash(root(), parent(), conceptMap(), requiresReiteration(), explainable(), mapping());
                 }
 
-                static <P extends Compound<P, ?>> MatchImpl<P> childOf(Mapping mapping, grakn.core.logic.resolvable.Concludable concludable,
+                static <P extends Compound<P, ?>> MatchImpl<P> childOf(Mapping mapping, com.vaticle.typedb.core.logic.resolvable.Concludable concludable,
                                                                        P parent, boolean explainable) {
                     return new MatchImpl<>(mapping, concludable, parent, mapping.transform(parent.conceptMap()),
                                            parent.root(), parent.requiresReiteration(), explainable);
@@ -672,7 +672,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                     } else if (concludable.isHas()) {
                         return conceptMap.withExplainableAttrOwnership(concludable.asHas().owner().id(), concludable.asHas().attribute().id(), concludable.pattern());
                     } else {
-                        throw GraknException.of(ILLEGAL_STATE);
+                        throw TypeDBException.of(ILLEGAL_STATE);
                     }
                 }
 
@@ -1013,7 +1013,7 @@ public abstract class AnswerStateImpl implements AnswerState {
             @Override
             public P aggregateToUpstream(ConceptMap concepts) {
                 assert concepts.concepts().keySet().containsAll(conceptMap().concepts().keySet()) && filter.containsAll(concepts.concepts().keySet());
-                if (concepts.concepts().isEmpty()) throw GraknException.of(ILLEGAL_STATE);
+                if (concepts.concepts().isEmpty()) throw TypeDBException.of(ILLEGAL_STATE);
                 return parent().with(concepts, parent().requiresReiteration());
             }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.test.behaviour.connection.database;
+package com.vaticle.typedb.core.test.behaviour.connection.database;
 
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -25,11 +25,11 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-import static grakn.common.collection.Collections.list;
-import static grakn.common.collection.Collections.set;
-import static grakn.core.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
-import static grakn.core.test.behaviour.connection.ConnectionSteps.grakn;
-import static grakn.core.test.behaviour.connection.ConnectionSteps.threadPool;
+import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
+import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.threadPool;
+import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.typedb;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -45,7 +45,7 @@ public class DatabaseSteps {
     @When("connection create database(s):")
     public void connection_create_databases(List<String> names) {
         for (String name : names) {
-            grakn.databases().create(name);
+            typedb.databases().create(name);
         }
     }
 
@@ -56,7 +56,7 @@ public class DatabaseSteps {
         CompletableFuture<?>[] creations = new CompletableFuture<?>[names.size()];
         int i = 0;
         for (String name : names) {
-            creations[i++] = CompletableFuture.supplyAsync(() -> grakn.databases().create(name), threadPool);
+            creations[i++] = CompletableFuture.supplyAsync(() -> typedb.databases().create(name), threadPool);
         }
 
         CompletableFuture.allOf(creations).join();
@@ -70,7 +70,7 @@ public class DatabaseSteps {
     @When("connection delete database(s):")
     public void connection_delete_databases(List<String> names) {
         for (String databaseName : names) {
-            grakn.databases().get(databaseName).delete();
+            typedb.databases().get(databaseName).delete();
         }
     }
 
@@ -83,7 +83,7 @@ public class DatabaseSteps {
     public void connection_delete_databases_throws_exception(List<String> names) {
         for (String databaseName : names) {
             try {
-                grakn.databases().get(databaseName).delete();
+                typedb.databases().get(databaseName).delete();
                 fail();
             } catch (Exception e) {
                 // successfully failed
@@ -100,7 +100,7 @@ public class DatabaseSteps {
         for (String name : names) {
             deletions[i++] = CompletableFuture.supplyAsync(
                     () -> {
-                        grakn.databases().get(name).delete();
+                        typedb.databases().get(name).delete();
                         return null;
                     },
                     threadPool
@@ -118,7 +118,7 @@ public class DatabaseSteps {
     @Then("connection has database(s):")
     public void connection_has_databases(List<String> names) {
         assertEquals(set(names),
-                     grakn.databases().all().stream()
+                     typedb.databases().all().stream()
                              .map(database -> database.name())
                              .collect(Collectors.toSet()));
     }
@@ -131,7 +131,7 @@ public class DatabaseSteps {
     @Then("connection does not have database(s):")
     public void connection_does_not_have_databases(List<String> names) {
         for (String name : names) {
-            assertNull(grakn.databases().get(name));
+            assertNull(typedb.databases().get(name));
         }
     }
 }

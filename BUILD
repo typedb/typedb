@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -16,15 +16,15 @@
 #
 
 load("//:deployment.bzl", deployment_github = "deployment", deployment_docker = "deployment")
-load("@graknlabs_bazel_distribution//brew:rules.bzl", "deploy_brew")
-load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip", "checksum", "assemble_versioned")
-load("@graknlabs_bazel_distribution//github:rules.bzl", "deploy_github")
-load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
-load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
-load("@graknlabs_dependencies//distribution:deployment.bzl", "deployment")
-load("@graknlabs_dependencies//distribution/artifact:rules.bzl", "artifact_repackage")
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_dependencies//tool/release:rules.bzl", "release_validate_deps")
+load("@vaticle_bazel_distribution//brew:rules.bzl", "deploy_brew")
+load("@vaticle_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip", "checksum", "assemble_versioned")
+load("@vaticle_bazel_distribution//github:rules.bzl", "deploy_github")
+load("@vaticle_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
+load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
+load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
+load("@vaticle_dependencies//distribution/artifact:rules.bzl", "artifact_repackage")
+load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//tool/release:rules.bzl", "release_validate_deps")
 load("@io_bazel_rules_docker//container:bundle.bzl", "container_bundle")
 load("@io_bazel_rules_docker//container:image.bzl", "container_image")
 load("@io_bazel_rules_docker//contrib:push-all.bzl", "docker_push")
@@ -34,7 +34,7 @@ exports_files(
 )
 
 native_java_libraries(
-    name = "grakn",
+    name = "typedb",
     srcs = glob(["*.java"]),
     deps = [
         # Internal dependencies
@@ -45,20 +45,20 @@ native_java_libraries(
         "//logic:logic",
         "//query:query",
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-core:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb:{pom_version}"],
     visibility = ["//visibility:public"],
 )
 
 assemble_files = {
     "//server/conf:logback": "server/conf/logback.xml",
     "//server/conf:logback-debug": "server/conf/logback-debug.xml",
-    "//server/conf:grakn-properties": "server/conf/grakn.properties",
-    "//server/resources:logo": "server/resources/grakn-core-ascii.txt",
+    "//server/conf:typedb-properties": "server/conf/typedb.properties",
+    "//server/resources:logo": "server/resources/typedb-ascii.txt",
     "//:LICENSE": "LICENSE",
 }
 
 permissions = {
-    "server/conf/grakn.properties": "0755",
+    "server/conf/typedb.properties": "0755",
     "server/conf/logback.xml": "0755",
     "server/conf/logback-debug.xml": "0755",
 }
@@ -72,26 +72,26 @@ artifact_repackage(
 
 assemble_targz(
     name = "assemble-linux-targz",
-    targets = ["//server:server-deps-linux", ":console-artifact-jars", "@graknlabs_common//binary:assemble-bash-targz"],
+    targets = ["//server:server-deps-linux", ":console-artifact-jars", "@vaticle_typedb_common//binary:assemble-bash-targz"],
     additional_files = assemble_files,
     permissions = permissions,
-    output_filename = "grakn-core-all-linux",
+    output_filename = "typedb-all-linux",
 )
 
 assemble_zip(
     name = "assemble-mac-zip",
-    targets = ["//server:server-deps-mac", "//server:server-deps-prod", ":console-artifact-jars", "@graknlabs_common//binary:assemble-bash-targz"],
+    targets = ["//server:server-deps-mac", "//server:server-deps-prod", ":console-artifact-jars", "@vaticle_typedb_common//binary:assemble-bash-targz"],
     additional_files = assemble_files,
     permissions = permissions,
-    output_filename = "grakn-core-all-mac",
+    output_filename = "typedb-all-mac",
 )
 
 assemble_zip(
     name = "assemble-windows-zip",
-    targets = ["//server:server-deps-windows", ":console-artifact-jars", "@graknlabs_common//binary:assemble-bat-targz"],
+    targets = ["//server:server-deps-windows", ":console-artifact-jars", "@vaticle_typedb_common//binary:assemble-bat-targz"],
     additional_files = assemble_files,
     permissions = permissions,
-    output_filename = "grakn-core-all-windows",
+    output_filename = "typedb-all-windows",
 )
 
 assemble_versioned(
@@ -120,7 +120,7 @@ deploy_github(
     name = "deploy-github",
     organisation = deployment_github['github.organisation'],
     repository = deployment_github['github.repository'],
-    title = "Grakn Core",
+    title = "TypeDB",
     title_append_version = True,
     release_description = "//:RELEASE_TEMPLATE.md",
     archive = ":assemble-versioned-all",
@@ -131,22 +131,22 @@ deploy_brew(
     name = "deploy-brew",
     snapshot = deployment['brew.snapshot'],
     release = deployment['brew.release'],
-    formula = "//config/brew:grakn-core.rb",
+    formula = "//config/brew:typedb.rb",
     checksum = "//:checksum-mac",
     version_file = "//:VERSION"
 )
 
 assemble_apt(
     name = "assemble-linux-apt",
-    package_name = "grakn-core-all",
-    maintainer = "Grakn Labs <community@grakn.ai>",
-    description = "Grakn Core (all)",
+    package_name = "typedb-all",
+    maintainer = "Vaticle <community@vaticle.com>",
+    description = "TypeDB (all)",
     depends = [
         "openjdk-11-jre",
-        "grakn-core-server (=%{version})",
-        "grakn-console (=%{@graknlabs_console_artifact_linux})",
+        "typedb-server (=%{version})",
+        "typedb-console (=%{@graknlabs_console_artifact_linux})",
     ],
-    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
+    workspace_refs = "@vaticle_typedb_workspace_refs//:refs.json",
 )
 
 deploy_apt(
@@ -158,11 +158,11 @@ deploy_apt(
 
 release_validate_deps(
     name = "release-validate-deps",
-    refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
+    refs = "@vaticle_typedb_workspace_refs//:refs.json",
     tagged_deps = [
-        "@graknlabs_common",
-        "@graknlabs_graql",
-        "@graknlabs_protocol",
+        "@vaticle_typeql",
+        "@vaticle_typedb_common",
+        "@vaticle_typedb_protocol",
     ],
     tags = ["manual"]  # in order for bazel test //... to not fail
 )
@@ -172,10 +172,10 @@ container_image(
     base = "@openjdk_image//image",
     tars = [":assemble-linux-targz"],
     directory = "opt",
-    workdir = "/opt/grakn-core-all-linux",
+    workdir = "/opt/typedb-all-linux",
     ports = ["1729"],
-    cmd = ["/opt/grakn-core-all-linux/grakn", "server"],
-    volumes = ["/opt/grakn-core-all-linux/server/data/"],
+    cmd = ["/opt/typedb-all-linux/typedb", "server"],
+    volumes = ["/opt/typedb-all-linux/server/data/"],
     visibility = ["//test:__subpackages__"],
 )
 
@@ -207,11 +207,10 @@ checkstyle_test(
 filegroup(
     name = "ci",
     data = [
-        "@graknlabs_dependencies//image/rbe:ubuntu-1604",
-        "@graknlabs_dependencies//library/maven:update",
-        "@graknlabs_dependencies//tool/checkstyle:test-coverage",
-        "@graknlabs_dependencies//tool/sonarcloud:code-analysis",
-        "@graknlabs_dependencies//tool/unuseddeps:unused-deps",
+        "@vaticle_dependencies//library/maven:update",
+        "@vaticle_dependencies//tool/checkstyle:test-coverage",
+        "@vaticle_dependencies//tool/sonarcloud:code-analysis",
+        "@vaticle_dependencies//tool/unuseddeps:unused-deps",
     ],
 )
 
