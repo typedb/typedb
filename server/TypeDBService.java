@@ -188,7 +188,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             UUID sessionID = byteStringAsUUID(request.getSessionId());
             SessionService sessionSvc = sessionServices.get(sessionID);
             boolean isAlive = sessionSvc != null && sessionSvc.isOpen();
-            if (isAlive) sessionSvc.keepAlive();
+            if (isAlive) sessionSvc.resetIdleTimeout();
             responder.onNext(pulseRes(isAlive));
             responder.onCompleted();
         } catch (RuntimeException e) {

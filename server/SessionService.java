@@ -44,7 +44,6 @@ public class SessionService implements AutoCloseable {
     private final TypeDB.Session session;
     private final ReadWriteLock accessLock;
     private final AtomicBoolean isOpen;
-    private final long idleTimeoutMillis;
     private ScheduledFuture<?> idleTimeoutTask;
 
     public SessionService(TypeDBService typeDBSvc, TypeDB.Session session, Options.Session options) {
@@ -54,15 +53,16 @@ public class SessionService implements AutoCloseable {
         this.accessLock = new StampedLock().asReadWriteLock();
         this.isOpen = new AtomicBoolean(true);
         this.transactionServices = new ConcurrentSet<>();
-        this.idleTimeoutMillis = options.sessionIdleTimeoutMillis();
-        setIdleTimeout();
+        mayStartIdleTimeout();
     }
 
     void register(TransactionService transactionSvc) {
         try {
             accessLock.readLock().lock();
-            if (isOpen.get()) transactionServices.add(transactionSvc);
-            else throw TypeDBException.of(SESSION_CLOSED);
+            if (isOpen.get()) {
+                transactionServices.add(transactionSvc);
+                cancelIdleTimeout();
+            } else throw TypeDBException.of(SESSION_CLOSED);
         } finally {
             accessLock.readLock().unlock();
         }
@@ -70,6 +70,7 @@ public class SessionService implements AutoCloseable {
 
     void remove(TransactionService transactionSvc) {
         transactionServices.remove(transactionSvc);
+        mayStartIdleTimeout();
     }
 
     public boolean isOpen() {
@@ -88,22 +89,27 @@ public class SessionService implements AutoCloseable {
         return options;
     }
 
-    private void setIdleTimeout() {
-        if (idleTimeoutTask != null) idleTimeoutTask.cancel(false);
-        this.idleTimeoutTask = scheduled().schedule(this::triggerIdleTimeout, idleTimeoutMillis, MILLISECONDS);
+    public synchronized void resetIdleTimeout() {
+        cancelIdleTimeout();
+        mayStartIdleTimeout();
     }
 
-    private void triggerIdleTimeout() {
-        if (!transactionServices.isEmpty()) {
-            keepAlive();
-            return;
+    private void cancelIdleTimeout() {
+        assert idleTimeoutTask != null;
+        idleTimeoutTask.cancel(false);
+    }
+
+    private void mayStartIdleTimeout() {
+        if (transactionServices.isEmpty()) {
+            idleTimeoutTask = scheduled().schedule(this::idleTimeout, options.sessionIdleTimeoutMillis(), MILLISECONDS);
         }
-        close();
-        LOG.warn("Session with ID " + session.uuid() + " timed out due to inactivity");
     }
 
-    public synchronized void keepAlive() {
-        setIdleTimeout();
+    private void idleTimeout() {
+        if (transactionServices.isEmpty()) {
+            close();
+            LOG.warn("Session with ID " + session.uuid() + " timed out due to inactivity");
+        } else resetIdleTimeout();
     }
 
     @Override
