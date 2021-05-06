@@ -182,6 +182,7 @@ public class ProducerIterator<T> extends AbstractFunctionalIterator<T> {
         public synchronized void done(@Nullable Throwable error) {
             assert !producers.isEmpty();
             producers.remove();
+            requested = 0;
             try {
                 if (error != null) blockingQueue.put(Either.second(Done.error(error)));
                 else if (producers.isEmpty()) blockingQueue.put(Either.second(Done.success()));
