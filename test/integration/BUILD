@@ -72,10 +72,10 @@ host_compatible_java_test(
 host_compatible_java_test(
     name = "test-consistency",
     srcs = ["ConsistencyTest.java"],
-    test_class = "grakn.core.test.integration.ConsistencyTest",
+    test_class = "com.vaticle.typedb.core.test.integration.ConsistencyTest",
     native_libraries_deps = [
         "//rocks:rocks",
-        "//:grakn",
+        "//:typedb",
         "//concept:concept",
         "//logic:logic",
     ],
@@ -84,8 +84,8 @@ host_compatible_java_test(
         "//test/integration/util:util",
         "//common:common",
 
-        # External dependencies from Grakn Labs
-        "@graknlabs_graql//java:graql",
+        # External dependencies from Vaticle
+        "@vaticle_typeql//java:typeql",
     ],
     resources = [
         "//common/test:logback-test"

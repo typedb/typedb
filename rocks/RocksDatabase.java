@@ -18,10 +18,13 @@
 
 package com.vaticle.typedb.core.rocks;
 
+import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.common.concurrent.NamedThreadFactory;
 import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.graph.TypeGraph;
@@ -41,8 +44,8 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -52,6 +55,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
 
@@ -60,6 +64,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.DIR
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Session.SCHEMA_ACQUIRE_LOCK_TIMEOUT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Session.Type.DATA;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Session.Type.SCHEMA;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.READ;
@@ -360,16 +367,27 @@ public class RocksDatabase implements TypeDB.Database {
             open.add(storage);
         }
 
+        AtomicLong counter = new AtomicLong(0);
         void tryOptimisticCommit(RocksDataStorage storage) {
             assert open.contains(storage);
-            for (RocksDataStorage committed : concurrentCommitted(storage)) {
-                validateModifiedKeys(storage, committed);
-                requireEmptyIntersection(storage.deletedKeys(), committed.modifiedKeys(), TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION);
-                requireEmptyIntersection(storage.exclusiveInsertKeys(), committed.exclusiveInsertKeys(), TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION);
+            Set<RocksDataStorage> concurrent = concurrentCommitted(storage);
+            long start = 0;
+            if (counter.get() % 10 == 0) {
+                start = System.nanoTime();
             }
-            // note: put, then delete to avoid race conditions. Side effect: concurrent readers my see it in both
-            optimisticallyCommitted.add(storage);
-            open.remove(storage);
+            synchronized (this) {
+                for (RocksDataStorage committed : concurrent) {
+                    validateModifiedKeys(storage, committed);
+                    requireEmptyIntersection(storage.deletedKeys(), committed.modifiedKeys(), TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION);
+                    requireEmptyIntersection(storage.exclusiveInsertKeys(), committed.exclusiveInsertKeys(), TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION);
+                }
+                // note: put, then delete to avoid race conditions. Side effect: concurrent readers my see it in both
+                optimisticallyCommitted.add(storage);
+                open.remove(storage);
+            }
+            if (counter.getAndIncrement() % 10 == 0) {
+                System.out.println("Millis to validate consistency: " + (System.nanoTime() - start)/1000_000.0);
+            }
         }
 
         private void validateModifiedKeys(RocksDataStorage storage, RocksDataStorage committed) {
@@ -377,29 +395,31 @@ public class RocksDatabase implements TypeDB.Database {
                 for (FunctionalIterator<ByteBuffer> modifiedKeys = storage.modifiedValidatedKeys(); modifiedKeys.hasNext(); ) {
                     ByteBuffer modified = modifiedKeys.next();
                     if (committed.deletedKeys().contains(modified)) {
-                        throw GraknException.of(TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION);
+                        throw TypeDBException.of(TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION);
                     }
                 }
             } else {
                 for (ByteBuffer key : committed.deletedKeys()) {
                     if (storage.isModifiedValidatedKey(key)) {
-                        throw GraknException.of(TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION);
+                        throw TypeDBException.of(TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION);
                     }
                 }
             }
         }
 
-        private void requireEmptyIntersection(Set<ByteBuffer> set1, Set<ByteBuffer> set2, ErrorMessage error) {
-            if (set1.size() < set2.size()) {
-                for (ByteBuffer key : set1) {
-                    if (set2.contains(key)) throw GraknException.of(error);
-                }
-            } else {
-                for (ByteBuffer key : set2) {
-                    if (set1.contains(key)) throw GraknException.of(error);
-                }
+        private void requireEmptyIntersection(NavigableSet<ByteBuffer> set1, NavigableSet<ByteBuffer> set2, ErrorMessage error) {
+            NavigableSet<ByteBuffer> active = set1;
+            NavigableSet<ByteBuffer> other = set2;
+            ByteBuffer currentKey = active.pollFirst();
+            while (currentKey != null) {
+                ByteBuffer otherKey = other.ceiling(currentKey);
+                if (otherKey != null && otherKey.equals(currentKey)) throw TypeDBException.of(error);
+                currentKey = otherKey;
+                NavigableSet<ByteBuffer> tmp = other;
+                other = active;
+                active = tmp;
             }
-        }
+        };
 
         public void committed(RocksDataStorage storage) {
             assert optimisticallyCommitted.contains(storage) && storage.snapshotEnd() != null;

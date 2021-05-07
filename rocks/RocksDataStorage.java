@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,25 +16,23 @@
  *
  */
 
-package grakn.core.rocks;
+package com.vaticle.typedb.core.rocks;
 
-import grakn.common.collection.ConcurrentSet;
-import grakn.core.common.exception.GraknCheckedException;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.iterator.Iterators;
-import grakn.core.graph.common.KeyGenerator;
-import grakn.core.graph.common.Storage;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
+import com.vaticle.typedb.core.graph.common.KeyGenerator;
+import com.vaticle.typedb.core.graph.common.Storage;
 import org.rocksdb.RocksDBException;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.nio.ByteBuffer;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.NavigableSet;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
-import static grakn.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
 @NotThreadSafe
 public class RocksDataStorage extends RocksStorage.TransactionBounded implements Storage.Data {
@@ -42,9 +40,9 @@ public class RocksDataStorage extends RocksStorage.TransactionBounded implements
     private final RocksDatabase database;
     private final KeyGenerator.Data dataKeyGenerator;
 
-    private final ConcurrentMap<ByteBuffer, Boolean> modifiedKeys;
-    private final ConcurrentSet<ByteBuffer> deletedKeys;
-    private final ConcurrentSet<ByteBuffer> exclusiveInsertKeys;
+    private final ConcurrentNavigableMap<ByteBuffer, Boolean> modifiedKeys;
+    private final ConcurrentNavigableMap<ByteBuffer, Boolean> deletedKeys;
+    private final ConcurrentNavigableMap<ByteBuffer, Boolean> exclusiveInsertKeys;
     private final long snapshotStart;
     private volatile Long snapshotEnd;
 
@@ -53,9 +51,9 @@ public class RocksDataStorage extends RocksStorage.TransactionBounded implements
         this.database = database;
         this.dataKeyGenerator = database.dataKeyGenerator();
         this.snapshotStart = storageTransaction.getSnapshot().getSequenceNumber();
-        this.modifiedKeys = new ConcurrentHashMap<>();
-        this.deletedKeys = new ConcurrentSet<>();
-        this.exclusiveInsertKeys = new ConcurrentSet<>();
+        this.modifiedKeys = new ConcurrentSkipListMap<>();
+        this.deletedKeys = new ConcurrentSkipListMap<>();
+        this.exclusiveInsertKeys = new ConcurrentSkipListMap<>();
         this.snapshotEnd = null;
         this.database.writesManager().register(this);
     }
@@ -86,7 +84,7 @@ public class RocksDataStorage extends RocksStorage.TransactionBounded implements
         assert isOpen() && !isReadOnly;
         try {
             deleteCloseSchemaWriteLock.readLock().lock();
-            if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
+            if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
             storageTransaction.putUntracked(key, value);
         } catch (RocksDBException e) {
             throw exception(e);
@@ -99,7 +97,7 @@ public class RocksDataStorage extends RocksStorage.TransactionBounded implements
     public void delete(byte[] key) {
         deleteUntracked(key);
         ByteBuffer bytes = ByteBuffer.wrap(key);
-        this.deletedKeys.add(bytes);
+        this.deletedKeys.put(bytes, false);
         this.modifiedKeys.remove(bytes);
         this.exclusiveInsertKeys.remove(bytes);
     }
@@ -121,7 +119,7 @@ public class RocksDataStorage extends RocksStorage.TransactionBounded implements
     public void setExclusiveCreate(byte[] key) {
         assert isOpen();
         ByteBuffer bytes = ByteBuffer.wrap(key);
-        this.exclusiveInsertKeys.add(bytes);
+        this.exclusiveInsertKeys.put(bytes, false);
         this.deletedKeys.remove(bytes);
     }
 
@@ -144,7 +142,7 @@ public class RocksDataStorage extends RocksStorage.TransactionBounded implements
         assert isOpen() && !isReadOnly;
         try {
             deleteCloseSchemaWriteLock.readLock().lock();
-            if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
+            if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
             storageTransaction.mergeUntracked(key, value);
         } catch (RocksDBException e) {
             throw exception(e);
@@ -161,15 +159,15 @@ public class RocksDataStorage extends RocksStorage.TransactionBounded implements
         return snapshotEnd;
     }
 
-    public Set<ByteBuffer> deletedKeys() {
-        return deletedKeys;
+    public NavigableSet<ByteBuffer> deletedKeys() {
+        return deletedKeys.keySet();
     }
 
     public FunctionalIterator<ByteBuffer> modifiedValidatedKeys() {
         return Iterators.iterate(modifiedKeys.entrySet()).filter(Map.Entry::getValue).map(Map.Entry::getKey);
     }
 
-    public Set<ByteBuffer> modifiedKeys() {
+    public NavigableSet<ByteBuffer> modifiedKeys() {
         return modifiedKeys.keySet();
     }
 
@@ -177,7 +175,7 @@ public class RocksDataStorage extends RocksStorage.TransactionBounded implements
         return modifiedKeys.getOrDefault(key, false);
     }
 
-    public Set<ByteBuffer> exclusiveInsertKeys() {
-        return exclusiveInsertKeys;
+    public NavigableSet<ByteBuffer> exclusiveInsertKeys() {
+        return exclusiveInsertKeys.keySet();
     }
 }

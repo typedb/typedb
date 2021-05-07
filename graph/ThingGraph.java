@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.graph;
 
 import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.common.collection.Pair;
+import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
@@ -29,6 +30,7 @@ import com.vaticle.typedb.core.graph.common.KeyGenerator;
 import com.vaticle.typedb.core.graph.common.StatisticsBytes;
 import com.vaticle.typedb.core.graph.common.Storage;
 import com.vaticle.typedb.core.graph.iid.EdgeIID;
+import com.vaticle.typedb.core.graph.iid.IID;
 import com.vaticle.typedb.core.graph.iid.PrefixIID;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;

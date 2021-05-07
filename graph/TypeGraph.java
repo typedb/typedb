@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
 import com.vaticle.typedb.core.graph.common.Storage;
+import com.vaticle.typedb.core.graph.iid.IID;
 import com.vaticle.typedb.core.graph.iid.IndexIID;
 import com.vaticle.typedb.core.graph.iid.IndexIID.Type.Rule;
 import com.vaticle.typedb.core.graph.iid.StructureIID;

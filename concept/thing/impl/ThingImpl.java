@@ -29,6 +29,7 @@ import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.concept.type.impl.RoleTypeImpl;
+import com.vaticle.typedb.core.concept.type.impl.ThingTypeImpl;
 import com.vaticle.typedb.core.concept.type.impl.TypeImpl;
 import com.vaticle.typedb.core.graph.edge.ThingEdge;
 import com.vaticle.typedb.core.graph.iid.PrefixIID;

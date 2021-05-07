@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.test.integration;
 
 import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.ConceptManager;
@@ -776,7 +777,7 @@ public class BasicTest {
                 try {
                     txn1.commit();
                     fail("put and delete should conflict in any order.");
-                } catch (GraknException e) {
+                } catch (TypeDBException e) {
                     assertTrue(true);
                 }
 

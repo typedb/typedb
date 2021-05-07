@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.rocks;
 
 import com.vaticle.typedb.core.TypeDB;
-import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Context;
@@ -214,9 +213,6 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
                     schemaStorage.commit();
                     session.database().cacheInvalidate();
                 } catch (RocksDBException e) {
-                    rollback();
-                    throw TypeDBException.of(e);
-                } catch (TypeDBCheckedException e) {
                     rollback(); // TODO what's the point of this?
                     throw TypeDBException.of(e);
                 } finally {
@@ -303,8 +299,6 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
                 } catch (RocksDBException e) {
                     rollback();
                     throw TypeDBException.of(e);
-                } catch (GraknCheckedException e) {
-                    throw GraknException.of(e);
                 } finally {
                     graphMgr.data().clear();
                     closeResources();
