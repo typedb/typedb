@@ -32,9 +32,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DAT
 
 public class RocksDatabaseManager implements TypeDB.DatabaseManager {
 
-    private final RocksTypeDB typedb;
-    private final ConcurrentMap<String, RocksDatabase> databases;
-    private final Factory.Database databaseFactory;
+    protected final RocksTypeDB typedb;
+    protected final ConcurrentMap<String, RocksDatabase> databases;
+    protected final Factory.Database databaseFactory;
 
     protected RocksDatabaseManager(RocksTypeDB typedb, Factory.Database databaseFactory) {
         this.typedb = typedb;
@@ -42,7 +42,7 @@ public class RocksDatabaseManager implements TypeDB.DatabaseManager {
         databases = new ConcurrentHashMap<>();
     }
 
-    void loadAll() {
+    protected void loadAll() {
         File[] databaseDirectories = typedb.directory().toFile().listFiles(File::isDirectory);
         if (databaseDirectories != null && databaseDirectories.length > 0) {
             Arrays.stream(databaseDirectories).parallel().forEach(directory -> {
@@ -79,5 +79,9 @@ public class RocksDatabaseManager implements TypeDB.DatabaseManager {
 
     void remove(RocksDatabase database) {
         databases.remove(database.name());
+    }
+
+    protected void close() {
+        all().parallelStream().forEach(RocksDatabase::close);
     }
 }

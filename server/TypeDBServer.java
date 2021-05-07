@@ -101,7 +101,7 @@ public class TypeDBServer implements AutoCloseable {
     private void configureAndVerifyJavaVersion() {
         int majorVersion = Java.getMajorVersion();
         if (majorVersion == Java.UNKNOWN_VERSION) {
-            LOG.warn("Could not detect Java version from version string '{}'. Will start TypeDB Server anyway.", System.getProperty("java.version"));
+            LOG.warn("Could not detect Java version from version string '{}'. Will start {} anyway.", System.getProperty("java.version"), name());
         } else if (majorVersion < 11) {
             throw TypeDBException.of(INCOMPATIBLE_JAVA_RUNTIME, majorVersion);
         }
@@ -207,7 +207,7 @@ public class TypeDBServer implements AutoCloseable {
             server.awaitTermination();
             typedb.close();
             System.runFinalization();
-            LOG.info("TypeDB Server has been shutdown");
+            LOG.info("{} has been shutdown", name());
         } catch (InterruptedException e) {
             LOG.error(FAILED_AT_STOPPING.message(), e);
             Thread.currentThread().interrupt();

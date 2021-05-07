@@ -149,7 +149,7 @@ public class RocksTypeDB implements TypeDB {
      * A different implementation of this class may override it.
      */
     protected void closeResources() {
-        databaseMgr.all().parallelStream().forEach(RocksDatabase::close);
+        databaseMgr.close();
         rocksDBOptions.close();
     }
 }
