@@ -50,9 +50,9 @@ native_java_libraries(
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
-        "@vaticle_typeql//java/common",
-        "@vaticle_typeql//java/pattern",
-        "@vaticle_typeql//java/query",
+        "@vaticle_typeql_lang_java//common",
+        "@vaticle_typeql_lang_java//pattern",
+        "@vaticle_typeql_lang_java//query",
 
         # External Maven Dependencies
         "@maven//:com_google_code_findbugs_jsr305",

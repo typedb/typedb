@@ -43,8 +43,8 @@ host_compatible_java_test(
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
-        "@vaticle_typeql//java:typeql",
-        "@vaticle_typeql//java/pattern:pattern",
+        "@vaticle_typeql_lang_java//:typeql-lang",
+        "@vaticle_typeql_lang_java//pattern:pattern",
     ],
 )
 
@@ -66,8 +66,8 @@ host_compatible_java_test(
         "//test/integration/util",
 
         # External dependencies from Vaticle
-        "@vaticle_typeql//java/query",
-        "@vaticle_typeql//java:typeql",
+        "@vaticle_typeql_lang_java//query",
+        "@vaticle_typeql_lang_java//:typeql-lang",
         "@vaticle_typedb_common//:common",
     ],
     data = [":basic-schema.gql", ":test-type-resolution.gql"],
@@ -96,7 +96,7 @@ host_compatible_java_test(
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
-        "@vaticle_typeql//java:typeql",
+        "@vaticle_typeql_lang_java//:typeql-lang",
     ],
 )
 
@@ -119,7 +119,7 @@ host_compatible_java_test(
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
-        "@vaticle_typeql//java:typeql",
+        "@vaticle_typeql_lang_java//:typeql-lang",
     ],
 )
 
@@ -142,7 +142,7 @@ host_compatible_java_test(
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
-        "@vaticle_typeql//java:typeql",
+        "@vaticle_typeql_lang_java//:typeql-lang",
     ],
     resources = [
         "//common/test:logback-test"
@@ -169,7 +169,7 @@ host_compatible_java_test(
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
-        "@vaticle_typeql//java:typeql",
+        "@vaticle_typeql_lang_java//:typeql-lang",
     ],
     resources = [
         "//common/test:logback-test"

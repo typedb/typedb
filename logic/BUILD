@@ -43,8 +43,8 @@ native_java_libraries(
 
         # Internal Repository Dependencies
         "@vaticle_typedb_common//:common",
-        "@vaticle_typeql//java/common",
-        "@vaticle_typeql//java/pattern",
+        "@vaticle_typeql_lang_java//common",
+        "@vaticle_typeql_lang_java//pattern",
 
         # External Maven Dependencies
         "@maven//:com_google_code_findbugs_jsr305",
@@ -72,7 +72,7 @@ host_compatible_java_test(
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
-        "@vaticle_typeql//java:typeql",
+        "@vaticle_typeql_lang_java//:typeql-lang",
     ],
 )
 
@@ -92,7 +92,7 @@ host_compatible_java_test(
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
-        "@vaticle_typeql//java:typeql",
+        "@vaticle_typeql_lang_java//:typeql-lang",
     ],
 )
 

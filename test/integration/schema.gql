@@ -44,7 +44,7 @@ job-type sub attribute, value string;
 started sub attribute, value datetime;
 ended sub attribute, value datetime;
 duration sub attribute, value long;
-idr sub attribute, value string;
+id sub attribute, value string;
 analysis-id sub attribute, value long;
 run sub attribute, value long;
 latest sub attribute, value boolean;
@@ -537,7 +537,7 @@ rule tracker-trace-rule:
     };
 
 trace sub entity,
-    owns idr @key, # TODO: rename to 'id' after completion of: https://github.com/vaticle/typeql/issues/95
+    owns id @key,
     owns name,
     owns path,
     owns label,
@@ -572,7 +572,7 @@ rule trace-iteration-rule:
     };
 
 tracker sub entity,
-    owns idr @key,
+    owns id @key,
     owns name,
     owns path,
     plays trace-tracker:tracker,

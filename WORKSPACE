@@ -17,7 +17,6 @@
 
 workspace(name = "vaticle_typedb")
 
-
 ################################
 # Load @vaticle_dependencies #
 ################################
@@ -117,25 +116,24 @@ github_deps()
 # We don't load Maven artifacts for @vaticle_typedb_common as they are only needed
 # if you depend on @vaticle_typedb_common//test/server
 load("//dependencies/vaticle:repositories.bzl",
-"vaticle_typedb_common","vaticle_typeql", "vaticle_typedb_protocol", "vaticle_factory_tracing", "vaticle_typedb_behaviour")
+"vaticle_typedb_common","vaticle_typeql_lang_java", "vaticle_typedb_protocol", "vaticle_factory_tracing", "vaticle_typedb_behaviour")
 vaticle_typedb_common()
-vaticle_typeql()
+vaticle_typeql_lang_java()
 vaticle_typedb_protocol()
 vaticle_factory_tracing()
 vaticle_typedb_behaviour()
+
+load("@vaticle_typeql_lang_java//dependencies/vaticle:repositories.bzl", "vaticle_typeql")
+vaticle_typeql()
 
 load("//dependencies/vaticle:artifacts.bzl", "graknlabs_console_artifact")
 graknlabs_console_artifact()
 
 # Load maven artifacts
-load("//dependencies/maven:artifacts.bzl",
-vaticle_typedb_artifacts = "artifacts")
-load("@vaticle_typeql//dependencies/maven:artifacts.bzl",
-vaticle_typeql_artifacts = "artifacts")
-load("@vaticle_typedb_protocol//dependencies/maven:artifacts.bzl",
-vaticle_typedb_protocol_artifacts = "artifacts")
-load("@vaticle_factory_tracing//dependencies/maven:artifacts.bzl",
-vaticle_factory_tracing_artifacts = "artifacts")
+load("@vaticle_typeql_lang_java//dependencies/maven:artifacts.bzl", vaticle_typeql_lang_java_artifacts = "artifacts")
+load("@vaticle_typedb_protocol//dependencies/maven:artifacts.bzl", vaticle_typedb_protocol_artifacts = "artifacts")
+load("@vaticle_factory_tracing//dependencies/maven:artifacts.bzl", vaticle_factory_tracing_artifacts = "artifacts")
+load("//dependencies/maven:artifacts.bzl", vaticle_typedb_artifacts = "artifacts")
 
 ############################
 # Load @maven dependencies #
@@ -143,9 +141,9 @@ vaticle_factory_tracing_artifacts = "artifacts")
 load("@vaticle_dependencies//library/maven:rules.bzl", "maven")
 maven(
     vaticle_dependencies_tool_maven_artifacts +
-        vaticle_factory_tracing_artifacts +
-        vaticle_typeql_artifacts +
-        vaticle_typedb_artifacts,
+    vaticle_factory_tracing_artifacts +
+    vaticle_typeql_lang_java_artifacts +
+    vaticle_typedb_artifacts
 )
 
 ###############################################

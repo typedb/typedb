@@ -36,9 +36,9 @@ host_compatible_java_test(
         "//common:common",
 
         # External dependencies from Vaticle
-        "@vaticle_typeql//java/query:query",
-        "@vaticle_typeql//java:typeql",
-        "@vaticle_typeql//java/common",
+        "@vaticle_typeql_lang_java//query:query",
+        "@vaticle_typeql_lang_java//:typeql-lang",
+        "@vaticle_typeql_lang_java//common",
         "@vaticle_typedb_common//:common"
     ],
     resources = [

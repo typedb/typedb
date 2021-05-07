@@ -55,10 +55,10 @@ native_java_libraries(
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
         "@vaticle_factory_tracing//client:client",
-        "@vaticle_typeql//java/pattern:pattern",
-        "@vaticle_typeql//java:typeql",
-        "@vaticle_typeql//java/query",
-        "@vaticle_typeql//java/common",
+        "@vaticle_typeql_lang_java//pattern:pattern",
+        "@vaticle_typeql_lang_java//:typeql-lang",
+        "@vaticle_typeql_lang_java//query",
+        "@vaticle_typeql_lang_java//common",
         "@vaticle_typedb_protocol//grpc/java:protocol",
 
         # External dependencies from Maven

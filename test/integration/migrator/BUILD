@@ -35,8 +35,8 @@ host_compatible_java_test(
         "//server:version",
 
         # External dependencies from Vaticle
-        "@vaticle_typeql//java:typeql",
-        "@vaticle_typeql//java/query:query",
+        "@vaticle_typeql_lang_java//:typeql-lang",
+        "@vaticle_typeql_lang_java//query:query",
 
         # External dependencies from Maven
         "@maven//:com_google_protobuf_protobuf_java",

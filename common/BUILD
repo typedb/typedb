@@ -26,7 +26,7 @@ java_library(
     deps = [
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
-        "@vaticle_typeql//java/query:query",
+        "@vaticle_typeql_lang_java//query:query",
 
         # External Maven Dependencies
         "@maven//:com_github_ben_manes_caffeine_caffeine",

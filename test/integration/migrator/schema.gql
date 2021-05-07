@@ -93,7 +93,7 @@ github-token sub attribute,
 heads sub attribute,
     value string;
 
-idr sub attribute,
+id sub attribute,
     value string;
 
 index sub attribute,
@@ -484,7 +484,7 @@ team sub entity,
     plays team-member:team;
 
 trace sub entity,
-    owns idr @key,
+    owns id @key,
     owns data,
     owns duration,
     owns ended,
@@ -499,7 +499,7 @@ trace sub entity,
     plays trace-tree:parent;
 
 tracker sub entity,
-    owns idr @key,
+    owns id @key,
     owns name,
     owns path,
     plays performance-tracker:tracker,

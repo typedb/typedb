@@ -43,9 +43,9 @@ native_java_libraries(
 
         # Internal Repository Dependencies
         "@vaticle_typedb_common//:common",
-        "@vaticle_typeql//java/common:common",
-        "@vaticle_typeql//java/pattern:pattern",
-        "@vaticle_typeql//java:typeql",
+        "@vaticle_typeql_lang_java//common:common",
+        "@vaticle_typeql_lang_java//pattern:pattern",
+        "@vaticle_typeql_lang_java//:typeql-lang",
 
         # External Maven Dependencies
         "@maven//:com_google_code_findbugs_jsr305",

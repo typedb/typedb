@@ -160,7 +160,7 @@ release_validate_deps(
     name = "release-validate-deps",
     refs = "@vaticle_typedb_workspace_refs//:refs.json",
     tagged_deps = [
-        "@vaticle_typeql",
+        "@vaticle_typeql_lang_java",
         "@vaticle_typedb_common",
         "@vaticle_typedb_protocol",
     ],

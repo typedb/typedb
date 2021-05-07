@@ -30,8 +30,8 @@ host_compatible_java_library(
         "//test/behaviour/exception",
 
         # External dependencies from Vaticle
-        "@vaticle_typeql//java:typeql",
-        "@vaticle_typeql//java/query",
+        "@vaticle_typeql_lang_java//:typeql-lang",
+        "@vaticle_typeql_lang_java//query",
 
         # External dependencies from Maven
         "@maven//:junit_junit",
