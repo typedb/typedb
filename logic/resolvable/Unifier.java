@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,17 +15,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.logic.resolvable;
+package com.vaticle.typedb.core.logic.resolvable;
 
-import grakn.common.collection.Pair;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Label;
-import grakn.core.concept.Concept;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.type.ThingType;
-import grakn.core.traversal.common.Identifier.Variable;
-import grakn.core.traversal.common.Identifier.Variable.Retrievable;
+import com.vaticle.typedb.common.collection.Pair;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.concept.Concept;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.type.ThingType;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,8 +37,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static grakn.common.collection.Collections.set;
-import static grakn.core.common.exception.ErrorMessage.Reasoner.REVERSE_UNIFICATION_MISSING_CONCEPT;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REVERSE_UNIFICATION_MISSING_CONCEPT;
 
 public class Unifier {
 
@@ -101,7 +101,7 @@ public class Unifier {
             Variable toReverse = entry.getKey();
             Set<Retrievable> reversed = entry.getValue();
             if (!concepts.containsKey(toReverse)) {
-                throw GraknException.of(REVERSE_UNIFICATION_MISSING_CONCEPT, toReverse, concepts);
+                throw TypeDBException.of(REVERSE_UNIFICATION_MISSING_CONCEPT, toReverse, concepts);
             }
             Concept concept = concepts.get(toReverse);
             for (Retrievable r : reversed) {

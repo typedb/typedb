@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,19 +16,19 @@
  *
  */
 
-package grakn.core.concept.type.impl;
+package com.vaticle.typedb.core.concept.type.impl;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.iterator.Iterators;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.impl.AttributeImpl;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.RoleType;
-import grakn.core.graph.GraphManager;
-import grakn.core.graph.common.Encoding;
-import grakn.core.graph.vertex.AttributeVertex;
-import grakn.core.graph.vertex.TypeVertex;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
+import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.thing.impl.AttributeImpl;
+import com.vaticle.typedb.core.concept.type.AttributeType;
+import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
+import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -36,38 +36,38 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_UNSATISFIES_REGEX;
-import static grakn.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CASTING;
-import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
-import static grakn.core.common.exception.ErrorMessage.TypeRead.VALUE_TYPE_MISMATCH;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_NEW_SUPERTYPE_NOT_ABSTRACT;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_SUPERTYPE_VALUE_TYPE;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_UNSET_ABSTRACT_HAS_SUBTYPES;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES;
-import static grakn.core.common.iterator.Iterators.link;
-import static grakn.core.graph.common.Encoding.Edge.Type.OWNS;
-import static grakn.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
-import static grakn.core.graph.common.Encoding.Edge.Type.SUB;
-import static grakn.core.graph.common.Encoding.ValueType.BOOLEAN;
-import static grakn.core.graph.common.Encoding.ValueType.DATETIME;
-import static grakn.core.graph.common.Encoding.ValueType.DOUBLE;
-import static grakn.core.graph.common.Encoding.ValueType.LONG;
-import static grakn.core.graph.common.Encoding.ValueType.STRING;
-import static grakn.core.graph.common.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
-import static grakn.core.graph.common.Encoding.Vertex.Type.Root.ATTRIBUTE;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_UNSATISFIES_REGEX;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CASTING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.VALUE_TYPE_MISMATCH;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_NEW_SUPERTYPE_NOT_ABSTRACT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_SUPERTYPE_VALUE_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_UNSET_ABSTRACT_HAS_SUBTYPES;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES;
+import static com.vaticle.typedb.core.common.iterator.Iterators.link;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.BOOLEAN;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DATETIME;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DOUBLE;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.LONG;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.Root.ATTRIBUTE;
 
 public abstract class AttributeTypeImpl extends ThingTypeImpl implements AttributeType {
 
     private AttributeTypeImpl(GraphManager graphMgr, TypeVertex vertex) {
         super(graphMgr, vertex);
         if (vertex.encoding() != ATTRIBUTE_TYPE) {
-            throw exception(GraknException.of(TYPE_ROOT_MISMATCH, vertex.label(),
-                                              ATTRIBUTE_TYPE.root().label(),
-                                              vertex.encoding().root().label()));
+            throw exception(TypeDBException.of(TYPE_ROOT_MISMATCH, vertex.label(),
+                                               ATTRIBUTE_TYPE.root().label(),
+                                               vertex.encoding().root().label()));
         }
     }
 
@@ -91,14 +91,14 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             case DATETIME:
                 return AttributeTypeImpl.DateTime.of(graphMgr, vertex);
             default:
-                throw graphMgr.exception(GraknException.of(UNRECOGNISED_VALUE));
+                throw graphMgr.exception(TypeDBException.of(UNRECOGNISED_VALUE));
         }
     }
 
     @Override
     public void setAbstract() {
         if (getInstances().first().isPresent()) {
-            throw exception(GraknException.of(TYPE_HAS_INSTANCES, getLabel()));
+            throw exception(TypeDBException.of(TYPE_HAS_INSTANCES, getLabel()));
         }
         vertex.isAbstract(true);
     }
@@ -106,7 +106,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     @Override
     public void unsetAbstract() {
         if (getSubtypes().anyMatch(sub -> !sub.equals(this))) {
-            throw exception(GraknException.of(ATTRIBUTE_UNSET_ABSTRACT_HAS_SUBTYPES, getLabel()));
+            throw exception(TypeDBException.of(ATTRIBUTE_UNSET_ABSTRACT_HAS_SUBTYPES, getLabel()));
         }
         vertex.isAbstract(false);
     }
@@ -132,10 +132,10 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     public void setSupertype(AttributeType superType) {
         validateIsNotDeleted();
         if (!superType.isRoot() && !Objects.equals(this.getValueType(), superType.getValueType())) {
-            throw exception(GraknException.of(ATTRIBUTE_SUPERTYPE_VALUE_TYPE, getLabel(), getValueType().name(),
-                                              superType.getLabel(), superType.getValueType().name()));
+            throw exception(TypeDBException.of(ATTRIBUTE_SUPERTYPE_VALUE_TYPE, getLabel(), getValueType().name(),
+                                               superType.getLabel(), superType.getValueType().name()));
         } else if (!superType.isAbstract()) {
-            throw exception(GraknException.of(ATTRIBUTE_NEW_SUPERTYPE_NOT_ABSTRACT, superType.getLabel()));
+            throw exception(TypeDBException.of(ATTRIBUTE_NEW_SUPERTYPE_NOT_ABSTRACT, superType.getLabel()));
         }
         setSuperTypeVertex(((AttributeTypeImpl) superType).vertex);
     }
@@ -174,7 +174,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     }
 
     @Override
-    public List<GraknException> validate() {
+    public List<TypeDBException> validate() {
         return super.validate();
     }
 
@@ -201,32 +201,32 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     @Override
     public AttributeTypeImpl.Boolean asBoolean() {
-        throw exception(GraknException.of(INVALID_TYPE_CASTING, className(this.getClass()),
-                                          className(AttributeType.Boolean.class)));
+        throw exception(TypeDBException.of(INVALID_TYPE_CASTING, className(this.getClass()),
+                                           className(AttributeType.Boolean.class)));
     }
 
     @Override
     public AttributeTypeImpl.Long asLong() {
-        throw exception(GraknException.of(INVALID_TYPE_CASTING, className(this.getClass()),
-                                          className(AttributeType.Long.class)));
+        throw exception(TypeDBException.of(INVALID_TYPE_CASTING, className(this.getClass()),
+                                           className(AttributeType.Long.class)));
     }
 
     @Override
     public AttributeTypeImpl.Double asDouble() {
-        throw exception(GraknException.of(INVALID_TYPE_CASTING, className(this.getClass()),
-                                          className(AttributeType.Double.class)));
+        throw exception(TypeDBException.of(INVALID_TYPE_CASTING, className(this.getClass()),
+                                           className(AttributeType.Double.class)));
     }
 
     @Override
     public AttributeTypeImpl.String asString() {
-        throw exception(GraknException.of(INVALID_TYPE_CASTING, className(this.getClass()),
-                                          className(AttributeType.String.class)));
+        throw exception(TypeDBException.of(INVALID_TYPE_CASTING, className(this.getClass()),
+                                           className(AttributeType.String.class)));
     }
 
     @Override
     public AttributeTypeImpl.DateTime asDateTime() {
-        throw exception(GraknException.of(INVALID_TYPE_CASTING, className(this.getClass()),
-                                          className(AttributeType.DateTime.class)));
+        throw exception(TypeDBException.of(INVALID_TYPE_CASTING, className(this.getClass()),
+                                           className(AttributeType.DateTime.class)));
     }
 
     @Override
@@ -270,13 +270,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public boolean isRoot() { return true; }
 
         @Override
-        public void setLabel(java.lang.String label) { throw exception(GraknException.of(ROOT_TYPE_MUTATION)); }
+        public void setLabel(java.lang.String label) { throw exception(TypeDBException.of(ROOT_TYPE_MUTATION)); }
 
         @Override
-        public void unsetAbstract() { throw exception(GraknException.of(ROOT_TYPE_MUTATION)); }
+        public void unsetAbstract() { throw exception(TypeDBException.of(ROOT_TYPE_MUTATION)); }
 
         @Override
-        public void setSupertype(AttributeType superType) { throw exception(GraknException.of(ROOT_TYPE_MUTATION)); }
+        public void setSupertype(AttributeType superType) { throw exception(TypeDBException.of(ROOT_TYPE_MUTATION)); }
 
         @Override
         public FunctionalIterator<AttributeTypeImpl> getSubtypes() {
@@ -296,7 +296,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                     case DATETIME:
                         return AttributeTypeImpl.DateTime.of(graphMgr, v);
                     default:
-                        throw exception(GraknException.of(UNRECOGNISED_VALUE));
+                        throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
                 }
             });
         }
@@ -316,7 +316,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                     case DATETIME:
                         return AttributeTypeImpl.DateTime.of(graphMgr, v);
                     default:
-                        throw exception(GraknException.of(UNRECOGNISED_VALUE));
+                        throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
                 }
             });
         }
@@ -328,27 +328,27 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public void setOwns(AttributeType attributeType, boolean isKey) {
-            throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
         public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-            throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
         public void setPlays(RoleType roleType) {
-            throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
         public void setPlays(RoleType roleType, RoleType overriddenType) {
-            throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
         public void unsetPlays(RoleType roleType) {
-            throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
     }
 
@@ -362,8 +362,8 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             super(graphMgr, vertex);
             if (!vertex.label().equals(ATTRIBUTE.label()) &&
                     !vertex.valueType().equals(BOOLEAN)) {
-                throw exception(GraknException.of(VALUE_TYPE_MISMATCH, vertex.label(),
-                                                  BOOLEAN.name(), vertex.valueType().name()));
+                throw exception(TypeDBException.of(VALUE_TYPE_MISMATCH, vertex.label(),
+                                                   BOOLEAN.name(), vertex.valueType().name()));
             }
         }
 
@@ -438,42 +438,42 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public void setLabel(java.lang.String label) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void unsetAbstract() {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void setSupertype(AttributeType superType) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void setOwns(AttributeType attributeType, boolean isKey) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void setPlays(RoleType roleType) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void setPlays(RoleType roleType, RoleType overriddenType) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void unsetPlays(RoleType roleType) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
         }
     }
@@ -487,8 +487,8 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         private Long(GraphManager graphMgr, TypeVertex vertex) {
             super(graphMgr, vertex);
             if (!vertex.label().equals(ATTRIBUTE.label()) && !vertex.valueType().equals(LONG)) {
-                throw exception(GraknException.of(VALUE_TYPE_MISMATCH, vertex.label(),
-                                                  LONG.name(), vertex.valueType().name()));
+                throw exception(TypeDBException.of(VALUE_TYPE_MISMATCH, vertex.label(),
+                                                   LONG.name(), vertex.valueType().name()));
             }
         }
 
@@ -565,42 +565,42 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public void setLabel(java.lang.String label) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void unsetAbstract() {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void setSupertype(AttributeType superType) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void setOwns(AttributeType attributeType, boolean isKey) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void setPlays(RoleType roleType) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void setPlays(RoleType roleType, RoleType overriddenType) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void unsetPlays(RoleType roleType) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
         }
     }
@@ -614,8 +614,8 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         private Double(GraphManager graphMgr, TypeVertex vertex) {
             super(graphMgr, vertex);
             if (!vertex.label().equals(ATTRIBUTE.label()) && !vertex.valueType().equals(DOUBLE)) {
-                throw exception(GraknException.of(VALUE_TYPE_MISMATCH, vertex.label(),
-                                                  DOUBLE.name(), vertex.valueType().name()));
+                throw exception(TypeDBException.of(VALUE_TYPE_MISMATCH, vertex.label(),
+                                                   DOUBLE.name(), vertex.valueType().name()));
             }
         }
 
@@ -692,42 +692,42 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public void setLabel(java.lang.String label) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void unsetAbstract() {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void setSupertype(AttributeType superType) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void setOwns(AttributeType attributeType, boolean isKey) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void setPlays(RoleType roleType) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void setPlays(RoleType roleType, RoleType overriddenType) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void unsetPlays(RoleType roleType) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
         }
     }
@@ -741,8 +741,8 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         private String(GraphManager graphMgr, TypeVertex vertex) {
             super(graphMgr, vertex);
             if (!vertex.label().equals(ATTRIBUTE.label()) && !vertex.valueType().equals(STRING)) {
-                throw exception(GraknException.of(VALUE_TYPE_MISMATCH, vertex.label(),
-                                                  STRING.name(), vertex.valueType().name()));
+                throw exception(TypeDBException.of(VALUE_TYPE_MISMATCH, vertex.label(),
+                                                   STRING.name(), vertex.valueType().name()));
             }
         }
 
@@ -780,7 +780,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                 getInstances().forEachRemaining(attribute -> {
                     Matcher matcher = regex.matcher(attribute.getValue());
                     if (!matcher.matches()) {
-                        throw exception(GraknException.of(
+                        throw exception(TypeDBException.of(
                                 ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES, getLabel(), regex, attribute.getValue()
                         ));
                     }
@@ -808,7 +808,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public Attribute.String put(java.lang.String value, boolean isInferred) {
             validateCanHaveInstances(Attribute.class);
             if (vertex.regex() != null && !getRegex().matcher(value).matches()) {
-                throw exception(GraknException.of(ATTRIBUTE_VALUE_UNSATISFIES_REGEX, getLabel(), value, getRegex()));
+                throw exception(TypeDBException.of(ATTRIBUTE_VALUE_UNSATISFIES_REGEX, getLabel(), value, getRegex()));
             }
             AttributeVertex<java.lang.String> attVertex = graphMgr.data().put(vertex, value, isInferred);
             return new AttributeImpl.String(attVertex);
@@ -848,52 +848,52 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public void setLabel(java.lang.String label) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void unsetAbstract() {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void setSupertype(AttributeType superType) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void setOwns(AttributeType attributeType, boolean isKey) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void setPlays(RoleType roleType) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void setPlays(RoleType roleType, RoleType overriddenType) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void unsetPlays(RoleType roleType) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void setRegex(Pattern regex) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void unsetRegex() {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
         }
     }
@@ -907,8 +907,8 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         private DateTime(GraphManager graphMgr, TypeVertex vertex) {
             super(graphMgr, vertex);
             if (!vertex.label().equals(ATTRIBUTE.label()) && !vertex.valueType().equals(DATETIME)) {
-                throw exception(GraknException.of(VALUE_TYPE_MISMATCH, vertex.label(),
-                                                  DATETIME.name(), vertex.valueType().name()));
+                throw exception(TypeDBException.of(VALUE_TYPE_MISMATCH, vertex.label(),
+                                                   DATETIME.name(), vertex.valueType().name()));
             }
         }
 
@@ -986,42 +986,42 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public void setLabel(java.lang.String label) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void unsetAbstract() {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void setSupertype(AttributeType superType) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void setOwns(AttributeType attributeType, boolean isKey) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void setPlays(RoleType roleType) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void setPlays(RoleType roleType, RoleType overriddenType) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
             public void unsetPlays(RoleType roleType) {
-                throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
         }
     }

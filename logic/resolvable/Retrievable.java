@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,23 +15,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.logic.resolvable;
+package com.vaticle.typedb.core.logic.resolvable;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.constraint.Constraint;
-import grakn.core.pattern.constraint.thing.ThingConstraint;
-import grakn.core.pattern.constraint.type.TypeConstraint;
-import grakn.core.pattern.variable.ThingVariable;
-import grakn.core.pattern.variable.Variable;
-import grakn.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.constraint.Constraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.ThingConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.TypeConstraint;
+import com.vaticle.typedb.core.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.pattern.variable.Variable;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class Retrievable extends Resolvable<Conjunction> {
 
@@ -44,7 +44,7 @@ public class Retrievable extends Resolvable<Conjunction> {
     }
 
     public static Set<Retrievable> extractFrom(Conjunction conjunction, Set<Concludable> toExclude) {
-        return grakn.core.logic.resolvable.Retrievable.Extractor.of(conjunction, toExclude).extract();
+        return com.vaticle.typedb.core.logic.resolvable.Retrievable.Extractor.of(conjunction, toExclude).extract();
     }
 
     @Override
@@ -148,7 +148,7 @@ public class Retrievable extends Resolvable<Conjunction> {
             private void registerConstraint(Constraint constraint) {
                 if (constraint.isThing()) registerConstraint(constraint.asThing());
                 else if (constraint.isType()) registerConstraint(constraint.asType());
-                else throw GraknException.of(ILLEGAL_STATE);
+                else throw TypeDBException.of(ILLEGAL_STATE);
             }
 
             private void registerConstraint(ThingConstraint thingConstraint) {

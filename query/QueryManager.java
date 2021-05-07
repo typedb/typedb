@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,34 +16,34 @@
  *
  */
 
-package grakn.core.query;
+package com.vaticle.typedb.core.query;
 
-import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.parameters.Context;
-import grakn.core.common.parameters.Options;
-import grakn.core.concept.ConceptManager;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.ConceptMapGroup;
-import grakn.core.concept.answer.Numeric;
-import grakn.core.concept.answer.NumericGroup;
-import grakn.core.logic.LogicManager;
-import grakn.core.reasoner.Reasoner;
-import grakn.core.reasoner.resolution.answer.Explanation;
-import graql.lang.query.GraqlDefine;
-import graql.lang.query.GraqlDelete;
-import graql.lang.query.GraqlInsert;
-import graql.lang.query.GraqlMatch;
-import graql.lang.query.GraqlUndefine;
-import graql.lang.query.GraqlUpdate;
+import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.ThreadTrace;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Context;
+import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concept.answer.ConceptMapGroup;
+import com.vaticle.typedb.core.concept.answer.Numeric;
+import com.vaticle.typedb.core.concept.answer.NumericGroup;
+import com.vaticle.typedb.core.logic.LogicManager;
+import com.vaticle.typedb.core.reasoner.Reasoner;
+import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
+import com.vaticle.typeql.lang.query.TypeQLDefine;
+import com.vaticle.typeql.lang.query.TypeQLDelete;
+import com.vaticle.typeql.lang.query.TypeQLInsert;
+import com.vaticle.typeql.lang.query.TypeQLMatch;
+import com.vaticle.typeql.lang.query.TypeQLUndefine;
+import com.vaticle.typeql.lang.query.TypeQLUpdate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
-import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_DATA_VIOLATION;
-import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
-import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_DATA_READ_VIOLATION;
-import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_SCHEMA_READ_VIOLATION;
+import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.traceOnThread;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.SESSION_DATA_VIOLATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_DATA_READ_VIOLATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_SCHEMA_READ_VIOLATION;
 
 public class QueryManager {
 
@@ -63,11 +63,11 @@ public class QueryManager {
         this.defaultContext = new Context.Query(context, new Options.Query());
     }
 
-    public FunctionalIterator<ConceptMap> match(GraqlMatch query) {
+    public FunctionalIterator<ConceptMap> match(TypeQLMatch query) {
         return match(query, defaultContext);
     }
 
-    public FunctionalIterator<ConceptMap> match(GraqlMatch query, Context.Query context) {
+    public FunctionalIterator<ConceptMap> match(TypeQLMatch query, Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match")) {
             return Matcher.create(reasoner, query, context).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
@@ -79,11 +79,11 @@ public class QueryManager {
         return reasoner.explain(explainableId, defaultContext);
     }
 
-    public Numeric match(GraqlMatch.Aggregate query) {
+    public Numeric match(TypeQLMatch.Aggregate query) {
         return match(query, defaultContext);
     }
 
-    public Numeric match(GraqlMatch.Aggregate query, Context.Query queryContext) {
+    public Numeric match(TypeQLMatch.Aggregate query, Context.Query queryContext) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match_aggregate")) {
             return Matcher.create(reasoner, query, queryContext).execute();
         } catch (Exception exception) {
@@ -91,11 +91,11 @@ public class QueryManager {
         }
     }
 
-    public FunctionalIterator<ConceptMapGroup> match(GraqlMatch.Group query) {
+    public FunctionalIterator<ConceptMapGroup> match(TypeQLMatch.Group query) {
         return match(query, defaultContext);
     }
 
-    public FunctionalIterator<ConceptMapGroup> match(GraqlMatch.Group query, Context.Query queryContext) {
+    public FunctionalIterator<ConceptMapGroup> match(TypeQLMatch.Group query, Context.Query queryContext) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match_group")) {
             return Matcher.create(reasoner, query, queryContext).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
@@ -103,11 +103,11 @@ public class QueryManager {
         }
     }
 
-    public FunctionalIterator<NumericGroup> match(GraqlMatch.Group.Aggregate query) {
+    public FunctionalIterator<NumericGroup> match(TypeQLMatch.Group.Aggregate query) {
         return match(query, defaultContext);
     }
 
-    public FunctionalIterator<NumericGroup> match(GraqlMatch.Group.Aggregate query, Context.Query queryContext) {
+    public FunctionalIterator<NumericGroup> match(TypeQLMatch.Group.Aggregate query, Context.Query queryContext) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match_group_aggregate")) {
             return Matcher.create(reasoner, query, queryContext).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
@@ -115,11 +115,11 @@ public class QueryManager {
         }
     }
 
-    public FunctionalIterator<ConceptMap> insert(GraqlInsert query) {
+    public FunctionalIterator<ConceptMap> insert(TypeQLInsert query) {
         return insert(query, defaultContext);
     }
 
-    public FunctionalIterator<ConceptMap> insert(GraqlInsert query, Context.Query context) {
+    public FunctionalIterator<ConceptMap> insert(TypeQLInsert query, Context.Query context) {
         if (context.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION);
         if (context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_DATA_READ_VIOLATION);
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
@@ -129,11 +129,11 @@ public class QueryManager {
         }
     }
 
-    public void delete(GraqlDelete query) {
+    public void delete(TypeQLDelete query) {
         delete(query, defaultContext);
     }
 
-    public void delete(GraqlDelete query, Context.Query context) {
+    public void delete(TypeQLDelete query, Context.Query context) {
         if (context.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION);
         if (context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_DATA_READ_VIOLATION);
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete")) {
@@ -143,11 +143,11 @@ public class QueryManager {
         }
     }
 
-    public void update(GraqlUpdate query) {
+    public void update(TypeQLUpdate query) {
         update(query, defaultContext);
     }
 
-    public FunctionalIterator<ConceptMap> update(GraqlUpdate query, Context.Query context) {
+    public FunctionalIterator<ConceptMap> update(TypeQLUpdate query, Context.Query context) {
         if (context.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION);
         if (context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_DATA_READ_VIOLATION);
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "update")) {
@@ -157,11 +157,11 @@ public class QueryManager {
         }
     }
 
-    public void define(GraqlDefine query) {
+    public void define(TypeQLDefine query) {
         define(query, defaultContext);
     }
 
-    public void define(GraqlDefine query, Context.Query context) {
+    public void define(TypeQLDefine query, Context.Query context) {
         if (context.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION);
         if (context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_SCHEMA_READ_VIOLATION);
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "define")) {
@@ -171,11 +171,11 @@ public class QueryManager {
         }
     }
 
-    public void undefine(GraqlUndefine query) {
+    public void undefine(TypeQLUndefine query) {
         undefine(query, defaultContext);
     }
 
-    public void undefine(GraqlUndefine query, Context.Query context) {
+    public void undefine(TypeQLUndefine query, Context.Query context) {
         if (context.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION);
         if (context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_SCHEMA_READ_VIOLATION);
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefine")) {

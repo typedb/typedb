@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,14 +16,14 @@
  *
  */
 
-package grakn.core.rocks;
+package com.vaticle.typedb.core.rocks;
 
-import grakn.common.collection.ConcurrentSet;
-import grakn.core.common.exception.ErrorMessage;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.graph.common.KeyGenerator;
-import grakn.core.graph.common.Storage;
+import com.vaticle.typedb.common.collection.ConcurrentSet;
+import com.vaticle.typedb.core.common.exception.ErrorMessage;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.graph.common.KeyGenerator;
+import com.vaticle.typedb.core.graph.common.Storage;
 import org.rocksdb.AbstractImmutableNativeReference;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.OptimisticTransactionOptions;
@@ -43,12 +43,12 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.BiFunction;
 
-import static grakn.core.common.collection.Bytes.bytesHavePrefix;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
-import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_DATA_READ_VIOLATION;
-import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_SCHEMA_READ_VIOLATION;
+import static com.vaticle.typedb.core.common.collection.Bytes.bytesHavePrefix;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_DATA_READ_VIOLATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_SCHEMA_READ_VIOLATION;
 
 public abstract class RocksStorage implements Storage {
 
@@ -137,17 +137,17 @@ public abstract class RocksStorage implements Storage {
     }
 
     @Override
-    public GraknException exception(ErrorMessage error) {
-        GraknException e = GraknException.of(error);
+    public TypeDBException exception(ErrorMessage error) {
+        TypeDBException e = TypeDBException.of(error);
         LOG.debug(e.getMessage(), e);
         return e;
     }
 
     @Override
-    public GraknException exception(Exception exception) {
-        GraknException e;
-        if (exception instanceof GraknException) e = (GraknException) exception;
-        else e = GraknException.of(exception);
+    public TypeDBException exception(Exception exception) {
+        TypeDBException e;
+        if (exception instanceof TypeDBException) e = (TypeDBException) exception;
+        else e = TypeDBException.of(exception);
         LOG.debug(e.getMessage(), e);
         return e;
     }
@@ -180,7 +180,7 @@ public abstract class RocksStorage implements Storage {
         public byte[] get(byte[] key) {
             try {
                 deleteCloseSchemaWriteLock.readLock().lock();
-                if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
+                if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
                 return storageTransaction.get(readOptions, key);
             } catch (RocksDBException e) {
                 throw exception(e);
@@ -193,7 +193,7 @@ public abstract class RocksStorage implements Storage {
         public <G> FunctionalIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
             RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
             iterators.add(iterator);
-            if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED); //guard against close() race conditions
+            if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED); //guard against close() race conditions
             return iterator.onFinalise(iterator::close);
         }
     }
@@ -211,7 +211,7 @@ public abstract class RocksStorage implements Storage {
         public byte[] get(byte[] key) {
             try {
                 deleteCloseSchemaWriteLock.readLock().lock();
-                if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
+                if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
                 return storageTransaction.get(readOptions, key);
             } catch (RocksDBException e) {
                 throw exception(e);
@@ -229,7 +229,7 @@ public abstract class RocksStorage implements Storage {
 
             try (org.rocksdb.RocksIterator iterator = getInternalRocksIterator()) {
                 deleteCloseSchemaWriteLock.readLock().lock();
-                if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
+                if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
                 iterator.seekForPrev(upperBound);
                 if (bytesHavePrefix(iterator.key(), prefix)) return iterator.key();
                 else return null;
@@ -248,7 +248,7 @@ public abstract class RocksStorage implements Storage {
             try {
                 deleteCloseSchemaWriteLock.writeLock().lock();
                 if (!isOpen() || (!transaction.isOpen() && transaction.isData())) {
-                    throw GraknException.of(RESOURCE_CLOSED);
+                    throw TypeDBException.of(RESOURCE_CLOSED);
                 }
                 storageTransaction.delete(key);
             } catch (RocksDBException e) {
@@ -262,18 +262,18 @@ public abstract class RocksStorage implements Storage {
         public <G> FunctionalIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor) {
             RocksIterator<G> iterator = new RocksIterator<>(this, key, constructor);
             iterators.add(iterator);
-            if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED); //guard against close() race conditions
+            if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED); //guard against close() race conditions
             return iterator;
         }
 
         @Override
-        public GraknException exception(ErrorMessage errorMessage) {
+        public TypeDBException exception(ErrorMessage errorMessage) {
             transaction.close();
             return super.exception(errorMessage);
         }
 
         @Override
-        public GraknException exception(Exception exception) {
+        public TypeDBException exception(Exception exception) {
             transaction.close();
             return super.exception(exception);
         }
@@ -314,7 +314,7 @@ public abstract class RocksStorage implements Storage {
                     deleteCloseSchemaWriteLock.writeLock().lock();
                     obtainedWriteLock = true;
                 }
-                if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
+                if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
                 storageTransaction.put(key, value);
             } catch (RocksDBException e) {
                 throw exception(e);
@@ -332,7 +332,7 @@ public abstract class RocksStorage implements Storage {
                     deleteCloseSchemaWriteLock.writeLock().lock();
                     obtainedWriteLock = true;
                 }
-                if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
+                if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
                 storageTransaction.putUntracked(key, value);
             } catch (RocksDBException e) {
                 throw exception(e);
@@ -362,7 +362,7 @@ public abstract class RocksStorage implements Storage {
             assert isOpen() && !isReadOnly;
             try {
                 deleteCloseSchemaWriteLock.readLock().lock();
-                if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
+                if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
                 storageTransaction.put(key, value);
             } catch (RocksDBException e) {
                 throw exception(e);
@@ -376,7 +376,7 @@ public abstract class RocksStorage implements Storage {
             assert isOpen() && !isReadOnly;
             try {
                 deleteCloseSchemaWriteLock.readLock().lock();
-                if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
+                if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
                 storageTransaction.putUntracked(key, value);
             } catch (RocksDBException e) {
                 throw exception(e);
@@ -390,7 +390,7 @@ public abstract class RocksStorage implements Storage {
             assert isOpen() && !isReadOnly;
             try {
                 deleteCloseSchemaWriteLock.readLock().lock();
-                if (!isOpen()) throw GraknException.of(RESOURCE_CLOSED);
+                if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
                 storageTransaction.mergeUntracked(key, value);
             } catch (RocksDBException e) {
                 throw exception(e);

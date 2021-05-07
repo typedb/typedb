@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,18 +15,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.logic.resolvable;
+package com.vaticle.typedb.core.logic.resolvable;
 
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.Disjunction;
-import grakn.core.pattern.constraint.thing.IsaConstraint;
-import grakn.core.pattern.constraint.thing.RelationConstraint;
-import graql.lang.Graql;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.pattern.constraint.thing.IsaConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
+import com.vaticle.typeql.lang.TypeQL;
 import org.junit.Test;
 
 import java.util.Set;
 
-import static grakn.common.collection.Collections.list;
+import static com.vaticle.typedb.common.collection.Collections.list;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
@@ -34,7 +34,7 @@ import static junit.framework.TestCase.assertTrue;
 public class ConcludableTest {
 
     private Conjunction parseConjunction(String query) {
-        return Disjunction.create(Graql.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
+        return Disjunction.create(TypeQL.parsePattern(query).asConjunction().normalise()).conjunctions().iterator().next();
     }
 
     private long relationConcludablesCount(Set<Concludable> concludables) {

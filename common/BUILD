@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -15,8 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
+load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 package(default_visibility = ["//visibility:public"])
 
 
@@ -24,16 +24,16 @@ java_library(
     name = "common",
     srcs = glob(["*/*.java", "*/*/*.java"], exclude=["test/*", "*Test.java", "*/*Test.java"]),
     deps = [
-        # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
-        "@graknlabs_graql//java/query:query",
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java/query:query",
 
         # External Maven Dependencies
         "@maven//:com_github_ben_manes_caffeine_caffeine",
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:org_slf4j_slf4j_api",
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-common:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-common:{pom_version}"],
 )
 
 java_test(
@@ -41,12 +41,12 @@ java_test(
     srcs = [
         "iterator/PermutationIteratorTest.java",
     ],
-    test_class = "grakn.core.common.iterator.PermutationIteratorTest",
+    test_class = "com.vaticle.typedb.core.common.iterator.PermutationIteratorTest",
     deps = [
         "//common:common",
 
-        # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
     ],
 )
 

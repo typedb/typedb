@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,25 +15,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner;
+package com.vaticle.typedb.core.reasoner;
 
-import grakn.common.concurrent.NamedThreadFactory;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Arguments;
-import grakn.core.common.parameters.Options;
-import grakn.core.common.parameters.Options.Database;
-import grakn.core.concept.ConceptManager;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concurrent.actor.ActorExecutorGroup;
-import grakn.core.logic.LogicManager;
-import grakn.core.rocks.RocksGrakn;
-import grakn.core.rocks.RocksSession;
-import grakn.core.rocks.RocksTransaction;
-import grakn.core.test.integration.util.Util;
-import graql.lang.Graql;
+import com.vaticle.typedb.common.concurrent.NamedThreadFactory;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.common.parameters.Options.Database;
+import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concept.type.AttributeType;
+import com.vaticle.typedb.core.concept.type.EntityType;
+import com.vaticle.typedb.core.concept.type.RelationType;
+import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
+import com.vaticle.typedb.core.logic.LogicManager;
+import com.vaticle.typedb.core.rocks.RocksSession;
+import com.vaticle.typedb.core.rocks.RocksTransaction;
+import com.vaticle.typedb.core.rocks.RocksTypeDB;
+import com.vaticle.typedb.core.test.integration.util.Util;
+import com.vaticle.typeql.lang.TypeQL;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -43,7 +43,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-import static grakn.core.common.exception.ErrorMessage.Reasoner.RESOLUTION_TERMINATED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.RESOLUTION_TERMINATED;
 import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -54,11 +54,11 @@ public class ReasonerTest {
     private static final Path logDir = dataDir.resolve("logs");
     private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
     private static final String database = "reasoner-test";
-    private static RocksGrakn grakn;
+    private static RocksTypeDB typedb;
 
     private RocksTransaction singleThreadElgTransaction(RocksSession session, Arguments.Transaction.Type transactionType) {
         RocksTransaction transaction = session.transaction(transactionType, new Options.Transaction().infer(true));
-        ActorExecutorGroup service = new ActorExecutorGroup(1, new NamedThreadFactory("grakn-core-actor"));
+        ActorExecutorGroup service = new ActorExecutorGroup(1, new NamedThreadFactory("typedb-actor"));
         transaction.reasoner().resolverRegistry().setExecutorService(service);
         return transaction;
     }
@@ -66,18 +66,18 @@ public class ReasonerTest {
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        grakn = RocksGrakn.open(options);
-        grakn.databases().create(database);
+        typedb = RocksTypeDB.open(options);
+        typedb.databases().create(database);
     }
 
     @After
     public void tearDown() {
-        grakn.close();
+        typedb.close();
     }
 
     @Test
     public void test_no_rules() {
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
 
@@ -87,14 +87,14 @@ public class ReasonerTest {
                 txn.commit();
             }
         }
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
-                txn.query().insert(Graql.parseQuery("insert $x isa milk, has age-in-days 5;").asInsert());
-                txn.query().insert(Graql.parseQuery("insert $x isa milk, has age-in-days 10;").asInsert());
+                txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 5;").asInsert());
+                txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 10;").asInsert());
                 txn.commit();
             }
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
-                List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $x has age-in-days $a;").asMatch()).toList();
+                List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $x has age-in-days $a;").asMatch()).toList();
 
                 ans.iterator().forEachRemaining(a -> {
                     assertEquals("age-in-days", a.get("a").asThing().getType().getLabel().scopedName());
@@ -107,7 +107,7 @@ public class ReasonerTest {
 
     @Test
     public void test_offset_limit() {
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 EntityType milk = conceptMgr.putEntityType("milk");
@@ -116,14 +116,14 @@ public class ReasonerTest {
                 txn.commit();
             }
         }
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
-                txn.query().insert(Graql.parseQuery("insert $x isa milk, has age-in-days 5;").asInsert());
-                txn.query().insert(Graql.parseQuery("insert $x isa milk, has age-in-days 10;").asInsert());
+                txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 5;").asInsert());
+                txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 10;").asInsert());
                 txn.commit();
             }
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
-                List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $x has age-in-days $a;").asMatch()).toList();
+                List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $x has age-in-days $a;").asMatch()).toList();
 
                 ans.iterator().forEachRemaining(a -> {
                     assertEquals("age-in-days", a.get("a").asThing().getType().getLabel().scopedName());
@@ -131,10 +131,10 @@ public class ReasonerTest {
                 });
                 assertEquals(2, ans.size());
 
-                List<ConceptMap> ansLimited = txn.query().match(Graql.parseQuery("match $x has age-in-days $a; limit 1;").asMatch()).toList();
+                List<ConceptMap> ansLimited = txn.query().match(TypeQL.parseQuery("match $x has age-in-days $a; limit 1;").asMatch()).toList();
                 assertEquals(1, ansLimited.size());
 
-                List<ConceptMap> ansLimitedOffsetted = txn.query().match(Graql.parseQuery("match $x has age-in-days $a; offset 1; limit 1;").asMatch()).toList();
+                List<ConceptMap> ansLimitedOffsetted = txn.query().match(TypeQL.parseQuery("match $x has age-in-days $a; offset 1; limit 1;").asMatch()).toList();
                 assertEquals(1, ansLimitedOffsetted.size());
             }
         }
@@ -142,7 +142,7 @@ public class ReasonerTest {
 
     @Test
     public void test_exception_kills_query() {
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
@@ -154,22 +154,22 @@ public class ReasonerTest {
                 milk.setOwns(isStillGood);
                 logicMgr.putRule(
                         "old-milk-is-not-good",
-                        Graql.parsePattern("{ $x isa milk, has age-in-days >= 10; }").asConjunction(),
-                        Graql.parseVariable("$x has is-still-good false").asThing());
+                        TypeQL.parsePattern("{ $x isa milk, has age-in-days >= 10; }").asConjunction(),
+                        TypeQL.parseVariable("$x has is-still-good false").asThing());
                 txn.commit();
             }
         }
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
-                txn.query().insert(Graql.parseQuery("insert $x isa milk, has age-in-days 5;").asInsert());
-                txn.query().insert(Graql.parseQuery("insert $x isa milk, has age-in-days 10;").asInsert());
+                txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 5;").asInsert());
+                txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 10;").asInsert());
                 txn.commit();
             }
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
                 txn.reasoner().resolverRegistry().terminateResolvers(new RuntimeException());
                 try {
-                    List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $x isa is-still-good;").asMatch()).toList();
-                } catch (GraknException e) {
+                    List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $x isa is-still-good;").asMatch()).toList();
+                } catch (TypeDBException e) {
                     assertEquals(e.code().get(), RESOLUTION_TERMINATED.code());
                     return;
                 }
@@ -180,7 +180,7 @@ public class ReasonerTest {
 
     @Test
     public void test_has_explicit_rule() {
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
@@ -192,21 +192,21 @@ public class ReasonerTest {
                 milk.setOwns(isStillGood);
                 logicMgr.putRule(
                         "old-milk-is-not-good",
-                        Graql.parsePattern("{ $x isa milk, has age-in-days >= 10; }").asConjunction(),
-                        Graql.parseVariable("$x has is-still-good false").asThing());
+                        TypeQL.parsePattern("{ $x isa milk, has age-in-days >= 10; }").asConjunction(),
+                        TypeQL.parseVariable("$x has is-still-good false").asThing());
                 txn.commit();
             }
         }
 
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
-                txn.query().insert(Graql.parseQuery("insert $x isa milk, has age-in-days 5;").asInsert());
-                txn.query().insert(Graql.parseQuery("insert $x isa milk, has age-in-days 10;").asInsert());
-                txn.query().insert(Graql.parseQuery("insert $x isa milk, has age-in-days 15;").asInsert());
+                txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 5;").asInsert());
+                txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 10;").asInsert());
+                txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 15;").asInsert());
                 txn.commit();
             }
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
-                List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $x has is-still-good $a;").asMatch()).toList();
+                List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $x has is-still-good $a;").asMatch()).toList();
 
                 ans.iterator().forEachRemaining(a -> {
                     assertFalse(a.get("a").asAttribute().asBoolean().getValue());
@@ -220,7 +220,7 @@ public class ReasonerTest {
 
     @Test
     public void test_relation_rule() {
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
@@ -238,18 +238,18 @@ public class ReasonerTest {
                 person.setPlays(marriage.getRelates("wife"));
                 logicMgr.putRule(
                         "marriage-is-friendship",
-                        Graql.parsePattern("{ $x isa person; $y isa person; (husband: $x, wife: $y) isa marriage; }").asConjunction(),
-                        Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
+                        TypeQL.parsePattern("{ $x isa person; $y isa person; (husband: $x, wife: $y) isa marriage; }").asConjunction(),
+                        TypeQL.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
                 txn.commit();
             }
         }
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
-                txn.query().insert(Graql.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (husband: $x, wife: $y) isa marriage;").asInsert());
+                txn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (husband: $x, wife: $y) isa marriage;").asInsert());
                 txn.commit();
             }
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
-                List<ConceptMap> ans = txn.query().match(Graql.parseQuery("match $f (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;").asMatch()).toList();
+                List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $f (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;").asMatch()).toList();
 
                 ans.iterator().forEachRemaining(a -> {
                     assertEquals("friendship", a.get("f").asThing().getType().getLabel().scopedName());

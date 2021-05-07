@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,19 +16,19 @@
  *
  */
 
-package grakn.core.pattern.constraint.thing;
+package com.vaticle.typedb.core.pattern.constraint.thing;
 
-import grakn.common.collection.Bytes;
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.variable.ThingVariable;
-import grakn.core.traversal.Traversal;
+import com.vaticle.typedb.common.collection.Bytes;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.traversal.Traversal;
 
 import java.util.Arrays;
 import java.util.Objects;
 
-import static grakn.common.collection.Collections.set;
-import static graql.lang.common.GraqlToken.Char.SPACE;
-import static graql.lang.common.GraqlToken.Constraint.IID;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SPACE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.IID;
 
 public class IIDConstraint extends ThingConstraint {
 
@@ -41,7 +41,7 @@ public class IIDConstraint extends ThingConstraint {
         this.hash = Objects.hash(IIDConstraint.class, this.owner, Arrays.hashCode(this.iid));
     }
 
-    static IIDConstraint of(ThingVariable owner, graql.lang.pattern.constraint.ThingConstraint.IID constraint) {
+    static IIDConstraint of(ThingVariable owner, com.vaticle.typeql.lang.pattern.constraint.ThingConstraint.IID constraint) {
         return new IIDConstraint(owner, Bytes.hexStringToBytes(constraint.iid()));
     }
 

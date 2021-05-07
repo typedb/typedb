@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -16,9 +16,9 @@
  *
  */
 
-package grakn.core.common.test;
+package com.vaticle.typedb.core.common.test;
 
-import grakn.core.common.exception.GraknException;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -26,11 +26,11 @@ import static org.junit.Assert.fail;
 
 public class Util {
 
-    public static void assertThrowsGraknException(Runnable function, String errorCode) {
+    public static void assertThrowsTypeDBException(Runnable function, String errorCode) {
         try {
             function.run();
             fail();
-        } catch (GraknException e) {
+        } catch (TypeDBException e) {
             assert e.code().isPresent();
             assertEquals(errorCode, e.code().get());
         } catch (Exception e) {

@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -17,16 +17,16 @@
 
 package(default_visibility = ["//server:__subpackages__", "//:__pkg__"])
 
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 filegroup(
     name = "logo",
-    srcs = ["grakn-core-ascii.txt"],
+    srcs = ["typedb-ascii.txt"],
 )
 
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),
-    exclude = ["grakn-core-ascii.txt"],
+    exclude = ["typedb-ascii.txt"],
     license_type = "agpl",
 )

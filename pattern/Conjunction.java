@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,25 +16,25 @@
  *
  */
 
-package grakn.core.pattern;
+package com.vaticle.typedb.core.pattern;
 
-import grabl.tracing.client.GrablTracingThreadStatic.ThreadTrace;
-import grakn.common.collection.Either;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Label;
-import grakn.core.pattern.constraint.Constraint;
-import grakn.core.pattern.constraint.thing.IIDConstraint;
-import grakn.core.pattern.constraint.type.LabelConstraint;
-import grakn.core.pattern.variable.ThingVariable;
-import grakn.core.pattern.variable.TypeVariable;
-import grakn.core.pattern.variable.Variable;
-import grakn.core.pattern.variable.VariableCloner;
-import grakn.core.pattern.variable.VariableRegistry;
-import grakn.core.traversal.Traversal;
-import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.Identifier.Variable.Retrievable;
-import graql.lang.pattern.Conjunctable;
-import graql.lang.pattern.variable.BoundVariable;
+import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.ThreadTrace;
+import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.pattern.constraint.Constraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.IIDConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.LabelConstraint;
+import com.vaticle.typedb.core.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.pattern.variable.TypeVariable;
+import com.vaticle.typedb.core.pattern.variable.Variable;
+import com.vaticle.typedb.core.pattern.variable.VariableCloner;
+import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
+import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
+import com.vaticle.typeql.lang.pattern.Conjunctable;
+import com.vaticle.typeql.lang.pattern.variable.BoundVariable;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -50,17 +50,17 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
-import static grakn.common.collection.Collections.set;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Pattern.UNBOUNDED_NEGATION;
-import static grakn.core.common.exception.ErrorMessage.ThingRead.CONTRADICTORY_BOUND_VARIABLE;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static graql.lang.common.GraqlToken.Char.CURLY_CLOSE;
-import static graql.lang.common.GraqlToken.Char.CURLY_OPEN;
-import static graql.lang.common.GraqlToken.Char.NEW_LINE;
-import static graql.lang.common.GraqlToken.Char.SEMICOLON;
-import static graql.lang.common.GraqlToken.Char.SPACE;
+import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.traceOnThread;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNBOUNDED_NEGATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.CONTRADICTORY_BOUND_VARIABLE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.CURLY_CLOSE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.CURLY_OPEN;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.NEW_LINE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SEMICOLON;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SPACE;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.stream.Collectors.toSet;
@@ -91,27 +91,27 @@ public class Conjunction implements Pattern, Cloneable {
         return unmodifiableMap(map);
     }
 
-    public static Conjunction create(graql.lang.pattern.Conjunction<Conjunctable> graql) {
-        return create(graql, null);
+    public static Conjunction create(com.vaticle.typeql.lang.pattern.Conjunction<Conjunctable> typeql) {
+        return create(typeql, null);
     }
 
-    public static Conjunction create(graql.lang.pattern.Conjunction<Conjunctable> graql,
+    public static Conjunction create(com.vaticle.typeql.lang.pattern.Conjunction<Conjunctable> typeql,
                                      @Nullable VariableRegistry bounds) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            List<BoundVariable> graqlVariables = new ArrayList<>();
-            List<graql.lang.pattern.Negation<?>> graqlNegations = new ArrayList<>();
+            List<BoundVariable> typeQLVariables = new ArrayList<>();
+            List<com.vaticle.typeql.lang.pattern.Negation<?>> typeQLNegations = new ArrayList<>();
 
-            graql.patterns().forEach(conjunctable -> {
-                if (conjunctable.isVariable()) graqlVariables.add(conjunctable.asVariable());
-                else if (conjunctable.isNegation()) graqlNegations.add(conjunctable.asNegation());
-                else throw GraknException.of(ILLEGAL_STATE);
+            typeql.patterns().forEach(conjunctable -> {
+                if (conjunctable.isVariable()) typeQLVariables.add(conjunctable.asVariable());
+                else if (conjunctable.isNegation()) typeQLNegations.add(conjunctable.asNegation());
+                else throw TypeDBException.of(ILLEGAL_STATE);
             });
 
-            if (graqlVariables.isEmpty() && !graqlNegations.isEmpty()) throw GraknException.of(UNBOUNDED_NEGATION);
-            VariableRegistry registry = VariableRegistry.createFromVariables(graqlVariables, bounds);
-            Set<Negation> graknNegations = graqlNegations.isEmpty() ? set() :
-                    graqlNegations.stream().map(n -> Negation.create(n, registry)).collect(toSet());
-            return new Conjunction(registry.variables(), graknNegations);
+            if (typeQLVariables.isEmpty() && !typeQLNegations.isEmpty()) throw TypeDBException.of(UNBOUNDED_NEGATION);
+            VariableRegistry registry = VariableRegistry.createFromVariables(typeQLVariables, bounds);
+            Set<Negation> typeDBNegations = typeQLNegations.isEmpty() ? set() :
+                    typeQLNegations.stream().map(n -> Negation.create(n, registry)).collect(toSet());
+            return new Conjunction(registry.variables(), typeDBNegations);
         }
     }
 
@@ -119,7 +119,7 @@ public class Conjunction implements Pattern, Cloneable {
         variableSet.forEach(var -> {
             if (var.id().isRetrievable() && bounds.containsKey(var.id().asRetrievable())) {
                 Either<Label, byte[]> boundVar = bounds.get(var.id().asRetrievable());
-                if (var.isType() != boundVar.isFirst()) throw GraknException.of(CONTRADICTORY_BOUND_VARIABLE, var);
+                if (var.isType() != boundVar.isFirst()) throw TypeDBException.of(CONTRADICTORY_BOUND_VARIABLE, var);
                 else if (var.isType()) {
                     Optional<LabelConstraint> existingLabel = var.asType().label();
                     if (existingLabel.isPresent() && !existingLabel.get().properLabel().equals(boundVar.first())) {
@@ -135,7 +135,7 @@ public class Conjunction implements Pattern, Cloneable {
                     } else {
                         var.asThing().iid(boundVar.second());
                     }
-                } else throw GraknException.of(ILLEGAL_STATE);
+                } else throw TypeDBException.of(ILLEGAL_STATE);
             }
         });
         isBounded = true;

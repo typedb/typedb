@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,22 +16,22 @@
  *
  */
 
-package grakn.core.pattern.variable;
+package com.vaticle.typedb.core.pattern.variable;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.pattern.constraint.Constraint;
-import grakn.core.pattern.constraint.thing.HasConstraint;
-import grakn.core.pattern.constraint.thing.IIDConstraint;
-import grakn.core.pattern.constraint.thing.IsConstraint;
-import grakn.core.pattern.constraint.thing.IsaConstraint;
-import grakn.core.pattern.constraint.thing.RelationConstraint;
-import grakn.core.pattern.constraint.thing.ThingConstraint;
-import grakn.core.pattern.constraint.thing.ValueConstraint;
-import grakn.core.pattern.equivalence.AlphaEquivalence;
-import grakn.core.pattern.equivalence.AlphaEquivalent;
-import grakn.core.traversal.Traversal;
-import grakn.core.traversal.common.Identifier;
-import graql.lang.common.GraqlToken;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.pattern.constraint.Constraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.IIDConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.IsConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.IsaConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.ThingConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.ValueConstraint;
+import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
+import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalent;
+import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -40,11 +40,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Pattern.ILLEGAL_DERIVED_THING_CONSTRAINT_ISA;
-import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_THING_CONSTRAINT_IID;
-import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_THING_CONSTRAINT_ISA;
-import static grakn.core.common.exception.ErrorMessage.Pattern.MULTIPLE_THING_CONSTRAINT_RELATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.ILLEGAL_DERIVED_THING_CONSTRAINT_ISA;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.MULTIPLE_THING_CONSTRAINT_IID;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.MULTIPLE_THING_CONSTRAINT_ISA;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.MULTIPLE_THING_CONSTRAINT_RELATION;
 
 public class ThingVariable extends Variable implements AlphaEquivalent<ThingVariable> {
 
@@ -66,17 +66,17 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         this.constraining = new HashSet<>();
     }
 
-    ThingVariable constrainThing(List<graql.lang.pattern.constraint.ThingConstraint> constraints, VariableRegistry registry) {
+    ThingVariable constrainThing(List<com.vaticle.typeql.lang.pattern.constraint.ThingConstraint> constraints, VariableRegistry registry) {
         constraints.forEach(constraint -> {
             if (constraint.isIsa() && constraint.asIsa().isDerived() && !registry.allowsDerived()) {
-                throw GraknException.of(ILLEGAL_DERIVED_THING_CONSTRAINT_ISA, id(), constraint.asIsa().type());
+                throw TypeDBException.of(ILLEGAL_DERIVED_THING_CONSTRAINT_ISA, id(), constraint.asIsa().type());
             }
             this.constrain(ThingConstraint.of(this, constraint, registry));
         });
         return this;
     }
 
-    ThingVariable constrainConcept(List<graql.lang.pattern.constraint.ConceptConstraint> constraints, VariableRegistry registry) {
+    ThingVariable constrainConcept(List<com.vaticle.typeql.lang.pattern.constraint.ConceptConstraint> constraints, VariableRegistry registry) {
         constraints.forEach(constraint -> this.constrain(ThingConstraint.of(this, constraint, registry)));
         return this;
     }
@@ -113,23 +113,23 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         constraints.add(constraint);
         if (constraint.isIID()) {
             if (iidConstraint != null && !iidConstraint.equals(constraint)) {
-                throw GraknException.of(MULTIPLE_THING_CONSTRAINT_IID, id());
+                throw TypeDBException.of(MULTIPLE_THING_CONSTRAINT_IID, id());
             }
             iidConstraint = constraint.asIID();
         } else if (constraint.isIsa()) {
             if (isaConstraint != null && !isaConstraint.equals(constraint)) {
-                throw GraknException.of(MULTIPLE_THING_CONSTRAINT_ISA, id(), constraint.asIsa().type(), isaConstraint.type());
+                throw TypeDBException.of(MULTIPLE_THING_CONSTRAINT_ISA, id(), constraint.asIsa().type(), isaConstraint.type());
             }
             isaConstraint = constraint.asIsa();
         } else if (constraint.isRelation()) {
             if (relationConstraint != null && !relationConstraint.equals(constraint)) {
-                throw GraknException.of(MULTIPLE_THING_CONSTRAINT_RELATION, id());
+                throw TypeDBException.of(MULTIPLE_THING_CONSTRAINT_RELATION, id());
             }
             relationConstraint = constraint.asRelation();
         } else if (constraint.isIs()) isConstraints.add(constraint.asIs());
         else if (constraint.isHas()) hasConstraints.add(constraint.asHas());
         else if (constraint.isValue()) valueConstraints.add(constraint.asValue());
-        else throw GraknException.of(ILLEGAL_STATE);
+        else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     @Override
@@ -175,37 +175,37 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         return valueConstraints;
     }
 
-    public ValueConstraint.Long valueLong(GraqlToken.Predicate.Equality comparator, long value) {
+    public ValueConstraint.Long valueLong(TypeQLToken.Predicate.Equality comparator, long value) {
         ValueConstraint.Long valueLongConstraint = new ValueConstraint.Long(this, comparator, value);
         constrain(valueLongConstraint);
         return valueLongConstraint;
     }
 
-    public ValueConstraint.Double valueDouble(GraqlToken.Predicate.Equality comparator, double value) {
+    public ValueConstraint.Double valueDouble(TypeQLToken.Predicate.Equality comparator, double value) {
         ValueConstraint.Double valueDoubleConstraint = new ValueConstraint.Double(this, comparator, value);
         constrain(valueDoubleConstraint);
         return valueDoubleConstraint;
     }
 
-    public ValueConstraint.Boolean valueBoolean(GraqlToken.Predicate.Equality comparator, boolean value) {
+    public ValueConstraint.Boolean valueBoolean(TypeQLToken.Predicate.Equality comparator, boolean value) {
         ValueConstraint.Boolean valueBooleanConstraint = new ValueConstraint.Boolean(this, comparator, value);
         constrain(valueBooleanConstraint);
         return valueBooleanConstraint;
     }
 
-    public ValueConstraint.String valueString(GraqlToken.Predicate comparator, String value) {
+    public ValueConstraint.String valueString(TypeQLToken.Predicate comparator, String value) {
         ValueConstraint.String valueStringConstraint = new ValueConstraint.String(this, comparator, value);
         constrain(valueStringConstraint);
         return valueStringConstraint;
     }
 
-    public ValueConstraint.DateTime valueDateTime(GraqlToken.Predicate.Equality comparator, LocalDateTime value) {
+    public ValueConstraint.DateTime valueDateTime(TypeQLToken.Predicate.Equality comparator, LocalDateTime value) {
         ValueConstraint.DateTime valueDateTimeConstraint = new ValueConstraint.DateTime(this, comparator, value);
         constrain(valueDateTimeConstraint);
         return valueDateTimeConstraint;
     }
 
-    public ValueConstraint.Variable valueVariable(GraqlToken.Predicate.Equality comparator, ThingVariable variable) {
+    public ValueConstraint.Variable valueVariable(TypeQLToken.Predicate.Equality comparator, ThingVariable variable) {
         ValueConstraint.Variable valueVarConstraint = new ValueConstraint.Variable(this, comparator, variable);
         constrain(valueVarConstraint);
         return valueVarConstraint;

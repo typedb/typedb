@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -21,14 +21,14 @@ orbs:
 commands:
   install-bazel-linux:
     steps:
-      - run: curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/linux.sh
+      - run: curl -OL https://raw.githubusercontent.com/vaticle/dependencies/master/tool/bazelinstall/linux.sh
       - run: bash ./linux.sh && rm ./linux.sh
-      - run: curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/rbe.sh
+      - run: curl -OL https://raw.githubusercontent.com/vaticle/dependencies/master/tool/bazelinstall/rbe.sh
       - run: bash ./rbe.sh && rm ./rbe.sh
 
   install-bazel-mac:
     steps:
-      - run: curl -OL https://raw.githubusercontent.com/graknlabs/dependencies/master/tool/bazelinstall/mac.sh
+      - run: curl -OL https://raw.githubusercontent.com/vaticle/dependencies/master/tool/bazelinstall/mac.sh
       - run: bash ./mac.sh && rm ./mac.sh
 
   run-bazel:
@@ -37,14 +37,14 @@ commands:
         type: string
     steps:
       - run:
-          command: bazel run @graknlabs_dependencies//tool/bazelrun:rbe -- << parameters.command >>
+          command: bazel run @vaticle_dependencies//tool/bazelrun:rbe -- << parameters.command >>
           no_output_timeout: 120m
 
 jobs:
   test-assembly-mac-zip:
     macos:
       xcode: "12.4.0"
-    working_directory: ~/grakn
+    working_directory: ~/typedb
     steps:
       - install-bazel-mac
       - checkout
@@ -55,7 +55,7 @@ jobs:
     executor:
       name: win/default
       shell: cmd.exe
-    working_directory: ~/grakn
+    working_directory: ~/typedb
     steps:
       - checkout
       - run: .circleci\windows\prepare.bat
@@ -63,7 +63,7 @@ jobs:
 
 
 workflows:
-  grakn-core:
+  typedb:
     jobs:
       - test-assembly-mac-zip:
           filters:

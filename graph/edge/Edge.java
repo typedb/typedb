@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,11 +16,11 @@
  *
  */
 
-package grakn.core.graph.edge;
+package com.vaticle.typedb.core.graph.edge;
 
-import grakn.core.graph.common.Encoding;
-import grakn.core.graph.iid.EdgeIID;
-import grakn.core.graph.vertex.Vertex;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.iid.EdgeIID;
+import com.vaticle.typedb.core.graph.vertex.Vertex;
 
 public interface Edge<
         EDGE_ENCODING extends Encoding.Edge,

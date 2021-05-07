@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,12 +16,12 @@
  *
  */
 
-package grakn.core.test.behaviour.concept.thing;
+package com.vaticle.typedb.core.test.behaviour.concept.thing;
 
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.ThingType;
-import grakn.core.test.behaviour.config.Parameters.RootLabel;
-import grakn.core.test.behaviour.config.Parameters.ScopedLabel;
+import com.vaticle.typedb.core.concept.thing.Thing;
+import com.vaticle.typedb.core.concept.type.ThingType;
+import com.vaticle.typedb.core.test.behaviour.config.Parameters.RootLabel;
+import com.vaticle.typedb.core.test.behaviour.config.Parameters.ScopedLabel;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -29,9 +29,9 @@ import io.cucumber.java.en.When;
 import java.util.HashMap;
 import java.util.Map;
 
-import static grakn.core.common.test.Util.assertThrows;
-import static grakn.core.test.behaviour.concept.type.thingtype.ThingTypeSteps.get_thing_type;
-import static grakn.core.test.behaviour.connection.ConnectionSteps.tx;
+import static com.vaticle.typedb.core.common.test.Util.assertThrows;
+import static com.vaticle.typedb.core.test.behaviour.concept.type.thingtype.ThingTypeSteps.get_thing_type;
+import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.tx;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

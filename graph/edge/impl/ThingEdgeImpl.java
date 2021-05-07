@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,27 +16,27 @@
  *
  */
 
-package grakn.core.graph.edge.impl;
+package com.vaticle.typedb.core.graph.edge.impl;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.graph.DataGraph;
-import grakn.core.graph.common.Encoding;
-import grakn.core.graph.edge.ThingEdge;
-import grakn.core.graph.iid.EdgeIID;
-import grakn.core.graph.iid.InfixIID;
-import grakn.core.graph.iid.SuffixIID;
-import grakn.core.graph.iid.VertexIID;
-import grakn.core.graph.vertex.ThingVertex;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.graph.DataGraph;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.edge.ThingEdge;
+import com.vaticle.typedb.core.graph.iid.EdgeIID;
+import com.vaticle.typedb.core.graph.iid.InfixIID;
+import com.vaticle.typedb.core.graph.iid.SuffixIID;
+import com.vaticle.typedb.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static grakn.core.common.collection.Bytes.join;
-import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
-import static grakn.core.graph.common.Encoding.Prefix.VERTEX_ROLE;
-import static grakn.core.graph.common.Encoding.Status.BUFFERED;
+import static com.vaticle.typedb.core.common.collection.Bytes.join;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
+import static com.vaticle.typedb.core.graph.common.Encoding.Prefix.VERTEX_ROLE;
+import static com.vaticle.typedb.core.graph.common.Encoding.Status.BUFFERED;
 import static java.util.Objects.hash;
 
 public abstract class ThingEdgeImpl implements ThingEdge {
@@ -165,7 +165,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
 
         @Override
         public void commit() {
-            if (isInferred()) throw GraknException.of(ILLEGAL_OPERATION);
+            if (isInferred()) throw TypeDBException.of(ILLEGAL_OPERATION);
             if (committed.compareAndSet(false, true)) {
                 graph.storage().put(outIID().bytes());
                 graph.storage().put(inIID().bytes());
@@ -302,7 +302,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
 
         @Override
         public void isInferred(boolean isInferred) {
-            throw GraknException.of(ILLEGAL_OPERATION);
+            throw TypeDBException.of(ILLEGAL_OPERATION);
         }
 
         /**

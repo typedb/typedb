@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,11 +16,11 @@
  *
  */
 
-package grakn.core.concurrent.producer;
+package com.vaticle.typedb.core.concurrent.producer;
 
-import grakn.common.collection.Either;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.AbstractFunctionalIterator;
+import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.AbstractFunctionalIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
 
 public class ProducerIterator<T> extends AbstractFunctionalIterator<T> {
 
@@ -97,7 +97,7 @@ public class ProducerIterator<T> extends AbstractFunctionalIterator<T> {
             recycle();
             state = State.COMPLETED;
             if (done.error().isPresent()) {
-                throw GraknException.of(done.error().get());
+                throw TypeDBException.of(done.error().get());
             }
         }
 
@@ -169,7 +169,7 @@ public class ProducerIterator<T> extends AbstractFunctionalIterator<T> {
             try {
                 blockingQueue.put(Either.first(new Result<>(item)));
             } catch (InterruptedException e) {
-                throw GraknException.of(UNEXPECTED_INTERRUPTION);
+                throw TypeDBException.of(UNEXPECTED_INTERRUPTION);
             }
         }
 
@@ -187,7 +187,7 @@ public class ProducerIterator<T> extends AbstractFunctionalIterator<T> {
                 else if (producers.isEmpty()) blockingQueue.put(Either.second(Done.success()));
                 else mayProduce();
             } catch (InterruptedException e) {
-                throw GraknException.of(UNEXPECTED_INTERRUPTION);
+                throw TypeDBException.of(UNEXPECTED_INTERRUPTION);
             }
         }
 
@@ -195,7 +195,7 @@ public class ProducerIterator<T> extends AbstractFunctionalIterator<T> {
             try {
                 return blockingQueue.take();
             } catch (InterruptedException e) {
-                throw GraknException.of(UNEXPECTED_INTERRUPTION);
+                throw TypeDBException.of(UNEXPECTED_INTERRUPTION);
             }
         }
 

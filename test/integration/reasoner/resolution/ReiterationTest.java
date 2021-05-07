@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,29 +15,29 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner.resolution;
+package com.vaticle.typedb.core.reasoner.resolution;
 
-import grakn.common.concurrent.NamedThreadFactory;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Arguments;
-import grakn.core.common.parameters.Options;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concurrent.actor.Actor;
-import grakn.core.concurrent.actor.ActorExecutorGroup;
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.variable.Variable;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial.Compound.Root;
-import grakn.core.reasoner.resolution.answer.AnswerState.Top.Match;
-import grakn.core.reasoner.resolution.answer.AnswerStateImpl.TopImpl.MatchImpl.InitialImpl;
-import grakn.core.reasoner.resolution.framework.Request;
-import grakn.core.reasoner.resolution.framework.ResolutionTracer;
-import grakn.core.reasoner.resolution.resolver.RootResolver;
-import grakn.core.rocks.RocksGrakn;
-import grakn.core.rocks.RocksSession;
-import grakn.core.rocks.RocksTransaction;
-import grakn.core.test.integration.util.Util;
-import grakn.core.traversal.common.Identifier;
-import graql.lang.Graql;
+import com.vaticle.typedb.common.concurrent.NamedThreadFactory;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concurrent.actor.Actor;
+import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.variable.Variable;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Compound.Root;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateImpl.TopImpl.MatchImpl.InitialImpl;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
+import com.vaticle.typedb.core.reasoner.resolution.resolver.RootResolver;
+import com.vaticle.typedb.core.rocks.RocksSession;
+import com.vaticle.typedb.core.rocks.RocksTransaction;
+import com.vaticle.typedb.core.rocks.RocksTypeDB;
+import com.vaticle.typedb.core.test.integration.util.Util;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typeql.lang.TypeQL;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -49,9 +49,9 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.parameters.Options.Database;
-import static grakn.core.reasoner.resolution.Util.resolvedConjunction;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.parameters.Options.Database;
+import static com.vaticle.typedb.core.reasoner.resolution.Util.resolvedConjunction;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
@@ -63,26 +63,26 @@ public class ReiterationTest {
     private static final Path logDir = dataDir.resolve("logs");
     private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
     private static final String database = "resolution-test";
-    private static RocksGrakn grakn;
+    private static RocksTypeDB typedb;
 
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        grakn = RocksGrakn.open(options);
-        grakn.databases().create(database);
+        typedb = RocksTypeDB.open(options);
+        typedb.databases().create(database);
         ResolutionTracer.initialise(logDir);
     }
 
     @After
     public void tearDown() {
-        grakn.close();
+        typedb.close();
     }
 
     @Test
     public void test_first_iteration_exhausts_and_second_iteration_recurses_infinitely() throws InterruptedException {
         try (RocksSession session = schemaSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                transaction.query().define(Graql.parseQuery(
+                transaction.query().define(TypeQL.parseQuery(
                         "define " +
                                 "X sub relation, relates item, plays Y:item;" +
                                 "Y sub relation, relates item, plays X:item;" +
@@ -111,7 +111,7 @@ public class ReiterationTest {
         }
         try (RocksSession session = dataSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                transaction.query().insert(Graql.parseQuery("insert $o isa object;"));
+                transaction.query().insert(TypeQL.parseQuery("insert $o isa object;"));
                 transaction.commit();
             }
         }
@@ -169,7 +169,7 @@ public class ReiterationTest {
                     }
                     ResolutionTracer.get().finish();
                 }
-            } catch (GraknException e) {
+            } catch (TypeDBException e) {
                 e.printStackTrace();
                 fail();
             }
@@ -184,16 +184,16 @@ public class ReiterationTest {
     }
 
     private RocksSession schemaSession() {
-        return grakn.session(database, Arguments.Session.Type.SCHEMA);
+        return typedb.session(database, Arguments.Session.Type.SCHEMA);
     }
 
     private RocksSession dataSession() {
-        return grakn.session(database, Arguments.Session.Type.DATA);
+        return typedb.session(database, Arguments.Session.Type.DATA);
     }
 
     private RocksTransaction singleThreadElgTransaction(RocksSession session) {
         RocksTransaction transaction = session.transaction(Arguments.Transaction.Type.WRITE, new Options.Transaction().infer(true));
-        ActorExecutorGroup service = new ActorExecutorGroup(1, new NamedThreadFactory("grakn-core-actor"));
+        ActorExecutorGroup service = new ActorExecutorGroup(1, new NamedThreadFactory("typedb-actor"));
         transaction.reasoner().resolverRegistry().setExecutorService(service);
         return transaction;
     }

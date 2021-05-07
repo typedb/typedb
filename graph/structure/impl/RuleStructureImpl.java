@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,37 +15,37 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graph.structure.impl;
+package com.vaticle.typedb.core.graph.structure.impl;
 
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.parameters.Label;
-import grakn.core.graph.SchemaGraph;
-import grakn.core.graph.common.Encoding;
-import grakn.core.graph.iid.IndexIID;
-import grakn.core.graph.iid.StructureIID;
-import grakn.core.graph.structure.RuleStructure;
-import grakn.core.graph.vertex.TypeVertex;
-import graql.lang.Graql;
-import graql.lang.pattern.Conjunctable;
-import graql.lang.pattern.Conjunction;
-import graql.lang.pattern.Negation;
-import graql.lang.pattern.Pattern;
-import graql.lang.pattern.constraint.TypeConstraint;
-import graql.lang.pattern.variable.BoundVariable;
-import graql.lang.pattern.variable.ThingVariable;
-import graql.lang.pattern.variable.Variable;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.graph.SchemaGraph;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.iid.IndexIID;
+import com.vaticle.typedb.core.graph.iid.StructureIID;
+import com.vaticle.typedb.core.graph.structure.RuleStructure;
+import com.vaticle.typedb.core.graph.vertex.TypeVertex;
+import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.pattern.Conjunctable;
+import com.vaticle.typeql.lang.pattern.Conjunction;
+import com.vaticle.typeql.lang.pattern.Negation;
+import com.vaticle.typeql.lang.pattern.Pattern;
+import com.vaticle.typeql.lang.pattern.constraint.TypeConstraint;
+import com.vaticle.typeql.lang.pattern.variable.BoundVariable;
+import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
+import com.vaticle.typeql.lang.pattern.variable.Variable;
 
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static grakn.core.common.collection.Bytes.join;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.iterator.Iterators.link;
-import static grakn.core.graph.common.Encoding.Property.LABEL;
-import static grakn.core.graph.common.Encoding.Property.THEN;
-import static grakn.core.graph.common.Encoding.Property.WHEN;
+import static com.vaticle.typedb.core.common.collection.Bytes.join;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.link;
+import static com.vaticle.typedb.core.graph.common.Encoding.Property.LABEL;
+import static com.vaticle.typedb.core.graph.common.Encoding.Property.THEN;
+import static com.vaticle.typedb.core.graph.common.Encoding.Property.WHEN;
 
 public abstract class RuleStructureImpl implements RuleStructure {
 
@@ -132,7 +132,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
     }
 
     FunctionalIterator<TypeVertex> types() {
-        graql.lang.pattern.Conjunction<Conjunctable> whenNormalised = when().normalise().patterns().get(0);
+        com.vaticle.typeql.lang.pattern.Conjunction<Conjunctable> whenNormalised = when().normalise().patterns().get(0);
         FunctionalIterator<BoundVariable> positiveVariables = iterate(whenNormalised.patterns()).filter(Conjunctable::isVariable)
                 .map(Conjunctable::asVariable);
         FunctionalIterator<BoundVariable> negativeVariables = iterate(whenNormalised.patterns()).filter(Conjunctable::isNegation)
@@ -250,8 +250,8 @@ public abstract class RuleStructureImpl implements RuleStructure {
         public Persisted(SchemaGraph graph, StructureIID.Rule iid) {
             super(graph, iid,
                   new String(graph.storage().get(join(iid.bytes(), LABEL.infix().bytes()))),
-                  Graql.parsePattern(new String(graph.storage().get(join(iid.bytes(), WHEN.infix().bytes())))).asConjunction(),
-                  Graql.parseVariable(new String(graph.storage().get(join(iid.bytes(), THEN.infix().bytes())))).asThing());
+                  TypeQL.parsePattern(new String(graph.storage().get(join(iid.bytes(), WHEN.infix().bytes())))).asConjunction(),
+                  TypeQL.parseVariable(new String(graph.storage().get(join(iid.bytes(), THEN.infix().bytes())))).asThing());
         }
 
         @Override

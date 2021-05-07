@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,20 +16,20 @@
  *
  */
 
-package grakn.core.concept.answer;
+package com.vaticle.typedb.core.concept.answer;
 
-import grakn.common.collection.Either;
-import grakn.common.collection.Pair;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.concept.Concept;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.Type;
-import grakn.core.pattern.Conjunction;
-import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.Identifier.Variable.Retrievable;
-import graql.lang.pattern.variable.Reference;
-import graql.lang.pattern.variable.UnboundVariable;
+import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.common.collection.Pair;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.concept.Concept;
+import com.vaticle.typedb.core.concept.thing.Thing;
+import com.vaticle.typedb.core.concept.type.Type;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
+import com.vaticle.typeql.lang.pattern.variable.Reference;
+import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -39,10 +39,10 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static grakn.common.collection.Collections.pair;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.iterator.Iterators.link;
+import static com.vaticle.typedb.common.collection.Collections.pair;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static java.util.Collections.unmodifiableMap;
 
 public class ConceptMap implements Answer {
@@ -117,7 +117,7 @@ public class ConceptMap implements Answer {
         return toMap(concept -> {
             if (concept.isType()) return Either.first(typeFn.apply(concept.asType()));
             else if (concept.isThing()) return Either.second(thingFn.apply(concept.asThing()));
-            else throw GraknException.of(ILLEGAL_STATE);
+            else throw TypeDBException.of(ILLEGAL_STATE);
         });
     }
 

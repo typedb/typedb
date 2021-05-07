@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,50 +15,50 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.pattern.constraint.thing;
+package com.vaticle.typedb.core.pattern.constraint.thing;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.equivalence.AlphaEquivalence;
-import grakn.core.pattern.equivalence.AlphaEquivalent;
-import grakn.core.pattern.variable.ThingVariable;
-import grakn.core.pattern.variable.VariableCloner;
-import grakn.core.pattern.variable.VariableRegistry;
-import grakn.core.traversal.Traversal;
-import graql.lang.common.GraqlToken;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
+import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalent;
+import com.vaticle.typedb.core.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.pattern.variable.VariableCloner;
+import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
+import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.set;
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
-import static grakn.core.common.exception.ErrorMessage.Pattern.MISSING_CONSTRAINT_VALUE;
-import static graql.lang.common.GraqlToken.Char.QUOTE_DOUBLE;
-import static graql.lang.common.GraqlToken.Char.SPACE;
-import static graql.lang.common.GraqlToken.Predicate.Equality.EQ;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.MISSING_CONSTRAINT_VALUE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.QUOTE_DOUBLE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SPACE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Predicate.Equality.EQ;
 
 public abstract class ValueConstraint<T> extends ThingConstraint implements AlphaEquivalent<ValueConstraint<?>> {
 
-    final GraqlToken.Predicate predicate;
+    final TypeQLToken.Predicate predicate;
     final T value;
     private final int hash;
 
-    private ValueConstraint(ThingVariable owner, GraqlToken.Predicate predicate, T value,
-                            Set<grakn.core.pattern.variable.Variable> additionalVariables) {
+    private ValueConstraint(ThingVariable owner, TypeQLToken.Predicate predicate, T value,
+                            Set<com.vaticle.typedb.core.pattern.variable.Variable> additionalVariables) {
         super(owner, additionalVariables);
         assert !predicate.isEquality() || value instanceof Comparable || value instanceof ThingVariable;
         assert !predicate.isSubString() || value instanceof java.lang.String;
-        if (value == null) throw GraknException.of(MISSING_CONSTRAINT_VALUE);
+        if (value == null) throw TypeDBException.of(MISSING_CONSTRAINT_VALUE);
         this.predicate = predicate;
         this.value = value;
         this.hash = Objects.hash(this.predicate, this.value);
     }
 
     static ValueConstraint<?> of(ThingVariable owner,
-                                 graql.lang.pattern.constraint.ThingConstraint.Value<?> valueConstraint,
+                                 com.vaticle.typeql.lang.pattern.constraint.ThingConstraint.Value<?> valueConstraint,
                                  VariableRegistry register) {
         if (valueConstraint.isLong()) {
             return new Long(owner, valueConstraint.predicate().asEquality(), valueConstraint.asLong().value());
@@ -72,7 +72,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
             return new DateTime(owner, valueConstraint.predicate().asEquality(), valueConstraint.asDateTime().value());
         } else if (valueConstraint.isVariable()) {
             return new Variable(owner, valueConstraint.predicate().asEquality(), register.register(valueConstraint.asVariable().value()));
-        } else throw GraknException.of(ILLEGAL_STATE);
+        } else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     static ValueConstraint<?> of(ThingVariable owner, ValueConstraint<?> clone, VariableCloner cloner) {
@@ -88,7 +88,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
             return new DateTime(owner, clone.predicate().asEquality(), clone.asDateTime().value());
         } else if (clone.isVariable()) {
             return new Variable(owner, clone.predicate().asEquality(), cloner.clone(clone.asVariable().value()));
-        } else throw GraknException.of(ILLEGAL_STATE);
+        } else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     @Override
@@ -101,7 +101,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         return this;
     }
 
-    public GraqlToken.Predicate predicate() {
+    public TypeQLToken.Predicate predicate() {
         return predicate;
     }
 
@@ -138,27 +138,27 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
     }
 
     public Long asLong() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Long.class));
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Long.class));
     }
 
     public Double asDouble() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Double.class));
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Double.class));
     }
 
     public Boolean asBoolean() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Boolean.class));
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Boolean.class));
     }
 
     public String asString() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(String.class));
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(String.class));
     }
 
     public DateTime asDateTime() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(DateTime.class));
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(DateTime.class));
     }
 
     public Variable asVariable() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Variable.class));
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Variable.class));
     }
 
     @Override
@@ -195,12 +195,12 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
     public static class Long extends ValueConstraint<java.lang.Long> {
 
-        public Long(ThingVariable owner, GraqlToken.Predicate.Equality predicate, long value) {
+        public Long(ThingVariable owner, TypeQLToken.Predicate.Equality predicate, long value) {
             super(owner, predicate, value, set());
         }
 
         @Override
-        public GraqlToken.Predicate.Equality predicate() {
+        public TypeQLToken.Predicate.Equality predicate() {
             return super.predicate().asEquality();
         }
 
@@ -232,12 +232,12 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
     public static class Double extends ValueConstraint<java.lang.Double> {
 
-        public Double(ThingVariable owner, GraqlToken.Predicate.Equality predicate, double value) {
+        public Double(ThingVariable owner, TypeQLToken.Predicate.Equality predicate, double value) {
             super(owner, predicate, value, set());
         }
 
         @Override
-        public GraqlToken.Predicate.Equality predicate() {
+        public TypeQLToken.Predicate.Equality predicate() {
             return super.predicate().asEquality();
         }
 
@@ -264,12 +264,12 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
     public static class Boolean extends ValueConstraint<java.lang.Boolean> {
 
-        public Boolean(ThingVariable owner, GraqlToken.Predicate.Equality predicate, boolean value) {
+        public Boolean(ThingVariable owner, TypeQLToken.Predicate.Equality predicate, boolean value) {
             super(owner, predicate, value, set());
         }
 
         @Override
-        public GraqlToken.Predicate.Equality predicate() {
+        public TypeQLToken.Predicate.Equality predicate() {
             return super.predicate().asEquality();
         }
 
@@ -296,7 +296,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
     public static class String extends ValueConstraint<java.lang.String> {
 
-        public String(ThingVariable owner, GraqlToken.Predicate predicate, java.lang.String value) {
+        public String(ThingVariable owner, TypeQLToken.Predicate predicate, java.lang.String value) {
             super(owner, predicate, value, set());
         }
 
@@ -328,12 +328,12 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
     public static class DateTime extends ValueConstraint<LocalDateTime> {
 
-        public DateTime(ThingVariable owner, GraqlToken.Predicate.Equality predicate, LocalDateTime value) {
+        public DateTime(ThingVariable owner, TypeQLToken.Predicate.Equality predicate, LocalDateTime value) {
             super(owner, predicate, value, set());
         }
 
         @Override
-        public GraqlToken.Predicate.Equality predicate() {
+        public TypeQLToken.Predicate.Equality predicate() {
             return super.predicate().asEquality();
         }
 
@@ -360,13 +360,13 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
     public static class Variable extends ValueConstraint<ThingVariable> {
 
-        public Variable(ThingVariable owner, GraqlToken.Predicate.Equality predicate, ThingVariable variable) {
+        public Variable(ThingVariable owner, TypeQLToken.Predicate.Equality predicate, ThingVariable variable) {
             super(owner, predicate, variable, set(variable));
             variable.constraining(this);
         }
 
         @Override
-        public GraqlToken.Predicate.Equality predicate() {
+        public TypeQLToken.Predicate.Equality predicate() {
             return predicate.asEquality();
         }
 

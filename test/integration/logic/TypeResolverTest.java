@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,21 +16,21 @@
  *
  */
 
-package grakn.core.logic;
+package com.vaticle.typedb.core.logic;
 
-import grakn.core.common.parameters.Arguments;
-import grakn.core.common.parameters.Label;
-import grakn.core.common.parameters.Options.Database;
-import grakn.core.logic.tool.TypeResolver;
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.Disjunction;
-import grakn.core.rocks.RocksGrakn;
-import grakn.core.rocks.RocksSession;
-import grakn.core.rocks.RocksTransaction;
-import grakn.core.test.integration.util.Util;
-import graql.lang.Graql;
-import graql.lang.query.GraqlDefine;
-import graql.lang.query.GraqlMatch;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.common.parameters.Options.Database;
+import com.vaticle.typedb.core.logic.tool.TypeResolver;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.rocks.RocksSession;
+import com.vaticle.typedb.core.rocks.RocksTransaction;
+import com.vaticle.typedb.core.rocks.RocksTypeDB;
+import com.vaticle.typedb.core.test.integration.util.Util;
+import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.query.TypeQLDefine;
+import com.vaticle.typeql.lang.query.TypeQLMatch;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -47,8 +47,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.common.collection.Collections.set;
-import static grakn.core.common.test.Util.assertThrows;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.test.Util.assertThrows;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -59,22 +59,22 @@ public class TypeResolverTest {
     private static final Path logDir = dataDir.resolve("logs");
     private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
     private static final String database = "type-resolver-test";
-    private static RocksGrakn grakn;
+    private static RocksTypeDB typedb;
     private static RocksSession session;
     private static RocksTransaction transaction;
 
     @BeforeClass
     public static void open_session() throws IOException {
         Util.resetDirectory(dataDir);
-        grakn = RocksGrakn.open(options);
-        grakn.databases().create(database);
-        session = grakn.session(database, Arguments.Session.Type.SCHEMA);
+        typedb = RocksTypeDB.open(options);
+        typedb.databases().create(database);
+        session = typedb.session(database, Arguments.Session.Type.SCHEMA);
     }
 
     @AfterClass
     public static void close_session() {
         session.close();
-        grakn.close();
+        typedb.close();
     }
 
     @Before
@@ -88,13 +88,13 @@ public class TypeResolverTest {
     }
 
     private static void define_standard_schema(String fileName) throws IOException {
-        GraqlDefine query = Graql.parseQuery(
+        TypeQLDefine query = TypeQL.parseQuery(
                 new String(Files.readAllBytes(Paths.get("test/integration/logic/" + fileName + ".gql")), UTF_8));
         transaction.query().define(query);
     }
 
     private static void define_custom_schema(String schema) {
-        GraqlDefine query = Graql.parseQuery(schema);
+        TypeQLDefine query = TypeQL.parseQuery(schema);
         transaction.query().define(query);
     }
 
@@ -106,7 +106,7 @@ public class TypeResolverTest {
     }
 
     private Disjunction createDisjunction(String matchString) {
-        GraqlMatch query = Graql.parseQuery(matchString);
+        TypeQLMatch query = TypeQL.parseQuery(matchString);
         return Disjunction.create(query.conjunction().normalise());
     }
 
@@ -1087,8 +1087,8 @@ public class TypeResolverTest {
         define_standard_schema("basic-schema");
         assertThrows(() -> transaction.logic().putRule(
                 "animals-are-named-fido",
-                Graql.parsePattern("{$x isa animal;}").asConjunction(),
-                Graql.parseVariable("$x has name 'fido'").asThing()));
+                TypeQL.parsePattern("{$x isa animal;}").asConjunction(),
+                TypeQL.parseVariable("$x has name 'fido'").asThing()));
     }
 
     @Test
@@ -1104,8 +1104,8 @@ public class TypeResolverTest {
 
         assertThrows(() -> transaction.logic().putRule(
                 "women-called-smith",
-                Graql.parsePattern("{$x isa woman;}").asConjunction(),
-                Graql.parseVariable("$x has name 'smith'").asThing()));
+                TypeQL.parsePattern("{$x isa woman;}").asConjunction(),
+                TypeQL.parseVariable("$x has name 'smith'").asThing()));
     }
 
     @Test
@@ -1120,8 +1120,8 @@ public class TypeResolverTest {
 
         assertThrows(() -> transaction.logic().putRule(
                 "marriage-rule",
-                Graql.parsePattern("{$x isa person;}").asConjunction(),
-                Graql.parseVariable("(wife: $x) isa partnership").asThing()));
+                TypeQL.parsePattern("{$x isa person;}").asConjunction(),
+                TypeQL.parseVariable("(wife: $x) isa partnership").asThing()));
     }
 
     @Test
@@ -1136,8 +1136,8 @@ public class TypeResolverTest {
 
         assertThrows(() -> transaction.logic().putRule(
                 "marriage-rule",
-                Graql.parsePattern("{$x isa person;}").asConjunction(),
-                Graql.parseVariable("(partner: $x) isa marriage").asThing()));
+                TypeQL.parsePattern("{$x isa person;}").asConjunction(),
+                TypeQL.parseVariable("(partner: $x) isa marriage").asThing()));
     }
 
     @Test
@@ -1148,8 +1148,8 @@ public class TypeResolverTest {
                                      " marriage sub partnership, relates husband as partner, relates wife as partner;");
         transaction.logic().putRule(
                 "marriage-rule",
-                Graql.parsePattern("{$x isa person; $t isa marriage;}").asConjunction(),
-                Graql.parseVariable("(wife: $x) isa $t").asThing());
+                TypeQL.parsePattern("{$x isa person; $t isa marriage;}").asConjunction(),
+                TypeQL.parseVariable("(wife: $x) isa $t").asThing());
     }
 
 

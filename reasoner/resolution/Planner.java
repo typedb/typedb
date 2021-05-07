@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,15 +15,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner.resolution;
+package com.vaticle.typedb.core.reasoner.resolution;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.concept.ConceptManager;
-import grakn.core.logic.LogicManager;
-import grakn.core.logic.resolvable.Concludable;
-import grakn.core.logic.resolvable.Resolvable;
-import grakn.core.pattern.variable.ThingVariable;
-import grakn.core.traversal.common.Identifier.Variable.Retrievable;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.logic.LogicManager;
+import com.vaticle.typedb.core.logic.resolvable.Concludable;
+import com.vaticle.typedb.core.logic.resolvable.Resolvable;
+import com.vaticle.typedb.core.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,9 +36,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static grakn.common.collection.Collections.set;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class Planner {
     private final ConceptManager conceptMgr;
@@ -79,7 +79,7 @@ public class Planner {
         private void computePlan() {
             while (remaining.size() != 0) {
                 Optional<Concludable> concludable;
-                Optional<grakn.core.logic.resolvable.Retrievable> retrievable;
+                Optional<com.vaticle.typedb.core.logic.resolvable.Retrievable> retrievable;
 
                 // Retrievable where:
                 // all of it's dependencies are already satisfied,
@@ -135,7 +135,7 @@ public class Planner {
                     continue;
                 }
 
-                throw GraknException.of(ILLEGAL_STATE);
+                throw TypeDBException.of(ILLEGAL_STATE);
             }
         }
 

@@ -1,6 +1,6 @@
 @echo off
 REM
-REM Copyright (C) 2021 Grakn Labs
+REM Copyright (C) 2021 Vaticle
 REM
 REM This program is free software: you can redistribute it and/or modify
 REM it under the terms of the GNU Affero General Public License as
@@ -20,7 +20,7 @@ REM needs to be called such that software installed
 REM by Chocolatey in prepare.bat is accessible
 CALL refreshenv
 
-REM build grakn-core-all-windows archive
+REM build typedb-all-windows archive
 bazel test //test/assembly:assembly --test_output=streamed --experimental_enable_runfiles --test_env=PATH
 
 :error

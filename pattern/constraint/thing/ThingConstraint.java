@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,22 +16,22 @@
  *
  */
 
-package grakn.core.pattern.constraint.thing;
+package com.vaticle.typedb.core.pattern.constraint.thing;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.pattern.constraint.Constraint;
-import grakn.core.pattern.variable.ThingVariable;
-import grakn.core.pattern.variable.Variable;
-import grakn.core.pattern.variable.VariableCloner;
-import grakn.core.pattern.variable.VariableRegistry;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.pattern.constraint.Constraint;
+import com.vaticle.typedb.core.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.pattern.variable.Variable;
+import com.vaticle.typedb.core.pattern.variable.VariableCloner;
+import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 
 import java.util.Collections;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.set;
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
 public abstract class ThingConstraint extends Constraint {
 
@@ -43,20 +43,20 @@ public abstract class ThingConstraint extends Constraint {
         variables = Collections.unmodifiableSet(set(additionalVariables, set(owner)));
     }
 
-    public static ThingConstraint of(ThingVariable owner, graql.lang.pattern.constraint.ThingConstraint constraint,
+    public static ThingConstraint of(ThingVariable owner, com.vaticle.typeql.lang.pattern.constraint.ThingConstraint constraint,
                                      VariableRegistry registry) {
         if (constraint.isIID()) return IIDConstraint.of(owner, constraint.asIID());
         else if (constraint.isIsa()) return IsaConstraint.of(owner, constraint.asIsa(), registry);
         else if (constraint.isValue()) return ValueConstraint.of(owner, constraint.asValue(), registry);
         else if (constraint.isRelation()) return RelationConstraint.of(owner, constraint.asRelation(), registry);
         else if (constraint.isHas()) return HasConstraint.of(owner, constraint.asHas(), registry);
-        else throw GraknException.of(ILLEGAL_STATE);
+        else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    public static ThingConstraint of(ThingVariable owner, graql.lang.pattern.constraint.ConceptConstraint constraint,
+    public static ThingConstraint of(ThingVariable owner, com.vaticle.typeql.lang.pattern.constraint.ConceptConstraint constraint,
                                      VariableRegistry registry) {
         if (constraint.isIs()) return IsConstraint.of(owner, constraint.asIs(), registry);
-        else throw GraknException.of(ILLEGAL_STATE);
+        else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     public static ThingConstraint of(ThingVariable owner, ThingConstraint clone, VariableCloner cloner) {
@@ -66,7 +66,7 @@ public abstract class ThingConstraint extends Constraint {
         else if (clone.isRelation()) return RelationConstraint.of(owner, clone.asRelation(), cloner);
         else if (clone.isHas()) return HasConstraint.of(owner, clone.asHas(), cloner);
         else if (clone.isIs()) return IsConstraint.of(owner, clone.asIs(), cloner);
-        else throw GraknException.of(ILLEGAL_STATE);
+        else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     @Override
@@ -114,26 +114,26 @@ public abstract class ThingConstraint extends Constraint {
     }
 
     public IIDConstraint asIID() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(IIDConstraint.class));
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(IIDConstraint.class));
     }
 
     public IsaConstraint asIsa() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(IsaConstraint.class));
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(IsaConstraint.class));
     }
 
     public IsConstraint asIs() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(IsConstraint.class));
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(IsConstraint.class));
     }
 
     public ValueConstraint<?> asValue() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(ValueConstraint.class));
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(ValueConstraint.class));
     }
 
     public RelationConstraint asRelation() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(RelationConstraint.class));
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(RelationConstraint.class));
     }
 
     public HasConstraint asHas() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(HasConstraint.class));
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(HasConstraint.class));
     }
 }

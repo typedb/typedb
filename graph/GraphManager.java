@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,10 +16,10 @@
  *
  */
 
-package grakn.core.graph;
+package com.vaticle.typedb.core.graph;
 
-import grakn.core.common.exception.ErrorMessage;
-import grakn.core.common.exception.GraknException;
+import com.vaticle.typedb.core.common.exception.ErrorMessage;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 
 import java.util.Objects;
 
@@ -47,11 +47,11 @@ public class GraphManager {
         dataGraph.clear();
     }
 
-    public GraknException exception(ErrorMessage error) {
+    public TypeDBException exception(ErrorMessage error) {
         return dataGraph.storage().exception(error);
     }
 
-    public GraknException exception(Exception exception) {
+    public TypeDBException exception(Exception exception) {
         return dataGraph.storage().exception(exception);
     }
 

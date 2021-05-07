@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.server.common;
+package com.vaticle.typedb.core.server.common;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -24,16 +24,16 @@ import java.nio.file.Paths;
 
 public class ServerDefaults {
 
-    public static final Path GRAKN_DIR = getGraknDir();
-    public static final Path DATA_DIR = GRAKN_DIR.resolve("server/data");
-    public static final Path LOGS_DIR = GRAKN_DIR.resolve("server/logs");
-    public static final File PROPERTIES_FILE = GRAKN_DIR.resolve("server/conf/grakn.properties").toFile();
-    public static final File ASCII_LOGO_FILE = GRAKN_DIR.resolve("server/resources/grakn-core-ascii.txt").toFile();
+    public static final Path TYPEDB_DIR = getTypedbDir();
+    public static final Path DATA_DIR = TYPEDB_DIR.resolve("server/data");
+    public static final Path LOGS_DIR = TYPEDB_DIR.resolve("server/logs");
+    public static final File PROPERTIES_FILE = TYPEDB_DIR.resolve("server/conf/typedb.properties").toFile();
+    public static final File ASCII_LOGO_FILE = TYPEDB_DIR.resolve("server/resources/typedb-ascii.txt").toFile();
     public static final int DEFAULT_DATABASE_PORT = 1729;
 
-    private static Path getGraknDir() {
+    private static Path getTypedbDir() {
         String homeDir;
-        if ((homeDir = System.getProperty("grakn.dir")) == null) {
+        if ((homeDir = System.getProperty("typedb.dir")) == null) {
             homeDir = System.getProperty("user.dir");
         }
         return Paths.get(homeDir);

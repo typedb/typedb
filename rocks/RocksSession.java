@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,13 +16,13 @@
  *
  */
 
-package grakn.core.rocks;
+package com.vaticle.typedb.core.rocks;
 
-import grakn.core.Grakn;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Arguments;
-import grakn.core.common.parameters.Context;
-import grakn.core.common.parameters.Options;
+import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Context;
+import com.vaticle.typedb.core.common.parameters.Options;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,15 +33,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.StampedLock;
 
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
-import static grakn.core.common.exception.ErrorMessage.Session.SCHEMA_ACQUIRE_LOCK_TIMEOUT;
-import static grakn.core.common.exception.ErrorMessage.Session.SESSION_CLOSED;
-import static grakn.core.common.exception.ErrorMessage.Transaction.DATA_ACQUIRE_LOCK_TIMEOUT;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Session.SCHEMA_ACQUIRE_LOCK_TIMEOUT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Session.SESSION_CLOSED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.DATA_ACQUIRE_LOCK_TIMEOUT;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public abstract class RocksSession implements Grakn.Session {
+public abstract class RocksSession implements TypeDB.Session {
 
     private static final Logger LOG = LoggerFactory.getLogger(RocksSession.class);
 
@@ -73,11 +73,11 @@ public abstract class RocksSession implements Grakn.Session {
     }
 
     RocksSession.Schema asSchema() {
-        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(RocksSession.Schema.class));
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(RocksSession.Schema.class));
     }
 
     RocksSession.Data asData() {
-        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(RocksSession.Data.class));
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(RocksSession.Data.class));
     }
 
     abstract void remove(RocksTransaction transaction);
@@ -144,14 +144,14 @@ public abstract class RocksSession implements Grakn.Session {
 
         @Override
         public RocksTransaction.Schema transaction(Arguments.Transaction.Type type, Options.Transaction options) {
-            if (!isOpen.get()) throw GraknException.of(SESSION_CLOSED);
+            if (!isOpen.get()) throw TypeDBException.of(SESSION_CLOSED);
             if (type.isWrite()) {
                 try {
                     if (!writeLock.tryLock(options.schemaLockTimeoutMillis(), MILLISECONDS)) {
-                        throw GraknException.of(SCHEMA_ACQUIRE_LOCK_TIMEOUT);
+                        throw TypeDBException.of(SCHEMA_ACQUIRE_LOCK_TIMEOUT);
                     }
                 } catch (InterruptedException e) {
-                    throw GraknException.of(e);
+                    throw TypeDBException.of(e);
                 }
             }
             RocksTransaction.Schema transaction = txSchemaFactory.transaction(this, type, options);
@@ -161,13 +161,13 @@ public abstract class RocksSession implements Grakn.Session {
         }
 
         RocksTransaction.Schema initialisationTransaction() {
-            if (!isOpen.get()) throw GraknException.of(SESSION_CLOSED);
+            if (!isOpen.get()) throw TypeDBException.of(SESSION_CLOSED);
             try {
                 if (!writeLock.tryLock(new Options.Transaction().schemaLockTimeoutMillis(), MILLISECONDS)) {
-                    throw GraknException.of(SCHEMA_ACQUIRE_LOCK_TIMEOUT);
+                    throw TypeDBException.of(SCHEMA_ACQUIRE_LOCK_TIMEOUT);
                 }
             } catch (InterruptedException e) {
-                throw GraknException.of(e);
+                throw TypeDBException.of(e);
             }
             RocksTransaction.Schema transaction = txSchemaFactory.initialisationTransaction(this);
             transactions.put(transaction, 0L);
@@ -207,15 +207,15 @@ public abstract class RocksSession implements Grakn.Session {
 
         @Override
         public RocksTransaction.Data transaction(Arguments.Transaction.Type type, Options.Transaction options) {
-            if (!isOpen.get()) throw GraknException.of(SESSION_CLOSED);
+            if (!isOpen.get()) throw TypeDBException.of(SESSION_CLOSED);
             long lock = 0;
             if (type == Arguments.Transaction.Type.WRITE) {
                 try {
                     int timeout = options.schemaLockTimeoutMillis();
                     lock = database().schemaLock().tryReadLock(timeout, MILLISECONDS);
-                    if (lock == 0) throw GraknException.of(DATA_ACQUIRE_LOCK_TIMEOUT);
+                    if (lock == 0) throw TypeDBException.of(DATA_ACQUIRE_LOCK_TIMEOUT);
                 } catch (InterruptedException e) {
-                    throw GraknException.of(UNEXPECTED_INTERRUPTION);
+                    throw TypeDBException.of(UNEXPECTED_INTERRUPTION);
                 }
             }
             RocksTransaction.Data transaction = txDataFactory.transaction(this, type, options);

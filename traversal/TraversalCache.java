@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,11 +16,11 @@
  *
  */
 
-package grakn.core.traversal;
+package com.vaticle.typedb.core.traversal;
 
-import grakn.core.common.cache.CommonCache;
-import grakn.core.traversal.planner.Planner;
-import grakn.core.traversal.structure.Structure;
+import com.vaticle.typedb.core.common.cache.CommonCache;
+import com.vaticle.typedb.core.traversal.planner.Planner;
+import com.vaticle.typedb.core.traversal.structure.Structure;
 
 public class TraversalCache extends CommonCache<Structure, Planner> {
 

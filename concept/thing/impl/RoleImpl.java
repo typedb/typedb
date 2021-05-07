@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,13 +16,13 @@
  *
  */
 
-package grakn.core.concept.thing.impl;
+package com.vaticle.typedb.core.concept.thing.impl;
 
-import grakn.core.graph.vertex.ThingVertex;
+import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 
-import static grakn.core.graph.common.Encoding.Edge.Thing.PLAYING;
-import static grakn.core.graph.common.Encoding.Edge.Thing.RELATING;
-import static grakn.core.graph.common.Encoding.Edge.Thing.ROLEPLAYER;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.PLAYING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.RELATING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.ROLEPLAYER;
 import static java.util.Objects.requireNonNull;
 
 public class RoleImpl {

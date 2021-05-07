@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,10 +15,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.pattern.equivalence;
+package com.vaticle.typedb.core.pattern.equivalence;
 
-import grakn.core.pattern.variable.Variable;
-import grakn.core.traversal.common.Identifier.Variable.Retrievable;
+import com.vaticle.typedb.core.pattern.variable.Variable;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
 import javax.annotation.Nullable;
 import java.util.AbstractMap;
@@ -30,7 +30,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static grakn.common.collection.Collections.set;
+import static com.vaticle.typedb.common.collection.Collections.set;
 
 public abstract class AlphaEquivalence {
 

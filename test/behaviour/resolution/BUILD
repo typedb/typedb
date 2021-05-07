@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -15,8 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_library")
+load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_library")
 
 host_compatible_java_library(
     name = "steps",
@@ -29,16 +29,16 @@ host_compatible_java_library(
         "//test/behaviour/connection:steps",
         "//test/behaviour/exception",
 
-        # External dependencies from Grakn Labs
-        "@graknlabs_graql//java:graql",
-        "@graknlabs_graql//java/query",
+        # External dependencies from Vaticle
+        "@vaticle_typeql//java:typeql",
+        "@vaticle_typeql//java/query",
 
         # External dependencies from Maven
         "@maven//:junit_junit",
         "@maven//:io_cucumber_cucumber_java",
     ],
     native_libraries_deps = [
-        "//:grakn",
+        "//:typedb",
         "//concept:concept",
     ],
     runtime_deps = [

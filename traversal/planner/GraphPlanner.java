@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,21 +16,21 @@
  *
  */
 
-package grakn.core.traversal.planner;
+package com.vaticle.typedb.core.traversal.planner;
 
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPSolverParameters;
 import com.google.ortools.linearsolver.MPVariable;
-import grakn.core.common.exception.GraknException;
-import grakn.core.graph.GraphManager;
-import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.graph.TraversalEdge;
-import grakn.core.traversal.procedure.GraphProcedure;
-import grakn.core.traversal.structure.Structure;
-import grakn.core.traversal.structure.StructureEdge;
-import grakn.core.traversal.structure.StructureVertex;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.graph.TraversalEdge;
+import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
+import com.vaticle.typedb.core.traversal.structure.Structure;
+import com.vaticle.typedb.core.traversal.structure.StructureEdge;
+import com.vaticle.typedb.core.traversal.structure.StructureVertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +57,7 @@ import static com.google.ortools.linearsolver.MPSolverParameters.IncrementalityV
 import static com.google.ortools.linearsolver.MPSolverParameters.IntegerParam.INCREMENTALITY;
 import static com.google.ortools.linearsolver.MPSolverParameters.IntegerParam.PRESOLVE;
 import static com.google.ortools.linearsolver.MPSolverParameters.PresolveValues.PRESOLVE_ON;
-import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_PLANNING_ERROR;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_PLANNING_ERROR;
 import static java.time.Duration.between;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
@@ -378,7 +378,7 @@ public class GraphPlanner implements Planner {
     private void throwPlanningError() {
         LOG.error(toString());
         LOG.error(solver.exportModelAsLpFormat());
-        throw GraknException.of(UNEXPECTED_PLANNING_ERROR);
+        throw TypeDBException.of(UNEXPECTED_PLANNING_ERROR);
     }
 
     private void printDebug(Instant start, Instant endSolver, Instant end) {

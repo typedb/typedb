@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,30 +16,30 @@
  *
  */
 
-package grakn.core.graph.iid;
+package com.vaticle.typedb.core.graph.iid;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.graph.common.Encoding;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.graph.common.Encoding;
 
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 
-import static grakn.core.common.collection.Bytes.DOUBLE_SIZE;
-import static grakn.core.common.collection.Bytes.LONG_SIZE;
-import static grakn.core.common.collection.Bytes.booleanToByte;
-import static grakn.core.common.collection.Bytes.byteToBoolean;
-import static grakn.core.common.collection.Bytes.bytesToDateTime;
-import static grakn.core.common.collection.Bytes.bytesToString;
-import static grakn.core.common.collection.Bytes.dateTimeToBytes;
-import static grakn.core.common.collection.Bytes.doubleToSortedBytes;
-import static grakn.core.common.collection.Bytes.join;
-import static grakn.core.common.collection.Bytes.longToSortedBytes;
-import static grakn.core.common.collection.Bytes.sortedBytesToDouble;
-import static grakn.core.common.collection.Bytes.sortedBytesToLong;
-import static grakn.core.common.collection.Bytes.stringToBytes;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.graph.common.Encoding.ValueType.STRING_ENCODING;
-import static grakn.core.graph.common.Encoding.ValueType.TIME_ZONE_ID;
+import static com.vaticle.typedb.core.common.collection.Bytes.DOUBLE_SIZE;
+import static com.vaticle.typedb.core.common.collection.Bytes.LONG_SIZE;
+import static com.vaticle.typedb.core.common.collection.Bytes.booleanToByte;
+import static com.vaticle.typedb.core.common.collection.Bytes.byteToBoolean;
+import static com.vaticle.typedb.core.common.collection.Bytes.bytesToDateTime;
+import static com.vaticle.typedb.core.common.collection.Bytes.bytesToString;
+import static com.vaticle.typedb.core.common.collection.Bytes.dateTimeToBytes;
+import static com.vaticle.typedb.core.common.collection.Bytes.doubleToSortedBytes;
+import static com.vaticle.typedb.core.common.collection.Bytes.join;
+import static com.vaticle.typedb.core.common.collection.Bytes.longToSortedBytes;
+import static com.vaticle.typedb.core.common.collection.Bytes.sortedBytesToDouble;
+import static com.vaticle.typedb.core.common.collection.Bytes.sortedBytesToLong;
+import static com.vaticle.typedb.core.common.collection.Bytes.stringToBytes;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_ENCODING;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.TIME_ZONE_ID;
 import static java.util.Arrays.copyOfRange;
 
 public abstract class IndexIID extends IID {
@@ -246,7 +246,7 @@ public abstract class IndexIID extends IID {
             try {
                 stringBytes = stringToBytes(value, STRING_ENCODING);
             } catch (Exception e) {
-                throw GraknException.of(ILLEGAL_STATE);
+                throw TypeDBException.of(ILLEGAL_STATE);
             }
             return newAttributeIndex(Encoding.ValueType.STRING.bytes(), stringBytes, typeIID.bytes);
         }

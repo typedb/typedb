@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,32 +15,32 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.logic;
+package com.vaticle.typedb.core.logic;
 
-import grakn.core.common.exception.ErrorMessage;
-import grakn.core.common.parameters.Arguments;
-import grakn.core.common.parameters.Label;
-import grakn.core.common.parameters.Options.Database;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptManager;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Entity;
-import grakn.core.concept.thing.Relation;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.graph.GraphManager;
-import grakn.core.graph.structure.RuleStructure;
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.variable.Variable;
-import grakn.core.rocks.RocksGrakn;
-import grakn.core.rocks.RocksSession;
-import grakn.core.rocks.RocksTransaction;
-import grakn.core.test.integration.util.Util;
-import grakn.core.traversal.common.Identifier;
-import graql.lang.Graql;
-import graql.lang.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.common.exception.ErrorMessage;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.common.parameters.Options.Database;
+import com.vaticle.typedb.core.concept.Concept;
+import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.thing.Entity;
+import com.vaticle.typedb.core.concept.thing.Relation;
+import com.vaticle.typedb.core.concept.type.AttributeType;
+import com.vaticle.typedb.core.concept.type.EntityType;
+import com.vaticle.typedb.core.concept.type.RelationType;
+import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.structure.RuleStructure;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.variable.Variable;
+import com.vaticle.typedb.core.rocks.RocksSession;
+import com.vaticle.typedb.core.rocks.RocksTransaction;
+import com.vaticle.typedb.core.rocks.RocksTypeDB;
+import com.vaticle.typedb.core.test.integration.util.Util;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -50,16 +50,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.map;
-import static grakn.common.collection.Collections.pair;
-import static grakn.common.collection.Collections.set;
-import static grakn.core.common.exception.ErrorMessage.RuleWrite.CONTRADICTORY_RULE_CYCLE;
-import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_CANNOT_BE_SATISFIED;
-import static grakn.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CANNOT_BE_SATISFIED;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.test.Util.assertNotThrows;
-import static grakn.core.common.test.Util.assertThrows;
-import static grakn.core.common.test.Util.assertThrowsGraknException;
+import static com.vaticle.typedb.common.collection.Collections.map;
+import static com.vaticle.typedb.common.collection.Collections.pair;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.CONTRADICTORY_RULE_CYCLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_CANNOT_BE_SATISFIED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CANNOT_BE_SATISFIED;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.test.Util.assertNotThrows;
+import static com.vaticle.typedb.core.common.test.Util.assertThrows;
+import static com.vaticle.typedb.core.common.test.Util.assertThrowsTypeDBException;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertFalse;
@@ -78,9 +78,9 @@ public class RuleTest {
     public void rule_relation_materialises_when_missing() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(options)) {
-            grakn.databases().create(database);
-            try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
+            typedb.databases().create(database);
+            try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     LogicManager logicMgr = txn.logic();
@@ -94,15 +94,15 @@ public class RuleTest {
                     person.setPlays(marriage.getRelates("spouse"));
                     logicMgr.putRule(
                             "marriage-is-friendship",
-                            Graql.parsePattern("{ $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
-                            Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
+                            TypeQL.parsePattern("{ $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
+                            TypeQL.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
                     txn.commit();
                 }
             }
-            try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+            try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
-                    txn.query().insert(Graql.parseQuery("insert $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage;").asInsert());
+                    txn.query().insert(TypeQL.parseQuery("insert $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage;").asInsert());
 
                     EntityType person = conceptMgr.getEntityType("person");
                     List<? extends Entity> people = person.getInstances().toList();
@@ -129,9 +129,9 @@ public class RuleTest {
     public void rule_relation_does_not_materialise_when_present() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(options)) {
-            grakn.databases().create(database);
-            try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
+            typedb.databases().create(database);
+            try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     LogicManager logicMgr = txn.logic();
@@ -145,18 +145,18 @@ public class RuleTest {
                     person.setPlays(marriage.getRelates("spouse"));
                     logicMgr.putRule(
                             "marriage-is-friendship",
-                            Graql.parsePattern("{ $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
-                            Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
+                            TypeQL.parsePattern("{ $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
+                            TypeQL.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
                     txn.commit();
                 }
             }
-            try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+            try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     RelationType friendship = conceptMgr.getRelationType("friendship");
-                    txn.query().insert(Graql.parseQuery("insert $x isa person; $y isa person; " +
-                                                                "(spouse: $x, spouse: $y) isa marriage;" +
-                                                                "(friend: $x, friend: $y) isa friendship;").asInsert());
+                    txn.query().insert(TypeQL.parseQuery("insert $x isa person; $y isa person; " +
+                                                                 "(spouse: $x, spouse: $y) isa marriage;" +
+                                                                 "(friend: $x, friend: $y) isa friendship;").asInsert());
                     List<? extends Relation> friendshipInstances = friendship.getInstances().toList();
                     assertEquals(1, friendshipInstances.size());
 
@@ -184,9 +184,9 @@ public class RuleTest {
     public void rule_has_variable_materialises_when_missing() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(options)) {
-            grakn.databases().create(database);
-            try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
+            typedb.databases().create(database);
+            try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
 
@@ -197,12 +197,12 @@ public class RuleTest {
                     milk.setOwns(isStillGood);
                     txn.logic().putRule(
                             "old-milk-is-not-good",
-                            Graql.parsePattern("{ $x isa milk; $a 10 isa age-in-days; }").asConjunction(),
-                            Graql.parseVariable("$x has $a").asThing());
+                            TypeQL.parsePattern("{ $x isa milk; $a 10 isa age-in-days; }").asConjunction(),
+                            TypeQL.parseVariable("$x has $a").asThing());
                     txn.commit();
                 }
             }
-            try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+            try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
 
@@ -231,9 +231,9 @@ public class RuleTest {
     public void rule_has_explicit_materialises_when_missing() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(options)) {
-            grakn.databases().create(database);
-            try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
+            typedb.databases().create(database);
+            try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
 
@@ -244,12 +244,12 @@ public class RuleTest {
                     milk.setOwns(isStillGood);
                     txn.logic().putRule(
                             "old-milk-is-not-good",
-                            Graql.parsePattern("{ $x isa milk, has age-in-days $a; $a >= 10; }").asConjunction(),
-                            Graql.parseVariable("$x has is-still-good false").asThing());
+                            TypeQL.parsePattern("{ $x isa milk, has age-in-days $a; $a >= 10; }").asConjunction(),
+                            TypeQL.parseVariable("$x has is-still-good false").asThing());
                     txn.commit();
                 }
             }
-            try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+            try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
 
@@ -280,9 +280,9 @@ public class RuleTest {
     public void rule_indexes_created_and_readable() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(options)) {
-            grakn.databases().create(database);
-            try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
+            typedb.databases().create(database);
+            try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     LogicManager logicMgr = txn.logic();
@@ -300,32 +300,32 @@ public class RuleTest {
                     person.setOwns(age);
                     Rule marriageFriendsRule = logicMgr.putRule(
                             "marriage-is-friendship",
-                            Graql.parsePattern("{ $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
-                            Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
+                            TypeQL.parsePattern("{ $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
+                            TypeQL.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
                     Conjunction marriageFriendsThen = marriageFriendsRule.then();
                     Variable marriageFriendsRelation = getVariable(marriageFriendsThen.variables(), Identifier.Variable.anon(0));
                     assertEquals(set(Label.of("friendship")), marriageFriendsRelation.resolvedTypes());
 
                     Rule allFriendsRule = logicMgr.putRule(
                             "all-people-are-friends",
-                            Graql.parsePattern("{ $x isa person; $y isa person; $t type friendship; }").asConjunction(),
-                            Graql.parseVariable("(friend: $x, friend: $y) isa $t").asThing());
+                            TypeQL.parsePattern("{ $x isa person; $y isa person; $t type friendship; }").asConjunction(),
+                            TypeQL.parseVariable("(friend: $x, friend: $y) isa $t").asThing());
                     Conjunction allFriendsThen = allFriendsRule.then();
                     Variable allFriendsRelation = getVariable(allFriendsThen.variables(), Identifier.Variable.anon(0));
                     assertEquals(set(Label.of("friendship")), allFriendsRelation.resolvedTypes());
 
                     Rule marriageSameName = logicMgr.putRule(
                             "marriage-same-name",
-                            Graql.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
-                            Graql.parseVariable("$y has $a").asThing());
+                            TypeQL.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
+                            TypeQL.parseVariable("$y has $a").asThing());
                     Conjunction sameName = marriageSameName.then();
                     Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.name("a"));
                     assertEquals(set(Label.of("name")), nameAttr.resolvedTypes());
 
                     Rule peopleHaveAge10 = logicMgr.putRule(
                             "people-have-age-10",
-                            Graql.parsePattern("{ $x isa person; }").asConjunction(),
-                            Graql.parseVariable("$x has age 10").asThing()
+                            TypeQL.parsePattern("{ $x isa person; }").asConjunction(),
+                            TypeQL.parseVariable("$x has age 10").asThing()
                     );
                     Conjunction age10 = peopleHaveAge10.then();
                     Variable ageAttr = getVariable(age10.variables(), Identifier.Variable.anon(0));
@@ -334,7 +334,7 @@ public class RuleTest {
                     txn.commit();
                 }
             }
-            try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+            try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     LogicManager logicMgr = txn.logic();
 
@@ -361,9 +361,9 @@ public class RuleTest {
     public void rule_indexes_update_on_rule_delete() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(options)) {
-            grakn.databases().create(database);
-            try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
+            typedb.databases().create(database);
+            try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     LogicManager logicMgr = txn.logic();
@@ -379,24 +379,24 @@ public class RuleTest {
                     person.setOwns(name);
                     Rule marriageFriendsRule = logicMgr.putRule(
                             "marriage-is-friendship",
-                            Graql.parsePattern("{ $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
-                            Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
+                            TypeQL.parsePattern("{ $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
+                            TypeQL.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
                     Conjunction marriageFriendsThen = marriageFriendsRule.then();
                     Variable marriageFriendsRelation = getVariable(marriageFriendsThen.variables(), Identifier.Variable.anon(0));
                     assertEquals(set(Label.of("friendship")), marriageFriendsRelation.resolvedTypes());
 
                     Rule allFriendsRule = logicMgr.putRule(
                             "all-people-are-friends",
-                            Graql.parsePattern("{ $x isa person; $y isa person; $t type friendship; }").asConjunction(),
-                            Graql.parseVariable("(friend: $x, friend: $y) isa $t").asThing());
+                            TypeQL.parsePattern("{ $x isa person; $y isa person; $t type friendship; }").asConjunction(),
+                            TypeQL.parseVariable("(friend: $x, friend: $y) isa $t").asThing());
                     Conjunction allFriendsThen = allFriendsRule.then();
                     Variable allFriendsRelation = getVariable(allFriendsThen.variables(), Identifier.Variable.anon(0));
                     assertEquals(set(Label.of("friendship")), allFriendsRelation.resolvedTypes());
 
                     Rule marriageSameName = logicMgr.putRule(
                             "marriage-same-name",
-                            Graql.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
-                            Graql.parseVariable("$y has $a").asThing());
+                            TypeQL.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
+                            TypeQL.parseVariable("$y has $a").asThing());
                     Conjunction sameName = marriageSameName.then();
                     Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.name("a"));
                     assertEquals(set(Label.of("name")), nameAttr.resolvedTypes());
@@ -421,7 +421,7 @@ public class RuleTest {
                 }
             }
             // check indexed types, should only includes rules that are still present
-            try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+            try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     LogicManager logicMgr = txn.logic();
                     Set<Rule> friendshipRules = logicMgr.rulesConcluding(Label.of("friendship")).toSet();
@@ -439,9 +439,9 @@ public class RuleTest {
     public void new_type_updates_rule_conclusion_index() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(options)) {
-            grakn.databases().create(database);
-            try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
+            typedb.databases().create(database);
+            try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     LogicManager logicMgr = txn.logic();
@@ -458,8 +458,8 @@ public class RuleTest {
 
                     Rule marriageSameName = logicMgr.putRule(
                             "marriage-same-name",
-                            Graql.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
-                            Graql.parseVariable("$y has $a").asThing());
+                            TypeQL.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
+                            TypeQL.parseVariable("$y has $a").asThing());
                     Conjunction sameName = marriageSameName.then();
                     Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.name("a"));
                     assertEquals(set(Label.of("first-name")), nameAttr.resolvedTypes());
@@ -497,9 +497,9 @@ public class RuleTest {
     public void rule_contains_indexes_prevent_undefining_contained_types() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(options)) {
-            grakn.databases().create(database);
-            try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
+            typedb.databases().create(database);
+            try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     LogicManager logicMgr = txn.logic();
@@ -515,16 +515,16 @@ public class RuleTest {
                     person.setOwns(name);
                     Rule marriageFriendsRule = logicMgr.putRule(
                             "marriage-is-friendship",
-                            Graql.parsePattern("{ $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
-                            Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
+                            TypeQL.parsePattern("{ $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
+                            TypeQL.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
                     Conjunction marriageFriendsThen = marriageFriendsRule.then();
                     Variable marriageFriendsRelation = getVariable(marriageFriendsThen.variables(), Identifier.Variable.anon(0));
                     assertEquals(set(Label.of("friendship")), marriageFriendsRelation.resolvedTypes());
 
                     Rule marriageSameName = logicMgr.putRule(
                             "marriage-same-name",
-                            Graql.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
-                            Graql.parseVariable("$y has $a").asThing());
+                            TypeQL.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
+                            TypeQL.parseVariable("$y has $a").asThing());
                     Conjunction sameName = marriageSameName.then();
                     Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.name("a"));
                     assertEquals(set(Label.of("name")), nameAttr.resolvedTypes());
@@ -534,7 +534,7 @@ public class RuleTest {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     EntityType person = conceptMgr.getEntityType("person");
-                    assertThrowsGraknException(person::delete, ErrorMessage.TypeWrite.TYPE_REFERENCED_IN_RULES.code());
+                    assertThrowsTypeDBException(person::delete, ErrorMessage.TypeWrite.TYPE_REFERENCED_IN_RULES.code());
                 }
             }
         }
@@ -544,9 +544,9 @@ public class RuleTest {
     public void rule_contains_indexes_allow_deleting_type_after_deleting_rule() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(options)) {
-            grakn.databases().create(database);
-            try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
+            typedb.databases().create(database);
+            try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     LogicManager logicMgr = txn.logic();
@@ -563,8 +563,8 @@ public class RuleTest {
                     person.setOwns(name);
                     Rule marriageFriendsRule = logicMgr.putRule(
                             "marriage-is-friendship",
-                            Graql.parsePattern("{ $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
-                            Graql.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
+                            TypeQL.parsePattern("{ $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
+                            TypeQL.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
                     assertIndexTypesContainRule(set(Label.of("person"), Label.of("spouse", "marriage"),
                                                     Label.of("marriage"), Label.of("friend", "friendship"), Label.of("friendship")),
                                                 marriageFriendsRule.getLabel(),
@@ -573,8 +573,8 @@ public class RuleTest {
 
                     Rule marriageSameName = logicMgr.putRule(
                             "marriage-same-name",
-                            Graql.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
-                            Graql.parseVariable("$y has $a").asThing());
+                            TypeQL.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
+                            TypeQL.parseVariable("$y has $a").asThing());
                     assertIndexTypesContainRule(set(Label.of("person"), Label.of("spouse", "marriage"), Label.of("marriage"), Label.of("name")),
                                                 marriageSameName.getLabel(),
                                                 graphMgr
@@ -598,14 +598,14 @@ public class RuleTest {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     RelationType friendship = conceptMgr.getRelationType("friendship");
-                    assertThrowsGraknException(friendship::delete, ErrorMessage.TypeWrite.TYPE_REFERENCED_IN_RULES.code());
+                    assertThrowsTypeDBException(friendship::delete, ErrorMessage.TypeWrite.TYPE_REFERENCED_IN_RULES.code());
                     assertTrue(!txn.isOpen());
                 }
                 // deleting an attribute type used in a rule should throw
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     AttributeType name = conceptMgr.getAttributeType("name");
-                    assertThrowsGraknException(name::delete, ErrorMessage.TypeWrite.TYPE_REFERENCED_IN_RULES.code());
+                    assertThrowsTypeDBException(name::delete, ErrorMessage.TypeWrite.TYPE_REFERENCED_IN_RULES.code());
                     assertTrue(!txn.isOpen());
                 }
                 // deleting a rule, then an attribute type used in the rule is allowed
@@ -646,9 +646,9 @@ public class RuleTest {
     public void rule_then_that_cannot_be_satisfied_throws_an_error() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(options)) {
-            grakn.databases().create(database);
-            try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
+            typedb.databases().create(database);
+            try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     final ConceptManager conceptMgr = txn.concepts();
 
@@ -657,10 +657,10 @@ public class RuleTest {
                     final AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
                     person.setOwns(name);
 
-                    ThingVariable<?> then = Graql.parseVariable("$x has name 'fido'").asThing();
-                    assertThrowsGraknException(() -> txn.logic().putRule(
+                    ThingVariable<?> then = TypeQL.parseVariable("$x has name 'fido'").asThing();
+                    assertThrowsTypeDBException(() -> txn.logic().putRule(
                             "dogs-are-named-fido",
-                            Graql.parsePattern("{$x isa dog;}").asConjunction(),
+                            TypeQL.parsePattern("{$x isa dog;}").asConjunction(),
                             then
                     ), RULE_THEN_CANNOT_BE_SATISFIED.code());
                 }
@@ -672,9 +672,9 @@ public class RuleTest {
     public void rule_when_that_cannot_be_satisfied_throws_an_error() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(options)) {
-            grakn.databases().create(database);
-            try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
+            typedb.databases().create(database);
+            try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     final ConceptManager conceptMgr = txn.concepts();
 
@@ -684,10 +684,10 @@ public class RuleTest {
                     person.setOwns(name);
 
                     // a when using an illegal comparator
-                    assertThrowsGraknException(() -> txn.logic().putRule(
+                    assertThrowsTypeDBException(() -> txn.logic().putRule(
                             "two-unique-dogs-exist-called-fido",
-                            Graql.parsePattern("{$x isa dog; $y isa dog; $x != $y;}").asConjunction(),
-                            Graql.parseVariable("$x has name 'fido'").asThing()
+                            TypeQL.parsePattern("{$x isa dog; $y isa dog; $x != $y;}").asConjunction(),
+                            TypeQL.parseVariable("$x has name 'fido'").asThing()
                     ), RULE_WHEN_CANNOT_BE_SATISFIED.code());
                 }
             }
@@ -698,9 +698,9 @@ public class RuleTest {
     public void rule_that_cannot_be_inserted_throws_an_error() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(options)) {
-            grakn.databases().create(database);
-            try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
+            typedb.databases().create(database);
+            try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     final ConceptManager conceptMgr = txn.concepts();
 
@@ -714,8 +714,8 @@ public class RuleTest {
 
                     assertThrows(() -> txn.logic().putRule(
                             "animals-are-named-fido",
-                            Graql.parsePattern("{$x isa animal;}").asConjunction(),
-                            Graql.parseVariable("$x has name 'fido'").asThing()));
+                            TypeQL.parsePattern("{$x isa animal;}").asConjunction(),
+                            TypeQL.parseVariable("$x has name 'fido'").asThing()));
                 }
             }
         }
@@ -725,28 +725,28 @@ public class RuleTest {
     public void rule_with_negated_cycle_throws_an_error() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (RocksGrakn grakn = RocksGrakn.open(options)) {
-            grakn.databases().create(database);
-            try (RocksSession session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
+            typedb.databases().create(database);
+            try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
 
-                    txn.query().define(Graql.parseQuery("define " +
-                                                                "person sub entity, owns is-starting-school, owns grade;" +
-                                                                "is-starting-school sub attribute, value boolean;" +
-                                                                "grade sub attribute, value long;" +
-                                                                "rule person-starting-school: when {" +
-                                                                "  $x isa person;" +
-                                                                "  not { $x has is-starting-school true; };" +
-                                                                "} then {" +
-                                                                "  $x has grade 1;" +
-                                                                "};" +
-                                                                "" +
-                                                                "rule person-with-grade-is-in-school: when {" +
-                                                                "  $x isa person, has grade 1;" +
-                                                                "} then {" +
-                                                                "  $x has is-starting-school true;" +
-                                                                "};").asDefine());
-                    assertThrowsGraknException(txn::commit, CONTRADICTORY_RULE_CYCLE.code());
+                    txn.query().define(TypeQL.parseQuery("define " +
+                                                                 "person sub entity, owns is-starting-school, owns grade;" +
+                                                                 "is-starting-school sub attribute, value boolean;" +
+                                                                 "grade sub attribute, value long;" +
+                                                                 "rule person-starting-school: when {" +
+                                                                 "  $x isa person;" +
+                                                                 "  not { $x has is-starting-school true; };" +
+                                                                 "} then {" +
+                                                                 "  $x has grade 1;" +
+                                                                 "};" +
+                                                                 "" +
+                                                                 "rule person-with-grade-is-in-school: when {" +
+                                                                 "  $x isa person, has grade 1;" +
+                                                                 "} then {" +
+                                                                 "  $x has is-starting-school true;" +
+                                                                 "};").asDefine());
+                    assertThrowsTypeDBException(txn::commit, CONTRADICTORY_RULE_CYCLE.code());
                 }
             }
         }

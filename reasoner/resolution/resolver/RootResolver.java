@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,23 +15,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.reasoner.resolution.resolver;
+package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
-import grakn.core.common.iterator.Iterators;
-import grakn.core.concept.ConceptManager;
-import grakn.core.logic.LogicManager;
-import grakn.core.logic.resolvable.Concludable;
-import grakn.core.reasoner.resolution.Planner;
-import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
-import grakn.core.reasoner.resolution.answer.AnswerState.Top;
-import grakn.core.reasoner.resolution.answer.AnswerState.Top.Match.Finished;
-import grakn.core.reasoner.resolution.answer.Explanation;
-import grakn.core.reasoner.resolution.framework.Request;
-import grakn.core.reasoner.resolution.framework.Resolver;
-import grakn.core.reasoner.resolution.framework.Response;
-import grakn.core.traversal.TraversalEngine;
+import com.vaticle.typedb.core.common.iterator.Iterators;
+import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.logic.LogicManager;
+import com.vaticle.typedb.core.logic.resolvable.Concludable;
+import com.vaticle.typedb.core.reasoner.resolution.Planner;
+import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match.Finished;
+import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
+import com.vaticle.typedb.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,12 +50,12 @@ public interface RootResolver<TOP extends Top> {
 
         private static final Logger LOG = LoggerFactory.getLogger(Conjunction.class);
 
-        private final grakn.core.pattern.Conjunction conjunction;
+        private final com.vaticle.typedb.core.pattern.Conjunction conjunction;
         private final Consumer<Finished> onAnswer;
         private final Consumer<Integer> onFail;
         private final Consumer<Throwable> onException;
 
-        public Conjunction(Driver<Conjunction> driver, grakn.core.pattern.Conjunction conjunction,
+        public Conjunction(Driver<Conjunction> driver, com.vaticle.typedb.core.pattern.Conjunction conjunction,
                            Consumer<Finished> onAnswer, Consumer<Integer> onFail, Consumer<Throwable> onException,
                            ResolverRegistry registry,
                            TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
@@ -69,7 +69,7 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        public grakn.core.pattern.Conjunction conjunction() {
+        public com.vaticle.typedb.core.pattern.Conjunction conjunction() {
             return conjunction;
         }
 
@@ -155,7 +155,7 @@ public interface RootResolver<TOP extends Top> {
         private final Consumer<Integer> onFail;
         private final Consumer<Throwable> onException;
 
-        public Disjunction(Driver<Disjunction> driver, grakn.core.pattern.Disjunction disjunction,
+        public Disjunction(Driver<Disjunction> driver, com.vaticle.typedb.core.pattern.Disjunction disjunction,
                            Consumer<Finished> onAnswer, Consumer<Integer> onFail, Consumer<Throwable> onException,
                            ResolverRegistry registry,
                            TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
@@ -220,7 +220,7 @@ public interface RootResolver<TOP extends Top> {
         protected AnswerState toUpstreamAnswer(Partial.Compound<?, ?> partialAnswer, Response.Answer fromDownstream) {
             assert partialAnswer.isRoot() && partialAnswer.isMatch();
             Driver<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
-            grakn.core.pattern.Conjunction patternAnswered = downstreamResolvers.get(sender);
+            com.vaticle.typedb.core.pattern.Conjunction patternAnswered = downstreamResolvers.get(sender);
             return partialAnswer.asRoot().asMatch().toFinishedTop(patternAnswered);
         }
 
@@ -234,14 +234,14 @@ public interface RootResolver<TOP extends Top> {
 
         private static final Logger LOG = LoggerFactory.getLogger(Explain.class);
 
-        private final grakn.core.pattern.Conjunction conjunction;
+        private final com.vaticle.typedb.core.pattern.Conjunction conjunction;
         private final Consumer<Top.Explain.Finished> onAnswer;
         private final Consumer<Integer> onFail;
         private final Consumer<Throwable> onException;
 
         private final Set<Explanation> submittedExplanations;
 
-        public Explain(Driver<Explain> driver, grakn.core.pattern.Conjunction conjunction, Consumer<Top.Explain.Finished> onAnswer,
+        public Explain(Driver<Explain> driver, com.vaticle.typedb.core.pattern.Conjunction conjunction, Consumer<Top.Explain.Finished> onAnswer,
                        Consumer<Integer> onFail, Consumer<Throwable> onException, ResolverRegistry registry,
                        TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr, Planner planner,
                        boolean resolutionTracing) {
@@ -329,7 +329,7 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        grakn.core.pattern.Conjunction conjunction() {
+        com.vaticle.typedb.core.pattern.Conjunction conjunction() {
             return conjunction;
         }
 

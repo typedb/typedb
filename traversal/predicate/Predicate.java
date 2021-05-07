@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,16 +16,16 @@
  *
  */
 
-package grakn.core.traversal.predicate;
+package com.vaticle.typedb.core.traversal.predicate;
 
-import grakn.core.graph.common.Encoding;
-import grakn.core.graph.vertex.AttributeVertex;
-import grakn.core.traversal.Traversal;
-import graql.lang.common.GraqlToken;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
+import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.util.Objects;
 
-import static grakn.core.graph.common.Encoding.ValueType.DOUBLE_PRECISION;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DOUBLE_PRECISION;
 
 public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG extends PredicateArgument> {
 
@@ -89,7 +89,7 @@ public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG exte
                 super(operator, argument);
             }
 
-            public static Numerical of(GraqlToken.Predicate.Equality token, PredicateArgument.Value<PredicateOperator.Equality, ?> argument) {
+            public static Numerical of(TypeQLToken.Predicate.Equality token, PredicateArgument.Value<PredicateOperator.Equality, ?> argument) {
                 return new Numerical(PredicateOperator.Equality.of(token), argument);
             }
         }
@@ -100,7 +100,7 @@ public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG exte
                 super(operator, argument);
             }
 
-            public static String of(GraqlToken.Predicate token) {
+            public static String of(TypeQLToken.Predicate token) {
                 return new String(PredicateOperator.of(token), PredicateArgument.Value.STRING);
             }
         }
@@ -113,7 +113,7 @@ public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG exte
             super(operator, PredicateArgument.Variable.VARIABLE);
         }
 
-        public static Predicate.Variable of(GraqlToken.Predicate.Equality token) {
+        public static Predicate.Variable of(TypeQLToken.Predicate.Equality token) {
             return new Predicate.Variable(PredicateOperator.Equality.of(token));
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,13 +15,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graph.iid;
+package com.vaticle.typedb.core.graph.iid;
 
-import grakn.core.graph.common.Encoding;
-import grakn.core.graph.common.KeyGenerator;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.common.KeyGenerator;
 
-import static grakn.core.common.collection.Bytes.join;
-import static grakn.core.common.collection.Bytes.sortedBytesToShort;
+import static com.vaticle.typedb.core.common.collection.Bytes.join;
+import static com.vaticle.typedb.core.common.collection.Bytes.sortedBytesToShort;
 import static java.util.Arrays.copyOfRange;
 
 public abstract class StructureIID extends IID {

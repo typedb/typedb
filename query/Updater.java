@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,37 +16,37 @@
  *
  */
 
-package grakn.core.query;
+package com.vaticle.typedb.core.query;
 
-import grabl.tracing.client.GrablTracingThreadStatic;
-import grakn.common.collection.Either;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.parameters.Context;
-import grakn.core.concept.ConceptManager;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.pattern.variable.ThingVariable;
-import grakn.core.pattern.variable.VariableRegistry;
-import grakn.core.reasoner.Reasoner;
-import graql.lang.pattern.variable.UnboundVariable;
-import graql.lang.query.GraqlUpdate;
+import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic;
+import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Context;
+import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
+import com.vaticle.typedb.core.reasoner.Reasoner;
+import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
+import com.vaticle.typeql.lang.query.TypeQLUpdate;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-import static grabl.tracing.client.GrablTracingThreadStatic.traceOnThread;
-import static grakn.common.collection.Collections.list;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_DELETE;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_INSERT;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
-import static grakn.core.concurrent.executor.Executors.PARALLELISATION_FACTOR;
-import static grakn.core.concurrent.executor.Executors.async1;
-import static grakn.core.concurrent.producer.Producers.async;
-import static grakn.core.concurrent.producer.Producers.produce;
-import static grakn.core.query.QueryManager.PARALLELISATION_SPLIT_MIN;
+import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.traceOnThread;
+import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_DELETE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_INSERT;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
+import static com.vaticle.typedb.core.concurrent.executor.Executors.PARALLELISATION_FACTOR;
+import static com.vaticle.typedb.core.concurrent.executor.Executors.async1;
+import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
+import static com.vaticle.typedb.core.concurrent.producer.Producers.produce;
+import static com.vaticle.typedb.core.query.QueryManager.PARALLELISATION_SPLIT_MIN;
 
 public class Updater {
 
@@ -66,16 +66,16 @@ public class Updater {
         this.context = context;
     }
 
-    public static Updater create(Reasoner reasoner, ConceptManager conceptMgr, GraqlUpdate query, Context.Query context) {
-        try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
+    public static Updater create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLUpdate query, Context.Query context) {
+        try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             VariableRegistry deleteRegistry = VariableRegistry.createFromThings(query.deleteVariables(), false);
             iterate(deleteRegistry.types()).filter(t -> !t.reference().isLabel()).forEachRemaining(t -> {
-                throw GraknException.of(ILLEGAL_TYPE_VARIABLE_IN_DELETE, t.reference());
+                throw TypeDBException.of(ILLEGAL_TYPE_VARIABLE_IN_DELETE, t.reference());
             });
 
             VariableRegistry insertRegistry = VariableRegistry.createFromThings(query.insertVariables());
             iterate(insertRegistry.types()).filter(t -> !t.reference().isLabel()).forEachRemaining(t -> {
-                throw GraknException.of(ILLEGAL_TYPE_VARIABLE_IN_INSERT, t.reference());
+                throw TypeDBException.of(ILLEGAL_TYPE_VARIABLE_IN_INSERT, t.reference());
             });
 
             assert query.match().namedVariablesUnbound().containsAll(query.namedDeleteVariablesUnbound());
@@ -87,7 +87,7 @@ public class Updater {
     }
 
     public FunctionalIterator<ConceptMap> execute() {
-        try (GrablTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
+        try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
             return context.options().parallel() ? executeParallel() : executeSerial();
         }
     }

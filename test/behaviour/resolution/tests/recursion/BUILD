@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -16,14 +16,14 @@
 #
 
 package(default_visibility = ["//test/behaviour:__subpackages__"])
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "test",
     srcs = [
         "RecursionTest.java",
     ],
-    test_class = "grakn.core.test.behaviour.resolution.tests.recursion.RecursionTest",
+    test_class = "com.vaticle.typedb.core.test.behaviour.resolution.tests.recursion.RecursionTest",
     deps = [
         # External dependencies from Maven
         "@maven//:io_cucumber_cucumber_junit",
@@ -35,7 +35,7 @@ java_test(
         "//test/behaviour/resolution:steps",
     ],
     data = [
-        "@graknlabs_behaviour//graql/reasoner:recursion.feature",
+        "@vaticle_typedb_behaviour//typeql/reasoner:recursion.feature",
     ],
     resources = [
         "//common/test:logback-test"

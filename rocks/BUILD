@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -15,9 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_dependencies//library/ortools:deps.bzl", "google_or_tools")
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
+load("@vaticle_dependencies//library/ortools:deps.bzl", "google_or_tools")
+load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
 
 package(
     default_visibility = [
@@ -35,15 +35,15 @@ native_java_libraries(
         "//concurrent:concurrent",
         "//graph:graph",
 
-        # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
 
         # External dependencies from Maven
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:org_slf4j_slf4j_api"
     ],
     native_libraries_deps = [
-        "//:grakn",
+        "//:typedb",
         "//concept:concept",
         "//logic:logic",
         "//query:query",
@@ -65,7 +65,7 @@ native_java_libraries(
         "@maven//:com_google_ortools_ortools_win32_x86_64_java",
         "@maven//:org_rocksdb_rocksdbjni",
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-rocks:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-rocks:{pom_version}"],
     visibility = [ "//visibility:public" ]
 )
 

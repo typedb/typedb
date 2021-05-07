@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,11 +16,11 @@
  *
  */
 
-package grakn.core.concept.thing;
+package com.vaticle.typedb.core.concept.thing;
 
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.ThingType;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.concept.type.AttributeType;
+import com.vaticle.typedb.core.concept.type.ThingType;
 
 public interface Attribute extends Thing {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,35 +16,35 @@
  *
  */
 
-package grakn.core.rocks;
+package com.vaticle.typedb.core.rocks;
 
-import grakn.core.Grakn;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Arguments;
-import grakn.core.common.parameters.Context;
-import grakn.core.common.parameters.Options;
-import grakn.core.concept.ConceptManager;
-import grakn.core.graph.DataGraph;
-import grakn.core.graph.GraphManager;
-import grakn.core.graph.SchemaGraph;
-import grakn.core.logic.LogicCache;
-import grakn.core.logic.LogicManager;
-import grakn.core.query.QueryManager;
-import grakn.core.reasoner.Reasoner;
-import grakn.core.traversal.TraversalCache;
-import grakn.core.traversal.TraversalEngine;
+import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Context;
+import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.graph.DataGraph;
+import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.SchemaGraph;
+import com.vaticle.typedb.core.logic.LogicCache;
+import com.vaticle.typedb.core.logic.LogicManager;
+import com.vaticle.typedb.core.query.QueryManager;
+import com.vaticle.typedb.core.reasoner.Reasoner;
+import com.vaticle.typedb.core.traversal.TraversalCache;
+import com.vaticle.typedb.core.traversal.TraversalEngine;
 import org.rocksdb.RocksDBException;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static grakn.core.common.exception.ErrorMessage.Transaction.ILLEGAL_COMMIT;
-import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_DATA_VIOLATION;
-import static grakn.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
-import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.ILLEGAL_COMMIT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.SESSION_DATA_VIOLATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
 
-public abstract class RocksTransaction implements Grakn.Transaction {
+public abstract class RocksTransaction implements TypeDB.Transaction {
 
     protected final RocksSession session;
     protected final Context.Transaction context;
@@ -90,19 +90,19 @@ public abstract class RocksTransaction implements Grakn.Transaction {
 
     @Override
     public QueryManager query() {
-        if (!isOpen.get()) throw GraknException.of(TRANSACTION_CLOSED);
+        if (!isOpen.get()) throw TypeDBException.of(TRANSACTION_CLOSED);
         return queryMgr;
     }
 
     @Override
     public ConceptManager concepts() {
-        if (!isOpen.get()) throw GraknException.of(TRANSACTION_CLOSED);
+        if (!isOpen.get()) throw TypeDBException.of(TRANSACTION_CLOSED);
         return conceptMgr;
     }
 
     @Override
     public LogicManager logic() {
-        if (!isOpen.get()) throw GraknException.of(TRANSACTION_CLOSED);
+        if (!isOpen.get()) throw TypeDBException.of(TRANSACTION_CLOSED);
         return logicMgr;
     }
 
@@ -133,11 +133,11 @@ public abstract class RocksTransaction implements Grakn.Transaction {
     }
 
     Schema asSchema() {
-        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Schema.class));
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Schema.class));
     }
 
     Data asData() {
-        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Data.class));
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Data.class));
     }
 
     public static class Schema extends RocksTransaction {
@@ -174,12 +174,12 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         }
 
         RocksStorage.Schema schemaStorage() {
-            if (!isOpen.get()) throw GraknException.of(TRANSACTION_CLOSED);
+            if (!isOpen.get()) throw TypeDBException.of(TRANSACTION_CLOSED);
             return schemaStorage;
         }
 
         RocksStorage.Data dataStorage() {
-            if (!isOpen.get()) throw GraknException.of(TRANSACTION_CLOSED);
+            if (!isOpen.get()) throw TypeDBException.of(TRANSACTION_CLOSED);
             return dataStorage;
         }
 
@@ -204,8 +204,8 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         public void commit() {
             if (isOpen.compareAndSet(true, false)) {
                 try {
-                    if (type().isRead()) throw GraknException.of(ILLEGAL_COMMIT);
-                    else if (graphMgr.data().isModified()) throw GraknException.of(SESSION_SCHEMA_VIOLATION);
+                    if (type().isRead()) throw TypeDBException.of(ILLEGAL_COMMIT);
+                    else if (graphMgr.data().isModified()) throw TypeDBException.of(SESSION_SCHEMA_VIOLATION);
 
                     conceptMgr.validateTypes();
                     logicMgr.revalidateAndReindexRules();
@@ -214,13 +214,13 @@ public abstract class RocksTransaction implements Grakn.Transaction {
                     session.database().cacheInvalidate();
                 } catch (RocksDBException e) {
                     rollback();
-                    throw GraknException.of(e);
+                    throw TypeDBException.of(e);
                 } finally {
                     graphMgr.clear();
                     closeResources();
                 }
             } else {
-                throw GraknException.of(TRANSACTION_CLOSED);
+                throw TypeDBException.of(TRANSACTION_CLOSED);
             }
         }
 
@@ -230,7 +230,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
                 graphMgr.clear();
                 schemaStorage.rollback();
             } catch (RocksDBException e) {
-                throw GraknException.of(e);
+                throw TypeDBException.of(e);
             }
         }
 
@@ -289,8 +289,8 @@ public abstract class RocksTransaction implements Grakn.Transaction {
         public void commit() {
             if (isOpen.compareAndSet(true, false)) {
                 try {
-                    if (type().isRead()) throw GraknException.of(ILLEGAL_COMMIT);
-                    else if (graphMgr.schema().isModified()) throw GraknException.of(SESSION_DATA_VIOLATION);
+                    if (type().isRead()) throw TypeDBException.of(ILLEGAL_COMMIT);
+                    else if (graphMgr.schema().isModified()) throw TypeDBException.of(SESSION_DATA_VIOLATION);
 
                     conceptMgr.validateThings();
                     graphMgr.data().commit();
@@ -298,13 +298,13 @@ public abstract class RocksTransaction implements Grakn.Transaction {
                     triggerStatisticBgCounter();
                 } catch (RocksDBException e) {
                     rollback();
-                    throw GraknException.of(e);
+                    throw TypeDBException.of(e);
                 } finally {
                     graphMgr.data().clear();
                     closeResources();
                 }
             } else {
-                throw GraknException.of(TRANSACTION_CLOSED);
+                throw TypeDBException.of(TRANSACTION_CLOSED);
             }
         }
 
@@ -314,7 +314,7 @@ public abstract class RocksTransaction implements Grakn.Transaction {
                 graphMgr.data().clear();
                 dataStorage.rollback();
             } catch (RocksDBException e) {
-                throw GraknException.of(e);
+                throw TypeDBException.of(e);
             }
         }
 

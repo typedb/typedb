@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,21 +16,21 @@
  *
  */
 
-package grakn.core.pattern.constraint.type;
+package com.vaticle.typedb.core.pattern.constraint.type;
 
-import grakn.core.common.parameters.Label;
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.equivalence.AlphaEquivalence;
-import grakn.core.pattern.equivalence.AlphaEquivalent;
-import grakn.core.pattern.variable.TypeVariable;
-import grakn.core.traversal.Traversal;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
+import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalent;
+import com.vaticle.typedb.core.pattern.variable.TypeVariable;
+import com.vaticle.typedb.core.traversal.Traversal;
 
 import java.util.Objects;
 import java.util.Optional;
 
-import static grakn.common.collection.Collections.set;
-import static graql.lang.common.GraqlToken.Char.SPACE;
-import static graql.lang.common.GraqlToken.Constraint.TYPE;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SPACE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.TYPE;
 
 public class LabelConstraint extends TypeConstraint implements AlphaEquivalent<LabelConstraint> {
 
@@ -44,7 +44,7 @@ public class LabelConstraint extends TypeConstraint implements AlphaEquivalent<L
         this.hash = Objects.hash(LabelConstraint.class, this.owner, this.label);
     }
 
-    static LabelConstraint of(TypeVariable owner, graql.lang.pattern.constraint.TypeConstraint.Label constraint) {
+    static LabelConstraint of(TypeVariable owner, com.vaticle.typeql.lang.pattern.constraint.TypeConstraint.Label constraint) {
         return new LabelConstraint(owner, Label.of(constraint.label(), constraint.scope().orElse(null)));
     }
 

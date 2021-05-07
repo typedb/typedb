@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,13 +16,13 @@
  *
  */
 
-package grakn.core.graph.vertex;
+package com.vaticle.typedb.core.graph.vertex;
 
-import grakn.core.graph.DataGraph;
-import grakn.core.graph.GraphManager;
-import grakn.core.graph.adjacency.ThingAdjacency;
-import grakn.core.graph.common.Encoding;
-import grakn.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.graph.DataGraph;
+import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.iid.VertexIID;
 
 public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thing> {
 

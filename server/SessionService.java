@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,12 +15,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server;
+package com.vaticle.typedb.core.server;
 
-import grakn.common.collection.ConcurrentSet;
-import grakn.core.Grakn;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Options;
+import com.vaticle.typedb.common.collection.ConcurrentSet;
+import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.parameters.Options;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,8 +30,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.StampedLock;
 
-import static grakn.core.common.exception.ErrorMessage.Session.SESSION_CLOSED;
-import static grakn.core.concurrent.executor.Executors.scheduled;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Session.SESSION_CLOSED;
+import static com.vaticle.typedb.core.concurrent.executor.Executors.scheduled;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class SessionService implements AutoCloseable {
@@ -39,30 +39,30 @@ public class SessionService implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(SessionService.class);
 
     private final ConcurrentSet<TransactionService> transactionServices;
-    private final GraknService graknSvc;
+    private final TypeDBService typeDBSvc;
     private final Options.Session options;
-    private final Grakn.Session session;
+    private final TypeDB.Session session;
     private final ReadWriteLock accessLock;
     private final AtomicBoolean isOpen;
-    private final long idleTimeoutMillis;
     private ScheduledFuture<?> idleTimeoutTask;
 
-    public SessionService(GraknService graknSvc, Grakn.Session session, Options.Session options) {
-        this.graknSvc = graknSvc;
+    public SessionService(TypeDBService typeDBSvc, TypeDB.Session session, Options.Session options) {
+        this.typeDBSvc = typeDBSvc;
         this.session = session;
         this.options = options;
         this.accessLock = new StampedLock().asReadWriteLock();
         this.isOpen = new AtomicBoolean(true);
         this.transactionServices = new ConcurrentSet<>();
-        this.idleTimeoutMillis = options.sessionIdleTimeoutMillis();
-        setIdleTimeout();
+        mayStartIdleTimeout();
     }
 
     void register(TransactionService transactionSvc) {
         try {
             accessLock.readLock().lock();
-            if (isOpen.get()) transactionServices.add(transactionSvc);
-            else throw GraknException.of(SESSION_CLOSED);
+            if (isOpen.get()) {
+                transactionServices.add(transactionSvc);
+                cancelIdleTimeout();
+            } else throw TypeDBException.of(SESSION_CLOSED);
         } finally {
             accessLock.readLock().unlock();
         }
@@ -70,6 +70,7 @@ public class SessionService implements AutoCloseable {
 
     void remove(TransactionService transactionSvc) {
         transactionServices.remove(transactionSvc);
+        mayStartIdleTimeout();
     }
 
     public boolean isOpen() {
@@ -80,7 +81,7 @@ public class SessionService implements AutoCloseable {
         return session.uuid();
     }
 
-    public Grakn.Session session() {
+    public TypeDB.Session session() {
         return session;
     }
 
@@ -88,22 +89,27 @@ public class SessionService implements AutoCloseable {
         return options;
     }
 
-    private void setIdleTimeout() {
-        if (idleTimeoutTask != null) idleTimeoutTask.cancel(false);
-        this.idleTimeoutTask = scheduled().schedule(this::triggerIdleTimeout, idleTimeoutMillis, MILLISECONDS);
+    public synchronized void resetIdleTimeout() {
+        cancelIdleTimeout();
+        mayStartIdleTimeout();
     }
 
-    private void triggerIdleTimeout() {
-        if (!transactionServices.isEmpty()) {
-            keepAlive();
-            return;
+    private void cancelIdleTimeout() {
+        assert idleTimeoutTask != null;
+        idleTimeoutTask.cancel(false);
+    }
+
+    private void mayStartIdleTimeout() {
+        if (transactionServices.isEmpty()) {
+            idleTimeoutTask = scheduled().schedule(this::idleTimeout, options.sessionIdleTimeoutMillis(), MILLISECONDS);
         }
-        close();
-        LOG.warn("Session with ID " + session.uuid() + " timed out due to inactivity");
     }
 
-    public synchronized void keepAlive() {
-        setIdleTimeout();
+    private void idleTimeout() {
+        if (transactionServices.isEmpty()) {
+            close();
+            LOG.warn("Session with ID " + session.uuid() + " timed out due to inactivity");
+        } else resetIdleTimeout();
     }
 
     @Override
@@ -114,7 +120,7 @@ public class SessionService implements AutoCloseable {
             if (isOpen.compareAndSet(true, false)) {
                 transactionServices.forEach(TransactionService::close);
                 session.close();
-                graknSvc.remove(this);
+                typeDBSvc.remove(this);
             }
         } finally {
             accessLock.writeLock().unlock();
@@ -127,7 +133,7 @@ public class SessionService implements AutoCloseable {
             if (isOpen.compareAndSet(true, false)) {
                 transactionServices.forEach(tr -> tr.close(error));
                 session.close();
-                graknSvc.remove(this);
+                typeDBSvc.remove(this);
             }
         } finally {
             accessLock.writeLock().unlock();

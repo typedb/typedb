@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,9 +16,9 @@
  *
  */
 
-package grakn.core.common.iterator;
+package com.vaticle.typedb.core.common.iterator;
 
-import grakn.core.common.exception.GraknException;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -33,8 +33,8 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static grakn.common.collection.Collections.list;
-import static grakn.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
@@ -216,7 +216,7 @@ public abstract class AbstractFunctionalIterator<T> implements FunctionalIterato
     }
 
     @Override
-    public FunctionalIterator<T> onError(Function<Exception, GraknException> exceptionFn) {
+    public FunctionalIterator<T> onError(Function<Exception, TypeDBException> exceptionFn) {
         return new ErrorHandledIterator<>(this, exceptionFn);
     }
 

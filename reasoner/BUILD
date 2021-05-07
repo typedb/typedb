@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -15,9 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_dependencies//builder/java:rules.bzl", "native_java_libraries")
-load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
+load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
+load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
 package(default_visibility = [
     "//query:__subpackages__",
@@ -48,11 +48,11 @@ native_java_libraries(
         "//common:common",
         "//concurrent:concurrent",
 
-        # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
-        "@graknlabs_graql//java/common",
-        "@graknlabs_graql//java/pattern",
-        "@graknlabs_graql//java/query",
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java/common",
+        "@vaticle_typeql//java/pattern",
+        "@vaticle_typeql//java/query",
 
         # External Maven Dependencies
         "@maven//:com_google_code_findbugs_jsr305",
@@ -61,7 +61,7 @@ native_java_libraries(
     runtime_deps = [
         "@maven//:ch_qos_logback_logback_classic",
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-reasoner:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-reasoner:{pom_version}"],
 )
 
 host_compatible_java_test(
@@ -69,7 +69,7 @@ host_compatible_java_test(
     srcs = [
         "resolution/answer/AnswerStateTest.java",
     ],
-    test_class = "grakn.core.reasoner.resolution.answer.AnswerStateTest",
+    test_class = "com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateTest",
     native_libraries_deps = [
         "//concept:concept",
         "//pattern:pattern",
@@ -80,8 +80,8 @@ host_compatible_java_test(
         # Internal dependencies
         "//common",
 
-        # External dependencies from Grakn Labs
-        "@graknlabs_common//:common",
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
     ],
 )
 

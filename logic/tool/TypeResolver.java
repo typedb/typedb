@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,44 +16,44 @@
  *
  */
 
-package grakn.core.logic.tool;
+package com.vaticle.typedb.core.logic.tool;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.parameters.Label;
-import grakn.core.concept.ConceptManager;
-import grakn.core.concept.thing.Thing;
-import grakn.core.graph.common.Encoding;
-import grakn.core.graph.vertex.TypeVertex;
-import grakn.core.graph.vertex.Vertex;
-import grakn.core.logic.LogicCache;
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.Disjunction;
-import grakn.core.pattern.Negation;
-import grakn.core.pattern.constraint.thing.HasConstraint;
-import grakn.core.pattern.constraint.thing.IIDConstraint;
-import grakn.core.pattern.constraint.thing.IsConstraint;
-import grakn.core.pattern.constraint.thing.IsaConstraint;
-import grakn.core.pattern.constraint.thing.RelationConstraint;
-import grakn.core.pattern.constraint.thing.ValueConstraint;
-import grakn.core.pattern.constraint.type.LabelConstraint;
-import grakn.core.pattern.constraint.type.OwnsConstraint;
-import grakn.core.pattern.constraint.type.PlaysConstraint;
-import grakn.core.pattern.constraint.type.RegexConstraint;
-import grakn.core.pattern.constraint.type.RelatesConstraint;
-import grakn.core.pattern.constraint.type.SubConstraint;
-import grakn.core.pattern.constraint.type.TypeConstraint;
-import grakn.core.pattern.constraint.type.ValueTypeConstraint;
-import grakn.core.pattern.variable.SystemReference;
-import grakn.core.pattern.variable.ThingVariable;
-import grakn.core.pattern.variable.TypeVariable;
-import grakn.core.pattern.variable.Variable;
-import grakn.core.traversal.Traversal;
-import grakn.core.traversal.TraversalEngine;
-import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.VertexMap;
-import graql.lang.common.GraqlArg.ValueType;
-import graql.lang.pattern.variable.Reference;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.concept.thing.Thing;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.vertex.TypeVertex;
+import com.vaticle.typedb.core.graph.vertex.Vertex;
+import com.vaticle.typedb.core.logic.LogicCache;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.pattern.Negation;
+import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.IIDConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.IsConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.IsaConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.ValueConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.LabelConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.OwnsConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.PlaysConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.RegexConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.RelatesConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.SubConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.TypeConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.ValueTypeConstraint;
+import com.vaticle.typedb.core.pattern.variable.SystemReference;
+import com.vaticle.typedb.core.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.pattern.variable.TypeVariable;
+import com.vaticle.typedb.core.pattern.variable.Variable;
+import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.TraversalEngine;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.VertexMap;
+import com.vaticle.typeql.lang.common.TypeQLArg.ValueType;
+import com.vaticle.typeql.lang.pattern.variable.Reference;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -63,15 +63,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.list;
-import static grakn.common.collection.Collections.set;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_PATTERN;
-import static grakn.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_NOT_FOUND;
-import static grakn.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static graql.lang.common.GraqlToken.Type.ATTRIBUTE;
-import static graql.lang.common.GraqlToken.Type.THING;
+import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_PATTERN;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_NOT_FOUND;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Type.ATTRIBUTE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Type.THING;
 
 public class TypeResolver {
 
@@ -107,11 +107,11 @@ public class TypeResolver {
                     if (label.scope().isPresent()) {
                         String scope = label.scope().get();
                         Set<Label> labels = traversalEng.graph().schema().resolveRoleTypeLabels(label);
-                        if (labels.isEmpty()) throw GraknException.of(ROLE_TYPE_NOT_FOUND, label.name(), scope);
+                        if (labels.isEmpty()) throw TypeDBException.of(ROLE_TYPE_NOT_FOUND, label.name(), scope);
                         typeVar.addResolvedTypes(labels);
                     } else {
                         TypeVertex type = traversalEng.graph().schema().getType(label);
-                        if (type == null) throw GraknException.of(TYPE_NOT_FOUND, label);
+                        if (type == null) throw TypeDBException.of(TYPE_NOT_FOUND, label);
                         typeVar.addResolvedType(label);
                     }
                 });
@@ -260,7 +260,7 @@ public class TypeResolver {
         private void register(Variable variable) {
             if (variable.isType()) register(variable.asType());
             else if (variable.isThing()) register(variable.asThing());
-            else throw GraknException.of(ILLEGAL_STATE);
+            else throw TypeDBException.of(ILLEGAL_STATE);
         }
 
         private TypeVariable register(TypeVariable var) {
@@ -285,7 +285,7 @@ public class TypeResolver {
                 else if (constraint.isRelates()) registerRelates(resolver, constraint.asRelates());
                 else if (constraint.isSub()) registerSub(resolver, constraint.asSub());
                 else if (constraint.isValueType()) registerValueType(resolver, constraint.asValueType());
-                else if (!constraint.isLabel()) throw GraknException.of(ILLEGAL_STATE);
+                else if (!constraint.isLabel()) throw TypeDBException.of(ILLEGAL_STATE);
             }
 
             return resolver;
@@ -295,7 +295,7 @@ public class TypeResolver {
             traversal.isAbstract(resolver.id());
         }
 
-        private void registerIsType(TypeVariable resolver, grakn.core.pattern.constraint.type.IsConstraint isConstraint) {
+        private void registerIsType(TypeVariable resolver, com.vaticle.typedb.core.pattern.constraint.type.IsConstraint isConstraint) {
             traversal.equalTypes(resolver.id(), register(isConstraint.variable()).id());
         }
 
@@ -355,7 +355,7 @@ public class TypeResolver {
                 traversal.equalTypes(resolver.id(), register(isaConstraint.type()).id());
             else if (isaConstraint.type().label().isPresent())
                 traversal.labels(resolver.id(), isaConstraint.type().label().get().properLabel());
-            else throw GraknException.of(ILLEGAL_STATE);
+            else throw TypeDBException.of(ILLEGAL_STATE);
         }
 
         private void registerIsThing(TypeVariable resolver, IsConstraint isConstraint) {
@@ -400,7 +400,7 @@ public class TypeResolver {
                 valueTypes = resolverValueTypes.get(comparableVar.id());
             } else {
                 valueTypes = iterate(Encoding.ValueType.of(constraint.value().getClass()).comparables())
-                        .map(Encoding.ValueType::graqlValueType).toSet();
+                        .map(Encoding.ValueType::typeQLValueType).toSet();
             }
 
             if (resolverValueTypes.get(resolver.id()).isEmpty()) {
@@ -408,7 +408,7 @@ public class TypeResolver {
                 resolverValueTypes.put(resolver.id(), valueTypes);
             } else if (!resolverValueTypes.get(resolver.id()).containsAll(valueTypes)) {
                 // TODO this is a bit odd - can we set not coherent here and short circuit?
-                throw GraknException.of(UNSATISFIABLE_PATTERN, conjunction, constraint);
+                throw TypeDBException.of(UNSATISFIABLE_PATTERN, conjunction, constraint);
             }
             registerSubAttribute(resolver);
         }

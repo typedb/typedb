@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,33 +15,33 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.common;
+package com.vaticle.typedb.core.server.common;
 
 import com.google.protobuf.ByteString;
-import grakn.common.collection.Pair;
-import grakn.core.common.exception.ErrorMessage;
-import grakn.core.common.exception.GraknException;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.ConceptMapGroup;
-import grakn.core.concept.answer.Numeric;
-import grakn.core.concept.answer.NumericGroup;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Entity;
-import grakn.core.concept.thing.Relation;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.RoleType;
-import grakn.core.concept.type.ThingType;
-import grakn.core.reasoner.resolution.answer.Explanation;
-import grakn.protocol.AnswerProto;
-import grakn.protocol.ConceptProto;
-import grakn.protocol.CoreDatabaseProto.CoreDatabase;
-import grakn.protocol.CoreDatabaseProto.CoreDatabaseManager;
-import grakn.protocol.LogicProto;
-import grakn.protocol.QueryProto;
-import grakn.protocol.SessionProto;
-import grakn.protocol.TransactionProto;
+import com.vaticle.typedb.common.collection.Pair;
+import com.vaticle.typedb.core.common.exception.ErrorMessage;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concept.answer.ConceptMapGroup;
+import com.vaticle.typedb.core.concept.answer.Numeric;
+import com.vaticle.typedb.core.concept.answer.NumericGroup;
+import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.thing.Entity;
+import com.vaticle.typedb.core.concept.thing.Relation;
+import com.vaticle.typedb.core.concept.type.AttributeType;
+import com.vaticle.typedb.core.concept.type.EntityType;
+import com.vaticle.typedb.core.concept.type.RelationType;
+import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.concept.type.ThingType;
+import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
+import com.vaticle.typedb.protocol.AnswerProto;
+import com.vaticle.typedb.protocol.ConceptProto;
+import com.vaticle.typedb.protocol.CoreDatabaseProto.CoreDatabase;
+import com.vaticle.typedb.protocol.CoreDatabaseProto.CoreDatabaseManager;
+import com.vaticle.typedb.protocol.LogicProto;
+import com.vaticle.typedb.protocol.QueryProto;
+import com.vaticle.typedb.protocol.SessionProto;
+import com.vaticle.typedb.protocol.TransactionProto;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 
@@ -54,14 +54,14 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 import static com.google.protobuf.ByteString.copyFrom;
-import static grakn.core.common.collection.Bytes.uuidToBytes;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.server.common.ResponseBuilder.Answer.conceptMap;
-import static grakn.core.server.common.ResponseBuilder.Answer.numeric;
-import static grakn.core.server.common.ResponseBuilder.Concept.protoThing;
-import static grakn.core.server.common.ResponseBuilder.Logic.Rule.protoRule;
-import static grakn.core.server.common.ResponseBuilder.Type.protoType;
+import static com.vaticle.typedb.core.common.collection.Bytes.uuidToBytes;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Answer.conceptMap;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Answer.numeric;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Concept.protoThing;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Logic.Rule.protoRule;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.protoType;
 import static java.util.stream.Collectors.toList;
 
 public class ResponseBuilder {
@@ -267,7 +267,7 @@ public class ResponseBuilder {
             return conceptMgrRes(reqID, ConceptProto.ConceptManager.Res.newBuilder().setGetThingTypeRes(getThingTypeRes));
         }
 
-        public static TransactionProto.Transaction.Res getThingRes(UUID reqID, @Nullable grakn.core.concept.thing.Thing thing) {
+        public static TransactionProto.Transaction.Res getThingRes(UUID reqID, @Nullable com.vaticle.typedb.core.concept.thing.Thing thing) {
             ConceptProto.ConceptManager.GetThing.Res.Builder getThingRes = ConceptProto.ConceptManager.GetThing.Res.newBuilder();
             if (thing != null) getThingRes.setThing(protoThing(thing));
             return conceptMgrRes(reqID, ConceptProto.ConceptManager.Res.newBuilder().setGetThingRes(getThingRes));
@@ -285,19 +285,19 @@ public class ResponseBuilder {
             return TransactionProto.Transaction.ResPart.newBuilder().setReqId(UUIDAsByteString(reqID)).setLogicManagerResPart(resPart).build();
         }
 
-        public static TransactionProto.Transaction.Res putRuleRes(UUID reqID, grakn.core.logic.Rule rule) {
+        public static TransactionProto.Transaction.Res putRuleRes(UUID reqID, com.vaticle.typedb.core.logic.Rule rule) {
             return logicMgrRes(reqID, LogicProto.LogicManager.Res.newBuilder().setPutRuleRes(
                     LogicProto.LogicManager.PutRule.Res.newBuilder().setRule(protoRule(rule))
             ));
         }
 
-        public static TransactionProto.Transaction.Res getRuleRes(UUID reqID, grakn.core.logic.Rule rule) {
+        public static TransactionProto.Transaction.Res getRuleRes(UUID reqID, com.vaticle.typedb.core.logic.Rule rule) {
             LogicProto.LogicManager.GetRule.Res.Builder getRuleRes = LogicProto.LogicManager.GetRule.Res.newBuilder();
             if (rule != null) getRuleRes.setRule(protoRule(rule));
             return logicMgrRes(reqID, LogicProto.LogicManager.Res.newBuilder().setGetRuleRes(getRuleRes));
         }
 
-        public static TransactionProto.Transaction.ResPart getRulesResPart(UUID reqID, List<grakn.core.logic.Rule> rules) {
+        public static TransactionProto.Transaction.ResPart getRulesResPart(UUID reqID, List<com.vaticle.typedb.core.logic.Rule> rules) {
             return logicMgrResPart(reqID, LogicProto.LogicManager.ResPart.newBuilder().setGetRulesResPart(
                     LogicProto.LogicManager.GetRules.ResPart.newBuilder().addAllRules(
                             rules.stream().map(Logic.Rule::protoRule).collect(toList()))
@@ -308,7 +308,7 @@ public class ResponseBuilder {
 
     public static class Concept {
 
-        public static ConceptProto.Concept protoConcept(grakn.core.concept.Concept concept) {
+        public static ConceptProto.Concept protoConcept(com.vaticle.typedb.core.concept.Concept concept) {
             if (concept == null) return null;
             if (concept.isThing()) {
                 return ConceptProto.Concept.newBuilder().setThing(protoThing(concept.asThing())).build();
@@ -317,7 +317,7 @@ public class ResponseBuilder {
             }
         }
 
-        public static ConceptProto.Thing protoThing(grakn.core.concept.thing.Thing thing) {
+        public static ConceptProto.Thing protoThing(com.vaticle.typedb.core.concept.thing.Thing thing) {
             ConceptProto.Thing.Builder protoThing = ConceptProto.Thing.newBuilder()
                     .setIid(ByteString.copyFrom(thing.getIID()))
                     .setType(protoType(thing.getType()))
@@ -340,7 +340,7 @@ public class ResponseBuilder {
             } else if (attribute.isDouble()) {
                 builder.setDouble(attribute.asDouble().getValue());
             } else {
-                throw GraknException.of(ErrorMessage.Server.BAD_VALUE_TYPE);
+                throw TypeDBException.of(ErrorMessage.Server.BAD_VALUE_TYPE);
             }
 
             return builder.build();
@@ -350,7 +350,7 @@ public class ResponseBuilder {
 
     public static class Type {
 
-        private static ConceptProto.Type.Encoding protoEncoding(grakn.core.concept.type.Type type) {
+        private static ConceptProto.Type.Encoding protoEncoding(com.vaticle.typedb.core.concept.type.Type type) {
             if (type.isEntityType()) {
                 return ConceptProto.Type.Encoding.ENTITY_TYPE;
             } else if (type.isRelationType()) {
@@ -362,11 +362,11 @@ public class ResponseBuilder {
             } else if (type.isRoleType()) {
                 return ConceptProto.Type.Encoding.ROLE_TYPE;
             } else {
-                throw GraknException.of(ILLEGAL_STATE);
+                throw TypeDBException.of(ILLEGAL_STATE);
             }
         }
 
-        public static ConceptProto.Type protoType(grakn.core.concept.type.Type type) {
+        public static ConceptProto.Type protoType(com.vaticle.typedb.core.concept.type.Type type) {
             ConceptProto.Type.Builder protoType = ConceptProto.Type.newBuilder()
                     .setLabel(type.getLabel().name()).setEncoding(protoEncoding(type));
             if (type.isAttributeType()) protoType.setValueType(AttributeType.protoValueType(type.asAttributeType()));
@@ -402,7 +402,7 @@ public class ResponseBuilder {
         }
 
         public static TransactionProto.Transaction.Res getSupertypeRes(
-                UUID reqID, @Nullable grakn.core.concept.type.Type supertype) {
+                UUID reqID, @Nullable com.vaticle.typedb.core.concept.type.Type supertype) {
             ConceptProto.Type.GetSupertype.Res.Builder getSupertypeRes = ConceptProto.Type.GetSupertype.Res.newBuilder();
             if (supertype != null) getSupertypeRes.setType(protoType(supertype));
             return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setTypeGetSupertypeRes(getSupertypeRes));
@@ -415,14 +415,14 @@ public class ResponseBuilder {
         }
 
         public static TransactionProto.Transaction.ResPart getSupertypesResPart(
-                UUID reqID, List<? extends grakn.core.concept.type.Type> types) {
+                UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.Type> types) {
             return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setTypeGetSupertypesResPart(
                     ConceptProto.Type.GetSupertypes.ResPart.newBuilder().addAllTypes(
                             types.stream().map(Type::protoType).collect(toList()))));
         }
 
         public static TransactionProto.Transaction.ResPart getSubtypesResPart(
-                UUID reqID, List<? extends grakn.core.concept.type.Type> types) {
+                UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.Type> types) {
             return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setTypeGetSubtypesResPart(
                     ConceptProto.Type.GetSubtypes.ResPart.newBuilder().addAllTypes(
                             types.stream().map(Type::protoType).collect(toList()))));
@@ -431,14 +431,14 @@ public class ResponseBuilder {
         public static class RoleType {
 
             public static TransactionProto.Transaction.ResPart getRelationTypesResPart(
-                    UUID reqID, List<? extends grakn.core.concept.type.RelationType> relationTypes) {
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.RelationType> relationTypes) {
                 return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRoleTypeGetRelationTypesResPart(
                         ConceptProto.RoleType.GetRelationTypes.ResPart.newBuilder().addAllRelationTypes(
                                 relationTypes.stream().map(Type::protoType).collect(toList()))));
             }
 
             public static TransactionProto.Transaction.ResPart getPlayersResPart(
-                    UUID reqID, List<? extends grakn.core.concept.type.ThingType> players) {
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.ThingType> players) {
                 return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRoleTypeGetPlayersResPart(
                         ConceptProto.RoleType.GetPlayers.ResPart.newBuilder().addAllThingTypes(
                                 players.stream().map(Type::protoType).collect(toList()))));
@@ -448,7 +448,7 @@ public class ResponseBuilder {
         public static class ThingType {
 
             public static TransactionProto.Transaction.ResPart getInstancesResPart(
-                    UUID reqID, List<? extends grakn.core.concept.thing.Thing> things) {
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Thing> things) {
                 return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setThingTypeGetInstancesResPart(
                         ConceptProto.ThingType.GetInstances.ResPart.newBuilder().addAllThings(
                                 things.stream().map(Concept::protoThing).collect(toList()))));
@@ -467,7 +467,7 @@ public class ResponseBuilder {
             }
 
             public static TransactionProto.Transaction.ResPart getOwnsResPart(
-                    UUID reqID, List<? extends grakn.core.concept.type.AttributeType> attributeTypes) {
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.AttributeType> attributeTypes) {
                 return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setThingTypeGetOwnsResPart(
                         ConceptProto.ThingType.GetOwns.ResPart.newBuilder().addAllAttributeTypes(
                                 attributeTypes.stream().map(Type::protoType).collect(toList()))));
@@ -486,7 +486,7 @@ public class ResponseBuilder {
             }
 
             public static TransactionProto.Transaction.ResPart getPlaysResPart(
-                    UUID reqID, List<? extends grakn.core.concept.type.RoleType> roleTypes) {
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.RoleType> roleTypes) {
                 return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setThingTypeGetPlaysResPart(
                         ConceptProto.ThingType.GetPlays.ResPart.newBuilder().addAllRoles(
                                 roleTypes.stream().map(Type::protoType).collect(toList()))));
@@ -523,7 +523,7 @@ public class ResponseBuilder {
             }
 
             public static TransactionProto.Transaction.Res getRelatesForRoleLabelRes(
-                    UUID reqID, @Nullable grakn.core.concept.type.RoleType roleType) {
+                    UUID reqID, @Nullable com.vaticle.typedb.core.concept.type.RoleType roleType) {
                 ConceptProto.RelationType.GetRelatesForRoleLabel.Res.Builder getRelatesRes =
                         ConceptProto.RelationType.GetRelatesForRoleLabel.Res.newBuilder();
                 if (roleType != null) getRelatesRes.setRoleType(protoType(roleType));
@@ -531,7 +531,7 @@ public class ResponseBuilder {
             }
 
             public static TransactionProto.Transaction.ResPart getRelatesResPart(
-                    UUID reqID, List<? extends grakn.core.concept.type.RoleType> roleTypes) {
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.RoleType> roleTypes) {
                 return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRelationTypeGetRelatesResPart(
                         ConceptProto.RelationType.GetRelates.ResPart.newBuilder().addAllRoles(
                                 roleTypes.stream().map(Type::protoType).collect(toList()))
@@ -554,7 +554,7 @@ public class ResponseBuilder {
         public static class AttributeType {
 
             public static ConceptProto.AttributeType.ValueType protoValueType(
-                    grakn.core.concept.type.AttributeType attributeType) {
+                    com.vaticle.typedb.core.concept.type.AttributeType attributeType) {
                 if (attributeType.isString()) {
                     return ConceptProto.AttributeType.ValueType.STRING;
                 } else if (attributeType.isBoolean()) {
@@ -568,7 +568,7 @@ public class ResponseBuilder {
                 } else if (attributeType.isRoot()) {
                     return ConceptProto.AttributeType.ValueType.OBJECT;
                 } else {
-                    throw GraknException.of(ErrorMessage.Server.BAD_VALUE_TYPE);
+                    throw TypeDBException.of(ErrorMessage.Server.BAD_VALUE_TYPE);
                 }
             }
 
@@ -597,7 +597,7 @@ public class ResponseBuilder {
             }
 
             public static TransactionProto.Transaction.ResPart getOwnersResPart(
-                    UUID reqID, List<? extends grakn.core.concept.type.ThingType> owners) {
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.ThingType> owners) {
                 return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setAttributeTypeGetOwnersResPart(
                         ConceptProto.AttributeType.GetOwners.ResPart.newBuilder().addAllOwners(
                                 owners.stream().map(Type::protoType).collect(toList()))
@@ -630,7 +630,7 @@ public class ResponseBuilder {
         }
 
         public static TransactionProto.Transaction.ResPart getHasResPart(
-                UUID reqID, List<? extends grakn.core.concept.thing.Attribute> attributes) {
+                UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Attribute> attributes) {
             return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setThingGetHasResPart(
                     ConceptProto.Thing.GetHas.ResPart.newBuilder().addAllAttributes(
                             attributes.stream().map(Concept::protoThing).collect(toList()))
@@ -650,7 +650,7 @@ public class ResponseBuilder {
         }
 
         public static TransactionProto.Transaction.ResPart getRelationsResPart(
-                UUID reqID, List<? extends grakn.core.concept.thing.Relation> relations) {
+                UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Relation> relations) {
             return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setThingGetRelationsResPart(
                     ConceptProto.Thing.GetRelations.ResPart.newBuilder().addAllRelations(
                             relations.stream().map(Concept::protoThing).collect(toList()))
@@ -680,7 +680,7 @@ public class ResponseBuilder {
             }
 
             public static TransactionProto.Transaction.ResPart getPlayersResPart(
-                    UUID reqID, List<? extends grakn.core.concept.thing.Thing> players) {
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Thing> players) {
                 return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setRelationGetPlayersResPart(
                         ConceptProto.Relation.GetPlayers.ResPart.newBuilder().addAllThings(
                                 players.stream().map(Concept::protoThing).collect(toList()))
@@ -688,7 +688,7 @@ public class ResponseBuilder {
             }
 
             public static TransactionProto.Transaction.ResPart getPlayersByRoleTypeResPart(
-                    UUID reqID, List<Pair<RoleType, grakn.core.concept.thing.Thing>> rolePlayers) {
+                    UUID reqID, List<Pair<RoleType, com.vaticle.typedb.core.concept.thing.Thing>> rolePlayers) {
                 return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setRelationGetPlayersByRoleTypeResPart(
                         ConceptProto.Relation.GetPlayersByRoleType.ResPart.newBuilder().addAllRoleTypesWithPlayers(
                                 rolePlayers.stream().map(rp -> ConceptProto.Relation.GetPlayersByRoleType.RoleTypeWithPlayer.newBuilder()
@@ -707,7 +707,7 @@ public class ResponseBuilder {
         public static class Attribute {
 
             public static TransactionProto.Transaction.ResPart getOwnersResPart(
-                    UUID reqID, List<? extends grakn.core.concept.thing.Thing> owners) {
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Thing> owners) {
                 return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setAttributeGetOwnersResPart(
                         ConceptProto.Attribute.GetOwners.ResPart.newBuilder().addAllThings(
                                 owners.stream().map(Concept::protoThing).collect(toList()))
@@ -720,7 +720,7 @@ public class ResponseBuilder {
 
         public static class Rule {
 
-            public static LogicProto.Rule protoRule(grakn.core.logic.Rule rule) {
+            public static LogicProto.Rule protoRule(com.vaticle.typedb.core.logic.Rule rule) {
                 return LogicProto.Rule.newBuilder().setLabel(rule.getLabel())
                         .setWhen(rule.getWhenPreNormalised().toString())
                         .setThen(rule.getThenPreNormalised().toString()).build();

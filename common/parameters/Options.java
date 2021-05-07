@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,22 +15,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.common.parameters;
+package com.vaticle.typedb.core.common.parameters;
 
-import grakn.core.common.exception.GraknException;
-import graql.lang.query.GraqlQuery;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typeql.lang.query.TypeQLQuery;
 
 import java.nio.file.Path;
 
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_CANNOT_BE_TOGGLED_PER_QUERY;
-import static grakn.core.common.exception.ErrorMessage.Reasoner.REASONING_CANNOT_BE_TOGGLED_PER_QUERY;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_CANNOT_BE_TOGGLED_PER_QUERY;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONING_CANNOT_BE_TOGGLED_PER_QUERY;
 
 public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options<?, ?>> {
 
-    public static final int DEFAULT_RESPONSE_BATCH_SIZE = 50;
-    public static final int DEFAULT_SESSION_IDLE_TIMEOUT_MILLIS = 10_000;
+    public static final int DEFAULT_PREFETCH_SIZE = 50;
+    public static final int DEFAULT_SESSION_IDLE_TIMEOUT_MILLIS = 30_000;
     public static final int DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS = 10_000;
     public static final boolean DEFAULT_INFER = false;
     public static final boolean DEFAULT_TRACE_INFERENCE = false;
@@ -44,16 +44,15 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     private Boolean infer = null;
     private Boolean traceInference = null;
     private Boolean explain = null;
-    private Integer batchSize = null;
     private Boolean parallel = null;
+    private Integer prefetchSize = null;
     private Integer sessionIdlTimeoutMillis = null;
     private Integer schemaLockAcquireTimeoutMillis = null;
     private Boolean readAnyReplica = null;
-
-    protected Path graknDir = null;
+    protected Boolean prefetch = null;
+    protected Path typeDBDir = null;
     protected Path dataDir = null;
     protected Path logsDir = null;
-    protected Boolean prefetch = null;
 
     abstract SELF getThis();
 
@@ -95,14 +94,14 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         return getThis();
     }
 
-    public int responseBatchSize() {
-        if (batchSize != null) return batchSize;
-        else if (parent != null) return parent.responseBatchSize();
-        else return DEFAULT_RESPONSE_BATCH_SIZE;
+    public int prefetchSize() {
+        if (prefetchSize != null) return prefetchSize;
+        else if (parent != null) return parent.prefetchSize();
+        else return DEFAULT_PREFETCH_SIZE;
     }
 
-    public SELF responseBatchSize(int batchSize) {
-        this.batchSize = batchSize;
+    public SELF prefetchSize(int prefetchSize) {
+        this.prefetchSize = prefetchSize;
         return getThis();
     }
 
@@ -150,22 +149,22 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         return getThis();
     }
 
-    public Path graknDir() {
-        if (graknDir != null) return graknDir;
-        else if (parent != null) return parent.graknDir();
-        else throw GraknException.of(ILLEGAL_STATE);
+    public Path typeDBDir() {
+        if (typeDBDir != null) return typeDBDir;
+        else if (parent != null) return parent.typeDBDir();
+        else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     public Path dataDir() {
         if (dataDir != null) return dataDir;
         else if (parent != null) return parent.dataDir();
-        else throw GraknException.of(ILLEGAL_STATE);
+        else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     public Path logsDir() {
         if (logsDir != null) return logsDir;
         else if (parent != null) return parent.logsDir();
-        else throw GraknException.of(ILLEGAL_STATE);
+        else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     public static class Database extends Options<Options<?, ?>, Database> {
@@ -176,11 +175,11 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         }
 
         public Database parent(Options<?, ?> parent) {
-            throw GraknException.of(ILLEGAL_OPERATION);
+            throw TypeDBException.of(ILLEGAL_OPERATION);
         }
 
-        public Database graknDir(Path graknDir) {
-            this.graknDir = graknDir;
+        public Database typeDBDir(Path typeDBDir) {
+            this.typeDBDir = typeDBDir;
             return this;
         }
 
@@ -213,14 +212,14 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
 
     public static class Query extends Options<Transaction, Query> {
 
-        private GraqlQuery query = null;
+        private TypeQLQuery query = null;
 
         @Override
         Query getThis() {
             return this;
         }
 
-        public Query query(GraqlQuery query) {
+        public Query query(TypeQLQuery query) {
             this.query = query;
             return this;
         }
@@ -237,12 +236,12 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
 
         @Override
         public Query infer(boolean infer) {
-            throw GraknException.of(REASONING_CANNOT_BE_TOGGLED_PER_QUERY);
+            throw TypeDBException.of(REASONING_CANNOT_BE_TOGGLED_PER_QUERY);
         }
 
         @Override
         public Query traceInference(boolean traceInference) {
-            throw GraknException.of(REASONER_TRACING_CANNOT_BE_TOGGLED_PER_QUERY);
+            throw TypeDBException.of(REASONER_TRACING_CANNOT_BE_TOGGLED_PER_QUERY);
         }
 
         public Query prefetch(boolean prefetch) {

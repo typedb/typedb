@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,19 +16,19 @@
  *
  */
 
-package grakn.core.rocks;
+package com.vaticle.typedb.core.rocks;
 
-import grakn.common.collection.Pair;
-import grakn.common.concurrent.NamedThreadFactory;
-import grakn.core.Grakn;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Arguments;
-import grakn.core.common.parameters.Options;
-import grakn.core.graph.SchemaGraph;
-import grakn.core.graph.common.Encoding;
-import grakn.core.graph.common.KeyGenerator;
-import grakn.core.logic.LogicCache;
-import grakn.core.traversal.TraversalCache;
+import com.vaticle.typedb.common.collection.Pair;
+import com.vaticle.typedb.common.concurrent.NamedThreadFactory;
+import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.graph.SchemaGraph;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.common.KeyGenerator;
+import com.vaticle.typedb.core.logic.LogicCache;
+import com.vaticle.typedb.core.traversal.TraversalCache;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.Status;
@@ -48,19 +48,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
 
-import static grakn.core.common.exception.ErrorMessage.Database.DATABASE_CLOSED;
-import static grakn.core.common.exception.ErrorMessage.Internal.DIRTY_INITIALISATION;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
-import static grakn.core.common.exception.ErrorMessage.Session.SCHEMA_ACQUIRE_LOCK_TIMEOUT;
-import static grakn.core.common.parameters.Arguments.Session.Type.DATA;
-import static grakn.core.common.parameters.Arguments.Session.Type.SCHEMA;
-import static grakn.core.common.parameters.Arguments.Transaction.Type.READ;
-import static grakn.core.common.parameters.Arguments.Transaction.Type.WRITE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_CLOSED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.DIRTY_INITIALISATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Session.SCHEMA_ACQUIRE_LOCK_TIMEOUT;
+import static com.vaticle.typedb.core.common.parameters.Arguments.Session.Type.DATA;
+import static com.vaticle.typedb.core.common.parameters.Arguments.Session.Type.SCHEMA;
+import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.READ;
+import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.WRITE;
 import static java.util.Comparator.reverseOrder;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class RocksDatabase implements Grakn.Database {
+public class RocksDatabase implements TypeDB.Database {
 
     private static final Logger LOG = LoggerFactory.getLogger(RocksDatabase.class);
 
@@ -73,15 +73,15 @@ public class RocksDatabase implements Grakn.Database {
     protected final KeyGenerator.Schema.Persisted schemaKeyGenerator;
     protected final KeyGenerator.Data.Persisted dataKeyGenerator;
     private final StampedLock schemaLock;
-    private final RocksGrakn grakn;
+    private final RocksTypeDB typedb;
     private final AtomicInteger schemaLockWriteRequests;
     private Cache cache;
 
     private final Factory.Session sessionFactory;
     protected final AtomicBoolean isOpen;
 
-    protected RocksDatabase(RocksGrakn grakn, String name, Factory.Session sessionFactory) {
-        this.grakn = grakn;
+    protected RocksDatabase(RocksTypeDB typedb, String name, Factory.Session sessionFactory) {
+        this.typedb = typedb;
         this.name = name;
         this.sessionFactory = sessionFactory;
         schemaKeyGenerator = new KeyGenerator.Schema.Persisted();
@@ -93,29 +93,29 @@ public class RocksDatabase implements Grakn.Database {
         try {
             String schemaDirPath = directory().resolve(Encoding.ROCKS_SCHEMA).toString();
             String dataDirPath = directory().resolve(Encoding.ROCKS_DATA).toString();
-            rocksSchema = OptimisticTransactionDB.open(this.grakn.rocksDBOptions(), schemaDirPath);
-            rocksData = OptimisticTransactionDB.open(this.grakn.rocksDBOptions(), dataDirPath);
+            rocksSchema = OptimisticTransactionDB.open(this.typedb.rocksDBOptions(), schemaDirPath);
+            rocksData = OptimisticTransactionDB.open(this.typedb.rocksDBOptions(), dataDirPath);
         } catch (RocksDBException e) {
-            throw GraknException.of(e);
+            throw TypeDBException.of(e);
         }
         isOpen = new AtomicBoolean(true);
     }
 
-    static RocksDatabase createAndOpen(RocksGrakn grakn, String name, Factory.Session sessionFactory) {
+    static RocksDatabase createAndOpen(RocksTypeDB typedb, String name, Factory.Session sessionFactory) {
         try {
-            Files.createDirectory(grakn.directory().resolve(name));
+            Files.createDirectory(typedb.directory().resolve(name));
         } catch (IOException e) {
-            throw GraknException.of(e);
+            throw TypeDBException.of(e);
         }
 
-        RocksDatabase database = new RocksDatabase(grakn, name, sessionFactory);
+        RocksDatabase database = new RocksDatabase(typedb, name, sessionFactory);
         database.initialise();
         database.statisticsBgCounterStart();
         return database;
     }
 
-    static RocksDatabase loadAndOpen(RocksGrakn grakn, String name, Factory.Session sessionFactory) {
-        RocksDatabase database = new RocksDatabase(grakn, name, sessionFactory);
+    static RocksDatabase loadAndOpen(RocksTypeDB typedb, String name, Factory.Session sessionFactory) {
+        RocksDatabase database = new RocksDatabase(typedb, name, sessionFactory);
         database.load();
         database.statisticsBgCounterStart();
         return database;
@@ -124,7 +124,7 @@ public class RocksDatabase implements Grakn.Database {
     protected void initialise() {
         try (RocksSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
             try (RocksTransaction.Schema txn = session.initialisationTransaction()) {
-                if (txn.graph().isInitialised()) throw GraknException.of(DIRTY_INITIALISATION);
+                if (txn.graph().isInitialised()) throw TypeDBException.of(DIRTY_INITIALISATION);
                 txn.graph().initialise();
                 txn.commit();
             }
@@ -141,7 +141,7 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     RocksSession createAndOpenSession(Arguments.Session.Type type, Options.Session options) {
-        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED, name);
+        if (!isOpen.get()) throw TypeDBException.of(DATABASE_CLOSED, name);
 
         long lock = 0;
         RocksSession session;
@@ -150,9 +150,9 @@ public class RocksDatabase implements Grakn.Database {
             try {
                 schemaLockWriteRequests.incrementAndGet();
                 lock = schemaLock().tryWriteLock(options.schemaLockTimeoutMillis(), MILLISECONDS);
-                if (lock == 0) throw GraknException.of(SCHEMA_ACQUIRE_LOCK_TIMEOUT);
+                if (lock == 0) throw TypeDBException.of(SCHEMA_ACQUIRE_LOCK_TIMEOUT);
             } catch (InterruptedException e) {
-                throw GraknException.of(e);
+                throw TypeDBException.of(e);
             } finally {
                 schemaLockWriteRequests.decrementAndGet();
             }
@@ -160,7 +160,7 @@ public class RocksDatabase implements Grakn.Database {
         } else if (type.isData()) {
             session = sessionFactory.sessionData(this, options);
         } else {
-            throw GraknException.of(ILLEGAL_STATE);
+            throw TypeDBException.of(ILLEGAL_STATE);
         }
 
         sessions.put(session.uuid(), new Pair<>(session, lock));
@@ -168,7 +168,7 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     synchronized Cache cacheBorrow() {
-        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED, name);
+        if (!isOpen.get()) throw TypeDBException.of(DATABASE_CLOSED, name);
 
         if (cache == null) cache = new Cache(this);
         cache.borrow();
@@ -180,7 +180,7 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     public synchronized void cacheInvalidate() {
-        if (!isOpen.get()) throw GraknException.of(DATABASE_CLOSED, name);
+        if (!isOpen.get()) throw TypeDBException.of(DATABASE_CLOSED, name);
 
         if (cache != null) {
             cache.invalidate();
@@ -211,11 +211,11 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     protected Path directory() {
-        return grakn.directory().resolve(name);
+        return typedb.directory().resolve(name);
     }
 
     public Options.Database options() {
-        return grakn.options();
+        return typedb.options();
     }
 
     OptimisticTransactionDB rocksData() {
@@ -258,19 +258,19 @@ public class RocksDatabase implements Grakn.Database {
     }
 
     @Override
-    public Grakn.Session session(UUID sessionID) {
+    public TypeDB.Session session(UUID sessionID) {
         if (sessions.containsKey(sessionID)) return sessions.get(sessionID).first();
         else return null;
     }
 
     @Override
-    public Stream<Grakn.Session> sessions() {
+    public Stream<TypeDB.Session> sessions() {
         return sessions.values().stream().map(Pair::first);
     }
 
     @Override
     public String schema() {
-        try (Grakn.Session session = grakn.session(name, DATA); Grakn.Transaction tx = session.transaction(READ)) {
+        try (TypeDB.Session session = typedb.session(name, DATA); TypeDB.Transaction tx = session.transaction(READ)) {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.append("define\n\n");
             tx.concepts().exportTypes(stringBuilder);
@@ -307,11 +307,11 @@ public class RocksDatabase implements Grakn.Database {
     @Override
     public void delete() {
         close();
-        grakn.databases().remove(this);
+        typedb.databases().remove(this);
         try {
             Files.walk(directory()).sorted(reverseOrder()).map(Path::toFile).forEach(File::delete);
         } catch (IOException e) {
-            throw GraknException.of(e);
+            throw TypeDBException.of(e);
         }
     }
 
@@ -395,11 +395,11 @@ public class RocksDatabase implements Grakn.Database {
                     boolean shouldRestart = tx.graphMgr.data().stats().processCountJobs();
                     if (shouldRestart) countJobNotifications.release();
                     tx.commit();
-                } catch (GraknException e) {
+                } catch (TypeDBException e) {
                     if (e.code().isPresent() && e.code().get().equals(DATABASE_CLOSED.code())) {
                         break;
                     } else {
-                        // TODO: Add specific code indicating rocksdb conflict to GraknException status code
+                        // TODO: Add specific code indicating rocksdb conflict to TypeDBException status code
                         boolean txConflicted = e.getCause() instanceof RocksDBException &&
                                 ((RocksDBException) e.getCause()).getStatus().getCode() == Status.Code.Busy;
                         if (txConflicted) {
@@ -418,7 +418,7 @@ public class RocksDatabase implements Grakn.Database {
             try {
                 countJobNotifications.acquire();
             } catch (InterruptedException e) {
-                throw GraknException.of(UNEXPECTED_INTERRUPTION);
+                throw TypeDBException.of(UNEXPECTED_INTERRUPTION);
             }
             countJobNotifications.drainPermits();
         }
@@ -428,7 +428,7 @@ public class RocksDatabase implements Grakn.Database {
                 try {
                     Thread.sleep(1);
                 } catch (InterruptedException e) {
-                    throw GraknException.of(UNEXPECTED_INTERRUPTION);
+                    throw TypeDBException.of(UNEXPECTED_INTERRUPTION);
                 }
             }
         }
@@ -439,7 +439,7 @@ public class RocksDatabase implements Grakn.Database {
                 countJobNotifications.release();
                 thread.join();
             } catch (InterruptedException e) {
-                throw GraknException.of(UNEXPECTED_INTERRUPTION);
+                throw TypeDBException.of(UNEXPECTED_INTERRUPTION);
             }
         }
     }

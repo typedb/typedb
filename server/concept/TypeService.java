@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,65 +15,65 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.concept;
+package com.vaticle.typedb.core.server.concept;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.concept.ConceptManager;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.RoleType;
-import grakn.core.concept.type.ThingType;
-import grakn.core.concept.type.Type;
-import grakn.core.server.TransactionService;
-import grakn.protocol.ConceptProto;
-import grakn.protocol.TransactionProto.Transaction;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.type.AttributeType;
+import com.vaticle.typedb.core.concept.type.EntityType;
+import com.vaticle.typedb.core.concept.type.RelationType;
+import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.concept.type.ThingType;
+import com.vaticle.typedb.core.concept.type.Type;
+import com.vaticle.typedb.core.server.TransactionService;
+import com.vaticle.typedb.protocol.ConceptProto;
+import com.vaticle.typedb.protocol.TransactionProto.Transaction;
 
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
-import static grakn.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
-import static grakn.core.common.exception.ErrorMessage.Server.MISSING_FIELD;
-import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.ILLEGAL_SUPERTYPE_ENCODING;
-import static grakn.core.server.common.RequestReader.byteStringAsUUID;
-import static grakn.core.server.common.RequestReader.valueType;
-import static grakn.core.server.common.ResponseBuilder.Type.AttributeType.getOwnersResPart;
-import static grakn.core.server.common.ResponseBuilder.Type.AttributeType.getRegexRes;
-import static grakn.core.server.common.ResponseBuilder.Type.AttributeType.getRes;
-import static grakn.core.server.common.ResponseBuilder.Type.AttributeType.putRes;
-import static grakn.core.server.common.ResponseBuilder.Type.AttributeType.setRegexRes;
-import static grakn.core.server.common.ResponseBuilder.Type.EntityType.createRes;
-import static grakn.core.server.common.ResponseBuilder.Type.RelationType.createRes;
-import static grakn.core.server.common.ResponseBuilder.Type.RelationType.getRelatesForRoleLabelRes;
-import static grakn.core.server.common.ResponseBuilder.Type.RelationType.getRelatesResPart;
-import static grakn.core.server.common.ResponseBuilder.Type.RelationType.setRelatesRes;
-import static grakn.core.server.common.ResponseBuilder.Type.RelationType.unsetRelatesRes;
-import static grakn.core.server.common.ResponseBuilder.Type.RoleType.getPlayersResPart;
-import static grakn.core.server.common.ResponseBuilder.Type.RoleType.getRelationTypesResPart;
-import static grakn.core.server.common.ResponseBuilder.Type.ThingType.getInstancesResPart;
-import static grakn.core.server.common.ResponseBuilder.Type.ThingType.getOwnsResPart;
-import static grakn.core.server.common.ResponseBuilder.Type.ThingType.getPlaysResPart;
-import static grakn.core.server.common.ResponseBuilder.Type.ThingType.setAbstractRes;
-import static grakn.core.server.common.ResponseBuilder.Type.ThingType.setOwnsRes;
-import static grakn.core.server.common.ResponseBuilder.Type.ThingType.setPlaysRes;
-import static grakn.core.server.common.ResponseBuilder.Type.ThingType.unsetAbstractRes;
-import static grakn.core.server.common.ResponseBuilder.Type.ThingType.unsetOwnsRes;
-import static grakn.core.server.common.ResponseBuilder.Type.ThingType.unsetPlaysRes;
-import static grakn.core.server.common.ResponseBuilder.Type.deleteRes;
-import static grakn.core.server.common.ResponseBuilder.Type.getSubtypesResPart;
-import static grakn.core.server.common.ResponseBuilder.Type.getSupertypeRes;
-import static grakn.core.server.common.ResponseBuilder.Type.getSupertypesResPart;
-import static grakn.core.server.common.ResponseBuilder.Type.isAbstractRes;
-import static grakn.core.server.common.ResponseBuilder.Type.setLabelRes;
-import static grakn.core.server.common.ResponseBuilder.Type.setSupertypeRes;
-import static grakn.protocol.ConceptProto.RelationType.SetRelates.Req.OverriddenCase.OVERRIDDEN_LABEL;
-import static grakn.protocol.ConceptProto.ThingType.GetOwns.Req.FilterCase.VALUE_TYPE;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_FIELD;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ILLEGAL_SUPERTYPE_ENCODING;
+import static com.vaticle.typedb.core.server.common.RequestReader.byteStringAsUUID;
+import static com.vaticle.typedb.core.server.common.RequestReader.valueType;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.AttributeType.getOwnersResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.AttributeType.getRegexRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.AttributeType.getRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.AttributeType.putRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.AttributeType.setRegexRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.EntityType.createRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RelationType.createRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RelationType.getRelatesForRoleLabelRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RelationType.getRelatesResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RelationType.setRelatesRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RelationType.unsetRelatesRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.getPlayersResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.getRelationTypesResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getInstancesResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getOwnsResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getPlaysResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.setAbstractRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.setOwnsRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.setPlaysRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.unsetAbstractRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.unsetOwnsRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.unsetPlaysRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.deleteRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.getSubtypesResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.getSupertypeRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.getSupertypesResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.isAbstractRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.setLabelRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.setSupertypeRes;
+import static com.vaticle.typedb.protocol.ConceptProto.RelationType.SetRelates.Req.OverriddenCase.OVERRIDDEN_LABEL;
+import static com.vaticle.typedb.protocol.ConceptProto.ThingType.GetOwns.Req.FilterCase.VALUE_TYPE;
 import static java.time.Instant.ofEpochMilli;
 import static java.time.ZoneOffset.UTC;
 
@@ -186,12 +186,12 @@ public class TypeService {
                 return;
             case REQ_NOT_SET:
             default:
-                throw GraknException.of(UNKNOWN_REQUEST_TYPE);
+                throw TypeDBException.of(UNKNOWN_REQUEST_TYPE);
         }
     }
 
     private static <T extends Type> T notNull(@Nullable T type) {
-        if (type == null) throw GraknException.of(MISSING_CONCEPT);
+        if (type == null) throw TypeDBException.of(MISSING_CONCEPT);
         return type;
     }
 
@@ -238,7 +238,7 @@ public class TypeService {
         } else if (type.isAttributeType()) {
             type.asAttributeType().setSupertype(sup.asAttributeType());
         } else {
-            throw GraknException.of(ILLEGAL_SUPERTYPE_ENCODING, className(type.getClass()));
+            throw TypeDBException.of(ILLEGAL_SUPERTYPE_ENCODING, className(type.getClass()));
         }
 
         transactionSvc.respond(setSupertypeRes(reqID));
@@ -345,9 +345,9 @@ public class TypeService {
                 attribute = attributeType.asBoolean().put(protoValue.getBoolean());
                 break;
             case VALUE_NOT_SET:
-                throw GraknException.of(MISSING_FIELD, "value");
+                throw TypeDBException.of(MISSING_FIELD, "value");
             default:
-                throw GraknException.of(BAD_VALUE_TYPE, protoValue.getValueCase());
+                throw TypeDBException.of(BAD_VALUE_TYPE, protoValue.getValueCase());
         }
 
         transactionSvc.respond(putRes(reqID, attribute));
@@ -374,8 +374,8 @@ public class TypeService {
                 break;
             case VALUE_NOT_SET:
             default:
-                // TODO: Unify our exceptions - they should either all be GraknException or all be StatusRuntimeException
-                throw GraknException.of(BAD_VALUE_TYPE);
+                // TODO: Unify our exceptions - they should either all be TypeDBException or all be StatusRuntimeException
+                throw TypeDBException.of(BAD_VALUE_TYPE);
         }
 
         transactionSvc.respond(getRes(reqID, attribute));

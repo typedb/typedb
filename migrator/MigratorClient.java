@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,12 +16,12 @@
  *
  */
 
-package grakn.core.migrator;
+package com.vaticle.typedb.core.migrator;
 
-import grakn.core.common.exception.ErrorMessage;
-import grakn.core.common.exception.GraknException;
-import grakn.core.migrator.proto.MigratorGrpc;
-import grakn.core.migrator.proto.MigratorProto;
+import com.vaticle.typedb.core.common.exception.ErrorMessage;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.migrator.proto.MigratorGrpc;
+import com.vaticle.typedb.core.migrator.proto.MigratorProto;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
@@ -102,7 +102,7 @@ public class MigratorClient {
             try {
                 latch.await();
             } catch (InterruptedException e) {
-                throw GraknException.of(ErrorMessage.Internal.UNEXPECTED_INTERRUPTION);
+                throw TypeDBException.of(ErrorMessage.Internal.UNEXPECTED_INTERRUPTION);
             }
         }
 

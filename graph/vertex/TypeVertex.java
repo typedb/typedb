@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -17,13 +17,13 @@
  *
  */
 
-package grakn.core.graph.vertex;
+package com.vaticle.typedb.core.graph.vertex;
 
-import grakn.core.common.parameters.Label;
-import grakn.core.graph.SchemaGraph;
-import grakn.core.graph.adjacency.TypeAdjacency;
-import grakn.core.graph.common.Encoding;
-import grakn.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.graph.SchemaGraph;
+import com.vaticle.typedb.core.graph.adjacency.TypeAdjacency;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.iid.VertexIID;
 
 import java.util.regex.Pattern;
 

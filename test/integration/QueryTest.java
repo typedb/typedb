@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,27 +16,27 @@
  *
  */
 
-package grakn.core.test.integration;
+package com.vaticle.typedb.core.test.integration;
 
-import grakn.core.Grakn;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.parameters.Arguments;
-import grakn.core.common.parameters.Options.Database;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Entity;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.RoleType;
-import grakn.core.rocks.RocksGrakn;
-import grakn.core.test.integration.util.Util;
-import graql.lang.Graql;
-import graql.lang.query.GraqlDefine;
-import graql.lang.query.GraqlDelete;
-import graql.lang.query.GraqlInsert;
-import graql.lang.query.GraqlMatch;
-import graql.lang.query.GraqlUndefine;
+import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Options.Database;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.thing.Entity;
+import com.vaticle.typedb.core.concept.type.AttributeType;
+import com.vaticle.typedb.core.concept.type.EntityType;
+import com.vaticle.typedb.core.concept.type.RelationType;
+import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.rocks.RocksTypeDB;
+import com.vaticle.typedb.core.test.integration.util.Util;
+import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.query.TypeQLDefine;
+import com.vaticle.typeql.lang.query.TypeQLDelete;
+import com.vaticle.typeql.lang.query.TypeQLInsert;
+import com.vaticle.typeql.lang.query.TypeQLMatch;
+import com.vaticle.typeql.lang.query.TypeQLUndefine;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -45,7 +45,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-import static grakn.core.test.integration.util.Util.assertNotNulls;
+import static com.vaticle.typedb.core.test.integration.util.Util.assertNotNulls;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -64,18 +64,18 @@ public class QueryTest {
     public void test_query_define() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (Grakn grakn = RocksGrakn.open(options)) {
-            grakn.databases().create(database);
+        try (TypeDB typedb = RocksTypeDB.open(options)) {
+            typedb.databases().create(database);
 
-            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
 
-                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    GraqlDefine query = Graql.parseQuery(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
+                try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    TypeQLDefine query = TypeQL.parseQuery(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
                     transaction.query().define(query);
                     transaction.commit();
                 }
 
-                try (Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
+                try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                     AttributeType.String name = tx.concepts().getAttributeType("name").asString();
                     AttributeType.String symbol = tx.concepts().getAttributeType("symbol").asString();
                     AttributeType.Boolean active = tx.concepts().getAttributeType("active").asBoolean();
@@ -129,56 +129,56 @@ public class QueryTest {
     public void test_query_undefine() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (Grakn grakn = RocksGrakn.open(options)) {
-            grakn.databases().create(database);
+        try (TypeDB typedb = RocksTypeDB.open(options)) {
+            typedb.databases().create(database);
 
-            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
 
-                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    GraqlDefine query = Graql.parseQuery(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
+                try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    TypeQLDefine query = TypeQL.parseQuery(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
                     transaction.query().define(query);
                     transaction.commit();
                 }
 
-                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     String queryString = "undefine analysis abstract, owns created, plays commit-analysis:analysis;";
-                    GraqlUndefine query = Graql.parseQuery(queryString);
+                    TypeQLUndefine query = TypeQL.parseQuery(queryString);
                     transaction.query().undefine(query);
 
                     queryString = "undefine rule performance-tracker-rule;";
-                    query = Graql.parseQuery(queryString);
+                    query = TypeQL.parseQuery(queryString);
                     transaction.query().undefine(query);
 
                     queryString = "undefine performance-tracker relates tracker;";
-                    query = Graql.parseQuery(queryString);
+                    query = TypeQL.parseQuery(queryString);
                     transaction.query().undefine(query);
 
                     queryString = "undefine email regex '.+\\@.+\\..+';";
-                    query = Graql.parseQuery(queryString);
+                    query = TypeQL.parseQuery(queryString);
                     transaction.query().undefine(query);
 
                     queryString = "undefine index sub attribute, value long;";
-                    query = Graql.parseQuery(queryString);
+                    query = TypeQL.parseQuery(queryString);
                     transaction.query().undefine(query);
 
                     // undefine first 4 rules
                     queryString = "undefine rule repo-fork-rule;";
-                    query = Graql.parseQuery(queryString);
+                    query = TypeQL.parseQuery(queryString);
                     transaction.query().undefine(query);
                     queryString = "undefine rule repo-dependency-transitive-rule;";
-                    query = Graql.parseQuery(queryString);
+                    query = TypeQL.parseQuery(queryString);
                     transaction.query().undefine(query);
                     queryString = "undefine rule repo-dependency-transitive-type-rule;";
-                    query = Graql.parseQuery(queryString);
+                    query = TypeQL.parseQuery(queryString);
                     transaction.query().undefine(query);
                     queryString = "undefine rule repo-collaborator-org-rule;";
-                    query = Graql.parseQuery(queryString);
+                    query = TypeQL.parseQuery(queryString);
                     transaction.query().undefine(query);
 
                     transaction.commit();
                 }
 
-                try (Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
+                try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                     EntityType analysis = tx.concepts().getEntityType("analysis");
                     RelationType performanceTracker = tx.concepts().getRelationType("performance-tracker");
                     RoleType commitAnalysisAnalysis = tx.concepts().getRelationType("commit-analysis").getRelates("analysis");
@@ -204,7 +204,7 @@ public class QueryTest {
                     assertEquals(15 - 5, tx.logic().rules().toList().size());
 
                     // a query that used to trigger a rule should not cause an error
-                    List<ConceptMap> answers = tx.query().match(Graql.parseQuery("match $x isa repo-fork;").asMatch()).toList();
+                    List<ConceptMap> answers = tx.query().match(TypeQL.parseQuery("match $x isa repo-fork;").asMatch()).toList();
                 }
             }
         }
@@ -214,48 +214,48 @@ public class QueryTest {
     public void test_query_insert() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (Grakn grakn = RocksGrakn.open(options)) {
-            grakn.databases().create(database);
+        try (TypeDB typedb = RocksTypeDB.open(options)) {
+            typedb.databases().create(database);
 
-            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
-                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    GraqlDefine query = Graql.parseQuery(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
+            try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    TypeQLDefine query = TypeQL.parseQuery(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
                     transaction.query().define(query);
                     transaction.commit();
                 }
             }
 
-            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA)) {
-                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
+            try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.DATA)) {
+                try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     String queryString = "insert " +
-                            "$n 'graknlabs' isa name; " +
+                            "$n 'vaticle' isa name; " +
                             "$o isa organisation, has name $n; " +
-                            "$t isa team, has name 'engineers', has symbol 'graknlabs/engineers'; " +
-                            "$u isa user, has name 'grabl', has email 'grabl@grakn.ai'; " +
+                            "$t isa team, has name 'engineers', has symbol 'vaticle/engineers'; " +
+                            "$u isa user, has name 'butler', has email 'butler@vaticle.com'; " +
                             "($o, $t) isa org-team; " +
                             "($o, $u) isa org-member; " +
                             "($t, $u) isa team-member;";
 
-                    GraqlInsert query = Graql.parseQuery(queryString);
+                    TypeQLInsert query = TypeQL.parseQuery(queryString);
                     transaction.query().insert(query);
 
                     transaction.commit();
                 }
 
-                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
-                    Attribute.String name_graknlabs = transaction.concepts().getAttributeType("name").asString().get("graknlabs");
-                    Attribute.String symbol_engineers = transaction.concepts().getAttributeType("symbol").asString().get("graknlabs/engineers");
-                    Attribute.String email_grabl = transaction.concepts().getAttributeType("email").asString().get("grabl@grakn.ai");
-                    assertNotNulls(name_graknlabs, symbol_engineers, email_grabl);
+                try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
+                    Attribute.String name_vaticle = transaction.concepts().getAttributeType("name").asString().get("vaticle");
+                    Attribute.String symbol_engineers = transaction.concepts().getAttributeType("symbol").asString().get("vaticle/engineers");
+                    Attribute.String email_butler = transaction.concepts().getAttributeType("email").asString().get("butler@vaticle.com");
+                    assertNotNulls(name_vaticle, symbol_engineers, email_butler);
 
-                    Entity organisation_graknlabs = name_graknlabs.getOwners().first().get().asEntity();
+                    Entity organisation_vaticle = name_vaticle.getOwners().first().get().asEntity();
                     Entity team_engineers = symbol_engineers.getOwners().first().get().asEntity();
-                    Entity user_grabl = email_grabl.getOwners().first().get().asEntity();
-                    assertNotNulls(organisation_graknlabs, team_engineers, user_grabl);
+                    Entity user_butler = email_butler.getOwners().first().get().asEntity();
+                    assertNotNulls(organisation_vaticle, team_engineers, user_butler);
 
-                    assertEquals(organisation_graknlabs.getRelations("org-team:org").first().get().getPlayers("team").first().get(), team_engineers);
-                    assertEquals(organisation_graknlabs.getRelations("org-member:org").first().get().getPlayers("member").first().get(), user_grabl);
-                    assertEquals(team_engineers.getRelations("team-member:team").first().get().getPlayers("member").first().get(), user_grabl);
+                    assertEquals(organisation_vaticle.getRelations("org-team:org").first().get().getPlayers("team").first().get(), team_engineers);
+                    assertEquals(organisation_vaticle.getRelations("org-member:org").first().get().getPlayers("member").first().get(), user_butler);
+                    assertEquals(team_engineers.getRelations("team-member:team").first().get().getPlayers("member").first().get(), user_butler);
                 }
             }
         }
@@ -265,41 +265,41 @@ public class QueryTest {
     public void test_query_delete() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (Grakn grakn = RocksGrakn.open(options)) {
-            grakn.databases().create(database);
+        try (TypeDB typedb = RocksTypeDB.open(options)) {
+            typedb.databases().create(database);
 
-            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
-                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    GraqlDefine query = Graql.parseQuery(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
+            try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    TypeQLDefine query = TypeQL.parseQuery(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
                     transaction.query().define(query);
                     transaction.commit();
                 }
             }
 
-            try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.DATA)) {
-                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
+            try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.DATA)) {
+                try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     String insertString = "insert " +
-                            "$o isa organisation, has name 'graknlabs'; " +
-                            "$t isa team, has name 'engineers', has symbol 'graknlabs/engineers'; " +
-                            "$u isa user, has name 'grabl', has email 'grabl@grakn.ai'; " +
+                            "$o isa organisation, has name 'vaticle'; " +
+                            "$t isa team, has name 'engineers', has symbol 'vaticle/engineers'; " +
+                            "$u isa user, has name 'butler', has email 'butler@vaticle.com'; " +
                             "($o, $t) isa org-team; " +
                             "($o, $u) isa org-member; " +
                             "($t, $u) isa team-member;";
-                    GraqlInsert insertQuery = Graql.parseQuery(insertString);
+                    TypeQLInsert insertQuery = TypeQL.parseQuery(insertString);
                     transaction.query().insert(insertQuery);
                     transaction.commit();
                 }
 
-                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     String deleteString = "match $x isa thing; delete $x isa thing;";
-                    GraqlDelete deleteQuery = Graql.parseQuery(deleteString);
+                    TypeQLDelete deleteQuery = TypeQL.parseQuery(deleteString);
                     transaction.query().delete(deleteQuery);
                     transaction.commit();
                 }
 
-                try (Grakn.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
+                try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
                     String matchString = "match $x isa thing;";
-                    GraqlMatch matchQuery = Graql.parseQuery(matchString);
+                    TypeQLMatch matchQuery = TypeQL.parseQuery(matchString);
                     FunctionalIterator<ConceptMap> answers = transaction.query().match(matchQuery);
                     assertFalse(answers.hasNext());
                 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -16,26 +16,26 @@
  *
  */
 
-package grakn.core.logic.resolvable;
+package com.vaticle.typedb.core.logic.resolvable;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Arguments;
-import grakn.core.common.parameters.Label;
-import grakn.core.common.parameters.Options;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptManager;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.ThingType;
-import grakn.core.logic.LogicManager;
-import grakn.core.logic.Rule;
-import grakn.core.rocks.RocksGrakn;
-import grakn.core.rocks.RocksSession;
-import grakn.core.rocks.RocksTransaction;
-import grakn.core.test.integration.util.Util;
-import grakn.core.traversal.common.Identifier;
-import graql.lang.Graql;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.concept.Concept;
+import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concept.thing.Thing;
+import com.vaticle.typedb.core.concept.type.AttributeType;
+import com.vaticle.typedb.core.concept.type.ThingType;
+import com.vaticle.typedb.core.logic.LogicManager;
+import com.vaticle.typedb.core.logic.Rule;
+import com.vaticle.typedb.core.rocks.RocksSession;
+import com.vaticle.typedb.core.rocks.RocksTransaction;
+import com.vaticle.typedb.core.rocks.RocksTypeDB;
+import com.vaticle.typedb.core.test.integration.util.Util;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typeql.lang.TypeQL;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -52,13 +52,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.common.collection.Collections.map;
-import static grakn.common.collection.Collections.pair;
-import static grakn.common.collection.Collections.set;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.logic.resolvable.Util.createRule;
-import static grakn.core.logic.resolvable.Util.getStringMapping;
-import static grakn.core.logic.resolvable.Util.resolvedConjunction;
+import static com.vaticle.typedb.common.collection.Collections.map;
+import static com.vaticle.typedb.common.collection.Collections.pair;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.logic.resolvable.Util.createRule;
+import static com.vaticle.typedb.core.logic.resolvable.Util.getStringMapping;
+import static com.vaticle.typedb.core.logic.resolvable.Util.resolvedConjunction;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -69,7 +69,7 @@ public class UnifyIsaConcludableTest {
     private static final Path logDir = dataDir.resolve("logs");
     private static final Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logDir);
     private static final String database = "unify-isa-test";
-    private static RocksGrakn grakn;
+    private static RocksTypeDB typedb;
     private static RocksSession session;
     private static RocksTransaction rocksTransaction;
     private static ConceptManager conceptMgr;
@@ -78,26 +78,26 @@ public class UnifyIsaConcludableTest {
     @BeforeClass
     public static void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        grakn = RocksGrakn.open(options);
-        grakn.databases().create(database);
-        session = grakn.session(database, Arguments.Session.Type.SCHEMA);
+        typedb = RocksTypeDB.open(options);
+        typedb.databases().create(database);
+        session = typedb.session(database, Arguments.Session.Type.SCHEMA);
         try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-            tx.query().define(Graql.parseQuery("define " +
-                                                       "person sub entity," +
-                                                       "    owns first-name," +
-                                                       "    owns last-name," +
-                                                       "    owns age," +
-                                                       "    plays employment:employee;" +
-                                                       "company sub entity," +
-                                                       "    plays employment:employer;" +
-                                                       "employment sub relation," +
-                                                       "    relates employee," +
-                                                       "    relates employer;" +
-                                                       "name sub attribute, value string, abstract;" +
-                                                       "first-name sub name;" +
-                                                       "last-name sub name;" +
-                                                       "age sub attribute, value long;" +
-                                                       "").asDefine());
+            tx.query().define(TypeQL.parseQuery("define " +
+                                                        "person sub entity," +
+                                                        "    owns first-name," +
+                                                        "    owns last-name," +
+                                                        "    owns age," +
+                                                        "    plays employment:employee;" +
+                                                        "company sub entity," +
+                                                        "    plays employment:employer;" +
+                                                        "employment sub relation," +
+                                                        "    relates employee," +
+                                                        "    relates employer;" +
+                                                        "name sub attribute, value string, abstract;" +
+                                                        "first-name sub name;" +
+                                                        "last-name sub name;" +
+                                                        "age sub attribute, value long;" +
+                                                        "").asDefine());
             tx.commit();
         }
     }
@@ -105,7 +105,7 @@ public class UnifyIsaConcludableTest {
     @AfterClass
     public static void tearDown() {
         session.close();
-        grakn.close();
+        typedb.close();
     }
 
     @Before
@@ -129,7 +129,7 @@ public class UnifyIsaConcludableTest {
             return type.asAttributeType().asString().put("john");
         else if (type.isAttributeType() && type.asAttributeType().isLong())
             return type.asAttributeType().asLong().put(10L);
-        else throw GraknException.of(ILLEGAL_STATE);
+        else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     private Thing instanceOf(String stringAttributeLabel, String stringValue) {

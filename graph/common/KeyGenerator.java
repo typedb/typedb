@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,14 +16,14 @@
  *
  */
 
-package grakn.core.graph.common;
+package com.vaticle.typedb.core.graph.common;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.parameters.Label;
-import grakn.core.graph.iid.PrefixIID;
-import grakn.core.graph.iid.StructureIID;
-import grakn.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.graph.iid.PrefixIID;
+import com.vaticle.typedb.core.graph.iid.StructureIID;
+import com.vaticle.typedb.core.graph.iid.VertexIID;
 
 import java.io.ByteArrayOutputStream;
 import java.util.Map;
@@ -32,27 +32,27 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static grakn.core.common.collection.Bytes.INTEGER_SIZE;
-import static grakn.core.common.collection.Bytes.LONG_SIZE;
-import static grakn.core.common.collection.Bytes.bytesToInt;
-import static grakn.core.common.collection.Bytes.bytesToLong;
-import static grakn.core.common.collection.Bytes.intToBytes;
-import static grakn.core.common.collection.Bytes.join;
-import static grakn.core.common.collection.Bytes.longToBytes;
-import static grakn.core.common.collection.Bytes.longToSortedBytes;
-import static grakn.core.common.collection.Bytes.shortToSortedBytes;
-import static grakn.core.common.collection.Bytes.sortedBytesToLong;
-import static grakn.core.common.collection.Bytes.sortedBytesToShort;
-import static grakn.core.common.exception.ErrorMessage.RuleWrite.MAX_RULE_REACHED;
-import static grakn.core.common.exception.ErrorMessage.ThingWrite.MAX_INSTANCE_REACHED;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.MAX_SUBTYPE_REACHED;
-import static grakn.core.graph.common.Encoding.Key.BUFFERED;
-import static grakn.core.graph.common.Encoding.Key.PERSISTED;
-import static grakn.core.graph.common.Encoding.Vertex.Thing.ENTITY;
-import static grakn.core.graph.common.Encoding.Vertex.Thing.RELATION;
-import static grakn.core.graph.common.Encoding.Vertex.Thing.ROLE;
-import static grakn.core.graph.iid.VertexIID.Thing.DEFAULT_LENGTH;
-import static grakn.core.graph.iid.VertexIID.Thing.PREFIX_W_TYPE_LENGTH;
+import static com.vaticle.typedb.core.common.collection.Bytes.INTEGER_SIZE;
+import static com.vaticle.typedb.core.common.collection.Bytes.LONG_SIZE;
+import static com.vaticle.typedb.core.common.collection.Bytes.bytesToInt;
+import static com.vaticle.typedb.core.common.collection.Bytes.bytesToLong;
+import static com.vaticle.typedb.core.common.collection.Bytes.intToBytes;
+import static com.vaticle.typedb.core.common.collection.Bytes.join;
+import static com.vaticle.typedb.core.common.collection.Bytes.longToBytes;
+import static com.vaticle.typedb.core.common.collection.Bytes.longToSortedBytes;
+import static com.vaticle.typedb.core.common.collection.Bytes.shortToSortedBytes;
+import static com.vaticle.typedb.core.common.collection.Bytes.sortedBytesToLong;
+import static com.vaticle.typedb.core.common.collection.Bytes.sortedBytesToShort;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.MAX_RULE_REACHED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.MAX_INSTANCE_REACHED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.MAX_SUBTYPE_REACHED;
+import static com.vaticle.typedb.core.graph.common.Encoding.Key.BUFFERED;
+import static com.vaticle.typedb.core.graph.common.Encoding.Key.PERSISTED;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ENTITY;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.RELATION;
+import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ROLE;
+import static com.vaticle.typedb.core.graph.iid.VertexIID.Thing.DEFAULT_LENGTH;
+import static com.vaticle.typedb.core.graph.iid.VertexIID.Thing.PREFIX_W_TYPE_LENGTH;
 import static java.util.Arrays.copyOfRange;
 
 public class KeyGenerator {
@@ -79,7 +79,7 @@ public class KeyGenerator {
             if ((key = typeKeys.computeIfAbsent(rootIID, k -> new AtomicInteger(initialValue)).getAndAdd(delta)) >= SHORT_MAX_VALUE
                     || key <= SHORT_MIN_VALUE) {
                 typeKeys.get(rootIID).addAndGet(-1 * delta);
-                throw GraknException.of(MAX_SUBTYPE_REACHED, rootLabel, SHORT_MAX_VALUE);
+                throw TypeDBException.of(MAX_SUBTYPE_REACHED, rootLabel, SHORT_MAX_VALUE);
             }
             return shortToSortedBytes(key);
         }
@@ -88,7 +88,7 @@ public class KeyGenerator {
             int key;
             if ((key = ruleKey.getAndAdd(delta)) >= SHORT_MAX_VALUE || key <= SHORT_MIN_VALUE) {
                 ruleKey.addAndGet(-1 * delta);
-                throw GraknException.of(MAX_RULE_REACHED, SHORT_MAX_VALUE);
+                throw TypeDBException.of(MAX_RULE_REACHED, SHORT_MAX_VALUE);
             }
             return shortToSortedBytes(key);
         }
@@ -187,7 +187,7 @@ public class KeyGenerator {
             if ((key = thingKeys.computeIfAbsent(typeIID, k -> new AtomicLong(initialValue)).getAndAdd(delta)) >= LONG_MAX_VALUE
                     || key <= LONG_MIN_VALUE) {
                 thingKeys.get(typeIID).addAndGet(-1 * delta);
-                throw GraknException.of(MAX_INSTANCE_REACHED, typeLabel, LONG_MAX_VALUE);
+                throw TypeDBException.of(MAX_INSTANCE_REACHED, typeLabel, LONG_MAX_VALUE);
             }
             return longToSortedBytes(key);
         }

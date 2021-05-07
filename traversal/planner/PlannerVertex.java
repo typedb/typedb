@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,24 +16,24 @@
  *
  */
 
-package grakn.core.traversal.planner;
+package com.vaticle.typedb.core.traversal.planner;
 
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPVariable;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.graph.GraphManager;
-import grakn.core.graph.common.Encoding;
-import grakn.core.graph.vertex.TypeVertex;
-import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.graph.TraversalVertex;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.vertex.TypeVertex;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
 
 import javax.annotation.Nullable;
 
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.traversal.predicate.PredicateOperator.Equality.EQ;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.EQ;
 
 public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Properties>
         extends TraversalVertex<PlannerEdge.Directional<?, ?>, PROPERTIES> {
@@ -231,11 +231,11 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     }
 
     public PlannerVertex.Thing asThing() {
-        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.class));
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.class));
     }
 
     public PlannerVertex.Type asType() {
-        throw GraknException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.class));
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.class));
     }
 
     @Override

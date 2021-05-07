@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,23 +16,23 @@
  *
  */
 
-package grakn.core.traversal.procedure;
+package com.vaticle.typedb.core.traversal.procedure;
 
-import grakn.common.collection.ConcurrentSet;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.parameters.Label;
-import grakn.core.concurrent.producer.FunctionalProducer;
-import grakn.core.graph.GraphManager;
-import grakn.core.traversal.Traversal;
-import grakn.core.traversal.common.Identifier;
-import grakn.core.traversal.common.VertexMap;
-import grakn.core.traversal.iterator.GraphIterator;
-import grakn.core.traversal.planner.GraphPlanner;
-import grakn.core.traversal.planner.PlannerEdge;
-import grakn.core.traversal.planner.PlannerVertex;
-import grakn.core.traversal.predicate.Predicate;
-import graql.lang.pattern.variable.Reference;
+import com.vaticle.typedb.common.collection.ConcurrentSet;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.concurrent.producer.FunctionalProducer;
+import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.VertexMap;
+import com.vaticle.typedb.core.traversal.iterator.GraphIterator;
+import com.vaticle.typedb.core.traversal.planner.GraphPlanner;
+import com.vaticle.typedb.core.traversal.planner.PlannerEdge;
+import com.vaticle.typedb.core.traversal.planner.PlannerVertex;
+import com.vaticle.typedb.core.traversal.predicate.Predicate;
+import com.vaticle.typeql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,9 +47,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.iterator.Iterators.iterate;
-import static grakn.core.concurrent.producer.Producers.async;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
 
 public class GraphProcedure implements Procedure {
 
@@ -84,7 +84,7 @@ public class GraphProcedure implements Procedure {
     public ProcedureVertex<?, ?> startVertex() {
         if (startVertex == null) {
             startVertex = this.vertices().filter(ProcedureVertex::isStartingVertex)
-                    .findAny().orElseThrow(() -> GraknException.of(ILLEGAL_STATE));
+                    .findAny().orElseThrow(() -> TypeDBException.of(ILLEGAL_STATE));
         }
         return startVertex;
     }

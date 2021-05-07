@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.test.deployment;
+package com.vaticle.typedb.core.test.deployment;
 
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
@@ -41,23 +41,23 @@ import static org.junit.Assert.assertTrue;
 
 public class AptTest {
     private static final Logger LOG = LoggerFactory.getLogger(AptTest.class);
-    private static final String aptSnapshot = "https://repo.grakn.ai/repository/apt-snapshot/";
-    private static final String aptRelease = "https://repo.grakn.ai/repository/apt/";
+    private static final String aptSnapshot = "https://repo.vaticle.com/repository/apt-snapshot/";
+    private static final String aptRelease = "https://repo.vaticle.com/repository/apt/";
     private static final String pubkey1 = "8F3DA4B5E9AEF44C";
     private static final String pubkey2 = "https://cli-assets.heroku.com/apt/release.key";
     private static final String pubkey3 = "https://dl.google.com/linux/linux_signing_key.pub";
     private static final Path versionFile = Paths.get("VERSION");
-    private static final int graknPort = 1729;
+    private static final int typeDBPort = 1729;
 
     private final String commit;
     private final ProcessExecutor executor;
-    private StartedProcess graknProcess;
+    private StartedProcess typeDBProcess;
     private JsonObject workspaceRefs;
 
     public AptTest() throws IOException {
-        commit = System.getenv("GRABL_COMMIT");
+        commit = System.getenv("TEST_DEPLOYMENT_APT_COMMIT");
         executor = new ProcessExecutor().directory(Paths.get(".").toFile()).readOutput(true);
-        workspaceRefs = Json.parse(new FileReader("./external/graknlabs_grakn_core_workspace_refs/refs.json")).asObject();
+        workspaceRefs = Json.parse(new FileReader("./external/vaticle_typedb_workspace_refs/refs.json")).asObject();
     }
 
     @Test
@@ -80,26 +80,26 @@ public class AptTest {
     private void install() throws InterruptedException, TimeoutException, IOException {
         System.out.println("core = " + commit);
         Files.write(versionFile, commit.getBytes(StandardCharsets.US_ASCII));
-        execute("sudo", "apt", "install", "-y", "grakn-core-server=0.0.0-" + commit, "grakn-bin=" + getDependencyVersion("graknlabs_common"));
+        execute("sudo", "apt", "install", "-y", "typedb-server=0.0.0-" + commit, "typedb-bin=" + getDependencyVersion("vaticle_typedb_common"));
     }
 
     private void start() throws InterruptedException, IOException {
-        graknProcess = executor.command("grakn", "server").start();
+        typeDBProcess = executor.command("typedb", "server").start();
 
         waitUntilReady();
-        assertTrue("Grakn Core failed to start", graknProcess.getProcess().isAlive());
+        assertTrue("TypeDB failed to start", typeDBProcess.getProcess().isAlive());
 
-        System.out.println("Grakn Core database server started");
+        System.out.println("TypeDB server started");
     }
 
     private void stop() {
-        if (graknProcess != null) {
+        if (typeDBProcess != null) {
             try {
-                System.out.println("Stopping Grakn Core database server");
+                System.out.println("Stopping TypeDB server");
 
-                graknProcess.getProcess().destroy();
+                typeDBProcess.getProcess().destroy();
 
-                System.out.println("Grakn Core database server stopped");
+                System.out.println("TypeDB server stopped");
             } catch (Exception e) {
                 throw e;
             }
@@ -108,15 +108,15 @@ public class AptTest {
 
     private void waitUntilReady() throws InterruptedException {
         int attempt = 0;
-        while (!isGraknServerReady() && attempt < 25) {
+        while (!isTypeDBServerReady() && attempt < 25) {
             Thread.sleep(1000);
             attempt++;
         }
     }
 
-    private static boolean isGraknServerReady() {
+    private static boolean isTypeDBServerReady() {
         try {
-            Socket s = new Socket("localhost", graknPort);
+            Socket s = new Socket("localhost", typeDBPort);
             s.close();
             return true;
         } catch (IOException e) {

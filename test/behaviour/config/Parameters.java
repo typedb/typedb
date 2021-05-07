@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,11 +16,11 @@
  *
  */
 
-package grakn.core.test.behaviour.config;
+package com.vaticle.typedb.core.test.behaviour.config;
 
-import grakn.core.common.parameters.Arguments;
-import grakn.core.common.parameters.Label;
-import grakn.core.concept.type.AttributeType;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.concept.type.AttributeType;
 import io.cucumber.java.DataTableType;
 import io.cucumber.java.ParameterType;
 
@@ -152,7 +152,7 @@ public class Parameters {
         }
     }
 
-    // TODO: remove this class, as we now have grakn.core.common.Label class natively
+    // TODO: remove this class, as we now have com.vaticle.typedb.core.common.Label class natively
     public static class ScopedLabel {
 
         private final Label label;

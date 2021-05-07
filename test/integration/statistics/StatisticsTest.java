@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,17 +16,17 @@
  *
  */
 
-package grakn.core.rocks;
+package com.vaticle.typedb.core.rocks;
 
-import grakn.core.Grakn;
-import grakn.core.common.parameters.Arguments;
-import grakn.core.common.parameters.Label;
-import grakn.core.common.parameters.Options.Database;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.test.integration.util.Util;
-import graql.lang.Graql;
-import graql.lang.query.GraqlQuery;
+import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.common.parameters.Options.Database;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.test.integration.util.Util;
+import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.query.TypeQLQuery;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -49,23 +49,23 @@ public class StatisticsTest {
     @Test
     public void test_statistics() throws IOException {
         Util.resetDirectory(dataDir);
-        try (RocksGrakn grakn = RocksGrakn.open(options)) {
-            grakn.databases().create(database);
-            setupSchema(grakn);
+        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
+            typedb.databases().create(database);
+            setupSchema(typedb);
             int personCount = 1000;
             Set<Long> ages = new HashSet<>();
             Random random = new Random(0);
-            insertPersonAndAges(grakn, personCount, ages, random);
-            assertStatistics(grakn, personCount, ages);
-            updateAges(grakn, ages);
-            assertStatistics(grakn, personCount, ages);
+            insertPersonAndAges(typedb, personCount, ages, random);
+            assertStatistics(typedb, personCount, ages);
+            updateAges(typedb, ages);
+            assertStatistics(typedb, personCount, ages);
         }
     }
 
-    private void updateAges(RocksGrakn grakn, Set<Long> ages) {
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+    private void updateAges(RocksTypeDB typedb, Set<Long> ages) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
             try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                GraqlQuery query = Graql.parseQuery("match $x isa person, has age $y;");
+                TypeQLQuery query = TypeQL.parseQuery("match $x isa person, has age $y;");
                 List<ConceptMap> conceptMaps = tx.query().match(query.asMatch()).toList();
                 conceptMaps.forEach(cm -> {
                     Attribute.Long attribute = cm.get("y").asAttribute().asLong();
@@ -81,13 +81,13 @@ public class StatisticsTest {
         }
     }
 
-    private void insertPersonAndAges(RocksGrakn grakn, int personCount, Set<Long> ages, Random random) {
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+    private void insertPersonAndAges(RocksTypeDB typedb, int personCount, Set<Long> ages, Random random) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
             try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 for (int i = 0; i < personCount; i++) {
                     long age = random.nextInt(personCount);
                     ages.add(age);
-                    GraqlQuery query = Graql.parseQuery("insert $x isa person, has age " + age + ";").asInsert();
+                    TypeQLQuery query = TypeQL.parseQuery("insert $x isa person, has age " + age + ";").asInsert();
                     tx.query().insert(query.asInsert());
                 }
                 tx.commit();
@@ -95,9 +95,9 @@ public class StatisticsTest {
         }
     }
 
-    private void assertStatistics(RocksGrakn grakn, int personCount, Set<Long> ages) {
+    private void assertStatistics(RocksTypeDB typedb, int personCount, Set<Long> ages) {
         waitForStatisticsCounter();
-        try (RocksSession session = grakn.session(database, Arguments.Session.Type.DATA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
             try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 assertEquals(personCount, tx.graphMgr.data().stats().thingVertexCount(Label.of("person")));
                 assertEquals(ages.size(), tx.graphMgr.data().stats().thingVertexCount(Label.of("age")));
@@ -106,14 +106,14 @@ public class StatisticsTest {
         }
     }
 
-    private void setupSchema(RocksGrakn grakn) {
-        try (Grakn.Session session = grakn.session(database, Arguments.Session.Type.SCHEMA)) {
-            try (Grakn.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                GraqlQuery query = Graql.parseQuery("" +
-                                                            "define " +
-                                                            "person sub entity, owns age; " +
-                                                            "age sub attribute, value long; " +
-                                                            "");
+    private void setupSchema(RocksTypeDB typedb) {
+        try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                TypeQLQuery query = TypeQL.parseQuery("" +
+                                                              "define " +
+                                                              "person sub entity, owns age; " +
+                                                              "age sub attribute, value long; " +
+                                                              "");
                 tx.query().define(query.asDefine());
                 tx.commit();
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,7 +16,7 @@
  *
  */
 
-package grakn.core.test.assembly;
+package com.vaticle.typedb.core.test.assembly;
 
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -36,7 +36,7 @@ import static org.junit.Assert.assertTrue;
 public class DockerTest {
     private static final Logger LOG = LoggerFactory.getLogger(DockerTest.class);
     private final ProcessExecutor executor;
-    private static final int graknPort = 1729;
+    private static final int typeDBPort = 1729;
 
     public DockerTest() {
         executor = new ProcessExecutor().readOutput(true);
@@ -47,30 +47,30 @@ public class DockerTest {
         String imagePath = Paths.get("assemble-docker.tar").toAbsolutePath().toString();
         ProcessResult result = execute("docker", "load", "-i", imagePath);
         LOG.info(result.outputString());
-        StartedProcess graknProcess = executor.command(
-                "docker", "run", "--name", "grakn",
-                "--rm", "-t", "-p", String.format("%d:%d", graknPort, graknPort),
+        StartedProcess typeDBProcess = executor.command(
+                "docker", "run", "--name", "typedb",
+                "--rm", "-t", "-p", String.format("%d:%d", typeDBPort, typeDBPort),
                 "bazel:assemble-docker"
         ).start();
         waitUntilReady();
-        assertTrue("Grakn Core failed to start", graknProcess.getProcess().isAlive());
-        graknProcess.getProcess().destroy();
+        assertTrue("TypeDB failed to start", typeDBProcess.getProcess().isAlive());
+        typeDBProcess.getProcess().destroy();
     }
 
     private void waitUntilReady() throws InterruptedException {
         int attempt = 0;
-        while (!isGraknServerReady() && attempt < 25) {
+        while (!isTypeDBServerReady() && attempt < 25) {
             Thread.sleep(1000);
             attempt++;
         }
-        if (!isGraknServerReady()) {
-            throw new RuntimeException("Grakn server didn't boot up in the allotted time");
+        if (!isTypeDBServerReady()) {
+            throw new RuntimeException("TypeDB server didn't boot up in the allotted time");
         }
     }
 
-    private static boolean isGraknServerReady() {
+    private static boolean isTypeDBServerReady() {
         try {
-            Socket s = new Socket("localhost", graknPort);
+            Socket s = new Socket("localhost", typeDBPort);
             s.close();
             return true;
         } catch (IOException e) {

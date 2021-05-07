@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -15,18 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@graknlabs_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
+load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
 host_compatible_java_test(
     name = "test-migrator",
     srcs = ["MigratorTest.java"],
-    test_class = "grakn.core.migrator.MigratorTest",
+    test_class = "com.vaticle.typedb.core.migrator.MigratorTest",
     native_libraries_deps = [
         "//server:server",
         "//rocks:rocks",
         "//migrator:migrator",
-        "//:grakn",
+        "//:typedb",
     ],
     deps = [
         # Internal dependencies
@@ -34,9 +34,9 @@ host_compatible_java_test(
         "//common:common",
         "//server:version",
 
-        # External dependencies from Grakn Labs
-        "@graknlabs_graql//java:graql",
-        "@graknlabs_graql//java/query:query",
+        # External dependencies from Vaticle
+        "@vaticle_typeql//java:typeql",
+        "@vaticle_typeql//java/query:query",
 
         # External dependencies from Maven
         "@maven//:com_google_protobuf_protobuf_java",
@@ -45,7 +45,7 @@ host_compatible_java_test(
         "//common/test:logback-test"
     ],
     resource_strip_prefix = "common/test",
-    data = [":schema.gql", "data.grakn"],
+    data = [":schema.gql", "data.typedb"],
     size = "large",
 )
 
@@ -54,6 +54,6 @@ checkstyle_test(
     include = glob([
         "*"
     ]),
-    exclude = ["data.grakn"],
+    exclude = ["data.typedb"],
     license_type = "agpl",
 )

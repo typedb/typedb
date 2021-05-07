@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,22 +16,22 @@
  *
  */
 
-package grakn.core.concept.type.impl;
+package com.vaticle.typedb.core.concept.type.impl;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.FunctionalIterator;
-import grakn.core.common.iterator.Iterators;
-import grakn.core.concept.thing.impl.AttributeImpl;
-import grakn.core.concept.thing.impl.EntityImpl;
-import grakn.core.concept.thing.impl.RelationImpl;
-import grakn.core.concept.thing.impl.ThingImpl;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.RoleType;
-import grakn.core.concept.type.ThingType;
-import grakn.core.graph.GraphManager;
-import grakn.core.graph.common.Encoding;
-import grakn.core.graph.edge.TypeEdge;
-import grakn.core.graph.vertex.TypeVertex;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
+import com.vaticle.typedb.core.concept.thing.impl.AttributeImpl;
+import com.vaticle.typedb.core.concept.thing.impl.EntityImpl;
+import com.vaticle.typedb.core.concept.thing.impl.RelationImpl;
+import com.vaticle.typedb.core.concept.thing.impl.ThingImpl;
+import com.vaticle.typedb.core.concept.type.AttributeType;
+import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.concept.type.ThingType;
+import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.edge.TypeEdge;
+import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
@@ -40,34 +40,34 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import static grakn.core.common.iterator.Iterators.compareSize;
-import static grakn.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_OWNS;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_PLAYS;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_NONEXISTENT_OWNS;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_NONEXISTENT_PLAYS;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_OWNS_HAS_INSTANCES;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_PLAYS_HAS_INSTANCES;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_NOT_SUPERTYPE;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.OVERRIDE_NOT_AVAILABLE;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.OWNS_ABSTRACT_ATT_TYPE;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.OWNS_ATT_NOT_AVAILABLE;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_NOT_AVAILABLE;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_NO_INSTANCES;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_OWNERSHIP;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_UNIQUENESS;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_VALUE_TYPE;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ABSTRACT_ROLE_TYPE;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_NOT_AVAILABLE;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES;
-import static grakn.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_SUBTYPES;
-import static grakn.core.common.iterator.Iterators.link;
-import static grakn.core.common.iterator.Iterators.loop;
-import static grakn.core.graph.common.Encoding.Edge.Type.OWNS;
-import static grakn.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
-import static grakn.core.graph.common.Encoding.Edge.Type.PLAYS;
-import static grakn.core.graph.common.Encoding.Edge.Type.SUB;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_OWNS;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_PLAYS;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_NONEXISTENT_OWNS;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_NONEXISTENT_PLAYS;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_OWNS_HAS_INSTANCES;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_PLAYS_HAS_INSTANCES;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_NOT_SUPERTYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDE_NOT_AVAILABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ABSTRACT_ATT_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ATT_NOT_AVAILABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_NOT_AVAILABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_NO_INSTANCES;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_OWNERSHIP;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_UNIQUENESS;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_VALUE_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ABSTRACT_ROLE_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_NOT_AVAILABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_SUBTYPES;
+import static com.vaticle.typedb.core.common.iterator.Iterators.compareSize;
+import static com.vaticle.typedb.core.common.iterator.Iterators.link;
+import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.PLAYS;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
 
 public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
@@ -90,7 +90,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             case THING_TYPE:
                 return new ThingTypeImpl.Root(graphMgr, vertex);
             default:
-                throw graphMgr.exception(GraknException.of(UNRECOGNISED_VALUE));
+                throw graphMgr.exception(TypeDBException.of(UNRECOGNISED_VALUE));
         }
     }
 
@@ -98,7 +98,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public void setAbstract() {
         validateIsNotDeleted();
         if (getInstances().first().isPresent()) {
-            throw exception(GraknException.of(TYPE_HAS_INSTANCES, getLabel()));
+            throw exception(TypeDBException.of(TYPE_HAS_INSTANCES, getLabel()));
         }
         vertex.isAbstract(true);
     }
@@ -158,25 +158,25 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         TypeEdge edge;
         TypeVertex attVertex = ((AttributeTypeImpl) attributeType).vertex;
         if (getInstances().anyMatch(thing -> thing.getHas(attributeType).first().isPresent())) {
-            throw exception(GraknException.of(INVALID_UNDEFINE_OWNS_HAS_INSTANCES, vertex.label(), attVertex.label()));
+            throw exception(TypeDBException.of(INVALID_UNDEFINE_OWNS_HAS_INSTANCES, vertex.label(), attVertex.label()));
         }
         if ((edge = vertex.outs().edge(OWNS_KEY, attVertex)) != null) edge.delete();
         else if ((edge = vertex.outs().edge(OWNS, attVertex)) != null) edge.delete();
         else if (this.getOwns().anyMatch(attr -> attr.equals(attributeType))) {
-            throw exception(GraknException.of(INVALID_UNDEFINE_INHERITED_OWNS,
-                                              this.getLabel().toString(), attributeType.getLabel().toString()));
+            throw exception(TypeDBException.of(INVALID_UNDEFINE_INHERITED_OWNS,
+                                               this.getLabel().toString(), attributeType.getLabel().toString()));
         } else {
-            throw exception(GraknException.of(INVALID_UNDEFINE_NONEXISTENT_OWNS,
-                                              this.getLabel().toString(), attributeType.getLabel().toString()));
+            throw exception(TypeDBException.of(INVALID_UNDEFINE_NONEXISTENT_OWNS,
+                                               this.getLabel().toString(), attributeType.getLabel().toString()));
         }
     }
 
-    private <T extends grakn.core.concept.type.Type> void override(Encoding.Edge.Type encoding, T type, T overriddenType,
-                                                                   FunctionalIterator<? extends TypeImpl> overridable, FunctionalIterator<? extends TypeImpl> notOverridable) {
+    private <T extends com.vaticle.typedb.core.concept.type.Type> void override(Encoding.Edge.Type encoding, T type, T overriddenType,
+                                                                                FunctionalIterator<? extends TypeImpl> overridable, FunctionalIterator<? extends TypeImpl> notOverridable) {
         if (type.getSupertypes().noneMatch(t -> t.equals(overriddenType))) {
-            throw exception(GraknException.of(OVERRIDDEN_NOT_SUPERTYPE, type.getLabel(), overriddenType.getLabel()));
+            throw exception(TypeDBException.of(OVERRIDDEN_NOT_SUPERTYPE, type.getLabel(), overriddenType.getLabel()));
         } else if (notOverridable.anyMatch(t -> t.equals(overriddenType)) || overridable.noneMatch(t -> t.equals(overriddenType))) {
-            throw exception(GraknException.of(OVERRIDE_NOT_AVAILABLE, type.getLabel(), overriddenType.getLabel()));
+            throw exception(TypeDBException.of(OVERRIDE_NOT_AVAILABLE, type.getLabel(), overriddenType.getLabel()));
         }
 
         vertex.outs().edge(encoding, ((TypeImpl) type).vertex).overridden(((TypeImpl) overriddenType).vertex);
@@ -191,22 +191,22 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if (vertex.outs().edge(OWNS_KEY, attVertex) != null) return;
 
         if (!attributeType.isKeyable()) {
-            throw exception(GraknException.of(OWNS_KEY_VALUE_TYPE, attributeType.getLabel(), attributeType.getValueType().name()));
+            throw exception(TypeDBException.of(OWNS_KEY_VALUE_TYPE, attributeType.getLabel(), attributeType.getValueType().name()));
         } else if (link(getSupertype().getOwns(attributeType.getValueType(), true),
-                          getSupertype().overriddenOwns(false, true)).anyMatch(a -> a.equals(attributeType))) {
-            throw exception(GraknException.of(OWNS_KEY_NOT_AVAILABLE, attributeType.getLabel()));
+                        getSupertype().overriddenOwns(false, true)).anyMatch(a -> a.equals(attributeType))) {
+            throw exception(TypeDBException.of(OWNS_KEY_NOT_AVAILABLE, attributeType.getLabel()));
         }
 
         if ((ownsEdge = vertex.outs().edge(OWNS, attVertex)) != null) {
             // TODO: These ownership and uniqueness checks should be parallelised to scale better
             if (getInstances().anyMatch(thing -> compareSize(thing.getHas(attributeType), 1) != 0)) {
-                throw exception(GraknException.of(OWNS_KEY_PRECONDITION_OWNERSHIP, vertex.label(), attVertex.label()));
+                throw exception(TypeDBException.of(OWNS_KEY_PRECONDITION_OWNERSHIP, vertex.label(), attVertex.label()));
             } else if (attributeType.getInstances().anyMatch(att -> compareSize(att.getOwners(this), 1) != 0)) {
-                throw exception(GraknException.of(OWNS_KEY_PRECONDITION_UNIQUENESS, attVertex.label(), vertex.label()));
+                throw exception(TypeDBException.of(OWNS_KEY_PRECONDITION_UNIQUENESS, attVertex.label(), vertex.label()));
             }
             ownsEdge.delete();
         } else if (getInstances().first().isPresent()) {
-            throw exception(GraknException.of(OWNS_KEY_PRECONDITION_NO_INSTANCES, vertex.label(), attVertex.label()));
+            throw exception(TypeDBException.of(OWNS_KEY_PRECONDITION_NO_INSTANCES, vertex.label(), attVertex.label()));
         }
         ownsKeyEdge = vertex.outs().put(OWNS_KEY, attVertex);
         if (getSupertype().declaredOwns(false).anyMatch(a -> a.equals(attributeType)))
@@ -223,7 +223,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     private void ownsAttribute(AttributeTypeImpl attributeType) {
         validateIsNotDeleted();
         if (getSupertypes().filter(t -> !t.equals(this)).flatMap(ThingType::getOwns).anyMatch(a -> a.equals(attributeType))) {
-            throw exception(GraknException.of(OWNS_ATT_NOT_AVAILABLE, attributeType.getLabel()));
+            throw exception(TypeDBException.of(OWNS_ATT_NOT_AVAILABLE, attributeType.getLabel()));
         }
 
         TypeVertex attVertex = attributeType.vertex;
@@ -326,7 +326,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public void setPlays(RoleType roleType) {
         validateIsNotDeleted();
         if (getSupertypes().filter(t -> !t.equals(this)).flatMap(ThingType::getPlays).anyMatch(a -> a.equals(roleType))) {
-            throw exception(GraknException.of(PLAYS_ROLE_NOT_AVAILABLE, roleType.getLabel()));
+            throw exception(TypeDBException.of(PLAYS_ROLE_NOT_AVAILABLE, roleType.getLabel()));
         }
         vertex.outs().put(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
     }
@@ -345,15 +345,15 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         TypeEdge edge = vertex.outs().edge(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
         if (edge == null) {
             if (this.getPlays().anyMatch(attr -> attr.equals(roleType))) {
-                throw exception(GraknException.of(INVALID_UNDEFINE_INHERITED_PLAYS,
-                                                  this.getLabel().toString(), roleType.getLabel().toString()));
+                throw exception(TypeDBException.of(INVALID_UNDEFINE_INHERITED_PLAYS,
+                                                   this.getLabel().toString(), roleType.getLabel().toString()));
             } else {
-                throw exception(GraknException.of(INVALID_UNDEFINE_NONEXISTENT_PLAYS,
-                                                  this.getLabel().toString(), roleType.getLabel().toString()));
+                throw exception(TypeDBException.of(INVALID_UNDEFINE_NONEXISTENT_PLAYS,
+                                                   this.getLabel().toString(), roleType.getLabel().toString()));
             }
         }
         if (getInstances().anyMatch(thing -> thing.getRelations(roleType).first().isPresent())) {
-            throw exception(GraknException.of(INVALID_UNDEFINE_PLAYS_HAS_INSTANCES, vertex.label(), roleType.getLabel().toString()));
+            throw exception(TypeDBException.of(INVALID_UNDEFINE_PLAYS_HAS_INSTANCES, vertex.label(), roleType.getLabel().toString()));
         }
         edge.delete();
     }
@@ -397,15 +397,15 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     void validateDelete() {
         super.validateDelete();
         if (getSubtypes().anyMatch(s -> !s.equals(this))) {
-            throw exception(GraknException.of(TYPE_HAS_SUBTYPES, getLabel()));
+            throw exception(TypeDBException.of(TYPE_HAS_SUBTYPES, getLabel()));
         } else if (getSubtypes().flatMap(ThingType::getInstances).first().isPresent()) {
-            throw exception(GraknException.of(TYPE_HAS_INSTANCES, getLabel()));
+            throw exception(TypeDBException.of(TYPE_HAS_INSTANCES, getLabel()));
         }
     }
 
     @Override
-    public List<GraknException> validate() {
-        List<GraknException> exceptions = super.validate();
+    public List<TypeDBException> validate() {
+        List<TypeDBException> exceptions = super.validate();
         if (!isAbstract()) {
             exceptions.addAll(exceptions_ownsAbstractAttType());
             exceptions.addAll(exceptions_playsAbstractRoleType());
@@ -419,15 +419,15 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public ThingTypeImpl asThingType() { return this; }
 
-    private List<GraknException> exceptions_ownsAbstractAttType() {
+    private List<TypeDBException> exceptions_ownsAbstractAttType() {
         return getOwns().filter(TypeImpl::isAbstract)
-                .map(attType -> GraknException.of(OWNS_ABSTRACT_ATT_TYPE, getLabel(), attType.getLabel()))
+                .map(attType -> TypeDBException.of(OWNS_ABSTRACT_ATT_TYPE, getLabel(), attType.getLabel()))
                 .toList();
     }
 
-    private List<GraknException> exceptions_playsAbstractRoleType() {
+    private List<TypeDBException> exceptions_playsAbstractRoleType() {
         return getPlays().filter(TypeImpl::isAbstract)
-                .map(roleType -> GraknException.of(PLAYS_ABSTRACT_ROLE_TYPE, getLabel(), roleType.getLabel()))
+                .map(roleType -> TypeDBException.of(PLAYS_ABSTRACT_ROLE_TYPE, getLabel(), roleType.getLabel()))
                 .toList();
     }
 
@@ -442,10 +442,10 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         public boolean isRoot() { return true; }
 
         @Override
-        public void setLabel(String label) { throw exception(GraknException.of(ROOT_TYPE_MUTATION)); }
+        public void setLabel(String label) { throw exception(TypeDBException.of(ROOT_TYPE_MUTATION)); }
 
         @Override
-        public void unsetAbstract() { throw exception(GraknException.of(ROOT_TYPE_MUTATION)); }
+        public void unsetAbstract() { throw exception(TypeDBException.of(ROOT_TYPE_MUTATION)); }
 
         @Override
         public ThingTypeImpl getSupertype() { return null; }
@@ -469,7 +469,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                     case RELATION_TYPE:
                         return RelationTypeImpl.of(graphMgr, v);
                     default:
-                        throw exception(GraknException.of(UNRECOGNISED_VALUE));
+                        throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
                 }
             });
         }
@@ -485,7 +485,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                     case RELATION_TYPE:
                         return RelationTypeImpl.of(graphMgr, v);
                     default:
-                        throw exception(GraknException.of(UNRECOGNISED_VALUE));
+                        throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
                 }
             });
         }
@@ -502,34 +502,34 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                         return RelationImpl.of(v);
                     default:
                         assert false;
-                        throw exception(GraknException.of(UNRECOGNISED_VALUE));
+                        throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
                 }
             });
         }
 
         @Override
         public void setOwns(AttributeType attributeType, boolean isKey) {
-            throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
         public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
-            throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
         public void setPlays(RoleType roleType) {
-            throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
         public void setPlays(RoleType roleType, RoleType overriddenType) {
-            throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
         public void unsetPlays(RoleType roleType) {
-            throw exception(GraknException.of(ROOT_TYPE_MUTATION));
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
         /**
@@ -538,7 +538,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
          * There's nothing to validate for the root type 'thing'.
          */
         @Override
-        public List<GraknException> validate() {
+        public List<TypeDBException> validate() {
             return Collections.emptyList();
         }
     }

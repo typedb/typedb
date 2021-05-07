@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,18 +15,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.logic.resolvable;
+package com.vaticle.typedb.core.logic.resolvable;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.pattern.Pattern;
-import grakn.core.pattern.variable.ThingVariable;
-import grakn.core.traversal.common.Identifier.Variable.Retrievable;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.pattern.Pattern;
+import com.vaticle.typedb.core.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.common.util.Objects.className;
-import static grakn.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
 public abstract class Resolvable<T extends Pattern> {
 
@@ -54,15 +54,15 @@ public abstract class Resolvable<T extends Pattern> {
         return false;
     }
 
-    public grakn.core.logic.resolvable.Retrievable asRetrievable() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(grakn.core.logic.resolvable.Retrievable.class));
+    public com.vaticle.typedb.core.logic.resolvable.Retrievable asRetrievable() {
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(com.vaticle.typedb.core.logic.resolvable.Retrievable.class));
     }
 
     public Concludable asConcludable() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Concludable.class));
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Concludable.class));
     }
 
     public Negated asNegated() {
-        throw GraknException.of(INVALID_CASTING, className(this.getClass()), className(Negated.class));
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Negated.class));
     }
 }

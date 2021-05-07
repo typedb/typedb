@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,28 +16,28 @@
  *
  */
 
-package grakn.core.reasoner.resolution.resolver;
+package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.iterator.Iterators;
-import grakn.core.concept.ConceptManager;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.logic.LogicManager;
-import grakn.core.logic.resolvable.Concludable;
-import grakn.core.logic.resolvable.Negated;
-import grakn.core.logic.resolvable.Resolvable;
-import grakn.core.logic.resolvable.Retrievable;
-import grakn.core.pattern.Conjunction;
-import grakn.core.pattern.Negation;
-import grakn.core.reasoner.resolution.Planner;
-import grakn.core.reasoner.resolution.ResolverRegistry;
-import grakn.core.reasoner.resolution.answer.AnswerState;
-import grakn.core.reasoner.resolution.answer.AnswerState.Partial;
-import grakn.core.reasoner.resolution.answer.Mapping;
-import grakn.core.reasoner.resolution.framework.Request;
-import grakn.core.reasoner.resolution.framework.Response;
-import grakn.core.traversal.TraversalEngine;
-import grakn.core.traversal.common.Identifier.Variable;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.Iterators;
+import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.logic.LogicManager;
+import com.vaticle.typedb.core.logic.resolvable.Concludable;
+import com.vaticle.typedb.core.logic.resolvable.Negated;
+import com.vaticle.typedb.core.logic.resolvable.Resolvable;
+import com.vaticle.typedb.core.logic.resolvable.Retrievable;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.Negation;
+import com.vaticle.typedb.core.reasoner.resolution.Planner;
+import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
+import com.vaticle.typedb.core.reasoner.resolution.answer.Mapping;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
+import com.vaticle.typedb.core.traversal.TraversalEngine;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,8 +48,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static grakn.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<RESOLVER>>
         extends CompoundResolver<RESOLVER, ConjunctionResolver.RequestState> {
@@ -152,7 +152,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         iterate(resolvables).forEachRemaining(resolvable -> {
             try {
                 downstreamResolvers.put(resolvable, registry.registerResolvable(resolvable));
-            } catch (GraknException e) {
+            } catch (TypeDBException e) {
                 terminate(e);
             }
         });
@@ -161,7 +161,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
             try {
                 downstreamResolvers.put(negated, registry.negated(negated, conjunction()));
                 negateds.add(negated);
-            } catch (GraknException e) {
+            } catch (TypeDBException e) {
                 terminate(e);
             }
         }
@@ -206,7 +206,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         } else if (nextDownstream.isFilteredRetrievable()) {
             return partialAnswer.filterToRetrievable(nextDownstream.asFilteredRetrievable().filter());
         } else {
-            throw GraknException.of(ILLEGAL_STATE);
+            throw TypeDBException.of(ILLEGAL_STATE);
         }
     }
 

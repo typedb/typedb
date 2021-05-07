@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,25 +15,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server;
+package com.vaticle.typedb.core.server;
 
-import grabl.tracing.client.GrablTracingThreadStatic;
-import grakn.core.Grakn;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.parameters.Arguments;
-import grakn.core.common.parameters.Context;
-import grakn.core.common.parameters.Options;
-import grakn.core.server.common.RequestReader;
-import grakn.core.server.common.ResponseBuilder;
-import grakn.core.server.common.SynchronizedStreamObserver;
-import grakn.core.server.common.TracingData;
-import grakn.core.server.concept.ConceptService;
-import grakn.core.server.concept.ThingService;
-import grakn.core.server.concept.TypeService;
-import grakn.core.server.logic.LogicService;
-import grakn.core.server.logic.RuleService;
-import grakn.core.server.query.QueryService;
-import grakn.protocol.TransactionProto;
+import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic;
+import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Context;
+import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.server.common.RequestReader;
+import com.vaticle.typedb.core.server.common.ResponseBuilder;
+import com.vaticle.typedb.core.server.common.SynchronizedStreamObserver;
+import com.vaticle.typedb.core.server.common.TracingData;
+import com.vaticle.typedb.core.server.concept.ConceptService;
+import com.vaticle.typedb.core.server.concept.ThingService;
+import com.vaticle.typedb.core.server.concept.TypeService;
+import com.vaticle.typedb.core.server.logic.LogicService;
+import com.vaticle.typedb.core.server.logic.RuleService;
+import com.vaticle.typedb.core.server.query.QueryService;
+import com.vaticle.typedb.protocol.TransactionProto;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
@@ -54,22 +54,22 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static grabl.tracing.client.GrablTracingThreadStatic.continueTraceOnThread;
-import static grakn.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
-import static grakn.core.common.exception.ErrorMessage.Server.DUPLICATE_REQUEST;
-import static grakn.core.common.exception.ErrorMessage.Server.EMPTY_TRANSACTION_REQUEST;
-import static grakn.core.common.exception.ErrorMessage.Server.ITERATION_WITH_UNKNOWN_ID;
-import static grakn.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
-import static grakn.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
-import static grakn.core.common.exception.ErrorMessage.Transaction.BAD_TRANSACTION_TYPE;
-import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_ALREADY_OPENED;
-import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
-import static grakn.core.common.exception.ErrorMessage.Transaction.TRANSACTION_NOT_OPENED;
-import static grakn.core.server.common.RequestReader.applyDefaultOptions;
-import static grakn.core.server.common.RequestReader.byteStringAsUUID;
-import static grakn.core.server.common.ResponseBuilder.Transaction.serverMsg;
-import static grakn.protocol.TransactionProto.Transaction.Stream.State.CONTINUE;
-import static grakn.protocol.TransactionProto.Transaction.Stream.State.DONE;
+import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.continueTraceOnThread;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DUPLICATE_REQUEST;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.EMPTY_TRANSACTION_REQUEST;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.ITERATION_WITH_UNKNOWN_ID;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.BAD_TRANSACTION_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_ALREADY_OPENED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_NOT_OPENED;
+import static com.vaticle.typedb.core.server.common.RequestReader.applyDefaultOptions;
+import static com.vaticle.typedb.core.server.common.RequestReader.byteStringAsUUID;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Transaction.serverMsg;
+import static com.vaticle.typedb.protocol.TransactionProto.Transaction.Stream.State.CONTINUE;
+import static com.vaticle.typedb.protocol.TransactionProto.Transaction.Stream.State.DONE;
 
 public class TransactionService implements StreamObserver<TransactionProto.Transaction.Client>, AutoCloseable {
 
@@ -77,14 +77,14 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     private static final String TRACE_PREFIX = "transaction_services.";
     private static final int MAX_NETWORK_LATENCY_MILLIS = 3_000;
 
-    private final GraknService graknSvc;
+    private final TypeDBService typeDBSvc;
     private final StreamObserver<TransactionProto.Transaction.Server> responder;
     private final ConcurrentMap<UUID, ResponseStream<?>> streams;
     private final AtomicBoolean isRPCAlive;
     private final AtomicBoolean isTransactionOpen;
 
     private volatile SessionService sessionSvc;
-    private volatile Grakn.Transaction transaction;
+    private volatile TypeDB.Transaction transaction;
     private volatile Services services;
     private volatile int networkLatencyMillis;
 
@@ -97,8 +97,8 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         private final RuleService rule = new RuleService(TransactionService.this, transaction.logic());
     }
 
-    public TransactionService(GraknService graknSvc, StreamObserver<TransactionProto.Transaction.Server> responder) {
-        this.graknSvc = graknSvc;
+    public TransactionService(TypeDBService typeDBSvc, StreamObserver<TransactionProto.Transaction.Server> responder) {
+        this.typeDBSvc = typeDBSvc;
         this.responder = SynchronizedStreamObserver.of(responder);
         this.streams = new ConcurrentHashMap<>();
         this.isRPCAlive = new AtomicBoolean(true);
@@ -111,7 +111,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
 
     @Override
     public void onNext(TransactionProto.Transaction.Client requests) {
-        if (requests.getReqsList().isEmpty()) close(GraknException.of(EMPTY_TRANSACTION_REQUEST));
+        if (requests.getReqsList().isEmpty()) close(TypeDBException.of(EMPTY_TRANSACTION_REQUEST));
         else for (TransactionProto.Transaction.Req req : requests.getReqsList()) execute(req);
     }
 
@@ -122,12 +122,12 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     public void onError(Throwable error) { close(error); }
 
     private synchronized void execute(TransactionProto.Transaction.Req request) {
-        GrablTracingThreadStatic.ThreadTrace trace = null;
+        FactoryTracingThreadStatic.ThreadTrace trace = null;
         try {
             trace = mayStartTrace(request, TRACE_PREFIX + request.getReqCase().name().toLowerCase());
             switch (request.getReqCase()) {
                 case REQ_NOT_SET:
-                    throw GraknException.of(UNKNOWN_REQUEST_TYPE);
+                    throw TypeDBException.of(UNKNOWN_REQUEST_TYPE);
                 case OPEN_REQ:
                     open(request);
                     break;
@@ -142,8 +142,8 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     }
 
     private void executeRequest(TransactionProto.Transaction.Req req) {
-        if (!isRPCAlive.get()) throw GraknException.of(TRANSACTION_CLOSED);
-        if (!isTransactionOpen.get()) throw GraknException.of(TRANSACTION_NOT_OPENED);
+        if (!isRPCAlive.get()) throw TypeDBException.of(TRANSACTION_CLOSED);
+        if (!isTransactionOpen.get()) throw TypeDBException.of(TRANSACTION_NOT_OPENED);
 
         switch (req.getReqCase()) {
             case ROLLBACK_REQ:
@@ -174,15 +174,15 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                 services.rule.execute(req);
                 break;
             default:
-                throw GraknException.of(ILLEGAL_ARGUMENT);
+                throw TypeDBException.of(ILLEGAL_ARGUMENT);
         }
     }
 
     private void open(TransactionProto.Transaction.Req request) {
-        if (isTransactionOpen.get()) throw GraknException.of(TRANSACTION_ALREADY_OPENED);
+        if (isTransactionOpen.get()) throw TypeDBException.of(TRANSACTION_ALREADY_OPENED);
         TransactionProto.Transaction.Open.Req openReq = request.getOpenReq();
         networkLatencyMillis = Math.min(openReq.getNetworkLatencyMillis(), MAX_NETWORK_LATENCY_MILLIS);
-        sessionSvc = sessionService(graknSvc, openReq);
+        sessionSvc = sessionService(typeDBSvc, openReq);
         sessionSvc.register(this);
         transaction = transaction(sessionSvc, openReq);
         services = new Services();
@@ -190,16 +190,16 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         isTransactionOpen.set(true);
     }
 
-    private static SessionService sessionService(GraknService graknSvc, TransactionProto.Transaction.Open.Req req) {
+    private static SessionService sessionService(TypeDBService typeDBSvc, TransactionProto.Transaction.Open.Req req) {
         UUID sessionID = byteStringAsUUID(req.getSessionId());
-        SessionService sessionSvc = graknSvc.session(sessionID);
-        if (sessionSvc == null) throw GraknException.of(SESSION_NOT_FOUND, sessionID);
+        SessionService sessionSvc = typeDBSvc.session(sessionID);
+        if (sessionSvc == null) throw TypeDBException.of(SESSION_NOT_FOUND, sessionID);
         return sessionSvc;
     }
 
-    private static Grakn.Transaction transaction(SessionService sessionSvc, TransactionProto.Transaction.Open.Req req) {
+    private static TypeDB.Transaction transaction(SessionService sessionSvc, TransactionProto.Transaction.Open.Req req) {
         Arguments.Transaction.Type type = Arguments.Transaction.Type.of(req.getType().getNumber());
-        if (type == null) throw GraknException.of(BAD_TRANSACTION_TYPE, req.getType());
+        if (type == null) throw TypeDBException.of(BAD_TRANSACTION_TYPE, req.getType());
         Options.Transaction options = new Options.Transaction().parent(sessionSvc.options());
         applyDefaultOptions(options, req.getOptions());
         return sessionSvc.session().transaction(type, options);
@@ -226,21 +226,21 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
 
     public <T> void stream(Iterator<T> iterator, UUID requestID,
                            Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn) {
-        int size = transaction.context().options().responseBatchSize();
+        int size = transaction.context().options().prefetchSize();
         stream(iterator, requestID, size, true, resPartFn);
     }
 
     public <T> void stream(Iterator<T> iterator, UUID requestID, Options.Query options,
                            Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn) {
-        stream(iterator, requestID, options.responseBatchSize(), options.prefetch(), resPartFn);
+        stream(iterator, requestID, options.prefetchSize(), options.prefetch(), resPartFn);
     }
 
-    private <T> void stream(Iterator<T> iterator, UUID requestID, int batchSize, boolean prefetch,
+    private <T> void stream(Iterator<T> iterator, UUID requestID, int prefetchSize, boolean prefetch,
                             Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn) {
-        ResponseStream<T> stream = new ResponseStream<>(iterator, requestID, batchSize, resPartFn);
+        ResponseStream<T> stream = new ResponseStream<>(iterator, requestID, prefetchSize, resPartFn);
         streams.compute(requestID, (key, oldValue) -> {
             if (oldValue == null) return stream;
-            else throw GraknException.of(DUPLICATE_REQUEST, requestID);
+            else throw TypeDBException.of(DUPLICATE_REQUEST, requestID);
         });
         if (prefetch) stream.streamResParts();
         else respond(ResponseBuilder.Transaction.stream(requestID, CONTINUE));
@@ -248,13 +248,13 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
 
     private void stream(UUID requestId) {
         ResponseStream<?> stream = streams.get(requestId);
-        if (stream == null) throw GraknException.of(ITERATION_WITH_UNKNOWN_ID, requestId);
+        if (stream == null) throw TypeDBException.of(ITERATION_WITH_UNKNOWN_ID, requestId);
         stream.streamResParts();
     }
 
     @Nullable
-    private GrablTracingThreadStatic.ThreadTrace mayStartTrace(TransactionProto.Transaction.Req request, String name) {
-        GrablTracingThreadStatic.ThreadTrace trace = null;
+    private FactoryTracingThreadStatic.ThreadTrace mayStartTrace(TransactionProto.Transaction.Req request, String name) {
+        FactoryTracingThreadStatic.ThreadTrace trace = null;
         Optional<TracingData> tracingData = RequestReader.getTracingData(request);
         if (tracingData.isPresent()) {
             trace = continueTraceOnThread(tracingData.get().rootID(), tracingData.get().parentID(), name);
@@ -262,7 +262,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         return trace;
     }
 
-    private void mayCloseTrace(@Nullable GrablTracingThreadStatic.ThreadTrace trace) {
+    private void mayCloseTrace(@Nullable FactoryTracingThreadStatic.ThreadTrace trace) {
         if (trace != null) trace.close();
     }
 
@@ -301,18 +301,18 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         private final Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn;
         private final Iterator<T> iterator;
         private final UUID requestID;
-        private final int batchSize;
+        private final int prefetchSize;
 
-        ResponseStream(Iterator<T> iterator, UUID requestID, int batchSize,
+        ResponseStream(Iterator<T> iterator, UUID requestID, int prefetchSize,
                        Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn) {
             this.iterator = iterator;
             this.requestID = requestID;
-            this.batchSize = batchSize;
+            this.prefetchSize = prefetchSize;
             this.resPartFn = resPartFn;
         }
 
         private void streamResParts() {
-            streamResPartsWhile(i -> i < batchSize && iterator.hasNext());
+            streamResPartsWhile(i -> i < prefetchSize && iterator.hasNext());
             if (mayClose()) return;
 
             respondStreamState(CONTINUE);
