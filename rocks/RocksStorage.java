@@ -53,7 +53,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.
 public abstract class RocksStorage implements Storage {
 
     private static final Logger LOG = LoggerFactory.getLogger(RocksStorage.class);
-    private static final byte[] EMPTY_ARRAY = new byte[]{};
+    static final byte[] EMPTY_ARRAY = new byte[]{};
 
     protected final ConcurrentSet<RocksIterator<?>> iterators;
     protected final Transaction storageTransaction;

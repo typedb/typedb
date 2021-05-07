@@ -98,13 +98,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         return ins;
     }
 
-    @Override
-    public void setModified() {
-        if (!isModified) {
-            isModified = true;
-            graph.setModified(iid);
-        }
-    }
 
     @Override
     public TypeVertex type() {
@@ -150,7 +143,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
     void deleteVertexFromStorage() {
         graph.storage().delete(iid.bytes());
-        graph.storage().delete(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
+        graph.storage().deleteUntracked(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
     }
 
     void commitEdges() {
@@ -184,7 +177,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
         private void commitVertex() {
             graph.storage().put(iid.bytes());
-            graph.storage().put(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
+            graph.storage().putUntracked(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
         }
 
         @Override
@@ -192,6 +185,13 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
             if (isDeleted.compareAndSet(false, true)) {
                 deleteEdges();
                 deleteVertexFromGraph();
+            }
+        }
+
+        @Override
+        public void setModified() {
+            if (!isModified) {
+                isModified = true;
             }
         }
     }
@@ -228,6 +228,14 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
                 deleteEdges();
                 deleteVertexFromStorage();
                 deleteVertexFromGraph();
+            }
+        }
+
+        @Override
+        public void setModified() {
+            if (!isModified) {
+                isModified = true;
+                graph.setModified(iid);
             }
         }
     }

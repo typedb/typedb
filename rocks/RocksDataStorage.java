@@ -72,6 +72,17 @@ public class RocksDataStorage extends RocksStorage.TransactionBounded implements
 
     @Override
     public void put(byte[] key, byte[] value, boolean checkConsistency) {
+        putUntracked(key, value);
+        setModified(key, checkConsistency);
+    }
+
+    @Override
+    public void putUntracked(byte[] key) {
+        putUntracked(key, EMPTY_ARRAY);
+    }
+
+    @Override
+    public void putUntracked(byte[] key, byte[] value) {
         assert isOpen() && !isReadOnly;
         try {
             deleteCloseSchemaWriteLock.readLock().lock();
@@ -82,16 +93,20 @@ public class RocksDataStorage extends RocksStorage.TransactionBounded implements
         } finally {
             deleteCloseSchemaWriteLock.readLock().unlock();
         }
-        setModified(key, checkConsistency);
     }
 
     @Override
     public void delete(byte[] key) {
-        super.delete(key);
+        deleteUntracked(key);
         ByteBuffer bytes = ByteBuffer.wrap(key);
         this.deletedKeys.add(bytes);
         this.modifiedKeys.remove(bytes);
         this.exclusiveInsertKeys.remove(bytes);
+    }
+
+    @Override
+    public void deleteUntracked(byte[] key) {
+        super.delete(key);
     }
 
     @Override

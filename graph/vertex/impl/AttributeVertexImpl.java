@@ -37,10 +37,12 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.
 public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl implements AttributeVertex<VALUE> {
 
     private final VertexIID.Attribute<VALUE> attributeIID;
+    private java.lang.Boolean isPersisted;
 
     AttributeVertexImpl(ThingGraph graph, VertexIID.Attribute<VALUE> iid, boolean isInferred) {
         super(graph, iid, isInferred);
         this.attributeIID = iid;
+        this.isPersisted = null;
     }
 
     public static AttributeVertexImpl<?> of(ThingGraph graph, VertexIID.Attribute<?> iid) {
@@ -126,10 +128,27 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     }
 
     private void commitVertex() {
-        graph.storage().put(attributeIID.bytes());
-        graph.storage().put(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
-        graph.storage().put(index().bytes(), attributeIID.bytes());
+        if (!isPersisted()) {
+            graph.storage().put(attributeIID.bytes());
+            graph.storage().put(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
+            graph.storage().put(index().bytes(), attributeIID.bytes());
+        } else {
+            setModified();
+        }
         // TODO: we should make use of attribute indexes to look up attributes by value (without type) quickly
+    }
+
+    @Override
+    public void setModified() {
+        if (!isModified) {
+            isModified = true;
+            if (isPersisted()) graph.setModified(iid);
+        }
+    }
+
+    private boolean isPersisted() {
+        if (isPersisted == null) isPersisted = graph.storage().get(iid.bytes()) != null;
+        return isPersisted;
     }
 
     @Override

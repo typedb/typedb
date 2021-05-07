@@ -72,6 +72,12 @@ public interface Storage {
 
         void put(byte[] key, byte[] value, boolean checkConsistency);
 
+        void putUntracked(byte[] key);
+
+        void putUntracked(byte[] key, byte[] value);
+
+        void deleteUntracked(byte[] key);
+
         void setModified(byte[] bytes, boolean checkConsistency);
 
         void setExclusiveCreate(byte[] key);
