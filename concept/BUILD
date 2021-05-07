@@ -54,7 +54,7 @@ native_java_libraries(
         "//pattern:pattern",
         "//traversal:traversal",
     ],
-    tags = ["maven_coordinates=com.vaticle.typedb:typedb-concept:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-concept:{pom_version}"],
     visibility = ["//visibility:public"],
 )
 

@@ -61,7 +61,7 @@ native_java_libraries(
     runtime_deps = [
         "@maven//:ch_qos_logback_logback_classic",
     ],
-    tags = ["maven_coordinates=com.vaticle.typedb:typedb-reasoner:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-reasoner:{pom_version}"],
 )
 
 host_compatible_java_test(

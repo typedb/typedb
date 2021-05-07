@@ -33,7 +33,7 @@ java_library(
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:org_slf4j_slf4j_api",
     ],
-    tags = ["maven_coordinates=com.vaticle.typedb:typedb-common:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-common:{pom_version}"],
 )
 
 java_test(

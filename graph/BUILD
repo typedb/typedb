@@ -43,7 +43,7 @@ java_library(
         # External Maven Dependencies
         "@maven//:com_google_code_findbugs_jsr305",
     ],
-    tags = ["maven_coordinates=com.vaticle.typedb:typedb-graph:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-graph:{pom_version}"],
     visibility = ["//visibility:public"],
 )
 

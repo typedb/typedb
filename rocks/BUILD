@@ -65,7 +65,7 @@ native_java_libraries(
         "@maven//:com_google_ortools_ortools_win32_x86_64_java",
         "@maven//:org_rocksdb_rocksdbjni",
     ],
-    tags = ["maven_coordinates=com.vaticle.typedb:typedb-rocks:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-rocks:{pom_version}"],
     visibility = [ "//visibility:public" ]
 )
 

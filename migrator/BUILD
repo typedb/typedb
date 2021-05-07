@@ -65,7 +65,7 @@ native_java_libraries(
         "//concept:concept",
         "//logic:logic"
     ],
-    tags = ["maven_coordinates=com.vaticle.typedb:typedb-migrator:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-migrator:{pom_version}"],
     visibility = ["//visibility:public"],
 )
 

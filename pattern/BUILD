@@ -57,7 +57,7 @@ native_java_libraries(
     native_libraries_deps = [
         "//traversal:traversal",
     ],
-    tags = ["maven_coordinates=com.vaticle.typedb:typedb-query-pattern:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-query-pattern:{pom_version}"],
 )
 
 host_compatible_java_test(

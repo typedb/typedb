@@ -39,7 +39,7 @@ genrule(
 java_library(
     name = "version",
     srcs = [":version-src"],
-    tags = ["maven_coordinates=com.vaticle.typedb:typedb-version:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-version:{pom_version}"],
     visibility = ["//test:__subpackages__"],
 )
 
@@ -83,7 +83,7 @@ native_java_libraries(
     runtime_deps = [
         "@maven//:ch_qos_logback_logback_classic",
     ],
-    tags = ["maven_coordinates=com.vaticle.typedb:typedb-server:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server:{pom_version}"],
     visibility = ["//visibility:public"],
 )
 
@@ -91,7 +91,7 @@ java_binary(
     name = "server-bin-mac",
     main_class = "com.vaticle.typedb.core.server.TypeDBServer",
     runtime_deps = [":server-mac"],
-    tags = ["maven_coordinates=com.vaticle.typedb:typedb-server-bin:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
     classpath_resources = [
         "//server/conf:logback.xml",
         "//server/conf:typedb-properties"
@@ -103,14 +103,14 @@ java_binary( # TODO: this target should not be needed if :server-deps-mac can de
     name = "server-bin-deps-mac",
     main_class = "com.vaticle.typedb.core.server.TypeDBServer",
     runtime_deps = [":server-mac"],
-    tags = ["maven_coordinates=com.vaticle.typedb:typedb-server-bin-deps:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin-deps:{pom_version}"],
 )
 
 java_binary(
     name = "server-bin-linux",
     main_class = "com.vaticle.typedb.core.server.TypeDBServer",
     runtime_deps = [":server-linux"],
-    tags = ["maven_coordinates=com.vaticle.typedb:typedb-server-bin:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
     classpath_resources = [
         "//server/conf:logback.xml",
         "//server/conf:typedb-properties"
@@ -122,14 +122,14 @@ java_binary( # TODO: this target should not be needed if :server-deps-linux can 
     name = "server-bin-deps-linux",
     main_class = "com.vaticle.typedb.core.server.TypeDBServer",
     runtime_deps = [":server-linux"],
-    tags = ["maven_coordinates=com.vaticle.typedb:typedb-server-bin-deps:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin-deps:{pom_version}"],
 )
 
 java_binary(
     name = "server-bin-windows",
     main_class = "com.vaticle.typedb.core.server.TypeDBServer",
     runtime_deps = [":server-windows"],
-    tags = ["maven_coordinates=com.vaticle.typedb:typedb-server-bin:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
     classpath_resources = [
         "//server/conf:logback.xml",
         "//server/conf:typedb-properties"
@@ -141,7 +141,7 @@ java_binary( # TODO: this target should not be needed if :server-deps-windows ca
     name = "server-bin-deps-windows",
     main_class = "com.vaticle.typedb.core.server.TypeDBServer",
     runtime_deps = [":server-windows"],
-    tags = ["maven_coordinates=com.vaticle.typedb:typedb-server-bin-deps:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin-deps:{pom_version}"],
 )
 
 java_deps(

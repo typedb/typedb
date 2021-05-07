@@ -53,7 +53,7 @@ native_java_libraries(
     runtime_deps = [
         "@maven//:ch_qos_logback_logback_classic",
     ],
-    tags = ["maven_coordinates=com.vaticle.typedb:typedb-logic:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-logic:{pom_version}"],
     visibility = ["//visibility:public"],
 )
 

@@ -35,7 +35,7 @@ java_library(
         "@maven//:io_netty_netty_all",
         "@maven//:org_slf4j_slf4j_api",
     ],
-    tags = ["maven_coordinates=com.vaticle.typedb:typedb-concurrent:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-concurrent:{pom_version}"],
 )
 
 checkstyle_test(
