@@ -18,7 +18,7 @@
 
 package com.vaticle.typedb.core.graph.edge.impl;
 
-import com.vaticle.typedb.core.graph.SchemaGraph;
+import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.iid.EdgeIID;
@@ -35,10 +35,10 @@ import static java.util.Objects.hash;
  */
 public abstract class TypeEdgeImpl implements TypeEdge {
 
-    final SchemaGraph graph;
+    final TypeGraph graph;
     final Encoding.Edge.Type encoding;
 
-    TypeEdgeImpl(SchemaGraph graph, Encoding.Edge.Type encoding) {
+    TypeEdgeImpl(TypeGraph graph, Encoding.Edge.Type encoding) {
         this.graph = graph;
         this.encoding = encoding;
     }
@@ -215,7 +215,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
          * @param graph the graph comprised of all the vertices
          * @param iid   the {@code iid} of a persisted edge
          */
-        public Persisted(SchemaGraph graph, EdgeIID.Type iid, @Nullable VertexIID.Type overriddenIID) {
+        public Persisted(TypeGraph graph, EdgeIID.Type iid, @Nullable VertexIID.Type overriddenIID) {
             super(graph, iid.encoding());
 
             if (iid.isOutwards()) {

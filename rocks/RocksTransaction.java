@@ -24,9 +24,9 @@ import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.ConceptManager;
-import com.vaticle.typedb.core.graph.DataGraph;
 import com.vaticle.typedb.core.graph.GraphManager;
-import com.vaticle.typedb.core.graph.SchemaGraph;
+import com.vaticle.typedb.core.graph.ThingGraph;
+import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.logic.LogicCache;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.query.QueryManager;
@@ -150,12 +150,12 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
             super(session, type, options);
 
             schemaStorage = storageFactory.storageSchema(session.database(), this);
-            SchemaGraph schemaGraph = new SchemaGraph(schemaStorage, type().isRead());
+            TypeGraph typeGraph = new TypeGraph(schemaStorage, type().isRead());
 
             dataStorage = storageFactory.storageData(session.database(), this);
-            DataGraph dataGraph = new DataGraph(dataStorage, schemaGraph);
+            ThingGraph thingGraph = new ThingGraph(dataStorage, typeGraph);
 
-            graphMgr = new GraphManager(schemaGraph, dataGraph);
+            graphMgr = new GraphManager(typeGraph, thingGraph);
             initialise(graphMgr, new TraversalCache(), new LogicCache());
         }
 
@@ -169,7 +169,7 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
             return this;
         }
 
-        SchemaGraph graph() {
+        TypeGraph graph() {
             return graphMgr.schema();
         }
 
@@ -252,8 +252,8 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
 
             cache = session.database().cacheBorrow();
             dataStorage = storageFactory.storageData(session.database(), this);
-            DataGraph dataGraph = new DataGraph(dataStorage, cache.schemaGraph());
-            graphMgr = new GraphManager(cache.schemaGraph(), dataGraph);
+            ThingGraph thingGraph = new ThingGraph(dataStorage, cache.typeGraph());
+            graphMgr = new GraphManager(cache.typeGraph(), thingGraph);
 
             initialise(graphMgr, cache.traversal(), cache.logic());
         }

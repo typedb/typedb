@@ -20,7 +20,7 @@
 package com.vaticle.typedb.core.graph.vertex;
 
 import com.vaticle.typedb.core.common.parameters.Label;
-import com.vaticle.typedb.core.graph.SchemaGraph;
+import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.adjacency.TypeAdjacency;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
@@ -31,7 +31,7 @@ public interface TypeVertex extends Vertex<VertexIID.Type, Encoding.Vertex.Type>
     /**
      * @return the {@code Graph} containing all Schema elements
      */
-    SchemaGraph graph();
+    TypeGraph graph();
 
     String label();
 

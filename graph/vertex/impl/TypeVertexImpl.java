@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.graph.vertex.impl;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
-import com.vaticle.typedb.core.graph.SchemaGraph;
+import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.adjacency.TypeAdjacency;
 import com.vaticle.typedb.core.graph.adjacency.impl.TypeAdjacencyImpl;
 import com.vaticle.typedb.core.graph.common.Encoding;
@@ -55,7 +55,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
     private static final int UNSET_COUNT = -1;
 
-    final SchemaGraph graph;
+    final TypeGraph graph;
     final AtomicBoolean isDeleted;
     final TypeAdjacency outs;
     final TypeAdjacency ins;
@@ -71,7 +71,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
     private volatile int inOwnsCount;
     private volatile int inPlaysCount;
 
-    TypeVertexImpl(SchemaGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
+    TypeVertexImpl(TypeGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
         super(iid);
         assert iid.isType();
         this.graph = graph;
@@ -89,7 +89,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
 
     @Override
-    public SchemaGraph graph() {
+    public TypeGraph graph() {
         return graph;
     }
 
@@ -254,7 +254,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         private final AtomicBoolean isCommitted;
 
-        public Buffered(SchemaGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
+        public Buffered(TypeGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
             super(graph, iid, label, scope);
             this.isCommitted = new AtomicBoolean(false);
             setModified();
@@ -378,19 +378,19 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         private boolean regexLookedUp;
 
-        public Persisted(SchemaGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
+        public Persisted(TypeGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
             super(graph, iid, label, scope);
             regexLookedUp = false;
         }
 
-        public Persisted(SchemaGraph graph, VertexIID.Type iid) {
+        public Persisted(TypeGraph graph, VertexIID.Type iid) {
             super(graph, iid,
                   new String(graph.storage().get(join(iid.bytes(), LABEL.infix().bytes()))),
                   getScope(graph, iid));
         }
 
         @Nullable
-        private static String getScope(SchemaGraph graph, VertexIID.Type iid) {
+        private static String getScope(TypeGraph graph, VertexIID.Type iid) {
             byte[] scopeBytes = graph.storage().get(join(iid.bytes(), SCOPE.infix().bytes()));
             if (scopeBytes != null) return new String(scopeBytes);
             else return null;

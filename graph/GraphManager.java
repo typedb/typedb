@@ -25,34 +25,34 @@ import java.util.Objects;
 
 public class GraphManager {
 
-    private final SchemaGraph schemaGraph;
+    private final TypeGraph typeGraph;
 
-    private final DataGraph dataGraph;
+    private final ThingGraph thingGraph;
 
-    public GraphManager(SchemaGraph schemaGraph, DataGraph dataGraph) {
-        this.schemaGraph = schemaGraph;
-        this.dataGraph = dataGraph;
+    public GraphManager(TypeGraph typeGraph, ThingGraph thingGraph) {
+        this.typeGraph = typeGraph;
+        this.thingGraph = thingGraph;
     }
 
-    public SchemaGraph schema() {
-        return schemaGraph;
+    public TypeGraph schema() {
+        return typeGraph;
     }
 
-    public DataGraph data() {
-        return dataGraph;
+    public ThingGraph data() {
+        return thingGraph;
     }
 
     public void clear() {
-        schemaGraph.clear();
-        dataGraph.clear();
+        typeGraph.clear();
+        thingGraph.clear();
     }
 
     public TypeDBException exception(ErrorMessage error) {
-        return dataGraph.storage().exception(error);
+        return thingGraph.storage().exception(error);
     }
 
     public TypeDBException exception(Exception exception) {
-        return dataGraph.storage().exception(exception);
+        return thingGraph.storage().exception(exception);
     }
 
     @Override
@@ -61,11 +61,11 @@ public class GraphManager {
         if (o == null || getClass() != o.getClass()) return false;
 
         GraphManager graphMgr = (GraphManager) o;
-        return schemaGraph.equals(graphMgr.schemaGraph) && dataGraph.equals(graphMgr.dataGraph);
+        return typeGraph.equals(graphMgr.typeGraph) && thingGraph.equals(graphMgr.thingGraph);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(schemaGraph, dataGraph);
+        return Objects.hash(typeGraph, thingGraph);
     }
 }

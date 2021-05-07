@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.graph.edge.impl;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.graph.DataGraph;
+import com.vaticle.typedb.core.graph.ThingGraph;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.edge.ThingEdge;
 import com.vaticle.typedb.core.graph.iid.EdgeIID;
@@ -41,12 +41,12 @@ import static java.util.Objects.hash;
 
 public abstract class ThingEdgeImpl implements ThingEdge {
 
-    final DataGraph graph;
+    final ThingGraph graph;
     final Encoding.Edge.Thing encoding;
     final AtomicBoolean deleted;
     boolean isInferred;
 
-    ThingEdgeImpl(DataGraph graph, Encoding.Edge.Thing encoding, boolean isInferred) {
+    ThingEdgeImpl(ThingGraph graph, Encoding.Edge.Thing encoding, boolean isInferred) {
         this.graph = graph;
         this.encoding = encoding;
         this.deleted = new AtomicBoolean(false);
@@ -237,7 +237,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
          * @param graph the graph comprised of all the vertices
          * @param iid   the {@code iid} of a persisted edge
          */
-        public Persisted(DataGraph graph, EdgeIID.Thing iid) {
+        public Persisted(ThingGraph graph, EdgeIID.Thing iid) {
             super(graph, iid.encoding(), false);
 
             if (iid.isOutwards()) {

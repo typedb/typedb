@@ -19,8 +19,8 @@
 package com.vaticle.typedb.core.graph.vertex.impl;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.graph.DataGraph;
 import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.ThingGraph;
 import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
 import com.vaticle.typedb.core.graph.adjacency.impl.ThingAdjacencyImpl;
 import com.vaticle.typedb.core.graph.common.Encoding;
@@ -39,17 +39,17 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ATTRIBU
 
 public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implements ThingVertex {
 
-    protected final DataGraph graph;
+    protected final ThingGraph graph;
     protected final GraphManager graphMgr;
     protected final ThingAdjacency outs;
     protected final ThingAdjacency ins;
     protected final AtomicBoolean isDeleted;
     protected boolean isInferred;
 
-    ThingVertexImpl(DataGraph graph, VertexIID.Thing iid, boolean isInferred) {
+    ThingVertexImpl(ThingGraph graph, VertexIID.Thing iid, boolean isInferred) {
         super(iid);
         this.graph = graph;
-        this.graphMgr = new GraphManager(graph.schema(), graph);
+        this.graphMgr = new GraphManager(graph.type(), graph);
         this.outs = newAdjacency(Encoding.Direction.Adjacency.OUT);
         this.ins = newAdjacency(Encoding.Direction.Adjacency.IN);
         this.isInferred = isInferred;
@@ -57,7 +57,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         this.isDeleted = new AtomicBoolean(false);
     }
 
-    public static ThingVertexImpl of(DataGraph graph, VertexIID.Thing iid) {
+    public static ThingVertexImpl of(ThingGraph graph, VertexIID.Thing iid) {
         if (iid.encoding().equals(ATTRIBUTE)) {
             return AttributeVertexImpl.of(graph, iid.asAttribute());
         } else {
@@ -74,7 +74,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     protected abstract ThingAdjacency newAdjacency(Encoding.Direction.Adjacency direction);
 
     @Override
-    public DataGraph graph() {
+    public ThingGraph graph() {
         return graph;
     }
 
@@ -108,7 +108,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
     @Override
     public TypeVertex type() {
-        return graph.schema().convert(iid.type());
+        return graph.type().convert(iid.type());
     }
 
     @Override
@@ -160,7 +160,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
     public static class Buffered extends ThingVertexImpl {
 
-        public Buffered(DataGraph graph, VertexIID.Thing iid, boolean isInferred) {
+        public Buffered(ThingGraph graph, VertexIID.Thing iid, boolean isInferred) {
             super(graph, iid, isInferred);
             setModified();
         }
@@ -198,7 +198,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
     public static class Persisted extends ThingVertexImpl {
 
-        public Persisted(DataGraph graph, VertexIID.Thing iid) {
+        public Persisted(ThingGraph graph, VertexIID.Thing iid) {
             super(graph, iid, false);
         }
 

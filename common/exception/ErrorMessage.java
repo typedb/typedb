@@ -329,16 +329,16 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         }
     }
 
-    public static class SchemaGraph extends ErrorMessage {
-        public static final SchemaGraph INVALID_SCHEMA_IID_CASTING =
-                new SchemaGraph(1, "Invalid Schema IID cast to '%s'.");
-        public static final SchemaGraph INVALID_SCHEMA_WRITE =
-                new SchemaGraph(2, "The label '%s' is already in use in the schema graph.");
+    public static class TypeGraph extends ErrorMessage {
+        public static final TypeGraph INVALID_SCHEMA_IID_CASTING =
+                new TypeGraph(1, "Invalid Schema IID cast to '%s'.");
+        public static final TypeGraph INVALID_SCHEMA_WRITE =
+                new TypeGraph(2, "The label '%s' is already in use in the schema graph.");
 
         private static final String codePrefix = "SCG";
         private static final String messagePrefix = "Invalid Schema Graph Operation";
 
-        SchemaGraph(int number, String message) { super(codePrefix, number, messagePrefix, message); }
+        TypeGraph(int number, String message) { super(codePrefix, number, messagePrefix, message); }
     }
 
     public static class TypeRead extends ErrorMessage {

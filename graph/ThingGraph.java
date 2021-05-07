@@ -79,10 +79,10 @@ import static com.vaticle.typedb.core.graph.common.StatisticsBytes.vertexCountKe
 import static com.vaticle.typedb.core.graph.common.StatisticsBytes.vertexTransitiveCountKey;
 import static com.vaticle.typedb.core.graph.iid.VertexIID.Thing.generate;
 
-public class DataGraph implements Graph {
+public class ThingGraph implements Graph {
 
     private final Storage.Data storage;
-    private final SchemaGraph schemaGraph;
+    private final TypeGraph typeGraph;
     private final KeyGenerator.Data.Buffered keyGenerator;
     private final ConcurrentMap<VertexIID.Thing, ThingVertex> thingsByIID;
     private final ConcurrentMap<VertexIID.Type, ConcurrentSet<ThingVertex>> thingsByTypeIID;
@@ -90,14 +90,14 @@ public class DataGraph implements Graph {
     private final Statistics statistics;
     private boolean isModified;
 
-    public DataGraph(Storage.Data storage, SchemaGraph schemaGraph) {
+    public ThingGraph(Storage.Data storage, TypeGraph typeGraph) {
         this.storage = storage;
-        this.schemaGraph = schemaGraph;
+        this.typeGraph = typeGraph;
         keyGenerator = new KeyGenerator.Data.Buffered();
         thingsByIID = new ConcurrentHashMap<>();
         thingsByTypeIID = new ConcurrentHashMap<>();
         attributesByIID = new AttributesByIID();
-        statistics = new Statistics(schemaGraph, storage);
+        statistics = new Statistics(typeGraph, storage);
     }
 
     @Override
@@ -105,11 +105,11 @@ public class DataGraph implements Graph {
         return storage;
     }
 
-    public SchemaGraph schema() {
-        return schemaGraph;
+    public TypeGraph type() {
+        return typeGraph;
     }
 
-    public DataGraph.Statistics stats() {
+    public ThingGraph.Statistics stats() {
         return statistics;
     }
 
@@ -536,11 +536,11 @@ public class DataGraph implements Graph {
         private final ConcurrentMap<VertexIID.Attribute<?>, Encoding.Statistics.JobOperation> attributeVertexCountJobs;
         private final ConcurrentMap<Pair<VertexIID.Thing, VertexIID.Attribute<?>>, Encoding.Statistics.JobOperation> hasEdgeCountJobs;
         private boolean needsBackgroundCounting;
-        private final SchemaGraph schemaGraph;
+        private final TypeGraph typeGraph;
         private final Storage storage;
         private final long snapshot;
 
-        public Statistics(SchemaGraph schemaGraph, Storage storage) {
+        public Statistics(TypeGraph typeGraph, Storage storage) {
             persistedVertexCount = new ConcurrentHashMap<>();
             persistedVertexTransitiveCount = new ConcurrentHashMap<>();
             deltaVertexCount = new ConcurrentHashMap<>();
@@ -550,7 +550,7 @@ public class DataGraph implements Graph {
             hasEdgeCountJobs = new ConcurrentHashMap<>();
             needsBackgroundCounting = false;
             snapshot = bytesToLongOrZero(storage.get(snapshotKey()));
-            this.schemaGraph = schemaGraph;
+            this.typeGraph = typeGraph;
             this.storage = storage;
         }
 
@@ -567,7 +567,7 @@ public class DataGraph implements Graph {
         }
 
         public long hasEdgeCount(TypeVertex thing, TypeVertex attribute) {
-            if (attribute.iid().equals(schemaGraph.rootAttributeType().iid())) {
+            if (attribute.iid().equals(typeGraph.rootAttributeType().iid())) {
                 return hasEdgeTotalCount(thing.iid());
             } else {
                 return hasEdgeCount(thing.iid(), attribute.iid());
@@ -575,11 +575,11 @@ public class DataGraph implements Graph {
         }
 
         public long hasEdgeCount(Label thing, Label attribute) {
-            return hasEdgeCount(schemaGraph.getType(thing), schemaGraph.getType(attribute));
+            return hasEdgeCount(typeGraph.getType(thing), typeGraph.getType(attribute));
         }
 
         public long thingVertexSum(Set<Label> labels) {
-            return thingVertexSum(labels.stream().map(schemaGraph::getType));
+            return thingVertexSum(labels.stream().map(typeGraph::getType));
         }
 
         public long thingVertexSum(Stream<TypeVertex> types) {
@@ -587,7 +587,7 @@ public class DataGraph implements Graph {
         }
 
         public long thingVertexMax(Set<Label> labels) {
-            return thingVertexMax(labels.stream().map(schemaGraph::getType));
+            return thingVertexMax(labels.stream().map(typeGraph::getType));
         }
 
         public long thingVertexMax(Stream<TypeVertex> types) {
@@ -595,7 +595,7 @@ public class DataGraph implements Graph {
         }
 
         public long thingVertexCount(Label label) {
-            return thingVertexCount(schemaGraph.getType(label));
+            return thingVertexCount(typeGraph.getType(label));
         }
 
         public long thingVertexCount(TypeVertex type) {
@@ -607,7 +607,7 @@ public class DataGraph implements Graph {
         }
 
         public long thingVertexTransitiveMax(Set<Label> labels, Set<Label> filter) {
-            return thingVertexTransitiveMax(labels.stream().map(schemaGraph::getType), filter);
+            return thingVertexTransitiveMax(labels.stream().map(typeGraph::getType), filter);
         }
 
         public long thingVertexTransitiveMax(Stream<TypeVertex> types, Set<Label> filter) {
@@ -674,7 +674,7 @@ public class DataGraph implements Graph {
                     if (persistedVertexTransitiveCount.containsKey(typeIID)) {
                         return persistedVertexTransitiveCount.get(typeIID);
                     } else {
-                        FunctionalIterator<TypeVertex> subTypes = schemaGraph.convert(typeIID).ins().edge(SUB).from();
+                        FunctionalIterator<TypeVertex> subTypes = typeGraph.convert(typeIID).ins().edge(SUB).from();
                         long childrenPersistedCount = 0;
                         while (subTypes.hasNext()) {
                             TypeVertex subType = subTypes.next();
@@ -700,10 +700,10 @@ public class DataGraph implements Graph {
             if (isRootTypeIID(rootTypeIID)) {
                 return persistedHasEdgeTotalCount.computeIfAbsent(rootTypeIID, iid ->
                         bytesToLongOrZero(storage.get(hasEdgeTotalCountKey(rootTypeIID))));
-            } else if (rootTypeIID.equals(schemaGraph.rootThingType().iid())) {
-                return persistedHasEdgeTotalCount(schemaGraph.rootEntityType().iid()) +
-                        persistedHasEdgeTotalCount(schemaGraph.rootRelationType().iid()) +
-                        persistedHasEdgeTotalCount(schemaGraph.rootAttributeType().iid());
+            } else if (rootTypeIID.equals(typeGraph.rootThingType().iid())) {
+                return persistedHasEdgeTotalCount(typeGraph.rootEntityType().iid()) +
+                        persistedHasEdgeTotalCount(typeGraph.rootRelationType().iid()) +
+                        persistedHasEdgeTotalCount(typeGraph.rootAttributeType().iid());
             } else {
                 assert false;
                 return 0;
@@ -711,21 +711,21 @@ public class DataGraph implements Graph {
         }
 
         private boolean isRootTypeIID(VertexIID.Type typeIID) {
-            return typeIID.equals(schemaGraph.rootEntityType().iid()) ||
-                    typeIID.equals(schemaGraph.rootRelationType().iid()) ||
-                    typeIID.equals(schemaGraph.rootAttributeType().iid()) ||
-                    typeIID.equals(schemaGraph.rootRoleType().iid());
+            return typeIID.equals(typeGraph.rootEntityType().iid()) ||
+                    typeIID.equals(typeGraph.rootRelationType().iid()) ||
+                    typeIID.equals(typeGraph.rootAttributeType().iid()) ||
+                    typeIID.equals(typeGraph.rootRoleType().iid());
         }
 
         private void commit(Map<VertexIID.Thing, VertexIID.Thing> IIDMap) {
             deltaVertexCount.forEach((typeIID, delta) -> {
                 storage.mergeUntracked(vertexCountKey(typeIID), longToBytes(delta));
                 if (typeIID.encoding().prefix() == VERTEX_ENTITY_TYPE) {
-                    storage.mergeUntracked(vertexTransitiveCountKey(schemaGraph.rootEntityType().iid()), longToBytes(delta));
+                    storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootEntityType().iid()), longToBytes(delta));
                 } else if (typeIID.encoding().prefix() == VERTEX_RELATION_TYPE) {
-                    storage.mergeUntracked(vertexTransitiveCountKey(schemaGraph.rootRelationType().iid()), longToBytes(delta));
+                    storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootRelationType().iid()), longToBytes(delta));
                 } else if (typeIID.encoding().prefix() == Encoding.Prefix.VERTEX_ROLE_TYPE) {
-                    storage.mergeUntracked(vertexTransitiveCountKey(schemaGraph.rootRoleType().iid()), longToBytes(delta));
+                    storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootRoleType().iid()), longToBytes(delta));
                 }
             });
             attributeVertexCountJobs.forEach((attIID, countWorkValue) -> storage.putUntracked(
@@ -781,7 +781,7 @@ public class DataGraph implements Graph {
             byte[] counted = storage.get(countedKey);
             if (counted == null) {
                 storage.mergeUntracked(vertexCountKey(attIID.type()), longToBytes(1));
-                storage.mergeUntracked(vertexTransitiveCountKey(schemaGraph.rootAttributeType().iid()), longToBytes(1));
+                storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootAttributeType().iid()), longToBytes(1));
                 storage.put(countedKey);
             }
         }
@@ -791,7 +791,7 @@ public class DataGraph implements Graph {
             byte[] counted = storage.get(countedKey);
             if (counted != null) {
                 storage.mergeUntracked(vertexCountKey(attIID.type()), longToBytes(-1));
-                storage.mergeUntracked(vertexTransitiveCountKey(schemaGraph.rootAttributeType().iid()), longToBytes(-1));
+                storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootAttributeType().iid()), longToBytes(-1));
                 storage.delete(countedKey);
             }
         }
@@ -814,11 +814,11 @@ public class DataGraph implements Graph {
             if (counted == null) {
                 storage.mergeUntracked(hasEdgeCountKey(thingIID.type(), attIID.type()), longToBytes(1));
                 if (thingIID.type().encoding().prefix() == VERTEX_ENTITY_TYPE) {
-                    storage.mergeUntracked(hasEdgeTotalCountKey(schemaGraph.rootEntityType().iid()), longToBytes(1));
+                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootEntityType().iid()), longToBytes(1));
                 } else if (thingIID.type().encoding().prefix() == VERTEX_RELATION_TYPE) {
-                    storage.mergeUntracked(hasEdgeTotalCountKey(schemaGraph.rootRelationType().iid()), longToBytes(1));
+                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootRelationType().iid()), longToBytes(1));
                 } else if (thingIID.type().encoding().prefix() == VERTEX_ATTRIBUTE_TYPE) {
-                    storage.mergeUntracked(hasEdgeTotalCountKey(schemaGraph.rootAttributeType().iid()), longToBytes(1));
+                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootAttributeType().iid()), longToBytes(1));
                 }
                 storage.put(countedKey);
             }
@@ -830,11 +830,11 @@ public class DataGraph implements Graph {
             if (counted != null) {
                 storage.mergeUntracked(hasEdgeCountKey(thingIID.type(), attIID.type()), longToBytes(-1));
                 if (thingIID.type().encoding().prefix() == VERTEX_ENTITY_TYPE) {
-                    storage.mergeUntracked(hasEdgeTotalCountKey(schemaGraph.rootEntityType().iid()), longToBytes(-1));
+                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootEntityType().iid()), longToBytes(-1));
                 } else if (thingIID.type().encoding().prefix() == VERTEX_RELATION_TYPE) {
-                    storage.mergeUntracked(hasEdgeTotalCountKey(schemaGraph.rootRelationType().iid()), longToBytes(-1));
+                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootRelationType().iid()), longToBytes(-1));
                 } else if (thingIID.type().encoding().prefix() == VERTEX_ATTRIBUTE_TYPE) {
-                    storage.mergeUntracked(hasEdgeTotalCountKey(schemaGraph.rootAttributeType().iid()), longToBytes(-1));
+                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootAttributeType().iid()), longToBytes(-1));
                 }
                 storage.delete(countedKey);
             }

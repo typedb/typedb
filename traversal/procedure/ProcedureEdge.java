@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.GraphManager;
-import com.vaticle.typedb.core.graph.SchemaGraph;
+import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.edge.ThingEdge;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
@@ -958,7 +958,7 @@ public abstract class ProcedureEdge<
                     this.roleTypes = roleTypes;
                 }
 
-                Set<TypeVertex> resolvedRoleTypes(SchemaGraph graph) {
+                Set<TypeVertex> resolvedRoleTypes(TypeGraph graph) {
                     // TODO: a duplicate of this code exists in PlannerEdge.Native.Thing.RolePlayer,
                     //       which is another indicator that we should:
                     // TODO: Merge PlannerVertex, PlannerEdge, ProcedureVertex, and ProcedureEdge into some

@@ -18,8 +18,8 @@
 
 package com.vaticle.typedb.core.graph.vertex;
 
-import com.vaticle.typedb.core.graph.DataGraph;
 import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.ThingGraph;
 import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
@@ -27,16 +27,16 @@ import com.vaticle.typedb.core.graph.iid.VertexIID;
 public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thing> {
 
     /**
-     * Returns the {@code DataGraph} containing all {@code ThingVertex}.
+     * Returns the {@code ThingGraph} containing all {@code ThingVertex}.
      *
-     * @return the {@code DataGraph} containing all {@code ThingVertex}
+     * @return the {@code ThingGraph} containing all {@code ThingVertex}
      */
-    DataGraph graph();
+    ThingGraph graph();
 
     /**
-     * Returns the {@code GraphManager} containing both {@code SchemaGraph} and {@code DataGraph}.
+     * Returns the {@code GraphManager} containing both {@code TypeGraph} and {@code ThingGraph}.
      *
-     * @return the {@code GraphManager} containing both {@code SchemaGraph} and {@code DataGraph}
+     * @return the {@code GraphManager} containing both {@code TypeGraph} and {@code ThingGraph}
      */
     GraphManager graphs();
 

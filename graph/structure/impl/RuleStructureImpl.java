@@ -19,7 +19,7 @@ package com.vaticle.typedb.core.graph.structure.impl;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
-import com.vaticle.typedb.core.graph.SchemaGraph;
+import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.iid.IndexIID;
 import com.vaticle.typedb.core.graph.iid.StructureIID;
@@ -49,7 +49,7 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Property.WHEN;
 
 public abstract class RuleStructureImpl implements RuleStructure {
 
-    final SchemaGraph graph;
+    final TypeGraph graph;
     final AtomicBoolean isDeleted;
     final Conjunction<? extends Pattern> when;
     final ThingVariable<?> then;
@@ -58,7 +58,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
     private boolean isModified;
 
-    RuleStructureImpl(SchemaGraph graph, StructureIID.Rule iid, String label,
+    RuleStructureImpl(TypeGraph graph, StructureIID.Rule iid, String label,
                       Conjunction<? extends Pattern> when, ThingVariable<?> then) {
         assert when != null;
         assert then != null;
@@ -176,7 +176,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
         private final AtomicBoolean isCommitted;
 
-        public Buffered(SchemaGraph graph, StructureIID.Rule iid, String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
+        public Buffered(TypeGraph graph, StructureIID.Rule iid, String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
             super(graph, iid, label, when, then);
             this.isCommitted = new AtomicBoolean(false);
             setModified();
@@ -247,7 +247,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
     public static class Persisted extends RuleStructureImpl {
 
-        public Persisted(SchemaGraph graph, StructureIID.Rule iid) {
+        public Persisted(TypeGraph graph, StructureIID.Rule iid) {
             super(graph, iid,
                   new String(graph.storage().get(join(iid.bytes(), LABEL.infix().bytes()))),
                   TypeQL.parsePattern(new String(graph.storage().get(join(iid.bytes(), WHEN.infix().bytes())))).asConjunction(),

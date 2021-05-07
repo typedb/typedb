@@ -23,7 +23,7 @@ import com.google.ortools.linearsolver.MPVariable;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.GraphManager;
-import com.vaticle.typedb.core.graph.SchemaGraph;
+import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.traversal.graph.TraversalEdge;
@@ -1309,7 +1309,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     backward = new Backward(to.asThing(), from.asThing());
                 }
 
-                Set<TypeVertex> resolvedRoleTypes(SchemaGraph graph) {
+                Set<TypeVertex> resolvedRoleTypes(TypeGraph graph) {
                     if (resolvedRoleTypes == null) {
                         resolvedRoleTypes = iterate(roleTypes).map(graph::getType)
                                 .flatMap(rt -> tree(rt, r -> r.ins().edge(SUB).from())).toSet();

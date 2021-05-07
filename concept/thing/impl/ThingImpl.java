@@ -195,7 +195,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
                 throw exception(TypeDBException.of(INVALID_ROLE_TYPE_LABEL, scopedLabel));
             }
             String[] label = scopedLabel.split(":");
-            return RoleTypeImpl.of(vertex.graphs(), vertex.graph().schema().getType(label[1], label[0]));
+            return RoleTypeImpl.of(vertex.graphs(), vertex.graph().type().getType(label[1], label[0]));
         }).stream().toArray(RoleType[]::new));
     }
 

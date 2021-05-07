@@ -52,8 +52,8 @@ import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.collection.Bytes.stripPrefix;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.SchemaGraph.INVALID_SCHEMA_WRITE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_SCHEMA_READ_VIOLATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeGraph.INVALID_SCHEMA_WRITE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
@@ -77,7 +77,7 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.THING_TY
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.scopedLabel;
 import static java.lang.Math.toIntExact;
 
-public class SchemaGraph implements Graph {
+public class TypeGraph implements Graph {
 
     private final Storage storage;
     private final KeyGenerator.Schema.Buffered keyGenerator;
@@ -92,7 +92,7 @@ public class SchemaGraph implements Graph {
     private final boolean isReadOnly;
     private boolean isModified;
 
-    public SchemaGraph(Storage storage, boolean isReadOnly) {
+    public TypeGraph(Storage storage, boolean isReadOnly) {
         this.storage = storage;
         this.isReadOnly = isReadOnly;
         keyGenerator = new KeyGenerator.Schema.Buffered();
@@ -133,7 +133,7 @@ public class SchemaGraph implements Graph {
         return rules;
     }
 
-    public SchemaGraph.Statistics stats() {
+    public TypeGraph.Statistics stats() {
         return statistics;
     }
 
@@ -422,7 +422,7 @@ public class SchemaGraph implements Graph {
             RuleStructure ruleStructure = rulesByIID.get(iid);
             if (ruleStructure != null) return ruleStructure;
             else return rulesByIID.computeIfAbsent(iid, i -> {
-                RuleStructure structure = new RuleStructureImpl.Persisted(SchemaGraph.this, i);
+                RuleStructure structure = new RuleStructureImpl.Persisted(TypeGraph.this, i);
                 rulesByLabel.putIfAbsent(structure.label(), structure);
                 return structure;
             });
@@ -458,7 +458,7 @@ public class SchemaGraph implements Graph {
                 singleLabelLocks.computeIfAbsent(label, x -> newReadWriteLock()).writeLock().lock();
 
                 RuleStructure rule = rulesByLabel.computeIfAbsent(label, i -> new RuleStructureImpl.Buffered(
-                        SchemaGraph.this, StructureIID.Rule.generate(keyGenerator), label, when, then
+                        TypeGraph.this, StructureIID.Rule.generate(keyGenerator), label, when, then
                 ));
                 rulesByIID.put(rule.iid(), rule);
                 return rule;
@@ -890,7 +890,7 @@ public class SchemaGraph implements Graph {
         }
 
         public double outOwnsMean(Set<Label> labels, boolean isKey) {
-            return outOwnsMean(labels.stream().map(SchemaGraph.this::getType), isKey);
+            return outOwnsMean(labels.stream().map(TypeGraph.this::getType), isKey);
         }
 
         public double outOwnsMean(Stream<TypeVertex> types, boolean isKey) {
@@ -898,7 +898,7 @@ public class SchemaGraph implements Graph {
         }
 
         public double inOwnsMean(Set<Label> labels, boolean isKey) {
-            return inOwnsMean(labels.stream().map(SchemaGraph.this::getType), isKey);
+            return inOwnsMean(labels.stream().map(TypeGraph.this::getType), isKey);
         }
 
         public double inOwnsMean(Stream<TypeVertex> types, boolean isKey) {
@@ -906,7 +906,7 @@ public class SchemaGraph implements Graph {
         }
 
         public double outPlaysMean(Set<Label> labels) {
-            return outPlaysMean(labels.stream().map(SchemaGraph.this::getType));
+            return outPlaysMean(labels.stream().map(TypeGraph.this::getType));
         }
 
         public double outPlaysMean(Stream<TypeVertex> types) {
@@ -914,7 +914,7 @@ public class SchemaGraph implements Graph {
         }
 
         public double inPlaysMean(Set<Label> labels) {
-            return inPlaysMean(labels.stream().map(SchemaGraph.this::getType));
+            return inPlaysMean(labels.stream().map(TypeGraph.this::getType));
         }
 
         public double inPlaysMean(Stream<TypeVertex> types) {
@@ -922,7 +922,7 @@ public class SchemaGraph implements Graph {
         }
 
         public double outRelates(Set<Label> labels) {
-            return outRelates(labels.stream().map(SchemaGraph.this::getType));
+            return outRelates(labels.stream().map(TypeGraph.this::getType));
         }
 
         public double outRelates(Stream<TypeVertex> types) {
@@ -930,7 +930,7 @@ public class SchemaGraph implements Graph {
         }
 
         public double subTypesMean(Set<Label> labels, boolean isTransitive) {
-            return subTypesMean(labels.stream().map(SchemaGraph.this::getType), isTransitive);
+            return subTypesMean(labels.stream().map(TypeGraph.this::getType), isTransitive);
         }
 
         public double subTypesMean(Stream<TypeVertex> types, boolean isTransitive) {
