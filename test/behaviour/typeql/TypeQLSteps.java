@@ -509,9 +509,9 @@ public class TypeQLSteps {
     public void each_answer_does_not_satisfy(String templatedGraqlQuery) {
         String templatedQuery = String.join("\n", templatedGraqlQuery);
         for (ConceptMap answer : answers) {
-            String query = applyQueryTemplate(templatedQuery, answer);
-            GraqlMatch graqlQuery = Graql.parseQuery(query).asMatch();
-            long answerSize = tx().query().match(graqlQuery).toList().size();
+            String queryString = applyQueryTemplate(templatedQuery, answer);
+            TypeQLMatch query = TypeQL.parseQuery(queryString).asMatch();
+            long answerSize = tx().query().match(query).toList().size();
             assertEquals(0, answerSize);
         }
     }
