@@ -15,8 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+load("//:assemble.bzl", "assemble_targz")
 load("@vaticle_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
-load("@vaticle_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip")
+load("@vaticle_bazel_distribution//common:rules.bzl", "java_deps", "assemble_zip")
 load("@vaticle_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
