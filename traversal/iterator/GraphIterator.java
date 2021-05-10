@@ -175,7 +175,6 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             scopes.get(edge.from().id().asVariable()).edgeOrders().forEach(pos -> {
                 if (!procedure.edge(pos).isClosureEdge()) branchSeekStack.addSeek(pos);
             });
-//            seekStack.addSeeks(scopes.get(edge.from().id().asVariable()).edgeOrders());
         }
         branchSeekStack.addSeeks(edge.from().dependedEdgeOrders());
     }
