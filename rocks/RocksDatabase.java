@@ -410,7 +410,8 @@ public class RocksDatabase implements TypeDB.Database {
         private void requireEmptyIntersection(NavigableSet<ByteBuffer> set1, NavigableSet<ByteBuffer> set2, ErrorMessage error) {
             NavigableSet<ByteBuffer> active = set1;
             NavigableSet<ByteBuffer> other = set2;
-            ByteBuffer currentKey = active.pollFirst();
+            if (active.isEmpty()) return;
+            ByteBuffer currentKey = active.first();
             while (currentKey != null) {
                 ByteBuffer otherKey = other.ceiling(currentKey);
                 if (otherKey != null && otherKey.equals(currentKey)) throw TypeDBException.of(error);

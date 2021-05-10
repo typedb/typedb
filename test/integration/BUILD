@@ -85,7 +85,7 @@ host_compatible_java_test(
         "//common:common",
 
         # External dependencies from Vaticle
-        "@vaticle_typeql//java:typeql",
+        "@vaticle_typeql_lang_java//:typeql-lang",
     ],
     resources = [
         "//common/test:logback-test"

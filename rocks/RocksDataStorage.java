@@ -97,7 +97,7 @@ public class RocksDataStorage extends RocksStorage.TransactionBounded implements
     public void delete(byte[] key) {
         deleteUntracked(key);
         ByteBuffer bytes = ByteBuffer.wrap(key);
-        this.deletedKeys.put(bytes, false);
+        this.deletedKeys.put(bytes, true);
         this.modifiedKeys.remove(bytes);
         this.exclusiveInsertKeys.remove(bytes);
     }
@@ -119,7 +119,7 @@ public class RocksDataStorage extends RocksStorage.TransactionBounded implements
     public void setExclusiveCreate(byte[] key) {
         assert isOpen();
         ByteBuffer bytes = ByteBuffer.wrap(key);
-        this.exclusiveInsertKeys.put(bytes, false);
+        this.exclusiveInsertKeys.put(bytes, true);
         this.deletedKeys.remove(bytes);
     }
 
