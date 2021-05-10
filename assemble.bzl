@@ -23,7 +23,7 @@ def assemble_targz(name, targets, additional_files, permissions, output_filename
       targets = targets,
       additional_files = additional_files,
       permissions = permissions,
-      output_filename = output_filename + "__do_not_reference",
+      output_filename = output_filename,
       **kwargs
   )
 
