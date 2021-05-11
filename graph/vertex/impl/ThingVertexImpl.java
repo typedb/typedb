@@ -98,10 +98,16 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(ThingVertex.Write.class));
     }
 
+    @Override
+    public int compareTo(ThingVertex o) {
+        return iid.bytes().compareTo(o.iid().bytes());
+    }
+
     public static class Read extends ThingVertexImpl {
 
         protected final ThingAdjacency outs;
         protected final ThingAdjacency ins;
+
 
         public Read(ThingGraph graph, VertexIID.Thing iid) {
             super(graph, iid);

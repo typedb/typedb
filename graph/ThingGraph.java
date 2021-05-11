@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.graph;
 import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.collection.ByteArray;
+import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
@@ -45,6 +46,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -56,6 +58,7 @@ import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.Iterators.tree;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
@@ -84,7 +87,7 @@ public class ThingGraph {
     private final TypeGraph typeGraph;
     private final KeyGenerator.Data.Buffered keyGenerator;
     private final ConcurrentMap<VertexIID.Thing, ThingVertex.Write> thingsByIID;
-    private final ConcurrentMap<VertexIID.Type, ConcurrentSet<ThingVertex.Write>> thingsByTypeIID;
+    private final ConcurrentMap<VertexIID.Type, ConcurrentSkipListSet<ThingVertex.Write>> thingsByTypeIID;
     private final AttributesByIID attributesByIID;
     private final Statistics statistics;
     private boolean isModified;
@@ -203,7 +206,7 @@ public class ThingGraph {
         VertexIID.Thing iid = generate(keyGenerator, typeVertex.iid(), typeVertex.properLabel());
         ThingVertex.Write vertex = new ThingVertexImpl.Write.Buffered(this, iid, isInferred);
         thingsByIID.put(iid, vertex);
-        thingsByTypeIID.computeIfAbsent(typeVertex.iid(), t -> new ConcurrentSet<>()).add(vertex);
+        thingsByTypeIID.computeIfAbsent(typeVertex.iid(), t -> new ConcurrentSkipListSet<>()).add(vertex);
         if (!isInferred) statistics.vertexCreated(typeVertex.iid());
         return vertex;
     }
@@ -218,13 +221,16 @@ public class ThingGraph {
         }
     }
 
-    public FunctionalIterator<ThingVertex> getReadable(TypeVertex typeVertex) {
-        FunctionalIterator<ThingVertex> storageIterator = storage.iterate(
-                join(typeVertex.iid().bytes(), Encoding.Edge.ISA.in().bytes()),
-                (key, value) -> convertToReadable(EdgeIID.InwardsISA.of(key).end())
-        );
+    public FunctionalIterator.Sorted<ThingVertex> getReadable(TypeVertex typeVertex) {
+        ByteArray.Base prefix = join(typeVertex.iid().bytes(), Encoding.Edge.ISA.in().bytes());
+        FunctionalIterator.Sorted<ThingVertex> storageIterator = storage.iterate(
+                prefix, (key, value) -> key
+        ).mapSorted(inEdge -> convertToReadable(EdgeIID.InwardsISA.of(inEdge).end()), vertex -> join(prefix, vertex.iid().bytes()));
         if (!thingsByTypeIID.containsKey(typeVertex.iid())) return storageIterator;
-        else return link(thingsByTypeIID.get(typeVertex.iid()).iterator(), storageIterator).distinct();
+        else {
+            FunctionalIterator.Sorted<ThingVertex> buffered = iterateSorted(thingsByTypeIID.get(typeVertex.iid())).mapSorted(e -> e, ThingVertex::toWrite);
+            return storageIterator.merge(buffered).distinct();
+        }
     }
 
     public AttributeVertex<Boolean> getReadable(TypeVertex type, boolean value) {
@@ -303,7 +309,7 @@ public class ThingGraph {
                 new VertexIID.Attribute.Boolean(type.iid(), value),
                 iid -> {
                     AttributeVertexImpl.Write.Boolean v = new AttributeVertexImpl.Write.Boolean(this, iid, isInferred);
-                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSkipListSet<>()).add(v);
                     if (!isInferred && !v.isPersisted()) statistics.attributeVertexCreated(iid);
                     return v;
                 }
@@ -321,7 +327,7 @@ public class ThingGraph {
                 new VertexIID.Attribute.Long(type.iid(), value),
                 iid -> {
                     AttributeVertexImpl.Write.Long v = new AttributeVertexImpl.Write.Long(this, iid, isInferred);
-                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSkipListSet<>()).add(v);
                     if (!isInferred && !v.isPersisted()) statistics.attributeVertexCreated(iid);
                     return v;
                 }
@@ -339,7 +345,7 @@ public class ThingGraph {
                 new VertexIID.Attribute.Double(type.iid(), value),
                 iid -> {
                     AttributeVertexImpl.Write.Double v = new AttributeVertexImpl.Write.Double(this, iid, isInferred);
-                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSkipListSet<>()).add(v);
                     if (!isInferred && !v.isPersisted()) statistics.attributeVertexCreated(iid);
                     return v;
                 }
@@ -368,7 +374,7 @@ public class ThingGraph {
         AttributeVertex.Write<String> vertex = attributesByIID.strings.computeIfAbsent(
                 attIID, iid -> {
                     AttributeVertexImpl.Write.String v = new AttributeVertexImpl.Write.String(this, iid, isInferred);
-                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSkipListSet<>()).add(v);
                     if (!isInferred && !v.isPersisted()) statistics.attributeVertexCreated(iid);
                     return v;
                 }
@@ -386,7 +392,7 @@ public class ThingGraph {
                 new VertexIID.Attribute.DateTime(type.iid(), value),
                 iid -> {
                     AttributeVertexImpl.Write.DateTime v = new AttributeVertexImpl.Write.DateTime(this, iid, isInferred);
-                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSkipListSet<>()).add(v);
                     if (!isInferred && !v.isPersisted()) statistics.attributeVertexCreated(iid);
                     return v;
                 }
@@ -767,7 +773,7 @@ public class ThingGraph {
                 } else {
                     assert false;
                 }
-                storage.deleteTracked(countJob.key());
+                storage.deleteTracked(countJob.getBytes());
             }
             storage.mergeUntracked(snapshotKey(), encodeLong(1));
             return countJobs.hasNext();
@@ -852,7 +858,8 @@ public class ThingGraph {
             return bytes != null ? bytes.decodeLong() : 0;
         }
 
-        public abstract static class CountJob {
+        public abstract static class CountJob implements Bytes.ByteComparable<CountJob> {
+
             private final Encoding.Statistics.JobOperation value;
             private final ByteArray key;
 
@@ -879,7 +886,8 @@ public class ThingGraph {
                 }
             }
 
-            public ByteArray key() {
+            @Override
+            public ByteArray getBytes() {
                 return key;
             }
 

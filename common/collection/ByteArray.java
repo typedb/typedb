@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.common.collection;
 
 import com.vaticle.typedb.common.collection.Bytes;
+import com.vaticle.typedb.core.common.collection.Bytes.ByteComparable;
 import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 
 import java.nio.ByteBuffer;
@@ -34,10 +35,11 @@ import static com.vaticle.typedb.core.common.collection.Bytes.INTEGER_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.LONG_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.SHORT_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.SHORT_UNSIGNED_MAX_VALUE;
+import static com.vaticle.typedb.core.common.collection.Bytes.unsignedValue;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
-public abstract class ByteArray implements Comparable<ByteArray> {
+public abstract class ByteArray implements ByteComparable<ByteArray> {
 
     final byte[] array;
     private int hash = 0;
@@ -54,10 +56,14 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         return new ByteArray.Base(new byte[]{});
     }
 
+    @Override
+    public ByteArray getBytes() {
+        return this;
+    }
 
-    public abstract byte[] getBytes();
+    public abstract byte[] getArray();
 
-    public abstract byte[] cloneBytes();
+    public abstract byte[] cloneArray();
 
     public abstract boolean isEmpty();
 
@@ -111,7 +117,7 @@ public abstract class ByteArray implements Comparable<ByteArray> {
     public abstract boolean hasPrefix(ByteArray prefix);
 
     public String toHexString() {
-        return Bytes.bytesToHexString(getBytes());
+        return Bytes.bytesToHexString(getArray());
     }
 
     public static ByteArray fromHexString(String string) {
@@ -169,7 +175,7 @@ public abstract class ByteArray implements Comparable<ByteArray> {
 
     public short decodeSortedAsShort() {
         assert length() == SHORT_SIZE;
-        byte[] clone = cloneBytes();
+        byte[] clone = cloneArray();
         clone[0] = (byte) (clone[0] ^ 0x80);
         return ByteBuffer.wrap(clone).getShort();
     }
@@ -185,7 +191,7 @@ public abstract class ByteArray implements Comparable<ByteArray> {
 
     public long decodeSortedAsInteger() {
         assert length() == INTEGER_SIZE;
-        byte[] clone = cloneBytes();
+        byte[] clone = cloneArray();
         clone[0] = (byte) (clone[0] ^ 0x80);
         return ByteBuffer.wrap(clone).getInt();
     }
@@ -205,7 +211,7 @@ public abstract class ByteArray implements Comparable<ByteArray> {
 
     public long decodeSortedAsLong() {
         assert length() == LONG_SIZE;
-        byte[] clone = cloneBytes();
+        byte[] clone = cloneArray();
         clone[0] = (byte) (clone[0] ^ 0x80);
         return ByteBuffer.wrap(clone).getLong();
     }
@@ -240,7 +246,7 @@ public abstract class ByteArray implements Comparable<ByteArray> {
 
     public double decodeSortedAsDouble() {
         assert length() == DOUBLE_SIZE;
-        byte[] clone = cloneBytes();
+        byte[] clone = cloneArray();
         if ((clone[0] & 0x80) == 0x80) {
             clone[0] = (byte) (clone[0] ^ 0x80);
         } else {
@@ -273,15 +279,21 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         return LocalDateTime.ofInstant(Instant.ofEpochMilli(decodeSortedAsLong()), timeZoneID);
     }
 
+    /**
+     * This comparison function implements the same byte-wise lexicographic comparator that RocksDB comparators use
+     * See similar implementations at: https://stackoverflow.com/questions/5108091/java-comparator-for-byte-array-lexicographic
+     * Note: if this is performance bottleneck we could move to Guava's Unsafe comparator in the link above
+     */
     @Override
     public int compareTo(ByteArray that) {
-        if (that instanceof Base) return compareToBase((Base) that);
-        else return compareToView((View) that);
+        int n = Math.min(length(), that.length());
+        for (int i = 1; i < n; i++) {
+            int a = unsignedValue(get(i));
+            int b = unsignedValue(that.get(i));
+            if (a != b) return a - b;
+        }
+        return Integer.compare(length(), that.length());
     }
-
-    abstract int compareToView(View that);
-
-    abstract int compareToBase(Base that);
 
     @Override
     public boolean equals(Object o) {
@@ -309,7 +321,7 @@ public abstract class ByteArray implements Comparable<ByteArray> {
 
     @Override
     public String toString() {
-        return Arrays.toString(getBytes());
+        return Arrays.toString(getArray());
     }
 
     public static class Base extends ByteArray {
@@ -319,12 +331,12 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         }
 
         @Override
-        public byte[] getBytes() {
+        public byte[] getArray() {
             return array;
         }
 
         @Override
-        public byte[] cloneBytes() {
+        public byte[] cloneArray() {
             return Arrays.copyOf(array, array.length);
         }
 
@@ -407,26 +419,6 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         }
 
         @Override
-        int compareToBase(Base that) {
-            int n = Math.min(array.length, that.array.length);
-            for (int i = 0; i < n; i++) {
-                int cmp = Byte.compare(array[i], that.array[i]);
-                if (cmp != 0) return cmp;
-            }
-            return Integer.compare(array.length, that.array.length);
-        }
-
-        @Override
-        int compareToView(View that) {
-            int n = Math.min(array.length, that.length);
-            for (int i = 0; i < n; i++) {
-                int cmp = Byte.compare(array[i], that.array[i + that.start]);
-                if (cmp != 0) return cmp;
-            }
-            return Integer.compare(array.length, that.length);
-        }
-
-        @Override
         public boolean equalsBase(Base o) {
             return Arrays.equals(array, o.array);
         }
@@ -455,13 +447,13 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         }
 
         @Override
-        public byte[] getBytes() {
+        public byte[] getArray() {
             if (arrayCache == null) arrayCache = Arrays.copyOfRange(array, start, start + length);
             return arrayCache;
         }
 
         @Override
-        public byte[] cloneBytes() {
+        public byte[] cloneArray() {
             return Arrays.copyOfRange(array, start, start + length);
         }
 
@@ -542,26 +534,6 @@ public abstract class ByteArray implements Comparable<ByteArray> {
                 if (array[i + start] != prefix.get(i)) return false;
             }
             return true;
-        }
-
-        @Override
-        int compareToBase(Base that) {
-            int n = Math.min(length, that.array.length);
-            for (int i = 0; i < n; i++) {
-                int cmp = Byte.compare(array[i + start], that.array[i]);
-                if (cmp != 0) return cmp;
-            }
-            return Integer.compare(length, that.array.length);
-        }
-
-        @Override
-        int compareToView(View that) {
-            int n = Math.min(length, that.length);
-            for (int i = 0; i < n; i++) {
-                int cmp = Byte.compare(array[i + start], that.array[i + that.start]);
-                if (cmp != 0) return cmp;
-            }
-            return Integer.compare(length, that.length);
         }
 
         @Override

@@ -19,8 +19,13 @@
 package com.vaticle.typedb.core.common.iterator;
 
 import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 
 import java.util.Iterator;
+import java.util.NavigableSet;
+import java.util.NoSuchElementException;
+
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 
 class BaseIterator<T> extends AbstractFunctionalIterator<T> {
 
@@ -43,5 +48,55 @@ class BaseIterator<T> extends AbstractFunctionalIterator<T> {
     @Override
     public void recycle() {
         iterator.ifFirst(FunctionalIterator::recycle);
+    }
+
+    static class Sorted<T extends Comparable<? super T>> extends AbstractFunctionalIterator.Sorted<T> {
+
+        private final NavigableSet<T> source;
+        private Iterator<T> iterator;
+        private T next;
+        private T last;
+
+        public Sorted(NavigableSet<T> source) {
+            this.source = source;
+            this.iterator = source.iterator();
+            this.last = null;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return (next != null) || fetchAndCheck();
+        }
+
+        private boolean fetchAndCheck() {
+            if (iterator.hasNext()) {
+                next = iterator.next();
+                return true;
+            } else return false;
+        }
+
+        @Override
+        public T next() {
+            if (!hasNext()) throw new NoSuchElementException();
+            last = next;
+            next = null;
+            return last;
+        }
+
+        @Override
+        public void seek(T target) {
+            if (last != null && target.compareTo(last) < 0) throw TypeDBException.of(ILLEGAL_ARGUMENT); // cannot use backward seeks
+            this.iterator = source.tailSet(target).iterator();
+            this.next = null;
+        }
+
+        @Override
+        public T peek() {
+            if (!hasNext()) throw new NoSuchElementException();
+            return next;
+        }
+
+        @Override
+        public void recycle() { }
     }
 }

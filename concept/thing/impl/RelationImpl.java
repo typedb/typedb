@@ -84,8 +84,8 @@ public class RelationImpl extends ThingImpl implements Relation {
     @Override
     public void removePlayer(RoleType roleType, Thing player) {
         validateIsNotDeleted();
-        FunctionalIterator<ThingVertex> role = writableVertex().outs().edge(
-                RELATING, PrefixIID.of(ROLE), ((RoleTypeImpl) roleType).vertex.iid()
+        FunctionalIterator<ThingVertex> role = writableVertex().outs().edgeRelating(
+                PrefixIID.of(ROLE), ((RoleTypeImpl) roleType).vertex.iid()
         ).to().filter(v -> v.ins().edge(PLAYING, ((ThingImpl) player).writableVertex()) != null);
         if (role.hasNext()) {
             RoleImpl.of(role.next()).delete();
@@ -121,7 +121,7 @@ public class RelationImpl extends ThingImpl implements Relation {
     }
 
     private FunctionalIterator<ThingImpl> getPlayers(FunctionalIterator<TypeVertex> roleTypeVertices) {
-        return roleTypeVertices.flatMap(v -> readableVertex().outs().edge(ROLEPLAYER, v.iid()).to()).map(ThingImpl::of);
+        return roleTypeVertices.flatMap(v -> readableVertex().outs().edgeRolePlayer(v.iid()).to()).map(ThingImpl::of);
     }
 
     @Override

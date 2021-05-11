@@ -18,6 +18,10 @@
 
 package com.vaticle.typedb.core.common.iterator;
 
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
+
 public class FinaliseHandledIterator<T> extends AbstractFunctionalIterator<T> implements FunctionalIterator<T> {
 
     private final FunctionalIterator<T> iterator;
@@ -46,5 +50,50 @@ public class FinaliseHandledIterator<T> extends AbstractFunctionalIterator<T> im
     @Override
     protected void finalize() {
         function.run();
+    }
+
+    public static class Sorted<T extends Comparable<? super T>> extends AbstractFunctionalIterator.Sorted<T> {
+
+        private final FunctionalIterator.Sorted<T> source;
+        private final Runnable function;
+        private T last;
+
+        public Sorted(FunctionalIterator.Sorted<T> source, Runnable function) {
+            this.source = source;
+            this.function = function;
+            this.last = null;
+        }
+
+        @Override
+        public T peek() {
+            return source.peek();
+        }
+
+        @Override
+        public boolean hasNext() {
+            return source.hasNext();
+        }
+
+        @Override
+        public T next() {
+            last = source.next();
+            return last;
+        }
+
+        @Override
+        public void seek(T target) {
+            if (last != null && target.compareTo(last) < 0) throw TypeDBException.of(ILLEGAL_ARGUMENT); // cannot use backward seeks
+            source.seek(target);
+        }
+
+        @Override
+        public void recycle() {
+            source.recycle();
+        }
+
+        @Override
+        protected void finalize() {
+            function.run();
+        }
     }
 }

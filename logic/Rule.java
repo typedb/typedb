@@ -334,7 +334,9 @@ public class Rule {
         public abstract FunctionalIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
                                                                                           ConceptManager conceptMgr);
 
-        public Rule rule() { return rule; }
+        public Rule rule() {
+            return rule;
+        }
 
         public abstract Optional<ThingVariable> generating();
 
@@ -570,7 +572,7 @@ public class Rule {
                         playersWithIIDs.add(playerId);
                     }
                 });
-                return traversalEng.iterator(traversal).map(conceptMgr::conceptMap)
+                return traversalEng.relations(traversal).map(conceptMgr::conceptMap)
                         .map(conceptMap -> conceptMap.get(relationId).asRelation());
             }
 
@@ -639,8 +641,8 @@ public class Rule {
                                         assert constraint.asHas().attribute().isa().get().type().label().isPresent();
                                         assert constraint.asHas().attribute().value().size() == 1;
                                         return new Has.Explicit(constraint.asHas(), constraint.asHas().attribute().isa().get(),
-                                                                constraint.asHas().attribute().value().iterator().next(),
-                                                                rule);
+                                                constraint.asHas().attribute().value().iterator().next(),
+                                                rule);
                                     })).first();
                 }
 
@@ -658,8 +660,8 @@ public class Rule {
                     ValueConstraint<?> value = has().attribute().value().iterator().next();
                     if (!AttributeType.ValueType.of(value.value().getClass()).assignables().contains(attrTypeValueType)) {
                         throw TypeDBException.of(RULE_THEN_INVALID_VALUE_ASSIGNMENT, rule().getLabel(),
-                                                 value.value().getClass().getSimpleName(),
-                                                 attributeType.getValueType().getValueClass().getSimpleName());
+                                value.value().getClass().getSimpleName(),
+                                attributeType.getValueType().getValueClass().getSimpleName());
                     }
                 }
 

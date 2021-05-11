@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.graph.edge.impl;
 
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.graph.ThingGraph;
 import com.vaticle.typedb.core.graph.common.Encoding;
@@ -27,6 +28,7 @@ import com.vaticle.typedb.core.graph.iid.InfixIID;
 import com.vaticle.typedb.core.graph.iid.SuffixIID;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
+import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
@@ -106,7 +108,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         public EdgeIID.Thing outIID() {
             if (encoding.isOptimisation()) {
                 return EdgeIID.Thing.of(from.iid(), InfixIID.Thing.of(encoding.out(), optimised.type().iid()),
-                                        to.iid(), SuffixIID.of(optimised.iid().key()));
+                        to.iid(), SuffixIID.of(optimised.iid().key()));
             } else {
                 return EdgeIID.Thing.of(from.iid(), InfixIID.Thing.of(encoding.out()), to.iid());
             }
@@ -116,7 +118,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         public EdgeIID.Thing inIID() {
             if (encoding.isOptimisation()) {
                 return EdgeIID.Thing.of(to.iid(), InfixIID.Thing.of(encoding.in(), optimised.type().iid()),
-                                        from.iid(), SuffixIID.of(optimised.iid().key()));
+                        from.iid(), SuffixIID.of(optimised.iid().key()));
             } else {
                 return EdgeIID.Thing.of(to.iid(), InfixIID.Thing.of(encoding.in()), from.iid());
             }
@@ -218,6 +220,87 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         public final int hashCode() {
             return hash;
         }
+    }
+
+    public static class Virtual extends ThingEdgeImpl implements ThingEdge {
+
+        private final ThingVertex from;
+        private final ThingVertex to;
+        private final TypeVertex optimisedType;
+
+        public Virtual(Encoding.Edge.Thing encoding, ThingVertex from, ThingVertex to, TypeVertex optimisedType) {
+            super(from.graph(), encoding, false);
+            this.optimisedType = optimisedType;
+            assert !encoding.isOptimisation() || optimisedType != null;
+            this.from = from;
+            this.to = to;
+        }
+
+        @Override
+        public Encoding.Edge.Thing encoding() {
+            return encoding;
+        }
+
+        @Override
+        public EdgeIID.Thing outIID() {
+            if (encoding.isOptimisation()) {
+                return EdgeIID.Thing.of(from.iid(), InfixIID.Thing.of(encoding.out(), optimisedType.iid()),
+                        to.iid(), SuffixIID.of(ByteArray.empty()));
+            } else {
+                return EdgeIID.Thing.of(from.iid(), InfixIID.Thing.of(encoding.out()), to.iid());
+            }
+        }
+
+        @Override
+        public EdgeIID.Thing inIID() {
+            if (encoding.isOptimisation()) {
+                return EdgeIID.Thing.of(to.iid(), InfixIID.Thing.of(encoding.in(), optimisedType.iid()),
+                        from.iid(), SuffixIID.of(ByteArray.empty()));
+            } else {
+                return EdgeIID.Thing.of(to.iid(), InfixIID.Thing.of(encoding.in()), from.iid());
+            }
+        }
+
+        @Override
+        public ThingVertex from() {
+            return from;
+        }
+
+        @Override
+        public VertexIID.Thing fromIID() {
+            return from.iid();
+        }
+
+        @Override
+        public ThingVertex to() {
+            return to;
+        }
+
+        @Override
+        public VertexIID.Thing toIID() {
+            return to.iid();
+        }
+
+        @Override
+        public Optional<? extends ThingVertex> optimised() {
+            return Optional.empty();
+        }
+
+        @Override
+        public void delete() {
+            throw TypeDBException.of(ILLEGAL_OPERATION);
+        }
+
+        @Override
+        public void commit() {
+            throw TypeDBException.of(ILLEGAL_OPERATION);
+        }
+
+        @Override
+        public void isInferred(boolean isInferred) {
+            throw TypeDBException.of(ILLEGAL_OPERATION);
+        }
+
     }
 
     public static class Persisted extends ThingEdgeImpl implements ThingEdge {

@@ -24,7 +24,6 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import javax.annotation.Nullable;
 import java.util.Objects;
 
-// TODO: add compute mode: single vs all (for negation vs regular)
 public class Request {
 
     private final Actor.Driver<? extends Resolver<?>> sender;

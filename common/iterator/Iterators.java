@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NavigableSet;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
@@ -42,6 +44,10 @@ public class Iterators {
         return iterate(set());
     }
 
+    public static <T extends Comparable<T>> FunctionalIterator.Sorted<T> emptySorted() {
+        return iterateSorted(new ConcurrentSkipListSet()); // TODO resolve generic warning
+    }
+
     public static <T> FunctionalIterator<T> single(T item) {
         return iterate(set(item));
     }
@@ -57,6 +63,10 @@ public class Iterators {
 
     public static <T> FunctionalIterator<T> iterate(Iterator<T> iterator) {
         return new BaseIterator<>(Either.second(iterator));
+    }
+
+    public static <T extends Comparable<? super T>> FunctionalIterator.Sorted<T> iterateSorted(NavigableSet<T> set) {
+        return new BaseIterator.Sorted<>(set);
     }
 
     public static <T> FunctionalIterator<T> link(Iterator<? extends T> iter1, Iterator<? extends T> iter2) {

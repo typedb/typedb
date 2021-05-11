@@ -62,6 +62,11 @@ public abstract class AbstractFunctionalIterator<T> implements FunctionalIterato
     }
 
     @Override
+    public <U extends Comparable<U>> FunctionalIterator.Sorted<U> flatMerge(Function<T, FunctionalIterator.Sorted<U>> flatMappingFn) {
+        return new FlatMergeSortedIterator<>(this, flatMappingFn);
+    }
+
+    @Override
     public FunctionalIterator<T> filter(Predicate<T> predicate) {
         return new FilteredIterator<>(this, predicate);
     }
@@ -227,4 +232,34 @@ public abstract class AbstractFunctionalIterator<T> implements FunctionalIterato
 
     @Override
     public abstract void recycle();
+
+    public static abstract class Sorted<T extends Comparable<? super T>> extends AbstractFunctionalIterator<T> implements FunctionalIterator.Sorted<T> {
+
+        @SafeVarargs
+        @Override
+        public final FunctionalIterator.Sorted<T> merge(FunctionalIterator.Sorted<T>... iterators) {
+            List<FunctionalIterator.Sorted<T>> iters = list(list(iterators), this);
+            return new FlatMergeSortedIterator<>(iterate(iters), e -> e);
+        }
+
+        @Override
+        public <U extends Comparable<? super U>> FunctionalIterator.Sorted<U> mapSorted(Function<T, U> mappingFn, Function<U, T> reverseMappingFn) {
+            return new MappedIterator.Sorted<>(this, mappingFn, reverseMappingFn);
+        }
+
+        @Override
+        public FunctionalIterator.Sorted<T> distinct() {
+            return new DistinctIterator.Sorted<>(this);
+        }
+
+        @Override
+        public FunctionalIterator.Sorted<T> filter(Predicate<T> predicate) {
+            return new FilteredIterator.Sorted<>(this, predicate);
+        }
+
+        @Override
+        public FunctionalIterator.Sorted<T> onFinalise(Runnable function) {
+            return new FinaliseHandledIterator.Sorted<>(this, function);
+        }
+    }
 }

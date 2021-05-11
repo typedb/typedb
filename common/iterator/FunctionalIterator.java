@@ -39,6 +39,8 @@ public interface FunctionalIterator<T> extends Iterator<T> {
 
     <U> FunctionalIterator<U> flatMap(Function<T, FunctionalIterator<U>> flatMappingFn);
 
+    <U extends Comparable<U>> Sorted<U> flatMerge(Function<T, Sorted<U>> flatMappingFn);
+
     FunctionalIterator<T> filter(Predicate<T> predicate);
 
     FunctionalIterator<T> offset(long offset);
@@ -86,4 +88,29 @@ public interface FunctionalIterator<T> extends Iterator<T> {
     FunctionalIterator<T> onFinalise(Runnable function);
 
     void recycle();
+
+    interface Sorted<T extends Comparable<? super T>> extends FunctionalIterator<T> {
+
+        void seek(T target);
+
+        T peek();
+
+        Sorted<T> merge(Sorted<T>... iterators);
+
+        Sorted<T> distinct();
+
+        Sorted<T> filter(Predicate<T> predicate);
+
+        <U extends Comparable<? super U>> Sorted<U> mapSorted(Function<T, U> mappingFn, Function<U, T> reverseMappingFn);
+
+
+//        Sorted<T, K> offset(long offset);
+//
+//        Sorted<T, K> onConsumed(Runnable function);
+//
+//        Sorted<T, K> onError(Function<Exception, TypeDBException> exceptionFn);
+//
+//        Sorted<T, K> onFinalise(Runnable function);
+
+    }
 }

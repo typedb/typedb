@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.rocks;
 
 import com.vaticle.typedb.core.common.collection.ByteArray;
+import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.AbstractFunctionalIterator;
 
@@ -27,7 +28,7 @@ import java.util.function.BiFunction;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
-public final class RocksIterator<T> extends AbstractFunctionalIterator<T> implements AutoCloseable {
+public final class RocksIterator<T extends Bytes.ByteComparable<T>> extends AbstractFunctionalIterator.Sorted<T> implements AutoCloseable {
 
     private final ByteArray prefix;
     private final RocksStorage storage;
@@ -37,7 +38,7 @@ public final class RocksIterator<T> extends AbstractFunctionalIterator<T> implem
     private T next;
     private boolean isClosed;
 
-    private enum State {INIT, EMPTY, FETCHED, COMPLETED}
+    private enum State {INIT, EMPTY, SEEKED_EMPTY, FETCHED, COMPLETED}
 
     RocksIterator(RocksStorage storage, ByteArray prefix, BiFunction<ByteArray, ByteArray, T> constructor) {
         this.storage = storage;
@@ -47,12 +48,12 @@ public final class RocksIterator<T> extends AbstractFunctionalIterator<T> implem
         isClosed = false;
     }
 
-    public final T peek() {
+    @Override
+    public synchronized final T peek() {
         if (!hasNext()) {
             if (isClosed) throw TypeDBException.of(RESOURCE_CLOSED);
             else throw new NoSuchElementException();
         }
-
         return next;
     }
 
@@ -75,6 +76,8 @@ public final class RocksIterator<T> extends AbstractFunctionalIterator<T> implem
                 return true;
             case EMPTY:
                 return fetchAndCheck();
+            case SEEKED_EMPTY:
+                return checkValidNext();
             case INIT:
                 return initialiseAndCheck();
             default: // This should never be reached
@@ -82,33 +85,46 @@ public final class RocksIterator<T> extends AbstractFunctionalIterator<T> implem
         }
     }
 
-    private synchronized boolean initialiseAndCheck() {
-        if (state != State.COMPLETED) {
-            this.internalRocksIterator = storage.getInternalRocksIterator();
-            this.internalRocksIterator.seek(prefix.getBytes());
-            state = State.EMPTY;
-            return hasValidNext();
-        } else {
-            return false;
-        }
+    @Override
+    public synchronized void seek(T target) {
+        if (state == State.INIT) initialise(target.getBytes());
+        else internalRocksIterator.seek(target.getBytes().getArray());
+        state = State.SEEKED_EMPTY;
     }
 
     private synchronized boolean fetchAndCheck() {
         if (state != State.COMPLETED) {
             internalRocksIterator.next();
-            return hasValidNext();
+            return checkValidNext();
         } else {
             return false;
         }
     }
 
-    private synchronized boolean hasValidNext() {
+    private synchronized boolean initialiseAndCheck() {
+        if (state != State.COMPLETED) {
+            initialise(prefix.getBytes());
+            return checkValidNext();
+        } else {
+            return false;
+        }
+    }
+
+    private synchronized void initialise(ByteArray prefix) {
+        assert state == State.INIT;
+        this.internalRocksIterator = storage.getInternalRocksIterator();
+        this.internalRocksIterator.seek(prefix.getArray());
+        state = State.EMPTY;
+    }
+
+    private synchronized boolean checkValidNext() {
         ByteArray key;
         if (!internalRocksIterator.isValid() || !((key = ByteArray.of(internalRocksIterator.key())).hasPrefix(prefix))) {
             recycle();
             return false;
         }
         next = constructor.apply(key, ByteArray.of(internalRocksIterator.value()));
+        assert next.getBytes().equals(key);
         state = State.FETCHED;
         return true;
     }
