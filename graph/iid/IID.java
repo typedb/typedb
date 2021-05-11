@@ -24,14 +24,13 @@ public abstract class IID implements Comparable<IID> {
 
     String readableString; // for debugging
     final ByteArray bytes;
-    private int hash = 0;
 
     IID(ByteArray bytes) {
-        this.bytes = ByteBuffer.wrap(bytes);
+        this.bytes = bytes;
     }
 
     public ByteArray bytes() {
-        return bytes.array();
+        return bytes;
     }
 
     public boolean isEmpty() {
@@ -51,8 +50,7 @@ public abstract class IID implements Comparable<IID> {
 
     @Override
     public final int hashCode() {
-        if (hash == 0) hash = bytes.hashCode();
-        return hash;
+        return bytes.hashCode();
     };
 
     @Override
