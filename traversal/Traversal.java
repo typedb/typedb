@@ -33,6 +33,7 @@ import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
+import com.vaticle.typedb.core.traversal.iterator.RelationIterator;
 import com.vaticle.typedb.core.traversal.planner.Planner;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
 import com.vaticle.typedb.core.traversal.predicate.PredicateArgument;
@@ -122,6 +123,11 @@ public class Traversal {
                 return VertexMap.of(combinedAnswers);
             });
         }
+    }
+
+    FunctionalIterator<VertexMap> relations(GraphManager graphMgr) {
+        RelationIterator relationIterator = new RelationIterator(this.structure, this.parameters, graphMgr);
+        return relationIterator.iterator();
     }
 
     FunctionalProducer<VertexMap> producer(GraphManager graphMgr, Either<Arguments.Query.Producer, Long> context,
@@ -341,6 +347,10 @@ public class Traversal {
 
         public VertexIID.Thing getIID(Identifier.Variable identifier) {
             return iid.get(identifier);
+        }
+
+        public Set<Identifier.Variable> withIID() {
+            return iid.keySet();
         }
 
         public Set<Value> getValues(Identifier.Variable identifier, Predicate.Value<?> predicate) {

@@ -150,6 +150,11 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         ins.commit();
     }
 
+    @Override
+    public int compareTo(ThingVertex o) {
+        return iid().compareTo(o.iid());
+    }
+
     public static class Buffered extends ThingVertexImpl {
 
         public Buffered(ThingGraph graph, VertexIID.Thing iid, boolean isInferred) {

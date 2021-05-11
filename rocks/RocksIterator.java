@@ -21,13 +21,15 @@ package com.vaticle.typedb.core.rocks;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.AbstractFunctionalIterator;
+import com.vaticle.typedb.core.common.seeker.Seeker;
 
 import java.util.NoSuchElementException;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
-public final class RocksIterator<T> extends AbstractFunctionalIterator<T> implements AutoCloseable {
+public final class RocksIterator<T> extends AbstractFunctionalIterator<T> implements AutoCloseable, Seeker<T> {
 
     private final ByteArray prefix;
     private final RocksStorage storage;
@@ -45,6 +47,13 @@ public final class RocksIterator<T> extends AbstractFunctionalIterator<T> implem
         this.constructor = constructor;
         state = State.INIT;
         isClosed = false;
+    }
+
+    @Override
+    public synchronized boolean trySeek(T target, Function<T, byte[]> converter) {
+        if (state == State.INIT) initialise();
+        internalRocksIterator.seek(converter.apply(target));
+        return hasValidNext();
     }
 
     public final T peek() {
@@ -83,14 +92,19 @@ public final class RocksIterator<T> extends AbstractFunctionalIterator<T> implem
     }
 
     private synchronized boolean initialiseAndCheck() {
-        if (state != State.COMPLETED) {
-            this.internalRocksIterator = storage.getInternalRocksIterator();
-            this.internalRocksIterator.seek(prefix.getBytes());
-            state = State.EMPTY;
+        if (state == State.INIT) {
+            initialise();
             return hasValidNext();
         } else {
             return false;
         }
+    }
+
+    private synchronized void initialise() {
+        assert state == State.INIT;
+        this.internalRocksIterator = storage.getInternalRocksIterator();
+        this.internalRocksIterator.seek(prefix.getBytes());
+        state = State.EMPTY;
     }
 
     private synchronized boolean fetchAndCheck() {

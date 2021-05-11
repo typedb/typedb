@@ -65,12 +65,13 @@ public class TraversalEngine {
         return traversal.iterator(graphMgr, extraPlanningTime);
     }
 
-    public FunctionalIterator<VertexMap> iterator(GraphProcedure procedure, Traversal.Parameters params) {
-        return iterator(procedure, params, set());
+    public FunctionalIterator<VertexMap> relations(Traversal traversal) {
+        return traversal.relations(graphMgr);
     }
 
     public FunctionalIterator<VertexMap> iterator(GraphProcedure procedure, Traversal.Parameters params,
                                                   Set<Identifier.Variable.Retrievable> filter) {
         return procedure.iterator(graphMgr, params, filter);
     }
+
 }

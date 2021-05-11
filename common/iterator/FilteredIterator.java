@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.common.iterator;
 
 import java.util.NoSuchElementException;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 class FilteredIterator<T> extends AbstractFunctionalIterator<T> {
@@ -53,5 +54,40 @@ class FilteredIterator<T> extends AbstractFunctionalIterator<T> {
     @Override
     public void recycle() {
         iterator.recycle();
+    }
+
+    public static class Sorted<T, K extends Comparable<K>> extends AbstractFunctionalIterator.Sorted<T, K> {
+
+        private final FunctionalIterator.Sorted<T, K> source;
+        private final Predicate<T> predicate;
+
+        public Sorted(FunctionalIterator.Sorted<T, K> source, Function<T, K> keyExtractor, Predicate<T> predicate) {
+            super(keyExtractor);
+            this.source = source;
+            this.predicate = predicate;
+        }
+
+        @Override
+        public boolean hasNext() {
+            while (source.hasNext() && !predicate.test(source.peek())) source.next();
+            return source.hasNext();
+        }
+
+        @Override
+        public T next() {
+            if (!hasNext()) throw new NoSuchElementException();
+            return source.next();
+        }
+
+        @Override
+        public T peek() {
+            if (!hasNext()) throw new NoSuchElementException();
+            return source.peek();
+        }
+
+        @Override
+        public void recycle() {
+            source.recycle();
+        }
     }
 }
