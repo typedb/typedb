@@ -707,8 +707,7 @@ public abstract class ProcedureEdge<
                     Encoding.Edge.Thing encoding, VertexIID.Thing toIID, Set<Label> allowedToTypes) {
                 ThingVertex toVertex = graphMgr.data().get(toIID);
                 if (toVertex != null && fromVertex.ins().edge(encoding, toVertex) != null &&
-                        (allowedToTypes.isEmpty() || allowedToTypes.contains(toVertex.type().properLabel()))
-                ) {
+                        (allowedToTypes.isEmpty() || allowedToTypes.contains(toVertex.type().properLabel()))) {
                     return single(toVertex);
                 } else {
                     return empty();
@@ -757,8 +756,7 @@ public abstract class ProcedureEdge<
                             if (!iid.isAttribute()) att = null;
                             else att = graphMgr.data().get(iid.asAttribute());
                             if (att != null && owner.outs().edge(HAS, att) != null &&
-                                    (to.props().types().isEmpty() || to.props().types().contains(att.type().properLabel()))
-                            ) {
+                                    (to.props().types().isEmpty() || to.props().types().contains(att.type().properLabel()))) {
                                 iter = single(att);
                             } else {
                                 return empty();

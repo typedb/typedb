@@ -215,8 +215,8 @@ public class TypeResolver {
     private static class TraversalBuilder {
 
         private static final Identifier.Variable ROOT_ATTRIBUTE_ID = Identifier.Variable.label(ATTRIBUTE.toString());
-        private static final Label ROOT_ATTRIBUTE_LABEL = Label.of(ATTRIBUTE.toString());
         private static final Identifier.Variable ROOT_THING_ID = Identifier.Variable.label(THING.toString());
+        private static final Label ROOT_ATTRIBUTE_LABEL = Label.of(ATTRIBUTE.toString());
         private static final Label ROOT_THING_LABEL = Label.of(THING.toString());
         private final Map<Identifier.Variable, Set<ValueType>> resolverValueTypes;
         private final Map<Identifier.Variable, TypeVariable> originalToResolver;
