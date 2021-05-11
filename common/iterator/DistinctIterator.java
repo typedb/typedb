@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.common.iterator;
 import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.function.Function;
 
 // TODO: verify (and potentially fix) this class is able to handle null objects
 class DistinctIterator<T> extends AbstractFunctionalIterator<T> {
@@ -60,5 +61,46 @@ class DistinctIterator<T> extends AbstractFunctionalIterator<T> {
     @Override
     public void recycle() {
         iterator.recycle();
+    }
+
+    public static class Sorted<T, K extends Comparable<K>> extends AbstractFunctionalIterator.Sorted<T, K> {
+
+        private Sorted<T, K> source;
+        T last;
+
+        public Sorted(AbstractFunctionalIterator.Sorted<T, K> source, Function<T, K> keyExtractor) {
+            super(keyExtractor);
+            this.source = source;
+            last = null;
+        }
+
+        @Override
+        public boolean hasNext() {
+            while (source.hasNext()) {
+                if (source.peek().equals(last)) source.next();
+                else {
+                    last = source.peek();
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public T next() {
+            if (!hasNext()) throw new NoSuchElementException();
+            return source.next();
+        }
+
+        @Override
+        public T peek() {
+            if (!hasNext()) throw new NoSuchElementException();
+            return source.peek();
+        }
+
+        @Override
+        public void recycle() {
+            source.recycle();
+        }
     }
 }

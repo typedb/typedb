@@ -62,6 +62,11 @@ public abstract class AbstractFunctionalIterator<T> implements FunctionalIterato
     }
 
     @Override
+    public <K extends Comparable<K>> FunctionalIterator.Sorted<T, K> flatMerge(Function<T, FunctionalIterator.Sorted<T, K>> flatMappingFn) {
+        return new FlatMergeSortedIterator<>(this, flatMappingFn);
+    }
+
+    @Override
     public FunctionalIterator<T> filter(Predicate<T> predicate) {
         return new FilteredIterator<>(this, predicate);
     }
@@ -227,4 +232,64 @@ public abstract class AbstractFunctionalIterator<T> implements FunctionalIterato
 
     @Override
     public abstract void recycle();
+
+    public static abstract class Sorted<T, K extends Comparable<K>> extends AbstractFunctionalIterator<T> implements FunctionalIterator.Sorted<T, K> {
+
+        private final Function<T, K> keyExtractor;
+
+        Sorted(Function<T, K> keyExtractor) {
+            this.keyExtractor = keyExtractor;
+        }
+
+        @Override
+        public Function<T, K> keyExtractor() {
+            return keyExtractor;
+        }
+
+        @Override
+        public void seek(T target) {
+            K targetKey = keyExtractor.apply(target);
+            while (hasNext()) {
+                if (keyExtractor.apply(peek()).compareTo(targetKey) > 0) return;
+                else next();
+            }
+        }
+
+//        @Override
+//        public FunctionalIterator.Sorted<T, K> merge(FunctionalIterator.Sorted<T, K>... iterator) {
+//            return null;
+//        }
+
+        @Override
+        public FunctionalIterator.Sorted<T, K> distinct() {
+            return new DistinctIterator.Sorted<>(this, keyExtractor);
+        }
+
+        @Override
+        public FunctionalIterator.Sorted<T, K> filter(Predicate<T> predicate) {
+            return new FilteredIterator.Sorted<>(this, keyExtractor, predicate);
+        }
+
+//        @Override
+//        public FunctionalIterator.Sorted<T, K> offset(long offset) {
+//
+//        }
+//
+//        @Override
+//        public FunctionalIterator.Sorted<T, K> onConsumed(Runnable function) {
+//
+//        }
+//
+//        @Override
+//        public FunctionalIterator.Sorted<T, K> onError(Function<Exception, TypeDBException> exceptionFn) {
+//
+//        }
+//
+//        @Override
+//        public FunctionalIterator.Sorted<T, K> onFinalise(Runnable function) {
+//
+//        }
+
+
+    }
 }

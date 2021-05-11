@@ -21,6 +21,8 @@ package com.vaticle.typedb.core.common.iterator;
 import com.vaticle.typedb.common.collection.Either;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.function.Function;
 
 class BaseIterator<T> extends AbstractFunctionalIterator<T> {
 
@@ -43,5 +45,48 @@ class BaseIterator<T> extends AbstractFunctionalIterator<T> {
     @Override
     public void recycle() {
         iterator.ifFirst(FunctionalIterator::recycle);
+    }
+
+    static class Sorted<T, K extends Comparable<K>> extends AbstractFunctionalIterator.Sorted<T, K> {
+
+        private final Iterator<T> source;
+        T next;
+        K lastKey;
+
+        public Sorted(Iterator<T> sortedSource, Function<T, K> keyExtractor) {
+            super(keyExtractor);
+            this.source = sortedSource;
+            next = null;
+            lastKey = null;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return (next != null) || fetchAndCheck();
+        }
+
+        private boolean fetchAndCheck() {
+            if (source.hasNext()) {
+                next = source.next();
+                assert lastKey == null || lastKey.compareTo(keyExtractor().apply(next)) <= 0;
+                lastKey = keyExtractor().apply(next);
+                return true;
+            } else return false;
+        }
+
+        @Override
+        public T next() {
+            if (!hasNext()) throw new NoSuchElementException();
+            return next;
+        }
+
+        @Override
+        public T peek() {
+            if (!hasNext()) throw new NoSuchElementException();
+            return next;
+        }
+
+        @Override
+        public void recycle() { }
     }
 }

@@ -42,6 +42,10 @@ public class Iterators {
         return iterate(set());
     }
 
+    public static <T, K extends Comparable<K>> FunctionalIterator.Sorted<T, K> emptySorted(Function<T, K> keyExtractor) {
+        return iterateSorted(set(), keyExtractor);
+    }
+
     public static <T> FunctionalIterator<T> single(T item) {
         return iterate(set(item));
     }
@@ -57,6 +61,16 @@ public class Iterators {
 
     public static <T> FunctionalIterator<T> iterate(Iterator<T> iterator) {
         return new BaseIterator<>(Either.second(iterator));
+    }
+
+    public static <T, K extends Comparable<K>> FunctionalIterator.Sorted<T, K> iterateSorted(Collection<T> sortedCollection,
+                                                                                             Function<T, K> keyExtractor) {
+        return iterateSorted(sortedCollection.iterator(), keyExtractor);
+    }
+
+    public static <T, K extends Comparable<K>> FunctionalIterator.Sorted<T, K> iterateSorted(Iterator<T> sortedIterator,
+                                                                                             Function<T, K> keyExtractor) {
+        return new BaseIterator.Sorted<>(sortedIterator, keyExtractor);
     }
 
     public static <T> FunctionalIterator<T> link(Iterator<? extends T> iter1, Iterator<? extends T> iter2) {

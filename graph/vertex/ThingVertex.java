@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 
-public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thing> {
+public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thing>, Comparable<ThingVertex> {
 
     /**
      * Returns the {@code ThingGraph} containing all {@code ThingVertex}.

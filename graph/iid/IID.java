@@ -20,17 +20,17 @@ package com.vaticle.typedb.core.graph.iid;
 
 import com.vaticle.typedb.core.common.collection.ByteArray;
 
-public abstract class IID {
+public abstract class IID implements Comparable<IID> {
 
     String readableString; // for debugging
     final ByteArray bytes;
 
     IID(ByteArray bytes) {
-        this.bytes = bytes;
+        this.bytes = ByteBuffer.wrap(bytes);
     }
 
     public ByteArray bytes() {
-        return bytes;
+        return bytes.array();
     }
 
     public boolean isEmpty() {
@@ -51,6 +51,10 @@ public abstract class IID {
     @Override
     public final int hashCode() {
         return bytes.hashCode();
-    }
+    };
 
+    @Override
+    public int compareTo(IID o) {
+        return bytes.compareTo(o.bytes);
+    }
 }

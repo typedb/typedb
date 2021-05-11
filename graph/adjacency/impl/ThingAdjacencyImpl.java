@@ -36,11 +36,16 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
+import static com.vaticle.typedb.core.common.iterator.Iterators.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static java.util.Arrays.copyOfRange;
 
@@ -131,7 +136,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
         final ThingVertex.Write owner;
         final ConcurrentMap<InfixIID.Thing, ConcurrentSet<InfixIID.Thing>> infixes;
-        final ConcurrentMap<InfixIID.Thing, ConcurrentMap<EdgeIID.Thing, ThingEdge>> edges;
+        final ConcurrentMap<InfixIID.Thing, ConcurrentNavigableMap<EdgeIID.Thing, ThingEdge>> edges;
 
         Write(ThingVertex.Write owner, Encoding.Direction.Adjacency direction) {
             super(direction);
@@ -153,11 +158,12 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             }
         }
 
-        FunctionalIterator<ThingEdge> bufferedEdgeIterator(Encoding.Edge.Thing encoding, IID[] lookAhead) {
-            ConcurrentMap<EdgeIID.Thing, ThingEdge> result;
-            InfixIID.Thing infixIID = infixIID(encoding, lookAhead);
+        FunctionalIterator.Sorted<ThingEdge, ThingVertex> bufferedEdgeIterator(Encoding.Edge.Thing encoding, IID[] lookAhead) {
+            ConcurrentNavigableMap<EdgeIID.Thing, ThingEdge> result;
+        InfixIID.Thing infixIID = infixIID(encoding, lookAhead);
+        Function<ThingEdge, ThingVertex> sortKey = direction.isOut() ? Edge::to : Edge::from;
             if (lookAhead.length == encoding.lookAhead()) {
-                return (result = edges.get(infixIID)) != null ? iterate(result.values()) : empty();
+                return (result = edges.get(infixIID)) != null ? iterateSorted(result.values(), sortKey) : emptySorted(sortKey);
             }
 
             assert lookAhead.length < encoding.lookAhead();
@@ -172,9 +178,9 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
                 iids = newIIDs;
             }
 
-            return iterate(iids).flatMap(iid -> {
+            return iterate(iids).flatMerge(iid -> {
                 ConcurrentMap<EdgeIID.Thing, ThingEdge> res;
-                return (res = edges.get(iid)) != null ? iterate(res.values()) : empty();
+                return (res = edges.get(iid)) != null ? iterateSorted(res.values(), sortKey) : emptySorted(sortKey);
             });
         }
 
@@ -223,7 +229,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             }
 
             edges.compute(infixIID, (iid, edgesByOutIID) -> {
-                if (edgesByOutIID == null) edgesByOutIID = new ConcurrentHashMap<>();
+                if (edgesByOutIID == null) edgesByOutIID = new ConcurrentSkipListMap<>();
                 ThingEdge thingEdge = edgesByOutIID.get(edge.outIID());
                 if (thingEdge != null) {
                     if (thingEdge.isInferred() && !edge.isInferred()) thingEdge.isInferred(false);

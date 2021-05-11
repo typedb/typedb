@@ -241,6 +241,11 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
             throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(AttributeVertex.Write.class));
         }
 
+        @Override
+        public int compareTo(ThingVertex o) {
+            return iid().compareTo(o.iid());
+        }
+
         public static class Buffered extends ThingVertexImpl.Write {
 
             protected boolean isInferred;
