@@ -93,14 +93,13 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
             case INIT:
                 return checkFirst();
             case EMPTY:
-            break;
+                return false;
             case FETCHED:
                 return true;
             case COMPLETED:
                 return false;
             default:
                 throw TypeDBException.of(ILLEGAL_STATE);
-
         }
     }
 

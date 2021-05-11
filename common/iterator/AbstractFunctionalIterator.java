@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.common.iterator;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -35,6 +36,7 @@ import java.util.stream.StreamSupport;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.single;
 import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
@@ -62,8 +64,9 @@ public abstract class AbstractFunctionalIterator<T> implements FunctionalIterato
     }
 
     @Override
-    public <K extends Comparable<K>> FunctionalIterator.Sorted<T, K> flatMerge(Function<T, FunctionalIterator.Sorted<T, K>> flatMappingFn) {
-        return new FlatMergeSortedIterator<>(this, flatMappingFn);
+    public <U, K extends Comparable<K>> FunctionalIterator.Sorted<U, K> flatMerge(Function<T, FunctionalIterator.Sorted<U, K>> flatMappingFn,
+                                                                                  Function<U, K> keyExtractor) {
+        return new FlatMergeSortedIterator<>(this, flatMappingFn, keyExtractor);
     }
 
     @Override
@@ -255,10 +258,12 @@ public abstract class AbstractFunctionalIterator<T> implements FunctionalIterato
             }
         }
 
-//        @Override
-//        public FunctionalIterator.Sorted<T, K> merge(FunctionalIterator.Sorted<T, K>... iterator) {
-//            return null;
-//        }
+        @SafeVarargs
+        @Override
+        public final FunctionalIterator.Sorted<T, K> merge(FunctionalIterator.Sorted<T, K>... iterators) {
+            List<FunctionalIterator.Sorted<T, K>> iters = list(list(iterators), this);
+            return new FlatMergeSortedIterator<>(iterate(iters), e -> e, keyExtractor);
+        }
 
         @Override
         public FunctionalIterator.Sorted<T, K> distinct() {

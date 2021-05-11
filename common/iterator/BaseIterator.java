@@ -77,7 +77,9 @@ class BaseIterator<T> extends AbstractFunctionalIterator<T> {
         @Override
         public T next() {
             if (!hasNext()) throw new NoSuchElementException();
-            return next;
+            T value = next;
+            next = null;
+            return value;
         }
 
         @Override

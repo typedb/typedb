@@ -65,7 +65,7 @@ class DistinctIterator<T> extends AbstractFunctionalIterator<T> {
 
     public static class Sorted<T, K extends Comparable<K>> extends AbstractFunctionalIterator.Sorted<T, K> {
 
-        private Sorted<T, K> source;
+        private FunctionalIterator.Sorted<T, K> source;
         T last;
 
         public Sorted(AbstractFunctionalIterator.Sorted<T, K> source, Function<T, K> keyExtractor) {
@@ -78,10 +78,7 @@ class DistinctIterator<T> extends AbstractFunctionalIterator<T> {
         public boolean hasNext() {
             while (source.hasNext()) {
                 if (source.peek().equals(last)) source.next();
-                else {
-                    last = source.peek();
-                    return true;
-                }
+                else return true;
             }
             return false;
         }
@@ -89,7 +86,8 @@ class DistinctIterator<T> extends AbstractFunctionalIterator<T> {
         @Override
         public T next() {
             if (!hasNext()) throw new NoSuchElementException();
-            return source.next();
+            last = source.next();
+            return last;
         }
 
         @Override

@@ -26,11 +26,11 @@ public abstract class IID implements Comparable<IID> {
     final ByteArray bytes;
 
     IID(ByteArray bytes) {
-        this.bytes = ByteBuffer.wrap(bytes);
+        this.bytes = bytes;
     }
 
     public ByteArray bytes() {
-        return bytes.array();
+        return bytes;
     }
 
     public boolean isEmpty() {

@@ -62,26 +62,26 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         return InfixIID.Thing.of(infix, lookAhead);
     }
 
-    public static class ThingIteratorBuilderImpl implements ThingIteratorBuilder {
+    static class ThingIteratorBuilderImpl implements ThingIteratorBuilder {
 
-        private final FunctionalIterator<ThingEdge> edgeIterator;
+        private final FunctionalIterator.Sorted<ThingEdge, ThingVertex> edgeIterator;
 
-        ThingIteratorBuilderImpl(FunctionalIterator<ThingEdge> edgeIterator) {
+        ThingIteratorBuilderImpl(FunctionalIterator.Sorted<ThingEdge, ThingVertex> edgeIterator) {
             this.edgeIterator = edgeIterator;
         }
 
         @Override
         public FunctionalIterator<ThingVertex> from() {
-            return edgeIterator.map(ThingEdge::from);
+            return edgeIterator.map(Edge::from);
         }
 
         @Override
         public FunctionalIterator<ThingVertex> to() {
-            return edgeIterator.map(ThingEdge::to);
+            return edgeIterator.map(Edge::to);
         }
 
         @Override
-        public FunctionalIterator<ThingEdge> get() {
+        public FunctionalIterator.Sorted<ThingEdge, ThingVertex> get() {
             return edgeIterator;
         }
     }
@@ -181,7 +181,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             return iterate(iids).flatMerge(iid -> {
                 ConcurrentMap<EdgeIID.Thing, ThingEdge> res;
                 return (res = edges.get(iid)) != null ? iterateSorted(res.values(), sortKey) : emptySorted(sortKey);
-            });
+            }, sortKey);
         }
 
         @Override
@@ -335,13 +335,16 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
                 super(owner, direction);
             }
 
-            private FunctionalIterator<ThingEdge> edgeIterator(Encoding.Edge.Thing encoding, IID... lookahead) {
-                ByteArray iid = join(owner.iid().bytes(), infixIID(encoding, lookahead).bytes());
-                FunctionalIterator<ThingEdge> storageIterator = owner.graph().storage()
-                        .iterate(iid, (key, value) -> cache(newPersistedEdge(EdgeIID.Thing.of(key))));
-                FunctionalIterator<ThingEdge> bufferedIterator = bufferedEdgeIterator(encoding, lookahead);
-                return link(bufferedIterator, storageIterator).distinct();
-            }
+            private FunctionalIterator.Sorted<ThingEdge, ThingVertex> edgeIterator(Encoding.Edge.Thing encoding, IID... lookahead) {
+            ByteArray iid = join(owner.iid().bytes(), infixIID(encoding, lookahead).bytes());
+            Function<ThingEdge, ThingVertex> sortKey = direction.isOut() ? Edge::to : Edge::from;
+                FunctionalIterator.Sorted<ThingEdge, ThingVertex> storageIterator = iterateSorted(
+                    owner.graph().storage().iterate(iid, (key, value) -> cache(newPersistedEdge(EdgeIID.Thing.of(key)))),
+                    sortKey
+            );
+            FunctionalIterator.Sorted<ThingEdge, ThingVertex> bufferedIterator = bufferedEdgeIterator(encoding, lookahead);
+                return bufferedIterator.merge(storageIterator).distinct();
+        }
 
             private ThingEdgeImpl.Persisted newPersistedEdge(EdgeIID.Thing of) {
                 return new ThingEdgeImpl.Persisted(owner.graph(), of);
