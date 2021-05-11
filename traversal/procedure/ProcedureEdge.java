@@ -702,12 +702,17 @@ public abstract class ProcedureEdge<
                 }
             }
 
-            FunctionalIterator<? extends ThingVertex> backwardBranchToIID(
+            FunctionalIterator<? extends ThingVertex> backwardBranchToIIDFiltered(
                     GraphManager graphMgr, ThingVertex fromVertex,
-                    Encoding.Edge.Thing encoding, VertexIID.Thing toIID) {
+                    Encoding.Edge.Thing encoding, VertexIID.Thing toIID, Set<Label> allowedToTypes) {
                 ThingVertex toVertex = graphMgr.data().get(toIID);
-                if (toVertex != null && fromVertex.ins().edge(encoding, toVertex) != null) return single(toVertex);
-                else return empty();
+                if (toVertex != null && fromVertex.ins().edge(encoding, toVertex) != null &&
+                        (allowedToTypes.isEmpty() || allowedToTypes.contains(toVertex.type().properLabel()))
+                ) {
+                    return single(toVertex);
+                } else {
+                    return empty();
+                }
             }
 
             FunctionalIterator<? extends Vertex<?, ?>> forwardBranchToRole(GraphManager graphMgr, Vertex<?, ?> fromVertex,
@@ -751,8 +756,13 @@ public abstract class ProcedureEdge<
                             AttributeVertex<?> att;
                             if (!iid.isAttribute()) att = null;
                             else att = graphMgr.data().get(iid.asAttribute());
-                            if (att != null && owner.outs().edge(HAS, att) != null) iter = single(att);
-                            else return empty();
+                            if (att != null && owner.outs().edge(HAS, att) != null &&
+                                    (to.props().types().isEmpty() || to.props().types().contains(att.type().properLabel()))
+                            ) {
+                                iter = single(att);
+                            } else {
+                                return empty();
+                            }
                         } else if (!to.props().types().isEmpty()) {
                             eq = iterate(to.props().predicates()).filter(p -> p.operator().equals(EQ)).firstOrNull();
                             if (eq != null) {
@@ -795,7 +805,7 @@ public abstract class ProcedureEdge<
                         AttributeVertex<?> att = fromVertex.asThing().asAttribute();
 
                         if (to.props().hasIID()) {
-                            iter = backwardBranchToIID(graphMgr, att, HAS, params.getIID(to.id().asVariable()));
+                            iter = backwardBranchToIIDFiltered(graphMgr, att, HAS, params.getIID(to.id().asVariable()), to.props().types());
                         } else if (!to.props().types().isEmpty()) {
                             iter = iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).noNulls()
                                     .flatMap(t -> att.ins().edge(HAS, PrefixIID.of(t.encoding().instance()), t.iid()).from());
@@ -858,7 +868,7 @@ public abstract class ProcedureEdge<
 
                         if (to.props().hasIID()) {
                             assert to.id().isVariable();
-                            iter = backwardBranchToIID(graphMgr, role, PLAYING, params.getIID(to.id().asVariable()));
+                            iter = backwardBranchToIIDFiltered(graphMgr, role, PLAYING, params.getIID(to.id().asVariable()), toTypes);
                         } else if (!toTypes.isEmpty()) {
                             iter = iterate(toTypes).map(l -> graphMgr.schema().getType(l)).noNulls()
                                     .flatMap(t -> role.ins().edge(PLAYING, PrefixIID.of(t.encoding().instance()), t.iid()).from());
@@ -924,7 +934,7 @@ public abstract class ProcedureEdge<
 
                         if (to.props().hasIID()) {
                             assert to.id().isVariable();
-                            iter = backwardBranchToIID(graphMgr, role, RELATING, params.getIID(to.id().asVariable()));
+                            iter = backwardBranchToIIDFiltered(graphMgr, role, RELATING, params.getIID(to.id().asVariable()), toTypes);
                         } else if (!toTypes.isEmpty()) {
                             iter = iterate(toTypes).map(l -> graphMgr.schema().getType(l)).noNulls()
                                     .flatMap(t -> role.ins().edge(RELATING, PrefixIID.of(RELATION), t.iid()).from());

@@ -56,7 +56,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     private final Map<Identifier, FunctionalIterator<? extends Vertex<?, ?>>> iterators;
     private final Map<Identifier, Vertex<?, ?>> answer;
     private final Scopes scopes;
-    private final SeekStack seekStack;
+    private final BranchSeekStack branchSeekStack;
     private final int edgeCount;
     private int computeNextSeekPos;
     private State state;
@@ -73,7 +73,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         this.edgeCount = procedure.edgesCount();
         this.iterators = new HashMap<>();
         this.scopes = new Scopes();
-        this.seekStack = new SeekStack(edgeCount);
+        this.branchSeekStack = new BranchSeekStack(edgeCount);
         this.state = State.INIT;
         this.answer = new HashMap<>();
 
@@ -131,8 +131,8 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             answer.put(toID, toIter.next());
             if (pos == edgeCount) return true;
             while (!computeFirst(pos + 1)) {
-                if (pos == seekStack.peekLastPos()) {
-                    seekStack.popLastPos();
+                if (pos == branchSeekStack.peekLastPos()) {
+                    branchSeekStack.popLastPos();
                     if (toIter.hasNext()) answer.put(toID, toIter.next());
                     else {
                         popScope(pos);
@@ -172,22 +172,24 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     private void branchFailure(ProcedureEdge<?, ?> edge) {
         if (edge.onlyStartsFromRelation()) {
             assert edge.from().id().isVariable();
-            seekStack.addSeeks(scopes.get(edge.from().id().asVariable()).edgeOrders());
+            scopes.get(edge.from().id().asVariable()).edgeOrders().forEach(pos -> {
+                if (!procedure.edge(pos).isClosureEdge()) branchSeekStack.addSeek(pos);
+            });
         }
-        seekStack.addSeeks(edge.from().dependedEdgeOrders());
+        branchSeekStack.addSeeks(edge.from().dependedEdgeOrders());
     }
 
     private void closureFailure(ProcedureEdge<?, ?> edge) {
         assert edge.from().id().isVariable();
         if (edge.onlyStartsFromRelation()) {
-            seekStack.addSeeks(scopes.get(edge.from().id().asVariable()).edgeOrders());
-            seekStack.addSeeks(edge.to().dependedEdgeOrders());
+            branchSeekStack.addSeeks(scopes.get(edge.from().id().asVariable()).edgeOrders());
+            branchSeekStack.addSeeks(edge.to().dependedEdgeOrders());
         } else if (edge.onlyEndsAtRelation()) {
-            seekStack.addSeeks(edge.from().dependedEdgeOrders());
-            seekStack.addSeeks(scopes.get(edge.to().id().asVariable()).edgeOrders());
+            branchSeekStack.addSeeks(edge.from().dependedEdgeOrders());
+            branchSeekStack.addSeeks(scopes.get(edge.to().id().asVariable()).edgeOrders());
         } else {
-            seekStack.addSeeks(edge.to().dependedEdgeOrders());
-            seekStack.addSeeks(edge.from().dependedEdgeOrders());
+            branchSeekStack.addSeeks(edge.to().dependedEdgeOrders());
+            branchSeekStack.addSeeks(edge.from().dependedEdgeOrders());
         }
     }
 
@@ -415,12 +417,12 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
     }
 
-    private static class SeekStack {
+    private class BranchSeekStack {
 
         private boolean[] seek;
         private int lastPos;
 
-        private SeekStack(int size) {
+        private BranchSeekStack(int size) {
             seek = new boolean[size];
             lastPos = 0;
         }
@@ -429,7 +431,12 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             seeks.forEach(this::setSeek);
         }
 
+        public void addSeek(Integer pos) {
+            setSeek(pos);
+        }
+
         private void setSeek(int pos) {
+            assert !procedure.edge(pos).isClosureEdge();
             seek[pos - 1] = true;
             if (pos > lastPos) lastPos = pos;
         }

@@ -214,8 +214,9 @@ public class TypeResolver {
 
     private static class TraversalBuilder {
 
-        private static final Identifier.Variable ROOT_ATTRIBUTE_ID = Identifier.Variable.of(Reference.label(ATTRIBUTE.toString()));
+        private static final Identifier.Variable ROOT_ATTRIBUTE_ID = Identifier.Variable.label(ATTRIBUTE.toString());
         private static final Label ROOT_ATTRIBUTE_LABEL = Label.of(ATTRIBUTE.toString());
+        private static final Identifier.Variable ROOT_THING_ID = Identifier.Variable.label(THING.toString());
         private static final Label ROOT_THING_LABEL = Label.of(THING.toString());
         private final Map<Identifier.Variable, Set<ValueType>> resolverValueTypes;
         private final Map<Identifier.Variable, TypeVariable> originalToResolver;
@@ -225,6 +226,7 @@ public class TypeResolver {
         private final Traversal traversal;
         private final boolean insertable;
         private boolean hasRootAttribute;
+        private boolean hasRootThing;
         private int sysVarCounter;
 
         TraversalBuilder(Conjunction conjunction, ConceptManager conceptMgr, Traversal initialTraversal,
@@ -238,6 +240,7 @@ public class TypeResolver {
             this.sysVarCounter = initialAnonymousVarCounter;
             this.insertable = insertable;
             this.hasRootAttribute = false;
+            this.hasRootThing  = false;
             conjunction.variables().forEach(this::register);
         }
 
@@ -335,12 +338,20 @@ public class TypeResolver {
             // have resolved its valueType, so we execute convertValue first.
             var.value().forEach(constraint -> registerValue(resolver, constraint));
             var.isa().ifPresent(constraint -> registerIsa(resolver, constraint));
-            var.is().forEach(constraint -> registerIsThing(resolver, constraint));
+            var.is().forEach(constraint -> registerIs(resolver, constraint));
             var.has().forEach(constraint -> registerHas(resolver, constraint));
             if (insertable) var.relation().ifPresent(constraint -> registerInsertableRelation(resolver, constraint));
             else var.relation().ifPresent(constraint -> registerRelation(resolver, constraint));
-            var.iid().ifPresent(constraint -> registerIID(resolver, constraint));
+            var.iid().ifPresent(constraint -> {
+                if (resolver.constraints().isEmpty()) registerSubThing(resolver);
+            });
             return resolver;
+        }
+
+        private void registerSubThing(TypeVariable resolver) {
+            assert resolver.constraints().isEmpty();
+            registerRootThing();
+            traversal.sub(resolver.id(), ROOT_THING_ID, true);
         }
 
         private void registerIID(TypeVariable resolver, IIDConstraint iidConstraint) {
@@ -349,16 +360,18 @@ public class TypeResolver {
         }
 
         private void registerIsa(TypeVariable resolver, IsaConstraint isaConstraint) {
-            if (!isaConstraint.isExplicit() && !insertable)
+            if (!isaConstraint.isExplicit() && !insertable) {
                 traversal.sub(resolver.id(), register(isaConstraint.type()).id(), true);
-            else if (isaConstraint.type().reference().isName())
+            } else if (isaConstraint.type().reference().isName()) {
                 traversal.equalTypes(resolver.id(), register(isaConstraint.type()).id());
-            else if (isaConstraint.type().label().isPresent())
+            } else if (isaConstraint.type().label().isPresent()) {
                 traversal.labels(resolver.id(), isaConstraint.type().label().get().properLabel());
-            else throw TypeDBException.of(ILLEGAL_STATE);
+            } else {
+                throw TypeDBException.of(ILLEGAL_STATE);
+            }
         }
 
-        private void registerIsThing(TypeVariable resolver, IsConstraint isConstraint) {
+        private void registerIs(TypeVariable resolver, IsConstraint isConstraint) {
             traversal.equalTypes(resolver.id(), register(isConstraint.variable()).id());
         }
 
@@ -433,6 +446,13 @@ public class TypeResolver {
             if (!hasRootAttribute) {
                 traversal.labels(ROOT_ATTRIBUTE_ID, ROOT_ATTRIBUTE_LABEL);
                 hasRootAttribute = true;
+            }
+        }
+
+        private void registerRootThing() {
+            if (!hasRootThing) {
+                traversal.labels(ROOT_THING_ID, ROOT_THING_LABEL);
+                hasRootThing = true;
             }
         }
 
