@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
@@ -41,8 +42,8 @@ public class RocksDataStorage extends RocksStorage.TransactionBounded implements
     private final KeyGenerator.Data dataKeyGenerator;
 
     private final ConcurrentNavigableMap<ByteBuffer, Boolean> modifiedKeys;
-    private final ConcurrentNavigableMap<ByteBuffer, Boolean> deletedKeys;
-    private final ConcurrentNavigableMap<ByteBuffer, Boolean> exclusiveInsertKeys;
+    private final ConcurrentSkipListSet<ByteBuffer> deletedKeys;
+    private final ConcurrentSkipListSet<ByteBuffer> exclusiveInsertKeys;
     private final long snapshotStart;
     private volatile Long snapshotEnd;
 
@@ -52,8 +53,8 @@ public class RocksDataStorage extends RocksStorage.TransactionBounded implements
         this.dataKeyGenerator = database.dataKeyGenerator();
         this.snapshotStart = storageTransaction.getSnapshot().getSequenceNumber();
         this.modifiedKeys = new ConcurrentSkipListMap<>();
-        this.deletedKeys = new ConcurrentSkipListMap<>();
-        this.exclusiveInsertKeys = new ConcurrentSkipListMap<>();
+        this.deletedKeys = new ConcurrentSkipListSet<>();
+        this.exclusiveInsertKeys = new ConcurrentSkipListSet<>();
         this.snapshotEnd = null;
         this.database.writesManager().register(this);
     }
@@ -97,7 +98,7 @@ public class RocksDataStorage extends RocksStorage.TransactionBounded implements
     public void delete(byte[] key) {
         deleteUntracked(key);
         ByteBuffer bytes = ByteBuffer.wrap(key);
-        this.deletedKeys.put(bytes, true);
+        this.deletedKeys.add(bytes);
         this.modifiedKeys.remove(bytes);
         this.exclusiveInsertKeys.remove(bytes);
     }
@@ -119,7 +120,7 @@ public class RocksDataStorage extends RocksStorage.TransactionBounded implements
     public void setExclusiveCreate(byte[] key) {
         assert isOpen();
         ByteBuffer bytes = ByteBuffer.wrap(key);
-        this.exclusiveInsertKeys.put(bytes, true);
+        this.exclusiveInsertKeys.add(bytes);
         this.deletedKeys.remove(bytes);
     }
 
@@ -160,7 +161,7 @@ public class RocksDataStorage extends RocksStorage.TransactionBounded implements
     }
 
     public NavigableSet<ByteBuffer> deletedKeys() {
-        return deletedKeys.keySet();
+        return deletedKeys;
     }
 
     public FunctionalIterator<ByteBuffer> modifiedValidatedKeys() {
@@ -176,6 +177,6 @@ public class RocksDataStorage extends RocksStorage.TransactionBounded implements
     }
 
     public NavigableSet<ByteBuffer> exclusiveInsertKeys() {
-        return exclusiveInsertKeys.keySet();
+        return exclusiveInsertKeys;
     }
 }

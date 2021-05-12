@@ -367,43 +367,39 @@ public class RocksDatabase implements TypeDB.Database {
             open.add(storage);
         }
 
-        AtomicLong counter = new AtomicLong(0);
         void tryOptimisticCommit(RocksDataStorage storage) {
             assert open.contains(storage);
             Set<RocksDataStorage> concurrent = concurrentCommitted(storage);
-            long start = 0;
-            if (counter.get() % 10 == 0) {
-                start = System.nanoTime();
-            }
             synchronized (this) {
                 for (RocksDataStorage committed : concurrent) {
                     validateModifiedKeys(storage, committed);
                     requireEmptyIntersection(storage.deletedKeys(), committed.modifiedKeys(), TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION);
                     requireEmptyIntersection(storage.exclusiveInsertKeys(), committed.exclusiveInsertKeys(), TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION);
                 }
-                // note: put, then delete to avoid race conditions. Side effect: concurrent readers my see it in both
+                // note: put, then delete to avoid race conditions. Side effect: concurrent readers may see it in both
                 optimisticallyCommitted.add(storage);
                 open.remove(storage);
-            }
-            if (counter.getAndIncrement() % 10 == 0) {
-                System.out.println("Millis to validate consistency: " + (System.nanoTime() - start)/1000_000.0);
             }
         }
 
         private void validateModifiedKeys(RocksDataStorage storage, RocksDataStorage committed) {
-            if (storage.modifiedKeys().size() < committed.deletedKeys().size()) {
-                for (FunctionalIterator<ByteBuffer> modifiedKeys = storage.modifiedValidatedKeys(); modifiedKeys.hasNext(); ) {
-                    ByteBuffer modified = modifiedKeys.next();
-                    if (committed.deletedKeys().contains(modified)) {
+            NavigableSet<ByteBuffer> active = storage.modifiedKeys();
+            NavigableSet<ByteBuffer> other = committed.deletedKeys();
+            if (active.isEmpty()) return;
+            ByteBuffer currentKey = active.first();
+            while (currentKey != null) {
+                ByteBuffer otherKey = other.ceiling(currentKey);
+                if (otherKey != null && otherKey.equals(currentKey)) {
+                    if (storage.isModifiedValidatedKey(currentKey)) {
                         throw TypeDBException.of(TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION);
+                    } else {
+                        otherKey = other.higher(currentKey);
                     }
                 }
-            } else {
-                for (ByteBuffer key : committed.deletedKeys()) {
-                    if (storage.isModifiedValidatedKey(key)) {
-                        throw TypeDBException.of(TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION);
-                    }
-                }
+                currentKey = otherKey;
+                NavigableSet<ByteBuffer> tmp = other;
+                other = active;
+                active = tmp;
             }
         }
 

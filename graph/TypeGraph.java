@@ -346,10 +346,12 @@ public class TypeGraph implements Graph {
         }
     }
 
+    @Override
     public void setModified(IID iid) {
         if (!isModified) isModified = true;
     }
 
+    @Override
     public boolean isModified() {
         return isModified;
     }
