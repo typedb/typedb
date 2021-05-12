@@ -717,16 +717,13 @@ public abstract class ProcedureEdge<
             FunctionalIterator<? extends Vertex<?, ?>> forwardBranchToRole(GraphManager graphMgr, Vertex<?, ?> fromVertex,
                                                                            Encoding.Edge.Thing encoding) {
                 assert !to.props().hasIID() && to.props().predicates().isEmpty();
-                FunctionalIterator<ThingVertex> iter;
                 ThingVertex relation = fromVertex.asThing();
-                Set<Label> toTypes = to.props().types();
-                if (!toTypes.isEmpty()) {
-                    iter = iterate(toTypes).map(l -> graphMgr.schema().getType(l)).noNulls()
+                if (!to.props().types().isEmpty()) {
+                    return iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).noNulls()
                             .flatMap(t -> relation.outs().edge(encoding, PrefixIID.of(VERTEX_ROLE), t.iid()).to());
                 } else {
-                    iter = relation.outs().edge(encoding).to();
+                    return relation.outs().edge(encoding).to();
                 }
-                return iter;
             }
 
             static abstract class Has extends Thing {
@@ -768,7 +765,7 @@ public abstract class ProcedureEdge<
                                         .filter(a -> owner.outs().edge(HAS, a) != null);
                             } else {
                                 iter = iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).noNulls()
-                                        .flatMap(t -> owner.outs().edge(HAS, PrefixIID.of(VERTEX_ATTRIBUTE), t.iid()).to())
+                                        .flatMap(t -> owner.outs().edgeHas(PrefixIID.of(VERTEX_ATTRIBUTE), t.iid()).to())
                                         .map(ThingVertex::asAttribute);
                             }
                         } else {
@@ -806,7 +803,7 @@ public abstract class ProcedureEdge<
                             iter = backwardBranchToIIDFiltered(graphMgr, att, HAS, params.getIID(to.id().asVariable()), to.props().types());
                         } else if (!to.props().types().isEmpty()) {
                             iter = iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).noNulls()
-                                    .flatMap(t -> att.ins().edge(HAS, PrefixIID.of(t.encoding().instance()), t.iid()).from());
+                                    .flatMap(t -> att.ins().edgeHas(PrefixIID.of(t.encoding().instance()), t.iid()).from());
                         } else {
                             iter = att.ins().edge(HAS).from();
                         }
@@ -869,7 +866,7 @@ public abstract class ProcedureEdge<
                             iter = backwardBranchToIIDFiltered(graphMgr, role, PLAYING, params.getIID(to.id().asVariable()), toTypes);
                         } else if (!toTypes.isEmpty()) {
                             iter = iterate(toTypes).map(l -> graphMgr.schema().getType(l)).noNulls()
-                                    .flatMap(t -> role.ins().edge(PLAYING, PrefixIID.of(t.encoding().instance()), t.iid()).from());
+                                    .flatMap(t -> role.ins().edgePlaying(PrefixIID.of(t.encoding().instance()), t.iid()).from());
                         } else {
                             iter = role.ins().edge(PLAYING).from();
                         }
@@ -935,7 +932,7 @@ public abstract class ProcedureEdge<
                             iter = backwardBranchToIIDFiltered(graphMgr, role, RELATING, params.getIID(to.id().asVariable()), toTypes);
                         } else if (!toTypes.isEmpty()) {
                             iter = iterate(toTypes).map(l -> graphMgr.schema().getType(l)).noNulls()
-                                    .flatMap(t -> role.ins().edge(RELATING, PrefixIID.of(RELATION), t.iid()).from());
+                                    .flatMap(t -> role.ins().edgeRelating(PrefixIID.of(RELATION), t.iid()).from());
                         } else {
                             iter = role.ins().edge(RELATING).from();
                         }
@@ -1041,16 +1038,16 @@ public abstract class ProcedureEdge<
                                 // TODO: the following code can be optimised if we have an API to directly get the
                                 //       roleplayer edge when we have the roleplayer vertex
                                 iter = resolveRoleTypesIter.flatMap(
-                                        rt -> rel.outs().edge(ROLEPLAYER, rt.iid(), player.iid().prefix(), player.iid().type()).get()
+                                        rt -> rel.outs().edgeRolePlayer(rt.iid(), player.iid().prefix(), player.iid().type()).get()
                                 ).filter(e -> e.to().equals(player));
                             } else if (!to.props().types().isEmpty()) {
                                 filteredTypes = true;
                                 iter = resolveRoleTypesIter.flatMap(
                                         rt -> iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).noNulls()
-                                                .flatMap(t -> rel.outs().edge(ROLEPLAYER, rt.iid(), PrefixIID.of(t.encoding().instance()), t.iid()).get())
+                                                .flatMap(t -> rel.outs().edgeRolePlayer(rt.iid(), PrefixIID.of(t.encoding().instance()), t.iid()).get())
                                 );
                             } else {
-                                iter = resolveRoleTypesIter.flatMap(rt -> rel.outs().edge(ROLEPLAYER, rt.iid()).get());
+                                iter = resolveRoleTypesIter.flatMap(rt -> rel.outs().edgeRolePlayer(rt.iid()).get());
                             }
                         } else {
                             iter = rel.outs().edge(ROLEPLAYER).get();
@@ -1069,7 +1066,7 @@ public abstract class ProcedureEdge<
                         Optional<ThingEdge> validEdge;
                         if (!roleTypes.isEmpty()) {
                             validEdge = iterate(resolvedRoleTypes(graphMgr.schema())).flatMap(
-                                    rt -> rel.outs().edge(ROLEPLAYER, rt.iid(), player.iid().prefix(), player.iid().type()).get()
+                                    rt -> rel.outs().edgeRolePlayer(rt.iid(), player.iid().prefix(), player.iid().type()).get()
                                             .filter(e -> e.to().equals(player) && !scoped.contains(e.optimised().get())))
                                     .first();
                         } else {
@@ -1104,15 +1101,15 @@ public abstract class ProcedureEdge<
                                 ThingVertex relation = graphMgr.data().get(params.getIID(to.id().asVariable()));
                                 if (relation == null) return empty();
                                 iter = resolveRoleTypesIter.flatMap(
-                                        rt -> player.ins().edge(ROLEPLAYER, rt.iid(), relation.iid().prefix(), relation.iid().type())
+                                        rt -> player.ins().edgeRolePlayer(rt.iid(), relation.iid().prefix(), relation.iid().type())
                                                 .get().filter(r -> r.from().equals(relation)));
                             } else if (!to.props().types().isEmpty()) {
                                 filteredTypes = true;
                                 iter = resolveRoleTypesIter.flatMap(
                                         rt -> iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).noNulls()
-                                                .flatMap(t -> player.ins().edge(ROLEPLAYER, rt.iid(), PrefixIID.of(t.encoding().instance()), t.iid()).get()));
+                                                .flatMap(t -> player.ins().edgeRolePlayer(rt.iid(), PrefixIID.of(t.encoding().instance()), t.iid()).get()));
                             } else {
-                                iter = resolveRoleTypesIter.flatMap(rt -> player.ins().edge(ROLEPLAYER, rt.iid()).get());
+                                iter = resolveRoleTypesIter.flatMap(rt -> player.ins().edgeRolePlayer(rt.iid()).get());
                             }
                         } else {
                             iter = player.ins().edge(ROLEPLAYER).get();
@@ -1130,7 +1127,7 @@ public abstract class ProcedureEdge<
                         Optional<ThingEdge> validEdge;
                         if (!roleTypes.isEmpty()) {
                             validEdge = iterate(resolvedRoleTypes(graphMgr.schema())).flatMap(
-                                    rt -> player.ins().edge(ROLEPLAYER, rt.iid(), rel.iid().prefix(), rel.iid().type()).get()
+                                    rt -> player.ins().edgeRolePlayer(rt.iid(), rel.iid().prefix(), rel.iid().type()).get()
                                             .filter(e -> e.from().equals(rel) && !scoped.contains(e.optimised().get())))
                                     .first();
                         } else {
