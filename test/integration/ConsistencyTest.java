@@ -166,8 +166,7 @@ public class ConsistencyTest {
                 // success
                 return;
             } catch (Exception e) {
-                System.out.println("Wrong exception type: " + e);
-                fail();
+                fail("Wrong exception type: " + e);
             }
             fail();
         }
@@ -214,8 +213,7 @@ public class ConsistencyTest {
                 // success
                 return;
             } catch (Exception e) {
-                System.out.println("Wrong exception type: " + e);
-                fail();
+                fail("Wrong exception type: " + e);
             }
             fail();
         }
@@ -254,8 +252,7 @@ public class ConsistencyTest {
                 // success
                 return;
             } catch (Exception e) {
-                System.out.println("Wrong exception type: " + e);
-                fail();
+                fail("Wrong exception type: " + e);
             }
             fail();
         }
@@ -278,8 +275,7 @@ public class ConsistencyTest {
                 // success
                 return;
             } catch (Exception e) {
-                System.out.println("Wrong exception type: " + e);
-                fail();
+                fail("Wrong exception type: " + e);
             }
             fail();
 
@@ -303,8 +299,7 @@ public class ConsistencyTest {
                 // success
                 return;
             } catch (Exception e) {
-                System.out.println("Wrong exception type: " + e);
-                fail();
+                fail("Wrong exception type: " + e);
             }
             fail();
         }
@@ -328,8 +323,7 @@ public class ConsistencyTest {
                 // success
                 return;
             } catch (Exception e) {
-                System.out.println("Wrong exception type: " + e);
-                fail();
+                fail("Wrong exception type: " + e);
             }
             fail();
         }
@@ -388,8 +382,7 @@ public class ConsistencyTest {
                 // success
                 return;
             } catch (Exception e) {
-                System.out.println("Wrong exception type: " + e);
-                fail();
+                fail("Wrong exception type: " + e);
             }
             fail();
         }

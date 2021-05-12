@@ -141,23 +141,19 @@ public class BasicTest {
     @Test
     public void write_types_concurrently() throws IOException, InterruptedException {
         Util.resetDirectory(dataDir);
-        System.out.println("1");
         try (TypeDB typedb = RocksTypeDB.open(options)) {
             typedb.databases().create(database);
-            System.out.println("2");
 
             assertTrue(typedb.isOpen());
             assertEquals(1, typedb.databases().all().size());
             assertEquals(database, typedb.databases().all().iterator().next().name());
 
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
-                System.out.println("3");
 
                 assertTrue(session.isOpen());
                 assertEquals(database, session.database().name());
 
                 try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
-                    System.out.println("4");
                     assertTrue(transaction.isOpen());
                     assertTrue(transaction.type().isRead());
 
