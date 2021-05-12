@@ -97,7 +97,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
     public void setModified() {
         if (!isModified) {
             isModified = true;
-            graph.setModified(iid);
+            graph.setModified();
         }
     }
 
@@ -341,8 +341,8 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         private void commitVertex() {
-            graph.storage().put(iid.bytes());
-            graph.storage().put(IndexIID.Type.Label.of(label, scope).bytes(), iid.bytes());
+            graph.storage().putUntracked(iid.bytes());
+            graph.storage().putUntracked(IndexIID.Type.Label.of(label, scope).bytes(), iid.bytes());
         }
 
         private void commitProperties() {
@@ -354,23 +354,23 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         private void commitPropertyScope() {
-            graph.storage().put(join(iid.bytes(), SCOPE.infix().bytes()), scope.getBytes());
+            graph.storage().putUntracked(join(iid.bytes(), SCOPE.infix().bytes()), scope.getBytes());
         }
 
         private void commitPropertyAbstract() {
-            graph.storage().put(join(iid.bytes(), ABSTRACT.infix().bytes()));
+            graph.storage().putUntracked(join(iid.bytes(), ABSTRACT.infix().bytes()));
         }
 
         private void commitPropertyLabel() {
-            graph.storage().put(join(iid.bytes(), LABEL.infix().bytes()), label.getBytes());
+            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), label.getBytes());
         }
 
         private void commitPropertyValueType() {
-            graph.storage().put(join(iid.bytes(), VALUE_TYPE.infix().bytes()), valueType.bytes());
+            graph.storage().putUntracked(join(iid.bytes(), VALUE_TYPE.infix().bytes()), valueType.bytes());
         }
 
         private void commitPropertyRegex() {
-            graph.storage().put(join(iid.bytes(), REGEX.infix().bytes()), regex.pattern().getBytes());
+            graph.storage().putUntracked(join(iid.bytes(), REGEX.infix().bytes()), regex.pattern().getBytes());
         }
     }
 
@@ -410,9 +410,9 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         public void label(String label) {
             assert !isDeleted();
             graph.update(this, this.label, scope, label, scope);
-            graph.storage().put(join(iid.bytes(), LABEL.infix().bytes()), label.getBytes());
-            graph.storage().delete(IndexIID.Type.Label.of(this.label, scope).bytes());
-            graph.storage().put(IndexIID.Type.Label.of(label, scope).bytes(), iid.bytes());
+            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), label.getBytes());
+            graph.storage().deleteUntracked(IndexIID.Type.Label.of(this.label, scope).bytes());
+            graph.storage().putUntracked(IndexIID.Type.Label.of(label, scope).bytes(), iid.bytes());
             this.label = label;
         }
 
@@ -420,9 +420,9 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         public void scope(String scope) {
             assert !isDeleted();
             graph.update(this, label, this.scope, label, scope);
-            graph.storage().put(join(iid.bytes(), SCOPE.infix().bytes()), scope.getBytes());
-            graph.storage().delete(IndexIID.Type.Label.of(label, this.scope).bytes());
-            graph.storage().put(IndexIID.Type.Label.of(label, scope).bytes(), iid.bytes());
+            graph.storage().putUntracked(join(iid.bytes(), SCOPE.infix().bytes()), scope.getBytes());
+            graph.storage().deleteUntracked(IndexIID.Type.Label.of(label, this.scope).bytes());
+            graph.storage().putUntracked(IndexIID.Type.Label.of(label, scope).bytes(), iid.bytes());
             this.scope = scope;
         }
 
@@ -437,8 +437,8 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         @Override
         public TypeVertexImpl isAbstract(boolean isAbstract) {
             assert !isDeleted();
-            if (isAbstract) graph.storage().put(join(iid.bytes(), ABSTRACT.infix().bytes()));
-            else graph.storage().delete(join(iid.bytes(), ABSTRACT.infix().bytes()));
+            if (isAbstract) graph.storage().putUntracked(join(iid.bytes(), ABSTRACT.infix().bytes()));
+            else graph.storage().deleteUntracked(join(iid.bytes(), ABSTRACT.infix().bytes()));
             this.isAbstract = isAbstract;
             this.setModified();
             return this;
@@ -455,7 +455,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         @Override
         public TypeVertexImpl valueType(Encoding.ValueType valueType) {
             assert !isDeleted();
-            graph.storage().put(join(iid.bytes(), VALUE_TYPE.infix().bytes()), valueType.bytes());
+            graph.storage().putUntracked(join(iid.bytes(), VALUE_TYPE.infix().bytes()), valueType.bytes());
             this.valueType = valueType;
             this.setModified();
             return this;
@@ -473,8 +473,8 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         @Override
         public TypeVertexImpl regex(Pattern regex) {
             assert !isDeleted();
-            if (regex == null) graph.storage().delete(join(iid.bytes(), REGEX.infix().bytes()));
-            else graph.storage().put(join(iid.bytes(), REGEX.infix().bytes()), regex.pattern().getBytes());
+            if (regex == null) graph.storage().deleteUntracked(join(iid.bytes(), REGEX.infix().bytes()));
+            else graph.storage().putUntracked(join(iid.bytes(), REGEX.infix().bytes()), regex.pattern().getBytes());
             this.regex = regex;
             this.setModified();
             return this;
@@ -495,10 +495,10 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         private void deleteVertexFromStorage() {
-            graph.storage().delete(IndexIID.Type.Label.of(label, scope).bytes());
+            graph.storage().deleteUntracked(IndexIID.Type.Label.of(label, scope).bytes());
             FunctionalIterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
-            while (keys.hasNext()) graph.storage().delete(keys.next());
-            graph.storage().delete(StatisticsBytes.vertexCountKey(iid));
+            while (keys.hasNext()) graph.storage().deleteUntracked(keys.next());
+            graph.storage().deleteUntracked(StatisticsBytes.vertexCountKey(iid));
         }
     }
 }

@@ -86,7 +86,7 @@ public class RocksDatabase implements TypeDB.Database {
     protected final KeyGenerator.Data.Persisted dataKeyGenerator;
     private final StampedLock schemaLock;
     private final RocksTypeDB typedb;
-    private final WriteConsistencyManager writesManager;
+    private final ConsistencyManager consistencyManager;
     private final AtomicInteger schemaLockWriteRequests;
     private Cache cache;
 
@@ -112,7 +112,7 @@ public class RocksDatabase implements TypeDB.Database {
             throw TypeDBException.of(e);
         }
         isOpen = new AtomicBoolean(true);
-        this.writesManager = new WriteConsistencyManager();
+        this.consistencyManager = new ConsistencyManager();
     }
 
     static RocksDatabase createAndOpen(RocksTypeDB typedb, String name, Factory.Session sessionFactory) {
@@ -248,8 +248,8 @@ public class RocksDatabase implements TypeDB.Database {
         return dataKeyGenerator;
     }
 
-    public WriteConsistencyManager writesManager() {
-        return writesManager;
+    public ConsistencyManager consistencyManager() {
+        return consistencyManager;
     }
 
     /**
@@ -340,14 +340,15 @@ public class RocksDatabase implements TypeDB.Database {
     avoid this causing issues by deduplicating into sets where otherwise we may have used iterators.
     This is preferable to intermediate readers not seeing the storage at all, possibly causing consistency violations
      */
-    public static class WriteConsistencyManager {
+    public static class ConsistencyManager {
 
+        // TODO move events and uncommitted into a Timeline class
         ConcurrentNavigableMap<Long, ConcurrentMap<RocksStorage.Data, EventType>> events;
-        ConcurrentSet<RocksStorage.Data> open;
+        ConcurrentSet<RocksStorage.Data> open; // TODO merge open and committed into one concurrent map with a boolean
         ConcurrentSet<RocksStorage.Data> optimisticallyCommitted;
         private AtomicBoolean cleanupRunning;
 
-        WriteConsistencyManager() {
+        ConsistencyManager() {
             this.events = new ConcurrentSkipListMap<>();
             this.open = new ConcurrentSet<>();
             this.optimisticallyCommitted = new ConcurrentSet<>();
@@ -355,13 +356,9 @@ public class RocksDatabase implements TypeDB.Database {
         }
 
         void register(RocksStorage.Data storage) {
-            long snapshotStart = storage.snapshotStart();
-            events.compute(snapshotStart, (snapshot, events) -> {
-                if (events == null) events = new ConcurrentHashMap<>();
-                assert !events.containsKey(storage);
-                events.put(storage, EventType.OPEN);
-                return events;
-            });
+            events.computeIfAbsent(
+                    storage.snapshotStart(), (key) -> new ConcurrentHashMap<>()
+            ).put(storage, EventType.OPEN);
             open.add(storage);
         }
 
@@ -417,8 +414,8 @@ public class RocksDatabase implements TypeDB.Database {
         };
 
         public void committed(RocksStorage.Data storage) {
-            assert optimisticallyCommitted.contains(storage) && storage.snapshotEnd() != null;
-            events.compute(storage.snapshotEnd(), (snapshot, events) -> {
+            assert optimisticallyCommitted.contains(storage) && storage.snapshotEnd().isPresent();
+            events.compute(storage.snapshotEnd().get(), (snapshot, events) -> {
                 if (events == null) events = new ConcurrentHashMap<>();
                 events.put(storage, EventType.COMMIT);
                 return events;
@@ -434,7 +431,7 @@ public class RocksDatabase implements TypeDB.Database {
                 optimisticallyCommitted.remove(storage);
                 deleteOpenEvent(storage);
             } else {
-                Map<RocksStorage.Data, EventType> events = this.events.get(storage.snapshotEnd());
+                Map<RocksStorage.Data, EventType> events = this.events.get(storage.snapshotEnd().get());
                 assert events == null || events.get(storage) == null || events.get(storage) == EventType.COMMIT;
                 if (events != null && events.get(storage) != null && isCommittedDeletable(storage)) {
                     deleteCommitted(storage);
@@ -444,10 +441,10 @@ public class RocksDatabase implements TypeDB.Database {
         }
 
         private boolean isCommittedDeletable(RocksStorage.Data storage) {
-            assert storage.snapshotEnd() != null || optimisticallyCommitted.contains(storage);
+            assert storage.snapshotEnd().isPresent() || optimisticallyCommitted.contains(storage);
             if (optimisticallyCommitted.contains(storage)) return false;
             // check for: open transactions that were opened before this one was committed
-            Map<Long, ConcurrentMap<RocksStorage.Data, EventType>> beforeCommitted = events.headMap(storage.snapshotEnd());
+            Map<Long, ConcurrentMap<RocksStorage.Data, EventType>> beforeCommitted = events.headMap(storage.snapshotEnd().get());
             for (RocksStorage.Data openStorage : open) {
                 ConcurrentMap<RocksStorage.Data, EventType> events = beforeCommitted.get(openStorage.snapshotStart());
                 if (events != null && events.containsKey(openStorage) && events.get(openStorage) == EventType.OPEN) {
@@ -458,7 +455,7 @@ public class RocksDatabase implements TypeDB.Database {
         }
 
         private void deleteCommitted(RocksStorage.Data storage) {
-            events.compute(storage.snapshotEnd(), (snapshot, events) -> {
+            events.compute(storage.snapshotEnd().get(), (snapshot, events) -> {
                 if (events != null) {
                     events.remove(storage);
                     if (!events.isEmpty()) return events;
@@ -484,7 +481,7 @@ public class RocksDatabase implements TypeDB.Database {
                     Long snapshot = entry.getKey();
                     ConcurrentMap<RocksStorage.Data, EventType> events = entry.getValue();
                     events.keySet().forEach(storage -> {
-                        if (storage.snapshotEnd() != null && isCommittedDeletable(storage)) {
+                        if (storage.snapshotEnd().isPresent() && isCommittedDeletable(storage)) {
                             events.remove(storage);
                         }
                     });
@@ -495,24 +492,24 @@ public class RocksDatabase implements TypeDB.Database {
         }
 
         private Set<RocksStorage.Data> concurrentCommitted(RocksStorage.Data storage) {
-            if (storage.snapshotEnd() == null) return concurrentCommittedWithOpen(storage);
+            if (!storage.snapshotEnd().isPresent()) return concurrentCommittedWithOpen(storage);
             else return concurrentCommittedWithCommitted(storage);
         }
 
         private Set<RocksStorage.Data> concurrentCommittedWithCommitted(RocksStorage.Data storage) {
-            assert storage.snapshotEnd() != null;
+            assert storage.snapshotEnd().isPresent();
             Set<RocksStorage.Data> concurrentCommitted = new HashSet<>();
             // include any storage opened or closed between storage's open-closed range
-            events.subMap(storage.snapshotStart(), storage.snapshotEnd()).forEach((snapshot, events) -> {
+            events.subMap(storage.snapshotStart(), storage.snapshotEnd().get()).forEach((snapshot, events) -> {
                 events.forEach((evtStorage, eventType) -> {
                     if ((eventType == EventType.OPEN || snapshot != evtStorage.snapshotStart()) &&
-                            evtStorage.snapshotEnd() != null) {
+                            evtStorage.snapshotEnd().isPresent()) {
                         concurrentCommitted.add(evtStorage);
                     }
                 });
             });
             // include any storage committed after storage is committed and opened before it is opened
-            events.tailMap(storage.snapshotEnd()).forEach((snapshot, events) -> {
+            events.tailMap(storage.snapshotEnd().get()).forEach((snapshot, events) -> {
                 events.forEach((evtStorage, eventType) -> {
                     if (eventType == EventType.COMMIT && evtStorage.snapshotStart() <= storage.snapshotStart()) {
                         concurrentCommitted.add(evtStorage);
@@ -523,7 +520,7 @@ public class RocksDatabase implements TypeDB.Database {
         }
 
         private Set<RocksStorage.Data> concurrentCommittedWithOpen(RocksStorage.Data storage) {
-            assert storage.snapshotEnd() == null;
+            assert !storage.snapshotEnd().isPresent();
             Set<RocksStorage.Data> concurrentCommitted = new HashSet<>(optimisticallyCommitted);
             events.tailMap(storage.snapshotStart() + 1).forEach((snapshot, events) -> {
                 events.forEach((s, type) -> {
@@ -546,7 +543,6 @@ public class RocksDatabase implements TypeDB.Database {
             });
             return recorded.size();
         }
-
     }
 
     static class Cache {

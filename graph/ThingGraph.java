@@ -81,7 +81,7 @@ import static com.vaticle.typedb.core.graph.common.StatisticsBytes.vertexCountKe
 import static com.vaticle.typedb.core.graph.common.StatisticsBytes.vertexTransitiveCountKey;
 import static com.vaticle.typedb.core.graph.iid.VertexIID.Thing.generate;
 
-public class ThingGraph implements Graph {
+public class ThingGraph {
 
     private final Storage.Data storage;
     private final TypeGraph typeGraph;
@@ -102,7 +102,6 @@ public class ThingGraph implements Graph {
         statistics = new Statistics(typeGraph, storage);
     }
 
-    @Override
     public Storage.Data storage() {
         return storage;
     }
@@ -181,7 +180,7 @@ public class ThingGraph implements Graph {
     }
 
     public void exclusiveOwnership(TypeVertex ownerType, AttributeVertex<?> attribute) {
-        storage.setExclusiveCreate(Bytes.join(ownerType.iid().bytes(), attribute.iid().bytes()));
+        storage.trackExclusiveCreate(Bytes.join(ownerType.iid().bytes(), attribute.iid().bytes()));
     }
 
     private <VALUE, ATT_IID extends VertexIID.Attribute<VALUE>, ATT_VERTEX extends AttributeVertex<VALUE>>
@@ -417,14 +416,13 @@ public class ThingGraph implements Graph {
     public void setModified(IID iid) {
         assert storage.isOpen();
         if (!isModified) isModified = true;
-        storage.setModified(iid.bytes(), true);
+        storage.trackModified(iid.bytes());
     }
 
     public boolean isModified() {
         return isModified;
     }
 
-    @Override
     public void clear() {
         thingsByIID.clear();
         thingsByTypeIID.clear();
@@ -442,7 +440,6 @@ public class ThingGraph implements Graph {
      * as the last step. Since the write operations to storage are serialised
      * anyways, we don't need to parallelise the streams to commit the vertices.
      */
-    @Override
     public void commit() {
         Map<VertexIID.Thing, VertexIID.Thing> bufferedToPersistedIIDs = new HashMap<>();
         iterate(thingsByIID.values()).filter(v -> v.status().equals(BUFFERED) && !v.isInferred()).forEachRemaining(v -> {
@@ -733,10 +730,10 @@ public class ThingGraph implements Graph {
                     storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootRoleType().iid()), longToBytes(delta));
                 }
             });
-            attributeVertexCountJobs.forEach((attIID, countWorkValue) -> storage.put(
+            attributeVertexCountJobs.forEach((attIID, countWorkValue) -> storage.putTracked(
                     attributeCountJobKey(attIID), countWorkValue.bytes(), false
             ));
-            hasEdgeCountJobs.forEach((hasEdge, countWorkValue) -> storage.put(
+            hasEdgeCountJobs.forEach((hasEdge, countWorkValue) -> storage.putTracked(
                     hasEdgeCountJobKey(IIDMap.getOrDefault(hasEdge.first(), hasEdge.first()), hasEdge.second()), countWorkValue.bytes(), false
             ));
             if (!deltaVertexCount.isEmpty()) {
@@ -764,7 +761,7 @@ public class ThingGraph implements Graph {
                 } else {
                     assert false;
                 }
-                storage.delete(countJob.key());
+                storage.deleteTracked(countJob.key());
             }
             storage.mergeUntracked(snapshotKey(), longToBytes(1));
             return countJobs.hasNext();
@@ -787,7 +784,7 @@ public class ThingGraph implements Graph {
             if (counted == null) {
                 storage.mergeUntracked(vertexCountKey(attIID.type()), longToBytes(1));
                 storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootAttributeType().iid()), longToBytes(1));
-                storage.put(countedKey);
+                storage.putTracked(countedKey);
             }
         }
 
@@ -797,7 +794,7 @@ public class ThingGraph implements Graph {
             if (counted != null) {
                 storage.mergeUntracked(vertexCountKey(attIID.type()), longToBytes(-1));
                 storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootAttributeType().iid()), longToBytes(-1));
-                storage.delete(countedKey);
+                storage.putTracked(countedKey);
             }
         }
 
@@ -825,7 +822,7 @@ public class ThingGraph implements Graph {
                 } else if (thingIID.type().encoding().prefix() == VERTEX_ATTRIBUTE_TYPE) {
                     storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootAttributeType().iid()), longToBytes(1));
                 }
-                storage.put(countedKey);
+                storage.putTracked(countedKey);
             }
         }
 
@@ -841,7 +838,7 @@ public class ThingGraph implements Graph {
                 } else if (thingIID.type().encoding().prefix() == VERTEX_ATTRIBUTE_TYPE) {
                     storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootAttributeType().iid()), longToBytes(-1));
                 }
-                storage.delete(countedKey);
+                storage.deleteTracked(countedKey);
             }
         }
 

@@ -357,13 +357,13 @@ public class ConsistencyTest {
             }
 
             CompletableFuture.allOf(workers.toArray(new CompletableFuture[0])).get();
-            assertEquals(0, session.database().writesManager().recordedCommittedEvents());
+            assertEquals(0, session.database().consistencyManager().recordedCommittedEvents());
 
             TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE);
             txn.query().insert(TypeQL.parseQuery("match $x isa person, has name 'Bob'; $y isa person, has name 'Alice'; " +
                                                         "insert $f (friend: $x, friend: $y) isa friendship;"));
             txn.commit();
-            assertEquals(0, session.database().writesManager().recordedCommittedEvents());
+            assertEquals(0, session.database().consistencyManager().recordedCommittedEvents());
         }
     }
 

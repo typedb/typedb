@@ -154,7 +154,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
                 from.outs().remove(this);
                 to.ins().remove(this);
                 if (!(from.status().equals(BUFFERED)) && !(to.status().equals(BUFFERED))) {
-                    graph.storage().delete(outIID().bytes());
+                    graph.storage().deleteTracked(outIID().bytes());
                     graph.storage().deleteUntracked(inIID().bytes());
                 }
                 if (encoding == Encoding.Edge.Thing.HAS && !isInferred) {
@@ -167,7 +167,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         public void commit() {
             if (isInferred()) throw TypeDBException.of(ILLEGAL_OPERATION);
             if (committed.compareAndSet(false, true)) {
-                graph.storage().put(outIID().bytes());
+                graph.storage().putTracked(outIID().bytes());
                 graph.storage().putUntracked(inIID().bytes());
             }
         }
@@ -319,7 +319,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             if (deleted.compareAndSet(false, true)) {
                 from().outs().remove(this);
                 to().ins().remove(this);
-                graph.storage().delete(this.outIID.bytes());
+                graph.storage().deleteTracked(this.outIID.bytes());
                 graph.storage().deleteUntracked(this.inIID.bytes());
                 if (encoding == Encoding.Edge.Thing.HAS && !isInferred) {
                     graph.stats().hasEdgeDeleted(fromIID, toIID.asAttribute());

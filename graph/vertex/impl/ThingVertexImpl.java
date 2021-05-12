@@ -141,7 +141,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     }
 
     void deleteVertexFromStorage() {
-        graph.storage().delete(iid.bytes());
+        graph.storage().deleteTracked(iid.bytes());
         graph.storage().deleteUntracked(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
     }
 
@@ -175,7 +175,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         }
 
         private void commitVertex() {
-            graph.storage().put(iid.bytes());
+            graph.storage().putTracked(iid.bytes());
             graph.storage().putUntracked(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
         }
 

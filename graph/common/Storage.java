@@ -37,22 +37,17 @@ public interface Storage {
 
     <G> FunctionalIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor);
 
+    void deleteUntracked(byte[] key);
+
+    void putUntracked(byte[] key);
+
+    void putUntracked(byte[] key, byte[] value);
+
     TypeDBException exception(ErrorMessage error);
 
     TypeDBException exception(Exception exception);
 
     void close();
-
-    // TODO split put into putTracked and putUntracked into two subclasses
-
-    void delete(byte[] key);
-
-    void put(byte[] key);
-
-    void put(byte[] key, byte[] value);
-
-    // TODO into Data only
-    void mergeUntracked(byte[] key, byte[] value);
 
     default boolean isSchema() { return false; }
 
@@ -73,18 +68,21 @@ public interface Storage {
 
         KeyGenerator.Data dataKeyGenerator();
 
-        void put(byte[] key, byte[] value, boolean checkConsistency);
+        void putTracked(byte[] key);
 
-        void putUntracked(byte[] key);
+        void putTracked(byte[] key, byte[] value);
 
-        void putUntracked(byte[] key, byte[] value);
+        void putTracked(byte[] key, byte[] value, boolean checkConsistency);
 
-        void deleteUntracked(byte[] key);
+        void deleteTracked(byte[] key);
 
-        // TODO overload to be default true
-        void setModified(byte[] bytes, boolean checkConsistency);
+        void trackModified(byte[] bytes);
 
-        void setExclusiveCreate(byte[] key);
+        void trackModified(byte[] bytes, boolean checkConsistency);
+
+        void trackExclusiveCreate(byte[] key);
+
+        void mergeUntracked(byte[] key, byte[] value);
 
     }
 }

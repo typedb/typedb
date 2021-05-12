@@ -94,7 +94,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
     public void setModified() {
         if (!isModified) {
             isModified = true;
-            graph.setModified(iid);
+            graph.setModified();
         }
     }
 
@@ -217,8 +217,8 @@ public abstract class RuleStructureImpl implements RuleStructure {
         }
 
         private void commitVertex() {
-            graph.storage().put(iid.bytes());
-            graph.storage().put(IndexIID.Rule.of(label).bytes(), iid.bytes());
+            graph.storage().putUntracked(iid.bytes());
+            graph.storage().putUntracked(IndexIID.Rule.of(label).bytes(), iid.bytes());
         }
 
         private void commitProperties() {
@@ -228,15 +228,15 @@ public abstract class RuleStructureImpl implements RuleStructure {
         }
 
         private void commitPropertyLabel() {
-            graph.storage().put(join(iid.bytes(), LABEL.infix().bytes()), label.getBytes());
+            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), label.getBytes());
         }
 
         private void commitWhen() {
-            graph.storage().put(join(iid.bytes(), WHEN.infix().bytes()), when().toString().getBytes());
+            graph.storage().putUntracked(join(iid.bytes(), WHEN.infix().bytes()), when().toString().getBytes());
         }
 
         private void commitThen() {
-            graph.storage().put(join(iid.bytes(), THEN.infix().bytes()), then().toString().getBytes());
+            graph.storage().putUntracked(join(iid.bytes(), THEN.infix().bytes()), then().toString().getBytes());
         }
 
         private void indexReferences() {
@@ -272,9 +272,9 @@ public abstract class RuleStructureImpl implements RuleStructure {
         @Override
         public void label(String label) {
             graph.rules().update(this, this.label, label);
-            graph.storage().put(join(iid.bytes(), LABEL.infix().bytes()), label.getBytes());
-            graph.storage().delete(IndexIID.Rule.of(this.label).bytes());
-            graph.storage().put(IndexIID.Rule.of(label).bytes(), iid.bytes());
+            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), label.getBytes());
+            graph.storage().deleteUntracked(IndexIID.Rule.of(this.label).bytes());
+            graph.storage().putUntracked(IndexIID.Rule.of(label).bytes(), iid.bytes());
             this.label = label;
         }
 
@@ -288,9 +288,9 @@ public abstract class RuleStructureImpl implements RuleStructure {
         }
 
         private void deleteVertexFromStorage() {
-            graph.storage().delete(IndexIID.Rule.of(label).bytes());
+            graph.storage().deleteUntracked(IndexIID.Rule.of(label).bytes());
             FunctionalIterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
-            while (keys.hasNext()) graph.storage().delete(keys.next());
+            while (keys.hasNext()) graph.storage().deleteUntracked(keys.next());
         }
 
         @Override
