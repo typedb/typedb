@@ -106,19 +106,18 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     @Override
     public void setHas(Attribute attribute, boolean isInferred) {
         validateIsNotDeleted();
-        boolean isKey = getType().getOwns(true).anyMatch(t -> t.equals(attribute.getType()));
+        AttributeVertex<?> attrVertex = ((AttributeImpl<?>) attribute).vertex.asAttribute();
         if (getType().getOwns().noneMatch(t -> t.equals(attribute.getType()))) {
             throw exception(TypeDBException.of(THING_CANNOT_OWN_ATTRIBUTE, attribute.getType().getLabel(), vertex.type().label()));
-        } else if (isKey) {
+        } else if (getType().getOwns(true).anyMatch(t -> t.equals(attribute.getType()))) {
             if (getHas(attribute.getType()).first().isPresent()) {
                 throw exception(TypeDBException.of(THING_KEY_OVER, attribute.getType().getLabel(), getType().getLabel()));
             } else if (attribute.getOwners(getType()).first().isPresent()) {
                 throw exception(TypeDBException.of(THING_KEY_TAKEN, attribute.getType().getLabel(), getType().getLabel()));
             }
+            this.vertex.graph().exclusiveOwnership(((ThingTypeImpl)this.getType()).vertex, attrVertex);
         }
-        AttributeVertex<?> attrVertex = ((AttributeImpl<?>) attribute).vertex.asAttribute();
         this.vertex.outs().put(HAS, attrVertex, isInferred);
-        if (isKey) this.vertex.graph().exclusiveHasKey(((ThingTypeImpl)this.getType()).vertex, attrVertex);
     }
 
     @Override

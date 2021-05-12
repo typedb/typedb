@@ -107,10 +107,6 @@ public class ThingGraph implements Graph {
         return storage;
     }
 
-    public void exclusiveHasKey(TypeVertex ownerType, AttributeVertex<?> attribute) {
-        storage.setExclusiveCreate(Bytes.join(ownerType.iid().bytes(), attribute.iid().bytes()));
-    }
-
     public TypeGraph type() {
         return typeGraph;
     }
@@ -182,6 +178,10 @@ public class ThingGraph implements Graph {
         thingsByTypeIID.computeIfAbsent(typeVertex.iid(), t -> new ConcurrentSet<>()).add(vertex);
         if (!isInferred) statistics.vertexCreated(typeVertex.iid());
         return vertex;
+    }
+
+    public void exclusiveOwnership(TypeVertex ownerType, AttributeVertex<?> attribute) {
+        storage.setExclusiveCreate(Bytes.join(ownerType.iid().bytes(), attribute.iid().bytes()));
     }
 
     private <VALUE, ATT_IID extends VertexIID.Attribute<VALUE>, ATT_VERTEX extends AttributeVertex<VALUE>>
@@ -444,17 +444,15 @@ public class ThingGraph implements Graph {
      */
     @Override
     public void commit() {
-        Map<VertexIID.Thing, VertexIID.Thing> uncommittedToPersistedIIDs = new HashMap<>();
-        iterate(thingsByIID.values()).filter(v -> v.status().equals(BUFFERED) && !v.isInferred()).forEachRemaining(
-                vertex -> {
-                    VertexIID.Thing newIID = generate(storage.dataKeyGenerator(), vertex.type().iid(), vertex.type().properLabel());
-                    uncommittedToPersistedIIDs.put(vertex.iid(), newIID);
-                    vertex.iid(newIID);
-                }
-        ); // thingsByIID no longer contains valid mapping from IID to TypeVertex
+        Map<VertexIID.Thing, VertexIID.Thing> bufferedToPersistedIIDs = new HashMap<>();
+        iterate(thingsByIID.values()).filter(v -> v.status().equals(BUFFERED) && !v.isInferred()).forEachRemaining(v -> {
+            VertexIID.Thing newIID = generate(storage.dataKeyGenerator(), v.type().iid(), v.type().properLabel());
+            bufferedToPersistedIIDs.put(v.iid(), newIID);
+            v.iid(newIID);
+        }); // thingsByIID no longer contains valid mapping from IID to TypeVertex
         thingsByIID.values().stream().filter(v -> !v.isInferred()).forEach(Vertex::commit);
         attributesByIID.valuesIterator().forEachRemaining(Vertex::commit);
-        statistics.commit(uncommittedToPersistedIIDs);
+        statistics.commit(bufferedToPersistedIIDs);
 
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Thing to be used again
     }

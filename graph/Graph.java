@@ -22,6 +22,7 @@ package com.vaticle.typedb.core.graph;
 import com.vaticle.typedb.core.graph.common.Storage;
 import com.vaticle.typedb.core.graph.iid.IID;
 
+// TODO delete graph interface
 public interface Graph {
 
     Storage storage();

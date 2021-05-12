@@ -36,8 +36,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.NotThreadSafe;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.NavigableSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.StampedLock;
@@ -310,6 +315,148 @@ public abstract class RocksStorage implements Storage {
             } finally {
                 if (obtainedWriteLock) deleteCloseSchemaWriteLock.writeLock().unlock();
             }
+        }
+    }
+
+    @NotThreadSafe
+    public static class Data extends TransactionBounded implements Storage.Data {
+
+        private final RocksDatabase database;
+        private final KeyGenerator.Data dataKeyGenerator;
+
+        private final ConcurrentNavigableMap<ByteBuffer, Boolean> modifiedKeys;
+        private final ConcurrentSkipListSet<ByteBuffer> deletedKeys;
+        private final ConcurrentSkipListSet<ByteBuffer> exclusiveInsertKeys;
+        private final long snapshotStart;
+        private volatile Long snapshotEnd;
+
+        public Data(RocksDatabase database, RocksTransaction transaction) {
+            super(database.rocksData, transaction);
+            this.database = database;
+            this.dataKeyGenerator = database.dataKeyGenerator();
+            this.snapshotStart = storageTransaction.getSnapshot().getSequenceNumber();
+            this.modifiedKeys = new ConcurrentSkipListMap<>();
+            this.deletedKeys = new ConcurrentSkipListSet<>();
+            this.exclusiveInsertKeys = new ConcurrentSkipListSet<>();
+            this.snapshotEnd = null;
+            this.database.writesManager().register(this);
+        }
+
+        @Override
+        public KeyGenerator.Data dataKeyGenerator() {
+            return dataKeyGenerator;
+        }
+
+        @Override
+        public void put(byte[] key, byte[] value) {
+            put(key, value, true);
+        }
+
+        @Override
+        public void put(byte[] key, byte[] value, boolean checkConsistency) {
+            putUntracked(key, value);
+            setModified(key, checkConsistency);
+        }
+
+        @Override
+        public void putUntracked(byte[] key) {
+            putUntracked(key, EMPTY_ARRAY);
+        }
+
+        @Override
+        public void putUntracked(byte[] key, byte[] value) {
+            assert isOpen() && !isReadOnly;
+            try {
+                deleteCloseSchemaWriteLock.readLock().lock();
+                if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
+                storageTransaction.putUntracked(key, value);
+            } catch (RocksDBException e) {
+                throw exception(e);
+            } finally {
+                deleteCloseSchemaWriteLock.readLock().unlock();
+            }
+        }
+
+        @Override
+        public void delete(byte[] key) {
+            deleteUntracked(key);
+            ByteBuffer bytes = ByteBuffer.wrap(key);
+            this.deletedKeys.add(bytes);
+            this.modifiedKeys.remove(bytes);
+            this.exclusiveInsertKeys.remove(bytes);
+        }
+
+        @Override
+        public void deleteUntracked(byte[] key) {
+            super.delete(key);
+        }
+
+        @Override
+        public void setModified(byte[] key, boolean checkConsistency) {
+            assert isOpen();
+            ByteBuffer bytes = ByteBuffer.wrap(key);
+            this.modifiedKeys.put(bytes, checkConsistency);
+            this.deletedKeys.remove(bytes);
+        }
+
+        @Override
+        public void setExclusiveCreate(byte[] key) {
+            assert isOpen();
+            ByteBuffer bytes = ByteBuffer.wrap(key);
+            this.exclusiveInsertKeys.add(bytes);
+            this.deletedKeys.remove(bytes);
+        }
+
+        @Override
+        public void commit() throws RocksDBException {
+            database.writesManager().tryOptimisticCommit(this);
+            super.commit();
+            snapshotEnd = database.rocksData.getLatestSequenceNumber();
+            database.writesManager().committed(this);
+        }
+
+        @Override
+        public void close() {
+            super.close();
+            database.writesManager().closed(this);
+        }
+
+        @Override
+        public void mergeUntracked(byte[] key, byte[] value) {
+            assert isOpen() && !isReadOnly;
+            try {
+                deleteCloseSchemaWriteLock.readLock().lock();
+                if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
+                storageTransaction.mergeUntracked(key, value);
+            } catch (RocksDBException e) {
+                throw exception(e);
+            } finally {
+                deleteCloseSchemaWriteLock.readLock().unlock();
+            }
+        }
+
+        public long snapshotStart() {
+            return snapshotStart;
+        }
+
+        public Long snapshotEnd() {
+            return snapshotEnd;
+        }
+
+        public NavigableSet<ByteBuffer> deletedKeys() {
+            return deletedKeys;
+        }
+
+        public NavigableSet<ByteBuffer> modifiedKeys() {
+            return modifiedKeys.keySet();
+        }
+
+        public boolean isModifiedValidatedKey(ByteBuffer key) {
+            return modifiedKeys.getOrDefault(key, false);
+        }
+
+        public NavigableSet<ByteBuffer> exclusiveInsertKeys() {
+            return exclusiveInsertKeys;
         }
     }
 }

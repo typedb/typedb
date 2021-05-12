@@ -35,14 +35,6 @@ public interface Storage {
 
     byte[] getLastKey(byte[] prefix);
 
-    void delete(byte[] key);
-
-    void put(byte[] key);
-
-    void put(byte[] key, byte[] value);
-
-    void mergeUntracked(byte[] key, byte[] value);
-
     <G> FunctionalIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor);
 
     TypeDBException exception(ErrorMessage error);
@@ -50,6 +42,17 @@ public interface Storage {
     TypeDBException exception(Exception exception);
 
     void close();
+
+    // TODO split put into putTracked and putUntracked into two subclasses
+
+    void delete(byte[] key);
+
+    void put(byte[] key);
+
+    void put(byte[] key, byte[] value);
+
+    // TODO into Data only
+    void mergeUntracked(byte[] key, byte[] value);
 
     default boolean isSchema() { return false; }
 
@@ -78,6 +81,7 @@ public interface Storage {
 
         void deleteUntracked(byte[] key);
 
+        // TODO overload to be default true
         void setModified(byte[] bytes, boolean checkConsistency);
 
         void setExclusiveCreate(byte[] key);

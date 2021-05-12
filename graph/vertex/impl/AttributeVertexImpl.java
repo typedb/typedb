@@ -141,7 +141,7 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     public void setModified() {
         if (!isModified) {
             isModified = true;
-            if (isPersisted()) graph.setModified(iid);
+            graph.setModified(iid);
         }
     }
 

@@ -111,8 +111,8 @@ public final class RocksFactory implements Factory {
                 }
 
                 @Override
-                public RocksDataStorage storageData(RocksDatabase database, RocksTransaction transaction) {
-                    return new RocksDataStorage(database, transaction);
+                public RocksStorage.Data storageData(RocksDatabase database, RocksTransaction transaction) {
+                    return new RocksStorage.Data(database, transaction);
                 }
             };
         }

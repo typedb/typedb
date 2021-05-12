@@ -143,7 +143,7 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
     public static class Schema extends RocksTransaction {
 
         protected final RocksStorage.Schema schemaStorage;
-        protected final RocksDataStorage dataStorage;
+        protected final RocksStorage.Data dataStorage;
 
         protected Schema(RocksSession.Schema session, Arguments.Transaction.Type type,
                          Options.Transaction options, Factory.Storage storageFactory) {
@@ -178,7 +178,7 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
             return schemaStorage;
         }
 
-        RocksDataStorage dataStorage() {
+        RocksStorage.Data dataStorage() {
             if (!isOpen.get()) throw TypeDBException.of(TRANSACTION_CLOSED);
             return dataStorage;
         }
@@ -243,7 +243,7 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
 
     public static class Data extends RocksTransaction {
 
-        protected final RocksDataStorage dataStorage;
+        protected final RocksStorage.Data dataStorage;
         private final RocksDatabase.Cache cache;
 
         public Data(RocksSession.Data session, Arguments.Transaction.Type type,

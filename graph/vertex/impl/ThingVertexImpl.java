@@ -98,7 +98,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         return ins;
     }
 
-
     @Override
     public TypeVertex type() {
         return graph.type().convert(iid.type());
@@ -190,9 +189,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
         @Override
         public void setModified() {
-            if (!isModified) {
-                isModified = true;
-            }
+            if (!isModified) isModified = true;
         }
     }
 
