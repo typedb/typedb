@@ -20,7 +20,9 @@ package com.vaticle.typedb.core.traversal.iterator;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.AbstractFunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.edge.ThingEdge;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
@@ -46,18 +48,19 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
     private final Traversal.Parameters parameters;
     private final GraphManager graphMgr;
 
-    private final State state;
-    Map<Identifier, ThingVertex> answer;
-    Identifier.Variable relationId;
+    private final Map<Identifier, ThingVertex> answer;
+    private final Map<Identifier, FunctionalIterator.Sorted<ThingEdge, ThingVertex>> iterators;
+    private Identifier.Variable relationId;
+    private State state;
 
     public RelationIterator(Structure structure, Traversal.Parameters parameters, GraphManager graphMgr) {
         this.parameters = parameters;
         this.graphMgr = graphMgr;
-        assert structure.asGraphs().size() == 1;
         vertices = structure.vertices();
         edges = new ArrayList<>(structure.edges());
-        answer = new HashMap<>();
         assert edges.size() == vertices.size() - 1;
+        answer = new HashMap<>();
+        this.iterators = new HashMap<>();
         state = State.INIT;
     }
 
@@ -65,9 +68,16 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
         INIT, EMPTY, FETCHED, COMPLETED;
     }
 
-    private boolean checkFirst() {
+    private boolean computeFirst() {
         if (!tryInitialise()) return false;
-        return computeFirst();
+
+
+
+        return ();
+    }
+
+    private boolean computeAnswer() {
+
     }
 
     private boolean tryInitialise() {
@@ -80,18 +90,17 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
             if (thingVertex == null) return false;
             answer.put(withIID, thingVertex);
         }
+        StructureEdge<?, ?> firstEdge = edges.get(0);
+        firstEdge.from().id();
         return true;
-    }
-
-    private boolean computeFirst() {
-        return false;
     }
 
     @Override
     public boolean hasNext() {
         switch (state) {
             case INIT:
-                return checkFirst();
+                if (computeFirst()) state = State.FETCHED;
+                else state = State.COMPLETED;
             case EMPTY:
                 return false;
             case FETCHED:

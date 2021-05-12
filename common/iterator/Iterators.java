@@ -63,8 +63,22 @@ public class Iterators {
         return new BaseIterator<>(Either.second(iterator));
     }
 
+    public static <T, K extends Comparable<K>> boolean validateSortedIterable(Collection<T> collection, Function<T, K> keyFn) {
+        if (collection.isEmpty()) return true;
+        Iterator<T> iter = collection.iterator();
+        K last = keyFn.apply(iter.next());
+        while (iter.hasNext()) {
+            T val = iter.next();
+            K newKey = keyFn.apply(val);
+            if (newKey.compareTo(last) < 0) return false;
+            last = newKey;
+        }
+        return true;
+    }
+
     public static <T, K extends Comparable<K>> FunctionalIterator.Sorted<T, K> iterateSorted(Collection<T> sortedCollection,
                                                                                              Function<T, K> keyExtractor) {
+        assert validateSortedIterable(sortedCollection, keyExtractor);
         return iterateSorted(sortedCollection.iterator(), keyExtractor);
     }
 
