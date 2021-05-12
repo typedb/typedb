@@ -334,7 +334,7 @@ public abstract class RocksStorage implements Storage {
             this.deletedKeys = new ConcurrentSkipListSet<>();
             this.exclusiveInsertKeys = new ConcurrentSkipListSet<>();
             this.snapshotEnd = null;
-            this.database.consistencyManager().register(this);
+            this.database.consistencyManager().open(this);
         }
 
         @Override
