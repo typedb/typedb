@@ -26,9 +26,9 @@ typedb_java_test(
     server_mac_artifact = "//server:assemble-mac-zip",
     server_linux_artifact = "//server:assemble-linux-targz",
     server_windows_artifact = "//server:assemble-windows-zip",
-    console_mac_artifact = "@graknlabs_console_artifact_mac//file",
-    console_linux_artifact = "@graknlabs_console_artifact_linux//file",
-    console_windows_artifact = "@graknlabs_console_artifact_windows//file",
+    console_mac_artifact = "@vaticle_typedb_console_artifact_mac//file",
+    console_linux_artifact = "@vaticle_typedb_console_artifact_linux//file",
+    console_windows_artifact = "@vaticle_typedb_console_artifact_windows//file",
     data = [":console-script"],
 )
 

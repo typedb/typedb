@@ -67,7 +67,7 @@ permissions = {
 artifact_repackage(
     name = "console-artifact-jars",
     # Jars produced for all platforms are the same
-    srcs = ["@graknlabs_console_artifact_linux//file"],
+    srcs = ["@vaticle_typedb_console_artifact_linux//file"],
     files_to_keep = ["console"],
 )
 
@@ -145,7 +145,7 @@ assemble_apt(
     depends = [
         "openjdk-11-jre",
         "typedb-server (=%{version})",
-        "typedb-console (=%{@graknlabs_console_artifact_linux})",
+        "typedb-console (=%{@vaticle_typedb_console_artifact_linux})",
     ],
     workspace_refs = "@vaticle_typedb_workspace_refs//:refs.json",
 )

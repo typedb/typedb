@@ -18,12 +18,12 @@
 load("@vaticle_dependencies//distribution/artifact:rules.bzl", "native_artifact_files")
 load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
 
-def graknlabs_console_artifact():
+def vaticle_typedb_console_artifact():
     native_artifact_files(
-        name = "graknlabs_console_artifact",
-        group_name = "graknlabs_console",
-        artifact_name = "grakn-console-{platform}-{version}.{ext}",
+        name = "vaticle_typedb_console_artifact",
+        group_name = "vaticle_typedb_console",
+        artifact_name = "typedb-console-{platform}-{version}.{ext}",
         tag_source = deployment["artifact.release"],
         commit_source = deployment["artifact.snapshot"],
-        tag = "2.0.1",
+        commit = "62067393eb37468eafece5959c9ef083925cf2d7",
     )
