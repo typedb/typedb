@@ -121,11 +121,20 @@ public abstract class RocksStorage implements Storage {
     }
 
     org.rocksdb.RocksIterator getInternalRocksIterator() {
-        if (isReadOnly) {
-            org.rocksdb.RocksIterator iterator = recycled.poll();
-            if (iterator != null) return iterator;
+        org.rocksdb.RocksIterator iterator = recycled.poll();
+        if (iterator != null && isReadOnly) {
+            return iterator;
+        } else if (iterator != null) {
+            try {
+                iterator.refresh();
+            } catch (RocksDBException e) {
+                e.printStackTrace();
+                throw TypeDBException.of(e);
+            }
+            return iterator;
+        } else {
+            return storageTransaction.getIterator(readOptions);
         }
-        return storageTransaction.getIterator(readOptions);
     }
 
     void recycle(org.rocksdb.RocksIterator rocksIterator) {
