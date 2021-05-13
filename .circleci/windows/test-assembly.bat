@@ -21,7 +21,7 @@ REM by Chocolatey in prepare.bat is accessible
 CALL refreshenv
 
 REM build typedb-all-windows archive
-bazel test //test/assembly:assembly --test_output=streamed --experimental_enable_runfiles --test_env=PATH
+bazel test //test/assembly:assembly --test_output=streamed --experimental_enable_runfiles --test_env=PATH --java_language_version=11 --javacopt='--release 11'
 
 :error
 IF %errorlevel% NEQ 0 EXIT /b %errorlevel%
