@@ -21,15 +21,14 @@ package com.vaticle.typedb.core.rocks;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.AbstractFunctionalIterator;
-import com.vaticle.typedb.core.common.seeker.Seeker;
 
+import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
-public final class RocksIterator<T> extends AbstractFunctionalIterator<T> implements AutoCloseable, Seeker<T> {
+public final class RocksIterator<T extends ByteComparable<T>> extends AbstractFunctionalIterator.Sorted<T> implements AutoCloseable {
 
     private final ByteArray prefix;
     private final RocksStorage storage;
@@ -50,18 +49,11 @@ public final class RocksIterator<T> extends AbstractFunctionalIterator<T> implem
     }
 
     @Override
-    public synchronized boolean trySeek(T target, Function<T, byte[]> converter) {
-        if (state == State.INIT) initialise();
-        internalRocksIterator.seek(converter.apply(target));
-        return hasValidNext();
-    }
-
     public final T peek() {
         if (!hasNext()) {
             if (isClosed) throw TypeDBException.of(RESOURCE_CLOSED);
             else throw new NoSuchElementException();
         }
-
         return next;
     }
 
@@ -89,6 +81,12 @@ public final class RocksIterator<T> extends AbstractFunctionalIterator<T> implem
             default: // This should never be reached
                 return false;
         }
+    }
+
+    @Override
+    public void seek(T target) {
+        internalRocksIterator.seek(target.getBytes());
+        if (!hasValidNext()) state = State.COMPLETED;
     }
 
     private synchronized boolean initialiseAndCheck() {
@@ -123,6 +121,7 @@ public final class RocksIterator<T> extends AbstractFunctionalIterator<T> implem
             return false;
         }
         next = constructor.apply(key, ByteArray.of(internalRocksIterator.value()));
+        assert next.getBytes().equals(key);
         state = State.FETCHED;
         return true;
     }

@@ -63,13 +63,12 @@ class DistinctIterator<T> extends AbstractFunctionalIterator<T> {
         iterator.recycle();
     }
 
-    public static class Sorted<T, K extends Comparable<K>> extends AbstractFunctionalIterator.Sorted<T, K> {
+    public static class Sorted<T extends Comparable<T>> extends AbstractFunctionalIterator.Sorted<T> {
 
-        private FunctionalIterator.Sorted<T, K> source;
+        private FunctionalIterator.Sorted<T> source;
         T last;
 
-        public Sorted(AbstractFunctionalIterator.Sorted<T, K> source, Function<T, K> keyExtractor) {
-            super(keyExtractor);
+        public Sorted(AbstractFunctionalIterator.Sorted<T> source) {
             this.source = source;
             last = null;
         }
@@ -94,6 +93,11 @@ class DistinctIterator<T> extends AbstractFunctionalIterator<T> {
         public T peek() {
             if (!hasNext()) throw new NoSuchElementException();
             return source.peek();
+        }
+
+        @Override
+        public void seek(T target) {
+            this.source.seek(target);
         }
 
         @Override

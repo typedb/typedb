@@ -24,6 +24,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NavigableMap;
+import java.util.NavigableSet;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
@@ -42,8 +45,8 @@ public class Iterators {
         return iterate(set());
     }
 
-    public static <T, K extends Comparable<K>> FunctionalIterator.Sorted<T, K> emptySorted(Function<T, K> keyExtractor) {
-        return iterateSorted(set(), keyExtractor);
+    public static <T extends Comparable<T>> FunctionalIterator.Sorted<T> emptySorted() {
+        return iterateSorted(new ConcurrentSkipListSet<>()); // LOL todo fix this
     }
 
     public static <T> FunctionalIterator<T> single(T item) {
@@ -63,28 +66,8 @@ public class Iterators {
         return new BaseIterator<>(Either.second(iterator));
     }
 
-    public static <T, K extends Comparable<K>> boolean validateSortedIterable(Collection<T> collection, Function<T, K> keyFn) {
-        if (collection.isEmpty()) return true;
-        Iterator<T> iter = collection.iterator();
-        K last = keyFn.apply(iter.next());
-        while (iter.hasNext()) {
-            T val = iter.next();
-            K newKey = keyFn.apply(val);
-            if (newKey.compareTo(last) < 0) return false;
-            last = newKey;
-        }
-        return true;
-    }
-
-    public static <T, K extends Comparable<K>> FunctionalIterator.Sorted<T, K> iterateSorted(Collection<T> sortedCollection,
-                                                                                             Function<T, K> keyExtractor) {
-        assert validateSortedIterable(sortedCollection, keyExtractor);
-        return iterateSorted(sortedCollection.iterator(), keyExtractor);
-    }
-
-    public static <T, K extends Comparable<K>> FunctionalIterator.Sorted<T, K> iterateSorted(Iterator<T> sortedIterator,
-                                                                                             Function<T, K> keyExtractor) {
-        return new BaseIterator.Sorted<>(sortedIterator, keyExtractor);
+    public static <T extends Comparable<T>> FunctionalIterator.Sorted<T> iterateSorted(NavigableSet<T> set) {
+        return new BaseIterator.Sorted<>(set);
     }
 
     public static <T> FunctionalIterator<T> link(Iterator<? extends T> iter1, Iterator<? extends T> iter2) {

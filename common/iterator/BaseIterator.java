@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.common.iterator;
 import com.vaticle.typedb.common.collection.Either;
 
 import java.util.Iterator;
+import java.util.NavigableSet;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 
@@ -47,45 +48,49 @@ class BaseIterator<T> extends AbstractFunctionalIterator<T> {
         iterator.ifFirst(FunctionalIterator::recycle);
     }
 
-    static class Sorted<T, K extends Comparable<K>> extends AbstractFunctionalIterator.Sorted<T, K> {
+    static class Sorted<T extends Comparable<T>> extends AbstractFunctionalIterator.Sorted<T> {
 
-        private final Iterator<T> source;
-        T next;
-        K lastKey;
+        private NavigableSet<T> source;
 
-        public Sorted(Iterator<T> sortedSource, Function<T, K> keyExtractor) {
-            super(keyExtractor);
-            this.source = sortedSource;
-            next = null;
-            lastKey = null;
+        public Sorted(NavigableSet<T> source) {
+            this.source = source;
         }
 
         @Override
         public boolean hasNext() {
-            return (next != null) || fetchAndCheck();
+//            return (next != null) || fetchAndCheck();
+            // TODO
         }
 
         private boolean fetchAndCheck() {
-            if (source.hasNext()) {
-                next = source.next();
-                assert lastKey == null || lastKey.compareTo(keyExtractor().apply(next)) <= 0;
-                lastKey = keyExtractor().apply(next);
-                return true;
-            } else return false;
+//            if (source.hasNext()) {
+//                next = source.next();
+//                assert lastKey == null || lastKey.compareTo(keyExtractor().apply(next)) <= 0;
+//                lastKey = keyExtractor().apply(next);
+//                return true;
+//            } else return false;
+            // TODO
         }
 
         @Override
         public T next() {
             if (!hasNext()) throw new NoSuchElementException();
-            T value = next;
-            next = null;
-            return value;
+//            T value = next;
+//            next = null;
+//            return value;
+            // TODO
+        }
+
+        @Override
+        public void seek(T target) {
+            // TODO
         }
 
         @Override
         public T peek() {
             if (!hasNext()) throw new NoSuchElementException();
-            return next;
+//            return next;
+            // TODO
         }
 
         @Override

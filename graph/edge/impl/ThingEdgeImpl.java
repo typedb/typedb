@@ -29,6 +29,7 @@ import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 
 import javax.annotation.Nullable;
+import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -64,6 +65,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         private final ThingVertex from;
         private final ThingVertex to;
         private final ThingVertex optimised;
+        private final ByteBuffer outIIDBytes;
         private final int hash;
 
         /**
@@ -93,6 +95,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             this.from = from;
             this.to = to;
             this.optimised = optimised;
+            this.outIIDBytes = ByteBuffer.wrap(outIID().bytes()); // TODO optimise
             this.hash = hash(Buffered.class, encoding, from, to);
             committed = new AtomicBoolean(false);
         }
@@ -172,6 +175,11 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             }
         }
 
+        @Override
+        public ByteBuffer getBytes() {
+            return outIIDBytes;
+        }
+
         /**
          * Determine the equality of a {@code ThingEdgeImpl.Buffered} against another.
          *
@@ -218,6 +226,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         private final VertexIID.Thing toIID;
         private final VertexIID.Thing optimisedIID;
         private final int hash;
+        private final ByteBuffer persistedBytes;
         private ThingVertex from;
         private ThingVertex to;
         private ThingVertex optimised;
@@ -259,7 +268,13 @@ public abstract class ThingEdgeImpl implements ThingEdge {
                 optimisedIID = null;
             }
 
+            this.persistedBytes = ByteBuffer.wrap(iid.bytes());
             this.hash = hash(Persisted.class, encoding, fromIID.hashCode(), toIID.hashCode());
+        }
+
+        @Override
+        public ByteBuffer getBytes() {
+            return persistedBytes;
         }
 
         @Override

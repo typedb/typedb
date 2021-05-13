@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 
+import java.nio.ByteBuffer;
 import java.util.function.BiFunction;
 
 import static com.vaticle.typedb.common.util.Objects.className;
@@ -36,13 +37,15 @@ public interface Storage {
 
     ByteArray getLastKey(ByteArray prefix);
 
-    <G> FunctionalIterator<G> iterate(ByteArray key, BiFunction<ByteArray, ByteArray, G> constructor);
-
     void deleteUntracked(ByteArray key);
 
     void putUntracked(ByteArray key);
 
     void putUntracked(ByteArray key, ByteArray value);
+
+    void mergeUntracked(byte[] key, byte[] value);
+
+    <G extends ByteComparable<G>> FunctionalIterator.Sorted<G> iterate(ByteArray key, BiFunction<ByteArray, ByteArray, G> constructor);
 
     TypeDBException exception(ErrorMessage error);
 
