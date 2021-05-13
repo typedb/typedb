@@ -26,16 +26,15 @@ import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
-public class FlatMergeSortedIterator<T, U, K extends Comparable<K>> extends AbstractFunctionalIterator.Sorted<U, K> {
+public class FlatMergeSortedIterator<T, U extends Comparable<U>> extends AbstractFunctionalIterator.Sorted<U> {
 
     private final FunctionalIterator<T> source;
-    private final Function<T, FunctionalIterator.Sorted<U, K>> flatMappingFn;
+    private final Function<T, FunctionalIterator.Sorted<U>> flatMappingFn;
     private final PriorityQueue<QueueNode> nextQueue;
     private State state;
-    private FunctionalIterator.Sorted<U, K> notInQueue;
+    private FunctionalIterator.Sorted<U> notInQueue;
 
-    public FlatMergeSortedIterator(FunctionalIterator<T> source, Function<T, FunctionalIterator.Sorted<U, K>> flatMappingFn, Function<U, K> keyExtractor) {
-        super(keyExtractor);
+    public FlatMergeSortedIterator(FunctionalIterator<T> source, Function<T, FunctionalIterator.Sorted<U>> flatMappingFn) {
         this.source = source;
         this.flatMappingFn = flatMappingFn;
         nextQueue = new PriorityQueue<>();
@@ -49,10 +48,10 @@ public class FlatMergeSortedIterator<T, U, K extends Comparable<K>> extends Abst
 
     private class QueueNode implements Comparable<QueueNode> {
 
-        private FunctionalIterator.Sorted<U, K> iter;
-        private K value;
+        private FunctionalIterator.Sorted<U> iter;
+        private U value;
 
-        private QueueNode(FunctionalIterator.Sorted<U, K> iter, K value){
+        private QueueNode(FunctionalIterator.Sorted<U> iter, U value){
             this.iter = iter;
             this.value = value;
         }
@@ -82,7 +81,7 @@ public class FlatMergeSortedIterator<T, U, K extends Comparable<K>> extends Abst
     private boolean fetchAndCheck() {
         if (notInQueue != null) {
             assert notInQueue.hasNext();
-            nextQueue.add(new QueueNode(notInQueue, notInQueue.keyExtractor().apply(notInQueue.peek())));
+            nextQueue.add(new QueueNode(notInQueue, notInQueue.peek()));
             notInQueue = null;
         }
         if (nextQueue.isEmpty()) state = State.COMPLETED;
@@ -92,9 +91,9 @@ public class FlatMergeSortedIterator<T, U, K extends Comparable<K>> extends Abst
 
     private boolean initialise() {
         source.forEachRemaining(value -> {
-            FunctionalIterator.Sorted<U, K> sortedIterator = flatMappingFn.apply(value);
+            FunctionalIterator.Sorted<U> sortedIterator = flatMappingFn.apply(value);
             if (sortedIterator.hasNext()) {
-                nextQueue.add(new QueueNode(sortedIterator, sortedIterator.keyExtractor().apply(sortedIterator.peek())));
+                nextQueue.add(new QueueNode(sortedIterator, sortedIterator.peek()));
             }
         });
         source.recycle();
@@ -107,7 +106,7 @@ public class FlatMergeSortedIterator<T, U, K extends Comparable<K>> extends Abst
     public U next() {
         if (!hasNext()) throw new NoSuchElementException();
         QueueNode lowest = this.nextQueue.poll();
-        FunctionalIterator.Sorted<U, K> iter = lowest.iter;
+        FunctionalIterator.Sorted<U> iter = lowest.iter;
         U value = iter.next();
         state = State.NOT_READY;
         if (iter.hasNext()) notInQueue = iter;
@@ -118,6 +117,11 @@ public class FlatMergeSortedIterator<T, U, K extends Comparable<K>> extends Abst
     public U peek() {
         if (!hasNext()) throw new NoSuchElementException();
         return nextQueue.peek().iter.peek();
+    }
+
+    @Override
+    public void seek(U target) {
+        // TODO
     }
 
     @Override

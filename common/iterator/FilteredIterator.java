@@ -56,13 +56,12 @@ class FilteredIterator<T> extends AbstractFunctionalIterator<T> {
         iterator.recycle();
     }
 
-    public static class Sorted<T, K extends Comparable<K>> extends AbstractFunctionalIterator.Sorted<T, K> {
+    public static class Sorted<T extends Comparable<T>> extends AbstractFunctionalIterator.Sorted<T> {
 
-        private final FunctionalIterator.Sorted<T, K> source;
+        private final FunctionalIterator.Sorted<T> source;
         private final Predicate<T> predicate;
 
-        public Sorted(FunctionalIterator.Sorted<T, K> source, Function<T, K> keyExtractor, Predicate<T> predicate) {
-            super(keyExtractor);
+        public Sorted(FunctionalIterator.Sorted<T> source, Predicate<T> predicate) {
             this.source = source;
             this.predicate = predicate;
         }
@@ -83,6 +82,11 @@ class FilteredIterator<T> extends AbstractFunctionalIterator<T> {
         public T peek() {
             if (!hasNext()) throw new NoSuchElementException();
             return source.peek();
+        }
+
+        @Override
+        public void seek(T target) {
+            this.source.seek(target);
         }
 
         @Override

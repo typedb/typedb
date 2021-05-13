@@ -39,7 +39,7 @@ public interface FunctionalIterator<T> extends Iterator<T> {
 
     <U> FunctionalIterator<U> flatMap(Function<T, FunctionalIterator<U>> flatMappingFn);
 
-    <U, K extends Comparable<K>> Sorted<U, K> flatMerge(Function<T, Sorted<U, K>> flatMappingFn, Function<U, K> keyExtractor);
+    <U extends Comparable<U>> Sorted<U> flatMerge(Function<T, Sorted<U>> flatMappingFn);
 
     FunctionalIterator<T> filter(Predicate<T> predicate);
 
@@ -89,19 +89,19 @@ public interface FunctionalIterator<T> extends Iterator<T> {
 
     void recycle();
 
-    interface Sorted<T, K extends Comparable<K>> extends FunctionalIterator<T> {
+    interface Sorted<T extends Comparable<T>> extends FunctionalIterator<T> {
 
-        Function<T, K> keyExtractor();
-
-        void seek(T target); // TODO maybe this should return a boolean
+        void seek(T target);
 
         T peek();
 
-        Sorted<T, K> merge(Sorted<T, K>... iterators);
+        Sorted<T> merge(Sorted<T>... iterators);
 
-        Sorted<T, K> distinct();
+        Sorted<T> distinct();
 
-        Sorted<T, K> filter(Predicate<T> predicate);
+        Sorted<T> filter(Predicate<T> predicate);
+
+        <U extends Comparable<U>> Sorted<U> mapSorted(Function<T, U> mappingFn, Function<U, T> reverseMappingFn);
 
 //        Sorted<T, K> offset(long offset);
 //

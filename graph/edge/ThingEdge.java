@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.graph.edge;
 
+import com.vaticle.typedb.core.common.collection.Bytes.ByteComparable;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.iid.EdgeIID;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
@@ -30,7 +31,7 @@ import java.util.Optional;
  *
  * This edge can only have a encoding of type {@code Encoding.Edge.Thing}.
  */
-public interface ThingEdge extends Edge<Encoding.Edge.Thing, EdgeIID.Thing, ThingVertex> {
+public interface ThingEdge extends Edge<Encoding.Edge.Thing, EdgeIID.Thing, ThingVertex>, ByteComparable<ThingEdge> {
 
     ThingVertex from();
 
