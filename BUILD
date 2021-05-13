@@ -15,12 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("//:assemble.bzl", "assemble_targz")
 load("//:deployment.bzl", deployment_github = "deployment", deployment_docker = "deployment")
-load("@vaticle_bazel_distribution//brew:rules.bzl", "deploy_brew")
-load("@vaticle_bazel_distribution//common:rules.bzl", "java_deps", "assemble_zip", "checksum", "assemble_versioned")
-load("@vaticle_bazel_distribution//github:rules.bzl", "deploy_github")
 load("@vaticle_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
+load("@vaticle_bazel_distribution//brew:rules.bzl", "deploy_brew")
+load("@vaticle_bazel_distribution//common:rules.bzl", "assemble_targz", "assemble_zip", "checksum", "assemble_versioned")
+load("@vaticle_bazel_distribution//github:rules.bzl", "deploy_github")
 load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
 load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
 load("@vaticle_dependencies//distribution/artifact:rules.bzl", "artifact_repackage")
