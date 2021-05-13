@@ -409,10 +409,10 @@ public abstract class RocksStorage implements Storage {
 
         @Override
         public void commit() throws RocksDBException {
-            database.consistencyMgr().tryOptimisticCommit(this);
+            database.consistencyMgr().tryCommitOptimistically(this);
             super.commit();
             snapshotEnd = database.rocksData.getLatestSequenceNumber();
-            database.consistencyMgr().committed(this);
+            database.consistencyMgr().commitCompletely(this);
         }
 
         @Override
