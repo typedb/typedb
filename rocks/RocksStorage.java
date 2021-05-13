@@ -334,7 +334,7 @@ public abstract class RocksStorage implements Storage {
             this.deletedKeys = new ConcurrentSkipListSet<>();
             this.exclusiveInsertKeys = new ConcurrentSkipListSet<>();
             this.snapshotEnd = null;
-            this.database.consistencyManager().open(this);
+            this.database.consistencyMgr().register(this);
         }
 
         @Override
@@ -409,16 +409,16 @@ public abstract class RocksStorage implements Storage {
 
         @Override
         public void commit() throws RocksDBException {
-            database.consistencyManager().tryOptimisticCommit(this);
+            database.consistencyMgr().tryOptimisticCommit(this);
             super.commit();
             snapshotEnd = database.rocksData.getLatestSequenceNumber();
-            database.consistencyManager().committed(this);
+            database.consistencyMgr().committed(this);
         }
 
         @Override
         public void close() {
             super.close();
-            database.consistencyManager().closed(this);
+            database.consistencyMgr().closed(this);
         }
 
         @Override
