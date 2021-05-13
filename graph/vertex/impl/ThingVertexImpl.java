@@ -99,14 +99,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     }
 
     @Override
-    public void setModified() {
-        if (!isModified) {
-            isModified = true;
-            graph.setModified();
-        }
-    }
-
-    @Override
     public TypeVertex type() {
         return graph.type().convert(iid.type());
     }
@@ -149,8 +141,8 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     }
 
     void deleteVertexFromStorage() {
-        graph.storage().delete(iid.bytes());
-        graph.storage().delete(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
+        graph.storage().deleteTracked(iid.bytes());
+        graph.storage().deleteUntracked(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
     }
 
     void commitEdges() {
@@ -183,8 +175,8 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         }
 
         private void commitVertex() {
-            graph.storage().put(iid.bytes());
-            graph.storage().put(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
+            graph.storage().putTracked(iid.bytes());
+            graph.storage().putUntracked(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
         }
 
         @Override
@@ -193,6 +185,11 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
                 deleteEdges();
                 deleteVertexFromGraph();
             }
+        }
+
+        @Override
+        public void setModified() {
+            if (!isModified) isModified = true;
         }
     }
 
@@ -228,6 +225,14 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
                 deleteEdges();
                 deleteVertexFromStorage();
                 deleteVertexFromGraph();
+            }
+        }
+
+        @Override
+        public void setModified() {
+            if (!isModified) {
+                isModified = true;
+                graph.setModified(iid);
             }
         }
     }

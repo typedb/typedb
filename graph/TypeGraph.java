@@ -77,7 +77,7 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.THING_TY
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.scopedLabel;
 import static java.lang.Math.toIntExact;
 
-public class TypeGraph implements Graph {
+public class TypeGraph {
 
     private final Storage storage;
     private final KeyGenerator.Schema.Buffered keyGenerator;
@@ -124,7 +124,6 @@ public class TypeGraph implements Graph {
         return new StampedLock().asReadWriteLock();
     }
 
-    @Override
     public Storage storage() {
         return storage;
     }
@@ -362,7 +361,6 @@ public class TypeGraph implements Graph {
      *
      * We repeat the same process for rules.
      */
-    @Override
     public void commit() {
         assert storage.isSchema();
         typesByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Status.BUFFERED)).forEach(
@@ -374,7 +372,6 @@ public class TypeGraph implements Graph {
         rules.clear();
     }
 
-    @Override
     public void clear() {
         typesByIID.clear();
         typesByLabel.clear();
@@ -587,7 +584,7 @@ public class TypeGraph implements Graph {
                     if (rules != null && rules.contains(rule)) {
                         concludesVertex.get(type).remove(rule);
                     }
-                    storage.delete(Rule.Key.concludedVertex(type.iid(), rule.iid()).bytes());
+                    storage.deleteUntracked(Rule.Key.concludedVertex(type.iid(), rule.iid()).bytes());
                 }
 
                 private void deleteConcludesEdgeTo(RuleStructure rule, TypeVertex type) {
@@ -595,7 +592,7 @@ public class TypeGraph implements Graph {
                     if (rules != null && rules.contains(rule)) {
                         rules.remove(rule);
                     }
-                    storage.delete(Rule.Key.concludedEdgeTo(type.iid(), rule.iid()).bytes());
+                    storage.deleteUntracked(Rule.Key.concludedEdgeTo(type.iid(), rule.iid()).bytes());
                 }
 
                 private Set<RuleStructure> loadConcludesVertex(TypeVertex type) {
@@ -648,14 +645,14 @@ public class TypeGraph implements Graph {
                         VertexIID.Type typeIID = type.iid();
                         rules.forEach(rule -> {
                             Rule concludesVertex = Rule.Key.concludedVertex(typeIID, rule.iid());
-                            storage.put(concludesVertex.bytes());
+                            storage.putUntracked(concludesVertex.bytes());
                         });
                     });
                     concludesEdgeTo.forEach((type, rules) -> {
                         VertexIID.Type typeIID = type.iid();
                         rules.forEach(rule -> {
                             Rule concludesEdgeTo = Rule.Key.concludedEdgeTo(typeIID, rule.iid());
-                            storage.put(concludesEdgeTo.bytes());
+                            storage.putUntracked(concludesEdgeTo.bytes());
                         });
                     });
                 }
@@ -732,7 +729,7 @@ public class TypeGraph implements Graph {
                 private void delete(RuleStructure rule, TypeVertex type) {
                     Set<RuleStructure> rules = references.get(type);
                     if (rules != null) rules.remove(rule);
-                    storage.delete(Rule.Key.contained(type.iid(), rule.iid()).bytes());
+                    storage.deleteUntracked(Rule.Key.contained(type.iid(), rule.iid()).bytes());
                 }
 
                 private Set<RuleStructure> loadIndex(TypeVertex type) {
@@ -774,7 +771,7 @@ public class TypeGraph implements Graph {
                     references.forEach((type, rules) -> {
                         rules.forEach(rule -> {
                             Rule typeInRule = Rule.Key.contained(type.iid(), rule.iid());
-                            storage.put(typeInRule.bytes());
+                            storage.putUntracked(typeInRule.bytes());
                         });
                     });
                 }

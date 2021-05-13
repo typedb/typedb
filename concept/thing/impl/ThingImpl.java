@@ -29,6 +29,7 @@ import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.concept.type.impl.RoleTypeImpl;
+import com.vaticle.typedb.core.concept.type.impl.ThingTypeImpl;
 import com.vaticle.typedb.core.concept.type.impl.TypeImpl;
 import com.vaticle.typedb.core.graph.edge.ThingEdge;
 import com.vaticle.typedb.core.graph.iid.PrefixIID;
@@ -105,6 +106,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     @Override
     public void setHas(Attribute attribute, boolean isInferred) {
         validateIsNotDeleted();
+        AttributeVertex<?> attrVertex = ((AttributeImpl<?>) attribute).vertex.asAttribute();
         if (getType().getOwns().noneMatch(t -> t.equals(attribute.getType()))) {
             throw exception(TypeDBException.of(THING_CANNOT_OWN_ATTRIBUTE, attribute.getType().getLabel(), vertex.type().label()));
         } else if (getType().getOwns(true).anyMatch(t -> t.equals(attribute.getType()))) {
@@ -113,8 +115,9 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
             } else if (attribute.getOwners(getType()).first().isPresent()) {
                 throw exception(TypeDBException.of(THING_KEY_TAKEN, attribute.getType().getLabel(), getType().getLabel()));
             }
+            this.vertex.graph().exclusiveOwnership(((ThingTypeImpl)this.getType()).vertex, attrVertex);
         }
-        vertex.outs().put(HAS, ((AttributeImpl<?>) attribute).vertex, isInferred);
+        this.vertex.outs().put(HAS, attrVertex, isInferred);
     }
 
     @Override

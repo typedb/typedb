@@ -213,7 +213,6 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
                     schemaStorage.commit();
                     session.database().cacheInvalidate();
                 } catch (RocksDBException e) {
-                    rollback();
                     throw TypeDBException.of(e);
                 } finally {
                     graphMgr.clear();

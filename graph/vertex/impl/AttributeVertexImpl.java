@@ -37,10 +37,12 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.
 public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl implements AttributeVertex<VALUE> {
 
     private final VertexIID.Attribute<VALUE> attributeIID;
+    private java.lang.Boolean isPersisted;
 
     AttributeVertexImpl(ThingGraph graph, VertexIID.Attribute<VALUE> iid, boolean isInferred) {
         super(graph, iid, isInferred);
         this.attributeIID = iid;
+        this.isPersisted = null;
     }
 
     public static AttributeVertexImpl<?> of(ThingGraph graph, VertexIID.Attribute<?> iid) {
@@ -94,7 +96,7 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     }
 
     void deleteVertexFromIndex() {
-        graph.storage().delete(index().bytes());
+        graph.storage().deleteUntracked(index().bytes());
     }
 
     @Override
@@ -126,10 +128,26 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     }
 
     private void commitVertex() {
-        graph.storage().putUntracked(attributeIID.bytes());
-        graph.storage().putUntracked(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
-        graph.storage().putUntracked(index().bytes(), attributeIID.bytes());
+        if (!isPersisted()) {
+            graph.storage().putUntracked(attributeIID.bytes());
+            graph.storage().putUntracked(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
+            graph.storage().putUntracked(index().bytes(), attributeIID.bytes());
+        }
+        graph.setModified(iid);
         // TODO: we should make use of attribute indexes to look up attributes by value (without type) quickly
+    }
+
+    @Override
+    public void setModified() {
+        if (!isModified) {
+            isModified = true;
+            graph.setModified(iid);
+        }
+    }
+
+    private boolean isPersisted() {
+        if (isPersisted == null) isPersisted = graph.storage().get(iid.bytes()) != null;
+        return isPersisted;
     }
 
     @Override

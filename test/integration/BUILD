@@ -69,6 +69,31 @@ host_compatible_java_test(
     resource_strip_prefix = "common/test",
 )
 
+host_compatible_java_test(
+    name = "test-consistency",
+    srcs = ["ConsistencyTest.java"],
+    test_class = "com.vaticle.typedb.core.test.integration.ConsistencyTest",
+    native_libraries_deps = [
+        "//rocks:rocks",
+        "//:typedb",
+        "//concept:concept",
+        "//logic:logic",
+    ],
+    deps = [
+        # Internal dependencies
+        "//test/integration/util:util",
+        "//common:common",
+
+        # External dependencies from Vaticle
+        "@vaticle_typeql_lang_java//:typeql-lang",
+    ],
+    resources = [
+        "//common/test:logback-test"
+    ],
+    resource_strip_prefix = "common/test",
+    size = "large",
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob([

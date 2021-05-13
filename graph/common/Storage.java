@@ -35,19 +35,13 @@ public interface Storage {
 
     byte[] getLastKey(byte[] prefix);
 
-    void delete(byte[] key);
+    <G> FunctionalIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor);
 
-    void put(byte[] key);
-
-    void put(byte[] key, byte[] value);
+    void deleteUntracked(byte[] key);
 
     void putUntracked(byte[] key);
 
     void putUntracked(byte[] key, byte[] value);
-
-    void mergeUntracked(byte[] key, byte[] value);
-
-    <G> FunctionalIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor);
 
     TypeDBException exception(ErrorMessage error);
 
@@ -73,5 +67,22 @@ public interface Storage {
     interface Data extends Storage {
 
         KeyGenerator.Data dataKeyGenerator();
+
+        void putTracked(byte[] key);
+
+        void putTracked(byte[] key, byte[] value);
+
+        void putTracked(byte[] key, byte[] value, boolean checkConsistency);
+
+        void deleteTracked(byte[] key);
+
+        void trackModified(byte[] bytes);
+
+        void trackModified(byte[] bytes, boolean checkConsistency);
+
+        void trackExclusiveCreate(byte[] key);
+
+        void mergeUntracked(byte[] key, byte[] value);
+
     }
 }

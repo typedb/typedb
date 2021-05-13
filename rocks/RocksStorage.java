@@ -36,8 +36,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.NotThreadSafe;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.NavigableSet;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.StampedLock;
@@ -53,7 +59,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.
 public abstract class RocksStorage implements Storage {
 
     private static final Logger LOG = LoggerFactory.getLogger(RocksStorage.class);
-    private static final byte[] EMPTY_ARRAY = new byte[]{};
+    static final byte[] EMPTY_ARRAY = new byte[]{};
 
     protected final ConcurrentSet<RocksIterator<?>> iterators;
     protected final Transaction storageTransaction;
@@ -91,17 +97,7 @@ public abstract class RocksStorage implements Storage {
     }
 
     @Override
-    public void delete(byte[] key) {
-        throw exception(ILLEGAL_OPERATION);
-    }
-
-    @Override
-    public void put(byte[] key) {
-        put(key, EMPTY_ARRAY);
-    }
-
-    @Override
-    public void put(byte[] key, byte[] value) {
+    public void deleteUntracked(byte[] key) {
         throw exception(ILLEGAL_OPERATION);
     }
 
@@ -112,11 +108,6 @@ public abstract class RocksStorage implements Storage {
 
     @Override
     public void putUntracked(byte[] key, byte[] value) {
-        throw exception(ILLEGAL_OPERATION);
-    }
-
-    @Override
-    public void mergeUntracked(byte[] key, byte[] value) {
         throw exception(ILLEGAL_OPERATION);
     }
 
@@ -237,7 +228,7 @@ public abstract class RocksStorage implements Storage {
         }
 
         @Override
-        public void delete(byte[] key) {
+        public void deleteUntracked(byte[] key) {
             if (isReadOnly) {
                 if (transaction.isSchema()) throw exception(TRANSACTION_SCHEMA_READ_VIOLATION);
                 else if (transaction.isData()) throw exception(TRANSACTION_DATA_READ_VIOLATION);
@@ -248,7 +239,7 @@ public abstract class RocksStorage implements Storage {
                 if (!isOpen() || (!transaction.isOpen() && transaction.isData())) {
                     throw TypeDBException.of(RESOURCE_CLOSED);
                 }
-                storageTransaction.delete(key);
+                storageTransaction.deleteUntracked(key);
             } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
@@ -304,24 +295,6 @@ public abstract class RocksStorage implements Storage {
         }
 
         @Override
-        public void put(byte[] key, byte[] value) {
-            assert isOpen() && !isReadOnly;
-            boolean obtainedWriteLock = false;
-            try {
-                if (transaction.isOpen()) {
-                    deleteCloseSchemaWriteLock.writeLock().lock();
-                    obtainedWriteLock = true;
-                }
-                if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
-                storageTransaction.put(key, value);
-            } catch (RocksDBException e) {
-                throw exception(e);
-            } finally {
-                if (obtainedWriteLock) deleteCloseSchemaWriteLock.writeLock().unlock();
-            }
-        }
-
-        @Override
         public void putUntracked(byte[] key, byte[] value) {
             assert isOpen() && !isReadOnly;
             boolean obtainedWriteLock = false;
@@ -343,11 +316,25 @@ public abstract class RocksStorage implements Storage {
     @NotThreadSafe
     public static class Data extends TransactionBounded implements Storage.Data {
 
+        private final RocksDatabase database;
         private final KeyGenerator.Data dataKeyGenerator;
+
+        private final ConcurrentNavigableMap<ByteBuffer, Boolean> modifiedKeys;
+        private final ConcurrentSkipListSet<ByteBuffer> deletedKeys;
+        private final ConcurrentSkipListSet<ByteBuffer> exclusiveInsertKeys;
+        private final long snapshotStart;
+        private volatile Long snapshotEnd;
 
         public Data(RocksDatabase database, RocksTransaction transaction) {
             super(database.rocksData, transaction);
+            this.database = database;
             this.dataKeyGenerator = database.dataKeyGenerator();
+            this.snapshotStart = storageTransaction.getSnapshot().getSequenceNumber();
+            this.modifiedKeys = new ConcurrentSkipListMap<>();
+            this.deletedKeys = new ConcurrentSkipListSet<>();
+            this.exclusiveInsertKeys = new ConcurrentSkipListSet<>();
+            this.snapshotEnd = null;
+            this.database.consistencyMgr().register(this);
         }
 
         @Override
@@ -356,17 +343,24 @@ public abstract class RocksStorage implements Storage {
         }
 
         @Override
-        public void put(byte[] key, byte[] value) {
-            assert isOpen() && !isReadOnly;
-            try {
-                deleteCloseSchemaWriteLock.readLock().lock();
-                if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
-                storageTransaction.put(key, value);
-            } catch (RocksDBException e) {
-                throw exception(e);
-            } finally {
-                deleteCloseSchemaWriteLock.readLock().unlock();
-            }
+        public void putTracked(byte[] key) {
+            putTracked(key, EMPTY_ARRAY);
+        }
+
+        @Override
+        public void putTracked(byte[] key, byte[] value) {
+            putTracked(key, value, true);
+        }
+
+        @Override
+        public void putTracked(byte[] key, byte[] value, boolean checkConsistency) {
+            putUntracked(key, value);
+            trackModified(key, checkConsistency);
+        }
+
+        @Override
+        public void putUntracked(byte[] key) {
+            putUntracked(key, EMPTY_ARRAY);
         }
 
         @Override
@@ -384,6 +378,50 @@ public abstract class RocksStorage implements Storage {
         }
 
         @Override
+        public void deleteTracked(byte[] key) {
+            deleteUntracked(key);
+            ByteBuffer bytes = ByteBuffer.wrap(key);
+            this.deletedKeys.add(bytes);
+            this.modifiedKeys.remove(bytes);
+            this.exclusiveInsertKeys.remove(bytes);
+        }
+
+        @Override
+        public void trackModified(byte[] key) {
+            trackModified(key, true);
+        }
+
+        @Override
+        public void trackModified(byte[] key, boolean checkConsistency) {
+            assert isOpen();
+            ByteBuffer bytes = ByteBuffer.wrap(key);
+            this.modifiedKeys.put(bytes, checkConsistency);
+            this.deletedKeys.remove(bytes);
+        }
+
+        @Override
+        public void trackExclusiveCreate(byte[] key) {
+            assert isOpen();
+            ByteBuffer bytes = ByteBuffer.wrap(key);
+            this.exclusiveInsertKeys.add(bytes);
+            this.deletedKeys.remove(bytes);
+        }
+
+        @Override
+        public void commit() throws RocksDBException {
+            database.consistencyMgr().tryCommitOptimistically(this);
+            super.commit();
+            snapshotEnd = database.rocksData.getLatestSequenceNumber();
+            database.consistencyMgr().commitCompletely(this);
+        }
+
+        @Override
+        public void close() {
+            super.close();
+            database.consistencyMgr().closed(this);
+        }
+
+        @Override
         public void mergeUntracked(byte[] key, byte[] value) {
             assert isOpen() && !isReadOnly;
             try {
@@ -395,6 +433,30 @@ public abstract class RocksStorage implements Storage {
             } finally {
                 deleteCloseSchemaWriteLock.readLock().unlock();
             }
+        }
+
+        public long snapshotStart() {
+            return snapshotStart;
+        }
+
+        public Optional<Long> snapshotEnd() {
+            return Optional.ofNullable(snapshotEnd);
+        }
+
+        public NavigableSet<ByteBuffer> deletedKeys() {
+            return deletedKeys;
+        }
+
+        public NavigableSet<ByteBuffer> modifiedKeys() {
+            return modifiedKeys.keySet();
+        }
+
+        public boolean isModifiedValidatedKey(ByteBuffer key) {
+            return modifiedKeys.getOrDefault(key, false);
+        }
+
+        public NavigableSet<ByteBuffer> exclusiveInsertKeys() {
+            return exclusiveInsertKeys;
         }
     }
 }
