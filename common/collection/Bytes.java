@@ -229,14 +229,6 @@ public class Bytes {
         return new UUID(firstLong, secondLong);
     }
 
-    public static boolean arrayContains(byte[] container, int from, byte[] contained) {
-        if ((container.length - from) > contained.length) return false;
-        for (int i = 0; i < contained.length; i++) {
-            if (container[from + i] != contained[i]) return false;
-        }
-        return true;
-    }
-
     public static byte signedByte(int value) {
         assert value >= -128 && value <= 127;
         return (byte) value;

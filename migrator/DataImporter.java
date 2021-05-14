@@ -23,6 +23,7 @@ import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.util.ByteArray;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.Entity;
 import com.vaticle.typedb.core.concept.thing.Relation;
@@ -64,9 +65,9 @@ public class DataImporter implements Migrator {
     private final Path filename;
     private final Map<String, String> remapLabels;
 
-    private final Map<String, byte[]> idMap = new HashMap<>();
-    private final List<Pair<byte[], List<String>>> missingOwnerships = new ArrayList<>();
-    private final List<Pair<byte[], List<Pair<String, List<String>>>>> missingRolePlayers = new ArrayList<>();
+    private final Map<String, ByteArray> idMap = new HashMap<>();
+    private final List<Pair<ByteArray, List<String>>> missingOwnerships = new ArrayList<>();
+    private final List<Pair<ByteArray, List<Pair<String, List<String>>>>> missingRolePlayers = new ArrayList<>();
     private final String version;
     private long totalThingCount = 0;
     private long entityCount = 0;
@@ -253,7 +254,7 @@ public class DataImporter implements Migrator {
     }
 
     private void insertMissingOwnerships() {
-        for (Pair<byte[], List<String>> ownership : missingOwnerships) {
+        for (Pair<ByteArray, List<String>> ownership : missingOwnerships) {
             Thing thing = tx.concepts().getThing(ownership.first());
             for (String originalAttributeId : ownership.second()) {
                 Thing attrThing = getThing(originalAttributeId);
@@ -267,7 +268,7 @@ public class DataImporter implements Migrator {
     }
 
     private void insertMissingRolePlayers() {
-        for (Pair<byte[], List<Pair<String, List<String>>>> rolePlayers : missingRolePlayers) {
+        for (Pair<ByteArray, List<Pair<String, List<String>>>> rolePlayers : missingRolePlayers) {
             Thing thing = tx.concepts().getThing(rolePlayers.first());
             assert thing != null;
             Relation relation = thing.asRelation();
@@ -287,7 +288,7 @@ public class DataImporter implements Migrator {
     }
 
     private Thing getThing(String originalId) {
-        byte[] newId = idMap.get(originalId);
+        ByteArray newId = idMap.get(originalId);
         return newId != null ? tx.concepts().getThing(newId) : null;
     }
 

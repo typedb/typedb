@@ -17,6 +17,7 @@
 
 package com.vaticle.typedb.core.graph.iid;
 
+import com.vaticle.typedb.core.common.util.ByteArray;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
 
@@ -26,7 +27,7 @@ import static java.util.Arrays.copyOfRange;
 
 public abstract class StructureIID extends IID {
 
-    StructureIID(byte[] bytes) {
+    StructureIID(ByteArray bytes) {
         super(bytes);
     }
 
@@ -41,12 +42,12 @@ public abstract class StructureIID extends IID {
 
         public static final int LENGTH = PrefixIID.LENGTH + 2;
 
-        Rule(byte[] bytes) {
+        Rule(ByteArray bytes) {
             super(bytes);
-            assert bytes.length == LENGTH;
+            assert bytes.length() == LENGTH;
         }
 
-        public static Rule of(byte[] bytes) {
+        public static Rule of(ByteArray bytes) {
             return new Rule(bytes);
         }
 
@@ -57,7 +58,7 @@ public abstract class StructureIID extends IID {
          * @return a byte array representing a new IID for a {@code RuleStructure}
          */
         public static Rule generate(KeyGenerator.Schema keyGenerator) {
-            return of(join(Encoding.Structure.RULE.prefix().bytes(), keyGenerator.forRule()));
+            return of(ByteArray.join(Encoding.Structure.RULE.prefix().bytes(), keyGenerator.forRule()));
         }
 
         @Override
@@ -70,7 +71,7 @@ public abstract class StructureIID extends IID {
             if (readableString == null) {
                 readableString = "[" + PrefixIID.LENGTH + ": " + encoding().toString() + "][" +
                         (LENGTH - PrefixIID.LENGTH) + ": " +
-                        sortedBytesToShort(copyOfRange(bytes, PrefixIID.LENGTH, LENGTH)) + "]";
+                        sortedBytesToShort(bytes.copyRange(PrefixIID.LENGTH, LENGTH)) + "]";
             }
             return readableString;
         }

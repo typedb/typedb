@@ -22,6 +22,7 @@ import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.common.util.ByteArray;
 import com.vaticle.typeql.lang.common.TypeQLArg;
 
 import javax.annotation.Nullable;
@@ -192,12 +193,12 @@ public class Encoding {
 
         private final byte key;
         private final PrefixType type;
-        private final byte[] bytes;
+        private final ByteArray bytes;
 
         Prefix(int key, PrefixType type) {
             this.key = unsignedByte(key);
             this.type = type;
-            this.bytes = new byte[]{this.key};
+            this.bytes = ByteArray.of(new byte[]{this.key});
         }
 
         public static Prefix of(byte key) {
@@ -210,7 +211,7 @@ public class Encoding {
             return key;
         }
 
-        public byte[] bytes() {
+        public ByteArray bytes() {
             return bytes;
         }
 
@@ -307,7 +308,7 @@ public class Encoding {
 
         private final byte key;
         private final boolean isOptimisation;
-        private final byte[] bytes;
+        private final ByteArray bytes;
 
         Infix(int key) {
             this(key, false);
@@ -316,7 +317,7 @@ public class Encoding {
         Infix(int key, boolean isOptimisation) {
             this.key = signedByte(key);
             this.isOptimisation = isOptimisation;
-            this.bytes = new byte[]{this.key};
+            this.bytes = ByteArray.of(new byte[]{this.key});
         }
 
         public static Infix of(byte key) {
@@ -329,7 +330,7 @@ public class Encoding {
             return key;
         }
 
-        public byte[] bytes() {
+        public ByteArray bytes() {
             return bytes;
         }
 
@@ -410,12 +411,12 @@ public class Encoding {
         private final boolean isWritable;
 
         private final TypeQLArg.ValueType typeQLValueType;
-        private final byte[] bytes;
+        private final ByteArray bytes;
 
         ValueType(int key, Class<?> valueClass, boolean isWritable, boolean isKeyable,
                   @Nullable TypeQLArg.ValueType typeQLValueType) {
             this.key = unsignedByte(key);
-            this.bytes = new byte[]{this.key};
+            this.bytes = ByteArray.of(new byte[]{this.key});
             this.valueClass = valueClass;
             this.isWritable = isWritable;
             this.isKeyable = isKeyable;
@@ -448,7 +449,7 @@ public class Encoding {
             else throw TypeDBException.of(UNRECOGNISED_VALUE);
         }
 
-        public byte[] bytes() {
+        public ByteArray bytes() {
             return bytes;
         }
 
@@ -832,7 +833,7 @@ public class Encoding {
                 return prefix;
             }
 
-            public byte[] bytes() { return prefix.bytes(); }
+            public ByteArray bytes() { return prefix.bytes(); }
         }
 
         /**
@@ -845,21 +846,21 @@ public class Encoding {
 
             public static final int LENGTH = 1;
             private final byte key;
-            private final byte[] bytes;
+            private final ByteArray bytes;
 
             Infix(int key) {
                 this.key = unsignedByte(key);
-                bytes = new byte[]{this.key};
+                bytes = ByteArray.of(new byte[]{this.key});
             }
 
-            public static Infix of(byte[] key) {
-                if (key[0] == CONTAINED_TYPE.key) return CONTAINED_TYPE;
-                else if (key[0] == CONCLUDED_VERTEX.key) return CONCLUDED_VERTEX;
-                else if (key[0] == CONCLUDED_EDGE_TO.key) return CONCLUDED_EDGE_TO;
+            public static Infix of(ByteArray key) {
+                if (key.get(0) == CONTAINED_TYPE.key) return CONTAINED_TYPE;
+                else if (key.get(0) == CONCLUDED_VERTEX.key) return CONCLUDED_VERTEX;
+                else if (key.get(0) == CONCLUDED_EDGE_TO.key) return CONCLUDED_EDGE_TO;
                 else throw TypeDBException.of(UNRECOGNISED_VALUE);
             }
 
-            public byte[] bytes() { return bytes; }
+            public ByteArray bytes() { return bytes; }
         }
     }
 
@@ -873,17 +874,17 @@ public class Encoding {
             HAS_EDGE(1);
 
             private final byte key;
-            private final byte[] bytes;
+            private final ByteArray bytes;
 
             JobType(int key) {
                 this.key = unsignedByte(key);
-                this.bytes = new byte[]{this.key};
+                this.bytes = ByteArray.of(new byte[]{this.key});
             }
 
-            public static JobType of(byte[] key) {
-                if (key.length == 1) {
-                    if (key[0] == ATTRIBUTE_VERTEX.key) return ATTRIBUTE_VERTEX;
-                    else if (key[0] == HAS_EDGE.key) return HAS_EDGE;
+            public static JobType of(ByteArray key) {
+                if (key.length() == 1) {
+                    if (key.get(0) == ATTRIBUTE_VERTEX.key) return ATTRIBUTE_VERTEX;
+                    else if (key.get(0) == HAS_EDGE.key) return HAS_EDGE;
                     else throw TypeDBException.of(UNRECOGNISED_VALUE);
                 }
                 throw TypeDBException.of(UNRECOGNISED_VALUE);
@@ -893,7 +894,7 @@ public class Encoding {
                 return key;
             }
 
-            public byte[] bytes() {
+            public ByteArray bytes() {
                 return bytes;
             }
         }
@@ -906,17 +907,17 @@ public class Encoding {
             DELETED(1);
 
             private final byte key;
-            private final byte[] bytes;
+            private final ByteArray bytes;
 
             JobOperation(int key) {
                 this.key = unsignedByte(key);
-                this.bytes = new byte[]{this.key};
+                this.bytes = ByteArray.of(new byte[]{this.key});
             }
 
-            public static JobOperation of(byte[] key) {
-                if (key.length == 1) {
-                    if (key[0] == CREATED.key) return CREATED;
-                    else if (key[0] == DELETED.key) return DELETED;
+            public static JobOperation of(ByteArray key) {
+                if (key.length() == 1) {
+                    if (key.get(0) == CREATED.key) return CREATED;
+                    else if (key.get(0) == DELETED.key) return DELETED;
                     else throw TypeDBException.of(UNRECOGNISED_VALUE);
                 }
                 throw TypeDBException.of(UNRECOGNISED_VALUE);
@@ -926,7 +927,7 @@ public class Encoding {
                 return key;
             }
 
-            public byte[] bytes() {
+            public ByteArray bytes() {
                 return bytes;
             }
         }
@@ -941,18 +942,18 @@ public class Encoding {
             HAS_EDGE_TOTAL_COUNT(3);
 
             private final byte key;
-            private final byte[] bytes;
+            private final ByteArray bytes;
 
             Infix(int key) {
                 this.key = unsignedByte(key);
-                this.bytes = new byte[]{this.key};
+                this.bytes = ByteArray.of(new byte[]{this.key});
             }
 
             public byte key() {
                 return key;
             }
 
-            public byte[] bytes() {
+            public ByteArray bytes() {
                 return bytes;
             }
         }

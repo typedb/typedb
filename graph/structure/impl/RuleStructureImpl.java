@@ -19,6 +19,7 @@ package com.vaticle.typedb.core.graph.structure.impl;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.common.util.ByteArray;
 import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.iid.IndexIID;
@@ -40,9 +41,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.vaticle.typedb.core.common.collection.Bytes.join;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
+import static com.vaticle.typedb.core.common.util.ByteArray.join;
 import static com.vaticle.typedb.core.graph.common.Encoding.Property.LABEL;
 import static com.vaticle.typedb.core.graph.common.Encoding.Property.THEN;
 import static com.vaticle.typedb.core.graph.common.Encoding.Property.WHEN;
@@ -228,15 +229,15 @@ public abstract class RuleStructureImpl implements RuleStructure {
         }
 
         private void commitPropertyLabel() {
-            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), label.getBytes());
+            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), ByteArray.of(label.getBytes()));
         }
 
         private void commitWhen() {
-            graph.storage().putUntracked(join(iid.bytes(), WHEN.infix().bytes()), when().toString().getBytes());
+            graph.storage().putUntracked(join(iid.bytes(), WHEN.infix().bytes()), ByteArray.of(when().toString().getBytes()));
         }
 
         private void commitThen() {
-            graph.storage().putUntracked(join(iid.bytes(), THEN.infix().bytes()), then().toString().getBytes());
+            graph.storage().putUntracked(join(iid.bytes(), THEN.infix().bytes()), ByteArray.of(then().toString().getBytes()));
         }
 
         private void indexReferences() {
@@ -249,9 +250,9 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
         public Persisted(TypeGraph graph, StructureIID.Rule iid) {
             super(graph, iid,
-                  new String(graph.storage().get(join(iid.bytes(), LABEL.infix().bytes()))),
-                  TypeQL.parsePattern(new String(graph.storage().get(join(iid.bytes(), WHEN.infix().bytes())))).asConjunction(),
-                  TypeQL.parseVariable(new String(graph.storage().get(join(iid.bytes(), THEN.infix().bytes())))).asThing());
+                  graph.storage().get(join(iid.bytes(), LABEL.infix().bytes())).decodeString(),
+                  TypeQL.parsePattern(graph.storage().get(join(iid.bytes(), WHEN.infix().bytes())).decodeString()).asConjunction(),
+                  TypeQL.parseVariable(graph.storage().get(join(iid.bytes(), THEN.infix().bytes())).decodeString()).asThing());
         }
 
         @Override
@@ -272,7 +273,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
         @Override
         public void label(String label) {
             graph.rules().update(this, this.label, label);
-            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), label.getBytes());
+            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), ByteArray.of(label.getBytes()));
             graph.storage().deleteUntracked(IndexIID.Rule.of(this.label).bytes());
             graph.storage().putUntracked(IndexIID.Rule.of(label).bytes(), iid.bytes());
             this.label = label;
@@ -289,7 +290,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
         private void deleteVertexFromStorage() {
             graph.storage().deleteUntracked(IndexIID.Rule.of(label).bytes());
-            FunctionalIterator<byte[]> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
+            FunctionalIterator<ByteArray> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
             while (keys.hasNext()) graph.storage().deleteUntracked(keys.next());
         }
 

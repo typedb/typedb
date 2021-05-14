@@ -18,6 +18,7 @@
 package com.vaticle.typedb.core.server.concept;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.util.ByteArray;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.EntityType;
@@ -55,7 +56,7 @@ public class ConceptService {
                 getThingType(conceptMgrReq.getGetThingTypeReq().getLabel(), reqID);
                 return;
             case GET_THING_REQ:
-                getThing(conceptMgrReq.getGetThingReq().getIid().toByteArray(), reqID);
+                getThing(ByteArray.of(conceptMgrReq.getGetThingReq().getIid().toByteArray()), reqID);
                 return;
             case PUT_ENTITY_TYPE_REQ:
                 putEntityType(conceptMgrReq.getPutEntityTypeReq().getLabel(), reqID);
@@ -76,7 +77,7 @@ public class ConceptService {
         transactionSvc.respond(ResponseBuilder.ConceptManager.getThingTypeRes(reqID, conceptMgr.getThingType(label)));
     }
 
-    private void getThing(byte[] iid, UUID reqID) {
+    private void getThing(ByteArray iid, UUID reqID) {
         transactionSvc.respond(getThingRes(reqID, conceptMgr.getThing(iid)));
     }
 

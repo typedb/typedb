@@ -18,24 +18,24 @@
 
 package com.vaticle.typedb.core.graph.iid;
 
-import java.util.Arrays;
+import com.vaticle.typedb.core.common.util.ByteArray;
 
 public abstract class IID {
 
     String readableString; // for debugging
-    final byte[] bytes;
+    final ByteArray bytes;
     private int hash = 0;
 
-    IID(byte[] bytes) {
+    IID(ByteArray bytes) {
         this.bytes = bytes;
     }
 
-    public byte[] bytes() {
+    public ByteArray bytes() {
         return bytes;
     }
 
     public boolean isEmpty() {
-        return bytes.length == 0;
+        return bytes.isEmpty();
     }
 
     @Override
@@ -46,12 +46,12 @@ public abstract class IID {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
         IID that = (IID) object;
-        return Arrays.equals(this.bytes, that.bytes);
+        return this.bytes.equals(that.bytes);
     }
 
     @Override
     public final int hashCode() {
-        if (hash == 0) hash = Arrays.hashCode(bytes);
+        if (hash == 0) hash = bytes.hashCode();
         return hash;
     }
 

@@ -22,6 +22,7 @@ import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.common.util.ByteArray;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
 import com.vaticle.typedb.core.graph.common.Storage;
@@ -271,7 +272,7 @@ public class TypeGraph {
             if (vertex != null) return vertex;
 
             IndexIID.Type index = IndexIID.Type.Label.of(label, scope);
-            byte[] iid = storage.get(index.bytes());
+            ByteArray iid = storage.get(index.bytes());
             if (iid != null) {
                 vertex = typesByIID.computeIfAbsent(
                         VertexIID.Type.of(iid), i -> new TypeVertexImpl.Persisted(this, i, label, scope)
@@ -437,7 +438,7 @@ public class TypeGraph {
                 if (vertex != null) return vertex;
 
                 IndexIID.Rule index = IndexIID.Rule.of(label);
-                byte[] iid = storage.get(index.bytes());
+                ByteArray iid = storage.get(index.bytes());
                 if (iid != null) vertex = convert(StructureIID.Rule.of(iid));
                 return vertex;
             } finally {

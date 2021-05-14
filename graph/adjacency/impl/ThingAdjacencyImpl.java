@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.graph.adjacency.impl;
 
 import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.util.ByteArray;
 import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.edge.Edge;
@@ -37,7 +38,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Predicate;
 
-import static com.vaticle.typedb.core.common.collection.Bytes.join;
 import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
@@ -276,7 +276,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         }
 
         private FunctionalIterator<ThingEdge> edgeIterator(Encoding.Edge.Thing encoding, IID... lookahead) {
-            byte[] iid = join(owner.iid().bytes(), infixIID(encoding, lookahead).bytes());
+            ByteArray iid = ByteArray.join(owner.iid().bytes(), infixIID(encoding, lookahead).bytes());
             FunctionalIterator<ThingEdge> storageIterator = owner.graph().storage()
                     .iterate(iid, (key, value) -> cache(newPersistedEdge(EdgeIID.Thing.of(key))));
             FunctionalIterator<ThingEdge> bufferedIterator = bufferedEdgeIterator(encoding, lookahead);

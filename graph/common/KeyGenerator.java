@@ -21,24 +21,16 @@ package com.vaticle.typedb.core.graph.common;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.common.util.ByteArray;
 import com.vaticle.typedb.core.graph.iid.PrefixIID;
 import com.vaticle.typedb.core.graph.iid.StructureIID;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 
-import java.io.ByteArrayOutputStream;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.vaticle.typedb.core.common.collection.Bytes.INTEGER_SIZE;
-import static com.vaticle.typedb.core.common.collection.Bytes.LONG_SIZE;
-import static com.vaticle.typedb.core.common.collection.Bytes.bytesToInt;
-import static com.vaticle.typedb.core.common.collection.Bytes.bytesToLong;
-import static com.vaticle.typedb.core.common.collection.Bytes.intToBytes;
-import static com.vaticle.typedb.core.common.collection.Bytes.join;
-import static com.vaticle.typedb.core.common.collection.Bytes.longToBytes;
 import static com.vaticle.typedb.core.common.collection.Bytes.longToSortedBytes;
 import static com.vaticle.typedb.core.common.collection.Bytes.shortToSortedBytes;
 import static com.vaticle.typedb.core.common.collection.Bytes.sortedBytesToLong;
@@ -53,7 +45,6 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.RELATIO
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ROLE;
 import static com.vaticle.typedb.core.graph.iid.VertexIID.Thing.DEFAULT_LENGTH;
 import static com.vaticle.typedb.core.graph.iid.VertexIID.Thing.PREFIX_W_TYPE_LENGTH;
-import static java.util.Arrays.copyOfRange;
 
 public class KeyGenerator {
 
@@ -74,7 +65,7 @@ public class KeyGenerator {
             this.delta = delta;
         }
 
-        public byte[] forType(PrefixIID rootIID, Label rootLabel) {
+        public ByteArray forType(PrefixIID rootIID, Label rootLabel) {
             int key;
             if ((key = typeKeys.computeIfAbsent(rootIID, k -> new AtomicInteger(initialValue)).getAndAdd(delta)) >= SHORT_MAX_VALUE
                     || key <= SHORT_MIN_VALUE) {
@@ -84,46 +75,13 @@ public class KeyGenerator {
             return shortToSortedBytes(key);
         }
 
-        public byte[] forRule() {
+        public ByteArray forRule() {
             int key;
             if ((key = ruleKey.getAndAdd(delta)) >= SHORT_MAX_VALUE || key <= SHORT_MIN_VALUE) {
                 ruleKey.addAndGet(-1 * delta);
                 throw TypeDBException.of(MAX_RULE_REACHED, SHORT_MAX_VALUE);
             }
             return shortToSortedBytes(key);
-        }
-
-        public byte[] serialise() {
-            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-            byte[] typeKeysSize = intToBytes(typeKeys.size());
-            bytes.write(typeKeysSize, 0, typeKeysSize.length);
-            for (Map.Entry<PrefixIID, AtomicInteger> typeKey : typeKeys.entrySet()) {
-                byte[] key = typeKey.getKey().bytes();
-                bytes.write(key, 0, key.length);
-                byte[] value = intToBytes(typeKey.getValue().get());
-                bytes.write(value, 0, value.length);
-            }
-            byte[] ruleKeyValue = intToBytes(ruleKey.get());
-            bytes.write(ruleKeyValue, 0, ruleKeyValue.length);
-            return bytes.toByteArray();
-        }
-
-        public void deserialise(byte[] bytes) {
-            int pos = 0;
-            typeKeys.clear();
-            int typeKeysSize = bytesToInt(copyOfRange(bytes, pos, pos + INTEGER_SIZE));
-            pos += INTEGER_SIZE;
-            for (int i = 0; i < typeKeysSize; i++) {
-                PrefixIID key = PrefixIID.of(Encoding.Prefix.of(bytes[pos]));
-                pos += 1;
-                AtomicInteger value = new AtomicInteger(bytesToInt(copyOfRange(bytes, pos, pos + INTEGER_SIZE)));
-                pos += INTEGER_SIZE;
-                typeKeys.put(key, value);
-            }
-            int ruleKeyValue = bytesToInt(copyOfRange(bytes, pos, pos + INTEGER_SIZE));
-            pos += INTEGER_SIZE;
-            ruleKey.set(ruleKeyValue);
-            assert pos == bytes.length;
         }
 
         public static class Buffered extends Schema {
@@ -146,20 +104,20 @@ public class KeyGenerator {
 
             private void syncTypeKeys(Storage.Schema storage) {
                 for (Encoding.Vertex.Type encoding : Encoding.Vertex.Type.values()) {
-                    byte[] prefix = encoding.prefix().bytes();
-                    byte[] lastIID = storage.getLastKey(prefix);
+                    ByteArray prefix = encoding.prefix().bytes();
+                    ByteArray lastIID = storage.getLastKey(prefix);
                     AtomicInteger nextValue = lastIID != null ?
-                            new AtomicInteger(sortedBytesToShort(copyOfRange(lastIID, PrefixIID.LENGTH, VertexIID.Type.LENGTH)) + delta) :
+                            new AtomicInteger(sortedBytesToShort(lastIID.copyRange(PrefixIID.LENGTH, VertexIID.Type.LENGTH)) + delta) :
                             new AtomicInteger(initialValue);
                     typeKeys.put(PrefixIID.of(encoding), nextValue);
                 }
             }
 
             private void syncRuleKey(Storage.Schema storage) {
-                byte[] prefix = Encoding.Structure.RULE.prefix().bytes();
-                byte[] lastIID = storage.getLastKey(prefix);
+                ByteArray prefix = Encoding.Structure.RULE.prefix().bytes();
+                ByteArray lastIID = storage.getLastKey(prefix);
                 if (lastIID != null) {
-                    ruleKey.set(sortedBytesToShort(copyOfRange(lastIID, PrefixIID.LENGTH, StructureIID.Rule.LENGTH)) + delta);
+                    ruleKey.set(sortedBytesToShort(lastIID.copyRange(PrefixIID.LENGTH, StructureIID.Rule.LENGTH)) + delta);
                 } else {
                     ruleKey.set(initialValue);
                 }
@@ -182,7 +140,7 @@ public class KeyGenerator {
             this.delta = delta;
         }
 
-        public byte[] forThing(VertexIID.Type typeIID, Label typeLabel) {
+        public ByteArray forThing(VertexIID.Type typeIID, Label typeLabel) {
             long key;
             if ((key = thingKeys.computeIfAbsent(typeIID, k -> new AtomicLong(initialValue)).getAndAdd(delta)) >= LONG_MAX_VALUE
                     || key <= LONG_MIN_VALUE) {
@@ -190,34 +148,6 @@ public class KeyGenerator {
                 throw TypeDBException.of(MAX_INSTANCE_REACHED, typeLabel, LONG_MAX_VALUE);
             }
             return longToSortedBytes(key);
-        }
-
-        public byte[] serialise() {
-            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-            byte[] thingKeysSize = intToBytes(thingKeys.size());
-            bytes.write(thingKeysSize, 0, thingKeysSize.length);
-            for (Map.Entry<VertexIID.Type, AtomicLong> thingKey : thingKeys.entrySet()) {
-                byte[] key = thingKey.getKey().bytes();
-                bytes.write(key, 0, key.length);
-                byte[] value = longToBytes(thingKey.getValue().get());
-                bytes.write(value, 0, value.length);
-            }
-            return bytes.toByteArray();
-        }
-
-        public void deserialise(byte[] bytes) {
-            int pos = 0;
-            thingKeys.clear();
-            int thingKeysSize = bytesToInt(copyOfRange(bytes, pos, pos + INTEGER_SIZE));
-            pos += INTEGER_SIZE;
-            for (int i = 0; i < thingKeysSize; i++) {
-                VertexIID.Type key = VertexIID.Type.extract(bytes, pos);
-                pos += key.bytes().length;
-                AtomicLong value = new AtomicLong(bytesToLong(copyOfRange(bytes, pos, pos + LONG_SIZE)));
-                pos += LONG_SIZE;
-                thingKeys.put(key, value);
-            }
-            assert pos == bytes.length;
         }
 
         public static class Buffered extends Data {
@@ -237,15 +167,15 @@ public class KeyGenerator {
                 Encoding.Vertex.Thing[] thingsWithGeneratedIID = new Encoding.Vertex.Thing[]{ENTITY, RELATION, ROLE};
 
                 for (Encoding.Vertex.Thing thingEncoding : thingsWithGeneratedIID) {
-                    byte[] typeEncoding = Encoding.Vertex.Type.of(thingEncoding).prefix().bytes();
-                    FunctionalIterator<byte[]> typeIterator = schemaStorage.iterate(typeEncoding, (iid, value) -> iid)
-                            .filter(iid1 -> iid1.length == VertexIID.Type.LENGTH);
+                    ByteArray typeEncoding = Encoding.Vertex.Type.of(thingEncoding).prefix().bytes();
+                    FunctionalIterator<ByteArray> typeIterator = schemaStorage.iterate(typeEncoding, (iid, value) -> iid)
+                            .filter(iid1 -> iid1.length() == VertexIID.Type.LENGTH);
                     while (typeIterator.hasNext()) {
-                        byte[] typeIID = typeIterator.next();
-                        byte[] prefix = join(thingEncoding.prefix().bytes(), typeIID);
-                        byte[] lastIID = dataStorage.getLastKey(prefix);
+                        ByteArray typeIID = typeIterator.next();
+                        ByteArray prefix = ByteArray.join(thingEncoding.prefix().bytes(), typeIID);
+                        ByteArray lastIID = dataStorage.getLastKey(prefix);
                         AtomicLong nextValue = lastIID != null ?
-                                new AtomicLong(sortedBytesToLong(copyOfRange(lastIID, PREFIX_W_TYPE_LENGTH, DEFAULT_LENGTH)) + delta) :
+                                new AtomicLong(sortedBytesToLong(lastIID.copyRange(PREFIX_W_TYPE_LENGTH, DEFAULT_LENGTH)) + delta) :
                                 new AtomicLong(initialValue);
                         thingKeys.put(VertexIID.Type.of(typeIID), nextValue);
                     }
