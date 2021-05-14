@@ -34,12 +34,12 @@ java_deps()
 load("@vaticle_dependencies//library/maven:rules.bzl", "maven")
 
 # Load //builder/antlr
-load("@vaticle_dependencies//builder/antlr:deps.bzl", antlr_deps = "deps")
+load("@vaticle_dependencies//builder/antlr:deps.bzl", antlr_deps = "deps", "antlr_version")
 antlr_deps()
 
 load("@rules_antlr//antlr:lang.bzl", "JAVA")
 load("@rules_antlr//antlr:repositories.bzl", "rules_antlr_dependencies")
-rules_antlr_dependencies("4.7.2", JAVA)
+rules_antlr_dependencies(antlr_version, JAVA)
 
 # Load //builder/kotlin
 load("@vaticle_dependencies//builder/kotlin:deps.bzl", kotlin_deps = "deps")
