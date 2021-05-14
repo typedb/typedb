@@ -23,7 +23,6 @@ import com.vaticle.typedb.common.collection.Either;
 import java.util.Iterator;
 import java.util.NavigableSet;
 import java.util.NoSuchElementException;
-import java.util.function.Function;
 
 class BaseIterator<T> extends AbstractFunctionalIterator<T> {
 
@@ -50,47 +49,45 @@ class BaseIterator<T> extends AbstractFunctionalIterator<T> {
 
     static class Sorted<T extends Comparable<T>> extends AbstractFunctionalIterator.Sorted<T> {
 
-        private NavigableSet<T> source;
+        private final NavigableSet<T> source;
+        private Iterator<T> iterator;
+        private T next;
 
         public Sorted(NavigableSet<T> source) {
             this.source = source;
+            this.iterator = source.iterator();
         }
 
         @Override
         public boolean hasNext() {
-//            return (next != null) || fetchAndCheck();
-            // TODO
+            return (next != null) || fetchAndCheck();
         }
 
         private boolean fetchAndCheck() {
-//            if (source.hasNext()) {
-//                next = source.next();
-//                assert lastKey == null || lastKey.compareTo(keyExtractor().apply(next)) <= 0;
-//                lastKey = keyExtractor().apply(next);
-//                return true;
-//            } else return false;
-            // TODO
+            if (iterator.hasNext()) {
+                next = iterator.next();
+                return true;
+            } else return false;
         }
 
         @Override
         public T next() {
             if (!hasNext()) throw new NoSuchElementException();
-//            T value = next;
-//            next = null;
-//            return value;
-            // TODO
+            T value = next;
+            next = null;
+            return value;
         }
 
         @Override
         public void seek(T target) {
-            // TODO
+            this.iterator = source.tailSet(target).iterator();
+            this.next = null;
         }
 
         @Override
         public T peek() {
             if (!hasNext()) throw new NoSuchElementException();
-//            return next;
-            // TODO
+            return next;
         }
 
         @Override

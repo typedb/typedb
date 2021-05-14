@@ -49,7 +49,7 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
     private final GraphManager graphMgr;
 
     private final Map<Identifier, ThingVertex> answer;
-    private final Map<Identifier, FunctionalIterator.Sorted<ThingEdge, ThingVertex>> iterators;
+    private final Map<Identifier, FunctionalIterator.Sorted<ThingEdge>> iterators;
     private Identifier.Variable relationId;
     private State state;
 
@@ -70,14 +70,13 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private boolean computeFirst() {
         if (!tryInitialise()) return false;
-
-
-
-        return ();
+        // TODO
+        return false;
     }
 
     private boolean computeAnswer() {
-
+        // TODO
+        return false;
     }
 
     private boolean tryInitialise() {
