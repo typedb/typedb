@@ -109,7 +109,7 @@ public abstract class VertexIID extends IID {
             if (readableString == null) {
                 readableString = "[" + PrefixIID.LENGTH + ": " + encoding().toString() + "][" +
                         (VertexIID.Type.LENGTH - PrefixIID.LENGTH) + ": " +
-                        ValueEncoding.bytesToShort(bytes.copyRange(PrefixIID.LENGTH, VertexIID.Type.LENGTH)) + "]";
+                        ValueEncoding.bytesToShort(bytes.view(PrefixIID.LENGTH, VertexIID.Type.LENGTH)) + "]";
             }
             return readableString;
         }
@@ -180,7 +180,7 @@ public abstract class VertexIID extends IID {
                 readableString = "[" + PrefixIID.LENGTH + ": " + encoding().toString() + "]" +
                         "[" + VertexIID.Type.LENGTH + ": " + type().toString() + "]" +
                         "[" + (DEFAULT_LENGTH - PREFIX_W_TYPE_LENGTH) + ": " +
-                        ValueEncoding.bytesToLong(bytes.copyRange(PREFIX_W_TYPE_LENGTH, DEFAULT_LENGTH)) + "]";
+                        ValueEncoding.bytesToLong(bytes.view(PREFIX_W_TYPE_LENGTH, DEFAULT_LENGTH)) + "]";
             }
             return readableString;
         }
@@ -331,7 +331,7 @@ public abstract class VertexIID extends IID {
 
             @Override
             public java.lang.Long value() {
-                return ValueEncoding.bytesToLong(bytes.copyRange(VALUE_INDEX, VALUE_INDEX + LONG_SIZE));
+                return ValueEncoding.bytesToLong(bytes.view(VALUE_INDEX, VALUE_INDEX + LONG_SIZE));
             }
 
             @Override
@@ -356,7 +356,7 @@ public abstract class VertexIID extends IID {
 
             @Override
             public java.lang.Double value() {
-                return ValueEncoding.bytesToDouble(bytes.copyRange(VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE));
+                return ValueEncoding.bytesToDouble(bytes.view(VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE));
             }
 
             @Override
@@ -378,14 +378,14 @@ public abstract class VertexIID extends IID {
 
             public static VertexIID.Attribute.String extract(ByteArray bytes, int from) {
                 int attValIndex = from + VALUE_INDEX;
-                int strValLen = bytes.copyRange(attValIndex, attValIndex + STRING_SIZE_ENCODING).decodeUnsignedShort();
+                int strValLen = bytes.view(attValIndex, attValIndex + STRING_SIZE_ENCODING).decodeUnsignedShort();
                 int stringEnd = from + PREFIX_W_TYPE_LENGTH + VALUE_TYPE_LENGTH + STRING_SIZE_ENCODING + strValLen;
                 return new VertexIID.Attribute.String(bytes.copyRange(from, stringEnd));
             }
 
             @Override
             public java.lang.String value() {
-                return ValueEncoding.bytesToString(bytes.copyRange(VALUE_INDEX, bytes.length()), STRING_ENCODING);
+                return ValueEncoding.bytesToString(bytes.view(VALUE_INDEX, bytes.length()), STRING_ENCODING);
             }
 
             @Override
@@ -410,7 +410,7 @@ public abstract class VertexIID extends IID {
 
             @Override
             public java.time.LocalDateTime value() {
-                return ValueEncoding.bytesToDateTime(bytes.copyRange(VALUE_INDEX, bytes.length()), TIME_ZONE_ID);
+                return ValueEncoding.bytesToDateTime(bytes.view(VALUE_INDEX, bytes.length()), TIME_ZONE_ID);
             }
 
             @Override

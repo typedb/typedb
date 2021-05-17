@@ -1073,9 +1073,8 @@ public class Encoding {
         }
 
         public static String bytesToString(ByteArray bytes, Charset encoding) {
-            int stringLength = bytes.copyRange(0, 2).decodeUnsignedShort();
-            ByteArray x = bytes.copyRange(SHORT_SIZE, SHORT_SIZE + stringLength);
-            return x.decodeString(encoding);
+            int stringLength = bytes.view(0, 2).decodeUnsignedShort();
+            return bytes.view(SHORT_SIZE, SHORT_SIZE + stringLength).decodeString(encoding);
         }
 
         public static ByteArray dateTimeToBytes(java.time.LocalDateTime value, ZoneId timeZoneID) {

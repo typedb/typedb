@@ -69,7 +69,7 @@ public abstract class IndexIID extends IID {
                 if (readableString == null) {
                     readableString = "[" + PrefixIID.LENGTH + ": " + Encoding.Index.Prefix.TYPE.toString() + "]" +
                             "[" + (bytes.length() - PrefixIID.LENGTH) +
-                            ": " + bytes.copyRange(PrefixIID.LENGTH, bytes.length()).decodeString(STRING_ENCODING) + "]";
+                            ": " + bytes.view(PrefixIID.LENGTH, bytes.length()).decodeString(STRING_ENCODING) + "]";
                 }
                 return readableString;
             }
@@ -120,9 +120,9 @@ public abstract class IndexIID extends IID {
                     if (readableString == null) {
                         String prefix = "[" + PrefixIID.LENGTH + ": " + Encoding.Index.Prefix.TYPE.toString() + "]";
                         String typeIID = "[" + (VertexIID.Type.LENGTH) + ": " +
-                                bytes.copyRange(PrefixIID.LENGTH, VertexIID.Type.LENGTH).decodeString(STRING_ENCODING) + "]";
+                                bytes.view(PrefixIID.LENGTH, VertexIID.Type.LENGTH).decodeString(STRING_ENCODING) + "]";
                         String infix = "[" + (Encoding.Index.Infix.LENGTH) + ": " + Encoding.Index.Infix.of(
-                                bytes.copyRange(PrefixIID.LENGTH + VertexIID.Type.LENGTH, Encoding.Index.Infix.LENGTH)) + "]";
+                                bytes.view(PrefixIID.LENGTH + VertexIID.Type.LENGTH, Encoding.Index.Infix.LENGTH)) + "]";
                         readableString = prefix + typeIID + infix;
                     }
                     return readableString;
@@ -164,11 +164,11 @@ public abstract class IndexIID extends IID {
                     if (readableString == null) {
                         String prefix = "[" + PrefixIID.LENGTH + ": " + Encoding.Index.Prefix.TYPE.toString() + "]";
                         String typeIID = "[" + (VertexIID.Type.LENGTH) + ": " +
-                                bytes.copyRange(PrefixIID.LENGTH, VertexIID.Type.LENGTH).decodeString(STRING_ENCODING) + "]";
+                                bytes.view(PrefixIID.LENGTH, VertexIID.Type.LENGTH).decodeString(STRING_ENCODING) + "]";
                         String infix = "[" + (Encoding.Index.Infix.LENGTH) + ": " + Encoding.Index.Infix.of(
-                                bytes.copyRange(PrefixIID.LENGTH + VertexIID.Type.LENGTH, Encoding.Index.Infix.LENGTH)) + "]";
+                                bytes.view(PrefixIID.LENGTH + VertexIID.Type.LENGTH, Encoding.Index.Infix.LENGTH)) + "]";
                         String ruleIID = "[" + (StructureIID.Rule.LENGTH) + ": " +
-                                bytes.copyRange(PrefixIID.LENGTH + VertexIID.Type.LENGTH + Encoding.Index.Infix.LENGTH,
+                                bytes.view(PrefixIID.LENGTH + VertexIID.Type.LENGTH + Encoding.Index.Infix.LENGTH,
                                                 StructureIID.Rule.LENGTH).decodeString(STRING_ENCODING) + "]";
                         readableString = prefix + typeIID + infix + ruleIID;
                     }
@@ -202,7 +202,7 @@ public abstract class IndexIID extends IID {
             if (readableString == null) {
                 readableString = "[" + PrefixIID.LENGTH + ": " + Encoding.Index.Prefix.RULE.toString() + "]" +
                         "[" + (bytes.length() - PrefixIID.LENGTH) +
-                        ": " + bytes.copyRange(PrefixIID.LENGTH).decodeString(STRING_ENCODING) + "]";
+                        ": " + bytes.view(PrefixIID.LENGTH).decodeString(STRING_ENCODING) + "]";
             }
             return readableString;
         }
@@ -256,16 +256,16 @@ public abstract class IndexIID extends IID {
                         value = byteToBoolean(bytes.get(VALUE_INDEX)).toString();
                         break;
                     case LONG:
-                        value = ValueEncoding.bytesToLong(bytes.copyRange(VALUE_INDEX, VALUE_INDEX + LONG_SIZE)) + "";
+                        value = ValueEncoding.bytesToLong(bytes.view(VALUE_INDEX, VALUE_INDEX + LONG_SIZE)) + "";
                         break;
                     case DOUBLE:
-                        value = ValueEncoding.bytesToDouble(bytes.copyRange(VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE)) + "";
+                        value = ValueEncoding.bytesToDouble(bytes.view(VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE)) + "";
                         break;
                     case STRING:
-                        value = ValueEncoding.bytesToString(bytes.copyRange(VALUE_INDEX, bytes.length() - VertexIID.Type.LENGTH), STRING_ENCODING);
+                        value = ValueEncoding.bytesToString(bytes.view(VALUE_INDEX, bytes.length() - VertexIID.Type.LENGTH), STRING_ENCODING);
                         break;
                     case DATETIME:
-                        value = ValueEncoding.bytesToDateTime(bytes.copyRange(VALUE_INDEX, bytes.length() - VertexIID.Type.LENGTH), TIME_ZONE_ID).toString();
+                        value = ValueEncoding.bytesToDateTime(bytes.view(VALUE_INDEX, bytes.length() - VertexIID.Type.LENGTH), TIME_ZONE_ID).toString();
                         break;
                     default:
                         value = "";

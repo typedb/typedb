@@ -104,7 +104,7 @@ public class KeyGenerator {
                     ByteArray prefix = encoding.prefix().bytes();
                     ByteArray lastIID = storage.getLastKey(prefix);
                     AtomicInteger nextValue = lastIID != null ?
-                            new AtomicInteger(ValueEncoding.bytesToShort(lastIID.copyRange(PrefixIID.LENGTH, VertexIID.Type.LENGTH)) + delta) :
+                            new AtomicInteger(ValueEncoding.bytesToShort(lastIID.view(PrefixIID.LENGTH, VertexIID.Type.LENGTH)) + delta) :
                             new AtomicInteger(initialValue);
                     typeKeys.put(PrefixIID.of(encoding), nextValue);
                 }
@@ -114,7 +114,7 @@ public class KeyGenerator {
                 ByteArray prefix = Encoding.Structure.RULE.prefix().bytes();
                 ByteArray lastIID = storage.getLastKey(prefix);
                 if (lastIID != null) {
-                    ruleKey.set(ValueEncoding.bytesToShort(lastIID.copyRange(PrefixIID.LENGTH, StructureIID.Rule.LENGTH)) + delta);
+                    ruleKey.set(ValueEncoding.bytesToShort(lastIID.view(PrefixIID.LENGTH, StructureIID.Rule.LENGTH)) + delta);
                 } else {
                     ruleKey.set(initialValue);
                 }
@@ -172,7 +172,7 @@ public class KeyGenerator {
                         ByteArray prefix = ByteArray.join(thingEncoding.prefix().bytes(), typeIID);
                         ByteArray lastIID = dataStorage.getLastKey(prefix);
                         AtomicLong nextValue = lastIID != null ?
-                                new AtomicLong(ValueEncoding.bytesToLong(lastIID.copyRange(PREFIX_W_TYPE_LENGTH, DEFAULT_LENGTH)) + delta) :
+                                new AtomicLong(ValueEncoding.bytesToLong(lastIID.view(PREFIX_W_TYPE_LENGTH, DEFAULT_LENGTH)) + delta) :
                                 new AtomicLong(initialValue);
                         thingKeys.put(VertexIID.Type.of(typeIID), nextValue);
                     }

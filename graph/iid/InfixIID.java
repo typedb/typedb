@@ -46,7 +46,7 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
         if (readableString == null) {
             readableString = "[1:" + Encoding.Infix.of(bytes.get(0)).toString() + "]";
             if (bytes.length() > 1) {
-                readableString += "[" + (bytes.length() - 1) + ": " + bytes.copyRange(1) + "]";
+                readableString += "[" + (bytes.length() - 1) + ": " + bytes.view(1) + "]";
             }
         }
         return readableString;
@@ -96,6 +96,7 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
             }
         }
 
+        // TODO this is a memory hotspot of calling `join()` and allocating lots of small amounts of memory
         public static InfixIID.Thing of(Encoding.Infix infix, IID... tail) {
             ByteArray[] iidBytes = new ByteArray[tail.length + 1];
             iidBytes[0] = infix.bytes();

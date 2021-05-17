@@ -68,7 +68,7 @@ public abstract class StructureIID extends IID {
             if (readableString == null) {
                 readableString = "[" + PrefixIID.LENGTH + ": " + encoding().toString() + "][" +
                         (LENGTH - PrefixIID.LENGTH) + ": " +
-                        ValueEncoding.bytesToShort(bytes.copyRange(PrefixIID.LENGTH, LENGTH)) + "]";
+                        ValueEncoding.bytesToShort(bytes.view(PrefixIID.LENGTH, LENGTH)) + "]";
             }
             return readableString;
         }
