@@ -63,8 +63,8 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
             return new Type(infix.bytes());
         }
 
-        static Type extract(byte[] bytes, int from) {
-            return new Type(ByteArray.of(new byte[]{bytes[from]}));
+        static Type extract(ByteArray bytes, int from) {
+            return new Type(bytes.copyRange(from, from+1));
         }
 
         @Override

@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.util.ByteArray;
 import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.common.Encoding.ValueEncoding;
 import com.vaticle.typedb.core.graph.iid.IndexIID;
 import com.vaticle.typedb.core.graph.iid.StructureIID;
 import com.vaticle.typedb.core.graph.structure.RuleStructure;
@@ -252,7 +253,8 @@ public abstract class RuleStructureImpl implements RuleStructure {
             super(graph, iid,
                   graph.storage().get(join(iid.bytes(), LABEL.infix().bytes())).decodeString(),
                   TypeQL.parsePattern(graph.storage().get(join(iid.bytes(), WHEN.infix().bytes())).decodeString()).asConjunction(),
-                  TypeQL.parseVariable(graph.storage().get(join(iid.bytes(), THEN.infix().bytes())).decodeString()).asThing());
+                  TypeQL.parseVariable(graph.storage().get(join(iid.bytes(), THEN.infix().bytes())).decodeString()).asThing()
+            );
         }
 
         @Override

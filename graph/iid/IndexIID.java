@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.graph.iid;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.util.ByteArray;
 import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.common.Encoding.ValueEncoding;
 
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
@@ -29,19 +30,9 @@ import static com.vaticle.typedb.core.common.collection.Bytes.DOUBLE_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.LONG_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.booleanToByte;
 import static com.vaticle.typedb.core.common.collection.Bytes.byteToBoolean;
-import static com.vaticle.typedb.core.common.collection.Bytes.bytesToDateTime;
-import static com.vaticle.typedb.core.common.collection.Bytes.bytesToString;
-import static com.vaticle.typedb.core.common.collection.Bytes.dateTimeToBytes;
-import static com.vaticle.typedb.core.common.collection.Bytes.doubleToSortedBytes;
-import static com.vaticle.typedb.core.common.collection.Bytes.join;
-import static com.vaticle.typedb.core.common.collection.Bytes.longToSortedBytes;
-import static com.vaticle.typedb.core.common.collection.Bytes.sortedBytesToDouble;
-import static com.vaticle.typedb.core.common.collection.Bytes.sortedBytesToLong;
-import static com.vaticle.typedb.core.common.collection.Bytes.stringToBytes;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_ENCODING;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.TIME_ZONE_ID;
-import static java.util.Arrays.copyOfRange;
 
 public abstract class IndexIID extends IID {
 
@@ -234,11 +225,11 @@ public abstract class IndexIID extends IID {
         }
 
         public static Attribute of(long value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Encoding.ValueType.LONG.bytes(), ByteArray.of(longToSortedBytes(value)), typeIID.bytes);
+            return newAttributeIndex(Encoding.ValueType.LONG.bytes(), ValueEncoding.longToBytes(value), typeIID.bytes);
         }
 
         public static Attribute of(double value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Encoding.ValueType.DOUBLE.bytes(), ByteArray.of(doubleToSortedBytes(value)), typeIID.bytes);
+            return newAttributeIndex(Encoding.ValueType.DOUBLE.bytes(), ValueEncoding.doubleToBytes(value), typeIID.bytes);
         }
 
         public static Attribute of(String value, VertexIID.Type typeIID) {
@@ -252,7 +243,7 @@ public abstract class IndexIID extends IID {
         }
 
         public static Attribute of(LocalDateTime value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Encoding.ValueType.DATETIME.bytes(), dateTimeToBytes(value, TIME_ZONE_ID), typeIID.bytes);
+            return newAttributeIndex(Encoding.ValueType.DATETIME.bytes(), ValueEncoding.dateTimeToBytes(value, TIME_ZONE_ID), typeIID.bytes);
         }
 
         @Override
@@ -265,16 +256,16 @@ public abstract class IndexIID extends IID {
                         value = byteToBoolean(bytes.get(VALUE_INDEX)).toString();
                         break;
                     case LONG:
-                        value = sortedBytesToLong(bytes.copyRange(VALUE_INDEX, VALUE_INDEX + LONG_SIZE)) + "";
+                        value = ValueEncoding.bytesToLong(bytes.copyRange(VALUE_INDEX, VALUE_INDEX + LONG_SIZE)) + "";
                         break;
                     case DOUBLE:
-                        value = sortedBytesToDouble(bytes.copyRange(VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE)) + "";
+                        value = ValueEncoding.bytesToDouble(bytes.copyRange(VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE)) + "";
                         break;
                     case STRING:
-                        value = bytesToString(bytes.copyRange(VALUE_INDEX, bytes.length() - VertexIID.Type.LENGTH), STRING_ENCODING);
+                        value = ValueEncoding.bytesToString(bytes.copyRange(VALUE_INDEX, bytes.length() - VertexIID.Type.LENGTH), STRING_ENCODING);
                         break;
                     case DATETIME:
-                        value = bytesToDateTime(bytes.copyRange(VALUE_INDEX, bytes.length() - VertexIID.Type.LENGTH), TIME_ZONE_ID).toString();
+                        value = ValueEncoding.bytesToDateTime(bytes.copyRange(VALUE_INDEX, bytes.length() - VertexIID.Type.LENGTH), TIME_ZONE_ID).toString();
                         break;
                     default:
                         value = "";

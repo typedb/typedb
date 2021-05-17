@@ -19,11 +19,8 @@ package com.vaticle.typedb.core.graph.iid;
 
 import com.vaticle.typedb.core.common.util.ByteArray;
 import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.common.Encoding.ValueEncoding;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
-
-import static com.vaticle.typedb.core.common.collection.Bytes.join;
-import static com.vaticle.typedb.core.common.collection.Bytes.sortedBytesToShort;
-import static java.util.Arrays.copyOfRange;
 
 public abstract class StructureIID extends IID {
 
@@ -71,7 +68,7 @@ public abstract class StructureIID extends IID {
             if (readableString == null) {
                 readableString = "[" + PrefixIID.LENGTH + ": " + encoding().toString() + "][" +
                         (LENGTH - PrefixIID.LENGTH) + ": " +
-                        sortedBytesToShort(bytes.copyRange(PrefixIID.LENGTH, LENGTH)) + "]";
+                        ValueEncoding.bytesToShort(bytes.copyRange(PrefixIID.LENGTH, LENGTH)) + "]";
             }
             return readableString;
         }

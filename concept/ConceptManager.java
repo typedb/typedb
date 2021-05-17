@@ -22,6 +22,7 @@ import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.util.ByteArray;
 import com.vaticle.typedb.core.common.util.StringBuilders;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Thing;
@@ -178,7 +179,7 @@ public final class ConceptManager {
         else return null;
     }
 
-    public Thing getThing(byte[] iid) {
+    public Thing getThing(ByteArray iid) {
         ThingVertex thingVertex = graphMgr.data().get(VertexIID.Thing.of(iid));
         if (thingVertex != null) return ThingImpl.of(thingVertex);
         else return null;

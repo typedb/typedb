@@ -21,6 +21,7 @@ import com.google.protobuf.ByteString;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.util.ByteArray;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.answer.ConceptMapGroup;
 import com.vaticle.typedb.core.concept.answer.Numeric;
@@ -54,7 +55,6 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 import static com.google.protobuf.ByteString.copyFrom;
-import static com.vaticle.typedb.core.common.collection.Bytes.uuidToBytes;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Answer.conceptMap;
@@ -77,7 +77,7 @@ public class ResponseBuilder {
     }
 
     public static ByteString UUIDAsByteString(UUID uuid) {
-        return copyFrom(uuidToBytes(uuid));
+        return copyFrom(ByteArray.encodeUUID(uuid).getBytes());
     }
 
     public static class DatabaseManager {
@@ -319,7 +319,7 @@ public class ResponseBuilder {
 
         public static ConceptProto.Thing protoThing(com.vaticle.typedb.core.concept.thing.Thing thing) {
             ConceptProto.Thing.Builder protoThing = ConceptProto.Thing.newBuilder()
-                    .setIid(ByteString.copyFrom(thing.getIID()))
+                    .setIid(ByteString.copyFrom(thing.getIID().getBytes()))
                     .setType(protoType(thing.getType()))
                     .setInferred(thing.isInferred());
             if (thing.isAttribute()) protoThing.setValue(attributeValue(thing.asAttribute()));

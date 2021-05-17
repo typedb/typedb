@@ -49,7 +49,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.BiFunction;
 
-import static com.vaticle.typedb.core.common.collection.Bytes.bytesHavePrefix;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
@@ -170,7 +169,9 @@ public abstract class RocksStorage implements Storage {
             try {
                 deleteCloseSchemaWriteLock.readLock().lock();
                 if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
-                return ByteArray.of(storageTransaction.get(readOptions, key.getBytes()));
+                byte[] value = storageTransaction.get(readOptions, key.getBytes());
+                if (value == null) return null;
+                else return ByteArray.of(value);
             } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
@@ -201,7 +202,9 @@ public abstract class RocksStorage implements Storage {
             try {
                 deleteCloseSchemaWriteLock.readLock().lock();
                 if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
-                return ByteArray.of(storageTransaction.get(readOptions, key.getBytes()));
+                byte[] value = storageTransaction.get(readOptions, key.getBytes());
+                if (value == null) return null;
+                else return ByteArray.of(value);
             } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
@@ -220,7 +223,9 @@ public abstract class RocksStorage implements Storage {
                 deleteCloseSchemaWriteLock.readLock().lock();
                 if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
                 iterator.seekForPrev(upperBound);
-                if (bytesHavePrefix(iterator.key(), prefix.getBytes())) return ByteArray.of(iterator.key());
+                byte[] key = iterator.key();
+                ByteArray array;
+                if (key != null && (array = ByteArray.of(key)).hasPrefix(prefix)) return array;
                 else return null;
             } finally {
                 deleteCloseSchemaWriteLock.readLock().unlock();

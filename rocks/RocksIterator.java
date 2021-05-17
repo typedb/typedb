@@ -25,7 +25,6 @@ import com.vaticle.typedb.core.common.util.ByteArray;
 import java.util.NoSuchElementException;
 import java.util.function.BiFunction;
 
-import static com.vaticle.typedb.core.common.collection.Bytes.bytesHavePrefix;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
 public final class RocksIterator<T> extends AbstractFunctionalIterator<T> implements AutoCloseable {
@@ -105,11 +104,11 @@ public final class RocksIterator<T> extends AbstractFunctionalIterator<T> implem
 
     private synchronized boolean hasValidNext() {
         ByteArray key;
-        if (!internalRocksIterator.isValid() || !bytesHavePrefix(key = internalRocksIterator.key(), prefix)) {
+        if (!internalRocksIterator.isValid() || !((key = ByteArray.of(internalRocksIterator.key())).hasPrefix(prefix))) {
             recycle();
             return false;
         }
-        next = constructor.apply(key, internalRocksIterator.value());
+        next = constructor.apply(key, ByteArray.of(internalRocksIterator.value()));
         state = State.FETCHED;
         return true;
     }

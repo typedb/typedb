@@ -18,13 +18,11 @@
 
 package com.vaticle.typedb.core.pattern.constraint.thing;
 
-import com.vaticle.typedb.common.collection.Bytes;
 import com.vaticle.typedb.core.common.util.ByteArray;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.traversal.Traversal;
 
-import java.util.Arrays;
 import java.util.Objects;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
@@ -43,7 +41,7 @@ public class IIDConstraint extends ThingConstraint {
     }
 
     static IIDConstraint of(ThingVariable owner, com.vaticle.typeql.lang.pattern.constraint.ThingConstraint.IID constraint) {
-        return new IIDConstraint(owner, Bytes.hexStringToBytes(constraint.iid()));
+        return new IIDConstraint(owner, ByteArray.fromHexString(constraint.iid()));
     }
 
     static IIDConstraint of(ThingVariable owner, IIDConstraint clone) {
@@ -74,7 +72,7 @@ public class IIDConstraint extends ThingConstraint {
         if (o == this) return true;
         if (o == null || getClass() != o.getClass()) return false;
         IIDConstraint that = (IIDConstraint) o;
-        return (this.owner.equals(that.owner) && Arrays.equals(this.iid, that.iid));
+        return this.owner.equals(that.owner) && this.iid.equals(that.iid);
     }
 
     @Override
@@ -84,7 +82,7 @@ public class IIDConstraint extends ThingConstraint {
 
     @Override
     public String toString() {
-        return owner.toString() + SPACE + IID + SPACE + Bytes.bytesToHexString(iid);
+        return owner.toString() + SPACE + IID + SPACE + iid.toHexString();
     }
 
     @Override

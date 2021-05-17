@@ -533,7 +533,7 @@ public class TypeQLSteps {
                 Concept concept = templateFiller.get(requiredVariable);
                 if (!concept.isThing())
                     throw new ScenarioDefinitionException("Cannot apply IID templating to Type concepts");
-                String conceptId = Bytes.bytesToHexString(concept.asThing().getIID());
+                String conceptId = concept.asThing().getIID().toHexString();
                 builder.append(conceptId);
 
             } else {

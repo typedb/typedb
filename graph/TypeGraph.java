@@ -52,7 +52,6 @@ import java.util.stream.Stream;
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.collection.Collections.set;
-import static com.vaticle.typedb.core.common.collection.Bytes.stripPrefix;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_SCHEMA_READ_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeGraph.INVALID_SCHEMA_WRITE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
@@ -598,13 +597,13 @@ public class TypeGraph {
 
                 private Set<RuleStructure> loadConcludesVertex(TypeVertex type) {
                     Rule scanPrefix = Rule.Prefix.concludedVertex(type.iid());
-                    return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
+                    return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of((key.stripPrefix(scanPrefix.length()))))
                             .map(Rules.this::convert).toSet();
                 }
 
                 private Set<RuleStructure> loadConcludesEdgeTo(TypeVertex attrType) {
                     Rule scanPrefix = Rule.Prefix.concludedEdgeTo(attrType.iid());
-                    return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
+                    return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(key.stripPrefix(scanPrefix.length())))
                             .map(Rules.this::convert).toSet();
                 }
 
@@ -735,7 +734,7 @@ public class TypeGraph {
 
                 private Set<RuleStructure> loadIndex(TypeVertex type) {
                     Rule scanPrefix = Rule.Prefix.contained(type.iid());
-                    return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
+                    return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(key.stripPrefix(scanPrefix.length())))
                             .map(Rules.this::convert).toSet();
                 }
 
