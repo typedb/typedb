@@ -82,7 +82,6 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             return (result = edges.get(infixIID)) != null ? iterate(result.values()) : empty();
         }
 
-        // TODO this is a memory hotspot allocating a lot of hashsets
         assert lookAhead.length < encoding.lookAhead();
         Set<InfixIID.Thing> iids = new HashSet<>();
         iids.add(infixIID);
@@ -281,7 +280,6 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             FunctionalIterator<ThingEdge> storageIterator = owner.graph().storage()
                     .iterate(iid, (key, value) -> cache(newPersistedEdge(EdgeIID.Thing.of(key))));
             FunctionalIterator<ThingEdge> bufferedIterator = bufferedEdgeIterator(encoding, lookahead);
-            // TODO this `distinct` is a memory hotspot allocating a lot of sets
             return link(bufferedIterator, storageIterator).distinct();
         }
 

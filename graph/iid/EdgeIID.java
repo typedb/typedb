@@ -21,9 +21,6 @@ package com.vaticle.typedb.core.graph.iid;
 import com.vaticle.typedb.core.common.util.ByteArray;
 import com.vaticle.typedb.core.graph.common.Encoding;
 
-import static com.vaticle.typedb.core.common.collection.Bytes.join;
-import static java.util.Arrays.copyOfRange;
-
 public abstract class EdgeIID<
         EDGE_ENCODING extends Encoding.Edge,
         EDGE_INFIX extends InfixIID<EDGE_ENCODING>,
@@ -102,14 +99,14 @@ public abstract class EdgeIID<
 
         @Override
         public VertexIID.Type start() {
-            if (start == null) start = VertexIID.Type.of(bytes.copyRange(0, VertexIID.Type.LENGTH));
+            if (start == null) start = VertexIID.Type.of(bytes.view(0, VertexIID.Type.LENGTH));
             return start;
         }
 
         @Override
         public VertexIID.Type end() {
             if (end != null) return end;
-            end = VertexIID.Type.of(bytes.copyRange(bytes.length() - VertexIID.Type.LENGTH, bytes.length()));
+            end = VertexIID.Type.of(bytes.view(bytes.length() - VertexIID.Type.LENGTH, bytes.length()));
             return end;
         }
     }
@@ -139,7 +136,10 @@ public abstract class EdgeIID<
         }
 
         public SuffixIID suffix() {
-            if (suffix == null) suffix = SuffixIID.of(bytes.copyRange(suffixIndex()));
+            if (suffix == null) {
+                if (suffixIndex() >= bytes.length()) suffix = SuffixIID.of(ByteArray.empty());
+                else suffix = SuffixIID.of(bytes.view(suffixIndex()));
+            }
             return suffix;
         }
 
@@ -193,14 +193,14 @@ public abstract class EdgeIID<
         @Override
         public VertexIID.Type start() {
             if (start != null) return start;
-            start = VertexIID.Type.of(bytes.copyRange(0, VertexIID.Type.LENGTH));
+            start = VertexIID.Type.of(bytes.view(0, VertexIID.Type.LENGTH));
             return start;
         }
 
         @Override
         public VertexIID.Thing end() {
             if (end != null) return end;
-            end = VertexIID.Thing.of(bytes.copyRange(VertexIID.Type.LENGTH + 1));
+            end = VertexIID.Thing.of(bytes.view(VertexIID.Type.LENGTH + 1));
             return end;
         }
     }

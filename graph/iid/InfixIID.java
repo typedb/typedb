@@ -64,7 +64,7 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
         }
 
         static Type extract(ByteArray bytes, int from) {
-            return new Type(bytes.copyRange(from, from+1));
+            return new Type(bytes.view(from, from+1));
         }
 
         @Override
@@ -96,7 +96,6 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
             }
         }
 
-        // TODO this is a memory hotspot of calling `join()` and allocating lots of small amounts of memory
         public static InfixIID.Thing of(Encoding.Infix infix, IID... tail) {
             ByteArray[] iidBytes = new ByteArray[tail.length + 1];
             iidBytes[0] = infix.bytes();
@@ -118,16 +117,16 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
 
         public InfixIID.Thing outwards() {
             if (isOutwards()) return this;
-            byte[] copy = Arrays.copyOf(bytes.getBytes(), bytes.length());
-            copy[0] = encoding().out().key();
-            return new InfixIID.Thing(ByteArray.of(copy));
+            byte[] bytesClone = bytes.cloneBytes();
+            bytesClone[0] = encoding().out().key();
+            return new InfixIID.Thing(ByteArray.of(bytesClone));
         }
 
         public InfixIID.Thing inwards() {
             if (!isOutwards()) return this;
-            byte[] copy = Arrays.copyOf(bytes.getBytes(), bytes.length());
-            copy[0] = encoding().in().key();
-            return new InfixIID.Thing(ByteArray.of(copy));
+            byte[] bytesClone = bytes.cloneBytes();
+            bytesClone[0] = encoding().in().key();
+            return new InfixIID.Thing(ByteArray.of(bytesClone));
         }
 
         public InfixIID.RolePlayer asRolePlayer() {

@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.util.ByteArray;
-import com.vaticle.typedb.core.graph.common.Encoding.ValueEncoding;
+import com.vaticle.typedb.core.graph.common.Encoding.ValueSortable;
 import com.vaticle.typedb.core.graph.iid.PrefixIID;
 import com.vaticle.typedb.core.graph.iid.StructureIID;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
@@ -69,7 +69,7 @@ public class KeyGenerator {
                 typeKeys.get(rootIID).addAndGet(-1 * delta);
                 throw TypeDBException.of(MAX_SUBTYPE_REACHED, rootLabel, SHORT_MAX_VALUE);
             }
-            return ValueEncoding.shortToBytes(key);
+            return ValueSortable.shortToBytes(key);
         }
 
         public ByteArray forRule() {
@@ -78,7 +78,7 @@ public class KeyGenerator {
                 ruleKey.addAndGet(-1 * delta);
                 throw TypeDBException.of(MAX_RULE_REACHED, SHORT_MAX_VALUE);
             }
-            return ValueEncoding.shortToBytes(key);
+            return ValueSortable.shortToBytes(key);
         }
 
         public static class Buffered extends Schema {
@@ -104,7 +104,7 @@ public class KeyGenerator {
                     ByteArray prefix = encoding.prefix().bytes();
                     ByteArray lastIID = storage.getLastKey(prefix);
                     AtomicInteger nextValue = lastIID != null ?
-                            new AtomicInteger(ValueEncoding.bytesToShort(lastIID.view(PrefixIID.LENGTH, VertexIID.Type.LENGTH)) + delta) :
+                            new AtomicInteger(ValueSortable.bytesToShort(lastIID.view(PrefixIID.LENGTH, VertexIID.Type.LENGTH)) + delta) :
                             new AtomicInteger(initialValue);
                     typeKeys.put(PrefixIID.of(encoding), nextValue);
                 }
@@ -114,7 +114,7 @@ public class KeyGenerator {
                 ByteArray prefix = Encoding.Structure.RULE.prefix().bytes();
                 ByteArray lastIID = storage.getLastKey(prefix);
                 if (lastIID != null) {
-                    ruleKey.set(ValueEncoding.bytesToShort(lastIID.view(PrefixIID.LENGTH, StructureIID.Rule.LENGTH)) + delta);
+                    ruleKey.set(ValueSortable.bytesToShort(lastIID.view(PrefixIID.LENGTH, StructureIID.Rule.LENGTH)) + delta);
                 } else {
                     ruleKey.set(initialValue);
                 }
@@ -144,7 +144,7 @@ public class KeyGenerator {
                 thingKeys.get(typeIID).addAndGet(-1 * delta);
                 throw TypeDBException.of(MAX_INSTANCE_REACHED, typeLabel, LONG_MAX_VALUE);
             }
-            return ValueEncoding.longToBytes(key);
+            return ValueSortable.longToBytes(key);
         }
 
         public static class Buffered extends Data {
@@ -172,7 +172,7 @@ public class KeyGenerator {
                         ByteArray prefix = ByteArray.join(thingEncoding.prefix().bytes(), typeIID);
                         ByteArray lastIID = dataStorage.getLastKey(prefix);
                         AtomicLong nextValue = lastIID != null ?
-                                new AtomicLong(ValueEncoding.bytesToLong(lastIID.view(PREFIX_W_TYPE_LENGTH, DEFAULT_LENGTH)) + delta) :
+                                new AtomicLong(ValueSortable.bytesToLong(lastIID.view(PREFIX_W_TYPE_LENGTH, DEFAULT_LENGTH)) + delta) :
                                 new AtomicLong(initialValue);
                         thingKeys.put(VertexIID.Type.of(typeIID), nextValue);
                     }

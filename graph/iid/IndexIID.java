@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.graph.iid;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.util.ByteArray;
 import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.common.Encoding.ValueEncoding;
+import com.vaticle.typedb.core.graph.common.Encoding.ValueSortable;
 
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
@@ -225,11 +225,11 @@ public abstract class IndexIID extends IID {
         }
 
         public static Attribute of(long value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Encoding.ValueType.LONG.bytes(), ValueEncoding.longToBytes(value), typeIID.bytes);
+            return newAttributeIndex(Encoding.ValueType.LONG.bytes(), ValueSortable.longToBytes(value), typeIID.bytes);
         }
 
         public static Attribute of(double value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Encoding.ValueType.DOUBLE.bytes(), ValueEncoding.doubleToBytes(value), typeIID.bytes);
+            return newAttributeIndex(Encoding.ValueType.DOUBLE.bytes(), ValueSortable.doubleToBytes(value), typeIID.bytes);
         }
 
         public static Attribute of(String value, VertexIID.Type typeIID) {
@@ -243,7 +243,7 @@ public abstract class IndexIID extends IID {
         }
 
         public static Attribute of(LocalDateTime value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Encoding.ValueType.DATETIME.bytes(), ValueEncoding.dateTimeToBytes(value, TIME_ZONE_ID), typeIID.bytes);
+            return newAttributeIndex(Encoding.ValueType.DATETIME.bytes(), ValueSortable.dateTimeToBytes(value, TIME_ZONE_ID), typeIID.bytes);
         }
 
         @Override
@@ -256,16 +256,16 @@ public abstract class IndexIID extends IID {
                         value = byteToBoolean(bytes.get(VALUE_INDEX)).toString();
                         break;
                     case LONG:
-                        value = ValueEncoding.bytesToLong(bytes.view(VALUE_INDEX, VALUE_INDEX + LONG_SIZE)) + "";
+                        value = ValueSortable.bytesToLong(bytes.view(VALUE_INDEX, VALUE_INDEX + LONG_SIZE)) + "";
                         break;
                     case DOUBLE:
-                        value = ValueEncoding.bytesToDouble(bytes.view(VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE)) + "";
+                        value = ValueSortable.bytesToDouble(bytes.view(VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE)) + "";
                         break;
                     case STRING:
-                        value = ValueEncoding.bytesToString(bytes.view(VALUE_INDEX, bytes.length() - VertexIID.Type.LENGTH), STRING_ENCODING);
+                        value = ValueSortable.bytesToString(bytes.view(VALUE_INDEX, bytes.length() - VertexIID.Type.LENGTH));
                         break;
                     case DATETIME:
-                        value = ValueEncoding.bytesToDateTime(bytes.view(VALUE_INDEX, bytes.length() - VertexIID.Type.LENGTH), TIME_ZONE_ID).toString();
+                        value = ValueSortable.bytesToDateTime(bytes.view(VALUE_INDEX, bytes.length() - VertexIID.Type.LENGTH), TIME_ZONE_ID).toString();
                         break;
                     default:
                         value = "";
@@ -275,7 +275,7 @@ public abstract class IndexIID extends IID {
                 readableString = "[" + PrefixIID.LENGTH + ": " + Encoding.Index.Prefix.ATTRIBUTE.toString() + "]" +
                         "[" + VertexIID.Attribute.VALUE_TYPE_LENGTH + ": " + valueType.toString() + "]" +
                         "[" + (bytes.length() - (PrefixIID.LENGTH + VertexIID.Attribute.VALUE_TYPE_LENGTH + VertexIID.Type.LENGTH)) + ": " + value + "]" +
-                        "[" + VertexIID.Type.LENGTH + ": " + VertexIID.Type.of(bytes.copyRange(bytes.length() - VertexIID.Type.LENGTH)).toString() + "]";
+                        "[" + VertexIID.Type.LENGTH + ": " + VertexIID.Type.of(bytes.view(bytes.length() - VertexIID.Type.LENGTH)).toString() + "]";
             }
             return readableString;
         }

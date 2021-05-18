@@ -27,22 +27,6 @@ public class Bytes {
     public static final int DOUBLE_SIZE = 8;
     public static final int DATETIME_SIZE = LONG_SIZE;
 
-    public static byte[] join(byte[]... byteArrays) {
-        int length = 0;
-        for (byte[] array : byteArrays) {
-            length += array.length;
-        }
-
-        byte[] joint = new byte[length];
-        int pos = 0;
-        for (byte[] array : byteArrays) {
-            System.arraycopy(array, 0, joint, pos, array.length);
-            pos += array.length;
-        }
-
-        return joint;
-    }
-
     public static byte booleanToByte(boolean value) {
         return (byte) (value ? 1 : 0);
     }

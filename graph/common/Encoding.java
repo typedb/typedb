@@ -972,7 +972,7 @@ public class Encoding {
     /**
      * Custom byte-sortable encodings of values
      */
-    public static class ValueEncoding {
+    public static class ValueSortable {
 
         public static ByteArray shortToBytes(int num) {
             byte[] bytes = new byte[SHORT_SIZE];
@@ -983,7 +983,7 @@ public class Encoding {
 
         public static short bytesToShort(ByteArray bytes) {
             assert bytes.length() == SHORT_SIZE;
-            byte[] clone = Arrays.copyOf(bytes.getBytes(), bytes.length());
+            byte[] clone = bytes.cloneBytes();
             clone[0] = (byte) (clone[0] ^ 0x80);
             return ByteBuffer.wrap(clone).getShort();
         }
@@ -997,10 +997,11 @@ public class Encoding {
             return ByteArray.of(bytes);
         }
 
-        public static long bytesToInteger(byte[] bytes) {
-            assert bytes.length == INTEGER_SIZE;
-            bytes[0] = (byte) (bytes[0] ^ 0x80);
-            return ByteBuffer.wrap(bytes).getInt();
+        public static long bytesToInteger(ByteArray bytes) {
+            assert bytes.length() == INTEGER_SIZE;
+            byte[] clone = bytes.cloneBytes();
+            clone[0] = (byte) (clone[0] ^ 0x80);
+            return ByteBuffer.wrap(clone).getInt();
         }
 
         public static ByteArray longToBytes(long num) {
@@ -1018,7 +1019,7 @@ public class Encoding {
 
         public static long bytesToLong(ByteArray bytes) {
             assert bytes.length() == LONG_SIZE;
-            byte[] clone = Arrays.copyOf(bytes.getBytes(), bytes.length());
+            byte[] clone = bytes.cloneBytes();
             clone[0] = (byte) (clone[0] ^ 0x80);
             return ByteBuffer.wrap(clone).getLong();
         }
@@ -1053,7 +1054,7 @@ public class Encoding {
 
         public static double bytesToDouble(ByteArray bytes) {
             assert bytes.length() == DOUBLE_SIZE;
-            byte[] clone = Arrays.copyOf(bytes.getBytes(), bytes.length());
+            byte[] clone = bytes.cloneBytes();
             if ((clone[0] & 0x80) == 0x80) {
                 clone[0] = (byte) (clone[0] ^ 0x80);
             } else {
@@ -1064,17 +1065,18 @@ public class Encoding {
             return ByteBuffer.wrap(clone).getDouble();
         }
 
-        public static ByteArray stringToBytes(String value, Charset encoding) throws TypeDBCheckedException {
-            byte[] bytes = value.getBytes(encoding);
+        public static ByteArray stringToBytes(String value) throws TypeDBCheckedException {
+            byte[] bytes = value.getBytes(ValueType.STRING_ENCODING);
             if (bytes.length > SHORT_UNSIGNED_MAX_VALUE) {
                 throw TypeDBCheckedException.of(ILLEGAL_STRING_SIZE, SHORT_UNSIGNED_MAX_VALUE);
             }
             return ByteArray.join(ByteArray.encodeUnsignedShort(bytes.length), ByteArray.of(bytes));
         }
 
-        public static String bytesToString(ByteArray bytes, Charset encoding) {
+        public static String bytesToString(ByteArray bytes) {
             int stringLength = bytes.view(0, 2).decodeUnsignedShort();
-            return bytes.view(SHORT_SIZE, SHORT_SIZE + stringLength).decodeString(encoding);
+            if (stringLength == 0) return "";
+            else return bytes.view(SHORT_SIZE, SHORT_SIZE + stringLength).decodeString(ValueType.STRING_ENCODING);
         }
 
         public static ByteArray dateTimeToBytes(java.time.LocalDateTime value, ZoneId timeZoneID) {

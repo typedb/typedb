@@ -853,10 +853,10 @@ public class ThingGraph {
             }
 
             public static CountJob of(ByteArray key, ByteArray value) {
-                ByteArray countJobKey = key.stripPrefix(PrefixIID.LENGTH);
+                ByteArray countJobKey = key.view(PrefixIID.LENGTH);
                 Encoding.Statistics.JobType jobType = Encoding.Statistics.JobType.of(ByteArray.of(new byte[]{countJobKey.get(0)}));
                 Encoding.Statistics.JobOperation jobOperation = Encoding.Statistics.JobOperation.of(value);
-                ByteArray countJobIID = countJobKey.stripPrefix(PrefixIID.LENGTH);
+                ByteArray countJobIID = countJobKey.view(PrefixIID.LENGTH);
                 if (jobType == Encoding.Statistics.JobType.ATTRIBUTE_VERTEX) {
                     VertexIID.Attribute<?> attIID = VertexIID.Attribute.of(countJobIID);
                     return new Attribute(key, attIID, jobOperation);

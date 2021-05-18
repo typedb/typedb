@@ -386,7 +386,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         public Persisted(TypeGraph graph, VertexIID.Type iid) {
             super(graph, iid,
-                  new String(graph.storage().get(join(iid.bytes(), LABEL.infix().bytes())).getBytes()),
+                  graph.storage().get(join(iid.bytes(), LABEL.infix().bytes())).decodeString(),
                   getScope(graph, iid));
         }
 
@@ -466,7 +466,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         public Pattern regex() {
             if (regexLookedUp) return regex;
             ByteArray val = graph.storage().get(join(iid.bytes(), REGEX.infix().bytes()));
-            if (val != null) regex = Pattern.compile(new String(val.getBytes()));
+            if (val != null) regex = Pattern.compile(val.decodeString());
             regexLookedUp = true;
             return regex;
         }

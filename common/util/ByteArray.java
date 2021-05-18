@@ -42,17 +42,19 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         return new ByteArray.Base(array);
     }
 
+    public static ByteArray empty() {
+        return new ByteArray.Base(new byte[]{});
+    }
+
     public abstract byte[] getBytes();
+
+    public abstract byte[] cloneBytes();
 
     public abstract boolean isEmpty();
 
     public abstract int length();
 
     public abstract byte get(int index);
-
-    public ByteArray stripPrefix(int prefixLength) {
-        return copyRange(prefixLength);
-    }
 
     /**
      * @param from - copy start index, inclusive
@@ -77,26 +79,27 @@ public abstract class ByteArray implements Comparable<ByteArray> {
 
     /**
      * WARNING: not efficient if used to join VIEW arrays
+     *
      * @param arrays - list of byte arrays to copy into a larger array
      * @return - new merged byte array
      */
     public static Base join(ByteArray... arrays) {
         int length = 0;
         for (ByteArray array : arrays) {
-            length += array.getBytes().length;
-            if (array instanceof View) throw new RuntimeException("bad");
+            length += array.length();
         }
 
         byte[] joint = new byte[length];
         int pos = 0;
         for (ByteArray array : arrays) {
-            byte[] bytes = array.getBytes();
-            System.arraycopy(bytes, 0, joint, pos, bytes.length);
-            pos += bytes.length;
+            array.copyInto(joint, pos);
+            pos += array.length();
         }
 
         return new Base(joint);
     }
+
+    abstract void copyInto(byte[] destination, int pos);
 
     public static ByteArray.Base encodeString(String string, Charset encoding) {
         return of(string.getBytes(encoding));
@@ -189,6 +192,11 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         }
 
         @Override
+        public byte[] cloneBytes() {
+            return Arrays.copyOf(array, array.length);
+        }
+
+        @Override
         public boolean isEmpty() {
             return array.length == 0;
         }
@@ -213,6 +221,12 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         public ByteArray.View view(int from, int to) {
             if (from >= array.length || to > array.length) throw new IndexOutOfBoundsException();
             return new ByteArray.View(array, from, to - from);
+        }
+
+        @Override
+        void copyInto(byte[] destination, int pos) {
+            assert pos + array.length <= destination.length;
+            System.arraycopy(array, 0, destination, pos, array.length);
         }
 
         @Override
@@ -286,14 +300,21 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         }
 
         @Override
-        boolean equalsView(View other) {
-            // TODO improve
-            return ByteBuffer.wrap(array).equals(ByteBuffer.wrap(other.array, other.start, other.length));
+        boolean equalsView(View o) {
+            if (array.length != o.length()) return false;
+            for (int i = 0; i < array.length; i++) {
+                if (array[i] != o.array[i + o.start]) return false;
+            }
+            return true;
         }
 
         @Override
         public int hashCode() {
-            return Arrays.hashCode(array);
+            int h = 1;
+            for (final byte b : array) {
+                h = 31 * h + (int) b;
+            }
+            return h;
         }
     }
 
@@ -301,6 +322,7 @@ public abstract class ByteArray implements Comparable<ByteArray> {
 
         private final int start;
         private final int length;
+        private byte[] arrayCache;
 
         private View(byte[] array, int start, int length) {
             super(array);
@@ -310,6 +332,12 @@ public abstract class ByteArray implements Comparable<ByteArray> {
 
         @Override
         public byte[] getBytes() {
+            if (arrayCache == null) arrayCache = Arrays.copyOfRange(array, start, start + length);
+            return arrayCache;
+        }
+
+        @Override
+        public byte[] cloneBytes() {
             return Arrays.copyOfRange(array, start, start + length);
         }
 
@@ -338,7 +366,13 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         @Override
         public ByteArray.View view(int from, int to) {
             if (from >= length || to > length) throw new ArrayIndexOutOfBoundsException();
-            return new View(array, start + from, start + (to - from));
+            return new View(array, start + from, to - from);
+        }
+
+        @Override
+        void copyInto(byte[] destination, int pos) {
+            assert pos + length <= destination.length;
+            System.arraycopy(array, start, destination, pos, length);
         }
 
         @Override
@@ -408,22 +442,29 @@ public abstract class ByteArray implements Comparable<ByteArray> {
 
         @Override
         boolean equalsBase(Base o) {
-            // TODO improve
-            // is there a way to comptue this without creating a ByteBuffer first?
-            return ByteBuffer.wrap(array, start, length).equals(ByteBuffer.wrap(o.array));
+            if (length != o.length()) return false;
+            for (int i = 0; i < length; i++) {
+                if (array[i + start] != o.array[i]) return false;
+            }
+            return true;
         }
 
         @Override
         boolean equalsView(View o) {
-            // TODO improve
-            // is there a way to comptue this without creating a ByteBuffer first?
-            return ByteBuffer.wrap(array, start, length).equals(ByteBuffer.wrap(o.array, o.start, o.length));
+            if (length != o.length()) return false;
+            for (int i = 0; i < length; i++) {
+                if (array[i + start] != o.array[i + o.start]) return false;
+            }
+            return true;
         }
 
         @Override
         public int hashCode() {
-            // is there a way to comptue this without creating a ByteBuffer first?
-            return ByteBuffer.wrap(array, start, length).hashCode();
+            int h = 1;
+            for (int i = start; i < start + length; i++) {
+                h = 31 * h + (int) array[i];
+            }
+            return h;
         }
     }
 }
