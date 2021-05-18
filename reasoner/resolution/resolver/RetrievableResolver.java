@@ -17,7 +17,6 @@
 
 package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
-import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
@@ -49,7 +48,8 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
 
     private final Retrievable retrievable;
     private final Map<Request, RetrievableRequestState> requestStates;
-    protected final Map<Driver<? extends Resolver<?>>, Pair<Map<ConceptMap, AnswerCache<ConceptMap, ConceptMap>>, Integer>> cacheRegistersByRoot;
+    protected final Map<Driver<? extends Resolver<?>>, Map<ConceptMap, AnswerCache<ConceptMap, ConceptMap>>> cacheRegistersByRoot;
+    protected final Map<Driver<? extends Resolver<?>>, Integer> iterationByRoot;
 
     public RetrievableResolver(Driver<RetrievableResolver> driver, Retrievable retrievable, ResolverRegistry registry,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
@@ -58,6 +58,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         this.retrievable = retrievable;
         this.requestStates = new HashMap<>();
         this.cacheRegistersByRoot = new HashMap<>();
+        this.iterationByRoot = new HashMap<>();
     }
 
     @Override
@@ -65,14 +66,26 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         LOG.trace("{}: received Request: {}", name(), fromUpstream);
         if (isTerminated()) return;
 
-        RetrievableRequestState requestState = getOrReplaceRequestState(fromUpstream, iteration);
-        if (iteration < requestState.iteration()) {
+        Driver<? extends Resolver<?>> root = fromUpstream.partialAnswer().root();
+        iterationByRoot.putIfAbsent(root, iteration);
+        if (iteration > iterationByRoot.get(root)) {
+            prepareNextIteration(fromUpstream.partialAnswer().root(), iteration);
+        }
+
+        if (iteration < iterationByRoot.get(fromUpstream.partialAnswer().root())) {
             // short circuit old iteration failed messages to upstream
             failToUpstream(fromUpstream, iteration);
         } else {
+            RetrievableRequestState requestState = getOrReplaceRequestState(fromUpstream, iteration);
             assert iteration == requestState.iteration();
             nextAnswer(fromUpstream, requestState, iteration);
         }
+    }
+
+    private void prepareNextIteration(Driver<? extends Resolver<?>> root, int iteration) {
+        iterationByRoot.put(root, iteration);
+        cacheRegistersByRoot.get(root).clear();
+        // TODO Clear RequestStates from previous iteration
     }
 
     @Override
@@ -108,8 +121,9 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     protected RetrievableRequestState createRequestState(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new RequestState for iteration:{}, request: {}", name(), iteration, fromUpstream);
         assert fromUpstream.partialAnswer().isRetrievable();
-        Map<ConceptMap, AnswerCache<ConceptMap, ConceptMap>> cacheRegister = cacheRegisterForRoot(
-                fromUpstream.partialAnswer().root(), iteration);
+        Driver<? extends Resolver<?>> root = fromUpstream.partialAnswer().root();
+        cacheRegistersByRoot.putIfAbsent(root, new HashMap<>());
+        Map<ConceptMap, AnswerCache<ConceptMap, ConceptMap>> cacheRegister = cacheRegistersByRoot.get(root);
         AnswerCache<ConceptMap, ConceptMap> answerCache = cacheRegister.computeIfAbsent(
                 fromUpstream.partialAnswer().conceptMap(), upstreamAns -> {
                     AnswerCache<ConceptMap, ConceptMap> newCache = new ConceptMapCache(cacheRegister, upstreamAns);
@@ -117,14 +131,6 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
                     return newCache;
                 });
         return new RetrievableRequestState(fromUpstream, answerCache, iteration);
-    }
-
-    private Map<ConceptMap, AnswerCache<ConceptMap, ConceptMap>> cacheRegisterForRoot(Driver<? extends Resolver<?>> root, int iteration) {
-        if (cacheRegistersByRoot.containsKey(root) && cacheRegistersByRoot.get(root).second() < iteration) {
-            cacheRegistersByRoot.remove(root);
-        }
-        cacheRegistersByRoot.putIfAbsent(root, new Pair<>(new HashMap<>(), iteration));
-        return cacheRegistersByRoot.get(root).first();
     }
 
     private void nextAnswer(Request fromUpstream, RetrievableRequestState requestState, int iteration) {

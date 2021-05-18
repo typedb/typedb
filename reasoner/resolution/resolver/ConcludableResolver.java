@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
-import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
@@ -65,7 +64,8 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private final Map<Request, CachingRequestState<?, ConceptMap>> requestStates;
     private final Set<Identifier.Variable.Retrievable> unboundVars;
     private boolean isInitialised;
-    protected final Map<Driver<? extends Resolver<?>>, Pair<Map<ConceptMap, AnswerCache<?, ConceptMap>>, Integer>> cacheRegistersByRoot;
+    protected final Map<Driver<? extends Resolver<?>>, Map<ConceptMap, AnswerCache<?, ConceptMap>>> cacheRegistersByRoot;
+    protected final Map<Driver<? extends Resolver<?>>, Integer> iterationByRoot;
 
     public ConcludableResolver(Driver<ConcludableResolver> driver, com.vaticle.typedb.core.logic.resolvable.Concludable concludable,
                                ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
@@ -80,6 +80,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         this.unboundVars = unboundVars(concludable.pattern());
         this.isInitialised = false;
         this.cacheRegistersByRoot = new HashMap<>();
+        this.iterationByRoot = new HashMap<>();
     }
 
     @Override
@@ -88,14 +89,25 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
 
-        CachingRequestState<?, ConceptMap> requestState = getOrReplaceRequestState(fromUpstream, iteration);
-        if (iteration < requestState.iteration()) {
+        Driver<? extends Resolver<?>> root = fromUpstream.partialAnswer().root();
+        iterationByRoot.putIfAbsent(root, iteration);
+        if (iteration > iterationByRoot.get(root)) prepareNextIteration(root, iteration);
+
+        if (iteration < iterationByRoot.get(root)) {
             // short circuit if the request came from a prior iteration
             failToUpstream(fromUpstream, iteration);
         } else {
+            CachingRequestState<?, ConceptMap> requestState = getOrReplaceRequestState(fromUpstream, iteration);
             assert iteration == requestState.iteration();
+            assert cacheRegistersByRoot.get(root).containsKey(fromUpstream.partialAnswer().conceptMap());
             nextAnswer(fromUpstream, requestState, iteration);
         }
+    }
+
+    private void prepareNextIteration(Driver<? extends Resolver<?>> root, int iteration) {
+        iterationByRoot.put(root, iteration);
+        cacheRegistersByRoot.get(root).clear();
+        // TODO Clear RequestStates from previous iteration
     }
 
     @Override
@@ -105,17 +117,17 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        CachingRequestState<?, ConceptMap> requestState = this.requestStates.get(fromUpstream);
+        Driver<? extends Resolver<?>> root = fromUpstream.partialAnswer().root();
 
-        assert cacheRegistersByRoot.get(fromUpstream.partialAnswer().root()).first().containsKey(fromUpstream.partialAnswer().conceptMap());
-        assert requestState.isExploration();
-        requestState.asExploration().newAnswer(fromDownstream.answer(), fromDownstream.answer().requiresReiteration());
-
-        if (iteration < requestState.iteration()) {
+        if (iteration < iterationByRoot.get(root)) {
             // short circuit if the request came from a prior iteration
             failToUpstream(fromUpstream, iteration);
         } else {
+            CachingRequestState<?, ConceptMap> requestState = this.requestStates.get(fromUpstream);
+            assert requestState.isExploration();
+            requestState.asExploration().newAnswer(fromDownstream.answer(), fromDownstream.answer().requiresReiteration());
             assert iteration == requestState.iteration();
+            assert cacheRegistersByRoot.get(root).containsKey(fromUpstream.partialAnswer().conceptMap());
             nextAnswer(fromUpstream, requestState, iteration);
         }
     }
@@ -144,12 +156,12 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        CachingRequestState<?, ConceptMap> requestState = this.requestStates.get(fromUpstream);
 
-        if (iteration < requestState.iteration()) {
+        if (iteration < iterationByRoot.get(fromUpstream.partialAnswer().root())) {
             // short circuit old iteration failed messages to upstream
             failToUpstream(fromUpstream, iteration);
         } else {
+            CachingRequestState<?, ConceptMap> requestState = this.requestStates.get(fromUpstream);
             assert iteration == requestState.iteration();
             if (requestState.isExploration()) {
                 requestState.asExploration().downstreamManager().removeDownstream(fromDownstream.sourceRequest());
@@ -220,7 +232,8 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     protected CachingRequestState<?, ConceptMap> createRequestState(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating new Responses for iteration{}, request: {}", name(), iteration, fromUpstream);
         Driver<? extends Resolver<?>> root = fromUpstream.partialAnswer().root();
-        Map<ConceptMap, AnswerCache<?, ConceptMap>> cacheRegister = cacheRegisterForRoot(root, iteration);
+        cacheRegistersByRoot.putIfAbsent(root, new HashMap<>());
+        Map<ConceptMap, AnswerCache<?, ConceptMap>> cacheRegister = cacheRegistersByRoot.get(root);
         ConceptMap answerFromUpstream = fromUpstream.partialAnswer().conceptMap();
         CachingRequestState<?, ConceptMap> requestState;
         assert fromUpstream.partialAnswer().isConcludable();
@@ -269,14 +282,6 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
         return requestState;
-    }
-
-    private Map<ConceptMap, AnswerCache<?, ConceptMap>> cacheRegisterForRoot(Driver<? extends Resolver<?>> root, int iteration) {
-        if (cacheRegistersByRoot.containsKey(root) && cacheRegistersByRoot.get(root).second() < iteration) {
-            cacheRegistersByRoot.remove(root);
-        }
-        cacheRegistersByRoot.putIfAbsent(root, new Pair<>(new HashMap<>(), iteration));
-        return cacheRegistersByRoot.get(root).first();
     }
 
     private void registerRules(Request fromUpstream, Exploration exploration) {
