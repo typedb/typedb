@@ -99,14 +99,14 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         byte[] joint = new byte[length];
         int pos = 0;
         for (ByteArray array : arrays) {
-            array.copyInto(joint, pos);
+            array.copyTo(joint, pos);
             pos += array.length();
         }
 
         return new Base(joint);
     }
 
-    abstract void copyInto(byte[] destination, int pos);
+    abstract void copyTo(byte[] destination, int pos);
 
     public abstract boolean hasPrefix(ByteArray prefix);
 
@@ -356,7 +356,7 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         }
 
         @Override
-        void copyInto(byte[] destination, int pos) {
+        void copyTo(byte[] destination, int pos) {
             assert pos + array.length <= destination.length;
             System.arraycopy(array, 0, destination, pos, array.length);
         }
@@ -494,7 +494,7 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         }
 
         @Override
-        void copyInto(byte[] destination, int pos) {
+        void copyTo(byte[] destination, int pos) {
             assert pos + length <= destination.length;
             System.arraycopy(array, start, destination, pos, length);
         }
