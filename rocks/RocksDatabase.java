@@ -33,7 +33,6 @@ import com.vaticle.typedb.core.logic.LogicCache;
 import com.vaticle.typedb.core.traversal.TraversalCache;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.RocksDBException;
-import org.rocksdb.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -411,7 +410,8 @@ public class RocksDatabase implements TypeDB.Database {
             private final AtomicBoolean cleanupRunning;
 
             enum Event {OPENED, COMMITTED}
-            enum CommitState {UNCOMMITTED, COMMITTING};
+
+            enum CommitState {UNCOMMITTED, COMMITTING}
 
             public StorageTimeline() {
                 this.events = new ConcurrentSkipListMap<>();
@@ -614,15 +614,12 @@ public class RocksDatabase implements TypeDB.Database {
                 } catch (TypeDBException e) {
                     if (e.code().isPresent() && e.code().get().equals(DATABASE_CLOSED.code())) {
                         break;
+                    } else if (e.code().isPresent() && (e.code().get().equals(TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION.code()) ||
+                            e.code().get().equals(TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION.code()) ||
+                            e.code().get().equals(TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION.code()))) {
+                        countJobNotifications.release();
                     } else {
-                        // TODO: Add specific code indicating rocksdb conflict to TypeDBException status code
-                        boolean txConflicted = e.getCause() instanceof RocksDBException &&
-                                ((RocksDBException) e.getCause()).getStatus().getCode() == Status.Code.Busy;
-                        if (txConflicted) {
-                            countJobNotifications.release();
-                        } else {
-                            throw e;
-                        }
+                        throw e;
                     }
                 }
                 waitForCountJob();
