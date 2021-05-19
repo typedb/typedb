@@ -274,7 +274,6 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
     }
 
-
     /**
      * Relation handles these concludable patterns, where `$role` and `$relation` could be labelled, and there could
      * be any number of rolePlayers:
