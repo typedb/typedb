@@ -64,8 +64,8 @@ build:
     test-integration:
       image: vaticle-ubuntu-20.04
       command: |
-#        sleep 10000
         bazel test //test/integration:test-basic --test_output=streamed
+#        sleep 10000
 #        bazel test //test/integration:test-query --test_output=streamed
 #        bazel test //test/integration/reasoner/... --test_output=streamed
 #        bazel test //test/integration/migrator/... --test_output=streamed
