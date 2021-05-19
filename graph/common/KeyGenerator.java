@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.graph.common;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
-import com.vaticle.typedb.core.common.util.ByteArray;
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.graph.common.Encoding.ValueSortable;
 import com.vaticle.typedb.core.graph.iid.PrefixIID;
 import com.vaticle.typedb.core.graph.iid.StructureIID;

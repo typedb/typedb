@@ -22,7 +22,7 @@ import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.ThreadTrace
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Label;
-import com.vaticle.typedb.core.common.util.ByteArray;
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.pattern.constraint.Constraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.IIDConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.LabelConstraint;
@@ -39,7 +39,6 @@ import com.vaticle.typeql.lang.pattern.variable.BoundVariable;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -131,7 +130,7 @@ public class Conjunction implements Pattern, Cloneable {
                     }
                 } else if (var.isThing()) {
                     Optional<IIDConstraint> existingIID = var.asThing().iid();
-                    if (existingIID.isPresent() && existingIID.get().iid().equals(boundVar.second())) {
+                    if (existingIID.isPresent() && !existingIID.get().iid().equals(boundVar.second())) {
                         this.setCoherent(false);
                     } else {
                         var.asThing().iid(boundVar.second());

@@ -18,7 +18,7 @@
 
 package com.vaticle.typedb.core.pattern.constraint.thing;
 
-import com.vaticle.typedb.core.common.util.ByteArray;
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.traversal.Traversal;

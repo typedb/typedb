@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.common.util;
+package com.vaticle.typedb.core.common.collection;
 
 import com.vaticle.typedb.common.collection.Bytes;
 
@@ -33,6 +33,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 public abstract class ByteArray implements Comparable<ByteArray> {
 
     final byte[] array;
+    private int hash = 0;
 
     private ByteArray(byte[] array) {
         this.array = array;
@@ -78,8 +79,6 @@ public abstract class ByteArray implements Comparable<ByteArray> {
     public abstract ByteArray.View view(int from, int to);
 
     /**
-     * WARNING: not efficient if used to join VIEW arrays
-     *
      * @param arrays - list of byte arrays to copy into a larger array
      * @return - new merged byte array
      */
@@ -100,6 +99,10 @@ public abstract class ByteArray implements Comparable<ByteArray> {
     }
 
     abstract void copyInto(byte[] destination, int pos);
+
+    public static ByteArray.Base encodeString(String string) {
+        return of(string.getBytes());
+    }
 
     public static ByteArray.Base encodeString(String string, Charset encoding) {
         return of(string.getBytes(encoding));
@@ -165,7 +168,12 @@ public abstract class ByteArray implements Comparable<ByteArray> {
     abstract boolean equalsBase(Base o);
 
     @Override
-    public abstract int hashCode();
+    public int hashCode() {
+        if (hash == 0) hash = computeHash();
+        return hash;
+    }
+
+    abstract int computeHash();
 
     @Override
     public String toString() {
@@ -309,7 +317,7 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         }
 
         @Override
-        public int hashCode() {
+        int computeHash() {
             int h = 1;
             for (final byte b : array) {
                 h = 31 * h + (int) b;
@@ -459,7 +467,7 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         }
 
         @Override
-        public int hashCode() {
+        int computeHash() {
             int h = 1;
             for (int i = start; i < start + length; i++) {
                 h = 31 * h + (int) array[i];

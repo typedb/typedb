@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.graph.iid;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.util.ByteArray;
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.Encoding.ValueSortable;
 

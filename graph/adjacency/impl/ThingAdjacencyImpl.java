@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.graph.adjacency.impl;
 
 import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.util.ByteArray;
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.edge.Edge;

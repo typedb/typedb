@@ -19,7 +19,7 @@ package com.vaticle.typedb.core.graph.structure.impl;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
-import com.vaticle.typedb.core.common.util.ByteArray;
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.iid.IndexIID;
@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
-import static com.vaticle.typedb.core.common.util.ByteArray.join;
+import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.graph.common.Encoding.Property.LABEL;
 import static com.vaticle.typedb.core.graph.common.Encoding.Property.THEN;
 import static com.vaticle.typedb.core.graph.common.Encoding.Property.WHEN;
@@ -229,15 +229,15 @@ public abstract class RuleStructureImpl implements RuleStructure {
         }
 
         private void commitPropertyLabel() {
-            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), ByteArray.of(label.getBytes()));
+            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), ByteArray.encodeString(label));
         }
 
         private void commitWhen() {
-            graph.storage().putUntracked(join(iid.bytes(), WHEN.infix().bytes()), ByteArray.of(when().toString().getBytes()));
+            graph.storage().putUntracked(join(iid.bytes(), WHEN.infix().bytes()), ByteArray.encodeString(when().toString()));
         }
 
         private void commitThen() {
-            graph.storage().putUntracked(join(iid.bytes(), THEN.infix().bytes()), ByteArray.of(then().toString().getBytes()));
+            graph.storage().putUntracked(join(iid.bytes(), THEN.infix().bytes()), ByteArray.encodeString(then().toString()));
         }
 
         private void indexReferences() {
@@ -274,7 +274,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
         @Override
         public void label(String label) {
             graph.rules().update(this, this.label, label);
-            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), ByteArray.of(label.getBytes()));
+            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), ByteArray.encodeString(label));
             graph.storage().deleteUntracked(IndexIID.Rule.of(this.label).bytes());
             graph.storage().putUntracked(IndexIID.Rule.of(label).bytes(), iid.bytes());
             this.label = label;

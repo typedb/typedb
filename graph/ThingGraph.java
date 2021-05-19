@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
-import com.vaticle.typedb.core.common.util.ByteArray;
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
 import com.vaticle.typedb.core.graph.common.StatisticsBytes;
@@ -57,7 +57,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.I
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.Iterators.tree;
-import static com.vaticle.typedb.core.common.util.ByteArray.join;
+import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
 import static com.vaticle.typedb.core.graph.common.Encoding.Prefix.VERTEX_ATTRIBUTE_TYPE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Prefix.VERTEX_ENTITY_TYPE;
@@ -854,7 +854,7 @@ public class ThingGraph {
 
             public static CountJob of(ByteArray key, ByteArray value) {
                 ByteArray countJobKey = key.view(PrefixIID.LENGTH);
-                Encoding.Statistics.JobType jobType = Encoding.Statistics.JobType.of(ByteArray.of(new byte[]{countJobKey.get(0)}));
+                Encoding.Statistics.JobType jobType = Encoding.Statistics.JobType.of(countJobKey.view(0, 1));
                 Encoding.Statistics.JobOperation jobOperation = Encoding.Statistics.JobOperation.of(value);
                 ByteArray countJobIID = countJobKey.view(PrefixIID.LENGTH);
                 if (jobType == Encoding.Statistics.JobType.ATTRIBUTE_VERTEX) {

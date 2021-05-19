@@ -18,9 +18,7 @@
 
 package com.vaticle.typedb.core.graph.iid;
 
-import com.vaticle.typedb.core.common.util.ByteArray;
-
-import java.util.Arrays;
+import com.vaticle.typedb.core.common.collection.ByteArray;
 
 public class SuffixIID extends IID {
 

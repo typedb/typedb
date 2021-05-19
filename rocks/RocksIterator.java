@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.rocks;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.AbstractFunctionalIterator;
-import com.vaticle.typedb.core.common.util.ByteArray;
+import com.vaticle.typedb.core.common.collection.ByteArray;
 
 import java.util.NoSuchElementException;
 import java.util.function.BiFunction;

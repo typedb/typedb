@@ -34,7 +34,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
-import static com.vaticle.typedb.core.common.util.ByteArray.join;
+import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.graph.common.Encoding.Prefix.VERTEX_ROLE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Status.BUFFERED;
 import static java.util.Objects.hash;

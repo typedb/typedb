@@ -18,10 +18,10 @@
 
 package com.vaticle.typedb.core.graph.common;
 
-import com.vaticle.typedb.core.common.util.ByteArray;
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 
-import static com.vaticle.typedb.core.common.util.ByteArray.join;
+import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 
 
 public class StatisticsBytes {

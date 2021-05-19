@@ -18,10 +18,8 @@
 
 package com.vaticle.typedb.core.graph.iid;
 
-import com.vaticle.typedb.core.common.util.ByteArray;
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.graph.common.Encoding;
-
-import java.util.Arrays;
 
 public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID {
 
@@ -84,7 +82,7 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
             if ((encoding.equals(Encoding.Edge.Thing.ROLEPLAYER))) {
                 return RolePlayer.extract(bytes, from);
             } else {
-                return new InfixIID.Thing(ByteArray.of(new byte[]{bytes.get(from)}));
+                return new InfixIID.Thing(bytes.view(from, from+1));
             }
         }
 
@@ -148,7 +146,7 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
         }
 
         static RolePlayer extract(ByteArray bytes, int from) {
-            return new RolePlayer(ByteArray.join(ByteArray.of(new byte[]{bytes.get(from)}), VertexIID.Type.extract(bytes, from + LENGTH).bytes()));
+            return new RolePlayer(ByteArray.join(bytes.view(from, from + 1), VertexIID.Type.extract(bytes, from + LENGTH).bytes()));
         }
 
         public VertexIID.Type tail() {
