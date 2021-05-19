@@ -168,12 +168,15 @@ public abstract class ByteArray implements Comparable<ByteArray> {
     abstract boolean equalsBase(Base o);
 
     @Override
-    public int hashCode() {
-        if (hash == 0) hash = computeHash();
+    public final int hashCode() {
+        if (hash == 0) {
+            hash = 1;
+            for (int i = 0; i < length(); i++) {
+                hash = 31 * hash + (int) get(i);
+            }
+        }
         return hash;
     }
-
-    abstract int computeHash();
 
     @Override
     public String toString() {
@@ -316,14 +319,6 @@ public abstract class ByteArray implements Comparable<ByteArray> {
             return true;
         }
 
-        @Override
-        int computeHash() {
-            int h = 1;
-            for (final byte b : array) {
-                h = 31 * h + (int) b;
-            }
-            return h;
-        }
     }
 
     public static class View extends ByteArray {
@@ -464,15 +459,6 @@ public abstract class ByteArray implements Comparable<ByteArray> {
                 if (array[i + start] != o.array[i + o.start]) return false;
             }
             return true;
-        }
-
-        @Override
-        int computeHash() {
-            int h = 1;
-            for (int i = start; i < start + length; i++) {
-                h = 31 * h + (int) array[i];
-            }
-            return h;
         }
     }
 }

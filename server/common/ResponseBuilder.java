@@ -55,6 +55,7 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 import static com.google.protobuf.ByteString.copyFrom;
+import static com.vaticle.typedb.core.common.collection.ByteArray.encodeUUID;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Answer.conceptMap;
@@ -77,7 +78,7 @@ public class ResponseBuilder {
     }
 
     public static ByteString UUIDAsByteString(UUID uuid) {
-        return copyFrom(ByteArray.encodeUUID(uuid).getBytes());
+        return copyFrom(encodeUUID(uuid).getBytes());
     }
 
     public static class DatabaseManager {

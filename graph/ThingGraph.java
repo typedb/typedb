@@ -52,6 +52,7 @@ import java.util.stream.Stream;
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLong;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -718,13 +719,13 @@ public class ThingGraph {
 
         private void commit(Map<VertexIID.Thing, VertexIID.Thing> IIDMap) {
             deltaVertexCount.forEach((typeIID, delta) -> {
-                storage.mergeUntracked(vertexCountKey(typeIID), ByteArray.encodeLong(delta));
+                storage.mergeUntracked(vertexCountKey(typeIID), encodeLong(delta));
                 if (typeIID.encoding().prefix() == VERTEX_ENTITY_TYPE) {
-                    storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootEntityType().iid()),  ByteArray.encodeLong(delta));
+                    storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootEntityType().iid()),  encodeLong(delta));
                 } else if (typeIID.encoding().prefix() == VERTEX_RELATION_TYPE) {
-                    storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootRelationType().iid()),  ByteArray.encodeLong(delta));
+                    storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootRelationType().iid()),  encodeLong(delta));
                 } else if (typeIID.encoding().prefix() == Encoding.Prefix.VERTEX_ROLE_TYPE) {
-                    storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootRoleType().iid()),  ByteArray.encodeLong(delta));
+                    storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootRoleType().iid()),  encodeLong(delta));
                 }
             });
             attributeVertexCountJobs.forEach((attIID, countWorkValue) -> storage.putTracked(
@@ -734,7 +735,7 @@ public class ThingGraph {
                     hasEdgeCountJobKey(IIDMap.getOrDefault(hasEdge.first(), hasEdge.first()), hasEdge.second()), countWorkValue.bytes(), false
             ));
             if (!deltaVertexCount.isEmpty()) {
-                storage.mergeUntracked(snapshotKey(),  ByteArray.encodeLong(1));
+                storage.mergeUntracked(snapshotKey(),  encodeLong(1));
             }
         }
 
@@ -760,7 +761,7 @@ public class ThingGraph {
                 }
                 storage.deleteTracked(countJob.key());
             }
-            storage.mergeUntracked(snapshotKey(), ByteArray.encodeLong(1));
+            storage.mergeUntracked(snapshotKey(), encodeLong(1));
             return countJobs.hasNext();
         }
 
@@ -779,8 +780,8 @@ public class ThingGraph {
             ByteArray countedKey = attributeCountedKey(attIID);
             ByteArray counted = storage.get(countedKey);
             if (counted == null) {
-                storage.mergeUntracked(vertexCountKey(attIID.type()),  ByteArray.encodeLong(1));
-                storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootAttributeType().iid()),  ByteArray.encodeLong(1));
+                storage.mergeUntracked(vertexCountKey(attIID.type()),  encodeLong(1));
+                storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootAttributeType().iid()),  encodeLong(1));
                 storage.putTracked(countedKey);
             }
         }
@@ -789,8 +790,8 @@ public class ThingGraph {
             ByteArray countedKey = attributeCountedKey(attIID);
             ByteArray counted = storage.get(countedKey);
             if (counted != null) {
-                storage.mergeUntracked(vertexCountKey(attIID.type()),  ByteArray.encodeLong(-1));
-                storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootAttributeType().iid()),  ByteArray.encodeLong(-1));
+                storage.mergeUntracked(vertexCountKey(attIID.type()),  encodeLong(-1));
+                storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootAttributeType().iid()),  encodeLong(-1));
                 storage.putTracked(countedKey);
             }
         }
@@ -811,13 +812,13 @@ public class ThingGraph {
             ByteArray countedKey = hasEdgeCountedKey(thingIID, attIID);
             ByteArray counted = storage.get(countedKey);
             if (counted == null) {
-                storage.mergeUntracked(hasEdgeCountKey(thingIID.type(), attIID.type()),  ByteArray.encodeLong(1));
+                storage.mergeUntracked(hasEdgeCountKey(thingIID.type(), attIID.type()),  encodeLong(1));
                 if (thingIID.type().encoding().prefix() == VERTEX_ENTITY_TYPE) {
-                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootEntityType().iid()),  ByteArray.encodeLong(1));
+                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootEntityType().iid()),  encodeLong(1));
                 } else if (thingIID.type().encoding().prefix() == VERTEX_RELATION_TYPE) {
-                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootRelationType().iid()),  ByteArray.encodeLong(1));
+                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootRelationType().iid()),  encodeLong(1));
                 } else if (thingIID.type().encoding().prefix() == VERTEX_ATTRIBUTE_TYPE) {
-                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootAttributeType().iid()),  ByteArray.encodeLong(1));
+                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootAttributeType().iid()),  encodeLong(1));
                 }
                 storage.putTracked(countedKey);
             }
@@ -827,13 +828,13 @@ public class ThingGraph {
             ByteArray countedKey = hasEdgeCountedKey(thingIID, attIID);
             ByteArray counted = storage.get(countedKey);
             if (counted != null) {
-                storage.mergeUntracked(hasEdgeCountKey(thingIID.type(), attIID.type()),  ByteArray.encodeLong(-1));
+                storage.mergeUntracked(hasEdgeCountKey(thingIID.type(), attIID.type()),  encodeLong(-1));
                 if (thingIID.type().encoding().prefix() == VERTEX_ENTITY_TYPE) {
-                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootEntityType().iid()),  ByteArray.encodeLong(-1));
+                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootEntityType().iid()),  encodeLong(-1));
                 } else if (thingIID.type().encoding().prefix() == VERTEX_RELATION_TYPE) {
-                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootRelationType().iid()),  ByteArray.encodeLong(-1));
+                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootRelationType().iid()),  encodeLong(-1));
                 } else if (thingIID.type().encoding().prefix() == VERTEX_ATTRIBUTE_TYPE) {
-                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootAttributeType().iid()),  ByteArray.encodeLong(-1));
+                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootAttributeType().iid()),  encodeLong(-1));
                 }
                 storage.deleteTracked(countedKey);
             }

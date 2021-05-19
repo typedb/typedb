@@ -26,6 +26,7 @@ import com.vaticle.typedb.core.traversal.Traversal;
 import java.util.Objects;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.collection.ByteArray.fromHexString;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SPACE;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.IID;
 
@@ -41,7 +42,7 @@ public class IIDConstraint extends ThingConstraint {
     }
 
     static IIDConstraint of(ThingVariable owner, com.vaticle.typeql.lang.pattern.constraint.ThingConstraint.IID constraint) {
-        return new IIDConstraint(owner, ByteArray.fromHexString(constraint.iid()));
+        return new IIDConstraint(owner, fromHexString(constraint.iid()));
     }
 
     static IIDConstraint of(ThingVariable owner, IIDConstraint clone) {

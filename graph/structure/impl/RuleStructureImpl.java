@@ -41,6 +41,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.vaticle.typedb.core.common.collection.ByteArray.encodeString;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
@@ -229,15 +230,15 @@ public abstract class RuleStructureImpl implements RuleStructure {
         }
 
         private void commitPropertyLabel() {
-            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), ByteArray.encodeString(label));
+            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), encodeString(label));
         }
 
         private void commitWhen() {
-            graph.storage().putUntracked(join(iid.bytes(), WHEN.infix().bytes()), ByteArray.encodeString(when().toString()));
+            graph.storage().putUntracked(join(iid.bytes(), WHEN.infix().bytes()), encodeString(when().toString()));
         }
 
         private void commitThen() {
-            graph.storage().putUntracked(join(iid.bytes(), THEN.infix().bytes()), ByteArray.encodeString(then().toString()));
+            graph.storage().putUntracked(join(iid.bytes(), THEN.infix().bytes()), encodeString(then().toString()));
         }
 
         private void indexReferences() {
@@ -274,7 +275,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
         @Override
         public void label(String label) {
             graph.rules().update(this, this.label, label);
-            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), ByteArray.encodeString(label));
+            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), encodeString(label));
             graph.storage().deleteUntracked(IndexIID.Rule.of(this.label).bytes());
             graph.storage().putUntracked(IndexIID.Rule.of(label).bytes(), iid.bytes());
             this.label = label;

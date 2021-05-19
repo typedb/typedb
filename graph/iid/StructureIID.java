@@ -22,6 +22,8 @@ import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.Encoding.ValueSortable;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
 
+import static com.vaticle.typedb.core.common.collection.ByteArray.join;
+
 public abstract class StructureIID extends IID {
 
     StructureIID(ByteArray bytes) {
@@ -55,7 +57,7 @@ public abstract class StructureIID extends IID {
          * @return a byte array representing a new IID for a {@code RuleStructure}
          */
         public static Rule generate(KeyGenerator.Schema keyGenerator) {
-            return of(ByteArray.join(Encoding.Structure.RULE.prefix().bytes(), keyGenerator.forRule()));
+            return of(join(Encoding.Structure.RULE.prefix().bytes(), keyGenerator.forRule()));
         }
 
         @Override

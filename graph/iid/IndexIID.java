@@ -26,6 +26,8 @@ import com.vaticle.typedb.core.graph.common.Encoding.ValueSortable;
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 
+import static com.vaticle.typedb.core.common.collection.ByteArray.encodeString;
+import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.common.collection.Bytes.DOUBLE_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.LONG_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.booleanToByte;
@@ -60,8 +62,8 @@ public abstract class IndexIID extends IID {
              * @return a byte array representing the index address of a {@code TypeVertex}
              */
             public static Label of(String label, @Nullable String scope) {
-                return new Label(ByteArray.join(Encoding.Index.Prefix.TYPE.prefix().bytes(),
-                                                ByteArray.encodeString(Encoding.Vertex.Type.scopedLabel(label, scope), STRING_ENCODING)));
+                return new Label(join(Encoding.Index.Prefix.TYPE.prefix().bytes(),
+                                      encodeString(Encoding.Vertex.Type.scopedLabel(label, scope), STRING_ENCODING)));
             }
 
             @Override
@@ -94,16 +96,16 @@ public abstract class IndexIID extends IID {
                  * @return a byte array representing the index of a given type concluded in a given rule
                  */
                 public static Key concludedVertex(VertexIID.Type typeIID, StructureIID.Rule ruleIID) {
-                    return new Key(ByteArray.join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
-                                                  Encoding.Index.Infix.CONCLUDED_VERTEX.bytes(), ruleIID.bytes()));
+                    return new Key(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
+                                        Encoding.Index.Infix.CONCLUDED_VERTEX.bytes(), ruleIID.bytes()));
                 }
 
                 /**
                  * @return a byte array representing the index of a given type concluded in a given rule
                  */
                 public static Key concludedEdgeTo(VertexIID.Type typeIID, StructureIID.Rule ruleIID) {
-                    return new Key(ByteArray.join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
-                                                  Encoding.Index.Infix.CONCLUDED_EDGE_TO.bytes(), ruleIID.bytes()));
+                    return new Key(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
+                                        Encoding.Index.Infix.CONCLUDED_EDGE_TO.bytes(), ruleIID.bytes()));
                 }
 
 
@@ -111,8 +113,8 @@ public abstract class IndexIID extends IID {
                  * @return a byte array representing the index of a given type contained in a given rule
                  */
                 public static Key contained(VertexIID.Type typeIID, StructureIID.Rule ruleIID) {
-                    return new Key(ByteArray.join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
-                                                  Encoding.Index.Infix.CONTAINED_TYPE.bytes(), ruleIID.bytes()));
+                    return new Key(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
+                                        Encoding.Index.Infix.CONTAINED_TYPE.bytes(), ruleIID.bytes()));
                 }
 
                 @Override
@@ -139,24 +141,24 @@ public abstract class IndexIID extends IID {
                  * @return a byte array representing the the index scan prefix of a given type concluded in rules
                  */
                 public static Prefix concludedVertex(VertexIID.Type typeIID) {
-                    return new Prefix(ByteArray.join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
-                                                     Encoding.Index.Infix.CONCLUDED_VERTEX.bytes()));
+                    return new Prefix(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
+                                           Encoding.Index.Infix.CONCLUDED_VERTEX.bytes()));
                 }
 
                 /**
                  * @return a byte array representing the index prefix scan of a given type concluded in rules
                  */
                 public static Prefix concludedEdgeTo(VertexIID.Type typeIID) {
-                    return new Prefix(ByteArray.join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
-                                                     Encoding.Index.Infix.CONCLUDED_EDGE_TO.bytes()));
+                    return new Prefix(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
+                                           Encoding.Index.Infix.CONCLUDED_EDGE_TO.bytes()));
                 }
 
                 /**
                  * @return a byte array representing the index scan prefix of a given type contained in rules
                  */
                 public static Prefix contained(VertexIID.Type typeIID) {
-                    return new Prefix(ByteArray.join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
-                                                     Encoding.Index.Infix.CONTAINED_TYPE.bytes()));
+                    return new Prefix(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
+                                           Encoding.Index.Infix.CONTAINED_TYPE.bytes()));
                 }
 
                 @Override
@@ -190,7 +192,7 @@ public abstract class IndexIID extends IID {
          * @return a byte array representing the index address of a {@code RuleStructure}
          */
         public static Rule of(String label) {
-            return new Rule(ByteArray.join(prefix().bytes(), ByteArray.encodeString(label, STRING_ENCODING)));
+            return new Rule(join(prefix().bytes(), encodeString(label, STRING_ENCODING)));
         }
 
         public static Encoding.Prefix prefix() {
@@ -217,7 +219,7 @@ public abstract class IndexIID extends IID {
         }
 
         private static Attribute newAttributeIndex(ByteArray valueType, ByteArray value, ByteArray typeIID) {
-            return new Attribute(ByteArray.join(Encoding.Index.Prefix.ATTRIBUTE.prefix().bytes(), valueType, value, typeIID));
+            return new Attribute(join(Encoding.Index.Prefix.ATTRIBUTE.prefix().bytes(), valueType, value, typeIID));
         }
 
         public static Attribute of(boolean value, VertexIID.Type typeIID) {
@@ -235,7 +237,7 @@ public abstract class IndexIID extends IID {
         public static Attribute of(String value, VertexIID.Type typeIID) {
             ByteArray stringBytes;
             try {
-                stringBytes = ByteArray.encodeString(value, STRING_ENCODING);
+                stringBytes = encodeString(value, STRING_ENCODING);
             } catch (Exception e) {
                 throw TypeDBException.of(ILLEGAL_STATE);
             }

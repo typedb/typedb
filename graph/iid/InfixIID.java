@@ -21,6 +21,8 @@ package com.vaticle.typedb.core.graph.iid;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.graph.common.Encoding;
 
+import static com.vaticle.typedb.core.common.collection.ByteArray.join;
+
 public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID {
 
     static final int LENGTH = 1;
@@ -40,7 +42,7 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
     }
 
     @Override
-    public String toString() { // TODO
+    public String toString() {
         if (readableString == null) {
             readableString = "[1:" + Encoding.Infix.of(bytes.get(0)).toString() + "]";
             if (bytes.length() > 1) {
@@ -102,9 +104,9 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
             }
 
             if (Encoding.Edge.Thing.of(infix).equals(Encoding.Edge.Thing.ROLEPLAYER)) {
-                return new InfixIID.RolePlayer(ByteArray.join(iidBytes));
+                return new InfixIID.RolePlayer(join(iidBytes));
             } else {
-                return new InfixIID.Thing(ByteArray.join(iidBytes));
+                return new InfixIID.Thing(join(iidBytes));
             }
         }
 
@@ -142,11 +144,11 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
 
         public static RolePlayer of(Encoding.Infix infix, VertexIID.Type type) {
             assert type != null && Encoding.Edge.Thing.of(infix).equals(Encoding.Edge.Thing.ROLEPLAYER);
-            return new RolePlayer(ByteArray.join(infix.bytes(), type.bytes()));
+            return new RolePlayer(join(infix.bytes(), type.bytes()));
         }
 
         static RolePlayer extract(ByteArray bytes, int from) {
-            return new RolePlayer(ByteArray.join(bytes.view(from, from + 1), VertexIID.Type.extract(bytes, from + LENGTH).bytes()));
+            return new RolePlayer(join(bytes.view(from, from + 1), VertexIID.Type.extract(bytes, from + LENGTH).bytes()));
         }
 
         public VertexIID.Type tail() {

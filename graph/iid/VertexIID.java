@@ -27,6 +27,7 @@ import com.vaticle.typedb.core.graph.common.Encoding.ValueSortable;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
 
 import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.common.collection.Bytes.DATETIME_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.DOUBLE_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.LONG_SIZE;
@@ -95,7 +96,7 @@ public abstract class VertexIID extends IID {
          * @return a byte array representing a new IID for a {@code TypeVertex}
          */
         public static VertexIID.Type generate(KeyGenerator.Schema keyGenerator, Encoding.Vertex.Type encoding) {
-            return of(ByteArray.join(encoding.prefix().bytes(), keyGenerator.forType(PrefixIID.of(encoding), encoding.root().properLabel())));
+            return of(join(encoding.prefix().bytes(), keyGenerator.forType(PrefixIID.of(encoding), encoding.root().properLabel())));
         }
 
         @Override
@@ -133,8 +134,8 @@ public abstract class VertexIID extends IID {
          * @return a byte array representing a new IID for a {@code ThingVertex}
          */
         public static VertexIID.Thing generate(KeyGenerator.Data keyGenerator, Type typeIID, Label typeLabel) {
-            return new Thing(ByteArray.join(typeIID.encoding().instance().prefix().bytes(),
-                                            typeIID.bytes(), keyGenerator.forThing(typeIID, typeLabel)));
+            return new Thing(join(typeIID.encoding().instance().prefix().bytes(),
+                                  typeIID.bytes(), keyGenerator.forThing(typeIID, typeLabel)));
         }
 
         public static VertexIID.Thing of(ByteArray bytes) {
@@ -198,7 +199,7 @@ public abstract class VertexIID extends IID {
         }
 
         Attribute(Encoding.ValueType valueType, Type typeIID, ByteArray valueBytes) {
-            super(ByteArray.join(
+            super(join(
                     ATTRIBUTE.prefix().bytes(),
                     typeIID.bytes(),
                     valueType.bytes(),

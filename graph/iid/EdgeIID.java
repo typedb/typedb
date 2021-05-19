@@ -21,6 +21,8 @@ package com.vaticle.typedb.core.graph.iid;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.graph.common.Encoding;
 
+import static com.vaticle.typedb.core.common.collection.ByteArray.join;
+
 public abstract class EdgeIID<
         EDGE_ENCODING extends Encoding.Edge,
         EDGE_INFIX extends InfixIID<EDGE_ENCODING>,
@@ -88,7 +90,7 @@ public abstract class EdgeIID<
         }
 
         public static Type of(VertexIID.Type start, Encoding.Infix infix, VertexIID.Type end) {
-            return new Type(ByteArray.join(start.bytes, infix.bytes(), end.bytes));
+            return new Type(join(start.bytes, infix.bytes(), end.bytes));
         }
 
         @Override
@@ -122,11 +124,11 @@ public abstract class EdgeIID<
         }
 
         public static Thing of(VertexIID.Thing start, InfixIID.Thing infix, VertexIID.Thing end) {
-            return new Thing(ByteArray.join(start.bytes(), infix.bytes(), end.bytes()));
+            return new Thing(join(start.bytes(), infix.bytes(), end.bytes()));
         }
 
         public static Thing of(VertexIID.Thing start, InfixIID.Thing infix, VertexIID.Thing end, SuffixIID suffix) {
-            return new Thing(ByteArray.join(start.bytes(), infix.bytes(), end.bytes(), suffix.bytes()));
+            return new Thing(join(start.bytes(), infix.bytes(), end.bytes(), suffix.bytes()));
         }
 
         @Override
@@ -182,7 +184,7 @@ public abstract class EdgeIID<
         }
 
         public static InwardsISA of(VertexIID.Type start, VertexIID.Thing end) {
-            return new InwardsISA(ByteArray.join(start.bytes, Encoding.Edge.ISA.in().bytes(), end.bytes));
+            return new InwardsISA(join(start.bytes, Encoding.Edge.ISA.in().bytes(), end.bytes));
         }
 
         @Override

@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
+import static com.vaticle.typedb.core.common.collection.ByteArray.encodeString;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
@@ -355,7 +356,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         private void commitPropertyScope() {
-            graph.storage().putUntracked(join(iid.bytes(), SCOPE.infix().bytes()), ByteArray.encodeString(scope));
+            graph.storage().putUntracked(join(iid.bytes(), SCOPE.infix().bytes()), encodeString(scope));
         }
 
         private void commitPropertyAbstract() {
@@ -363,7 +364,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         private void commitPropertyLabel() {
-            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), ByteArray.encodeString(label));
+            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), encodeString(label));
         }
 
         private void commitPropertyValueType() {
@@ -371,7 +372,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         private void commitPropertyRegex() {
-            graph.storage().putUntracked(join(iid.bytes(), REGEX.infix().bytes()), ByteArray.encodeString(regex.pattern()));
+            graph.storage().putUntracked(join(iid.bytes(), REGEX.infix().bytes()), encodeString(regex.pattern()));
         }
     }
 
@@ -393,7 +394,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         @Nullable
         private static String getScope(TypeGraph graph, VertexIID.Type iid) {
             ByteArray scopeBytes = graph.storage().get(join(iid.bytes(), SCOPE.infix().bytes()));
-            if (scopeBytes != null) return new String(scopeBytes.getBytes());
+            if (scopeBytes != null) return scopeBytes.decodeString();
             else return null;
         }
 
@@ -411,7 +412,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         public void label(String label) {
             assert !isDeleted();
             graph.update(this, this.label, scope, label, scope);
-            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), ByteArray.encodeString(label));
+            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), encodeString(label));
             graph.storage().deleteUntracked(IndexIID.Type.Label.of(this.label, scope).bytes());
             graph.storage().putUntracked(IndexIID.Type.Label.of(label, scope).bytes(), iid.bytes());
             this.label = label;
@@ -421,7 +422,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         public void scope(String scope) {
             assert !isDeleted();
             graph.update(this, label, this.scope, label, scope);
-            graph.storage().putUntracked(join(iid.bytes(), SCOPE.infix().bytes()), ByteArray.encodeString(scope));
+            graph.storage().putUntracked(join(iid.bytes(), SCOPE.infix().bytes()), encodeString(scope));
             graph.storage().deleteUntracked(IndexIID.Type.Label.of(label, this.scope).bytes());
             graph.storage().putUntracked(IndexIID.Type.Label.of(label, scope).bytes(), iid.bytes());
             this.scope = scope;
@@ -476,7 +477,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
             assert !isDeleted();
             if (regex == null) graph.storage().deleteUntracked(join(iid.bytes(), REGEX.infix().bytes()));
             else
-                graph.storage().putUntracked(join(iid.bytes(), REGEX.infix().bytes()), ByteArray.encodeString(regex.pattern()));
+                graph.storage().putUntracked(join(iid.bytes(), REGEX.infix().bytes()), encodeString(regex.pattern()));
             this.regex = regex;
             this.setModified();
             return this;

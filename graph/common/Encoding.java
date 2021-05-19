@@ -41,6 +41,7 @@ import static com.vaticle.typedb.common.collection.Collections.map;
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.common.collection.Bytes.DOUBLE_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.INTEGER_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.LONG_SIZE;
@@ -1068,7 +1069,7 @@ public class Encoding {
             if (bytes.length > SHORT_UNSIGNED_MAX_VALUE) {
                 throw TypeDBCheckedException.of(ILLEGAL_STRING_SIZE, SHORT_UNSIGNED_MAX_VALUE);
             }
-            return ByteArray.join(ByteArray.encodeUnsignedShort(bytes.length), ByteArray.of(bytes));
+            return join(ByteArray.encodeUnsignedShort(bytes.length), ByteArray.of(bytes));
         }
 
         public static String bytesToString(ByteArray bytes) {
