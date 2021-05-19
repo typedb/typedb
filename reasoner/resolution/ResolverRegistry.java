@@ -48,6 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -89,6 +90,10 @@ public class ResolverRegistry {
         this.resolvers = new ConcurrentSet<>();
         this.terminated = new AtomicBoolean(false);
         this.resolutionTracing = resolutionTracing;
+    }
+
+    public Set<Actor.Driver<ConcludableResolver>> concludableResolvers() {
+        return new HashSet<>(concludableResolvers.values());
     }
 
     public void terminateResolvers(Throwable cause) {

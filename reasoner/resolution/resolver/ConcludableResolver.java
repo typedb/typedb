@@ -32,6 +32,7 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache.ConcludableAnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache.SubsumptionAnswerCache.ConceptMapCache;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ReiterationQuery;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState.CachingRequestState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState.Exploration;
@@ -168,6 +169,16 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             }
             nextAnswer(fromUpstream, requestState, iteration);
         }
+    }
+
+    public void receiveReiterationQuery(ReiterationQuery.Request request) {
+        boolean reiterate = iterate(cacheRegistersByRoot.get(request.sender()).values())
+                .filter(AnswerCache::requiresReiteration).first().isPresent();
+        respondToReiterationQuery(request, reiterate);
+    }
+
+    private void respondToReiterationQuery(ReiterationQuery.Request request, boolean reiterate) {
+        request.onResponse().accept(ReiterationQuery.Response.create(driver(), reiterate));
     }
 
     @Override

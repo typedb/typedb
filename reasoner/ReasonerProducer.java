@@ -28,9 +28,11 @@ import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Compound.Root;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match.Finished;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateImpl.TopImpl.MatchImpl.InitialImpl;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ReiterationQuery;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
+import com.vaticle.typedb.core.reasoner.resolution.resolver.ConcludableResolver;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
@@ -38,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.ThreadSafe;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executor;
@@ -54,6 +57,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private final AtomicInteger required;
     private final AtomicInteger processing;
     private final Options.Query options;
+    private ResolverRegistry resolverRegistry;
     private final ExplainablesManager explainablesManager;
     private final Request resolveRequest;
     private final int computeSize;
@@ -61,22 +65,26 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private boolean done;
     private int iteration;
     private Queue<ConceptMap> queue;
+    private HashSet<Actor.Driver<? extends Resolver<?>>> reiterationQueryRespondents;
+    private final Set<Integer> iterationsCheckedForReiteration;
 
     // TODO: this class should not be a Producer, it implements a different async processing mechanism
     public ReasonerProducer(Conjunction conjunction, TypeQLMatch.Modifiers modifiers, Options.Query options,
                             ResolverRegistry resolverRegistry, ExplainablesManager explainablesManager) {
         this.options = options;
+        this.resolverRegistry = resolverRegistry;
         this.explainablesManager = explainablesManager;
         this.queue = null;
         this.iteration = 0;
         this.done = false;
         this.required = new AtomicInteger();
         this.processing = new AtomicInteger();
-        this.rootResolver = resolverRegistry.root(conjunction, this::requestAnswered, this::requestFailed, this::exception);
+        this.rootResolver = this.resolverRegistry.root(conjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
         Root<?, ?> downstream = InitialImpl.create(filter(modifiers.filter()), new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
         this.resolveRequest = Request.create(rootResolver, downstream);
+        this.iterationsCheckedForReiteration = new HashSet<>();
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
@@ -94,6 +102,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         assert computeSize > 0;
         Root<?, ?> downstream = InitialImpl.create(filter(modifiers.filter()), new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
         this.resolveRequest = Request.create(rootResolver, downstream);
+        this.iterationsCheckedForReiteration = new HashSet<>();
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
@@ -135,18 +144,32 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private void requestFailed(int iteration) {
         LOG.trace("Failed to find answer to request in iteration: " + iteration);
         if (options.traceInference()) ResolutionTracer.get().finish();
-        if (!done && iteration == this.iteration && !mustReiterate()) {
-            // query is completely terminated
-            done = true;
-            queue.done();
-            required.set(0);
-            return;
-        }
+        if (!iterationsCheckedForReiteration.contains(iteration)) sendReiterationRequests();
+    }
 
-        if (!done) {
-            if (iteration == this.iteration) prepareNextIteration();
-            assert iteration < this.iteration;
-            retryInNewIteration();
+    private void sendReiterationRequests() {
+        iterationsCheckedForReiteration.add(iteration);
+        reiterationQueryRespondents = new HashSet<>(resolverRegistry.concludableResolvers());
+        resolverRegistry.concludableResolvers()
+                .forEach(res -> res.execute(actor -> actor.receiveReiterationQuery(
+                        ReiterationQuery.Request.create(rootResolver, this::receiveReiterationResponse))));
+    }
+
+    private void receiveReiterationResponse(ReiterationQuery.Response response) {
+        if (response.reiterate()) requiresReiteration = true;
+        assert reiterationQueryRespondents.contains(response.sender());
+        reiterationQueryRespondents.remove(response.sender());
+
+        if (reiterationQueryRespondents.isEmpty()) {
+            if (requiresReiteration) {
+                prepareNextIteration();
+                retryInNewIteration();
+            } else {
+                // query is completely terminated
+                done = true;
+                queue.done();
+                required.set(0);
+            }
         }
     }
 
@@ -161,20 +184,6 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private void prepareNextIteration() {
         iteration++;
         requiresReiteration = false;
-    }
-
-    private boolean mustReiterate() {
-        /*
-        TODO: room for optimisation:
-        for example, reiteration should never be required if there
-        are no loops in the rule graph
-        NOTE: double check this logic holds in the actor execution model, eg. because of asynchrony, we may
-        always have to reiterate until no more answers are found.
-
-        counter example: $x isa $type; -> unifies with then { (friend: $y) isa friendship; }
-        Without reiteration we will miss $x = instance, $type = relation/thing
-         */
-        return requiresReiteration;
     }
 
     private void retryInNewIteration() {
