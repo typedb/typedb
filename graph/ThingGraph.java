@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.graph;
 import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.collection.ByteArray;
+import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
@@ -219,10 +220,10 @@ public class ThingGraph {
     }
 
     public FunctionalIterator<ThingVertex> getReadable(TypeVertex typeVertex) {
-        FunctionalIterator<ThingVertex> storageIterator = storage.iterate(
-                join(typeVertex.iid().bytes(), Encoding.Edge.ISA.in().bytes()),
-                (key, value) -> convertToReadable(EdgeIID.InwardsISA.of(key).end())
-        );
+        ByteArray.Base prefix = join(typeVertex.iid().bytes(), Encoding.Edge.ISA.in().bytes());
+        FunctionalIterator.Sorted<ThingVertex> storageIterator = storage.iterate(
+                prefix, (key, value) -> key
+        ).mapSorted(inEdge -> convertToReadable(EdgeIID.InwardsISA.of(inEdge).end()), vertex -> join(prefix, vertex.iid().bytes()));
         if (!thingsByTypeIID.containsKey(typeVertex.iid())) return storageIterator;
         else return link(thingsByTypeIID.get(typeVertex.iid()).iterator(), storageIterator).distinct();
     }
@@ -767,7 +768,7 @@ public class ThingGraph {
                 } else {
                     assert false;
                 }
-                storage.deleteTracked(countJob.key());
+                storage.deleteTracked(countJob.getBytes());
             }
             storage.mergeUntracked(snapshotKey(), encodeLong(1));
             return countJobs.hasNext();
@@ -852,7 +853,7 @@ public class ThingGraph {
             return bytes != null ? bytes.decodeLong() : 0;
         }
 
-        public abstract static class CountJob {
+        public abstract static class CountJob implements Bytes.ByteComparable<CountJob> {
             private final Encoding.Statistics.JobOperation value;
             private final ByteArray key;
 
@@ -879,7 +880,8 @@ public class ThingGraph {
                 }
             }
 
-            public ByteArray key() {
+            @Override
+            public ByteArray getBytes() {
                 return key;
             }
 

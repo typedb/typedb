@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.graph.edge.impl;
 
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
@@ -52,6 +53,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         private final TypeVertex to;
         private final AtomicBoolean committed;
         private final AtomicBoolean deleted;
+        private final ByteArray outIIDBytes;
         private TypeVertex overridden;
         private int hash;
 
@@ -67,6 +69,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
             assert this.graph == to.graph();
             this.from = from;
             this.to = to;
+            this.outIIDBytes = outIID().bytes();
             committed = new AtomicBoolean(false);
             deleted = new AtomicBoolean(false);
         }
@@ -105,7 +108,6 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         public void overridden(TypeVertex overridden) {
             this.overridden = overridden;
         }
-
 
         /**
          * Deletes this {@code Edge} from connecting between two {@code Vertex}.
@@ -182,6 +184,11 @@ public abstract class TypeEdgeImpl implements TypeEdge {
             if (hash == 0) hash = hash(encoding, from, to);
             return hash;
         }
+
+        @Override
+        public ByteArray getBytes() {
+            return outIIDBytes;
+        }
     }
 
     /**
@@ -194,6 +201,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         private final VertexIID.Type fromIID;
         private final VertexIID.Type toIID;
         private final AtomicBoolean deleted;
+        private final ByteArray persistedBytes;
         private TypeVertex from;
         private TypeVertex to;
         private VertexIID.Type overriddenIID;
@@ -230,6 +238,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
                 outIID = EdgeIID.Type.of(iid.end(), iid.encoding().out(), iid.start());
             }
 
+            persistedBytes = iid.bytes();
             deleted = new AtomicBoolean(false);
 
             if (iid.isOutwards()) {
@@ -360,6 +369,11 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         public final int hashCode() {
             if (hash == 0) hash = hash(encoding, fromIID.hashCode(), toIID.hashCode());
             return hash;
+        }
+
+        @Override
+        public ByteArray getBytes() {
+            return persistedBytes;
         }
     }
 }

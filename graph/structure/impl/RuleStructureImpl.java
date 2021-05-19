@@ -88,6 +88,11 @@ public abstract class RuleStructureImpl implements RuleStructure {
     }
 
     @Override
+    public ByteArray getBytes() {
+        return iid.bytes();
+    }
+
+    @Override
     public boolean isModified() {
         return isModified;
     }

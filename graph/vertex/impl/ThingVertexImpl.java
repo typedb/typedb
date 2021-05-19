@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.graph.vertex.impl;
 
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.ThingGraph;
@@ -242,8 +243,8 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         }
 
         @Override
-        public int compareTo(ThingVertex o) {
-            return iid().compareTo(o.iid());
+        public ByteArray getBytes() {
+            return iid.bytes();
         }
 
         public static class Buffered extends ThingVertexImpl.Write {

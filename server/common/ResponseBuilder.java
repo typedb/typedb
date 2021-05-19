@@ -77,7 +77,7 @@ public class ResponseBuilder {
     }
 
     public static ByteString UUIDAsByteString(UUID uuid) {
-        return copyFrom(encodeUUID(uuid).getBytes());
+        return copyFrom(encodeUUID(uuid).getArray());
     }
 
     public static class DatabaseManager {
@@ -319,7 +319,7 @@ public class ResponseBuilder {
 
         public static ConceptProto.Thing protoThing(com.vaticle.typedb.core.concept.thing.Thing thing) {
             ConceptProto.Thing.Builder protoThing = ConceptProto.Thing.newBuilder()
-                    .setIid(ByteString.copyFrom(thing.getIID().getBytes()))
+                    .setIid(ByteString.copyFrom(thing.getIID().getArray()))
                     .setType(protoType(thing.getType()))
                     .setInferred(thing.isInferred());
             if (thing.isAttribute()) protoThing.setValue(attributeValue(thing.asAttribute()));

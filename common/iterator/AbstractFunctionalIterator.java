@@ -273,11 +273,9 @@ public abstract class AbstractFunctionalIterator<T> implements FunctionalIterato
 //
 //        }
 //
-//        @Override
-//        public FunctionalIterator.Sorted<T, K> onFinalise(Runnable function) {
-//
-//        }
-
-
+        @Override
+        public FunctionalIterator.Sorted<T> onFinalise(Runnable function) {
+            return new FinaliseHandledIterator.Sorted<>(this, function);
+        }
     }
 }

@@ -309,7 +309,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         public void remove(ThingEdge edge) {
             InfixIID.Thing infixIID = infixIID(edge.encoding(), infixTails(edge));
             if (edges.containsKey(infixIID)) {
-                edges.get(infixIID).remove(edge.outIID());
+                edges.get(infixIID).remove(edge);
                 owner.setModified();
             }
         }
@@ -377,9 +377,9 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             }
 
             private FunctionalIterator<ThingEdge> edgeIterator(Encoding.Edge.Thing encoding, IID... lookahead) {
-            byte[] iid = join(owner.iid().bytes(), infixIID(encoding, lookahead).bytes());
+            ByteArray iid = join(owner.iid().bytes(), infixIID(encoding, lookahead).bytes());
             FunctionalIterator.Sorted<ThingEdge> storageIterator = owner.graph().storage().iterate(
-                    iid, (key, value) -> cache(newPersistedEdge(EdgeIID.Thing.of(key.array()))) //TODO fix .array()
+                    iid, (key, value) -> cache(newPersistedEdge(EdgeIID.Thing.of(key)))
             );
             FunctionalIterator.Sorted<ThingEdge>  bufferedIterator = bufferedEdgeIterator(encoding, lookahead);
             return link(bufferedIterator, storageIterator).distinct();
@@ -389,7 +389,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             assert encoding != Encoding.Edge.Thing.ROLEPLAYER || lookahead.length >= 1;
             ByteArray iid = join(owner.iid().bytes(), infixIID(encoding, lookahead).bytes());
             FunctionalIterator.Sorted<ThingEdge> storageIterator = owner.graph().storage()
-                    .iterate(iid, (key, value) -> cache(newPersistedEdge(EdgeIID.Thing.of(key.array())))); // TODO fix .array()
+                    .iterate(iid, (key, value) -> cache(newPersistedEdge(EdgeIID.Thing.of(key))));
             FunctionalIterator.Sorted<ThingEdge> bufferedIterator = bufferedEdgeIterator(encoding, lookahead);
                 return bufferedIterator.merge(storageIterator).distinct();
         }

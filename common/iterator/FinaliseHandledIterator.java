@@ -47,4 +47,45 @@ public class FinaliseHandledIterator<T> extends AbstractFunctionalIterator<T> im
     protected void finalize() {
         function.run();
     }
+
+    public static class Sorted<T extends Comparable<T>> extends AbstractFunctionalIterator.Sorted<T> {
+
+        private FunctionalIterator.Sorted<T> source;
+        private Runnable function;
+
+        public Sorted(FunctionalIterator.Sorted<T> source, Runnable function) {
+            this.source = source;
+            this.function = function;
+        }
+
+        @Override
+        public void seek(T target) {
+            source.seek(target);
+        }
+
+        @Override
+        public T peek() {
+            return null;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return source.hasNext();
+        }
+
+        @Override
+        public T next() {
+            return source.next();
+        }
+
+        @Override
+        public void recycle() {
+            source.recycle();
+        }
+
+        @Override
+        protected void finalize() {
+            function.run();
+        }
+    }
 }
