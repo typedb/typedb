@@ -19,9 +19,9 @@ package com.vaticle.typedb.core.server.common;
 
 import com.google.protobuf.ByteString;
 import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic;
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Options;
-import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.concept.type.AttributeType.ValueType;
 import com.vaticle.typedb.protocol.ConceptProto;
 import com.vaticle.typedb.protocol.OptionsProto;

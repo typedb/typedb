@@ -18,10 +18,10 @@
 
 package com.vaticle.typedb.core.graph.common;
 
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.collection.ByteArray;
 
 import java.util.function.BiFunction;
 

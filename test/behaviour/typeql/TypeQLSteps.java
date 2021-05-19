@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.test.behaviour.typeql;
 
-import com.vaticle.typedb.common.collection.Bytes;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.answer.ConceptMapGroup;
