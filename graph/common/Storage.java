@@ -19,11 +19,11 @@
 package com.vaticle.typedb.core.graph.common;
 
 import com.vaticle.typedb.core.common.collection.ByteArray;
+import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 
-import java.nio.ByteBuffer;
 import java.util.function.BiFunction;
 
 import static com.vaticle.typedb.common.util.Objects.className;
@@ -43,9 +43,7 @@ public interface Storage {
 
     void putUntracked(ByteArray key, ByteArray value);
 
-    void mergeUntracked(byte[] key, byte[] value);
-
-    <G extends ByteComparable<G>> FunctionalIterator.Sorted<G> iterate(ByteArray key, BiFunction<ByteArray, ByteArray, G> constructor);
+    <G extends Bytes.ByteComparable<G>> FunctionalIterator.Sorted<G> iterate(ByteArray key, BiFunction<ByteArray, ByteArray, G> constructor);
 
     TypeDBException exception(ErrorMessage error);
 
@@ -57,6 +55,26 @@ public interface Storage {
 
     default Schema asSchema() {
         throw exception(TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Schema.class)));
+    }
+
+    class SortedPair<T extends Bytes.ByteComparable<T>, U> implements Bytes.ByteComparable<SortedPair<T, U>> {
+
+        T first;
+        U second;
+
+        public SortedPair(T first, U second) {
+            this.first = first;
+            this.second = second;
+        }
+
+        public T first() { return first; }
+
+        public U second() { return second; }
+
+        @Override
+        public ByteArray getBytes() {
+            return first.getBytes();
+        }
     }
 
     interface Schema extends Storage {

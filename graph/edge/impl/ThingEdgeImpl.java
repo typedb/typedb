@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.graph.edge.impl;
 
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.graph.ThingGraph;
 import com.vaticle.typedb.core.graph.common.Encoding;
@@ -65,7 +66,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         private final ThingVertex from;
         private final ThingVertex to;
         private final ThingVertex optimised;
-        private final ByteBuffer outIIDBytes;
+        private final ByteArray outIIDBytes;
         private final int hash;
 
         /**
@@ -95,7 +96,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             this.from = from;
             this.to = to;
             this.optimised = optimised;
-            this.outIIDBytes = ByteBuffer.wrap(outIID().bytes()); // TODO optimise
+            this.outIIDBytes = outIID().bytes();
             this.hash = hash(Buffered.class, encoding, from, to);
             committed = new AtomicBoolean(false);
         }
@@ -176,7 +177,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         }
 
         @Override
-        public ByteBuffer getBytes() {
+        public ByteArray getBytes() {
             return outIIDBytes;
         }
 
@@ -226,7 +227,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         private final VertexIID.Thing toIID;
         private final VertexIID.Thing optimisedIID;
         private final int hash;
-        private final ByteBuffer persistedBytes;
+        private final ByteArray persistedBytes;
         private ThingVertex from;
         private ThingVertex to;
         private ThingVertex optimised;
@@ -268,12 +269,12 @@ public abstract class ThingEdgeImpl implements ThingEdge {
                 optimisedIID = null;
             }
 
-            this.persistedBytes = ByteBuffer.wrap(iid.bytes());
+            this.persistedBytes = iid.bytes();
             this.hash = hash(Persisted.class, encoding, fromIID.hashCode(), toIID.hashCode());
         }
 
         @Override
-        public ByteBuffer getBytes() {
+        public ByteArray getBytes() {
             return persistedBytes;
         }
 

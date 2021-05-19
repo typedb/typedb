@@ -406,8 +406,8 @@ public class TypeGraph {
 
         public FunctionalIterator<RuleStructure> all() {
             Encoding.Prefix index = IndexIID.Rule.prefix();
-            FunctionalIterator<RuleStructure> persistedRules = storage.iterate(index.bytes(), (key, value) ->
-                    convert(StructureIID.Rule.of(value)));
+            FunctionalIterator<RuleStructure> persistedRules = storage.iterate(index.bytes(), Storage.SortedPair::new)
+                    .map(pair -> convert(StructureIID.Rule.of(pair.second())));
             return link(buffered(), persistedRules).distinct();
         }
 

@@ -19,16 +19,16 @@
 package com.vaticle.typedb.core.rocks;
 
 import com.vaticle.typedb.core.common.collection.ByteArray;
+import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.AbstractFunctionalIterator;
 
-import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
 import java.util.function.BiFunction;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
-public final class RocksIterator<T extends ByteComparable<T>> extends AbstractFunctionalIterator.Sorted<T> implements AutoCloseable {
+public final class RocksIterator<T extends Bytes.ByteComparable<T>> extends AbstractFunctionalIterator.Sorted<T> implements AutoCloseable {
 
     private final ByteArray prefix;
     private final RocksStorage storage;
@@ -85,7 +85,7 @@ public final class RocksIterator<T extends ByteComparable<T>> extends AbstractFu
 
     @Override
     public void seek(T target) {
-        internalRocksIterator.seek(target.getBytes());
+        internalRocksIterator.seek(target.getBytes().getArray());
         if (!hasValidNext()) state = State.COMPLETED;
     }
 
@@ -101,7 +101,7 @@ public final class RocksIterator<T extends ByteComparable<T>> extends AbstractFu
     private synchronized void initialise() {
         assert state == State.INIT;
         this.internalRocksIterator = storage.getInternalRocksIterator();
-        this.internalRocksIterator.seek(prefix.getBytes());
+        this.internalRocksIterator.seek(prefix.getArray());
         state = State.EMPTY;
     }
 

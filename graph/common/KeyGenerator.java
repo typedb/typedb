@@ -92,15 +92,15 @@ public class KeyGenerator {
         public ByteArray serialise() {
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
             ByteArray typeKeysSize = encodeInt(typeKeys.size());
-            bytes.write(typeKeysSize.getBytes(), 0, typeKeysSize.length());
+            bytes.write(typeKeysSize.getArray(), 0, typeKeysSize.length());
             for (Map.Entry<PrefixIID, AtomicInteger> typeKey : typeKeys.entrySet()) {
                 ByteArray key = typeKey.getKey().bytes();
-                bytes.write(key.getBytes(), 0, key.length());
+                bytes.write(key.getArray(), 0, key.length());
                 ByteArray value = encodeInt(typeKey.getValue().get());
-                bytes.write(value.getBytes(), 0, value.length());
+                bytes.write(value.getArray(), 0, value.length());
             }
             ByteArray ruleKeyValue = encodeInt(ruleKey.get());
-            bytes.write(ruleKeyValue.getBytes(), 0, ruleKeyValue.length());
+            bytes.write(ruleKeyValue.getArray(), 0, ruleKeyValue.length());
             return ByteArray.of(bytes.toByteArray());
         }
 
@@ -191,12 +191,12 @@ public class KeyGenerator {
         public ByteArray serialise() {
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
             ByteArray thingKeysSize = encodeInt(thingKeys.size());
-            bytes.write(thingKeysSize.getBytes(), 0, thingKeysSize.length());
+            bytes.write(thingKeysSize.getArray(), 0, thingKeysSize.length());
             for (Map.Entry<VertexIID.Type, AtomicLong> thingKey : thingKeys.entrySet()) {
                 ByteArray key = thingKey.getKey().bytes();
-                bytes.write(key.getBytes(), 0, key.length());
+                bytes.write(key.getArray(), 0, key.length());
                 ByteArray value = encodeLong(thingKey.getValue().get());
-                bytes.write(value.getBytes(), 0, value.length());
+                bytes.write(value.getArray(), 0, value.length());
             }
             return ByteArray.of(bytes.toByteArray());
         }

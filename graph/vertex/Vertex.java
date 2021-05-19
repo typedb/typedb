@@ -18,6 +18,8 @@
 
 package com.vaticle.typedb.core.graph.vertex;
 
+import com.vaticle.typedb.core.common.collection.ByteArray;
+import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
@@ -59,4 +61,5 @@ public interface Vertex<VERTEX_IID extends VertexIID, VERTEX_ENCODING extends En
      * Commits this {@code ThingVertex} to be persisted onto storage.
      */
     void commit();
+
 }

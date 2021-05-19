@@ -17,6 +17,7 @@
 
 package com.vaticle.typedb.core.graph.structure;
 
+import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.iid.StructureIID;
@@ -24,7 +25,7 @@ import com.vaticle.typeql.lang.pattern.Conjunction;
 import com.vaticle.typeql.lang.pattern.Pattern;
 import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
 
-public interface RuleStructure {
+public interface RuleStructure extends Bytes.ByteComparable<RuleStructure> {
 
     StructureIID.Rule iid();
 

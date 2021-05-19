@@ -95,7 +95,6 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
         edges.values().forEach(set -> set.forEach(Edge::commit));
     }
 
-
     public static class Buffered extends TypeAdjacencyImpl implements TypeAdjacency {
 
         public Buffered(TypeVertex owner, Encoding.Direction.Adjacency direction) {
@@ -108,7 +107,6 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
             if (t != null) return new TypeIteratorBuilder(iterate(t.iterator()));
             return new TypeIteratorBuilder(empty());
         }
-
 
         @Override
         public TypeEdge edge(Encoding.Edge.Type encoding, TypeVertex adjacent) {

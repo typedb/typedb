@@ -18,6 +18,8 @@
 
 package com.vaticle.typedb.core.graph.vertex.impl;
 
+import com.vaticle.typedb.core.common.collection.ByteArray;
+import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 
 import static com.vaticle.typedb.common.util.Objects.className;

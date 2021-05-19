@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Function;
@@ -46,7 +45,7 @@ public class Iterators {
     }
 
     public static <T extends Comparable<T>> FunctionalIterator.Sorted<T> emptySorted() {
-        return iterateSorted(new ConcurrentSkipListSet<>()); // LOL todo fix this
+        return iterateSorted(new ConcurrentSkipListSet()); // LOL todo fix this
     }
 
     public static <T> FunctionalIterator<T> single(T item) {

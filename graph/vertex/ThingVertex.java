@@ -18,13 +18,14 @@
 
 package com.vaticle.typedb.core.graph.vertex;
 
+import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.ThingGraph;
 import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 
-public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thing>, Comparable<ThingVertex> {
+public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thing>, Bytes.ByteComparable<ThingVertex> {
 
     /**
      * Returns the {@code ThingGraph} containing all {@code ThingVertex}.

@@ -22,12 +22,13 @@ public class Bytes {
 
     public interface ByteComparable<T extends ByteComparable<T>> extends Comparable<T> {
 
-        ByteBuffer getBytes();
+        ByteArray getBytes();
 
         @Override
         default int compareTo(T o) {
             return getBytes().compareTo(o.getBytes());
         }
+
     }
 
     public static final int SHORT_SIZE = 2;
