@@ -712,7 +712,7 @@ public class BasicTest {
 
     @Test
     public void write_and_delete_attributes_concurrently_repeatedly() throws IOException {
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 100; i++) {
             System.out.println(i + " ---- ");
             write_and_delete_attributes_concurrently();
         }
