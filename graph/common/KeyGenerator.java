@@ -33,6 +33,10 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static com.vaticle.typedb.core.common.collection.ByteArray.encodeInt;
+import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLong;
+import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLongAsSorted;
+import static com.vaticle.typedb.core.common.collection.ByteArray.encodeShortAsSorted;
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.common.collection.Bytes.INTEGER_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.LONG_SIZE;
@@ -73,7 +77,7 @@ public class KeyGenerator {
                 typeKeys.get(rootIID).addAndGet(-1 * delta);
                 throw TypeDBException.of(MAX_SUBTYPE_REACHED, rootLabel, SHORT_MAX_VALUE);
             }
-            return ByteArray.encodeShortAsSorted(key);
+            return encodeShortAsSorted(key);
         }
 
         public ByteArray forRule() {
@@ -82,20 +86,20 @@ public class KeyGenerator {
                 ruleKey.addAndGet(-1 * delta);
                 throw TypeDBException.of(MAX_RULE_REACHED, SHORT_MAX_VALUE);
             }
-            return ByteArray.encodeShortAsSorted(key);
+            return encodeShortAsSorted(key);
         }
 
         public ByteArray serialise() {
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-            ByteArray typeKeysSize = ByteArray.encodeInt(typeKeys.size());
+            ByteArray typeKeysSize = encodeInt(typeKeys.size());
             bytes.write(typeKeysSize.getBytes(), 0, typeKeysSize.length());
             for (Map.Entry<PrefixIID, AtomicInteger> typeKey : typeKeys.entrySet()) {
                 ByteArray key = typeKey.getKey().bytes();
                 bytes.write(key.getBytes(), 0, key.length());
-                ByteArray value = ByteArray.encodeInt(typeKey.getValue().get());
+                ByteArray value = encodeInt(typeKey.getValue().get());
                 bytes.write(value.getBytes(), 0, value.length());
             }
-            ByteArray ruleKeyValue = ByteArray.encodeInt(ruleKey.get());
+            ByteArray ruleKeyValue = encodeInt(ruleKey.get());
             bytes.write(ruleKeyValue.getBytes(), 0, ruleKeyValue.length());
             return ByteArray.of(bytes.toByteArray());
         }
@@ -181,17 +185,17 @@ public class KeyGenerator {
                 thingKeys.get(typeIID).addAndGet(-1 * delta);
                 throw TypeDBException.of(MAX_INSTANCE_REACHED, typeLabel, LONG_MAX_VALUE);
             }
-            return ByteArray.encodeLongAsSorted(key);
+            return encodeLongAsSorted(key);
         }
 
         public ByteArray serialise() {
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-            ByteArray thingKeysSize = ByteArray.encodeInt(thingKeys.size());
+            ByteArray thingKeysSize = encodeInt(thingKeys.size());
             bytes.write(thingKeysSize.getBytes(), 0, thingKeysSize.length());
             for (Map.Entry<VertexIID.Type, AtomicLong> thingKey : thingKeys.entrySet()) {
                 ByteArray key = thingKey.getKey().bytes();
                 bytes.write(key.getBytes(), 0, key.length());
-                ByteArray value = ByteArray.encodeLong(thingKey.getValue().get());
+                ByteArray value = encodeLong(thingKey.getValue().get());
                 bytes.write(value.getBytes(), 0, value.length());
             }
             return ByteArray.of(bytes.toByteArray());

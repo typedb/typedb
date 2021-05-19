@@ -26,6 +26,10 @@ import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
 
 import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.collection.ByteArray.encodeDateTimeAsSorted;
+import static com.vaticle.typedb.core.common.collection.ByteArray.encodeDoubleAsSorted;
+import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLongAsSorted;
+import static com.vaticle.typedb.core.common.collection.ByteArray.encodeStringAsSorted;
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.common.collection.Bytes.DATETIME_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.DOUBLE_SIZE;
@@ -322,7 +326,7 @@ public abstract class VertexIID extends IID {
             }
 
             public Long(VertexIID.Type typeIID, long value) {
-                super(Encoding.ValueType.LONG, typeIID, ByteArray.encodeLongAsSorted(value));
+                super(Encoding.ValueType.LONG, typeIID, encodeLongAsSorted(value));
             }
 
             public static VertexIID.Attribute.Long extract(ByteArray bytes, int from) {
@@ -347,7 +351,7 @@ public abstract class VertexIID extends IID {
             }
 
             public Double(VertexIID.Type typeIID, double value) {
-                super(Encoding.ValueType.DOUBLE, typeIID, ByteArray.encodeDoubleAsSorted(value));
+                super(Encoding.ValueType.DOUBLE, typeIID, encodeDoubleAsSorted(value));
             }
 
             public static VertexIID.Attribute.Double extract(ByteArray bytes, int from) {
@@ -372,7 +376,7 @@ public abstract class VertexIID extends IID {
             }
 
             public String(VertexIID.Type typeIID, java.lang.String value) throws TypeDBCheckedException {
-                super(Encoding.ValueType.STRING, typeIID, ByteArray.encodeStringAsSorted(value, STRING_ENCODING));
+                super(Encoding.ValueType.STRING, typeIID, encodeStringAsSorted(value, STRING_ENCODING));
                 assert bytes.length() <= STRING_MAX_SIZE + STRING_SIZE_ENCODING;
             }
 
@@ -401,7 +405,7 @@ public abstract class VertexIID extends IID {
             }
 
             public DateTime(VertexIID.Type typeIID, java.time.LocalDateTime value) {
-                super(Encoding.ValueType.DATETIME, typeIID, ByteArray.encodeDateTimeAsSorted(value, TIME_ZONE_ID));
+                super(Encoding.ValueType.DATETIME, typeIID, encodeDateTimeAsSorted(value, TIME_ZONE_ID));
             }
 
             public static VertexIID.Attribute.DateTime extract(ByteArray bytes, int from) {

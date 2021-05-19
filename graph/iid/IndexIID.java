@@ -25,6 +25,9 @@ import com.vaticle.typedb.core.graph.common.Encoding;
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 
+import static com.vaticle.typedb.core.common.collection.ByteArray.encodeDateTimeAsSorted;
+import static com.vaticle.typedb.core.common.collection.ByteArray.encodeDoubleAsSorted;
+import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLongAsSorted;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeString;
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.common.collection.Bytes.DOUBLE_SIZE;
@@ -226,11 +229,11 @@ public abstract class IndexIID extends IID {
         }
 
         public static Attribute of(long value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Encoding.ValueType.LONG.bytes(), ByteArray.encodeLongAsSorted(value), typeIID.bytes);
+            return newAttributeIndex(Encoding.ValueType.LONG.bytes(), encodeLongAsSorted(value), typeIID.bytes);
         }
 
         public static Attribute of(double value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Encoding.ValueType.DOUBLE.bytes(), ByteArray.encodeDoubleAsSorted(value), typeIID.bytes);
+            return newAttributeIndex(Encoding.ValueType.DOUBLE.bytes(), encodeDoubleAsSorted(value), typeIID.bytes);
         }
 
         public static Attribute of(String value, VertexIID.Type typeIID) {
@@ -244,7 +247,7 @@ public abstract class IndexIID extends IID {
         }
 
         public static Attribute of(LocalDateTime value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Encoding.ValueType.DATETIME.bytes(), ByteArray.encodeDateTimeAsSorted(value, TIME_ZONE_ID), typeIID.bytes);
+            return newAttributeIndex(Encoding.ValueType.DATETIME.bytes(), encodeDateTimeAsSorted(value, TIME_ZONE_ID), typeIID.bytes);
         }
 
         @Override
