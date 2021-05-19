@@ -47,7 +47,7 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
     protected final List<ANSWER> answers;
     private final Set<ANSWER> answersSet;
     private boolean reexploreOnNewAnswers;
-    private boolean requiresReexploration;
+    private boolean requiresReiteration;
     protected FunctionalIterator<ANSWER> unexploredAnswers;
     protected boolean complete;
     protected final Map<SUBSUMES, ? extends AnswerCache<?, SUBSUMES>> cacheRegister;
@@ -60,7 +60,7 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
         this.answers = new ArrayList<>(); // TODO: Replace answer list and deduplication set with a bloom filter
         this.answersSet = new HashSet<>();
         this.reexploreOnNewAnswers = false;
-        this.requiresReexploration = false;
+        this.requiresReiteration = false;
         this.complete = false;
     }
 
@@ -87,12 +87,12 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
         return complete;
     }
 
-    public void setRequiresReexploration() {
-        this.requiresReexploration = true;
+    public void setRequiresReiteration() {
+        this.requiresReiteration = true;
     }
 
-    public boolean requiresReexploration() {
-        return requiresReexploration;
+    public boolean requiresReiteration() {
+        return requiresReiteration;
     }
 
     public boolean isConceptMapCache() {
@@ -141,7 +141,7 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
         if (answersSet.contains(answer)) return Optional.empty();
         answers.add(answer);
         answersSet.add(answer);
-        if (reexploreOnNewAnswers) this.requiresReexploration = true;
+        if (reexploreOnNewAnswers) this.requiresReiteration = true;
         return Optional.of(answer);
     }
 
@@ -234,7 +234,7 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
         private void completeFromSubsumer(AnswerCache<?, ANSWER> subsumingCache) {
             setCompletedAnswers(subsumingCache.answers());
             setComplete();
-            if (subsumingCache.requiresReexploration()) setRequiresReexploration();
+            if (subsumingCache.requiresReiteration()) setRequiresReiteration();
         }
 
         private void setCompletedAnswers(List<ANSWER> completeAnswers) {

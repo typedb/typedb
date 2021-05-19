@@ -320,7 +320,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         @Override
         protected FunctionalIterator<? extends Partial<?>> toUpstream(ConceptMap conceptMap) {
             return Iterators.single(fromUpstream.partialAnswer().asConcludable().asMatch().toUpstreamLookup(
-                    conceptMap, concludable.isInferredAnswer(conceptMap), answerCache.requiresReexploration()));
+                    conceptMap, concludable.isInferredAnswer(conceptMap), answerCache.requiresReiteration()));
         }
 
     }
@@ -355,7 +355,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         @Override
         public void newAnswer(Partial<?> partial, boolean requiresReiteration) {
             answerCache.add(partial.conceptMap());
-            if (requiresReiteration) answerCache.setRequiresReexploration();
+            if (requiresReiteration) answerCache.setRequiresReiteration();
         }
 
         @Override
@@ -366,7 +366,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         @Override
         protected FunctionalIterator<? extends Partial<?>> toUpstream(ConceptMap conceptMap) {
             return Iterators.single(fromUpstream.partialAnswer().asConcludable().asMatch().toUpstreamLookup(
-                    conceptMap, concludable.isInferredAnswer(conceptMap), answerCache.requiresReexploration()));
+                    conceptMap, concludable.isInferredAnswer(conceptMap), answerCache.requiresReiteration()));
         }
     }
 
@@ -379,7 +379,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
         @Override
         protected FunctionalIterator<? extends Partial<?>> toUpstream(Partial.Concludable<?> partial) {
-            return Iterators.single(partial.asExplain().toUpstreamInferred(answerCache.requiresReexploration()));
+            return Iterators.single(partial.asExplain().toUpstreamInferred(answerCache.requiresReiteration()));
         }
     }
 
@@ -411,7 +411,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         @Override
         public void newAnswer(Partial<?> partial, boolean requiresReiteration) {
             answerCache.add(partial.asConcludable());
-            if (requiresReiteration) answerCache.setRequiresReexploration();
+            if (requiresReiteration) answerCache.setRequiresReiteration();
         }
 
         @Override
@@ -421,7 +421,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
         @Override
         protected FunctionalIterator<? extends Partial<?>> toUpstream(Partial.Concludable<?> partial) {
-            return Iterators.single(partial.asExplain().toUpstreamInferred(answerCache.requiresReexploration()));
+            return Iterators.single(partial.asExplain().toUpstreamInferred(answerCache.requiresReiteration()));
         }
 
     }
