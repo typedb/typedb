@@ -64,234 +64,234 @@ public class BasicTest {
     private static final Path logDir = dataDir.resolve("logs");
     private static final Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logDir);
 
-//    private static void assert_transaction_read(TypeDB.Transaction transaction) {
-//        assertTrue(transaction.isOpen());
-//        assertTrue(transaction.type().isRead());
-//
-//        ThingType rootType = transaction.concepts().getRootThingType();
-//        EntityType rootEntityType = transaction.concepts().getRootEntityType();
-//        RelationType rootRelationType = transaction.concepts().getRootRelationType();
-//        AttributeType rootAttributeType = transaction.concepts().getRootAttributeType();
-//        Util.assertNotNulls(rootType, rootEntityType, rootRelationType, rootAttributeType);
-//
-//        Stream<Consumer<TypeDB.Transaction>> typeAssertions = Stream.of(
-//                tx -> {
-//                    AttributeType.String name = tx.concepts().getAttributeType("name").asString();
-//                    Util.assertNotNulls(name);
-//                    assertEquals(rootAttributeType, name.getSupertype());
-//                },
-//                tx -> {
-//                    AttributeType.Long age = tx.concepts().getAttributeType("age").asLong();
-//                    Util.assertNotNulls(age);
-//                    assertEquals(rootAttributeType, age.getSupertype());
-//                },
-//                tx -> {
-//                    RelationType marriage = tx.concepts().getRelationType("marriage");
-//                    RoleType husband = marriage.getRelates("husband");
-//                    RoleType wife = marriage.getRelates("wife");
-//                    Util.assertNotNulls(marriage, husband, wife);
-//                    assertEquals(rootRelationType, marriage.getSupertype());
-//                    assertEquals(rootRelationType.getRelates("role"), husband.getSupertype());
-//                    assertEquals(rootRelationType.getRelates("role"), wife.getSupertype());
-//                },
-//                tx -> {
-//                    RelationType employment = tx.concepts().getRelationType("employment");
-//                    RoleType employee = employment.getRelates("employee");
-//                    RoleType employer = employment.getRelates("employer");
-//                    Util.assertNotNulls(employment, employee, employer);
-//                    assertEquals(rootRelationType, employment.getSupertype());
-//                },
-//                tx -> {
-//                    EntityType person = tx.concepts().getEntityType("person");
-//                    Util.assertNotNulls(person);
-//                    assertEquals(rootEntityType, person.getSupertype());
-//
-//                    Stream<Consumer<TypeDB.Transaction>> subPersonAssertions = Stream.of(
-//                            tx2 -> {
-//                                EntityType man = tx2.concepts().getEntityType("man");
-//                                Util.assertNotNulls(man);
-//                                assertEquals(person, man.getSupertype());
-//                            },
-//                            tx2 -> {
-//                                EntityType woman = tx2.concepts().getEntityType("woman");
-//                                Util.assertNotNulls(woman);
-//                                assertEquals(person, woman.getSupertype());
-//                            }
-//                    );
-//                    subPersonAssertions.parallel().forEach(assertions -> assertions.accept(tx));
-//                },
-//                tx -> {
-//                    EntityType company = tx.concepts().getEntityType("company");
-//                    Util.assertNotNulls(company);
-//                    assertEquals(rootEntityType, company.getSupertype());
-//                }
-//        );
-//
-//        typeAssertions.parallel().forEach(assertion -> assertion.accept(transaction));
-//    }
-//
-//    @Test
-//    public void write_types_concurrently_repeatedly() throws IOException, InterruptedException {
-//        for (int i = 0; i < 100; i++) {
-//            System.out.println(i + " ---- ");
-//            write_types_concurrently();
-//        }
-//    }
-//
-//    @Test
-//    public void write_types_concurrently() throws IOException, InterruptedException {
-//        Util.resetDirectory(dataDir);
-//        try (TypeDB typedb = RocksTypeDB.open(options)) {
-//            typedb.databases().create(database);
-//
-//            assertTrue(typedb.isOpen());
-//            assertEquals(1, typedb.databases().all().size());
-//            assertEquals(database, typedb.databases().all().iterator().next().name());
-//
-//            try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
-//
-//                assertTrue(session.isOpen());
-//                assertEquals(database, session.database().name());
-//
-//                try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
-//                    assertTrue(transaction.isOpen());
-//                    assertTrue(transaction.type().isRead());
-//
-//                    Stream<Consumer<TypeDB.Transaction>> rootTypeAssertions = Stream.of(
-//                            tx -> {
-//                                ThingType rootType = tx.concepts().getRootThingType();
-//                                assertNotNull(rootType);
-//                            },
-//                            tx -> {
-//                                EntityType rootEntityType = tx.concepts().getRootEntityType();
-//                                assertNotNull(rootEntityType);
-//                            },
-//                            tx -> {
-//                                RelationType rootRelationType = tx.concepts().getRootRelationType();
-//                                assertNotNull(rootRelationType);
-//                            },
-//                            tx -> {
-//                                AttributeType rootAttributeType = tx.concepts().getRootAttributeType();
-//                                assertNotNull(rootAttributeType);
-//                            }
-//                    );
-//
-//                    rootTypeAssertions.parallel().forEach(assertion -> assertion.accept(transaction));
-//                }
-//
-//                try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-//                    assertTrue(transaction.isOpen());
-//                    assertTrue(transaction.type().isWrite());
-//
-//                    ThingType rootType = transaction.concepts().getRootThingType();
-//                    EntityType rootEntityType = transaction.concepts().getRootEntityType();
-//                    RelationType rootRelationType = transaction.concepts().getRootRelationType();
-//                    AttributeType rootAttributeType = transaction.concepts().getRootAttributeType();
-//                    Util.assertNotNulls(rootType, rootEntityType, rootRelationType, rootAttributeType);
-//
-//                    Stream<Consumer<TypeDB.Transaction>> typeAssertions = Stream.of(
-//                            tx -> {
-//                                AttributeType name = tx.concepts().putAttributeType("name", STRING).asString();
-//                                Util.assertNotNulls(name);
-//                                assertEquals(rootAttributeType, name.getSupertype());
-//                            },
-//                            tx -> {
-//                                AttributeType.Long age = tx.concepts().putAttributeType("age", LONG).asLong();
-//                                Util.assertNotNulls(age);
-//                                assertEquals(rootAttributeType, age.getSupertype());
-//                            },
-//                            tx -> {
-//                                RelationType marriage = tx.concepts().putRelationType("marriage");
-//                                marriage.setRelates("husband");
-//                                marriage.setRelates("wife");
-//                                Util.assertNotNulls(marriage);
-//                                assertEquals(rootRelationType, marriage.getSupertype());
-//                            },
-//                            tx -> {
-//                                RelationType employment = tx.concepts().putRelationType("employment");
-//                                employment.setRelates("employee");
-//                                employment.setRelates("employer");
-//                                Util.assertNotNulls(employment);
-//                                assertEquals(rootRelationType, employment.getSupertype());
-//                            },
-//                            tx -> {
-//                                EntityType person = tx.concepts().putEntityType("person");
-//                                Util.assertNotNulls(person);
-//                                assertEquals(rootEntityType, person.getSupertype());
-//
-//                                Stream<Consumer<TypeDB.Transaction>> subPersonAssertions = Stream.of(
-//                                        tx2 -> {
-//                                            EntityType man = tx2.concepts().putEntityType("man");
-//                                            man.setSupertype(person);
-//                                            Util.assertNotNulls(man);
-//                                            assertEquals(person, man.getSupertype());
-//                                        },
-//                                        tx2 -> {
-//                                            EntityType woman = tx2.concepts().putEntityType("woman");
-//                                            woman.setSupertype(person);
-//                                            Util.assertNotNulls(woman);
-//                                            assertEquals(person, woman.getSupertype());
-//                                        }
-//                                );
-//                                subPersonAssertions.parallel().forEach(assertions -> assertions.accept(tx));
-//                            },
-//                            tx -> {
-//                                EntityType company = tx.concepts().putEntityType("company");
-//                                Util.assertNotNulls(company);
-//                                assertEquals(rootEntityType, company.getSupertype());
-//                            }
-//                    );
-//
-//                    typeAssertions.parallel().forEach(assertion -> assertion.accept(transaction));
-//                    transaction.commit();
-//                }
-//
-//                try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
-//                    assert_transaction_read(transaction);
-//                }
-//            }
-//        }
-//
-//
-//        try (TypeDB typedb = RocksTypeDB.open(options)) {
-//            assertTrue(typedb.isOpen());
-//            assertEquals(1, typedb.databases().all().size());
-//            assertEquals(database, typedb.databases().all().iterator().next().name());
-//
-//            try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
-//
-//                assertTrue(session.isOpen());
-//                assertEquals(database, session.database().name());
-//
-//                try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
-//                    assert_transaction_read(transaction);
-//                }
-//
-//                try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-//                    AttributeType.String gender = transaction.concepts().putAttributeType("gender", STRING).asString();
-//                    EntityType school = transaction.concepts().putEntityType("school");
-//                    RelationType teaching = transaction.concepts().putRelationType("teaching");
-//                    teaching.setRelates("teacher");
-//                    teaching.setRelates("student");
-//                    RoleType teacher = teaching.getRelates("teacher");
-//                    RoleType student = teaching.getRelates("student");
-//                    Util.assertNotNulls(gender, school, teaching, teacher, student);
-//                    transaction.commit();
-//                }
-//
-//                try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
-//                    assert_transaction_read(transaction);
-//                    AttributeType.String gender = transaction.concepts().getAttributeType("gender").asString();
-//                    EntityType school = transaction.concepts().getEntityType("school");
-//                    RelationType teaching = transaction.concepts().getRelationType("teaching");
-//                    RoleType teacher = teaching.getRelates("teacher");
-//                    RoleType student = teaching.getRelates("student");
-//                    Util.assertNotNulls(gender, school, teaching, teacher, student);
-//                }
-//            }
-//        }
-//    }
-//
+    private static void assert_transaction_read(TypeDB.Transaction transaction) {
+        assertTrue(transaction.isOpen());
+        assertTrue(transaction.type().isRead());
+
+        ThingType rootType = transaction.concepts().getRootThingType();
+        EntityType rootEntityType = transaction.concepts().getRootEntityType();
+        RelationType rootRelationType = transaction.concepts().getRootRelationType();
+        AttributeType rootAttributeType = transaction.concepts().getRootAttributeType();
+        Util.assertNotNulls(rootType, rootEntityType, rootRelationType, rootAttributeType);
+
+        Stream<Consumer<TypeDB.Transaction>> typeAssertions = Stream.of(
+                tx -> {
+                    AttributeType.String name = tx.concepts().getAttributeType("name").asString();
+                    Util.assertNotNulls(name);
+                    assertEquals(rootAttributeType, name.getSupertype());
+                },
+                tx -> {
+                    AttributeType.Long age = tx.concepts().getAttributeType("age").asLong();
+                    Util.assertNotNulls(age);
+                    assertEquals(rootAttributeType, age.getSupertype());
+                },
+                tx -> {
+                    RelationType marriage = tx.concepts().getRelationType("marriage");
+                    RoleType husband = marriage.getRelates("husband");
+                    RoleType wife = marriage.getRelates("wife");
+                    Util.assertNotNulls(marriage, husband, wife);
+                    assertEquals(rootRelationType, marriage.getSupertype());
+                    assertEquals(rootRelationType.getRelates("role"), husband.getSupertype());
+                    assertEquals(rootRelationType.getRelates("role"), wife.getSupertype());
+                },
+                tx -> {
+                    RelationType employment = tx.concepts().getRelationType("employment");
+                    RoleType employee = employment.getRelates("employee");
+                    RoleType employer = employment.getRelates("employer");
+                    Util.assertNotNulls(employment, employee, employer);
+                    assertEquals(rootRelationType, employment.getSupertype());
+                },
+                tx -> {
+                    EntityType person = tx.concepts().getEntityType("person");
+                    Util.assertNotNulls(person);
+                    assertEquals(rootEntityType, person.getSupertype());
+
+                    Stream<Consumer<TypeDB.Transaction>> subPersonAssertions = Stream.of(
+                            tx2 -> {
+                                EntityType man = tx2.concepts().getEntityType("man");
+                                Util.assertNotNulls(man);
+                                assertEquals(person, man.getSupertype());
+                            },
+                            tx2 -> {
+                                EntityType woman = tx2.concepts().getEntityType("woman");
+                                Util.assertNotNulls(woman);
+                                assertEquals(person, woman.getSupertype());
+                            }
+                    );
+                    subPersonAssertions.parallel().forEach(assertions -> assertions.accept(tx));
+                },
+                tx -> {
+                    EntityType company = tx.concepts().getEntityType("company");
+                    Util.assertNotNulls(company);
+                    assertEquals(rootEntityType, company.getSupertype());
+                }
+        );
+
+        typeAssertions.parallel().forEach(assertion -> assertion.accept(transaction));
+    }
+
+    @Test
+    public void write_types_concurrently_repeatedly() throws IOException, InterruptedException {
+        for (int i = 0; i < 100; i++) {
+            System.out.println(i + " ---- ");
+            write_types_concurrently();
+        }
+    }
+
+    @Test
+    public void write_types_concurrently() throws IOException, InterruptedException {
+        Util.resetDirectory(dataDir);
+        try (TypeDB typedb = RocksTypeDB.open(options)) {
+            typedb.databases().create(database);
+
+            assertTrue(typedb.isOpen());
+            assertEquals(1, typedb.databases().all().size());
+            assertEquals(database, typedb.databases().all().iterator().next().name());
+
+            try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
+
+                assertTrue(session.isOpen());
+                assertEquals(database, session.database().name());
+
+                try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
+                    assertTrue(transaction.isOpen());
+                    assertTrue(transaction.type().isRead());
+
+                    Stream<Consumer<TypeDB.Transaction>> rootTypeAssertions = Stream.of(
+                            tx -> {
+                                ThingType rootType = tx.concepts().getRootThingType();
+                                assertNotNull(rootType);
+                            },
+                            tx -> {
+                                EntityType rootEntityType = tx.concepts().getRootEntityType();
+                                assertNotNull(rootEntityType);
+                            },
+                            tx -> {
+                                RelationType rootRelationType = tx.concepts().getRootRelationType();
+                                assertNotNull(rootRelationType);
+                            },
+                            tx -> {
+                                AttributeType rootAttributeType = tx.concepts().getRootAttributeType();
+                                assertNotNull(rootAttributeType);
+                            }
+                    );
+
+                    rootTypeAssertions.parallel().forEach(assertion -> assertion.accept(transaction));
+                }
+
+                try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    assertTrue(transaction.isOpen());
+                    assertTrue(transaction.type().isWrite());
+
+                    ThingType rootType = transaction.concepts().getRootThingType();
+                    EntityType rootEntityType = transaction.concepts().getRootEntityType();
+                    RelationType rootRelationType = transaction.concepts().getRootRelationType();
+                    AttributeType rootAttributeType = transaction.concepts().getRootAttributeType();
+                    Util.assertNotNulls(rootType, rootEntityType, rootRelationType, rootAttributeType);
+
+                    Stream<Consumer<TypeDB.Transaction>> typeAssertions = Stream.of(
+                            tx -> {
+                                AttributeType name = tx.concepts().putAttributeType("name", STRING).asString();
+                                Util.assertNotNulls(name);
+                                assertEquals(rootAttributeType, name.getSupertype());
+                            },
+                            tx -> {
+                                AttributeType.Long age = tx.concepts().putAttributeType("age", LONG).asLong();
+                                Util.assertNotNulls(age);
+                                assertEquals(rootAttributeType, age.getSupertype());
+                            },
+                            tx -> {
+                                RelationType marriage = tx.concepts().putRelationType("marriage");
+                                marriage.setRelates("husband");
+                                marriage.setRelates("wife");
+                                Util.assertNotNulls(marriage);
+                                assertEquals(rootRelationType, marriage.getSupertype());
+                            },
+                            tx -> {
+                                RelationType employment = tx.concepts().putRelationType("employment");
+                                employment.setRelates("employee");
+                                employment.setRelates("employer");
+                                Util.assertNotNulls(employment);
+                                assertEquals(rootRelationType, employment.getSupertype());
+                            },
+                            tx -> {
+                                EntityType person = tx.concepts().putEntityType("person");
+                                Util.assertNotNulls(person);
+                                assertEquals(rootEntityType, person.getSupertype());
+
+                                Stream<Consumer<TypeDB.Transaction>> subPersonAssertions = Stream.of(
+                                        tx2 -> {
+                                            EntityType man = tx2.concepts().putEntityType("man");
+                                            man.setSupertype(person);
+                                            Util.assertNotNulls(man);
+                                            assertEquals(person, man.getSupertype());
+                                        },
+                                        tx2 -> {
+                                            EntityType woman = tx2.concepts().putEntityType("woman");
+                                            woman.setSupertype(person);
+                                            Util.assertNotNulls(woman);
+                                            assertEquals(person, woman.getSupertype());
+                                        }
+                                );
+                                subPersonAssertions.parallel().forEach(assertions -> assertions.accept(tx));
+                            },
+                            tx -> {
+                                EntityType company = tx.concepts().putEntityType("company");
+                                Util.assertNotNulls(company);
+                                assertEquals(rootEntityType, company.getSupertype());
+                            }
+                    );
+
+                    typeAssertions.parallel().forEach(assertion -> assertion.accept(transaction));
+                    transaction.commit();
+                }
+
+                try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
+                    assert_transaction_read(transaction);
+                }
+            }
+        }
+
+
+        try (TypeDB typedb = RocksTypeDB.open(options)) {
+            assertTrue(typedb.isOpen());
+            assertEquals(1, typedb.databases().all().size());
+            assertEquals(database, typedb.databases().all().iterator().next().name());
+
+            try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
+
+                assertTrue(session.isOpen());
+                assertEquals(database, session.database().name());
+
+                try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
+                    assert_transaction_read(transaction);
+                }
+
+                try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    AttributeType.String gender = transaction.concepts().putAttributeType("gender", STRING).asString();
+                    EntityType school = transaction.concepts().putEntityType("school");
+                    RelationType teaching = transaction.concepts().putRelationType("teaching");
+                    teaching.setRelates("teacher");
+                    teaching.setRelates("student");
+                    RoleType teacher = teaching.getRelates("teacher");
+                    RoleType student = teaching.getRelates("student");
+                    Util.assertNotNulls(gender, school, teaching, teacher, student);
+                    transaction.commit();
+                }
+
+                try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
+                    assert_transaction_read(transaction);
+                    AttributeType.String gender = transaction.concepts().getAttributeType("gender").asString();
+                    EntityType school = transaction.concepts().getEntityType("school");
+                    RelationType teaching = transaction.concepts().getRelationType("teaching");
+                    RoleType teacher = teaching.getRelates("teacher");
+                    RoleType student = teaching.getRelates("student");
+                    Util.assertNotNulls(gender, school, teaching, teacher, student);
+                }
+            }
+        }
+    }
+
     private void reset_directory_and_create_attribute_types() throws IOException {
         Util.resetDirectory(dataDir);
 
@@ -801,30 +801,30 @@ public class BasicTest {
         }
     }
 
-//    @Test
-//    public void test_query_cancelled_asynchronously() throws IOException {
-//        Util.resetDirectory(dataDir);
-//        try (TypeDB typedb = RocksTypeDB.open(options)) {
-//            typedb.databases().create(database);
-//            for (int i = 0; i < 50; i++) {
-//                new Thread(() -> {
-//                    TypeDB.Session session = typedb.session(database, Arguments.Session.Type.DATA);
-//                    TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE);
-//                    new Thread(() -> {
-//                        try {
-//                            Thread.sleep(1);
-//                        } catch (InterruptedException e) {
-//                            e.printStackTrace();
-//                        }
-//                        tx.close();
-//                        session.close();
-//                    }).start();
-//                    tx.query().match(TypeQL.parseQuery("match $x sub thing;").asMatch());
-//                }).start();
-//            }
-//            TypeDB.Session session = typedb.session(database, Arguments.Session.Type.DATA);
-//            TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE);
-//            tx.query().match(TypeQL.parseQuery("match $x sub thing;").asMatch());
-//        }
-//    }
+    @Test
+    public void test_query_cancelled_asynchronously() throws IOException {
+        Util.resetDirectory(dataDir);
+        try (TypeDB typedb = RocksTypeDB.open(options)) {
+            typedb.databases().create(database);
+            for (int i = 0; i < 50; i++) {
+                new Thread(() -> {
+                    TypeDB.Session session = typedb.session(database, Arguments.Session.Type.DATA);
+                    TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE);
+                    new Thread(() -> {
+                        try {
+                            Thread.sleep(1);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        tx.close();
+                        session.close();
+                    }).start();
+                    tx.query().match(TypeQL.parseQuery("match $x sub thing;").asMatch());
+                }).start();
+            }
+            TypeDB.Session session = typedb.session(database, Arguments.Session.Type.DATA);
+            TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE);
+            tx.query().match(TypeQL.parseQuery("match $x sub thing;").asMatch());
+        }
+    }
 }
