@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.graph.common;
 
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
@@ -31,17 +32,17 @@ public interface Storage {
 
     boolean isOpen();
 
-    byte[] get(byte[] key);
+    ByteArray get(ByteArray key);
 
-    byte[] getLastKey(byte[] prefix);
+    ByteArray getLastKey(ByteArray prefix);
 
-    <G> FunctionalIterator<G> iterate(byte[] key, BiFunction<byte[], byte[], G> constructor);
+    <G> FunctionalIterator<G> iterate(ByteArray key, BiFunction<ByteArray, ByteArray, G> constructor);
 
-    void deleteUntracked(byte[] key);
+    void deleteUntracked(ByteArray key);
 
-    void putUntracked(byte[] key);
+    void putUntracked(ByteArray key);
 
-    void putUntracked(byte[] key, byte[] value);
+    void putUntracked(ByteArray key, ByteArray value);
 
     TypeDBException exception(ErrorMessage error);
 
@@ -68,21 +69,21 @@ public interface Storage {
 
         KeyGenerator.Data dataKeyGenerator();
 
-        void putTracked(byte[] key);
+        void putTracked(ByteArray key);
 
-        void putTracked(byte[] key, byte[] value);
+        void putTracked(ByteArray key, ByteArray value);
 
-        void putTracked(byte[] key, byte[] value, boolean checkConsistency);
+        void putTracked(ByteArray key, ByteArray value, boolean checkConsistency);
 
-        void deleteTracked(byte[] key);
+        void deleteTracked(ByteArray key);
 
-        void trackModified(byte[] bytes);
+        void trackModified(ByteArray bytes);
 
-        void trackModified(byte[] bytes, boolean checkConsistency);
+        void trackModified(ByteArray bytes, boolean checkConsistency);
 
-        void trackExclusiveCreate(byte[] key);
+        void trackExclusiveCreate(ByteArray key);
 
-        void mergeUntracked(byte[] key, byte[] value);
+        void mergeUntracked(ByteArray key, ByteArray value);
 
     }
 }

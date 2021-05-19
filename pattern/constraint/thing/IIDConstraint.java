@@ -18,38 +18,38 @@
 
 package com.vaticle.typedb.core.pattern.constraint.thing;
 
-import com.vaticle.typedb.common.collection.Bytes;
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.traversal.Traversal;
 
-import java.util.Arrays;
 import java.util.Objects;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.collection.ByteArray.fromHexString;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SPACE;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.IID;
 
 public class IIDConstraint extends ThingConstraint {
 
-    private final byte[] iid;
+    private final ByteArray iid;
     private final int hash;
 
-    public IIDConstraint(ThingVariable owner, byte[] iid) {
+    public IIDConstraint(ThingVariable owner, ByteArray iid) {
         super(owner, set());
         this.iid = iid;
-        this.hash = Objects.hash(IIDConstraint.class, this.owner, Arrays.hashCode(this.iid));
+        this.hash = Objects.hash(IIDConstraint.class, this.owner, this.iid);
     }
 
     static IIDConstraint of(ThingVariable owner, com.vaticle.typeql.lang.pattern.constraint.ThingConstraint.IID constraint) {
-        return new IIDConstraint(owner, Bytes.hexStringToBytes(constraint.iid()));
+        return new IIDConstraint(owner, fromHexString(constraint.iid()));
     }
 
     static IIDConstraint of(ThingVariable owner, IIDConstraint clone) {
         return new IIDConstraint(owner, clone.iid());
     }
 
-    public byte[] iid() {
+    public ByteArray iid() {
         return iid;
     }
 
@@ -73,7 +73,7 @@ public class IIDConstraint extends ThingConstraint {
         if (o == this) return true;
         if (o == null || getClass() != o.getClass()) return false;
         IIDConstraint that = (IIDConstraint) o;
-        return (this.owner.equals(that.owner) && Arrays.equals(this.iid, that.iid));
+        return this.owner.equals(that.owner) && this.iid.equals(that.iid);
     }
 
     @Override
@@ -83,7 +83,7 @@ public class IIDConstraint extends ThingConstraint {
 
     @Override
     public String toString() {
-        return owner.toString() + SPACE + IID + SPACE + Bytes.bytesToHexString(iid);
+        return owner.toString() + SPACE + IID + SPACE + iid.toHexString();
     }
 
     @Override

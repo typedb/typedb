@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.concept;
 
 import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
@@ -178,7 +179,7 @@ public final class ConceptManager {
         else return null;
     }
 
-    public Thing getThing(byte[] iid) {
+    public Thing getThing(ByteArray iid) {
         ThingVertex thingVertex = graphMgr.data().get(VertexIID.Thing.of(iid));
         if (thingVertex != null) return ThingImpl.of(thingVertex);
         else return null;

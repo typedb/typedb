@@ -18,46 +18,41 @@
 
 package com.vaticle.typedb.core.graph.iid;
 
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.graph.common.Encoding;
 
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 
+import static com.vaticle.typedb.core.common.collection.ByteArray.encodeDateTimeAsSorted;
+import static com.vaticle.typedb.core.common.collection.ByteArray.encodeDoubleAsSorted;
+import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLongAsSorted;
+import static com.vaticle.typedb.core.common.collection.ByteArray.encodeString;
+import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.common.collection.Bytes.DOUBLE_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.LONG_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.booleanToByte;
 import static com.vaticle.typedb.core.common.collection.Bytes.byteToBoolean;
-import static com.vaticle.typedb.core.common.collection.Bytes.bytesToDateTime;
-import static com.vaticle.typedb.core.common.collection.Bytes.bytesToString;
-import static com.vaticle.typedb.core.common.collection.Bytes.dateTimeToBytes;
-import static com.vaticle.typedb.core.common.collection.Bytes.doubleToSortedBytes;
-import static com.vaticle.typedb.core.common.collection.Bytes.join;
-import static com.vaticle.typedb.core.common.collection.Bytes.longToSortedBytes;
-import static com.vaticle.typedb.core.common.collection.Bytes.sortedBytesToDouble;
-import static com.vaticle.typedb.core.common.collection.Bytes.sortedBytesToLong;
-import static com.vaticle.typedb.core.common.collection.Bytes.stringToBytes;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_ENCODING;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.TIME_ZONE_ID;
-import static java.util.Arrays.copyOfRange;
 
 public abstract class IndexIID extends IID {
 
-    IndexIID(byte[] bytes) {
+    IndexIID(ByteArray bytes) {
         super(bytes);
     }
 
-
     public static abstract class Type extends IndexIID {
 
-        Type(byte[] bytes) {
+        Type(ByteArray bytes) {
             super(bytes);
         }
 
         public static class Label extends Type {
 
-            Label(byte[] bytes) {
+            Label(ByteArray bytes) {
                 super(bytes);
             }
 
@@ -70,15 +65,15 @@ public abstract class IndexIID extends IID {
              */
             public static Label of(String label, @Nullable String scope) {
                 return new Label(join(Encoding.Index.Prefix.TYPE.prefix().bytes(),
-                                      Encoding.Vertex.Type.scopedLabel(label, scope).getBytes(STRING_ENCODING)));
+                                      encodeString(Encoding.Vertex.Type.scopedLabel(label, scope), STRING_ENCODING)));
             }
 
             @Override
             public String toString() {
                 if (readableString == null) {
                     readableString = "[" + PrefixIID.LENGTH + ": " + Encoding.Index.Prefix.TYPE.toString() + "]" +
-                            "[" + (bytes.length - PrefixIID.LENGTH) +
-                            ": " + new String(copyOfRange(bytes, PrefixIID.LENGTH, bytes.length), STRING_ENCODING) + "]";
+                            "[" + (bytes.length() - PrefixIID.LENGTH) +
+                            ": " + bytes.view(PrefixIID.LENGTH, bytes.length()).decodeString(STRING_ENCODING) + "]";
                 }
                 return readableString;
             }
@@ -87,15 +82,15 @@ public abstract class IndexIID extends IID {
         // type -> rule indexing
         public static abstract class Rule extends Type {
 
-            Rule(byte[] bytes) {
+            Rule(ByteArray bytes) {
                 super(bytes);
             }
 
-            public int length() { return bytes.length; }
+            public int length() { return bytes.length(); }
 
             public static class Key extends Type.Rule {
 
-                public Key(byte[] bytes) {
+                public Key(ByteArray bytes) {
                     super(bytes);
                 }
 
@@ -128,10 +123,10 @@ public abstract class IndexIID extends IID {
                 public String toString() {
                     if (readableString == null) {
                         String prefix = "[" + PrefixIID.LENGTH + ": " + Encoding.Index.Prefix.TYPE.toString() + "]";
-                        String typeIID = "[" + (VertexIID.Type.LENGTH) + ": " + bytesToString(
-                                copyOfRange(bytes, PrefixIID.LENGTH, VertexIID.Type.LENGTH), STRING_ENCODING) + "]";
+                        String typeIID = "[" + (VertexIID.Type.LENGTH) + ": " +
+                                bytes.view(PrefixIID.LENGTH, VertexIID.Type.LENGTH).decodeString(STRING_ENCODING) + "]";
                         String infix = "[" + (Encoding.Index.Infix.LENGTH) + ": " + Encoding.Index.Infix.of(
-                                copyOfRange(bytes, PrefixIID.LENGTH + VertexIID.Type.LENGTH, Encoding.Index.Infix.LENGTH)) + "]";
+                                bytes.view(PrefixIID.LENGTH + VertexIID.Type.LENGTH, Encoding.Index.Infix.LENGTH)) + "]";
                         readableString = prefix + typeIID + infix;
                     }
                     return readableString;
@@ -140,7 +135,7 @@ public abstract class IndexIID extends IID {
 
             public static class Prefix extends Type.Rule {
 
-                public Prefix(byte[] bytes) {
+                public Prefix(ByteArray bytes) {
                     super(bytes);
                 }
 
@@ -172,13 +167,13 @@ public abstract class IndexIID extends IID {
                 public String toString() {
                     if (readableString == null) {
                         String prefix = "[" + PrefixIID.LENGTH + ": " + Encoding.Index.Prefix.TYPE.toString() + "]";
-                        String typeIID = "[" + (VertexIID.Type.LENGTH) + ": " + bytesToString(
-                                copyOfRange(bytes, PrefixIID.LENGTH, VertexIID.Type.LENGTH), STRING_ENCODING) + "]";
+                        String typeIID = "[" + (VertexIID.Type.LENGTH) + ": " +
+                                bytes.view(PrefixIID.LENGTH, VertexIID.Type.LENGTH).decodeString(STRING_ENCODING) + "]";
                         String infix = "[" + (Encoding.Index.Infix.LENGTH) + ": " + Encoding.Index.Infix.of(
-                                copyOfRange(bytes, PrefixIID.LENGTH + VertexIID.Type.LENGTH, Encoding.Index.Infix.LENGTH)) + "]";
-                        String ruleIID = "[" + (StructureIID.Rule.LENGTH) + ": " + bytesToString(
-                                copyOfRange(bytes, PrefixIID.LENGTH + VertexIID.Type.LENGTH + Encoding.Index.Infix.LENGTH,
-                                            StructureIID.Rule.LENGTH), STRING_ENCODING) + "]";
+                                bytes.view(PrefixIID.LENGTH + VertexIID.Type.LENGTH, Encoding.Index.Infix.LENGTH)) + "]";
+                        String ruleIID = "[" + (StructureIID.Rule.LENGTH) + ": " +
+                                bytes.view(PrefixIID.LENGTH + VertexIID.Type.LENGTH + Encoding.Index.Infix.LENGTH,
+                                                StructureIID.Rule.LENGTH).decodeString(STRING_ENCODING) + "]";
                         readableString = prefix + typeIID + infix + ruleIID;
                     }
                     return readableString;
@@ -190,7 +185,7 @@ public abstract class IndexIID extends IID {
 
     public static class Rule extends IndexIID {
 
-        Rule(byte[] bytes) { super(bytes); }
+        Rule(ByteArray bytes) { super(bytes); }
 
         /**
          * Returns the index address of given {@code RuleStructure}
@@ -199,7 +194,7 @@ public abstract class IndexIID extends IID {
          * @return a byte array representing the index address of a {@code RuleStructure}
          */
         public static Rule of(String label) {
-            return new Rule(join(prefix().bytes(), label.getBytes(STRING_ENCODING)));
+            return new Rule(join(prefix().bytes(), encodeString(label, STRING_ENCODING)));
         }
 
         public static Encoding.Prefix prefix() {
@@ -210,8 +205,8 @@ public abstract class IndexIID extends IID {
         public String toString() {
             if (readableString == null) {
                 readableString = "[" + PrefixIID.LENGTH + ": " + Encoding.Index.Prefix.RULE.toString() + "]" +
-                        "[" + (bytes.length - PrefixIID.LENGTH) +
-                        ": " + new String(copyOfRange(bytes, PrefixIID.LENGTH, bytes.length), STRING_ENCODING) + "]";
+                        "[" + (bytes.length() - PrefixIID.LENGTH) +
+                        ": " + bytes.view(PrefixIID.LENGTH).decodeString(STRING_ENCODING) + "]";
             }
             return readableString;
         }
@@ -221,30 +216,30 @@ public abstract class IndexIID extends IID {
 
         static final int VALUE_INDEX = PrefixIID.LENGTH + VertexIID.Attribute.VALUE_TYPE_LENGTH;
 
-        Attribute(byte[] bytes) {
+        Attribute(ByteArray bytes) {
             super(bytes);
         }
 
-        private static Attribute newAttributeIndex(byte[] valueType, byte[] value, byte[] typeIID) {
+        private static Attribute newAttributeIndex(ByteArray valueType, ByteArray value, ByteArray typeIID) {
             return new Attribute(join(Encoding.Index.Prefix.ATTRIBUTE.prefix().bytes(), valueType, value, typeIID));
         }
 
         public static Attribute of(boolean value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Encoding.ValueType.BOOLEAN.bytes(), new byte[]{booleanToByte(value)}, typeIID.bytes);
+            return newAttributeIndex(Encoding.ValueType.BOOLEAN.bytes(), ByteArray.of(new byte[]{booleanToByte(value)}), typeIID.bytes);
         }
 
         public static Attribute of(long value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Encoding.ValueType.LONG.bytes(), longToSortedBytes(value), typeIID.bytes);
+            return newAttributeIndex(Encoding.ValueType.LONG.bytes(), encodeLongAsSorted(value), typeIID.bytes);
         }
 
         public static Attribute of(double value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Encoding.ValueType.DOUBLE.bytes(), doubleToSortedBytes(value), typeIID.bytes);
+            return newAttributeIndex(Encoding.ValueType.DOUBLE.bytes(), encodeDoubleAsSorted(value), typeIID.bytes);
         }
 
         public static Attribute of(String value, VertexIID.Type typeIID) {
-            byte[] stringBytes;
+            ByteArray stringBytes;
             try {
-                stringBytes = stringToBytes(value, STRING_ENCODING);
+                stringBytes = encodeString(value, STRING_ENCODING);
             } catch (Exception e) {
                 throw TypeDBException.of(ILLEGAL_STATE);
             }
@@ -252,29 +247,29 @@ public abstract class IndexIID extends IID {
         }
 
         public static Attribute of(LocalDateTime value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Encoding.ValueType.DATETIME.bytes(), dateTimeToBytes(value, TIME_ZONE_ID), typeIID.bytes);
+            return newAttributeIndex(Encoding.ValueType.DATETIME.bytes(), encodeDateTimeAsSorted(value, TIME_ZONE_ID), typeIID.bytes);
         }
 
         @Override
         public String toString() {
             if (readableString == null) {
-                Encoding.ValueType valueType = Encoding.ValueType.of(bytes[PrefixIID.LENGTH]);
+                Encoding.ValueType valueType = Encoding.ValueType.of(bytes.get(PrefixIID.LENGTH));
                 String value;
                 switch (valueType) {
                     case BOOLEAN:
-                        value = byteToBoolean(bytes[VALUE_INDEX]).toString();
+                        value = byteToBoolean(bytes.get(VALUE_INDEX)).toString();
                         break;
                     case LONG:
-                        value = sortedBytesToLong(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + LONG_SIZE)) + "";
+                        value = bytes.view(VALUE_INDEX, VALUE_INDEX + LONG_SIZE).decodeSortedAsLong() + "";
                         break;
                     case DOUBLE:
-                        value = sortedBytesToDouble(copyOfRange(bytes, VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE)) + "";
+                        value = bytes.view(VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE).decodeSortedAsDouble() + "";
                         break;
                     case STRING:
-                        value = bytesToString(copyOfRange(bytes, VALUE_INDEX, bytes.length - VertexIID.Type.LENGTH), STRING_ENCODING);
+                        value = bytes.view(VALUE_INDEX, bytes.length() - VertexIID.Type.LENGTH).decodeSortedAsString(STRING_ENCODING);
                         break;
                     case DATETIME:
-                        value = bytesToDateTime(copyOfRange(bytes, VALUE_INDEX, bytes.length - VertexIID.Type.LENGTH), TIME_ZONE_ID).toString();
+                        value = bytes.view(VALUE_INDEX, bytes.length() - VertexIID.Type.LENGTH).decodeSortedAsDateTime(TIME_ZONE_ID).toString();
                         break;
                     default:
                         value = "";
@@ -283,8 +278,8 @@ public abstract class IndexIID extends IID {
 
                 readableString = "[" + PrefixIID.LENGTH + ": " + Encoding.Index.Prefix.ATTRIBUTE.toString() + "]" +
                         "[" + VertexIID.Attribute.VALUE_TYPE_LENGTH + ": " + valueType.toString() + "]" +
-                        "[" + (bytes.length - (PrefixIID.LENGTH + VertexIID.Attribute.VALUE_TYPE_LENGTH + VertexIID.Type.LENGTH)) + ": " + value + "]" +
-                        "[" + VertexIID.Type.LENGTH + ": " + VertexIID.Type.of(copyOfRange(bytes, bytes.length - VertexIID.Type.LENGTH, bytes.length)).toString() + "]";
+                        "[" + (bytes.length() - (PrefixIID.LENGTH + VertexIID.Attribute.VALUE_TYPE_LENGTH + VertexIID.Type.LENGTH)) + ": " + value + "]" +
+                        "[" + VertexIID.Type.LENGTH + ": " + VertexIID.Type.of(bytes.view(bytes.length() - VertexIID.Type.LENGTH)).toString() + "]";
             }
             return readableString;
         }

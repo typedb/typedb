@@ -39,7 +39,6 @@ import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -160,7 +159,7 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
             assert conjVariable != null;
             if (conjVariable.isThing()) {
                 if (!conjVariable.asThing().iid().isPresent()) newBounds.put(id, bound);
-                else if (!Arrays.equals(conjVariable.asThing().iid().get().iid(), bound.asThing().getIID())) {
+                else if (!conjVariable.asThing().iid().get().iid().equals(bound.asThing().getIID())) {
                     return Optional.empty();
                 }
             } else if (conjVariable.isType()) {

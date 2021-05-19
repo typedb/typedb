@@ -18,21 +18,21 @@
 
 package com.vaticle.typedb.core.graph.iid;
 
-import java.util.Arrays;
+import com.vaticle.typedb.core.common.collection.ByteArray;
 
 public class SuffixIID extends IID {
 
-    private SuffixIID(byte[] bytes) {
+    private SuffixIID(ByteArray bytes) {
         super(bytes);
     }
 
-    public static SuffixIID of(byte[] bytes) {
+    public static SuffixIID of(ByteArray bytes) {
         return new SuffixIID(bytes);
     }
 
     @Override
     public String toString() {
-        if (readableString == null) readableString = "Suffix: " + Arrays.toString(bytes);
+        if (readableString == null) readableString = "Suffix: " + bytes.toString();
         return readableString;
     }
 }

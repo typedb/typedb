@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.graph;
 
 import com.vaticle.typedb.common.collection.Pair;
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
@@ -51,7 +52,6 @@ import java.util.stream.Stream;
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.collection.Collections.set;
-import static com.vaticle.typedb.core.common.collection.Bytes.stripPrefix;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_SCHEMA_READ_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeGraph.INVALID_SCHEMA_WRITE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
@@ -271,7 +271,7 @@ public class TypeGraph {
             if (vertex != null) return vertex;
 
             IndexIID.Type index = IndexIID.Type.Label.of(label, scope);
-            byte[] iid = storage.get(index.bytes());
+            ByteArray iid = storage.get(index.bytes());
             if (iid != null) {
                 vertex = typesByIID.computeIfAbsent(
                         VertexIID.Type.of(iid), i -> new TypeVertexImpl.Persisted(this, i, label, scope)
@@ -437,7 +437,7 @@ public class TypeGraph {
                 if (vertex != null) return vertex;
 
                 IndexIID.Rule index = IndexIID.Rule.of(label);
-                byte[] iid = storage.get(index.bytes());
+                ByteArray iid = storage.get(index.bytes());
                 if (iid != null) vertex = convert(StructureIID.Rule.of(iid));
                 return vertex;
             } finally {
@@ -597,13 +597,13 @@ public class TypeGraph {
 
                 private Set<RuleStructure> loadConcludesVertex(TypeVertex type) {
                     Rule scanPrefix = Rule.Prefix.concludedVertex(type.iid());
-                    return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
+                    return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of((key.view(scanPrefix.length()))))
                             .map(Rules.this::convert).toSet();
                 }
 
                 private Set<RuleStructure> loadConcludesEdgeTo(TypeVertex attrType) {
                     Rule scanPrefix = Rule.Prefix.concludedEdgeTo(attrType.iid());
-                    return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
+                    return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(key.view(scanPrefix.length())))
                             .map(Rules.this::convert).toSet();
                 }
 
@@ -734,7 +734,7 @@ public class TypeGraph {
 
                 private Set<RuleStructure> loadIndex(TypeVertex type) {
                     Rule scanPrefix = Rule.Prefix.contained(type.iid());
-                    return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(stripPrefix(key, scanPrefix.length())))
+                    return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(key.view(scanPrefix.length())))
                             .map(Rules.this::convert).toSet();
                 }
 

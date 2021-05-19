@@ -129,7 +129,7 @@ public class DataExporter implements Migrator {
     private DataProto.Item readEntity(Entity entity) {
         entityCount.incrementAndGet();
         DataProto.Item.Entity.Builder entityBuilder = DataProto.Item.Entity.newBuilder()
-                .setId(new String(entity.getIID()))
+                .setId(entity.getIID().decodeString())
                 .setLabel(entity.getType().getLabel().name());
         readOwnerships(entity).forEachRemaining(a -> {
             ownershipCount.incrementAndGet();
@@ -141,7 +141,7 @@ public class DataExporter implements Migrator {
     private DataProto.Item readRelation(Relation relation) {
         relationCount.incrementAndGet();
         DataProto.Item.Relation.Builder relationBuilder = DataProto.Item.Relation.newBuilder()
-                .setId(new String(relation.getIID()))
+                .setId(relation.getIID().decodeString())
                 .setLabel(relation.getType().getLabel().name());
         Map<? extends RoleType, ? extends List<? extends Thing>> playersByRole = relation.getPlayersByRoleType();
         for (Map.Entry<? extends RoleType, ? extends List<? extends Thing>> rolePlayers : playersByRole.entrySet()) {
@@ -151,7 +151,7 @@ public class DataExporter implements Migrator {
             for (Thing player : rolePlayers.getValue()) {
                 playerCount.incrementAndGet();
                 roleBuilder.addPlayer(DataProto.Item.Relation.Role.Player.newBuilder()
-                                              .setId(new String(player.getIID())));
+                                              .setId(player.getIID().decodeString()));
             }
             relationBuilder.addRole(roleBuilder);
         }
@@ -165,7 +165,7 @@ public class DataExporter implements Migrator {
     private DataProto.Item readAttribute(Attribute attribute) {
         attributeCount.incrementAndGet();
         DataProto.Item.Attribute.Builder attributeBuilder = DataProto.Item.Attribute.newBuilder()
-                .setId(new String(attribute.getIID()))
+                .setId(attribute.getIID().decodeString())
                 .setLabel(attribute.getType().getLabel().name())
                 .setValue(readValue(attribute));
         readOwnerships(attribute).forEachRemaining(a -> {
@@ -195,7 +195,7 @@ public class DataExporter implements Migrator {
 
     private FunctionalIterator<DataProto.Item.OwnedAttribute.Builder> readOwnerships(Thing thing) {
         return thing.getHas().map(attribute -> DataProto.Item.OwnedAttribute.newBuilder()
-                .setId(new String(attribute.getIID())));
+                .setId(attribute.getIID().decodeString()));
     }
 
     private synchronized void write(OutputStream outputStream, DataProto.Item item) {

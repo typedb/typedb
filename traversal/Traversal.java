@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.traversal;
 
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.common.collection.Pair;
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -208,7 +209,7 @@ public class Traversal {
         structure.nativeEdge(structure.typeVertex(subtype), structure.typeVertex(supertype), SUB, isTransitive);
     }
 
-    public void iid(Identifier.Variable thing, byte[] iid) {
+    public void iid(Identifier.Variable thing, ByteArray iid) {
         assert modifiable;
         parameters.putIID(thing, VertexIID.Thing.of(iid));
         structure.thingVertex(thing).props().hasIID(true);

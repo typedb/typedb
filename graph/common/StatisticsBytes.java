@@ -18,26 +18,28 @@
 
 package com.vaticle.typedb.core.graph.common;
 
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 
-import static com.vaticle.typedb.core.common.collection.Bytes.join;
+import static com.vaticle.typedb.core.common.collection.ByteArray.join;
+
 
 public class StatisticsBytes {
-    public static byte[] vertexCountKey(VertexIID.Type typeIID) {
+    public static ByteArray vertexCountKey(VertexIID.Type typeIID) {
         return join(
                 Encoding.Prefix.STATISTICS_THINGS.bytes(),
                 typeIID.bytes(),
                 Encoding.Statistics.Infix.VERTEX_COUNT.bytes());
     }
 
-    public static byte[] vertexTransitiveCountKey(VertexIID.Type typeIID) {
+    public static ByteArray vertexTransitiveCountKey(VertexIID.Type typeIID) {
         return join(
                 Encoding.Prefix.STATISTICS_THINGS.bytes(),
                 typeIID.bytes(),
                 Encoding.Statistics.Infix.VERTEX_TRANSITIVE_COUNT.bytes());
     }
 
-    public static byte[] hasEdgeCountKey(VertexIID.Type thingTypeIID, VertexIID.Type attTypeIID) {
+    public static ByteArray hasEdgeCountKey(VertexIID.Type thingTypeIID, VertexIID.Type attTypeIID) {
         return join(
                 Encoding.Prefix.STATISTICS_THINGS.bytes(),
                 thingTypeIID.bytes(),
@@ -45,32 +47,32 @@ public class StatisticsBytes {
                 attTypeIID.bytes());
     }
 
-    public static byte[] hasEdgeTotalCountKey(VertexIID.Type thingTypeIID) {
+    public static ByteArray hasEdgeTotalCountKey(VertexIID.Type thingTypeIID) {
         return join(
                 Encoding.Prefix.STATISTICS_THINGS.bytes(),
                 thingTypeIID.bytes(),
                 Encoding.Statistics.Infix.HAS_EDGE_TOTAL_COUNT.bytes());
     }
 
-    public static byte[] countJobKey() {
+    public static ByteArray countJobKey() {
         return join(
                 Encoding.Prefix.STATISTICS_COUNT_JOB.bytes());
     }
 
-    public static byte[] attributeCountJobKey(VertexIID.Attribute<?> attIID) {
+    public static ByteArray attributeCountJobKey(VertexIID.Attribute<?> attIID) {
         return join(
                 Encoding.Prefix.STATISTICS_COUNT_JOB.bytes(),
                 Encoding.Statistics.JobType.ATTRIBUTE_VERTEX.bytes(),
                 attIID.bytes());
     }
 
-    public static byte[] attributeCountedKey(VertexIID.Attribute<?> attIID) {
+    public static ByteArray attributeCountedKey(VertexIID.Attribute<?> attIID) {
         return join(
                 Encoding.Prefix.STATISTICS_COUNTED.bytes(),
                 attIID.bytes());
     }
 
-    public static byte[] hasEdgeCountJobKey(VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
+    public static ByteArray hasEdgeCountJobKey(VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
         return join(
                 Encoding.Prefix.STATISTICS_COUNT_JOB.bytes(),
                 Encoding.Statistics.JobType.HAS_EDGE.bytes(),
@@ -79,7 +81,7 @@ public class StatisticsBytes {
         );
     }
 
-    public static byte[] hasEdgeCountedKey(VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
+    public static ByteArray hasEdgeCountedKey(VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
         return join(
                 Encoding.Prefix.STATISTICS_COUNTED.bytes(),
                 thingIID.bytes(),
@@ -88,7 +90,7 @@ public class StatisticsBytes {
         );
     }
 
-    public static byte[] snapshotKey() {
+    public static ByteArray snapshotKey() {
         return Encoding.Prefix.STATISTICS_SNAPSHOT.bytes();
     }
 }
