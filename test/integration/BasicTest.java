@@ -608,107 +608,107 @@ public class BasicTest {
 //        }
 //    }
 //
-//    @Test
-//    public void write_identical_attributes_in_parallel_successfully_repeatedly() throws IOException {
-//        for (int i = 0; i < 100; i++) {
-//            System.out.println(i + " ---- ");
-//            write_identical_attributes_in_parallel_successfully();
-//        }
-//    }
-//
-//    @Test
-//    public void write_identical_attributes_in_parallel_successfully() throws IOException {
-//        reset_directory_and_create_attribute_types();
-//
-//        LocalDateTime date_1992_2_3_4_5 = LocalDateTime.of(1991, 2, 3, 4, 5);
-//
-//        try (TypeDB typedb = RocksTypeDB.open(options)) {
-//            try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.DATA)) {
-//                TypeDB.Transaction txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
-//                TypeDB.Transaction txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
-//                TypeDB.Transaction txn3 = session.transaction(Arguments.Transaction.Type.WRITE);
-//
-//                isAlive(txn1).put(true);
-//                isAlive(txn2).put(true);
-//                isAlive(txn3).put(true);
-//                age(txn1).put(17);
-//                age(txn2).put(17);
-//                age(txn3).put(17);
-//                score(txn1).put(70.5);
-//                score(txn2).put(70.5);
-//                score(txn3).put(70.5);
-//                name(txn1).put("alice");
-//                name(txn2).put("alice");
-//                name(txn3).put("alice");
-//                dob(txn1).put(date_1992_2_3_4_5);
-//                dob(txn2).put(date_1992_2_3_4_5);
-//                dob(txn3).put(date_1992_2_3_4_5);
-//
-//                assertEquals(1, isAlive(txn1).getInstances().count());
-//                assertTrue(isAlive(txn1).getInstances().anyMatch(att -> att.getValue().equals(true)));
-//                assertEquals(1, isAlive(txn2).getInstances().count());
-//                assertTrue(isAlive(txn2).getInstances().anyMatch(att -> att.getValue().equals(true)));
-//                assertEquals(1, isAlive(txn3).getInstances().count());
-//                assertTrue(isAlive(txn2).getInstances().anyMatch(att -> att.getValue().equals(true)));
-//
-//                assertEquals(1, age(txn1).getInstances().count());
-//                assertTrue(age(txn1).getInstances().anyMatch(att -> att.getValue() == 17));
-//                assertEquals(1, age(txn2).getInstances().count());
-//                assertTrue(age(txn2).getInstances().anyMatch(att -> att.getValue() == 17));
-//                assertEquals(1, age(txn3).getInstances().count());
-//                assertTrue(age(txn3).getInstances().anyMatch(att -> att.getValue() == 17));
-//
-//                assertEquals(1, score(txn1).getInstances().count());
-//                assertTrue(score(txn1).getInstances().anyMatch(att -> att.getValue() == 70.5));
-//                assertEquals(1, score(txn2).getInstances().count());
-//                assertTrue(score(txn2).getInstances().anyMatch(att -> att.getValue() == 70.5));
-//                assertEquals(1, score(txn3).getInstances().count());
-//                assertTrue(score(txn3).getInstances().anyMatch(att -> att.getValue() == 70.5));
-//
-//                assertEquals(1, name(txn1).getInstances().count());
-//                assertTrue(name(txn1).getInstances().anyMatch(att -> att.getValue().equals("alice")));
-//                assertEquals(1, name(txn2).getInstances().count());
-//                assertTrue(name(txn2).getInstances().anyMatch(att -> att.getValue().equals("alice")));
-//                assertEquals(1, name(txn3).getInstances().count());
-//                assertTrue(name(txn3).getInstances().anyMatch(att -> att.getValue().equals("alice")));
-//
-//                assertEquals(1, dob(txn1).getInstances().count());
-//                assertTrue(dob(txn1).getInstances().anyMatch(att -> att.getValue().equals(date_1992_2_3_4_5)));
-//                assertEquals(1, dob(txn2).getInstances().count());
-//                assertTrue(dob(txn2).getInstances().anyMatch(att -> att.getValue().equals(date_1992_2_3_4_5)));
-//                assertEquals(1, dob(txn3).getInstances().count());
-//                assertTrue(dob(txn3).getInstances().anyMatch(att -> att.getValue().equals(date_1992_2_3_4_5)));
-//
-//                txn1.commit();
-//                txn2.commit();
-//                txn3.commit();
-//
-//                try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
-//
-//                    assertEquals(true, isAlive(txn).get(true).getValue());
-//                    assertEquals(17, age(txn).get(17).getValue().longValue());
-//                    assertEquals(70.5, score(txn).get(70.5).getValue(), 0.001);
-//                    assertEquals("alice", name(txn).get("alice").getValue());
-//                    assertEquals(date_1992_2_3_4_5, dob(txn).get(date_1992_2_3_4_5).getValue());
-//
-//                    assertEquals(1, isAlive(txn).getInstances().count());
-//                    assertTrue(isAlive(txn).getInstances().anyMatch(att -> att.getValue().equals(true)));
-//
-//                    assertEquals(1, age(txn).getInstances().count());
-//                    assertTrue(age(txn).getInstances().anyMatch(att -> att.getValue() == 17));
-//
-//                    assertEquals(1, score(txn).getInstances().count());
-//                    assertTrue(score(txn).getInstances().anyMatch(att -> att.getValue() == 70.5));
-//
-//                    assertEquals(1, name(txn).getInstances().count());
-//                    assertTrue(name(txn).getInstances().anyMatch(att -> att.getValue().equals("alice")));
-//
-//                    assertEquals(1, dob(txn).getInstances().count());
-//                    assertTrue(dob(txn).getInstances().anyMatch(att -> att.getValue().equals(date_1992_2_3_4_5)));
-//                }
-//            }
-//        }
-//    }
+    @Test
+    public void write_identical_attributes_in_parallel_successfully_repeatedly() throws IOException {
+        for (int i = 0; i < 100; i++) {
+            System.out.println(i + " ---- ");
+            write_identical_attributes_in_parallel_successfully();
+        }
+    }
+
+    @Test
+    public void write_identical_attributes_in_parallel_successfully() throws IOException {
+        reset_directory_and_create_attribute_types();
+
+        LocalDateTime date_1992_2_3_4_5 = LocalDateTime.of(1991, 2, 3, 4, 5);
+
+        try (TypeDB typedb = RocksTypeDB.open(options)) {
+            try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.DATA)) {
+                TypeDB.Transaction txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
+                TypeDB.Transaction txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
+                TypeDB.Transaction txn3 = session.transaction(Arguments.Transaction.Type.WRITE);
+
+                isAlive(txn1).put(true);
+                isAlive(txn2).put(true);
+                isAlive(txn3).put(true);
+                age(txn1).put(17);
+                age(txn2).put(17);
+                age(txn3).put(17);
+                score(txn1).put(70.5);
+                score(txn2).put(70.5);
+                score(txn3).put(70.5);
+                name(txn1).put("alice");
+                name(txn2).put("alice");
+                name(txn3).put("alice");
+                dob(txn1).put(date_1992_2_3_4_5);
+                dob(txn2).put(date_1992_2_3_4_5);
+                dob(txn3).put(date_1992_2_3_4_5);
+
+                assertEquals(1, isAlive(txn1).getInstances().count());
+                assertTrue(isAlive(txn1).getInstances().anyMatch(att -> att.getValue().equals(true)));
+                assertEquals(1, isAlive(txn2).getInstances().count());
+                assertTrue(isAlive(txn2).getInstances().anyMatch(att -> att.getValue().equals(true)));
+                assertEquals(1, isAlive(txn3).getInstances().count());
+                assertTrue(isAlive(txn2).getInstances().anyMatch(att -> att.getValue().equals(true)));
+
+                assertEquals(1, age(txn1).getInstances().count());
+                assertTrue(age(txn1).getInstances().anyMatch(att -> att.getValue() == 17));
+                assertEquals(1, age(txn2).getInstances().count());
+                assertTrue(age(txn2).getInstances().anyMatch(att -> att.getValue() == 17));
+                assertEquals(1, age(txn3).getInstances().count());
+                assertTrue(age(txn3).getInstances().anyMatch(att -> att.getValue() == 17));
+
+                assertEquals(1, score(txn1).getInstances().count());
+                assertTrue(score(txn1).getInstances().anyMatch(att -> att.getValue() == 70.5));
+                assertEquals(1, score(txn2).getInstances().count());
+                assertTrue(score(txn2).getInstances().anyMatch(att -> att.getValue() == 70.5));
+                assertEquals(1, score(txn3).getInstances().count());
+                assertTrue(score(txn3).getInstances().anyMatch(att -> att.getValue() == 70.5));
+
+                assertEquals(1, name(txn1).getInstances().count());
+                assertTrue(name(txn1).getInstances().anyMatch(att -> att.getValue().equals("alice")));
+                assertEquals(1, name(txn2).getInstances().count());
+                assertTrue(name(txn2).getInstances().anyMatch(att -> att.getValue().equals("alice")));
+                assertEquals(1, name(txn3).getInstances().count());
+                assertTrue(name(txn3).getInstances().anyMatch(att -> att.getValue().equals("alice")));
+
+                assertEquals(1, dob(txn1).getInstances().count());
+                assertTrue(dob(txn1).getInstances().anyMatch(att -> att.getValue().equals(date_1992_2_3_4_5)));
+                assertEquals(1, dob(txn2).getInstances().count());
+                assertTrue(dob(txn2).getInstances().anyMatch(att -> att.getValue().equals(date_1992_2_3_4_5)));
+                assertEquals(1, dob(txn3).getInstances().count());
+                assertTrue(dob(txn3).getInstances().anyMatch(att -> att.getValue().equals(date_1992_2_3_4_5)));
+
+                txn1.commit();
+                txn2.commit();
+                txn3.commit();
+
+                try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
+
+                    assertEquals(true, isAlive(txn).get(true).getValue());
+                    assertEquals(17, age(txn).get(17).getValue().longValue());
+                    assertEquals(70.5, score(txn).get(70.5).getValue(), 0.001);
+                    assertEquals("alice", name(txn).get("alice").getValue());
+                    assertEquals(date_1992_2_3_4_5, dob(txn).get(date_1992_2_3_4_5).getValue());
+
+                    assertEquals(1, isAlive(txn).getInstances().count());
+                    assertTrue(isAlive(txn).getInstances().anyMatch(att -> att.getValue().equals(true)));
+
+                    assertEquals(1, age(txn).getInstances().count());
+                    assertTrue(age(txn).getInstances().anyMatch(att -> att.getValue() == 17));
+
+                    assertEquals(1, score(txn).getInstances().count());
+                    assertTrue(score(txn).getInstances().anyMatch(att -> att.getValue() == 70.5));
+
+                    assertEquals(1, name(txn).getInstances().count());
+                    assertTrue(name(txn).getInstances().anyMatch(att -> att.getValue().equals("alice")));
+
+                    assertEquals(1, dob(txn).getInstances().count());
+                    assertTrue(dob(txn).getInstances().anyMatch(att -> att.getValue().equals(date_1992_2_3_4_5)));
+                }
+            }
+        }
+    }
 
     @Test
     public void write_and_delete_attributes_concurrently_repeatedly() throws IOException {
