@@ -18,10 +18,9 @@
 
 package com.vaticle.typedb.core.graph.iid;
 
-import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.collection.ByteArray;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.common.Encoding.ValueSortable;
 
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
@@ -227,11 +226,11 @@ public abstract class IndexIID extends IID {
         }
 
         public static Attribute of(long value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Encoding.ValueType.LONG.bytes(), ValueSortable.longToBytes(value), typeIID.bytes);
+            return newAttributeIndex(Encoding.ValueType.LONG.bytes(), ByteArray.encodeLongAsSorted(value), typeIID.bytes);
         }
 
         public static Attribute of(double value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Encoding.ValueType.DOUBLE.bytes(), ValueSortable.doubleToBytes(value), typeIID.bytes);
+            return newAttributeIndex(Encoding.ValueType.DOUBLE.bytes(), ByteArray.encodeDoubleAsSorted(value), typeIID.bytes);
         }
 
         public static Attribute of(String value, VertexIID.Type typeIID) {
@@ -245,7 +244,7 @@ public abstract class IndexIID extends IID {
         }
 
         public static Attribute of(LocalDateTime value, VertexIID.Type typeIID) {
-            return newAttributeIndex(Encoding.ValueType.DATETIME.bytes(), ValueSortable.dateTimeToBytes(value, TIME_ZONE_ID), typeIID.bytes);
+            return newAttributeIndex(Encoding.ValueType.DATETIME.bytes(), ByteArray.encodeDateTimeAsSorted(value, TIME_ZONE_ID), typeIID.bytes);
         }
 
         @Override
@@ -258,16 +257,16 @@ public abstract class IndexIID extends IID {
                         value = byteToBoolean(bytes.get(VALUE_INDEX)).toString();
                         break;
                     case LONG:
-                        value = ValueSortable.bytesToLong(bytes.view(VALUE_INDEX, VALUE_INDEX + LONG_SIZE)) + "";
+                        value = bytes.view(VALUE_INDEX, VALUE_INDEX + LONG_SIZE).decodeSortedAsLong() + "";
                         break;
                     case DOUBLE:
-                        value = ValueSortable.bytesToDouble(bytes.view(VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE)) + "";
+                        value = bytes.view(VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE).decodeSortedAsDouble() + "";
                         break;
                     case STRING:
-                        value = ValueSortable.bytesToString(bytes.view(VALUE_INDEX, bytes.length() - VertexIID.Type.LENGTH));
+                        value = bytes.view(VALUE_INDEX, bytes.length() - VertexIID.Type.LENGTH).decodeSortedAsString(STRING_ENCODING);
                         break;
                     case DATETIME:
-                        value = ValueSortable.bytesToDateTime(bytes.view(VALUE_INDEX, bytes.length() - VertexIID.Type.LENGTH), TIME_ZONE_ID).toString();
+                        value = bytes.view(VALUE_INDEX, bytes.length() - VertexIID.Type.LENGTH).decodeSortedAsDateTime(TIME_ZONE_ID).toString();
                         break;
                     default:
                         value = "";

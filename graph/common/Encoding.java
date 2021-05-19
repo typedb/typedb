@@ -19,16 +19,13 @@
 package com.vaticle.typedb.core.graph.common;
 
 import com.vaticle.typedb.common.collection.Pair;
-import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Label;
-import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typeql.lang.common.TypeQLArg;
 
 import javax.annotation.Nullable;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -41,17 +38,12 @@ import static com.vaticle.typedb.common.collection.Collections.map;
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
-import static com.vaticle.typedb.core.common.collection.ByteArray.join;
-import static com.vaticle.typedb.core.common.collection.Bytes.DOUBLE_SIZE;
-import static com.vaticle.typedb.core.common.collection.Bytes.INTEGER_SIZE;
-import static com.vaticle.typedb.core.common.collection.Bytes.LONG_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.SHORT_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.SHORT_UNSIGNED_MAX_VALUE;
 import static com.vaticle.typedb.core.common.collection.Bytes.signedByte;
 import static com.vaticle.typedb.core.common.collection.Bytes.unsignedByte;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Encoding {
@@ -965,125 +957,6 @@ public class Encoding {
             public ByteArray bytes() {
                 return bytes;
             }
-        }
-    }
-
-    /**
-     * Custom byte-sortable encodings of values
-     */
-    public static class ValueSortable {
-
-        public static ByteArray shortToBytes(int num) {
-            byte[] bytes = new byte[SHORT_SIZE];
-            bytes[1] = (byte) (num);
-            bytes[0] = (byte) ((num >> 8) ^ 0x80);
-            return ByteArray.of(bytes);
-        }
-
-        public static short bytesToShort(ByteArray bytes) {
-            assert bytes.length() == SHORT_SIZE;
-            byte[] clone = bytes.cloneBytes();
-            clone[0] = (byte) (clone[0] ^ 0x80);
-            return ByteBuffer.wrap(clone).getShort();
-        }
-
-        public static ByteArray integerToBytes(int num) {
-            byte[] bytes = new byte[INTEGER_SIZE];
-            bytes[3] = (byte) (num);
-            bytes[2] = (byte) (num >>= 8);
-            bytes[1] = (byte) (num >>= 8);
-            bytes[0] = (byte) ((num >> 8) ^ 0x80);
-            return ByteArray.of(bytes);
-        }
-
-        public static long bytesToInteger(ByteArray bytes) {
-            assert bytes.length() == INTEGER_SIZE;
-            byte[] clone = bytes.cloneBytes();
-            clone[0] = (byte) (clone[0] ^ 0x80);
-            return ByteBuffer.wrap(clone).getInt();
-        }
-
-        public static ByteArray longToBytes(long num) {
-            byte[] bytes = new byte[LONG_SIZE];
-            bytes[7] = (byte) (num);
-            bytes[6] = (byte) (num >>= 8);
-            bytes[5] = (byte) (num >>= 8);
-            bytes[4] = (byte) (num >>= 8);
-            bytes[3] = (byte) (num >>= 8);
-            bytes[2] = (byte) (num >>= 8);
-            bytes[1] = (byte) (num >>= 8);
-            bytes[0] = (byte) ((num >> 8) ^ 0x80);
-            return ByteArray.of(bytes);
-        }
-
-        public static long bytesToLong(ByteArray bytes) {
-            assert bytes.length() == LONG_SIZE;
-            byte[] clone = bytes.cloneBytes();
-            clone[0] = (byte) (clone[0] ^ 0x80);
-            return ByteBuffer.wrap(clone).getLong();
-        }
-
-        /**
-         * Convert {@code double} to lexicographically sorted bytes.
-         *
-         * We need to implement a custom byte representation of doubles. The bytes
-         * need to be lexicographically sortable in the same order as the numerical
-         * values of themselves. I.e. The bytes of -10 need to come before -1, -1
-         * before 0, 0 before 1, and 1 before 10, and so on. This is not true with
-         * the (default) 2's complement byte representation of doubles.
-         *
-         * We need to XOR all positive numbers with 0x8000... and XOR negative
-         * numbers with 0xffff... This should flip the sign bit on both (so negative
-         * numbers go first), and then reverse the ordering on negative numbers.
-         *
-         * @param value the {@code double} value to convert
-         * @return the sorted byte representation of the {@code double} value
-         */
-        public static ByteArray doubleToBytes(double value) {
-            byte[] bytes = ByteBuffer.allocate(DOUBLE_SIZE).putDouble(value).array();
-            if (value >= 0) {
-                bytes[0] = (byte) (bytes[0] ^ 0x80);
-            } else {
-                for (int i = 0; i < DOUBLE_SIZE; i++) {
-                    bytes[i] = (byte) (bytes[i] ^ 0xff);
-                }
-            }
-            return ByteArray.of(bytes);
-        }
-
-        public static double bytesToDouble(ByteArray bytes) {
-            assert bytes.length() == DOUBLE_SIZE;
-            byte[] clone = bytes.cloneBytes();
-            if ((clone[0] & 0x80) == 0x80) {
-                clone[0] = (byte) (clone[0] ^ 0x80);
-            } else {
-                for (int i = 0; i < DOUBLE_SIZE; i++) {
-                    clone[i] = (byte) (clone[i] ^ 0xff);
-                }
-            }
-            return ByteBuffer.wrap(clone).getDouble();
-        }
-
-        public static ByteArray stringToBytes(String value) throws TypeDBCheckedException {
-            byte[] bytes = value.getBytes(ValueType.STRING_ENCODING);
-            if (bytes.length > SHORT_UNSIGNED_MAX_VALUE) {
-                throw TypeDBCheckedException.of(ILLEGAL_STRING_SIZE, SHORT_UNSIGNED_MAX_VALUE);
-            }
-            return join(ByteArray.encodeUnsignedShort(bytes.length), ByteArray.of(bytes));
-        }
-
-        public static String bytesToString(ByteArray bytes) {
-            int stringLength = bytes.view(0, 2).decodeUnsignedShort();
-            if (stringLength == 0) return "";
-            else return bytes.view(SHORT_SIZE, SHORT_SIZE + stringLength).decodeString(ValueType.STRING_ENCODING);
-        }
-
-        public static ByteArray dateTimeToBytes(java.time.LocalDateTime value, ZoneId timeZoneID) {
-            return longToBytes(value.atZone(timeZoneID).toInstant().toEpochMilli());
-        }
-
-        public static java.time.LocalDateTime bytesToDateTime(ByteArray bytes, ZoneId timeZoneID) {
-            return LocalDateTime.ofInstant(Instant.ofEpochMilli(bytesToLong(bytes)), timeZoneID);
         }
     }
 

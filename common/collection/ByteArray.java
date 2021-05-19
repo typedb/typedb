@@ -19,15 +19,22 @@
 package com.vaticle.typedb.core.common.collection;
 
 import com.vaticle.typedb.common.collection.Bytes;
+import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.UUID;
 
+import static com.vaticle.typedb.core.common.collection.Bytes.DOUBLE_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.INTEGER_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.LONG_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.SHORT_SIZE;
+import static com.vaticle.typedb.core.common.collection.Bytes.SHORT_UNSIGNED_MAX_VALUE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 public abstract class ByteArray implements Comparable<ByteArray> {
@@ -46,6 +53,7 @@ public abstract class ByteArray implements Comparable<ByteArray> {
     public static ByteArray empty() {
         return new ByteArray.Base(new byte[]{});
     }
+
 
     public abstract byte[] getBytes();
 
@@ -100,6 +108,16 @@ public abstract class ByteArray implements Comparable<ByteArray> {
 
     abstract void copyInto(byte[] destination, int pos);
 
+    public abstract boolean hasPrefix(ByteArray prefix);
+
+    public String toHexString() {
+        return Bytes.bytesToHexString(getBytes());
+    }
+
+    public static ByteArray fromHexString(String string) {
+        return of(Bytes.hexStringToBytes(string));
+    }
+
     public static ByteArray.Base encodeString(String string) {
         return of(string.getBytes());
     }
@@ -142,7 +160,118 @@ public abstract class ByteArray implements Comparable<ByteArray> {
 
     public abstract UUID decodeUUID();
 
-    public abstract boolean hasPrefix(ByteArray prefix);
+    public static ByteArray encodeShortAsSorted(int num) {
+        byte[] bytes = new byte[SHORT_SIZE];
+        bytes[1] = (byte) (num);
+        bytes[0] = (byte) ((num >> 8) ^ 0x80);
+        return of(bytes);
+    }
+
+    public short decodeSortedAsShort() {
+        assert length() == SHORT_SIZE;
+        byte[] clone = cloneBytes();
+        clone[0] = (byte) (clone[0] ^ 0x80);
+        return ByteBuffer.wrap(clone).getShort();
+    }
+
+    public static ByteArray encodeIntegerAsSorted(int num) {
+        byte[] bytes = new byte[INTEGER_SIZE];
+        bytes[3] = (byte) (num);
+        bytes[2] = (byte) (num >>= 8);
+        bytes[1] = (byte) (num >>= 8);
+        bytes[0] = (byte) ((num >> 8) ^ 0x80);
+        return of(bytes);
+    }
+
+    public long decodeSortedAsInteger() {
+        assert length() == INTEGER_SIZE;
+        byte[] clone = cloneBytes();
+        clone[0] = (byte) (clone[0] ^ 0x80);
+        return ByteBuffer.wrap(clone).getInt();
+    }
+
+    public static ByteArray encodeLongAsSorted(long num) {
+        byte[] bytes = new byte[LONG_SIZE];
+        bytes[7] = (byte) (num);
+        bytes[6] = (byte) (num >>= 8);
+        bytes[5] = (byte) (num >>= 8);
+        bytes[4] = (byte) (num >>= 8);
+        bytes[3] = (byte) (num >>= 8);
+        bytes[2] = (byte) (num >>= 8);
+        bytes[1] = (byte) (num >>= 8);
+        bytes[0] = (byte) ((num >> 8) ^ 0x80);
+        return of(bytes);
+    }
+
+    public long decodeSortedAsLong() {
+        assert length() == LONG_SIZE;
+        byte[] clone = cloneBytes();
+        clone[0] = (byte) (clone[0] ^ 0x80);
+        return ByteBuffer.wrap(clone).getLong();
+    }
+
+    /**
+     * Convert {@code double} to lexicographically sorted bytes.
+     *
+     * We need to implement a custom byte representation of doubles. The bytes
+     * need to be lexicographically sortable in the same order as the numerical
+     * values of themselves. I.e. The bytes of -10 need to come before -1, -1
+     * before 0, 0 before 1, and 1 before 10, and so on. This is not true with
+     * the (default) 2's complement byte representation of doubles.
+     *
+     * We need to XOR all positive numbers with 0x8000... and XOR negative
+     * numbers with 0xffff... This should flip the sign bit on both (so negative
+     * numbers go first), and then reverse the ordering on negative numbers.
+     *
+     * @param value the {@code double} value to convert
+     * @return the sorted byte representation of the {@code double} value
+     */
+    public static ByteArray encodeDoubleAsSorted(double value) {
+        byte[] bytes = ByteBuffer.allocate(DOUBLE_SIZE).putDouble(value).array();
+        if (value >= 0) {
+            bytes[0] = (byte) (bytes[0] ^ 0x80);
+        } else {
+            for (int i = 0; i < DOUBLE_SIZE; i++) {
+                bytes[i] = (byte) (bytes[i] ^ 0xff);
+            }
+        }
+        return of(bytes);
+    }
+
+    public double decodeSortedAsDouble() {
+        assert length() == DOUBLE_SIZE;
+        byte[] clone = cloneBytes();
+        if ((clone[0] & 0x80) == 0x80) {
+            clone[0] = (byte) (clone[0] ^ 0x80);
+        } else {
+            for (int i = 0; i < DOUBLE_SIZE; i++) {
+                clone[i] = (byte) (clone[i] ^ 0xff);
+            }
+        }
+        return ByteBuffer.wrap(clone).getDouble();
+    }
+
+    public static ByteArray encodeStringAsSorted(String value, Charset encoding) throws TypeDBCheckedException {
+        byte[] bytes = value.getBytes();
+        if (bytes.length > SHORT_UNSIGNED_MAX_VALUE) {
+            throw TypeDBCheckedException.of(ILLEGAL_STRING_SIZE, SHORT_UNSIGNED_MAX_VALUE);
+        }
+        return join(encodeUnsignedShort(bytes.length), of(bytes));
+    }
+
+    public String decodeSortedAsString(Charset encoding) {
+        int stringLength = view(0, 2).decodeUnsignedShort();
+        if (stringLength == 0) return "";
+        else return view(SHORT_SIZE, SHORT_SIZE + stringLength).decodeString(encoding);
+    }
+
+    public static ByteArray encodeDateTimeAsSorted(LocalDateTime value, ZoneId timeZoneID) {
+        return encodeLongAsSorted(value.atZone(timeZoneID).toInstant().toEpochMilli());
+    }
+
+    public LocalDateTime decodeSortedAsDateTime(ZoneId timeZoneID) {
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(decodeSortedAsLong()), timeZoneID);
+    }
 
     @Override
     public int compareTo(ByteArray that) {
@@ -181,14 +310,6 @@ public abstract class ByteArray implements Comparable<ByteArray> {
     @Override
     public String toString() {
         return Arrays.toString(getBytes());
-    }
-
-    public String toHexString() {
-        return Bytes.bytesToHexString(getBytes());
-    }
-
-    public static ByteArray fromHexString(String string) {
-        return of(Bytes.hexStringToBytes(string));
     }
 
     public static class Base extends ByteArray {

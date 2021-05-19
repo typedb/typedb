@@ -18,11 +18,10 @@
 
 package com.vaticle.typedb.core.graph.common;
 
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
-import com.vaticle.typedb.core.common.collection.ByteArray;
-import com.vaticle.typedb.core.graph.common.Encoding.ValueSortable;
 import com.vaticle.typedb.core.graph.iid.PrefixIID;
 import com.vaticle.typedb.core.graph.iid.StructureIID;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
@@ -47,7 +46,6 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.RELATIO
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ROLE;
 import static com.vaticle.typedb.core.graph.iid.VertexIID.Thing.DEFAULT_LENGTH;
 import static com.vaticle.typedb.core.graph.iid.VertexIID.Thing.PREFIX_W_TYPE_LENGTH;
-import static java.util.Arrays.copyOfRange;
 
 public class KeyGenerator {
 
@@ -75,7 +73,7 @@ public class KeyGenerator {
                 typeKeys.get(rootIID).addAndGet(-1 * delta);
                 throw TypeDBException.of(MAX_SUBTYPE_REACHED, rootLabel, SHORT_MAX_VALUE);
             }
-            return ValueSortable.shortToBytes(key);
+            return ByteArray.encodeShortAsSorted(key);
         }
 
         public ByteArray forRule() {
@@ -84,7 +82,7 @@ public class KeyGenerator {
                 ruleKey.addAndGet(-1 * delta);
                 throw TypeDBException.of(MAX_RULE_REACHED, SHORT_MAX_VALUE);
             }
-            return ValueSortable.shortToBytes(key);
+            return ByteArray.encodeShortAsSorted(key);
         }
 
         public ByteArray serialise() {
@@ -143,7 +141,7 @@ public class KeyGenerator {
                     ByteArray prefix = encoding.prefix().bytes();
                     ByteArray lastIID = storage.getLastKey(prefix);
                     AtomicInteger nextValue = lastIID != null ?
-                            new AtomicInteger(ValueSortable.bytesToShort(lastIID.view(PrefixIID.LENGTH, VertexIID.Type.LENGTH)) + delta) :
+                            new AtomicInteger(lastIID.view(PrefixIID.LENGTH, VertexIID.Type.LENGTH).decodeSortedAsShort() + delta) :
                             new AtomicInteger(initialValue);
                     typeKeys.put(PrefixIID.of(encoding), nextValue);
                 }
@@ -153,7 +151,7 @@ public class KeyGenerator {
                 ByteArray prefix = Encoding.Structure.RULE.prefix().bytes();
                 ByteArray lastIID = storage.getLastKey(prefix);
                 if (lastIID != null) {
-                    ruleKey.set(ValueSortable.bytesToShort(lastIID.view(PrefixIID.LENGTH, StructureIID.Rule.LENGTH)) + delta);
+                    ruleKey.set(lastIID.view(PrefixIID.LENGTH, StructureIID.Rule.LENGTH).decodeSortedAsShort() + delta);
                 } else {
                     ruleKey.set(initialValue);
                 }
@@ -183,7 +181,7 @@ public class KeyGenerator {
                 thingKeys.get(typeIID).addAndGet(-1 * delta);
                 throw TypeDBException.of(MAX_INSTANCE_REACHED, typeLabel, LONG_MAX_VALUE);
             }
-            return ValueSortable.longToBytes(key);
+            return ByteArray.encodeLongAsSorted(key);
         }
 
         public ByteArray serialise() {
@@ -239,7 +237,7 @@ public class KeyGenerator {
                         ByteArray prefix = join(thingEncoding.prefix().bytes(), typeIID);
                         ByteArray lastIID = dataStorage.getLastKey(prefix);
                         AtomicLong nextValue = lastIID != null ?
-                                new AtomicLong(ValueSortable.bytesToLong(lastIID.view(PREFIX_W_TYPE_LENGTH, DEFAULT_LENGTH)) + delta) :
+                                new AtomicLong(lastIID.view(PREFIX_W_TYPE_LENGTH, DEFAULT_LENGTH).decodeSortedAsLong() + delta) :
                                 new AtomicLong(initialValue);
                         thingKeys.put(VertexIID.Type.of(typeIID), nextValue);
                     }
