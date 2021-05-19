@@ -41,6 +41,7 @@ import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.rocks.RocksTypeDB;
 import com.vaticle.typedb.core.test.integration.util.Util;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import com.vaticle.typeql.lang.TypeQL;
 import org.junit.After;
@@ -54,6 +55,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -271,11 +273,12 @@ public class UnifyRelationConcludableTest {
                 pair(Variable.label("employment"), employment.getType()),
                 pair(Variable.label("employment:employee"), employment.getType().getRelates("employee"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
-        assertTrue(unified.isPresent());
-        assertEquals(2, unified.get().concepts().size());
-        assertEquals(employment, unified.get().get("r"));
-        assertEquals(person, unified.get().get("y"));
+        FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
+        assertTrue(unified.hasNext());
+        ConceptMap unifiedAnswer = unified.first().get();
+        assertEquals(2, unifiedAnswer.concepts().size());
+        assertEquals(employment, unifiedAnswer.get("r"));
+        assertEquals(person, unifiedAnswer.get("y"));
 
         // filter out invalid types
         Relation friendship = instanceOf("friendship").asRelation();
@@ -288,7 +291,7 @@ public class UnifyRelationConcludableTest {
                 pair(Variable.label("employment:employee"), friendship.getType().getRelates("friend"))
         );
         unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
-        assertFalse(unified.isPresent());
+        assertFalse(unified.hasNext());
     }
 
     @Test
@@ -325,12 +328,13 @@ public class UnifyRelationConcludableTest {
                 pair(Variable.label("employment"), employment.getType()),
                 pair(Variable.label("employment:employee"), employment.getType().getRelates("employee"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
-        assertTrue(unified.isPresent());
-        assertEquals(3, unified.get().concepts().size());
-        assertEquals(employment.getType(), unified.get().get("rel"));
-        assertEquals(person, unified.get().get("y"));
-        assertEquals(employment, unified.get().get(Variable.anon(0)));
+        FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
+        assertTrue(unified.hasNext());
+        ConceptMap unifiedAnswer = unified.first().get();
+        assertEquals(3, unifiedAnswer.concepts().size());
+        assertEquals(employment.getType(), unifiedAnswer.get("rel"));
+        assertEquals(person, unifiedAnswer.get("y"));
+        assertEquals(employment, unifiedAnswer.get(Variable.anon(0)));
 
         // filter out invalid types
         Relation friendship = instanceOf("friendship").asRelation();
@@ -343,7 +347,7 @@ public class UnifyRelationConcludableTest {
                 pair(Variable.label("employment:employee"), friendship.getType().getRelates("friend"))
         );
         unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
-        assertFalse(unified.isPresent());
+        assertFalse(unified.hasNext());
     }
 
     @Test
@@ -380,12 +384,13 @@ public class UnifyRelationConcludableTest {
                 pair(Variable.label("employment"), employment.getType()),
                 pair(Variable.label("employment:employee"), employment.getType().getRelates("employee"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
-        assertTrue(unified.isPresent());
-        assertEquals(3, unified.get().concepts().size());
-        assertEquals(employment.getType().getRelates("employee"), unified.get().get("role"));
-        assertEquals(person, unified.get().get("y"));
-        assertEquals(employment, unified.get().get(Variable.anon(0)));
+        FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
+        assertTrue(unified.hasNext());
+        ConceptMap unifiedAnswer = unified.first().get();
+        assertEquals(3, unified.next().concepts().size());
+        assertEquals(employment.getType().getRelates("employee"), unifiedAnswer.get("role"));
+        assertEquals(person, unifiedAnswer.get("y"));
+        assertEquals(employment, unifiedAnswer.get(Variable.anon(0)));
 
         // filter out invalid types
         Relation friendship = instanceOf("friendship").asRelation();
@@ -398,7 +403,7 @@ public class UnifyRelationConcludableTest {
                 pair(Variable.label("employment:employee"), friendship.getType().getRelates("friend"))
         );
         unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
-        assertFalse(unified.isPresent());
+        assertFalse(unified.hasNext());
     }
 
     @Test
@@ -466,10 +471,11 @@ public class UnifyRelationConcludableTest {
                 pair(Variable.name("employment"), employment.getType()),
                 pair(Variable.name("employee"), employment.getType().getRelates("employee"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
-        assertTrue(unified.isPresent());
-        assertEquals(2, unified.get().concepts().size());
-        assertEquals(person, unified.get().get("p"));
+        FunctionalIterator<ConceptMap> unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
+        assertTrue(unified.hasNext());
+        ConceptMap unifiedAnswer = unified.first().get();
+        assertEquals(2, unifiedAnswer.concepts().size());
+        assertEquals(person, unifiedAnswer.get("p"));
 
         // filter out answers with differing role players that must be the same
         employment = instanceOf("employment").asRelation();
@@ -485,7 +491,7 @@ public class UnifyRelationConcludableTest {
                 pair(Variable.name("employee"), employment.getType().getRelates("employee"))
         );
         unified = unifier.unUnify(identifiedConcepts, new Unifier.Requirements.Instance(map()));
-        assertFalse(unified.isPresent());
+        assertFalse(unified.hasNext());
     }
 
     //TODO tests below do not test for requirements and unifier application to answers
@@ -812,12 +818,13 @@ public class UnifyRelationConcludableTest {
                 pair(Variable.name("employment"), employment.getType()),
                 pair(Variable.name("employee"), employment.getType().getRelates("employee"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
-        assertTrue(unified.isPresent());
-        assertEquals(3, unified.get().concepts().size());
-        assertEquals(person, unified.get().get("p"));
-        assertEquals(person, unified.get().get("q"));
-        assertEquals(employment, unified.get().get(Variable.anon(0)));
+        FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
+        assertTrue(unified.hasNext());
+        ConceptMap unifiedAnswer = unified.first().get();
+        assertEquals(3, unifiedAnswer.concepts().size());
+        assertEquals(person, unifiedAnswer.get("p"));
+        assertEquals(person, unifiedAnswer.get("q"));
+        assertEquals(employment, unifiedAnswer.get(Variable.anon(0)));
     }
 
     //[reflexive parent, child]
@@ -1013,6 +1020,120 @@ public class UnifyRelationConcludableTest {
         verifyUnificationSucceedsFor(rule(conclusions.get(3), "{$p isa driving-hire; $q isa driving-hire;}"), parents, Lists.newArrayList(1, 2, 3));
     }
 
+    @Test
+    public void unUnify_produces_cartesian_named_types() {
+        String conjunction = "{$r ($role: $x) isa $rel;}";
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction, logicMgr));
+        Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
+
+        Rule rule = createRule("people-are-self-friends", "{ $x isa person; }",
+                               " (friend: $x) isa friendship ", logicMgr);
+
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
+        assertEquals(1, unifiers.size());
+        Unifier unifier = unifiers.get(0);
+
+        // test filter allows a valid answer
+        Relation friendship = instanceOf("friendship").asRelation();
+        Thing person = instanceOf("person");
+        addRolePlayer(friendship, "friend", person);
+        Map<Variable, Concept> concepts = map(
+                pair(Variable.anon(0), friendship),
+                pair(Variable.name("x"), person),
+                pair(Variable.label("friendship"), friendship.getType()),
+                pair(Variable.label("friendship:friend"), friendship.getType().getRelates("friend"))
+        );
+        List<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map())).toList();
+        assertEquals(6, unified.size());
+
+        Set<Map<String, String>> expected = set(
+                new HashMap<String, String>() {{
+                    put("$rel", "friendship");
+                    put("$role", "friendship:friend");
+                }},
+                new HashMap<String, String>() {{
+                    put("$rel", "friendship");
+                    put("$role", "relation:role");
+                }},
+                new HashMap<String, String>() {{
+                    put("$rel", "relation");
+                    put("$role", "friendship:friend");
+                }},
+                new HashMap<String, String>() {{
+                    put("$rel", "relation");
+                    put("$role", "relation:role");
+                }},
+                new HashMap<String, String>() {{
+                    put("$rel", "thing");
+                    put("$role", "friendship:friend");
+                }},
+                new HashMap<String, String>() {{
+                    put("$rel", "thing");
+                    put("$role", "relation:role");
+                }}
+        );
+
+        Set<Map<String, String>> actual = new HashSet<>();
+        iterate(unified).forEachRemaining(answer -> {
+            actual.add(new HashMap<String, String>() {{
+                put("$rel", answer.get("rel").asType().getLabel().name());
+                put("$role", answer.get("role").asType().getLabel().scopedName());
+            }});
+        });
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void unUnify_produces_cartesian_named_types_only_for_unbound_vars() {
+        String conjunction = "{$r ($role: $x) isa $rel;}";
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction, logicMgr));
+        Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
+
+        Rule rule = createRule("people-are-self-friends", "{ $x isa person; }",
+                               " (friend: $x) isa friendship ", logicMgr);
+
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
+        assertEquals(1, unifiers.size());
+        Unifier unifier = unifiers.get(0);
+
+        // test filter allows a valid answer
+        Relation friendship = instanceOf("friendship").asRelation();
+        Thing person = instanceOf("person");
+        addRolePlayer(friendship, "friend", person);
+        Map<Variable, Concept> concepts = map(
+                pair(Variable.anon(0), friendship),
+                pair(Variable.name("x"), person),
+                pair(Variable.label("friendship"), friendship.getType()),
+                pair(Variable.label("friendship:friend"), friendship.getType().getRelates("friend"))
+        );
+        List<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map(
+                pair(Variable.name("rel"), friendship.getType())
+        ))).toList();
+        assertEquals(2, unified.size());
+
+        Set<Map<String, String>> expected = set(
+                new HashMap<String, String>() {{
+                    put("$rel", "friendship");
+                    put("$role", "friendship:friend");
+                }},
+                new HashMap<String, String>() {{
+                    put("$rel", "friendship");
+                    put("$role", "relation:role");
+                }}
+        );
+
+        Set<Map<String, String>> actual = new HashSet<>();
+        iterate(unified).forEachRemaining(answer -> {
+            actual.add(new HashMap<String, String>() {{
+                put("$rel", answer.get("rel").asType().getLabel().name());
+                put("$role", answer.get("role").asType().getLabel().scopedName());
+            }});
+        });
+
+        assertEquals(expected, actual);
+    }
+
     private Rule rule(String conclusion, String conditions){
         return createRule(UUID.randomUUID().toString(), conditions, conclusion, logicMgr);
     }
@@ -1054,21 +1175,22 @@ public class UnifyRelationConcludableTest {
         assertFalse(childAnswers.isEmpty());
         assertFalse(parentAnswers.isEmpty());
 
-        List<ConceptMap> unifiedAnswers = childAnswers.stream()
-                .map(ans -> {
+        List<ConceptMap> unifiedAnswers = iterate(childAnswers)
+                .flatMap(ans -> {
                     Map<Variable, Concept> labelledTypes = addRequiredLabeledTypes(ans, unifier);
                     Map<Variable, Concept> requiredRetrievableConcepts = addRequiredRetrievableConcepts(ans, unifier);
                     labelledTypes.putAll(requiredRetrievableConcepts);
                     //TODO if want to use with iids add instance requirements
-                    ConceptMap unified = unifier.unUnify(labelledTypes, new Unifier.Requirements.Instance(map())).orElse(null);
-                    if (unified == null) return null;
-                    Map<Variable.Retrievable, Concept> concepts = unified.concepts().entrySet().stream()
-                            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-                    requiredRetrievableConcepts.forEach(concepts::remove);
-                    return new ConceptMap(concepts);
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                    FunctionalIterator<ConceptMap> unified = unifier.unUnify(labelledTypes,
+                                                                             new Unifier.Requirements.Instance(map()))
+                            .map(u -> {
+                                Map<Variable.Retrievable, Concept> concepts = u.concepts().entrySet().stream()
+                                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                                requiredRetrievableConcepts.forEach(concepts::remove);
+                                return new ConceptMap(concepts);
+                            });
+                    return unified;
+                }).toList();
 
         assertFalse(unifiedAnswers.isEmpty());
         assertTrue(parentAnswers.containsAll(unifiedAnswers));

@@ -19,17 +19,22 @@ package com.vaticle.typedb.core.logic.resolvable;
 
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.type.ThingType;
+import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -92,9 +97,9 @@ public class Unifier {
      * Un-unify a map of concepts, with given identifiers. These must include anonymous and labelled concepts,
      * as they may be mapped to from a named variable, and may have requirements that need to be met.
      */
-    public Optional<ConceptMap> unUnify(Map<Variable, Concept> concepts, Requirements.Instance instanceRequirements) {
+    public FunctionalIterator<ConceptMap> unUnify(Map<Variable, Concept> concepts, Requirements.Instance instanceRequirements) {
 
-        if (!unifiedRequirements.exactlySatisfiedBy(concepts)) return Optional.empty();
+        if (!unifiedRequirements.exactlySatisfiedBy(concepts)) return Iterators.empty();
 
         Map<Retrievable, Concept> reversedConcepts = new HashMap<>();
         for (Map.Entry<Variable, Set<Retrievable>> entry : reverseUnifier.entrySet()) {
@@ -106,12 +111,37 @@ public class Unifier {
             Concept concept = concepts.get(toReverse);
             for (Retrievable r : reversed) {
                 if (!reversedConcepts.containsKey(r)) reversedConcepts.put(r, concept);
-                if (!reversedConcepts.get(r).equals(concept)) return Optional.empty();
+                if (!reversedConcepts.get(r).equals(concept)) return Iterators.empty();
             }
         }
 
-        if (instanceRequirements.satisfiedBy(reversedConcepts)) return Optional.of(new ConceptMap(reversedConcepts));
-        else return Optional.empty();
+        if (instanceRequirements.satisfiedBy(reversedConcepts)) return cartesianUnrestrictedNamedTypes(reversedConcepts, instanceRequirements);
+        else return Iterators.empty();
+    }
+
+    private static FunctionalIterator<ConceptMap> cartesianUnrestrictedNamedTypes(Map<Retrievable, Concept> initialConcepts,
+                                                                                  Requirements.Instance instanceRequirements) {
+        Map<Retrievable, Concept> fixedConcepts = new HashMap<>();
+        List<Variable.Name> namedTypeNames = new ArrayList<>();
+        List<FunctionalIterator<Type>> namedTypeSupers = new ArrayList<>();
+        initialConcepts.forEach((id, concept) -> {
+            if (id.isName() && concept.isType() && !instanceRequirements.hasRestriction(id)) {
+                namedTypeNames.add(id.asName());
+                namedTypeSupers.add(concept.asType().getSupertypes().map(t -> t));
+            } else fixedConcepts.put(id, concept);
+        });
+
+        if (namedTypeNames.isEmpty()) {
+            return Iterators.single(new ConceptMap(fixedConcepts));
+        } else {
+            return Iterators.cartesian(namedTypeSupers).map(permutation -> {
+                Map<Retrievable, Concept> concepts = new HashMap<>(fixedConcepts);
+                for (int i = 0; i < permutation.size(); i++) {
+                    concepts.put(namedTypeNames.get(i), permutation.get(i));
+                }
+                return new ConceptMap(concepts);
+            });
+        }
     }
 
     public Map<Retrievable, Set<Variable>> mapping() {
@@ -334,6 +364,10 @@ public class Unifier {
                     }
                 }
                 return true;
+            }
+
+            public boolean hasRestriction(Retrievable var) {
+                return requireCompatible.containsKey(var);
             }
 
             @Override

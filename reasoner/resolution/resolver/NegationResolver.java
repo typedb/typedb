@@ -98,8 +98,8 @@ public class NegationResolver extends Resolver<NegationResolver> {
     }
 
     private void tryAnswer(Request fromUpstream, BoundsState boundsState) {
-        // TODO: if we wanted to accelerate the searching of a negation counter example,
-        // TODO: we could send multiple requests into the sub system at once!
+        // TODO: if we wanted to accelerate the searching of a negation counter example, we could send multiple
+        //  requests into the sub system at once!
 
         /*
         NOTE:

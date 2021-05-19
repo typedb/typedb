@@ -18,8 +18,6 @@
 package com.vaticle.typedb.core.reasoner.resolution;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.concept.ConceptManager;
-import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
@@ -41,30 +39,27 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class Planner {
-    private final ConceptManager conceptMgr;
-    private final LogicManager logicMgr;
 
-    Planner(ConceptManager conceptMgr, LogicManager logicMgr) {
-        this.conceptMgr = conceptMgr;
-        this.logicMgr = logicMgr;
+    public static List<Resolvable<?>> plan(Set<Resolvable<?>> resolvables,
+                                           Map<Resolvable<?>, Integer> visitCounts,
+                                           Set<Retrievable> boundVariables) {
+        return new Plan(resolvables, visitCounts, boundVariables).plan;
     }
 
-    public List<Resolvable<?>> plan(Set<Resolvable<?>> resolvables, Set<Retrievable> bound) {
-        return new Plan(resolvables, bound).plan;
-    }
-
-    class Plan {
+    static class Plan {
         private final List<Resolvable<?>> plan;
         private final Map<Resolvable<?>, Set<Retrievable>> dependencies;
-        private final Set<Retrievable> answered;
-        private final Set<Resolvable<?>> remaining;
+        private final Set<Retrievable> boundVariables;
+        private final Set<Resolvable<?>> unplanned;
+        private final Map<Resolvable<?>, Integer> visitCounts;
 
-        Plan(Set<Resolvable<?>> resolvables, Set<Retrievable> boundVars) {
+        Plan(Set<Resolvable<?>> resolvables, Map<Resolvable<?>, Integer> visitCounts, Set<Retrievable> boundVariables) {
             assert resolvables.size() > 0;
-            this.plan = new ArrayList<>();
-            this.answered = new HashSet<>(boundVars);
+            this.unplanned = new HashSet<>(resolvables);
+            this.visitCounts = visitCounts;
+            this.boundVariables = new HashSet<>(boundVariables);
             this.dependencies = dependencies(resolvables);
-            this.remaining = new HashSet<>(resolvables);
+            this.plan = new ArrayList<>();
             computePlan();
             assert plan.size() == resolvables.size();
             assert set(plan).equals(resolvables);
@@ -72,19 +67,19 @@ public class Planner {
 
         private void add(Resolvable<?> resolvable) {
             plan.add(resolvable);
-            iterate(resolvable.retrieves()).forEachRemaining(answered::add);
-            remaining.remove(resolvable);
+            iterate(resolvable.retrieves()).forEachRemaining(boundVariables::add);
+            unplanned.remove(resolvable);
         }
 
         private void computePlan() {
-            while (remaining.size() != 0) {
+            while (!unplanned.isEmpty()) {
                 Optional<Concludable> concludable;
                 Optional<com.vaticle.typedb.core.logic.resolvable.Retrievable> retrievable;
 
                 // Retrievable where:
+                // it is connected
                 // all of it's dependencies are already satisfied,
-                // which will answer the most variables
-                retrievable = mostAnsweredVars(dependenciesSatisfied(hasAnsweredVar(remaining.stream().filter(Resolvable::isRetrievable))))
+                retrievable = sortedByVisitCount(dependenciesSatisfied(hasAnsweredVar(unplanned.stream().filter(Resolvable::isRetrievable))))
                         .map(Resolvable::asRetrievable);
                 if (retrievable.isPresent()) {
                     add(retrievable.get());
@@ -92,10 +87,9 @@ public class Planner {
                 }
 
                 // Concludable where:
+                // it is connected
                 // all of it's dependencies are already satisfied,
-                // which has the least applicable rules,
-                // and of those the least unsatisfied variables
-                concludable = mostAnsweredVars(dependenciesSatisfied(hasAnsweredVar(remaining.stream().filter(Resolvable::isConcludable))))
+                concludable = sortedByVisitCount(dependenciesSatisfied(hasAnsweredVar(unplanned.stream().filter(Resolvable::isConcludable))))
                         .map(Resolvable::asConcludable);
                 if (concludable.isPresent()) {
                     add(concludable.get());
@@ -103,10 +97,10 @@ public class Planner {
                 }
 
                 // Retrievable where:
+                // it can be disconnected
                 // all of it's dependencies are already satisfied (should be moot),
                 // it can be disconnected
-                // which will answer the most variables
-                retrievable = mostUnansweredVars(dependenciesSatisfied(remaining.stream().filter(Resolvable::isRetrievable)))
+                retrievable = sortedByVisitCount(dependenciesSatisfied(unplanned.stream().filter(Resolvable::isRetrievable)))
                         .map(Resolvable::asRetrievable);
                 if (retrievable.isPresent()) {
                     add(retrievable.get());
@@ -115,10 +109,9 @@ public class Planner {
 
                 // Concludable where:
                 // it can be disconnected
-                // all of it's dependencies are already satisfied,
-                // which has the least applicable rules,
-                // and of those the least unsatisfied variables
-                concludable = fewestRules(dependenciesSatisfied(remaining.stream().filter(Resolvable::isConcludable)));
+                // all of it's dependencies are already satisfied
+                concludable = sortedByVisitCount(dependenciesSatisfied(unplanned.stream().filter(Resolvable::isConcludable)))
+                        .map(Resolvable::asConcludable);
                 if (concludable.isPresent()) {
                     add(concludable.get());
                     continue;
@@ -126,47 +119,33 @@ public class Planner {
 
                 // Concludable where:
                 // it can be disconnected
-                // all of it's dependencies are NOT already satisfied,
-                // which has the least applicable rules,
-                // and of those the least unsatisfied variables
-                concludable = fewestRules(remaining.stream().filter(Resolvable::isConcludable));
+                // all of it's dependencies are NOT already satisfied
+                concludable = sortedByVisitCount(unplanned.stream().filter(Resolvable::isConcludable))
+                        .map(Resolvable::asConcludable);
                 if (concludable.isPresent()) {
                     add(concludable.get());
                     continue;
                 }
-
                 throw TypeDBException.of(ILLEGAL_STATE);
             }
         }
 
         private Stream<Resolvable<?>> dependenciesSatisfied(Stream<Resolvable<?>> resolvableStream) {
-            return resolvableStream.filter(c -> answered.containsAll(dependencies.get(c)));
+            return resolvableStream.filter(c -> boundVariables.containsAll(dependencies.get(c)));
         }
 
         private Stream<Resolvable<?>> hasAnsweredVar(Stream<Resolvable<?>> resolvableStream) {
-            return resolvableStream.filter(r -> !Collections.disjoint(r.retrieves(), answered));
+            return resolvableStream.filter(r -> !Collections.disjoint(r.retrieves(), boundVariables));
         }
 
-        private Optional<Concludable> fewestRules(Stream<Resolvable<?>> resolvableStream) {
-            // TODO: Tie-break for Concludables with the same number of applicable rules
-            return resolvableStream.map(Resolvable::asConcludable)
-                    .min(Comparator.comparingInt(c -> (int) c.getApplicableRules(conceptMgr, logicMgr).count()));
-        }
-
-        private Optional<Resolvable<?>> mostAnsweredVars(Stream<Resolvable<?>> resolvables) {
-            return resolvables.max(Comparator.comparingInt(r -> iterate(r.retrieves())
-                    .filter(answered::contains).toSet().size()));
-        }
-
-        private Optional<Resolvable<?>> mostUnansweredVars(Stream<Resolvable<?>> resolvableStream) {
-            return resolvableStream.max(Comparator.comparingInt(r -> iterate(r.retrieves())
-                    .filter(id -> !answered.contains(id)).toSet().size()));
+        private Optional<Resolvable<?>> sortedByVisitCount(Stream<Resolvable<?>> resolvables) {
+            return resolvables.max(Comparator.comparingInt(r -> visitCounts.getOrDefault(r, 0)));
         }
 
         /**
          * Determine the resolvables that are dependent upon the generation of each variable
          */
-        private Map<Resolvable<?>, Set<Retrievable>> dependencies(Set<Resolvable<?>> resolvables) {
+        private static Map<Resolvable<?>, Set<Retrievable>> dependencies(Set<Resolvable<?>> resolvables) {
             Map<Resolvable<?>, Set<Retrievable>> deps = new HashMap<>();
             Set<Retrievable> generated = iterate(resolvables).map(Resolvable::generating).filter(Optional::isPresent)
                     .map(Optional::get).map(ThingVariable::id).toSet();

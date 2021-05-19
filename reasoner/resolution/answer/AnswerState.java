@@ -18,6 +18,7 @@
 package com.vaticle.typedb.core.reasoner.resolution.answer;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
@@ -59,8 +60,10 @@ public interface AnswerState {
 
     interface Top extends AnswerState {
 
+        @Override
         default boolean isTop() { return true; }
 
+        @Override
         default Top asTop() { return this; }
 
         default boolean isMatch() { return false; }
@@ -169,7 +172,7 @@ public interface AnswerState {
             throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Concludable.class));
         }
 
-        default Conclusion<?, ?> asConclusion() {
+        default Conclusion<?, ? extends Concludable<?>> asConclusion() {
             throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Conclusion.class));
         }
 
@@ -274,6 +277,7 @@ public interface AnswerState {
             interface Condition<S extends Condition<S, P>, P extends Conclusion<P, ?>> extends Compound<S, P> {
 
                 // merge point where Match and Explain all become Match states
+                @Override
                 Concludable.Match<S> toDownstream(Mapping mapping, com.vaticle.typedb.core.logic.resolvable.Concludable concludable);
 
                 Conclusion<?, ?> toUpstream();
@@ -290,6 +294,7 @@ public interface AnswerState {
 
                 interface Match extends Condition<Match, Conclusion.Match> {
 
+                    @Override
                     Conclusion.Match toUpstream();
 
                     @Override
@@ -302,6 +307,7 @@ public interface AnswerState {
 
                 interface Explain extends Condition<Explain, Conclusion.Explain> {
 
+                    @Override
                     Conclusion.Explain toUpstream();
 
                     @Override
@@ -320,7 +326,7 @@ public interface AnswerState {
 
             Mapping mapping();
 
-            PRNT toUpstreamInferred();
+            PRNT toUpstreamInferred(boolean requiresReiteration);
 
             Optional<? extends Conclusion<?, ?>> toDownstream(Unifier unifier, Rule rule);
 
@@ -345,7 +351,8 @@ public interface AnswerState {
 
                 Match<P> with(ConceptMap extension, boolean requiresReiteration);
 
-                P toUpstreamLookup(ConceptMap additionalConcepts, boolean isInferredConclusion);
+                P toUpstreamLookup(ConceptMap additionalConcepts, boolean isInferredConclusion,
+                                   boolean requiresReiteration);
 
                 @Override
                 default boolean isMatch() { return true; }
@@ -382,7 +389,7 @@ public interface AnswerState {
 
             Unifier.Requirements.Instance instanceRequirements();
 
-            Optional<? extends PRNT> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts);
+            FunctionalIterator<? extends PRNT> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts);
 
             SLF extend(ConceptMap ans);
 
@@ -392,17 +399,31 @@ public interface AnswerState {
             default boolean isConclusion() { return true; }
 
             @Override
-            default Conclusion<?, ?> asConclusion() { return this; }
+            default Conclusion<?, PRNT> asConclusion() { return this; }
+
+            default boolean isMatch() { return false; }
+
+            default Match asMatch() { throw TypeDBException.of(ILLEGAL_CAST, this.getClass(), Top.Match.class); }
+
+            default boolean isExplain() { return false; }
+
+            default Explain asExplain() { throw TypeDBException.of(ILLEGAL_CAST, this.getClass(), Top.Explain.class); }
 
             interface Match extends Conclusion<Match, Concludable.Match<?>>, Explainable {
 
                 @Override
-                Optional<Concludable.Match<?>> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts);
+                FunctionalIterator<Concludable.Match<?>> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts);
 
                 Match with(ConceptMap extension, boolean requiresReiteration);
 
                 @Override
                 Compound.Root.Condition.Match toDownstream(Set<Identifier.Variable.Retrievable> filter);
+
+                @Override
+                default boolean isMatch() { return true; }
+
+                @Override
+                default Match asMatch() { return this; }
 
             }
 
@@ -413,10 +434,16 @@ public interface AnswerState {
                 Explain with(ConceptMap conditionAnswer, boolean requiresReiteration);
 
                 @Override
-                Optional<Concludable.Explain> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts);
+                FunctionalIterator<Concludable.Explain> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts);
 
                 @Override
                 Compound.Condition.Explain toDownstream(Set<Identifier.Variable.Retrievable> filter);
+
+                @Override
+                default boolean isExplain() { return true; }
+
+                @Override
+                default Explain asExplain() { return this; }
 
             }
 
@@ -424,7 +451,7 @@ public interface AnswerState {
 
         interface Retrievable<P extends Compound<P, ?>> extends Partial<P> {
 
-            P aggregateToUpstream(ConceptMap concepts);
+            P aggregateToUpstream(ConceptMap concepts, boolean requiresReiteration);
 
             @Override
             default boolean isRetrievable() { return true; }
