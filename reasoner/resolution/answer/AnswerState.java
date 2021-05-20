@@ -46,8 +46,6 @@ public interface AnswerState {
 
     ConceptMap conceptMap();
 
-    boolean requiresReiteration();
-
     Actor.Driver<? extends Resolver<?>> root();
 
     default boolean isTop() { return false; }
@@ -96,7 +94,7 @@ public interface AnswerState {
 
                 Partial.Compound.Root.Root.Match toDownstream();
 
-                Finished finish(ConceptMap conceptMap, boolean requiresReiteration);
+                Finished finish(ConceptMap conceptMap);
 
             }
 
@@ -128,7 +126,7 @@ public interface AnswerState {
 
                 Partial.Compound.Root.Explain toDownstream();
 
-                Finished finish(ConceptMap conceptMap, boolean requiresReiteration, Explanation explanation);
+                Finished finish(ConceptMap conceptMap, Explanation explanation);
 
             }
 
@@ -182,7 +180,7 @@ public interface AnswerState {
 
         interface Compound<SLF extends Compound<SLF, PRNT>, PRNT extends AnswerState> extends Partial<PRNT> {
 
-            SLF with(ConceptMap extension, boolean requiresReiteration);
+            SLF with(ConceptMap extension);
 
             Concludable<SLF> toDownstream(Mapping mapping, com.vaticle.typedb.core.logic.resolvable.Concludable concludable);
 
@@ -258,7 +256,7 @@ public interface AnswerState {
 
                 interface Explain extends Root<Explain, Top.Explain.Initial> {
 
-                    Explain with(ConceptMap extension, boolean requiresReiteration, Explanation explanation);
+                    Explain with(ConceptMap extension, Explanation explanation);
 
                     @Override
                     Concludable.Explain toDownstream(Mapping mapping, com.vaticle.typedb.core.logic.resolvable.Concludable concludable);
@@ -326,7 +324,7 @@ public interface AnswerState {
 
             Mapping mapping();
 
-            PRNT toUpstreamInferred(boolean requiresReiteration);
+            PRNT toUpstreamInferred();
 
             Optional<? extends Conclusion<?, ?>> toDownstream(Unifier unifier, Rule rule);
 
@@ -349,10 +347,9 @@ public interface AnswerState {
                 @Override
                 Optional<Conclusion.Match> toDownstream(Unifier unifier, Rule rule);
 
-                Match<P> with(ConceptMap extension, boolean requiresReiteration);
+                Match<P> with(ConceptMap extension);
 
-                P toUpstreamLookup(ConceptMap additionalConcepts, boolean isInferredConclusion,
-                                   boolean requiresReiteration);
+                P toUpstreamLookup(ConceptMap additionalConcepts, boolean isInferredConclusion);
 
                 @Override
                 default boolean isMatch() { return true; }
@@ -367,7 +364,7 @@ public interface AnswerState {
                 @Override
                 Optional<Conclusion.Explain> toDownstream(Unifier unifier, Rule rule);
 
-                Explain with(ConceptMap extension, boolean requiresReiteration, Rule rule, ConceptMap conclusionAnswer,
+                Explain with(ConceptMap extension, Rule rule, ConceptMap conclusionAnswer,
                              Unifier unifier, ConceptMap conditionAnswer);
 
                 @Override
@@ -414,7 +411,7 @@ public interface AnswerState {
                 @Override
                 FunctionalIterator<Concludable.Match<?>> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts);
 
-                Match with(ConceptMap extension, boolean requiresReiteration);
+                Match with(ConceptMap extension);
 
                 @Override
                 Compound.Root.Condition.Match toDownstream(Set<Identifier.Variable.Retrievable> filter);
@@ -431,7 +428,7 @@ public interface AnswerState {
 
                 ConceptMap conditionAnswer();
 
-                Explain with(ConceptMap conditionAnswer, boolean requiresReiteration);
+                Explain with(ConceptMap conditionAnswer);
 
                 @Override
                 FunctionalIterator<Concludable.Explain> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts);
@@ -451,7 +448,7 @@ public interface AnswerState {
 
         interface Retrievable<P extends Compound<P, ?>> extends Partial<P> {
 
-            P aggregateToUpstream(ConceptMap concepts, boolean requiresReiteration);
+            P aggregateToUpstream(ConceptMap concepts);
 
             @Override
             default boolean isRetrievable() { return true; }

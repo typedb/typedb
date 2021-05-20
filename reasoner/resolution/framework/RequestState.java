@@ -57,7 +57,7 @@ public abstract class RequestState {
     }
 
     public interface Exploration {
-        void newAnswer(AnswerState.Partial<?> partial, boolean requiresReiteration);
+        void newAnswer(AnswerState.Partial<?> partial);
 
         DownstreamManager downstreamManager();
 

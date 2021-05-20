@@ -109,9 +109,9 @@ build:
         bazel test //test/behaviour/resolution/tests/negation:test --test_output=streamed
         bazel test //test/behaviour/resolution/tests/recursion:test --test_output=streamed
         bazel test //test/behaviour/resolution/tests/schema_queries:test --test_output=streamed
-        # TODO The following two sets of tests are a bit too flaky to include in CI
+        bazel test //test/behaviour/resolution/tests/concept_inequality:test --test_output=streamed
+        # Flakey tests:
         # bazel test //test/behaviour/resolution/tests/variable_roles:test --test_output=streamed
-        # bazel test //test/behaviour/resolution/tests/concept_inequality:test --test_output=streamed
     test-assembly-linux-targz:
       image: vaticle-ubuntu-20.04
       filter:
