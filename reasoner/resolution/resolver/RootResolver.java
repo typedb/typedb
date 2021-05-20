@@ -154,8 +154,8 @@ public interface RootResolver<TOP extends Top> {
 
         public Disjunction(Driver<Disjunction> driver, com.vaticle.typedb.core.pattern.Disjunction disjunction,
                            Consumer<Finished> onAnswer, Consumer<Integer> onFail, Consumer<Throwable> onException,
-                           ResolverRegistry registry,
-                           TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
+                           ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
+                           boolean resolutionTracing) {
             super(driver, Disjunction.class.getSimpleName() + "(pattern:" + disjunction + ")", disjunction,
                   registry, traversalEngine, conceptMgr, resolutionTracing);
             this.onAnswer = onAnswer;

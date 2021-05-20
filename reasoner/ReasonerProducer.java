@@ -91,13 +91,14 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     public ReasonerProducer(Disjunction disjunction, TypeQLMatch.Modifiers modifiers, Options.Query options,
                             ResolverRegistry resolverRegistry, ExplainablesManager explainablesManager) {
         this.options = options;
+        this.resolverRegistry = resolverRegistry;
         this.explainablesManager = explainablesManager;
         this.queue = null;
         this.iteration = 0;
         this.done = false;
         this.required = new AtomicInteger();
         this.processing = new AtomicInteger();
-        this.rootResolver = resolverRegistry.root(disjunction, this::requestAnswered, this::requestFailed, this::exception);
+        this.rootResolver = this.resolverRegistry.root(disjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
         Root<?, ?> downstream = InitialImpl.create(filter(modifiers.filter()), new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
