@@ -28,7 +28,7 @@ public class ReiterationQuery {
         private final Driver<? extends Resolver<?>> rootResolver;
         private final Consumer<Response> onResponse;
 
-        public Request(Driver<? extends Resolver<?>> rootResolver, Consumer<Response> onResponse) {
+        private Request(Driver<? extends Resolver<?>> rootResolver, Consumer<Response> onResponse) {
             this.rootResolver = rootResolver;
             this.onResponse = onResponse;
         }
@@ -52,7 +52,7 @@ public class ReiterationQuery {
         private final boolean reiterate;
         private final Driver<ConcludableResolver> sender;
 
-        public Response(Driver<ConcludableResolver> sender, boolean reiterate) {
+        private Response(Driver<ConcludableResolver> sender, boolean reiterate) {
             this.reiterate = reiterate;
             this.sender = sender;
         }

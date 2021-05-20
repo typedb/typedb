@@ -56,7 +56,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private final AtomicInteger required;
     private final AtomicInteger processing;
     private final Options.Query options;
-    private ResolverRegistry resolverRegistry;
+    private final ResolverRegistry resolverRegistry;
     private final ExplainablesManager explainablesManager;
     private final Request resolveRequest;
     private final ReiterationQuery.Request reiterationRequest;
