@@ -145,7 +145,18 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private void requestFailed(int iteration) {
         LOG.trace("Failed to find answer to request in iteration: " + iteration);
         if (options.traceInference()) ResolutionTracer.get().finish();
-        if (!iterationsCheckedForReiteration.contains(iteration)) sendReiterationRequests();
+        if (resolverRegistry.concludableResolvers().size() == 0) {
+            finish();
+        } else if (!iterationsCheckedForReiteration.contains(iteration)) {
+            sendReiterationRequests();
+        }
+    }
+
+    private void finish() {
+        // query is completely terminated
+        done = true;
+        queue.done();
+        required.set(0);
     }
 
     private void sendReiterationRequests() {
@@ -167,10 +178,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
                 prepareNextIteration();
                 retryInNewIteration();
             } else {
-                // query is completely terminated
-                done = true;
-                queue.done();
-                required.set(0);
+                finish();
             }
         }
     }
