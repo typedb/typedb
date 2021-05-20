@@ -172,8 +172,9 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     }
 
     public void receiveReiterationQuery(ReiterationQuery.Request request) {
-        boolean reiterate = iterate(cacheRegistersByRoot.get(request.sender()).values())
-                .filter(AnswerCache::requiresReiteration).first().isPresent();
+        boolean reiterate = cacheRegistersByRoot.containsKey(request.sender()) &&
+                iterate(cacheRegistersByRoot.get(request.sender()).values())
+                    .filter(AnswerCache::requiresReiteration).first().isPresent();
         driver().execute(actor -> actor.respondToReiterationQuery(request, reiterate));
     }
 
