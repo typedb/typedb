@@ -66,7 +66,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private Queue<ConceptMap> queue;
     private Set<Actor.Driver<? extends Resolver<?>>> reiterationQueryRespondents;
     private boolean requiresReiteration;
-    private final Set<Integer> iterationsCheckedForReiteration;
+    private boolean sentReiterationRequests;
 
     // TODO: this class should not be a Producer, it implements a different async processing mechanism
     public ReasonerProducer(Conjunction conjunction, TypeQLMatch.Modifiers modifiers, Options.Query options,
@@ -85,7 +85,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         Root<?, ?> downstream = InitialImpl.create(filter(modifiers.filter()), new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
         this.resolveRequest = Request.create(rootResolver, downstream);
         this.reiterationRequest = ReiterationQuery.Request.create(rootResolver, this::receiveReiterationResponse);
-        this.iterationsCheckedForReiteration = new HashSet<>();
+        this.sentReiterationRequests = false;
         this.requiresReiteration = false;
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
@@ -106,7 +106,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         Root<?, ?> downstream = InitialImpl.create(filter(modifiers.filter()), new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
         this.resolveRequest = Request.create(rootResolver, downstream);
         this.reiterationRequest = ReiterationQuery.Request.create(rootResolver, this::receiveReiterationResponse);
-        this.iterationsCheckedForReiteration = new HashSet<>();
+        this.sentReiterationRequests = false;
         this.requiresReiteration = false;
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
@@ -150,7 +150,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         if (options.traceInference()) ResolutionTracer.get().finish();
         if (resolverRegistry.concludableResolvers().size() == 0) {
             finish();
-        } else if (!iterationsCheckedForReiteration.contains(iteration)) {
+        } else if (!sentReiterationRequests && iteration == this.iteration) {
             sendReiterationRequests();
         }
     }
@@ -164,7 +164,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private void sendReiterationRequests() {
         assert reiterationQueryRespondents == null || reiterationQueryRespondents.isEmpty();
-        iterationsCheckedForReiteration.add(iteration);
+        sentReiterationRequests = true;
         reiterationQueryRespondents = new HashSet<>(resolverRegistry.concludableResolvers());
         resolverRegistry.concludableResolvers()
                 .forEach(res -> res.execute(actor -> actor.receiveReiterationQuery(reiterationRequest)));
@@ -195,6 +195,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private void prepareNextIteration() {
         iteration++;
+        sentReiterationRequests = false;
         requiresReiteration = false;
     }
 
