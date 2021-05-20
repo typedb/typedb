@@ -32,7 +32,6 @@ import com.vaticle.typedb.core.reasoner.resolution.framework.ReiterationQuery;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
-import com.vaticle.typedb.core.reasoner.resolution.resolver.ConcludableResolver;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
@@ -61,11 +60,11 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private final ExplainablesManager explainablesManager;
     private final Request resolveRequest;
     private final int computeSize;
-    private boolean requiresReiteration;
     private boolean done;
     private int iteration;
     private Queue<ConceptMap> queue;
-    private HashSet<Actor.Driver<? extends Resolver<?>>> reiterationQueryRespondents;
+    private Set<Actor.Driver<? extends Resolver<?>>> reiterationQueryRespondents;
+    private boolean requiresReiteration;
     private final Set<Integer> iterationsCheckedForReiteration;
 
     // TODO: this class should not be a Producer, it implements a different async processing mechanism
@@ -85,6 +84,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         Root<?, ?> downstream = InitialImpl.create(filter(modifiers.filter()), new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
         this.resolveRequest = Request.create(rootResolver, downstream);
         this.iterationsCheckedForReiteration = new HashSet<>();
+        this.requiresReiteration = false;
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
@@ -103,6 +103,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         Root<?, ?> downstream = InitialImpl.create(filter(modifiers.filter()), new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
         this.resolveRequest = Request.create(rootResolver, downstream);
         this.iterationsCheckedForReiteration = new HashSet<>();
+        this.requiresReiteration = false;
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
@@ -130,7 +131,6 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     // note: root resolver calls this single-threaded, so is thread safe
     private void requestAnswered(Finished answer) {
         if (options.traceInference()) ResolutionTracer.get().finish();
-        if (answer.requiresReiteration()) requiresReiteration = true;
         ConceptMap conceptMap = answer.conceptMap();
         if (options.explain() && !conceptMap.explainables().isEmpty()) {
             explainablesManager.setAndRecordExplainables(conceptMap);
@@ -148,6 +148,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     private void sendReiterationRequests() {
+        assert reiterationQueryRespondents == null || reiterationQueryRespondents.isEmpty();
         iterationsCheckedForReiteration.add(iteration);
         reiterationQueryRespondents = new HashSet<>(resolverRegistry.concludableResolvers());
         resolverRegistry.concludableResolvers()
@@ -155,7 +156,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
                         ReiterationQuery.Request.create(rootResolver, this::receiveReiterationResponse))));
     }
 
-    private void receiveReiterationResponse(ReiterationQuery.Response response) {
+    private synchronized void receiveReiterationResponse(ReiterationQuery.Response response) {
         if (response.reiterate()) requiresReiteration = true;
         assert reiterationQueryRespondents.contains(response.sender());
         reiterationQueryRespondents.remove(response.sender());
