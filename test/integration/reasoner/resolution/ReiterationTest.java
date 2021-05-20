@@ -130,7 +130,7 @@ public class ReiterationTest {
 
                 ResolutionTracer.get().start();
                 Actor.Driver<RootResolver.Conjunction> root = registry.root(conjunction, answer -> {
-                    if (answer.requiresReiteration()) receivedInferredAnswer[0] = true;
+                    //if (answer.requiresReiteration()) receivedInferredAnswer[0] = true;
                     responses.add(answer);
                 }, iterDone -> {
                     assert iteration[0] == iterDone;

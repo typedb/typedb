@@ -65,7 +65,7 @@ public class ExplanationProducer implements Producer<Explanation> {
         this.processing = new AtomicInteger();
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR : 1;
         this.explainer = registry.explainer(conjunction, this::requestAnswered, this::requestFailed, this::exception);
-        Root.Explain downstream = new AnswerStateImpl.TopImpl.ExplainImpl.InitialImpl(bounds, explainer, false).toDownstream();
+        Root.Explain downstream = new AnswerStateImpl.TopImpl.ExplainImpl.InitialImpl(bounds, explainer).toDownstream();
         this.explainRequest = Request.create(explainer, downstream);
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
@@ -91,7 +91,6 @@ public class ExplanationProducer implements Producer<Explanation> {
     // note: root resolver calls this single-threaded, so is threads safe
     private void requestAnswered(Explain.Finished explainedAnswer) {
         if (options.traceInference()) ResolutionTracer.get().finish();
-        if (explainedAnswer.requiresReiteration()) requiresReiteration = true;
         Explanation explanation = explainedAnswer.explanation();
         explainablesManager.setAndRecordExplainables(explanation.conditionAnswer());
         queue.put(explanation);

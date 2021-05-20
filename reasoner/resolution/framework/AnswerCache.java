@@ -47,7 +47,7 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
     protected final List<ANSWER> answers;
     private final Set<ANSWER> answersSet;
     private boolean reexploreOnNewAnswers;
-    private boolean requiresReiteration;
+    protected boolean requiresReiteration;
     protected FunctionalIterator<ANSWER> unexploredAnswers;
     protected boolean complete;
     protected final Map<SUBSUMES, ? extends AnswerCache<?, SUBSUMES>> cacheRegister;
@@ -85,10 +85,6 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
 
     public boolean isComplete() {
         return complete;
-    }
-
-    public void setRequiresReiteration() {
-        this.requiresReiteration = true;
     }
 
     public boolean requiresReiteration() {
@@ -234,7 +230,7 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
         private void completeFromSubsumer(AnswerCache<?, ANSWER> subsumingCache) {
             setCompletedAnswers(subsumingCache.answers());
             setComplete();
-            if (subsumingCache.requiresReiteration()) setRequiresReiteration();
+            if (subsumingCache.requiresReiteration()) this.requiresReiteration = true;
         }
 
         private void setCompletedAnswers(List<ANSWER> completeAnswers) {
