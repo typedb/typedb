@@ -59,6 +59,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private ResolverRegistry resolverRegistry;
     private final ExplainablesManager explainablesManager;
     private final Request resolveRequest;
+    private final ReiterationQuery.Request reiterationRequest;
     private final int computeSize;
     private boolean done;
     private int iteration;
@@ -83,6 +84,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         assert computeSize > 0;
         Root<?, ?> downstream = InitialImpl.create(filter(modifiers.filter()), new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
         this.resolveRequest = Request.create(rootResolver, downstream);
+        this.reiterationRequest = ReiterationQuery.Request.create(rootResolver, this::receiveReiterationResponse);
         this.iterationsCheckedForReiteration = new HashSet<>();
         this.requiresReiteration = false;
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
@@ -103,6 +105,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         assert computeSize > 0;
         Root<?, ?> downstream = InitialImpl.create(filter(modifiers.filter()), new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
         this.resolveRequest = Request.create(rootResolver, downstream);
+        this.reiterationRequest = ReiterationQuery.Request.create(rootResolver, this::receiveReiterationResponse);
         this.iterationsCheckedForReiteration = new HashSet<>();
         this.requiresReiteration = false;
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
@@ -164,8 +167,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         iterationsCheckedForReiteration.add(iteration);
         reiterationQueryRespondents = new HashSet<>(resolverRegistry.concludableResolvers());
         resolverRegistry.concludableResolvers()
-                .forEach(res -> res.execute(actor -> actor.receiveReiterationQuery(
-                        ReiterationQuery.Request.create(rootResolver, this::receiveReiterationResponse))));
+                .forEach(res -> res.execute(actor -> actor.receiveReiterationQuery(reiterationRequest)));
     }
 
     private synchronized void receiveReiterationResponse(ReiterationQuery.Response response) {
