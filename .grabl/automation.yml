@@ -194,7 +194,7 @@ release:
       command: |
         pyenv install -s 3.6.10
         pyenv global 3.6.10 system
-        export DEPLOY_BREW_TOKEN=$REPO_GITHUB_TOKEN
+        export DEPLOY_BREW_TOKEN=$REPO_GITHUB_TOKEN DEPLOY_BREW_USERNAME=grabl DEPLOY_BREW_EMAIL=grabl@vaticle.com
         bazel run --define version=$(cat VERSION) //:deploy-brew -- release
     deploy-apt-release:
       image: vaticle-ubuntu-20.04
