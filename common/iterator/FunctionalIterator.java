@@ -103,6 +103,7 @@ public interface FunctionalIterator<T> extends Iterator<T> {
 
         <U extends Comparable<U>> Sorted<U> mapSorted(Function<T, U> mappingFn, Function<U, T> reverseMappingFn);
 
+
 //        Sorted<T, K> offset(long offset);
 //
 //        Sorted<T, K> onConsumed(Runnable function);
