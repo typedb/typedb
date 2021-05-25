@@ -74,9 +74,8 @@ public class ReasonerTest {
     public void tearDown() {
         typedb.close();
     }
-
     @Test
-    public void test() {
+    public void test_no_rules() {
         try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
@@ -101,53 +100,6 @@ public class ReasonerTest {
                     assertEquals("milk", a.get("x").asThing().getType().getLabel().scopedName());
                 });
                 assertEquals(2, ans.size());
-            }
-        }
-    }
-    @Test
-    public void test_no_rules() {
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
-                ConceptManager conceptMgr = txn.concepts();
-                LogicManager logicMgr = txn.logic();
-
-                EntityType person = conceptMgr.putEntityType("person");
-                AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
-                person.setOwns(name);
-                RelationType friendship = conceptMgr.putRelationType("friendship");
-                friendship.setRelates("friend");
-                RelationType marriage = conceptMgr.putRelationType("marriage");
-                marriage.setRelates("husband");
-                marriage.setRelates("wife");
-                person.setPlays(friendship.getRelates("friend"));
-                person.setPlays(marriage.getRelates("husband"));
-                person.setPlays(marriage.getRelates("wife"));
-                logicMgr.putRule(
-                        "marriage-is-friendship",
-                        TypeQL.parsePattern("{ $x isa person; $y isa person; (husband: $x, wife: $y) isa marriage; }").asConjunction(),
-                        TypeQL.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
-                txn.commit();
-            }
-        }
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
-                txn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (husband: $x, wife: $y) isa marriage;").asInsert());
-                txn.commit();
-            }
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
-                List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $f (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;").asMatch()).toList();
-
-                ans.iterator().forEachRemaining(a -> {
-                    assertEquals("friendship", a.get("f").asThing().getType().getLabel().scopedName());
-                    assertEquals("person", a.get("p1").asThing().getType().getLabel().scopedName());
-                    assertEquals("person", a.get("p2").asThing().getType().getLabel().scopedName());
-                    assertEquals("name", a.get("na").asAttribute().getType().getLabel().scopedName());
-                });
-
-                assertEquals(2, ans.size());
-
-                List<ConceptMap> answers = txn.query().match(TypeQL.parseQuery("match $f (friend: $p1, friend: $p2) isa friendship;").asMatch(), new Options.Query().infer(false)).toList();
-                assertEquals(2, answers.size());
             }
         }
     }

@@ -213,7 +213,6 @@ public class Unifier {
             unifiedRequirements.types(target, allowedTypes);
         }
 
-
         public Requirements.Constraint requirements() {
             return requirements;
         }
@@ -321,12 +320,12 @@ public class Unifier {
                 }
             }
 
-            public void types(Variable id, Set<Label> labels) {
+            private void types(Variable id, Set<Label> labels) {
                 assert !types.containsKey(id) || types.get(id).equals(labels);
                 types.put(id, set(labels));
             }
 
-            public void isaExplicit(Retrievable id, Set<Label> labels) {
+            private void isaExplicit(Retrievable id, Set<Label> labels) {
                 if (isaExplicit.containsKey(id)) {
                     isaExplicit.compute(id, (i, existingLabels) -> {
                         existingLabels.retainAll(labels);
