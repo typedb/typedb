@@ -57,10 +57,6 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
     QueryManager queryMgr;
 
     private RocksTransaction(RocksSession session, Arguments.Transaction.Type type, Options.Transaction options) {
-        if (this instanceof Schema) {
-            System.out.println("HENLO");
-            new Exception().printStackTrace();
-        }
         this.session = session;
         this.context = new Context.Transaction(session.context(), options).type(type);
     }
