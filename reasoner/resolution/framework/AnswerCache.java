@@ -190,7 +190,6 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
         protected SubsumptionAnswerCache(Map<SUBSUMES, ? extends AnswerCache<?, SUBSUMES>> cacheRegister, ConceptMap state) {
             super(cacheRegister, state);
             this.subsumingConceptMaps = subsumingConceptMaps(state);
-            completeIfSubsumerComplete();
         }
 
         private static Set<ConceptMap> subsumingConceptMaps(ConceptMap fromUpstream) {

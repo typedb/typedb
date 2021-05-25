@@ -125,8 +125,8 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         Map<ConceptMap, AnswerCache<ConceptMap, ConceptMap>> cacheRegister = cacheRegistersByRoot.get(root);
         AnswerCache<ConceptMap, ConceptMap> answerCache = cacheRegister.computeIfAbsent(
                 fromUpstream.partialAnswer().conceptMap(), upstreamAns -> {
-                    AnswerCache<ConceptMap, ConceptMap> newCache = new ConceptMapCache(cacheRegister, upstreamAns);
-                    if (!newCache.isComplete()) newCache.addSource(traversalIterator(retrievable.pattern(), upstreamAns));
+                    ConceptMapCache newCache = new ConceptMapCache(cacheRegister, upstreamAns);
+                    if (!newCache.completeIfSubsumerComplete()) newCache.addSource(traversalIterator(retrievable.pattern(), upstreamAns));
                     return newCache;
                 });
         return new RetrievableRequestState(fromUpstream, answerCache, iteration);
