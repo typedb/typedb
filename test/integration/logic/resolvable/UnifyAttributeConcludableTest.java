@@ -140,7 +140,7 @@ public class UnifyAttributeConcludableTest {
 
         // test requirements
         assertEquals(0, unifier.requirements().types().size());
-        assertEquals(0, unifier.requirements().isaExplicit().size());
+        assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(1, unifier.requirements().predicates().size());
 
         // test forward unification can reject an invalid partial answer
@@ -186,7 +186,7 @@ public class UnifyAttributeConcludableTest {
 
         // test requirements
         assertEquals(0, unifier.requirements().types().size());
-        assertEquals(0, unifier.requirements().isaExplicit().size());
+        assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(0, unifier.requirements().predicates().size());
 
         Rule rule2 = createRule("isa-rule-2", "{ " + var + " isa person; }", "(employee: " + var + ") isa employment", logicMgr);

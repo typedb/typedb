@@ -161,8 +161,8 @@ public class UnifyHasConcludableTest {
 
         // test requirements
         assertEquals(0, unifier.requirements().types().size());
-        assertEquals(1, unifier.requirements().isaExplicit().size());
-        assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().get(Identifier.Variable.anon(0)));
+        assertEquals(2, unifier.requirements().isaExplicit().size());
+        assertEquals(set(Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().get(Identifier.Variable.anon(0)));
         assertEquals(1, unifier.requirements().predicates().size());
 
         // test forward unification can reject an invalid partial answer
@@ -215,8 +215,8 @@ public class UnifyHasConcludableTest {
 
         // test requirements
         assertEquals(0, unifier.requirements().types().size());
-        assertEquals(1, unifier.requirements().isaExplicit().size());
-        assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().get(Identifier.Variable.anon(0)));
+        assertEquals(2, unifier.requirements().isaExplicit().size());
+        assertEquals(set(Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().get(Identifier.Variable.anon(0)));
         assertEquals(1, unifier.requirements().predicates().size());
 
         // test filter allows a valid answer
@@ -281,7 +281,7 @@ public class UnifyHasConcludableTest {
 
         // test requirements
         assertEquals(0, unifier.requirements().types().size());
-        assertEquals(0, unifier.requirements().isaExplicit().size());
+        assertEquals(2, unifier.requirements().isaExplicit().size());
         assertEquals(0, unifier.requirements().predicates().size());
     }
 
@@ -314,7 +314,7 @@ public class UnifyHasConcludableTest {
 
         // test requirements
         assertEquals(0, unifier.requirements().types().size());
-        assertEquals(0, unifier.requirements().isaExplicit().size());
+        assertEquals(2, unifier.requirements().isaExplicit().size());
         assertEquals(0, unifier.requirements().predicates().size());
     }
 
@@ -338,8 +338,8 @@ public class UnifyHasConcludableTest {
 
         // test requirements
         assertEquals(0, unifier.requirements().types().size());
-        assertEquals(1, unifier.requirements().isaExplicit().size());
-        assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().get(Identifier.Variable.name("b")));
+        assertEquals(2, unifier.requirements().isaExplicit().size());
+        assertEquals(set(Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().get(Identifier.Variable.name("b")));
         assertEquals(0, unifier.requirements().predicates().size());
 
         // test forward unification can reject an invalid partial answer
@@ -384,8 +384,8 @@ public class UnifyHasConcludableTest {
 
         // test requirements
         assertEquals(0, unifier.requirements().types().size());
-        assertEquals(1, unifier.requirements().isaExplicit().size());
-        assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().get(Identifier.Variable.name("b")));
+        assertEquals(2, unifier.requirements().isaExplicit().size());
+        assertEquals(set(Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().get(Identifier.Variable.name("b")));
         assertEquals(0, unifier.requirements().predicates().size());
 
         // test filter allows a valid answer
@@ -426,7 +426,7 @@ public class UnifyHasConcludableTest {
 
         // test requirements
         assertEquals(0, unifier.requirements().types().size());
-        assertEquals(1, unifier.requirements().isaExplicit().size());
+        assertEquals(2, unifier.requirements().isaExplicit().size());
         assertEquals(0, unifier.requirements().predicates().size());
     }
 

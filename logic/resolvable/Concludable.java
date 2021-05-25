@@ -360,7 +360,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
                 } else {
                     unifierBuilder.addVariableType(relVar.isa().get().type(), unifiedRelVar.isa().get().type().id());
                 }
-            } else return Iterators.empty();
+            }
 
             List<RolePlayer> conjRolePlayers = list(relation().players());
             Set<RolePlayer> thenRolePlayers = relationConclusion.relation().players();

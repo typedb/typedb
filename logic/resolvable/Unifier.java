@@ -327,8 +327,14 @@ public class Unifier {
             }
 
             public void isaExplicit(Retrievable id, Set<Label> labels) {
-                assert (!isaExplicit.containsKey(id) || isaExplicit.get(id).equals(labels));
-                isaExplicit.put(id, set(labels));
+                if (isaExplicit.containsKey(id)) {
+                    isaExplicit.compute(id, (i, existingLabels) -> {
+                        existingLabels.retainAll(labels);
+                        return existingLabels;
+                    });
+                } else {
+                    isaExplicit.put(id, new HashSet<>(labels));
+                }
             }
 
             public void predicates(Retrievable id, Function<Attribute, Boolean> predicateFn) {
