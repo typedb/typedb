@@ -108,7 +108,6 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private void prepareNextIteration(Driver<? extends Resolver<?>> root, int iteration) {
         iterationByRoot.put(root, iteration);
         cacheRegistersByRoot.get(root).clear();
-        // TODO Clear RequestStates from previous iteration
     }
 
     @Override
@@ -283,7 +282,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             } else {
                 ConceptMapCache answerCache = new ConceptMapCache(cacheRegister, answerFromUpstream);
                 cacheRegister.put(answerFromUpstream, answerCache);
-                if (!answerCache.isComplete()) {
+                if (!answerCache.completeIfSubsumerComplete()) {
                     answerCache.addSource(traversalIterator(concludable.pattern(), answerFromUpstream));
                 }
                 boolean singleAnswerRequired = answerFromUpstream.concepts().keySet().containsAll(unboundVars);

@@ -46,9 +46,9 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
 
     protected final List<ANSWER> answers;
     private final Set<ANSWER> answersSet;
-    private boolean reexploreOnNewAnswers;
+    protected boolean reiterateOnAnswerAdded;
     protected boolean requiresReiteration;
-    protected FunctionalIterator<ANSWER> unexploredAnswers;
+    protected FunctionalIterator<ANSWER> answerSource;
     protected boolean complete;
     protected final Map<SUBSUMES, ? extends AnswerCache<?, SUBSUMES>> cacheRegister;
     protected final ConceptMap state;
@@ -56,22 +56,23 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
     protected AnswerCache(Map<SUBSUMES, ? extends AnswerCache<?, SUBSUMES>> cacheRegister, ConceptMap state) {
         this.cacheRegister = cacheRegister;
         this.state = state;
-        this.unexploredAnswers = Iterators.empty();
+        this.answerSource = Iterators.empty();
         this.answers = new ArrayList<>(); // TODO: Replace answer list and deduplication set with a bloom filter
         this.answersSet = new HashSet<>();
-        this.reexploreOnNewAnswers = false;
+        this.reiterateOnAnswerAdded = false;
         this.requiresReiteration = false;
         this.complete = false;
     }
 
-    public void add(ANSWER newAnswer) {
-        addIfAbsent(newAnswer);
+    public void add(ANSWER answer) {
+        assert !isComplete();
+        if (addIfAbsent(answer) && reiterateOnAnswerAdded) requiresReiteration = true;
     }
 
     public void addSource(FunctionalIterator<ANSWER> newAnswers) {
-        // assert !isComplete(); // Removed to allow additional answers to propagate upstream, which crucially may be
-        // carrying requiresReiteration flags
-        unexploredAnswers = unexploredAnswers.link(newAnswers);
+        assert !isComplete();
+        if (answerSource.hasNext()) answerSource = answerSource.link(newAnswers);
+        else answerSource = newAnswers;
     }
 
     public Poller<ANSWER> reader(boolean isSubscriber) {
@@ -80,7 +81,7 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
 
     public void setComplete() {
         complete = true;
-        unexploredAnswers.recycle();
+        answerSource.recycle();
     }
 
     public boolean isComplete() {
@@ -114,7 +115,7 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
         } else if (index == answers.size()) {
             if (isComplete()) return Optional.empty();
             Optional<ANSWER> nextAnswer = searchForAnswer(index, isSubscriber);
-            if (!nextAnswer.isPresent() && isSubscriber) reexploreOnNewAnswers = true;
+            if (!nextAnswer.isPresent() && isSubscriber) reiterateOnAnswerAdded = true;
             return nextAnswer;
         } else {
             throw TypeDBException.of(ILLEGAL_STATE);
@@ -126,19 +127,21 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
     }
 
     protected Optional<ANSWER> searchUnexploredForAnswer() {
-        while (unexploredAnswers.hasNext()) {
-            Optional<ANSWER> nextAnswer = addIfAbsent(unexploredAnswers.next());
-            if (nextAnswer.isPresent()) return nextAnswer;
+        while (answerSource.hasNext()) {
+            ANSWER answer = answerSource.next();
+            if (addIfAbsent(answer)) {
+                if (reiterateOnAnswerAdded) requiresReiteration = true;
+                return Optional.of(answer);
+            }
         }
         return Optional.empty();
     }
 
-    protected Optional<ANSWER> addIfAbsent(ANSWER answer) {
-        if (answersSet.contains(answer)) return Optional.empty();
+    protected boolean addIfAbsent(ANSWER answer) {
+        if (answersSet.contains(answer)) return false;
         answers.add(answer);
         answersSet.add(answer);
-        if (reexploreOnNewAnswers) this.requiresReiteration = true;
-        return Optional.of(answer);
+        return true;
     }
 
     protected abstract List<SUBSUMES> answers();
@@ -216,25 +219,35 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
 
         @Override
         protected Optional<ANSWER> searchForAnswer(int index, boolean mayReadOverEagerly) {
-            Optional<AnswerCache<?, ANSWER>> subsumingCache;
-            if ((subsumingCache = findCompleteSubsumingCache()).isPresent()) {
-                completeFromSubsumer(subsumingCache.get());
+            if (completeIfSubsumerComplete()) {
                 return get(index, mayReadOverEagerly);
             } else {
                 return searchUnexploredForAnswer();
             }
         }
 
+        public boolean completeIfSubsumerComplete() {
+            Optional<AnswerCache<?, ANSWER>> completeSubsumer = findCompleteSubsumingCache();
+            if (completeSubsumer.isPresent()) {
+                completeFromSubsumer(completeSubsumer.get());
+                return true;
+            } else return false;
+        }
+
         protected abstract Optional<AnswerCache<?, ANSWER>> findCompleteSubsumingCache();
 
         private void completeFromSubsumer(AnswerCache<?, ANSWER> subsumingCache) {
-            setCompletedAnswers(subsumingCache.answers());
             setComplete();
+            setCompletedAnswers(subsumingCache.answers());
             if (subsumingCache.requiresReiteration()) this.requiresReiteration = true;
         }
 
         private void setCompletedAnswers(List<ANSWER> completeAnswers) {
-            iterate(completeAnswers).filter(e -> subsumes(e, state)).toList().forEach(this::addIfAbsent);
+            completeAnswers.forEach(answer -> {
+                if (subsumes(answer, state) && addIfAbsent(answer) && this.reiterateOnAnswerAdded) {
+                    requiresReiteration = true;
+                }
+            });
         }
 
         protected abstract boolean subsumes(ANSWER answer, ConceptMap contained);
