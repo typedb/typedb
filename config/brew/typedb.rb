@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-class TypeDB < Formula
+class Typedb < Formula
   desc "TypeDB: a strongly-typed database"
   homepage "https://vaticle.com"
   url "https://github.com/vaticle/typedb/releases/download/{version}/typedb-all-mac-{version}.zip"
