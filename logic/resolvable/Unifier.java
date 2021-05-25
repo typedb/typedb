@@ -27,6 +27,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.concept.type.Type;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
@@ -194,9 +195,24 @@ public class Unifier {
             this.unifiedRequirements = unifiedRequirements;
         }
 
-        public void add(Retrievable source, Variable target) {
-            unifier.computeIfAbsent(source, (s) -> new HashSet<>()).add(target);
+        public void addThing(com.vaticle.typedb.core.pattern.variable.ThingVariable source, Retrievable target) {
+            unifier.computeIfAbsent(source.id(), (s) -> new HashSet<>()).add(target);
+            requirements.isaExplicit(source.id(), source.resolvedTypes());
+            unifiedRequirements.isaExplicit(target, source.resolvedTypes());
         }
+
+        public void addVariableType(com.vaticle.typedb.core.pattern.variable.TypeVariable source, Variable target) {
+            assert source.id().isVariable();
+            unifier.computeIfAbsent(source.id().asRetrievable(), (s) -> new HashSet<>()).add(target);
+            requirements.types(source.id(), source.resolvedTypes());
+            unifiedRequirements.types(target, source.resolvedTypes());
+        }
+
+        public void addLabelType(Identifier.Variable.Label source, Set<Label> allowedTypes, Variable target) {
+            requirements.types(source, allowedTypes);
+            unifiedRequirements.types(target, allowedTypes);
+        }
+
 
         public Requirements.Constraint requirements() {
             return requirements;
@@ -235,7 +251,7 @@ public class Unifier {
          */
         public static class Constraint {
 
-            private final Map<Variable, Set<Label>> roleTypes;
+            private final Map<Variable, Set<Label>> types;
             private final Map<Retrievable, Set<Label>> isaExplicit;
             private final Map<Retrievable, Function<Attribute, Boolean>> predicates;
 
@@ -243,15 +259,15 @@ public class Unifier {
                 this(new HashMap<>(), new HashMap<>(), new HashMap<>());
             }
 
-            public Constraint(Map<Variable, Set<Label>> roleTypes, Map<Retrievable, Set<Label>> isaExplicit,
+            public Constraint(Map<Variable, Set<Label>> types, Map<Retrievable, Set<Label>> isaExplicit,
                               Map<Retrievable, Function<Attribute, Boolean>> predicates) {
-                this.roleTypes = roleTypes;
+                this.types = types;
                 this.isaExplicit = isaExplicit;
                 this.predicates = predicates;
             }
 
             public boolean exactlySatisfiedBy(Map<Variable, Concept> concepts) {
-                if (!(concepts.keySet().containsAll(roleTypes.keySet()) && concepts.keySet().containsAll(isaExplicit.keySet())
+                if (!(concepts.keySet().containsAll(types.keySet()) && concepts.keySet().containsAll(isaExplicit.keySet())
                         && concepts.keySet().containsAll(predicates.keySet()))) {
                     return false;
                 }
@@ -278,9 +294,9 @@ public class Unifier {
             }
 
             private boolean typesSatisfied(Variable id, Concept concept) {
-                if (roleTypes.containsKey(id)) {
+                if (types.containsKey(id)) {
                     assert concept.isType();
-                    return roleTypes.get(id).contains(concept.asType().getLabel());
+                    return types.get(id).contains(concept.asType().getLabel());
                 } else {
                     return true;
                 }
@@ -305,22 +321,22 @@ public class Unifier {
                 }
             }
 
-            public void roleTypes(Variable unifiedId, Set<Label> labels) {
-                assert !roleTypes.containsKey(unifiedId) || roleTypes.get(unifiedId).equals(labels);
-                roleTypes.put(unifiedId, set(labels));
+            public void types(Variable id, Set<Label> labels) {
+                assert !types.containsKey(id) || types.get(id).equals(labels);
+                types.put(id, set(labels));
             }
 
-            public void isaExplicit(Retrievable unifiedId, Set<Label> labels) {
-                assert (!isaExplicit.containsKey(unifiedId) || isaExplicit.get(unifiedId).equals(labels));
-                isaExplicit.put(unifiedId, set(labels));
+            public void isaExplicit(Retrievable id, Set<Label> labels) {
+                assert (!isaExplicit.containsKey(id) || isaExplicit.get(id).equals(labels));
+                isaExplicit.put(id, set(labels));
             }
 
-            public void predicates(Retrievable unifiedId, Function<Attribute, Boolean> predicateFn) {
-                assert !predicates.containsKey(unifiedId);
-                predicates.put(unifiedId, predicateFn);
+            public void predicates(Retrievable id, Function<Attribute, Boolean> predicateFn) {
+                assert !predicates.containsKey(id);
+                predicates.put(id, predicateFn);
             }
 
-            public Map<Variable, Set<Label>> roleTypes() { return roleTypes; }
+            public Map<Variable, Set<Label>> types() { return types; }
 
             public Map<Retrievable, Set<Label>> isaExplicit() { return isaExplicit; }
 
@@ -330,7 +346,7 @@ public class Unifier {
                 Map<Variable, Set<Label>> typesCopy = new HashMap<>();
                 Map<Retrievable, Set<Label>> isaExplicitCopy = new HashMap<>();
                 Map<Retrievable, Function<Attribute, Boolean>> predicatesCopy = new HashMap<>();
-                roleTypes.forEach(((identifier, labels) -> typesCopy.put(identifier, set(labels))));
+                types.forEach(((identifier, labels) -> typesCopy.put(identifier, set(labels))));
                 isaExplicit.forEach(((identifier, labels) -> isaExplicitCopy.put(identifier, set(labels))));
                 predicates.forEach((predicatesCopy::put));
                 return new Constraint(typesCopy, isaExplicitCopy, predicatesCopy);

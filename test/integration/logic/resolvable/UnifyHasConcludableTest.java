@@ -160,7 +160,7 @@ public class UnifyHasConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.requirements().roleTypes().size());
+        assertEquals(0, unifier.requirements().types().size());
         assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().get(Identifier.Variable.anon(0)));
         assertEquals(1, unifier.requirements().predicates().size());
@@ -214,7 +214,7 @@ public class UnifyHasConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.requirements().roleTypes().size());
+        assertEquals(0, unifier.requirements().types().size());
         assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().get(Identifier.Variable.anon(0)));
         assertEquals(1, unifier.requirements().predicates().size());
@@ -280,7 +280,7 @@ public class UnifyHasConcludableTest {
         assertEquals(2, unified.next().concepts().size());
 
         // test requirements
-        assertEquals(0, unifier.requirements().roleTypes().size());
+        assertEquals(0, unifier.requirements().types().size());
         assertEquals(0, unifier.requirements().isaExplicit().size());
         assertEquals(0, unifier.requirements().predicates().size());
     }
@@ -313,7 +313,7 @@ public class UnifyHasConcludableTest {
         assertEquals(2, unified.next().concepts().size());
 
         // test requirements
-        assertEquals(0, unifier.requirements().roleTypes().size());
+        assertEquals(0, unifier.requirements().types().size());
         assertEquals(0, unifier.requirements().isaExplicit().size());
         assertEquals(0, unifier.requirements().predicates().size());
     }
@@ -337,7 +337,7 @@ public class UnifyHasConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.requirements().roleTypes().size());
+        assertEquals(0, unifier.requirements().types().size());
         assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().get(Identifier.Variable.name("b")));
         assertEquals(0, unifier.requirements().predicates().size());
@@ -383,7 +383,7 @@ public class UnifyHasConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.requirements().roleTypes().size());
+        assertEquals(0, unifier.requirements().types().size());
         assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().get(Identifier.Variable.name("b")));
         assertEquals(0, unifier.requirements().predicates().size());
@@ -425,7 +425,7 @@ public class UnifyHasConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.requirements().roleTypes().size());
+        assertEquals(0, unifier.requirements().types().size());
         assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(0, unifier.requirements().predicates().size());
     }
@@ -482,7 +482,7 @@ public class UnifyHasConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.requirements().roleTypes().size());
+        assertEquals(0, unifier.requirements().types().size());
         assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(set(Label.of("self-owning-attribute")), unifier.requirements().isaExplicit().get(Identifier.Variable.name("b")));
         assertEquals(0, unifier.requirements().predicates().size());

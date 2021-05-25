@@ -158,7 +158,7 @@ public class UnifyIsaConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.requirements().roleTypes().size());
+        assertEquals(0, unifier.requirements().types().size());
         assertEquals(0, unifier.requirements().isaExplicit().size());
         assertEquals(0, unifier.requirements().predicates().size());
     }
@@ -183,7 +183,7 @@ public class UnifyIsaConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.requirements().roleTypes().size());
+        assertEquals(0, unifier.requirements().types().size());
         assertEquals(0, unifier.requirements().isaExplicit().size());
         assertEquals(0, unifier.requirements().predicates().size());
     }
@@ -209,7 +209,7 @@ public class UnifyIsaConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.requirements().roleTypes().size());
+        assertEquals(0, unifier.requirements().types().size());
         assertEquals(0, unifier.requirements().isaExplicit().size());
         assertEquals(0, unifier.requirements().predicates().size());
     }
@@ -259,7 +259,7 @@ public class UnifyIsaConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.requirements().roleTypes().size());
+        assertEquals(0, unifier.requirements().types().size());
         assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")),
                      unifier.requirements().isaExplicit().values().iterator().next());
@@ -301,7 +301,7 @@ public class UnifyIsaConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.requirements().roleTypes().size());
+        assertEquals(0, unifier.requirements().types().size());
         assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(set(Label.of("relation"), Label.of("employment")), unifier.requirements().isaExplicit().get(Identifier.Variable.name("a")));
         assertEquals(0, unifier.requirements().predicates().size());
@@ -344,7 +344,7 @@ public class UnifyIsaConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.requirements().roleTypes().size());
+        assertEquals(0, unifier.requirements().types().size());
         assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(set(Label.of("relation"), Label.of("employment")), unifier.requirements().isaExplicit().get(Identifier.Variable.name("a")));
         assertEquals(0, unifier.requirements().predicates().size());
@@ -420,7 +420,7 @@ public class UnifyIsaConcludableTest {
         Unifier unifier = unifiers.get(0);
 
         // test requirements
-        assertEquals(0, unifier.requirements().roleTypes().size());
+        assertEquals(0, unifier.requirements().types().size());
         assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(3, unifier.requirements().predicates().size());
 
