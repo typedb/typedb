@@ -93,31 +93,31 @@ public class UnifyRelationConcludableTest {
         typedb = RocksTypeDB.open(options);
         typedb.databases().create(database);
 
-        try(RocksSession schemaSession = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksSession schemaSession = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction tx = schemaSession.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().define(TypeQL.parseQuery(
                         "define\n" +
-                                                        "person sub entity,\n" +
-                                                        "    owns first-name,\n" +
-                                                        "    owns last-name,\n" +
-                                                        "    owns age,\n" +
-                                                        "    plays employment:employee,\n" +
-                                                        "    plays employment:employer,\n" +
-                                "   plays employment:employee-recommender,\n" +
-                                "   plays friendship:friend;\n" +
+                                "person sub entity,\n" +
+                                "  owns first-name,\n" +
+                                "  owns last-name,\n" +
+                                "  owns age,\n" +
+                                "  plays employment:employee,\n" +
+                                "  plays employment:employer,\n" +
+                                "  plays employment:employee-recommender,\n" +
+                                "  plays friendship:friend;\n" +
                                 "\n" +
                                 "restricted-entity sub entity,\n" +
-                                "   plays part-time-employment:restriction;\n" +
+                                "  plays part-time-employment:restriction;\n" +
                                 "student sub person,\n" +
-                                                        "    plays part-time-employment:part-time-employee,\n" +
-                                                        "    plays part-time-employment:part-time-employer,\n" +
-                                "   plays part-time-employment:part-time-employee-recommender;\n" +
+                                "  plays part-time-employment:part-time-employee,\n" +
+                                "  plays part-time-employment:part-time-employer,\n" +
+                                "  plays part-time-employment:part-time-employee-recommender;\n" +
                                 "\n" +
                                 "student-driver sub student,\n" +
-                                "   plays part-time-driving:night-shift-driver,\n" +
-                                                        "plays part-time-driving:day-shift-driver;\n" +
+                                "  plays part-time-driving:night-shift-driver,\n" +
+                                "  plays part-time-driving:day-shift-driver;\n" +
                                 "organisation sub entity,\n" +
-                                                        "    plays employment:employer,\n" +
+                                "  plays employment:employer,\n" +
                                 "  plays employment:employee,\n" +
                                 "  plays employment:employee-recommender;\n" +
                                 "part-time-organisation sub organisation,\n" +
@@ -129,35 +129,34 @@ public class UnifyRelationConcludableTest {
                                 "  plays part-time-driving:night-shift-driver,\n" +
                                 "  plays part-time-driving:day-shift-driver;\n" +
                                 "\n" +
-                                                        "employment sub relation,\n" +
+                                "employment sub relation,\n" +
                                 "  relates employer,\n" +
-                                                        "    relates employee,\n" +
-                                                        "    relates contractor,\n" +
+                                "  relates employee,\n" +
+                                "  relates contractor,\n" +
                                 "  relates employee-recommender;\n" +
                                 "\n" +
-                                                        "part-time-employment sub employment,\n" +
+                                "part-time-employment sub employment,\n" +
                                 "  relates part-time-employer as employer,\n" +
                                 "  relates part-time-employee as employee,\n" +
-                                                        "    relates part-time-employee-recommender as employee-recommender,\n" +
-                                                        "    relates restriction;\n" +
-                                                        "\n " +
-                                                        "    part-time-driving sub part-time-employment,\n" +
+                                "  relates part-time-employee-recommender as employee-recommender,\n" +
+                                "  relates restriction;\n" +
+                                "\n " +
+                                "part-time-driving sub part-time-employment,\n" +
                                 "  relates night-shift-driver as part-time-employee,\n" +
                                 "  relates day-shift-driver as part-time-employee,\n" +
                                 "  relates taxi as part-time-employer;\n" +
-                                "\n" +
-                                                        "friendship sub relation,\n" +
-                                                        "    relates friend;\n" +
-                                                        "name sub attribute, value string, abstract;\n" +
-                                                        "first-name sub name;\n" +
-                                                        "last-name sub name;\n" +
-                                                        "age sub attribute, value long;"
-                                                        ).asDefine());
+                                "friendship sub relation,\n" +
+                                "    relates friend;\n" +
+                                "name sub attribute, value string, abstract;\n" +
+                                "first-name sub name;\n" +
+                                "last-name sub name;\n" +
+                                "age sub attribute, value long;"
+                ).asDefine());
                 tx.commit();
             }
         }
 
-        try(RocksSession dataSession = typedb.session(database, Arguments.Session.Type.DATA)){
+        try (RocksSession dataSession = typedb.session(database, Arguments.Session.Type.DATA)) {
             try (RocksTransaction tx = dataSession.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().insert(TypeQL.parseQuery(
                         "insert " +
@@ -168,7 +167,7 @@ public class UnifyRelationConcludableTest {
                                 "$x isa driving-hire;" +
                                 "$y isa driving-hire;" +
                                 "$z isa driving-hire;"
-                        ).asInsert()
+                                  ).asInsert()
                 );
                 tx.commit();
             }
@@ -207,20 +206,21 @@ public class UnifyRelationConcludableTest {
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    private Set<Label> typeHierarchy(String type){
+    private Type type(Label label) {
+        if (label.scope().isPresent()) {
+            return conceptMgr.getRelationType(label.scope().get()).getRelates(label.name());
+        } else {
+            return conceptMgr.getThingType(label.name());
+        }
+    }
+
+    private Set<Label> typeHierarchy(String type) {
         return conceptMgr.getThingType(type).getSubtypes()
                 .map(Type::getLabel).toSet();
     }
 
-    private RoleType role(String roleType, String typeScope){
-        return conceptMgr.getRelationType(typeScope)
-                .getRelates()
-                .filter(r -> r.getLabel().name().equals(roleType))
-                .first().orElse(null);
-    }
-
-    private Set<Label> roleHierarchy(String roleType, String typeScope){
-        return role(roleType, typeScope)
+    private Set<Label> roleHierarchy(String roleType, String typeScope) {
+        return type(Label.of(roleType, typeScope))
                 .getSubtypes()
                 .map(Type::getLabel)
                 .toSet();
@@ -239,7 +239,7 @@ public class UnifyRelationConcludableTest {
                 "{ $r (employee: $y) isa employment; }",
                 rule(
                         " (employee: $x) isa employment",
-                "{ $x isa person; }")
+                        "{ $x isa person; }")
         );
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
@@ -252,11 +252,11 @@ public class UnifyRelationConcludableTest {
         assertEquals(
                 typeHierarchy("employment"),
                 unifier.requirements().isaExplicit().get(Variable.name("r")));
-        assertEquals(1, unifier.requirements().isaExplicit().size());
+        assertEquals(2, unifier.requirements().isaExplicit().size());
         assertEquals(
                 roleHierarchy("employee", "employment"),
-                unifier.requirements().roleTypes().get(Variable.label("employment:employee")));
-        assertEquals(1, unifier.requirements().roleTypes().size());
+                unifier.requirements().types().get(Variable.label("employment:employee")));
+        assertEquals(2, unifier.requirements().types().size());
         assertEquals(0, unifier.requirements().predicates().size());
 
         // test filter allows a valid answer
@@ -297,7 +297,7 @@ public class UnifyRelationConcludableTest {
                 "{ (employee: $y) isa $rel; }",
                 rule(
                         "(employee: $x) isa employment",
-                "{ $x isa person; }")
+                        "{ $x isa person; }")
         );
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
@@ -310,9 +310,9 @@ public class UnifyRelationConcludableTest {
         // test requirements
         assertEquals(
                 roleHierarchy("employee", "employment"),
-                unifier.requirements().roleTypes().get(Variable.label("relation:employee")));
-        assertEquals(1, unifier.requirements().roleTypes().size());
-        assertEquals(0, unifier.requirements().isaExplicit().size());
+                unifier.requirements().types().get(Variable.label("relation:employee")));
+        assertEquals(2, unifier.requirements().types().size());
+        assertEquals(2, unifier.requirements().isaExplicit().size());
         assertEquals(0, unifier.requirements().predicates().size());
 
         // test filter allows a valid answer
@@ -353,7 +353,7 @@ public class UnifyRelationConcludableTest {
                 "{ ($role: $y) isa employment; }",
                 rule(
                         " (employee: $x) isa employment ",
-                "{ $x isa person; }")
+                        "{ $x isa person; }")
         );
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
         Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
@@ -367,8 +367,7 @@ public class UnifyRelationConcludableTest {
         assertEquals(
                 typeHierarchy("employment"),
                 unifier.requirements().isaExplicit().get(Variable.anon(0)));
-        assertEquals(1, unifier.requirements().isaExplicit().size());
-        assertEquals(1, unifier.requirements().isaExplicit().size());
+        assertEquals(2, unifier.requirements().isaExplicit().size());
         assertEquals(0, unifier.requirements().predicates().size());
 
         // test filter allows a valid answer
@@ -421,9 +420,9 @@ public class UnifyRelationConcludableTest {
         // test requirements
         assertEquals(
                 roleHierarchy("employee", "employment"),
-                unifier.requirements().roleTypes().get(Variable.label("relation:employee")));
-        assertEquals(1, unifier.requirements().roleTypes().size());
-        assertEquals(0, unifier.requirements().isaExplicit().size());
+                unifier.requirements().types().get(Variable.label("relation:employee")));
+        assertEquals(1, unifier.requirements().types().size());
+        assertEquals(2, unifier.requirements().isaExplicit().size());
         assertEquals(0, unifier.requirements().predicates().size());
     }
 
@@ -433,7 +432,7 @@ public class UnifyRelationConcludableTest {
                 "{ (employee: $p, employee: $p) isa employment; }",
                 rule(
                         "($employee: $x, $employee: $y) isa $employment",
-                "{ $x isa person; $y isa person; $employment type employment;$employee type employment:employee; }")
+                        "{ $x isa person; $y isa person; $employment type employment;$employee type employment:employee; }")
         ).toList();
         Set<Map<String, Set<String>>> result = iterate(unifiers).map(u -> getStringMapping(u.mapping())).toSet();
         Set<Map<String, Set<String>>> expected = set(
@@ -450,10 +449,11 @@ public class UnifyRelationConcludableTest {
         assertEquals(
                 typeHierarchy("employment"),
                 unifier.requirements().isaExplicit().get(Variable.anon(0)));
-        assertEquals(1, unifier.requirements().isaExplicit().size());
+        assertEquals(2, unifier.requirements().isaExplicit().size());
+        assertEquals(2, unifier.requirements().types().size());
         assertEquals(
                 roleHierarchy("employee", "employment"),
-                unifier.requirements().roleTypes().get(Variable.label("employment:employee")));
+                unifier.requirements().types().get(Variable.label("employment:employee")));
         assertEquals(0, unifier.requirements().predicates().size());
 
         // test filter allows a valid answer
@@ -794,14 +794,14 @@ public class UnifyRelationConcludableTest {
 
         Unifier unifier = unifiers.get(0);
         // test requirements
-        assertEquals(1, unifier.requirements().roleTypes().size());
-            assertEquals(
-                    roleHierarchy("employee", "employment"),
-                    unifier.requirements().roleTypes().get(Variable.label("employment:employee")));
+        assertEquals(2, unifier.requirements().types().size());
+        assertEquals(
+                roleHierarchy("employee", "employment"),
+                unifier.requirements().types().get(Variable.label("employment:employee")));
         assertEquals(
                 typeHierarchy("employment"),
                 unifier.requirements().isaExplicit().get(Variable.anon(0)));
-        assertEquals(1, unifier.requirements().isaExplicit().size());
+        assertEquals(3, unifier.requirements().isaExplicit().size());
         assertEquals(0, unifier.requirements().predicates().size());
 
         // test filter allows a valid answer
@@ -849,8 +849,8 @@ public class UnifyRelationConcludableTest {
 
     @Test
     public void relation_more_players_than_rule_relation_fails_unify() {
-        String parentRelation = "{ (part-time-employee: $r, part-time-employer: $p, restriction: $q) isa part-time-employment; }";
-        Set<Concludable> concludables = Concludable.create(resolvedConjunction(parentRelation, logicMgr));
+        String relationQuery = "{ (part-time-employee: $r, part-time-employer: $p, restriction: $q) isa part-time-employment; }";
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(relationQuery, logicMgr));
         Concludable.Relation queryConcludable = concludables.iterator().next().asRelation();
 
         Rule rule = createRule("one-employee-one-employer",
@@ -866,77 +866,77 @@ public class UnifyRelationConcludableTest {
     }
 
     @Test
-    public void binaryRelationWithRoleHierarchy_ParentWithBaseRoles(){
-        String parentRelation = "{ (employer: $x, employee: $y); }";
+    public void binaryRelationWithRoleHierarchy_ParentWithBaseRoles() {
+        String relationQuery = "{ (employer: $x, employee: $y); }";
         String conclusion = "(part-time-employer: $u, part-time-employee: $v) isa part-time-employment";
         String conclusion2 = "(taxi: $u, night-shift-driver: $v) isa part-time-driving";
 
-        verifyUnificationSucceeds(parentRelation, rule(conclusion, "{ $u isa part-time-organisation; $v isa student;}"));
-        verifyUnificationSucceeds(parentRelation, rule(conclusion2, "{ $u isa driving-hire; $v isa student-driver;}"));
+        verifyUnificationSucceeds(relationQuery, rule(conclusion, "{ $u isa part-time-organisation; $v isa student;}"));
+        verifyUnificationSucceeds(relationQuery, rule(conclusion2, "{ $u isa driving-hire; $v isa student-driver;}"));
     }
 
     @Test
-    public void binaryRelationWithRoleHierarchy_ParentWithSubRoles(){
-        String parentRelation = "{ (part-time-employer: $x, part-time-employee: $y); }";
+    public void binaryRelationWithRoleHierarchy_ParentWithSubRoles() {
+        String relationQuery = "{ (part-time-employer: $x, part-time-employee: $y); }";
         String conclusion = "(part-time-employer: $u, part-time-employee: $v) isa part-time-employment";
         String conclusion2 = "(taxi: $u, night-shift-driver: $v) isa part-time-driving";
         String conclusion3 = "(taxi: $u, part-time-employee-recommender: $v) isa part-time-driving";
         String conclusion4 = "(employer: $u, employee: $v) isa employment";
 
-        verifyUnificationSucceeds(parentRelation, rule(conclusion, "{$u isa part-time-organisation; $v isa student;}"));
-        verifyUnificationSucceeds(parentRelation, rule(conclusion2, "{$u isa driving-hire; $v isa student-driver;}"));
-        nonExistentUnifier(parentRelation, rule(conclusion3, "{$u isa driving-hire; $v isa student;}"));
-        nonExistentUnifier(parentRelation, rule(conclusion4, "{$u isa part-time-organisation; $v isa person;}"));
+        verifyUnificationSucceeds(relationQuery, rule(conclusion, "{$u isa part-time-organisation; $v isa student;}"));
+        verifyUnificationSucceeds(relationQuery, rule(conclusion2, "{$u isa driving-hire; $v isa student-driver;}"));
+        nonExistentUnifier(relationQuery, rule(conclusion3, "{$u isa driving-hire; $v isa student;}"));
+        nonExistentUnifier(relationQuery, rule(conclusion4, "{$u isa part-time-organisation; $v isa person;}"));
     }
 
     @Test
-    public void ternaryRelationWithRoleHierarchy_ParentWithBaseRoles(){
-        String parentRelation = "{ (employer: $x, employee: $y, employee-recommender: $z); }";
+    public void ternaryRelationWithRoleHierarchy_ParentWithBaseRoles() {
+        String relationQuery = "{ (employer: $x, employee: $y, employee-recommender: $z); }";
         String conclusion = "(taxi: $u, night-shift-driver: $v, part-time-employee-recommender: $q) isa part-time-driving";
         String conclusion2 = "(part-time-employer: $u, part-time-employee: $v, part-time-employee-recommender: $q) isa part-time-employment";
         String conclusion3 = "(part-time-employer: $u, part-time-employer: $v, part-time-employee-recommender: $q) isa part-time-employment";
 
-        verifyUnificationSucceeds(parentRelation, rule(conclusion, "{$u isa driving-hire; $v isa student-driver; $q isa student;}"));
-        verifyUnificationSucceeds(parentRelation, rule(conclusion2, "{$u isa part-time-organisation; $v isa student; $q isa student;}"));
-        nonExistentUnifier(parentRelation, rule(conclusion3, "{$u isa part-time-organisation; $v isa part-time-organisation; $q isa student;}"));
+        verifyUnificationSucceeds(relationQuery, rule(conclusion, "{$u isa driving-hire; $v isa student-driver; $q isa student;}"));
+        verifyUnificationSucceeds(relationQuery, rule(conclusion2, "{$u isa part-time-organisation; $v isa student; $q isa student;}"));
+        nonExistentUnifier(relationQuery, rule(conclusion3, "{$u isa part-time-organisation; $v isa part-time-organisation; $q isa student;}"));
     }
 
     @Test
-    public void ternaryRelationWithRoleHierarchy_ParentWithSubRoles(){
-        String parentRelation = "{(part-time-employer: $x, part-time-employee: $y, part-time-employee-recommender: $z);}";
+    public void ternaryRelationWithRoleHierarchy_ParentWithSubRoles() {
+        String relationQuery = "{(part-time-employer: $x, part-time-employee: $y, part-time-employee-recommender: $z);}";
         String conclusion = "(employer: $u, employee: $v, employee-recommender: $q) isa employment";
         String conclusion2 = "(part-time-employer: $u, part-time-employee: $v, part-time-employee-recommender: $q) isa part-time-employment";
         String conclusion3 = "(taxi: $u, night-shift-driver: $v, part-time-employee-recommender: $q) isa part-time-driving";
         String conclusion4 = "(part-time-employer: $u, part-time-employer: $v, part-time-employee-recommender: $q) isa part-time-employment";
 
-        nonExistentUnifier(parentRelation, rule(conclusion, "{$u isa organisation; $v isa person; $q isa person;}"));
-        verifyUnificationSucceeds(parentRelation, rule(conclusion2, "{$u isa part-time-organisation; $v isa student; $q isa student;}"));
-        verifyUnificationSucceeds(parentRelation, rule(conclusion3,"{$u isa driving-hire; $v isa student-driver; $q isa student;}"));
-        nonExistentUnifier(parentRelation, rule(conclusion4, "{$u isa part-time-organisation; $v isa student; $q isa student;}"));
+        nonExistentUnifier(relationQuery, rule(conclusion, "{$u isa organisation; $v isa person; $q isa person;}"));
+        verifyUnificationSucceeds(relationQuery, rule(conclusion2, "{$u isa part-time-organisation; $v isa student; $q isa student;}"));
+        verifyUnificationSucceeds(relationQuery, rule(conclusion3, "{$u isa driving-hire; $v isa student-driver; $q isa student;}"));
+        nonExistentUnifier(relationQuery, rule(conclusion4, "{$u isa part-time-organisation; $v isa student; $q isa student;}"));
     }
 
     @Test
-    public void ternaryRelationWithRoleHierarchy_ParentWithBaseRoles_childrenRepeatRolePlayers(){
-        String parentRelation = "{ (employer: $x, employee: $y, employee-recommender: $z);}";
+    public void ternaryRelationWithRoleHierarchy_ParentWithBaseRoles_childrenRepeatRolePlayers() {
+        String relationQuery = "{ (employer: $x, employee: $y, employee-recommender: $z);}";
         String conclusion = "(employer: $u, employee: $u, employee-recommender: $q) isa employment";
         String conclusion2 = "(part-time-employer: $u, part-time-employee: $u, part-time-employee-recommender: $q) isa part-time-employment";
         String conclusion3 = "(part-time-employer: $u, part-time-employer: $u, part-time-employee-recommender: $q) isa part-time-employment";
 
-        verifyUnificationSucceeds(parentRelation, rule(conclusion, "{$u isa student; $q isa student;}"));
-        verifyUnificationSucceeds(parentRelation, rule(conclusion2,  "{$u isa student; $q isa student;}"));
-        nonExistentUnifier(parentRelation, rule(conclusion3, "{$u isa student; $q isa student;}"));
+        verifyUnificationSucceeds(relationQuery, rule(conclusion, "{$u isa student; $q isa student;}"));
+        verifyUnificationSucceeds(relationQuery, rule(conclusion2, "{$u isa student; $q isa student;}"));
+        nonExistentUnifier(relationQuery, rule(conclusion3, "{$u isa student; $q isa student;}"));
     }
 
     @Test
-    public void ternaryRelationWithRoleHierarchy_ParentWithBaseRoles_parentRepeatRolePlayers(){
-        String parentRelation = "{ (employer: $x, employee: $x, employee-recommender: $y);}";
+    public void ternaryRelationWithRoleHierarchy_ParentWithBaseRoles_parentRepeatRolePlayers() {
+        String relationQuery = "{ (employer: $x, employee: $x, employee-recommender: $y);}";
         String conclusion = "(employer: $u, employee: $v, employee-recommender: $q) isa employment";
         String conclusion2 = "(part-time-employer: $u, part-time-employee: $v, part-time-employee-recommender: $q) isa part-time-employment";
         String conclusion3 = "(part-time-employer: $u, part-time-employer: $v, part-time-employee-recommender: $q) isa part-time-employment";
 
-        verifyUnificationSucceeds(parentRelation, rule(conclusion, "{$u isa student; $v isa student; $q isa student;}"));
-        verifyUnificationSucceeds(parentRelation, rule(conclusion2, "{$u isa student; $v isa student; $q isa student;}"));
-        nonExistentUnifier(parentRelation, rule(conclusion3, "{$u isa student; $v isa student; $q isa student;}"));
+        verifyUnificationSucceeds(relationQuery, rule(conclusion, "{$u isa student; $v isa student; $q isa student;}"));
+        verifyUnificationSucceeds(relationQuery, rule(conclusion2, "{$u isa student; $v isa student; $q isa student;}"));
+        nonExistentUnifier(relationQuery, rule(conclusion3, "{$u isa student; $v isa student; $q isa student;}"));
     }
 
     @Test
@@ -945,7 +945,7 @@ public class UnifyRelationConcludableTest {
         String parent2 = "{ (part-time-employee: $y) isa employment; }";
         String conclusion = "(part-time-employer: $y, part-time-employee: $x) isa part-time-employment";
 
-        verifyUnificationSucceeds(parent, rule(conclusion,"{$x isa student; $y isa student;}"));
+        verifyUnificationSucceeds(parent, rule(conclusion, "{$x isa student; $y isa student;}"));
         verifyUnificationSucceeds(parent2, rule(conclusion, "{$x isa student; $y isa student;}"));
     }
 
@@ -984,11 +984,11 @@ public class UnifyRelationConcludableTest {
         verifyUnificationSucceedsFor(rule(conclusions.get(1), "{$p isa person;}"), parents, Lists.newArrayList(3, 4, 5, 6, 7, 9, 13));
         verifyUnificationSucceedsFor(rule(conclusions.get(1), "{$p isa student;}"), parents, Lists.newArrayList(3, 4, 5, 6, 7, 9, 13));
 
-        verifyUnificationSucceedsFor(rule(conclusions.get(2), "{$p isa part-time-organisation;$q isa student;}"), parents, Lists.newArrayList(0, 1 ,2, 3, 4, 5));
-        verifyUnificationSucceedsFor(rule(conclusions.get(2), "{$p isa student;$q isa student-driver;}"), parents, Lists.newArrayList( 3, 4, 5, 6, 7, 9, 13));
+        verifyUnificationSucceedsFor(rule(conclusions.get(2), "{$p isa part-time-organisation;$q isa student;}"), parents, Lists.newArrayList(0, 1, 2, 3, 4, 5));
+        verifyUnificationSucceedsFor(rule(conclusions.get(2), "{$p isa student;$q isa student-driver;}"), parents, Lists.newArrayList(3, 4, 5, 6, 7, 9, 13));
 
-        verifyUnificationSucceedsFor(rule(conclusions.get(3), "{$p isa driving-hire; $q isa student-driver;}"), parents, Lists.newArrayList(0, 1 ,2, 3, 4, 5));
-        verifyUnificationSucceedsFor(rule(conclusions.get(3), "{$p isa driving-hire; $q isa student-driver;}"), parents, Lists.newArrayList(0, 1 ,2, 3, 4, 5));
+        verifyUnificationSucceedsFor(rule(conclusions.get(3), "{$p isa driving-hire; $q isa student-driver;}"), parents, Lists.newArrayList(0, 1, 2, 3, 4, 5));
+        verifyUnificationSucceedsFor(rule(conclusions.get(3), "{$p isa driving-hire; $q isa student-driver;}"), parents, Lists.newArrayList(0, 1, 2, 3, 4, 5));
     }
 
     @Test
@@ -998,7 +998,7 @@ public class UnifyRelationConcludableTest {
                 "{(part-time-employer: $x, part-time-employee: $x);}",
                 "{(taxi: $x, employee: $x); $x isa organisation;}",
                 "{(taxi: $x, employee: $x); $x isa driving-hire;}"
-                );
+        );
         List<String> conclusions = Lists.newArrayList(
                 "(employer: $p, employee: $q) isa employment",
                 "(employer: $p, employee: $p) isa employment",
@@ -1013,7 +1013,7 @@ public class UnifyRelationConcludableTest {
 
         verifyUnificationSucceedsFor(rule(conclusions.get(2), "{$p isa student;$q isa student-driver;}"), parents, Lists.newArrayList(0, 1));
 
-        verifyUnificationSucceedsFor(rule(conclusions.get(3), "{$p isa driving-hire; $q isa student-driver;}"), parents,  Lists.newArrayList(1));
+        verifyUnificationSucceedsFor(rule(conclusions.get(3), "{$p isa driving-hire; $q isa student-driver;}"), parents, Lists.newArrayList(1));
         verifyUnificationSucceedsFor(rule(conclusions.get(3), "{$p isa driving-hire; $q isa driving-hire;}"), parents, Lists.newArrayList(1, 2, 3));
     }
 
@@ -1131,11 +1131,11 @@ public class UnifyRelationConcludableTest {
         assertEquals(expected, actual);
     }
 
-    private Rule rule(String conclusion, String conditions){
+    private Rule rule(String conclusion, String conditions) {
         return createRule(UUID.randomUUID().toString(), conditions, conclusion, logicMgr);
     }
 
-    private FunctionalIterator<Unifier> unifiers(String parent, Rule rule){
+    private FunctionalIterator<Unifier> unifiers(String parent, Rule rule) {
         Conjunction parentConjunction = resolvedConjunction(parent, logicMgr);
         Concludable.Relation queryConcludable = Concludable.create(parentConjunction).stream()
                 .filter(Concludable::isRelation)
@@ -1144,28 +1144,28 @@ public class UnifyRelationConcludableTest {
         return queryConcludable.unify(rule.conclusion(), conceptMgr);
     }
 
-    private void nonExistentUnifier(String parent, Rule rule){
+    private void nonExistentUnifier(String parent, Rule rule) {
         assertFalse(unifiers(parent, rule).hasNext());
     }
 
-    private Unifier uniqueUnifier(String parent, Rule rule){
+    private Unifier uniqueUnifier(String parent, Rule rule) {
         List<Unifier> unifiers = unifiers(parent, rule).toList();
         assertEquals(1, unifiers.size());
         return unifiers.iterator().next();
     }
 
-    private void verifyUnificationSucceedsFor(Rule rule, List<String> parents, List<Integer> unifiableParents){
-        for (int parentIndex = 0; parentIndex < parents.size() ; parentIndex++) {
+    private void verifyUnificationSucceedsFor(Rule rule, List<String> parents, List<Integer> unifiableParents) {
+        for (int parentIndex = 0; parentIndex < parents.size(); parentIndex++) {
             String parent = parents.get(parentIndex);
             assertEquals(
                     String.format("Unexpected unification outcome at index [%s]:\nconjunction: %s\nconclusion: %s\nconditions: %s\n",
-                            parentIndex, parent, rule.conclusion(), rule.condition()),
+                                  parentIndex, parent, rule.conclusion(), rule.condition()),
                     unifiableParents.contains(parentIndex), unifiers(parent, rule).hasNext()
             );
         }
     }
 
-    private void verifyUnificationSucceeds(String parent, Rule rule){
+    private void verifyUnificationSucceeds(String parent, Rule rule) {
         Unifier unifier = uniqueUnifier(parent, rule);
         List<ConceptMap> childAnswers = rocksTransaction.query().match(TypeQL.match(rule.getThenPreNormalised())).toList();
         List<ConceptMap> parentAnswers = rocksTransaction.query().match(TypeQL.match(TypeQL.parsePattern(parent))).toList();
@@ -1193,14 +1193,13 @@ public class UnifyRelationConcludableTest {
         assertTrue(parentAnswers.containsAll(unifiedAnswers));
     }
 
-    Map<Variable, Concept> addRequiredLabeledTypes(ConceptMap ans, Unifier unifier){
-        Map<Variable, Concept> imap = new HashMap<>(ans.concepts());
-        unifier.unifiedRequirements().roleTypes()
-                .forEach((var, labels) -> labels.forEach(label -> imap.put(var, role(label.name(), label.scope().get()))));
-        return imap;
+    Map<Variable, Concept> addRequiredLabeledTypes(ConceptMap ans, Unifier unifier) {
+        Map<Variable, Concept> withLabeledTypes = new HashMap<>(ans.concepts());
+        unifier.unifiedRequirements().types().forEach((var, labels) -> labels.forEach(label -> withLabeledTypes.put(var, type(label))));
+        return withLabeledTypes;
     }
 
-    Map<Variable, Concept> addRequiredRetrievableConcepts(ConceptMap ans, Unifier unifier){
+    Map<Variable, Concept> addRequiredRetrievableConcepts(ConceptMap ans, Unifier unifier) {
         //insert random concepts for any var in unifier that is not in conceptmap
         Iterator<? extends Thing> instances = iterate(conceptMgr.getRootThingType().getInstances());
         return unifier.reverseUnifier().keySet().stream()

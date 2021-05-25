@@ -57,11 +57,13 @@ public abstract class RequestState {
     }
 
     public interface Exploration {
+
         void newAnswer(AnswerState.Partial<?> partial);
 
         DownstreamManager downstreamManager();
 
         boolean singleAnswerRequired();
+
     }
 
     public abstract static class CachingRequestState<ANSWER, SUBSUMES> extends RequestState {
