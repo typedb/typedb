@@ -108,7 +108,6 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     private void prepareNextIteration(Driver<? extends Resolver<?>> root, int iteration) {
         iterationByRoot.put(root, iteration);
         cacheRegistersByRoot.get(root).clear();
-        // TODO Clear RequestStates from previous iteration
     }
 
     @Override

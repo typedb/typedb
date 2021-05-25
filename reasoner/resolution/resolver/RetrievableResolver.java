@@ -85,7 +85,6 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     private void prepareNextIteration(Driver<? extends Resolver<?>> root, int iteration) {
         iterationByRoot.put(root, iteration);
         cacheRegistersByRoot.get(root).clear();
-        // TODO Clear RequestStates from previous iteration
     }
 
     @Override
@@ -146,7 +145,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     private static class RetrievableRequestState extends CachingRequestState<ConceptMap, ConceptMap> {
 
         public RetrievableRequestState(Request fromUpstream, AnswerCache<ConceptMap, ConceptMap> answerCache, int iteration) {
-            super(fromUpstream, answerCache, iteration, false, true);
+            super(fromUpstream, answerCache, iteration, false, false);
         }
 
         @Override
