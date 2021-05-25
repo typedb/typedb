@@ -365,7 +365,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
         @Override
         public void newAnswer(Partial<?> partial) {
-            answerCache.add(partial.conceptMap());
+            if (!answerCache.isComplete()) answerCache.add(partial.conceptMap());
         }
 
         @Override
@@ -420,7 +420,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
         @Override
         public void newAnswer(Partial<?> partial) {
-            answerCache.add(partial.asConcludable());
+            if (!answerCache.isComplete()) answerCache.add(partial.asConcludable());
         }
 
         @Override
