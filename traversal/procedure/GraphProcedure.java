@@ -176,9 +176,9 @@ public class GraphProcedure implements Procedure {
             LOG.debug(this.toString());
         }
         assertWithinFilterBounds(filter);
-        ConcurrentSet<VertexMap> produced = new ConcurrentSet<>();
         return async(startVertex().iterator(graphMgr, params).map(
-                v -> new GraphIterator(graphMgr, v, this, params, filter).distinct(produced)
+                // TODO we should push the distinct() into the GraphIterator
+                v -> new GraphIterator(graphMgr, v, this, params, filter).distinct()
         ), parallelisation);
     }
 
@@ -191,8 +191,9 @@ public class GraphProcedure implements Procedure {
         }
         assertWithinFilterBounds(filter);
         return startVertex().iterator(graphMgr, params).flatMap(
-                sv -> new GraphIterator(graphMgr, sv, this, params, filter)
-        ).distinct();
+                // TODO we should push the distinct() into the GraphIterator
+                sv -> new GraphIterator(graphMgr, sv, this, params, filter).distinct()
+        );
     }
 
     @Override
