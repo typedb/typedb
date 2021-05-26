@@ -35,6 +35,7 @@ import static com.vaticle.typedb.core.common.collection.Bytes.INTEGER_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.LONG_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.SHORT_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.SHORT_UNSIGNED_MAX_VALUE;
+import static com.vaticle.typedb.core.common.collection.Bytes.unsignedByte;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
@@ -280,8 +281,19 @@ public abstract class ByteArray implements ByteComparable<ByteArray> {
 
     @Override
     public int compareTo(ByteArray that) {
-        if (that instanceof Base) return compareToBase((Base) that);
-        else return compareToView((View) that);
+        int n = Math.min(length(), that.length());
+//        if (n == 0) return Integer.compare(length(), that.length());
+//        int cmp = Byte.compare((byte)(get(0) ^ 0x80), (byte)(that.get(0) ^ 0x80));
+//        if (cmp != 0) return cmp;
+        for (int i = 1; i < n; i++) {
+            byte a = unsignedByte(get(i));
+            byte b = unsignedByte(that.get(i));
+            if (a != b) return a - b;
+        }
+        return Integer.compare(length(), that.length());
+
+//        if (that instanceof Base) return compareToBase((Base) that);
+//        else return compareToView((View) that);
     }
 
     abstract int compareToView(View that);
