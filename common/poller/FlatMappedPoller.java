@@ -18,36 +18,44 @@
 
 package com.vaticle.typedb.core.common.poller;
 
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.Iterators;
-
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
 public class FlatMappedPoller<T, U> extends AbstractPoller<U> {
 
     private final Poller<T> source;
-    private final Function<T, FunctionalIterator<U>> flatMappingFn;
-    private FunctionalIterator<U> currentIterator;
+    private final Function<T, Poller<U>> flatMappingFn;
+    private final List<Poller<U>> pollers;
 
-    public FlatMappedPoller(AbstractPoller<T> poller, Function<T, FunctionalIterator<U>> flatMappingFn) {
+    public FlatMappedPoller(Poller<T> poller, Function<T, Poller<U>> flatMappingFn) {
         this.source = poller;
         this.flatMappingFn = flatMappingFn;
-        currentIterator = Iterators.empty();
+        this.pollers = new ArrayList<>();
     }
 
     @Override
     public Optional<U> poll() {
-        mayFetchIterator();
-        if (currentIterator.hasNext()) return Optional.of(currentIterator.next());
-        else return Optional.empty();
+        for (Poller<U> poller : pollers) {
+            Optional<U> next = poller.poll();
+            if (next.isPresent()) return next;
+        }
+
+        Optional<T> fromSource = source.poll();
+        if (fromSource.isPresent()) {
+            Poller<U> newPoller = flatMappingFn.apply(fromSource.get());
+            pollers.add(newPoller);
+            return newPoller.poll();
+        } else {
+            return Optional.empty();
+        }
     }
 
-    private void mayFetchIterator() {
-        Optional<T> nextSource;
-        while (!currentIterator.hasNext() && (nextSource = source.poll()).isPresent()) {
-            currentIterator = flatMappingFn.apply(nextSource.get());
-        }
+    @Override
+    public void recycle() {
+        pollers.forEach(Poller::recycle);
+        source.recycle();
     }
 
 }

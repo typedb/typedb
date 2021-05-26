@@ -18,12 +18,10 @@
 
 package com.vaticle.typedb.core.common.poller;
 
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-
 import java.util.Optional;
 import java.util.function.Function;
 
-public class AbstractPoller<T> implements Poller<T> {
+public abstract class AbstractPoller<T> implements Poller<T> {
 
     @Override
     public Optional<T> poll() {
@@ -31,8 +29,16 @@ public class AbstractPoller<T> implements Poller<T> {
     }
 
     @Override
-    public <U> Poller<U> flatMap(Function<T, FunctionalIterator<U>> flatMappingFn) {
+    public <U> Poller<U> flatMap(Function<T, Poller<U>> flatMappingFn) {
         return new FlatMappedPoller<>(this, flatMappingFn);
     }
+
+    @Override
+    public Poller<T> link(Poller<T> toLink) {
+        return new LinkedPoller<>(this, toLink);
+    }
+
+    @Override
+    public abstract void recycle();
 
 }
