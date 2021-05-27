@@ -274,13 +274,13 @@ assemble_apt(
         "opt/typedb/core/server/lib/dev",
         "opt/typedb/core/server/lib/prod",
         "opt/typedb/core/server/lib/common",
-        "var/lib/typedb/db/"
+        "var/lib/typedb/core/data/"
      ],
     permissions = {
-        "var/lib/typedb/db/": "0777",
+        "var/lib/typedb/core/data/": "0777",
     },
     symlinks = {
-        "opt/typedb/core/server/data": "/var/lib/typedb/db/",
+        "opt/typedb/core/server/data": "/var/lib/typedb/core/data/",
     },
 )
 
