@@ -180,7 +180,11 @@ public final class ConceptManager {
     }
 
     public Thing getThing(ByteArray iid) {
-        ThingVertex thingVertex = graphMgr.data().get(VertexIID.Thing.of(iid));
+        return getThing(iid, false);
+    }
+
+    public Thing getThing(ByteArray iid, boolean getForUpdate) {
+        ThingVertex thingVertex = graphMgr.data().get(VertexIID.Thing.of(iid), getForUpdate);
         if (thingVertex != null) return ThingImpl.of(thingVertex);
         else return null;
     }

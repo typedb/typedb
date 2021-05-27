@@ -117,69 +117,86 @@ public class ThingGraph {
     }
 
     public ThingVertex get(VertexIID.Thing iid) {
+        return get(iid, false);
+    }
+
+    public ThingVertex get(VertexIID.Thing iid, boolean getForUpdate) {
         assert storage.isOpen();
-        if (iid.encoding().equals(ATTRIBUTE)) return get(iid.asAttribute());
+        if (iid.encoding().equals(ATTRIBUTE)) return get(iid.asAttribute(), getForUpdate);
         else if (!thingsByIID.containsKey(iid) && storage.get(iid.bytes()) == null) return null;
-        return convert(iid);
+        return convert(iid, getForUpdate);
     }
 
     public AttributeVertex<?> get(VertexIID.Attribute<?> iid) {
+        return get(iid, false);
+    }
+
+    public AttributeVertex<?> get(VertexIID.Attribute<?> iid, boolean getForUpdate) {
         if (!attributesByIID.forValueType(iid.valueType()).containsKey(iid) && storage.get(iid.bytes()) == null) {
             return null;
         }
-        return convert(iid);
+        return convert(iid, getForUpdate);
     }
 
     public ThingVertex convert(VertexIID.Thing iid) {
+        return convert(iid, false);
+    }
+
+    public ThingVertex convert(VertexIID.Thing iid, boolean getForUpdate) {
         assert storage.isOpen();
-        if (iid.encoding().equals(ATTRIBUTE)) return convert(iid.asAttribute());
+        if (iid.encoding().equals(ATTRIBUTE)) return convert(iid.asAttribute(), getForUpdate);
         else {
-            ThingVertex vertex = thingsByIID.get(iid);
-            if (vertex == null) {
-                vertex = ThingVertexImpl.of(this, iid);
-                if (!storage.isReadOnly()) thingsByIID.put(iid, vertex);
+            // TODO flatten nested ifs
+            if (getForUpdate || !storage.isReadOnly()) {
+                return thingsByIID.computeIfAbsent(iid, i -> ThingVertexImpl.of(this, i));
+            } else {
+                return thingsByIID.getOrDefault(iid, ThingVertexImpl.of(this, iid));
             }
-            return vertex;
         }
     }
 
-    public AttributeVertex<?> convert(VertexIID.Attribute<?> attIID) {
+    public AttributeVertex<?> convert(VertexIID.Attribute<?> attIID, boolean getForUpdate) {
         switch (attIID.valueType()) {
             case BOOLEAN:
-                AttributeVertex<Boolean> booleanVertex = attributesByIID.booleans.get(attIID.asBoolean());
-                if (booleanVertex == null) {
-                    booleanVertex = new AttributeVertexImpl.Boolean(this, attIID.asBoolean());
-                    if (!storage.isReadOnly()) attributesByIID.booleans.put(attIID.asBoolean(), booleanVertex);
+                if (getForUpdate || !storage.isReadOnly()) {
+                    return attributesByIID.booleans.computeIfAbsent(attIID.asBoolean(),
+                                                                    i -> new AttributeVertexImpl.Boolean(this, attIID.asBoolean()));
+                } else {
+                    return attributesByIID.booleans.getOrDefault(attIID.asBoolean(),
+                                                                 new AttributeVertexImpl.Boolean(this, attIID.asBoolean()));
                 }
-                return booleanVertex;
             case LONG:
-                AttributeVertex<Long> longVertex = attributesByIID.longs.get(attIID.asLong());
-                if (longVertex == null) {
-                    longVertex = new AttributeVertexImpl.Long(this, attIID.asLong());
-                    if (!storage.isReadOnly()) attributesByIID.longs.put(attIID.asLong(), longVertex);
+                if (getForUpdate || !storage.isReadOnly()) {
+                    return attributesByIID.longs.computeIfAbsent(attIID.asLong(),
+                                                                    i -> new AttributeVertexImpl.Long(this, attIID.asLong()));
+                } else {
+                    return attributesByIID.longs.getOrDefault(attIID.asLong(),
+                                                                 new AttributeVertexImpl.Long(this, attIID.asLong()));
                 }
-                return longVertex;
             case DOUBLE:
-                AttributeVertex<Double> doubleVertex = attributesByIID.doubles.get(attIID.asDouble());
-                if (doubleVertex == null) {
-                    doubleVertex = new AttributeVertexImpl.Double(this, attIID.asDouble());
-                    if (!storage.isReadOnly()) attributesByIID.doubles.put(attIID.asDouble(), doubleVertex);
+                if (getForUpdate || !storage.isReadOnly()) {
+                    return attributesByIID.doubles.computeIfAbsent(attIID.asDouble(),
+                                                                    i -> new AttributeVertexImpl.Double(this, attIID.asDouble()));
+                } else {
+                    return attributesByIID.doubles.getOrDefault(attIID.asDouble(),
+                                                                 new AttributeVertexImpl.Double(this, attIID.asDouble()));
                 }
-                return doubleVertex;
             case STRING:
-                AttributeVertex<String> stringVertex = attributesByIID.strings.get(attIID.asString());
-                if (stringVertex == null) {
-                    stringVertex = new AttributeVertexImpl.String(this, attIID.asString());
-                    if (!storage.isReadOnly()) attributesByIID.strings.put(attIID.asString(), stringVertex);
+                if (getForUpdate || !storage.isReadOnly()) {
+                    return attributesByIID.strings.computeIfAbsent(attIID.asString(),
+                                                                    i -> new AttributeVertexImpl.String(this, attIID.asString()));
+                } else {
+                    return attributesByIID.strings.getOrDefault(attIID.asString(),
+                                                                 new AttributeVertexImpl.String(this, attIID.asString()));
                 }
-                return stringVertex;
             case DATETIME:
-                AttributeVertex<LocalDateTime> dateTimeVertex = attributesByIID.dateTimes.get(attIID.asDateTime());
-                if (dateTimeVertex == null) {
-                    dateTimeVertex = new AttributeVertexImpl.DateTime(this, attIID.asDateTime());
-                    if (!storage.isReadOnly()) attributesByIID.dateTimes.put(attIID.asDateTime(), dateTimeVertex);
+                if (getForUpdate || !storage.isReadOnly()) {
+                    return attributesByIID.dateTimes.computeIfAbsent(attIID.asDateTime(),
+                                                                    i -> new AttributeVertexImpl.DateTime(this, attIID.asDateTime()));
+                } else {
+                    return attributesByIID.dateTimes.getOrDefault(attIID.asDateTime(),
+                                                                 new AttributeVertexImpl.DateTime(this, attIID.asDateTime()));
                 }
-                return dateTimeVertex;
             default:
                 assert false;
                 return null;
@@ -214,7 +231,7 @@ public class ThingGraph {
     public FunctionalIterator<ThingVertex> get(TypeVertex typeVertex) {
         FunctionalIterator<ThingVertex> storageIterator = storage.iterate(
                 join(typeVertex.iid().bytes(), Encoding.Edge.ISA.in().bytes()),
-                (key, value) -> convert(EdgeIID.InwardsISA.of(key).end())
+                (key, value) -> convert(EdgeIID.InwardsISA.of(key).end(), false)
         );
         if (!modifiedThingsByTypeIID.containsKey(typeVertex.iid())) return storageIterator;
         else return link(modifiedThingsByTypeIID.get(typeVertex.iid()).iterator(), storageIterator).distinct();
