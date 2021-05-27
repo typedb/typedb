@@ -131,7 +131,7 @@ public class ThingGraph {
     }
 
     public ThingVertex convert(VertexIID.Thing iid) {
-         assert storage.isOpen();
+        assert storage.isOpen();
         if (iid.encoding().equals(ATTRIBUTE)) return convert(iid.asAttribute());
         else {
             ThingVertex vertex = thingsByIID.get(iid);
@@ -437,10 +437,8 @@ public class ThingGraph {
         assert storage.isOpen();
         if (!isModified) isModified = true;
         storage.trackModified(vertex.iid().bytes());
-        if (!storage.isReadOnly()) {
-            if (vertex.isAttribute()) attributesByIID.add(vertex.asAttribute());
-            else thingsByIID.put(vertex.iid(), vertex);
-        }
+        if (vertex.isAttribute()) attributesByIID.add(vertex.asAttribute());
+        else thingsByIID.put(vertex.iid(), vertex);
         modifiedThingsByTypeIID.computeIfAbsent(vertex.type().iid(), t -> new ConcurrentSet<>()).add(vertex);
     }
 
