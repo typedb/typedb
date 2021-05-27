@@ -30,7 +30,6 @@ import com.vaticle.typedb.core.graph.common.KeyGenerator;
 import com.vaticle.typedb.core.graph.common.StatisticsBytes;
 import com.vaticle.typedb.core.graph.common.Storage;
 import com.vaticle.typedb.core.graph.iid.EdgeIID;
-import com.vaticle.typedb.core.graph.iid.IID;
 import com.vaticle.typedb.core.graph.iid.PrefixIID;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
@@ -55,6 +54,7 @@ import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLong;
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
@@ -84,9 +84,9 @@ public class ThingGraph {
     private final Storage.Data storage;
     private final TypeGraph typeGraph;
     private final KeyGenerator.Data.Buffered keyGenerator;
-    private final ConcurrentMap<VertexIID.Thing, ThingVertex> bufferedThingsByIID;
-    private final ConcurrentMap<VertexIID.Type, ConcurrentSet<ThingVertex>> bufferedThingsByTypeIID;
-    private final AttributesByIID putAttributesByIID;
+    private final ConcurrentMap<VertexIID.Thing, ThingVertex> thingsByIID;
+    private final ConcurrentMap<VertexIID.Type, ConcurrentSet<ThingVertex>> modifiedThingsByTypeIID;
+    private final AttributesByIID attributesByIID;
     private final Statistics statistics;
     private boolean isModified;
 
@@ -94,9 +94,9 @@ public class ThingGraph {
         this.storage = storage;
         this.typeGraph = typeGraph;
         keyGenerator = new KeyGenerator.Data.Buffered();
-        bufferedThingsByIID = new ConcurrentHashMap<>();
-        bufferedThingsByTypeIID = new ConcurrentHashMap<>();
-        putAttributesByIID = new AttributesByIID();
+        thingsByIID = new ConcurrentHashMap<>();
+        modifiedThingsByTypeIID = new ConcurrentHashMap<>();
+        attributesByIID = new AttributesByIID();
         statistics = new Statistics(typeGraph, storage);
     }
 
@@ -113,57 +113,73 @@ public class ThingGraph {
     }
 
     public FunctionalIterator<ThingVertex> vertices() {
-        return link(bufferedThingsByIID.values().iterator(), putAttributesByIID.valuesIterator());
+        return link(thingsByIID.values().iterator(), attributesByIID.valuesIterator());
     }
 
     public ThingVertex get(VertexIID.Thing iid) {
         assert storage.isOpen();
         if (iid.encoding().equals(ATTRIBUTE)) return get(iid.asAttribute());
-        else if (!bufferedThingsByIID.containsKey(iid) && storage.get(iid.bytes()) == null) return null;
+        else if (!thingsByIID.containsKey(iid) && storage.get(iid.bytes()) == null) return null;
         return convert(iid);
     }
 
     public AttributeVertex<?> get(VertexIID.Attribute<?> iid) {
-        if (!putAttributesByIID.forValueType(iid.valueType()).containsKey(iid) && storage.get(iid.bytes()) == null) {
+        if (!attributesByIID.forValueType(iid.valueType()).containsKey(iid) && storage.get(iid.bytes()) == null) {
             return null;
         }
         return convert(iid);
     }
 
     public ThingVertex convert(VertexIID.Thing iid) {
-        // assert storage.isOpen();
-        // enable the the line above
+         assert storage.isOpen();
         if (iid.encoding().equals(ATTRIBUTE)) return convert(iid.asAttribute());
         else {
-            ThingVertex vertex = bufferedThingsByIID.get(iid);
-            if (vertex != null) return vertex;
-            else return ThingVertexImpl.of(this, iid);
+            ThingVertex vertex = thingsByIID.get(iid);
+            if (vertex == null) {
+                vertex = ThingVertexImpl.of(this, iid);
+                if (!storage.isReadOnly()) thingsByIID.put(iid, vertex);
+            }
+            return vertex;
         }
     }
 
     public AttributeVertex<?> convert(VertexIID.Attribute<?> attIID) {
-        AttributeVertex<?> vertex;
         switch (attIID.valueType()) {
             case BOOLEAN:
-                vertex = putAttributesByIID.booleans.get(attIID.asBoolean());
-                if (vertex != null) return vertex;
-                else return new AttributeVertexImpl.Boolean(this, attIID.asBoolean());
+                AttributeVertex<Boolean> booleanVertex = attributesByIID.booleans.get(attIID.asBoolean());
+                if (booleanVertex == null) {
+                    booleanVertex = new AttributeVertexImpl.Boolean(this, attIID.asBoolean());
+                    if (!storage.isReadOnly()) attributesByIID.booleans.put(attIID.asBoolean(), booleanVertex);
+                }
+                return booleanVertex;
             case LONG:
-                vertex = putAttributesByIID.longs.get(attIID.asLong());
-                if (vertex != null) return vertex;
-                else return new AttributeVertexImpl.Long(this, attIID.asLong());
+                AttributeVertex<Long> longVertex = attributesByIID.longs.get(attIID.asLong());
+                if (longVertex == null) {
+                    longVertex = new AttributeVertexImpl.Long(this, attIID.asLong());
+                    if (!storage.isReadOnly()) attributesByIID.longs.put(attIID.asLong(), longVertex);
+                }
+                return longVertex;
             case DOUBLE:
-                vertex = putAttributesByIID.doubles.get(attIID.asDouble());
-                if (vertex != null) return vertex;
-                else return new AttributeVertexImpl.Double(this, attIID.asDouble());
+                AttributeVertex<Double> doubleVertex = attributesByIID.doubles.get(attIID.asDouble());
+                if (doubleVertex == null) {
+                    doubleVertex = new AttributeVertexImpl.Double(this, attIID.asDouble());
+                    if (!storage.isReadOnly()) attributesByIID.doubles.put(attIID.asDouble(), doubleVertex);
+                }
+                return doubleVertex;
             case STRING:
-                vertex = putAttributesByIID.strings.get(attIID.asString());
-                if (vertex != null) return vertex;
-                else return new AttributeVertexImpl.String(this, attIID.asString());
+                AttributeVertex<String> stringVertex = attributesByIID.strings.get(attIID.asString());
+                if (stringVertex == null) {
+                    stringVertex = new AttributeVertexImpl.String(this, attIID.asString());
+                    if (!storage.isReadOnly()) attributesByIID.strings.put(attIID.asString(), stringVertex);
+                }
+                return stringVertex;
             case DATETIME:
-                vertex = putAttributesByIID.dateTimes.get(attIID.asDateTime());
-                if (vertex != null) return vertex;
-                else return new AttributeVertexImpl.DateTime(this, attIID.asDateTime());
+                AttributeVertex<LocalDateTime> dateTimeVertex = attributesByIID.dateTimes.get(attIID.asDateTime());
+                if (dateTimeVertex == null) {
+                    dateTimeVertex = new AttributeVertexImpl.DateTime(this, attIID.asDateTime());
+                    if (!storage.isReadOnly()) attributesByIID.dateTimes.put(attIID.asDateTime(), dateTimeVertex);
+                }
+                return dateTimeVertex;
             default:
                 assert false;
                 return null;
@@ -175,8 +191,8 @@ public class ThingGraph {
         assert !typeVertex.isAttributeType();
         VertexIID.Thing iid = generate(keyGenerator, typeVertex.iid(), typeVertex.properLabel());
         ThingVertex vertex = new ThingVertexImpl.Buffered(this, iid, isInferred);
-        bufferedThingsByIID.put(iid, vertex);
-        bufferedThingsByTypeIID.computeIfAbsent(typeVertex.iid(), t -> new ConcurrentSet<>()).add(vertex);
+        thingsByIID.put(iid, vertex);
+        modifiedThingsByTypeIID.computeIfAbsent(typeVertex.iid(), t -> new ConcurrentSet<>()).add(vertex);
         if (!isInferred) statistics.vertexCreated(typeVertex.iid());
         return vertex;
     }
@@ -187,11 +203,12 @@ public class ThingGraph {
 
     private <VALUE, ATT_IID extends VertexIID.Attribute<VALUE>, ATT_VERTEX extends AttributeVertex<VALUE>>
     ATT_VERTEX getOrReadFromStorage(Map<ATT_IID, ATT_VERTEX> map, ATT_IID attIID, Function<ATT_IID, ATT_VERTEX> vertexConstructor) {
-        // TODO review this method
-        if (map.containsKey(attIID)) return map.get(attIID);
-        ByteArray val = storage.get(attIID.bytes());
-        if (val != null) return vertexConstructor.apply(attIID);
-        else return null;
+        ATT_VERTEX vertex = map.get(attIID);
+        if (vertex == null && storage.get(attIID.bytes()) != null) {
+            vertex = vertexConstructor.apply(attIID);
+            if (!storage.isReadOnly()) map.put(attIID, vertex);
+        }
+        return vertex;
     }
 
     public FunctionalIterator<ThingVertex> get(TypeVertex typeVertex) {
@@ -199,8 +216,8 @@ public class ThingGraph {
                 join(typeVertex.iid().bytes(), Encoding.Edge.ISA.in().bytes()),
                 (key, value) -> convert(EdgeIID.InwardsISA.of(key).end())
         );
-        if (!bufferedThingsByTypeIID.containsKey(typeVertex.iid())) return storageIterator;
-        else return link(bufferedThingsByTypeIID.get(typeVertex.iid()).iterator(), storageIterator).distinct();
+        if (!modifiedThingsByTypeIID.containsKey(typeVertex.iid())) return storageIterator;
+        else return link(modifiedThingsByTypeIID.get(typeVertex.iid()).iterator(), storageIterator).distinct();
     }
 
     public AttributeVertex<Boolean> get(TypeVertex type, boolean value) {
@@ -209,7 +226,7 @@ public class ThingGraph {
         assert type.valueType().valueClass().equals(Boolean.class);
 
         return getOrReadFromStorage(
-                putAttributesByIID.booleans,
+                attributesByIID.booleans,
                 new VertexIID.Attribute.Boolean(type.iid(), value),
                 iid -> new AttributeVertexImpl.Boolean(this, iid)
         );
@@ -221,7 +238,7 @@ public class ThingGraph {
         assert type.valueType().valueClass().equals(Long.class);
 
         return getOrReadFromStorage(
-                putAttributesByIID.longs,
+                attributesByIID.longs,
                 new VertexIID.Attribute.Long(type.iid(), value),
                 iid -> new AttributeVertexImpl.Long(this, iid)
         );
@@ -233,7 +250,7 @@ public class ThingGraph {
         assert type.valueType().valueClass().equals(Double.class);
 
         return getOrReadFromStorage(
-                putAttributesByIID.doubles,
+                attributesByIID.doubles,
                 new VertexIID.Attribute.Double(type.iid(), value),
                 iid -> new AttributeVertexImpl.Double(this, iid)
         );
@@ -253,7 +270,7 @@ public class ThingGraph {
         }
 
         return getOrReadFromStorage(
-                putAttributesByIID.strings, attIID,
+                attributesByIID.strings, attIID,
                 iid -> new AttributeVertexImpl.String(this, iid)
         );
     }
@@ -264,7 +281,7 @@ public class ThingGraph {
         assert type.valueType().valueClass().equals(LocalDateTime.class);
 
         return getOrReadFromStorage(
-                putAttributesByIID.dateTimes,
+                attributesByIID.dateTimes,
                 new VertexIID.Attribute.DateTime(type.iid(), value),
                 iid -> new AttributeVertexImpl.DateTime(this, iid)
         );
@@ -276,16 +293,16 @@ public class ThingGraph {
         assert type.valueType().valueClass().equals(Boolean.class);
 
         boolean[] isNewVertex = new boolean[]{false};
-        AttributeVertex<Boolean> vertex = putAttributesByIID.booleans.computeIfAbsent(
+        AttributeVertex<Boolean> vertex = attributesByIID.booleans.computeIfAbsent(
                 new VertexIID.Attribute.Boolean(type.iid(), value),
                 iid -> {
                     AttributeVertex<Boolean> v = new AttributeVertexImpl.Boolean(this, iid, isInferred);
-                    bufferedThingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
+                    modifiedThingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     isNewVertex[0] = true;
                     return v;
                 }
         );
-        // TODO should use isPersisted() to not count unnecessarily
+        // TODO should use isPersisted() to not count unnecessarily on all these methods
         if (!isInferred && (isNewVertex[0] || vertex.isInferred())) {
             vertex.isInferred(false);
             statistics.attributeVertexCreated(vertex.iid());
@@ -299,11 +316,11 @@ public class ThingGraph {
         assert type.valueType().valueClass().equals(Long.class);
 
         boolean[] isNewVertex = new boolean[]{false};
-        AttributeVertex<Long> vertex = putAttributesByIID.longs.computeIfAbsent(
+        AttributeVertex<Long> vertex = attributesByIID.longs.computeIfAbsent(
                 new VertexIID.Attribute.Long(type.iid(), value),
                 iid -> {
                     AttributeVertex<Long> v = new AttributeVertexImpl.Long(this, iid, isInferred);
-                    bufferedThingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
+                    modifiedThingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     isNewVertex[0] = true;
                     return v;
                 }
@@ -323,11 +340,11 @@ public class ThingGraph {
         assert type.valueType().valueClass().equals(Double.class);
 
         boolean[] isNewVertex = new boolean[]{false};
-        AttributeVertex<Double> vertex = putAttributesByIID.doubles.computeIfAbsent(
+        AttributeVertex<Double> vertex = attributesByIID.doubles.computeIfAbsent(
                 new VertexIID.Attribute.Double(type.iid(), value),
                 iid -> {
                     AttributeVertex<Double> v = new AttributeVertexImpl.Double(this, iid, isInferred);
-                    bufferedThingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
+                    modifiedThingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     isNewVertex[0] = true;
                     return v;
                 }
@@ -357,10 +374,10 @@ public class ThingGraph {
         }
 
         boolean[] isNewVertex = new boolean[]{false};
-        AttributeVertex<String> vertex = putAttributesByIID.strings.computeIfAbsent(
+        AttributeVertex<String> vertex = attributesByIID.strings.computeIfAbsent(
                 attIID, iid -> {
                     AttributeVertex<String> v = new AttributeVertexImpl.String(this, iid, isInferred);
-                    bufferedThingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
+                    modifiedThingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     isNewVertex[0] = true;
                     return v;
                 }
@@ -379,11 +396,11 @@ public class ThingGraph {
         assert type.valueType().valueClass().equals(LocalDateTime.class);
 
         boolean[] isNewVertex = new boolean[]{false};
-        AttributeVertex<LocalDateTime> vertex = putAttributesByIID.dateTimes.computeIfAbsent(
+        AttributeVertex<LocalDateTime> vertex = attributesByIID.dateTimes.computeIfAbsent(
                 new VertexIID.Attribute.DateTime(type.iid(), value),
                 iid -> {
                     AttributeVertex<LocalDateTime> v = new AttributeVertexImpl.DateTime(this, iid, isInferred);
-                    bufferedThingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
+                    modifiedThingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     isNewVertex[0] = true;
                     return v;
                 }
@@ -398,9 +415,9 @@ public class ThingGraph {
 
     public void delete(AttributeVertex<?> vertex) {
         assert storage.isOpen();
-        putAttributesByIID.remove(vertex.iid());
-        if (bufferedThingsByTypeIID.containsKey(vertex.type().iid())) {
-            bufferedThingsByTypeIID.get(vertex.type().iid()).remove(vertex);
+        attributesByIID.remove(vertex.iid());
+        if (modifiedThingsByTypeIID.containsKey(vertex.type().iid())) {
+            modifiedThingsByTypeIID.get(vertex.type().iid()).remove(vertex);
         }
         if (!vertex.isInferred()) statistics.attributeVertexDeleted(vertex.iid());
     }
@@ -408,18 +425,23 @@ public class ThingGraph {
     public void delete(ThingVertex vertex) {
         assert storage.isOpen();
         if (!vertex.isAttribute()) {
-            bufferedThingsByIID.remove(vertex.iid());
-            if (bufferedThingsByTypeIID.containsKey(vertex.type().iid())) {
-                bufferedThingsByTypeIID.get(vertex.type().iid()).remove(vertex);
+            thingsByIID.remove(vertex.iid());
+            if (modifiedThingsByTypeIID.containsKey(vertex.type().iid())) {
+                modifiedThingsByTypeIID.get(vertex.type().iid()).remove(vertex);
             }
             if (!vertex.isInferred()) statistics.vertexDeleted(vertex.type().iid());
         } else delete(vertex.asAttribute());
     }
 
-    public void setModified(IID iid) {
+    public void setModified(ThingVertex vertex) {
         assert storage.isOpen();
         if (!isModified) isModified = true;
-        storage.trackModified(iid.bytes());
+        storage.trackModified(vertex.iid().bytes());
+        if (!storage.isReadOnly()) {
+            if (vertex.isAttribute()) attributesByIID.add(vertex.asAttribute());
+            else thingsByIID.put(vertex.iid(), vertex);
+        }
+        modifiedThingsByTypeIID.computeIfAbsent(vertex.type().iid(), t -> new ConcurrentSet<>()).add(vertex);
     }
 
     public boolean isModified() {
@@ -427,9 +449,9 @@ public class ThingGraph {
     }
 
     public void clear() {
-        bufferedThingsByIID.clear();
-        bufferedThingsByTypeIID.clear();
-        putAttributesByIID.clear();
+        thingsByIID.clear();
+        modifiedThingsByTypeIID.clear();
+        attributesByIID.clear();
         statistics.clear();
     }
 
@@ -445,16 +467,13 @@ public class ThingGraph {
      */
     public void commit() {
         Map<VertexIID.Thing, VertexIID.Thing> bufferedToPersistedIIDs = new HashMap<>();
-        iterate(bufferedThingsByIID.values()).forEachRemaining(v -> {
-            assert v.status().equals(BUFFERED);
-            if (!v.isInferred()) {
-                VertexIID.Thing newIID = generate(storage.dataKeyGenerator(), v.type().iid(), v.type().properLabel());
-                bufferedToPersistedIIDs.put(v.iid(), newIID);
-                v.iid(newIID);
-            }
+        iterate(thingsByIID.values()).filter(v -> v.status().equals(BUFFERED) && !v.isInferred()).forEachRemaining(v -> {
+            VertexIID.Thing newIID = generate(storage.dataKeyGenerator(), v.type().iid(), v.type().properLabel());
+            bufferedToPersistedIIDs.put(v.iid(), newIID);
+            v.iid(newIID);
         }); // thingsByIID no longer contains valid mapping from IID to TypeVertex
-        bufferedThingsByIID.values().stream().filter(v -> !v.isInferred()).forEach(Vertex::commit);
-        putAttributesByIID.valuesIterator().forEachRemaining(Vertex::commit);
+        thingsByIID.values().stream().filter(v -> !v.isInferred()).forEach(Vertex::commit);
+        attributesByIID.valuesIterator().forEachRemaining(Vertex::commit);
         statistics.commit(bufferedToPersistedIIDs);
 
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Thing to be used again
@@ -492,6 +511,15 @@ public class ThingGraph {
             doubles.clear();
             strings.clear();
             dateTimes.clear();
+        }
+
+        void add(AttributeVertex<?> vertex) {
+            if (vertex.isBoolean()) booleans.put(vertex.iid().asBoolean(), vertex.asBoolean());
+            else if (vertex.isDouble()) doubles.put(vertex.iid().asDouble(), vertex.asDouble());
+            else if (vertex.isLong()) longs.put(vertex.iid().asLong(), vertex.asLong());
+            else if (vertex.isString()) strings.put(vertex.iid().asString(), vertex.asString());
+            else if (vertex.isDateTime()) dateTimes.put(vertex.iid().asDateTime(), vertex.asDateTime());
+            else throw TypeDBException.of(ILLEGAL_STATE);
         }
 
         void remove(VertexIID.Attribute<?> iid) {
@@ -729,11 +757,11 @@ public class ThingGraph {
             deltaVertexCount.forEach((typeIID, delta) -> {
                 storage.mergeUntracked(vertexCountKey(typeIID), encodeLong(delta));
                 if (typeIID.encoding().prefix() == VERTEX_ENTITY_TYPE) {
-                    storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootEntityType().iid()),  encodeLong(delta));
+                    storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootEntityType().iid()), encodeLong(delta));
                 } else if (typeIID.encoding().prefix() == VERTEX_RELATION_TYPE) {
-                    storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootRelationType().iid()),  encodeLong(delta));
+                    storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootRelationType().iid()), encodeLong(delta));
                 } else if (typeIID.encoding().prefix() == Encoding.Prefix.VERTEX_ROLE_TYPE) {
-                    storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootRoleType().iid()),  encodeLong(delta));
+                    storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootRoleType().iid()), encodeLong(delta));
                 }
             });
             attributeVertexCountJobs.forEach((attIID, countWorkValue) -> storage.putTracked(
@@ -743,7 +771,7 @@ public class ThingGraph {
                     hasEdgeCountJobKey(IIDMap.getOrDefault(hasEdge.first(), hasEdge.first()), hasEdge.second()), countWorkValue.bytes(), false
             ));
             if (!deltaVertexCount.isEmpty()) {
-                storage.mergeUntracked(snapshotKey(),  encodeLong(1));
+                storage.mergeUntracked(snapshotKey(), encodeLong(1));
             }
         }
 
@@ -788,8 +816,8 @@ public class ThingGraph {
             ByteArray countedKey = attributeCountedKey(attIID);
             ByteArray counted = storage.get(countedKey);
             if (counted == null) {
-                storage.mergeUntracked(vertexCountKey(attIID.type()),  encodeLong(1));
-                storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootAttributeType().iid()),  encodeLong(1));
+                storage.mergeUntracked(vertexCountKey(attIID.type()), encodeLong(1));
+                storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootAttributeType().iid()), encodeLong(1));
                 storage.putTracked(countedKey);
             }
         }
@@ -798,8 +826,8 @@ public class ThingGraph {
             ByteArray countedKey = attributeCountedKey(attIID);
             ByteArray counted = storage.get(countedKey);
             if (counted != null) {
-                storage.mergeUntracked(vertexCountKey(attIID.type()),  encodeLong(-1));
-                storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootAttributeType().iid()),  encodeLong(-1));
+                storage.mergeUntracked(vertexCountKey(attIID.type()), encodeLong(-1));
+                storage.mergeUntracked(vertexTransitiveCountKey(typeGraph.rootAttributeType().iid()), encodeLong(-1));
                 storage.putTracked(countedKey);
             }
         }
@@ -820,13 +848,13 @@ public class ThingGraph {
             ByteArray countedKey = hasEdgeCountedKey(thingIID, attIID);
             ByteArray counted = storage.get(countedKey);
             if (counted == null) {
-                storage.mergeUntracked(hasEdgeCountKey(thingIID.type(), attIID.type()),  encodeLong(1));
+                storage.mergeUntracked(hasEdgeCountKey(thingIID.type(), attIID.type()), encodeLong(1));
                 if (thingIID.type().encoding().prefix() == VERTEX_ENTITY_TYPE) {
-                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootEntityType().iid()),  encodeLong(1));
+                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootEntityType().iid()), encodeLong(1));
                 } else if (thingIID.type().encoding().prefix() == VERTEX_RELATION_TYPE) {
-                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootRelationType().iid()),  encodeLong(1));
+                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootRelationType().iid()), encodeLong(1));
                 } else if (thingIID.type().encoding().prefix() == VERTEX_ATTRIBUTE_TYPE) {
-                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootAttributeType().iid()),  encodeLong(1));
+                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootAttributeType().iid()), encodeLong(1));
                 }
                 storage.putTracked(countedKey);
             }
@@ -836,20 +864,20 @@ public class ThingGraph {
             ByteArray countedKey = hasEdgeCountedKey(thingIID, attIID);
             ByteArray counted = storage.get(countedKey);
             if (counted != null) {
-                storage.mergeUntracked(hasEdgeCountKey(thingIID.type(), attIID.type()),  encodeLong(-1));
+                storage.mergeUntracked(hasEdgeCountKey(thingIID.type(), attIID.type()), encodeLong(-1));
                 if (thingIID.type().encoding().prefix() == VERTEX_ENTITY_TYPE) {
-                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootEntityType().iid()),  encodeLong(-1));
+                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootEntityType().iid()), encodeLong(-1));
                 } else if (thingIID.type().encoding().prefix() == VERTEX_RELATION_TYPE) {
-                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootRelationType().iid()),  encodeLong(-1));
+                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootRelationType().iid()), encodeLong(-1));
                 } else if (thingIID.type().encoding().prefix() == VERTEX_ATTRIBUTE_TYPE) {
-                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootAttributeType().iid()),  encodeLong(-1));
+                    storage.mergeUntracked(hasEdgeTotalCountKey(typeGraph.rootAttributeType().iid()), encodeLong(-1));
                 }
                 storage.deleteTracked(countedKey);
             }
         }
 
         private long bytesToLongOrZero(ByteArray bytes) {
-            return bytes != null ?  bytes.decodeLong() : 0;
+            return bytes != null ? bytes.decodeLong() : 0;
         }
 
         public abstract static class CountJob {

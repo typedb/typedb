@@ -343,6 +343,11 @@ public abstract class RocksStorage implements Storage {
         }
 
         @Override
+        public boolean isReadOnly() {
+            return isReadOnly;
+        }
+
+        @Override
         public KeyGenerator.Data dataKeyGenerator() {
             return dataKeyGenerator;
         }
