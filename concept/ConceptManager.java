@@ -79,10 +79,6 @@ public final class ConceptManager {
         this.graphMgr = graphMgr;
     }
 
-    public FunctionalIterator<ConceptMap> conceptMaps(FunctionalIterator<VertexMap> vertexMap) {
-        return vertexMap.map(this::conceptMap);
-    }
-
     public ConceptMap conceptMap(VertexMap vertexMap) {
         Map<Retrievable, Concept> map = new HashMap<>();
         vertexMap.forEach((id, vertex) -> {

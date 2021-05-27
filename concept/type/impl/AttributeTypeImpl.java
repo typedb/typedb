@@ -411,7 +411,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Attribute.Boolean get(boolean value) {
-            AttributeVertex<java.lang.Boolean> attVertex = graphMgr.data().get(vertex, value);
+            AttributeVertex<java.lang.Boolean> attVertex = graphMgr.data().get(vertex, value, false);
             if (attVertex != null) return new AttributeImpl.Boolean(attVertex);
             else return null;
         }
@@ -538,7 +538,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Attribute.Long get(long value) {
-            AttributeVertex<java.lang.Long> attVertex = graphMgr.data().get(vertex, value);
+            AttributeVertex<java.lang.Long> attVertex = graphMgr.data().get(vertex, value, true);
             if (attVertex != null) return new AttributeImpl.Long(attVertex);
             else return null;
         }
@@ -665,7 +665,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Attribute.Double get(double value) {
-            AttributeVertex<java.lang.Double> attVertex = graphMgr.data().get(vertex, value);
+            AttributeVertex<java.lang.Double> attVertex = graphMgr.data().get(vertex, value, true);
             if (attVertex != null) return new AttributeImpl.Double(attVertex);
             else return null;
         }
@@ -816,7 +816,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Attribute.String get(java.lang.String value) {
-            AttributeVertex<java.lang.String> attVertex = graphMgr.data().get(vertex, value);
+            AttributeVertex<java.lang.String> attVertex = graphMgr.data().get(vertex, value, true);
             if (attVertex != null) return new AttributeImpl.String(attVertex);
             else return null;
         }
@@ -959,7 +959,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Attribute.DateTime get(LocalDateTime value) {
-            AttributeVertex<java.time.LocalDateTime> attVertex = graphMgr.data().get(vertex, value);
+            AttributeVertex<java.time.LocalDateTime> attVertex = graphMgr.data().get(vertex, value, true);
             if (attVertex != null) return new AttributeImpl.DateTime(attVertex);
             else return null;
         }

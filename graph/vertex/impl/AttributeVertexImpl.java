@@ -133,7 +133,7 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
             graph.storage().putUntracked(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
             graph.storage().putUntracked(index().bytes(), attributeIID.bytes());
         }
-        graph.setModified(this);
+        graph.setModified(iid());
         // TODO: we should make use of attribute indexes to look up attributes by value (without type) quickly
     }
 
@@ -141,7 +141,7 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
     public void setModified() {
         if (!isModified) {
             isModified = true;
-            graph.setModified(this);
+            graph.setModified(iid());
         }
     }
 

@@ -121,7 +121,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
 
     abstract FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr);
 
-    public abstract boolean isInferredAnswer(ConceptMap conceptMap);
+    public abstract boolean isInferredAnswer(ConceptMap conceptMap, ConceptManager conceptMgr);
 
     public abstract AlphaEquivalence alphaEquals(Concludable that);
 
@@ -331,8 +331,8 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        public boolean isInferredAnswer(ConceptMap conceptMap) {
-            return conceptMap.get(generating().get().id()).asThing().isInferred();
+        public boolean isInferredAnswer(ConceptMap conceptMap, ConceptManager conceptMgr) {
+            return conceptMgr.getThing(conceptMap.get(generating().get().id()).asThing().getIID()).isInferred();
         }
 
         @Override
@@ -521,10 +521,10 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        public boolean isInferredAnswer(ConceptMap conceptMap) {
-            Thing owner = conceptMap.get(has.owner().id()).asThing();
-            com.vaticle.typedb.core.concept.thing.Attribute attribute = conceptMap.get(has.attribute().id()).asAttribute();
-            return owner.hasInferred(attribute);
+        public boolean isInferredAnswer(ConceptMap conceptMap, ConceptManager conceptMgr) {
+            Thing refreshedOwner = conceptMgr.getThing(conceptMap.get(has.owner().id()).asThing().getIID());
+            com.vaticle.typedb.core.concept.thing.Attribute refreshedAttr = conceptMgr.getThing(conceptMap.get(has.attribute().id()).asAttribute().getIID()).asAttribute();
+            return refreshedOwner.hasInferred(refreshedAttr);
         }
 
         public FunctionalIterator<Unifier> unify(Rule.Conclusion.Has hasConclusion, ConceptManager conceptMgr) {
@@ -636,8 +636,8 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        public boolean isInferredAnswer(ConceptMap conceptMap) {
-            return conceptMap.get(generating().get().id()).asThing().isInferred();
+        public boolean isInferredAnswer(ConceptMap conceptMap, ConceptManager conceptMgr) {
+            return conceptMgr.getThing(conceptMap.get(generating().get().id()).asThing().getIID()).isInferred();
         }
 
         FunctionalIterator<Unifier> unify(Rule.Conclusion.Isa isa, ConceptManager conceptMgr) {
@@ -757,8 +757,8 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        public boolean isInferredAnswer(ConceptMap conceptMap) {
-            return conceptMap.get(generating().get().id()).asThing().isInferred();
+        public boolean isInferredAnswer(ConceptMap conceptMap, ConceptManager conceptMgr) {
+            return conceptMgr.getThing(conceptMap.get(generating().get().id()).asThing().getIID()).isInferred();
         }
 
         FunctionalIterator<Unifier> unify(Rule.Conclusion.Value value) {
