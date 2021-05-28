@@ -123,8 +123,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Database(3, "Database with the name '%s' has been deleted.");
         public static final Database DATABASE_CLOSED =
                 new Database(4, "Attempted to open a new session from the database '%s' that has been closed.");
-        public static final Database DATABASE_NAME_INVALID =
-                new Database(5, "Invalid database name: '%s'. Name must not start with an underscore.");
+        public static final Database DATABASE_NAME_RESERVED =
+                new Database(5, "Database name must not start with an underscore.");
 
         private static final String codePrefix = "DBS";
         private static final String messagePrefix = "Invalid Database Operations";

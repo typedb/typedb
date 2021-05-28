@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NAME_INVALID;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NAME_RESERVED;
 
 public class RocksDatabaseManager implements TypeDB.DatabaseManager {
 
@@ -58,13 +58,13 @@ public class RocksDatabaseManager implements TypeDB.DatabaseManager {
 
     @Override
     public boolean contains(String name) {
-        if (isReservedName(name)) throw TypeDBException.of(DATABASE_NAME_INVALID, name);
+        if (isReservedName(name)) throw TypeDBException.of(DATABASE_NAME_RESERVED);
         return databases.containsKey(name);
     }
 
     @Override
     public RocksDatabase create(String name) {
-        if (isReservedName(name)) throw TypeDBException.of(DATABASE_NAME_INVALID, name);
+        if (isReservedName(name)) throw TypeDBException.of(DATABASE_NAME_RESERVED);
         if (databases.containsKey(name)) throw TypeDBException.of(DATABASE_EXISTS, name);
 
         RocksDatabase database = databaseFactory.databaseCreateAndOpen(typedb, name);
@@ -74,13 +74,13 @@ public class RocksDatabaseManager implements TypeDB.DatabaseManager {
 
     @Override
     public RocksDatabase get(String name) {
-        if (isReservedName(name)) throw TypeDBException.of(DATABASE_NAME_INVALID, name);
+        if (isReservedName(name)) throw TypeDBException.of(DATABASE_NAME_RESERVED);
         return databases.get(name);
     }
 
     @Override
     public Set<RocksDatabase> all() {
-        return unreservedDatabase();
+        return databases.values().stream().filter(database -> !isReservedName(database.name())).collect(Collectors.toSet());
     }
 
     void remove(RocksDatabase database) {
@@ -93,13 +93,5 @@ public class RocksDatabaseManager implements TypeDB.DatabaseManager {
 
     protected boolean isReservedName(String name) {
         return name.startsWith(RESERVED_NAME_PREFIX);
-    }
-
-    protected Set<RocksDatabase> unreservedDatabase() {
-        return databases.values().stream().filter(database -> {
-            boolean isReserved = isReservedName(database.name());
-            System.out.println("name: " + database.name() + ", isReserved: " + isReserved);
-            return !isReserved;
-        }).collect(Collectors.toSet());
     }
 }
