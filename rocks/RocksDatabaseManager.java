@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NAME_INVALID;
 
 public class RocksDatabaseManager implements TypeDB.DatabaseManager {
 
@@ -60,6 +61,7 @@ public class RocksDatabaseManager implements TypeDB.DatabaseManager {
 
     @Override
     public RocksDatabase create(String name) {
+        if (name.startsWith("_")) throw TypeDBException.of(DATABASE_NAME_INVALID, name);
         if (databases.containsKey(name)) throw TypeDBException.of(DATABASE_EXISTS, name);
 
         RocksDatabase database = databaseFactory.databaseCreateAndOpen(typedb, name);
