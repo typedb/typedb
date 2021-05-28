@@ -96,6 +96,10 @@ public class RocksDatabaseManager implements TypeDB.DatabaseManager {
     }
 
     protected Set<RocksDatabase> unreservedDatabase() {
-        return databases.values().stream().filter(database -> !isReservedName(database.name())).collect(Collectors.toSet());
+        return databases.values().stream().filter(database -> {
+            boolean isReserved = isReservedName(database.name());
+            System.out.println("name: " + database.name() + ", isReserved: " + isReserved);
+            return !isReserved;
+        }).collect(Collectors.toSet());
     }
 }
