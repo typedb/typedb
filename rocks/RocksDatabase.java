@@ -153,7 +153,7 @@ public class RocksDatabase implements TypeDB.Database {
         }
     }
 
-    RocksSession createAndOpenSession(Arguments.Session.Type type, Options.Session options) {
+    public RocksSession createAndOpenSession(Arguments.Session.Type type, Options.Session options) {
         if (!isOpen.get()) throw TypeDBException.of(DATABASE_CLOSED, name);
 
         long lock = 0;

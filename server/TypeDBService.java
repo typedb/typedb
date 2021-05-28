@@ -59,7 +59,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
 
     private static final Logger LOG = LoggerFactory.getLogger(TypeDBService.class);
 
-    private final TypeDB typedb;
+    protected final TypeDB typedb;
     private final ConcurrentMap<UUID, SessionService> sessionServices;
 
     public TypeDBService(TypeDB typedb) {
