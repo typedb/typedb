@@ -18,7 +18,7 @@
 
 package com.vaticle.typedb.core.concept.thing.impl;
 
-import com.vaticle.typedb.common.collection.Bytes;
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.Concept;
@@ -79,13 +79,13 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     }
 
     @Override
-    public byte[] getIID() {
+    public ByteArray getIID() {
         return vertex.iid().bytes();
     }
 
     @Override
     public String getIIDForPrinting() {
-        return Bytes.bytesToHexString(vertex.iid().bytes());
+        return vertex.iid().bytes().toHexString();
     }
 
     @Override
@@ -115,7 +115,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
             } else if (attribute.getOwners(getType()).first().isPresent()) {
                 throw exception(TypeDBException.of(THING_KEY_TAKEN, attribute.getType().getLabel(), getType().getLabel()));
             }
-            this.vertex.graph().exclusiveOwnership(((ThingTypeImpl)this.getType()).vertex, attrVertex);
+            this.vertex.graph().exclusiveOwnership(((ThingTypeImpl) this.getType()).vertex, attrVertex);
         }
         this.vertex.outs().put(HAS, attrVertex, isInferred);
     }

@@ -54,10 +54,10 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OW
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ATT_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_NO_INSTANCES;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_UNIQUENESS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_VALUE_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ABSTRACT_ROLE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;

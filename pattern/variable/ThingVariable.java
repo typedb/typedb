@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.pattern.variable;
 
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.pattern.constraint.Constraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
@@ -141,7 +142,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         return Optional.ofNullable(iidConstraint);
     }
 
-    public IIDConstraint iid(byte[] iid) {
+    public IIDConstraint iid(ByteArray iid) {
         IIDConstraint iidConstraint = new IIDConstraint(this, iid);
         constrain(iidConstraint);
         return iidConstraint;

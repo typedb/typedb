@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.concept.thing;
 
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -31,7 +32,7 @@ public interface Thing extends Concept {
      *
      * @return the {@code IID} of this {@code Thing} as a byte array
      */
-    byte[] getIID();
+    ByteArray getIID();
 
 
     /**

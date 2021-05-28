@@ -74,7 +74,6 @@ public class ReasonerTest {
     public void tearDown() {
         typedb.close();
     }
-
     @Test
     public void test_no_rules() {
         try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {

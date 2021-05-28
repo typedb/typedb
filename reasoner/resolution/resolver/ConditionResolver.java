@@ -21,7 +21,6 @@ import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
-import com.vaticle.typedb.core.reasoner.resolution.Planner;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
@@ -40,11 +39,11 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
 
     private final Rule.Condition condition;
 
-    public ConditionResolver(Driver<ConditionResolver> driver, Rule.Condition condition,
-                             ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                             LogicManager logicMgr, Planner planner, boolean resolutionTracing) {
+    public ConditionResolver(Driver<ConditionResolver> driver, Rule.Condition condition, ResolverRegistry registry,
+                             TraversalEngine traversalEngine, ConceptManager conceptMgr,
+                             LogicManager logicMgr, boolean resolutionTracing) {
         super(driver, ConditionResolver.class.getSimpleName() + "(" + condition + ")",
-              registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
+              registry, traversalEngine, conceptMgr, logicMgr, resolutionTracing);
         this.condition = condition;
     }
 
@@ -60,8 +59,8 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
 
     @Override
     protected void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
-        if (requestState.hasDownstreamProducer()) {
-            requestFromDownstream(requestState.nextDownstreamProducer(), fromUpstream, iteration);
+        if (requestState.downstreamManager().hasDownstream()) {
+            requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
         } else {
             failToUpstream(fromUpstream, iteration);
         }
@@ -76,8 +75,8 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
     @Override
     boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
         RequestState requestState = requestStates.get(fromUpstream);
-        if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
-            requestState.recordProduced(upstreamAnswer.conceptMap());
+        if (!requestState.deduplicationSet().contains(upstreamAnswer.conceptMap())) {
+            requestState.deduplicationSet().add(upstreamAnswer.conceptMap());
             answerToUpstream(upstreamAnswer, fromUpstream, iteration);
             return true;
         } else {
@@ -86,12 +85,12 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
     }
 
     @Override
-    ConjunctionResolver.RequestState requestStateNew(int iteration) {
+    RequestState requestStateNew(int iteration) {
         return new RequestState(iteration);
     }
 
     @Override
-    ConjunctionResolver.RequestState requestStateForIteration(RequestState requestStatePrior, int iteration) {
+    RequestState requestStateForIteration(RequestState requestStatePrior, int iteration) {
         return new RequestState(iteration);
     }
 

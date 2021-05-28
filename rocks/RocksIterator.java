@@ -18,20 +18,20 @@
 
 package com.vaticle.typedb.core.rocks;
 
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.AbstractFunctionalIterator;
 
 import java.util.NoSuchElementException;
 import java.util.function.BiFunction;
 
-import static com.vaticle.typedb.core.common.collection.Bytes.bytesHavePrefix;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
 public final class RocksIterator<T> extends AbstractFunctionalIterator<T> implements AutoCloseable {
 
-    private final byte[] prefix;
+    private final ByteArray prefix;
     private final RocksStorage storage;
-    private final BiFunction<byte[], byte[], T> constructor;
+    private final BiFunction<ByteArray, ByteArray, T> constructor;
     private org.rocksdb.RocksIterator internalRocksIterator;
     private State state;
     private T next;
@@ -39,7 +39,7 @@ public final class RocksIterator<T> extends AbstractFunctionalIterator<T> implem
 
     private enum State {INIT, EMPTY, FETCHED, COMPLETED}
 
-    RocksIterator(RocksStorage storage, byte[] prefix, BiFunction<byte[], byte[], T> constructor) {
+    RocksIterator(RocksStorage storage, ByteArray prefix, BiFunction<ByteArray, ByteArray, T> constructor) {
         this.storage = storage;
         this.prefix = prefix;
         this.constructor = constructor;
@@ -85,7 +85,7 @@ public final class RocksIterator<T> extends AbstractFunctionalIterator<T> implem
     private synchronized boolean initialiseAndCheck() {
         if (state != State.COMPLETED) {
             this.internalRocksIterator = storage.getInternalRocksIterator();
-            this.internalRocksIterator.seek(prefix);
+            this.internalRocksIterator.seek(prefix.getBytes());
             state = State.EMPTY;
             return hasValidNext();
         } else {
@@ -103,12 +103,12 @@ public final class RocksIterator<T> extends AbstractFunctionalIterator<T> implem
     }
 
     private synchronized boolean hasValidNext() {
-        byte[] key;
-        if (!internalRocksIterator.isValid() || !bytesHavePrefix(key = internalRocksIterator.key(), prefix)) {
+        ByteArray key;
+        if (!internalRocksIterator.isValid() || !((key = ByteArray.of(internalRocksIterator.key())).hasPrefix(prefix))) {
             recycle();
             return false;
         }
-        next = constructor.apply(key, internalRocksIterator.value());
+        next = constructor.apply(key, ByteArray.of(internalRocksIterator.value()));
         state = State.FETCHED;
         return true;
     }

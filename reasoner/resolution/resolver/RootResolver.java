@@ -21,7 +21,6 @@ import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
-import com.vaticle.typedb.core.reasoner.resolution.Planner;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
@@ -57,11 +56,10 @@ public interface RootResolver<TOP extends Top> {
 
         public Conjunction(Driver<Conjunction> driver, com.vaticle.typedb.core.pattern.Conjunction conjunction,
                            Consumer<Finished> onAnswer, Consumer<Integer> onFail, Consumer<Throwable> onException,
-                           ResolverRegistry registry,
-                           TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
-                           Planner planner, boolean resolutionTracing) {
+                           ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
+                           LogicManager logicMgr, boolean resolutionTracing) {
             super(driver, Conjunction.class.getSimpleName() + "(pattern:" + conjunction + ")",
-                  registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
+                  registry, traversalEngine, conceptMgr, logicMgr, resolutionTracing);
             this.conjunction = conjunction;
             this.onAnswer = onAnswer;
             this.onFail = onFail;
@@ -111,8 +109,8 @@ public interface RootResolver<TOP extends Top> {
 
         @Override
         protected void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
-            if (requestState.hasDownstreamProducer()) {
-                requestFromDownstream(requestState.nextDownstreamProducer(), fromUpstream, iteration);
+            if (requestState.downstreamManager().hasDownstream()) {
+                requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
             } else {
                 submitFail(iteration);
             }
@@ -127,8 +125,8 @@ public interface RootResolver<TOP extends Top> {
         @Override
         boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
             RequestState requestState = requestStates.get(fromUpstream);
-            if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
-                requestState.recordProduced(upstreamAnswer.conceptMap());
+            if (!requestState.deduplicationSet().contains(upstreamAnswer.conceptMap())) {
+                requestState.deduplicationSet().add(upstreamAnswer.conceptMap());
                 answerToUpstream(upstreamAnswer, fromUpstream, iteration);
                 return true;
             } else {
@@ -143,9 +141,8 @@ public interface RootResolver<TOP extends Top> {
 
         @Override
         RequestState requestStateForIteration(RequestState requestStatePrior, int iteration) {
-            return new RequestState(iteration, requestStatePrior.produced());
+            return new RequestState(iteration, requestStatePrior.deduplicationSet());
         }
-
     }
 
     class Disjunction extends DisjunctionResolver<Disjunction> implements RootResolver<Finished> {
@@ -157,8 +154,8 @@ public interface RootResolver<TOP extends Top> {
 
         public Disjunction(Driver<Disjunction> driver, com.vaticle.typedb.core.pattern.Disjunction disjunction,
                            Consumer<Finished> onAnswer, Consumer<Integer> onFail, Consumer<Throwable> onException,
-                           ResolverRegistry registry,
-                           TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
+                           ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
+                           boolean resolutionTracing) {
             super(driver, Disjunction.class.getSimpleName() + "(pattern:" + disjunction + ")", disjunction,
                   registry, traversalEngine, conceptMgr, resolutionTracing);
             this.onAnswer = onAnswer;
@@ -175,8 +172,8 @@ public interface RootResolver<TOP extends Top> {
 
         @Override
         protected void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
-            if (requestState.hasDownstreamProducer()) {
-                requestFromDownstream(requestState.nextDownstreamProducer(), fromUpstream, iteration);
+            if (requestState.downstreamManager().hasDownstream()) {
+                requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
             } else {
                 submitFail(iteration);
             }
@@ -207,8 +204,8 @@ public interface RootResolver<TOP extends Top> {
         @Override
         protected boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
             RequestState requestState = requestStates.get(fromUpstream);
-            if (!requestState.hasProduced(upstreamAnswer.conceptMap())) {
-                requestState.recordProduced(upstreamAnswer.conceptMap());
+            if (!requestState.deduplicationSet().contains(upstreamAnswer.conceptMap())) {
+                requestState.deduplicationSet().add(upstreamAnswer.conceptMap());
                 answerToUpstream(upstreamAnswer, fromUpstream, iteration);
                 return true;
             } else {
@@ -226,7 +223,7 @@ public interface RootResolver<TOP extends Top> {
 
         @Override
         protected RequestState requestStateForIteration(RequestState requestStatePrior, int newIteration) {
-            return new RequestState(newIteration, requestStatePrior.produced());
+            return new RequestState(newIteration, requestStatePrior.deduplicationSet());
         }
     }
 
@@ -241,11 +238,11 @@ public interface RootResolver<TOP extends Top> {
 
         private final Set<Explanation> submittedExplanations;
 
-        public Explain(Driver<Explain> driver, com.vaticle.typedb.core.pattern.Conjunction conjunction, Consumer<Top.Explain.Finished> onAnswer,
-                       Consumer<Integer> onFail, Consumer<Throwable> onException, ResolverRegistry registry,
-                       TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr, Planner planner,
-                       boolean resolutionTracing) {
-            super(driver, "Explain(" + conjunction + ")", registry, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing);
+        public Explain(Driver<Explain> driver, com.vaticle.typedb.core.pattern.Conjunction conjunction,
+                       Consumer<Top.Explain.Finished> onAnswer, Consumer<Integer> onFail,
+                       Consumer<Throwable> onException, ResolverRegistry registry, TraversalEngine traversalEngine,
+                       ConceptManager conceptMgr, LogicManager logicMgr, boolean resolutionTracing) {
+            super(driver, "Explain(" + conjunction + ")", registry, traversalEngine, conceptMgr, logicMgr, resolutionTracing);
             this.conjunction = conjunction;
             this.onAnswer = onAnswer;
             this.onFail = onFail;
@@ -272,8 +269,8 @@ public interface RootResolver<TOP extends Top> {
 
         @Override
         protected void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
-            if (requestState.hasDownstreamProducer()) {
-                requestFromDownstream(requestState.nextDownstreamProducer(), fromUpstream, iteration);
+            if (requestState.downstreamManager().hasDownstream()) {
+                requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
             } else {
                 submitFail(iteration);
             }
@@ -316,7 +313,7 @@ public interface RootResolver<TOP extends Top> {
 
         @Override
         RequestState requestStateForIteration(RequestState requestStatePrior, int iteration) {
-            return new RequestState(iteration, requestStatePrior.produced());
+            return new RequestState(iteration, requestStatePrior.deduplicationSet());
         }
 
         @Override
@@ -332,7 +329,6 @@ public interface RootResolver<TOP extends Top> {
         com.vaticle.typedb.core.pattern.Conjunction conjunction() {
             return conjunction;
         }
-
     }
 
 }

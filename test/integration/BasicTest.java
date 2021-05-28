@@ -485,7 +485,6 @@ public class BasicTest {
         }
     }
 
-
     @Test
     public void write_different_attributes_in_parallel_successfully_repeatedly() throws IOException {
         for (int i = 0; i < 100; i++) {

@@ -18,38 +18,35 @@
 
 package com.vaticle.typedb.core.graph.iid;
 
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.graph.common.Encoding;
 
-import java.util.Arrays;
-
-import static com.vaticle.typedb.core.common.collection.Bytes.join;
-import static java.util.Arrays.copyOfRange;
+import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 
 public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID {
 
     static final int LENGTH = 1;
 
-    private InfixIID(byte[] bytes) {
+    private InfixIID(ByteArray bytes) {
         super(bytes);
     }
 
     abstract EDGE_ENCODING encoding();
 
     boolean isOutwards() {
-        return Encoding.Edge.isOut(bytes[0]);
+        return Encoding.Edge.isOut(bytes.get(0));
     }
 
     public int length() {
-        return bytes.length;
+        return bytes.length();
     }
 
     @Override
-    public String toString() { // TODO
+    public String toString() {
         if (readableString == null) {
-            readableString = "[1:" + Encoding.Infix.of(bytes[0]).toString() + "]";
-            if (bytes.length > 1) {
-                readableString += "[" + (bytes.length - 1) + ": " +
-                        Arrays.toString(copyOfRange(bytes, 1, bytes.length)) + "]";
+            readableString = "[1:" + Encoding.Infix.of(bytes.get(0)).toString() + "]";
+            if (bytes.length() > 1) {
+                readableString += "[" + (bytes.length() - 1) + ": " + bytes.view(1) + "]";
             }
         }
         return readableString;
@@ -57,37 +54,37 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
 
     public static class Type extends InfixIID<Encoding.Edge.Type> {
 
-        private Type(byte[] bytes) {
+        private Type(ByteArray bytes) {
             super(bytes);
-            assert bytes.length == LENGTH;
+            assert bytes.length() == LENGTH;
         }
 
         static Type of(Encoding.Infix infix) {
             return new Type(infix.bytes());
         }
 
-        static Type extract(byte[] bytes, int from) {
-            return new Type(new byte[]{bytes[from]});
+        static Type extract(ByteArray bytes, int from) {
+            return new Type(bytes.view(from, from+1));
         }
 
         @Override
         Encoding.Edge.Type encoding() {
-            return Encoding.Edge.Type.of(bytes[0]);
+            return Encoding.Edge.Type.of(bytes.get(0));
         }
     }
 
     public static class Thing extends InfixIID<Encoding.Edge.Thing> {
 
-        private Thing(byte[] bytes) {
+        private Thing(ByteArray bytes) {
             super(bytes);
         }
 
-        static InfixIID.Thing extract(byte[] bytes, int from) {
-            Encoding.Edge.Thing encoding = Encoding.Edge.Thing.of(bytes[from]);
+        static InfixIID.Thing extract(ByteArray bytes, int from) {
+            Encoding.Edge.Thing encoding = Encoding.Edge.Thing.of(bytes.get(from));
             if ((encoding.equals(Encoding.Edge.Thing.ROLEPLAYER))) {
                 return RolePlayer.extract(bytes, from);
             } else {
-                return new InfixIID.Thing(new byte[]{bytes[from]});
+                return new InfixIID.Thing(bytes.view(from, from+1));
             }
         }
 
@@ -100,7 +97,7 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
         }
 
         public static InfixIID.Thing of(Encoding.Infix infix, IID... tail) {
-            byte[][] iidBytes = new byte[tail.length + 1][];
+            ByteArray[] iidBytes = new ByteArray[tail.length + 1];
             iidBytes[0] = infix.bytes();
             for (int i = 0; i < tail.length; i++) {
                 iidBytes[i + 1] = tail[i].bytes();
@@ -115,21 +112,21 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
 
         @Override
         Encoding.Edge.Thing encoding() {
-            return Encoding.Edge.Thing.of(bytes[0]);
+            return Encoding.Edge.Thing.of(bytes.get(0));
         }
 
         public InfixIID.Thing outwards() {
             if (isOutwards()) return this;
-            byte[] copy = Arrays.copyOf(bytes, bytes.length);
-            copy[0] = encoding().out().key();
-            return new InfixIID.Thing(copy);
+            byte[] bytesClone = bytes.cloneBytes();
+            bytesClone[0] = encoding().out().key();
+            return new InfixIID.Thing(ByteArray.of(bytesClone));
         }
 
         public InfixIID.Thing inwards() {
             if (!isOutwards()) return this;
-            byte[] copy = Arrays.copyOf(bytes, bytes.length);
-            copy[0] = encoding().in().key();
-            return new InfixIID.Thing(copy);
+            byte[] bytesClone = bytes.cloneBytes();
+            bytesClone[0] = encoding().in().key();
+            return new InfixIID.Thing(ByteArray.of(bytesClone));
         }
 
         public InfixIID.RolePlayer asRolePlayer() {
@@ -141,7 +138,7 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
 
     public static class RolePlayer extends InfixIID.Thing {
 
-        private RolePlayer(byte[] bytes) {
+        private RolePlayer(ByteArray bytes) {
             super(bytes);
         }
 
@@ -150,8 +147,8 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
             return new RolePlayer(join(infix.bytes(), type.bytes()));
         }
 
-        static RolePlayer extract(byte[] bytes, int from) {
-            return new RolePlayer(join(new byte[]{bytes[from]}, VertexIID.Type.extract(bytes, from + LENGTH).bytes()));
+        static RolePlayer extract(ByteArray bytes, int from) {
+            return new RolePlayer(join(bytes.view(from, from + 1), VertexIID.Type.extract(bytes, from + LENGTH).bytes()));
         }
 
         public VertexIID.Type tail() {

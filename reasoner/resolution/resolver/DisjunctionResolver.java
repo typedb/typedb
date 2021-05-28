@@ -19,7 +19,6 @@ package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.ConceptManager;
-import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
@@ -32,23 +31,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<RESOLVER>>
-        extends CompoundResolver<RESOLVER, DisjunctionResolver.RequestState> {
+public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<RESOLVER>> extends CompoundResolver<RESOLVER> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Disjunction.class);
 
     final Map<Driver<ConjunctionResolver.Nested>, com.vaticle.typedb.core.pattern.Conjunction> downstreamResolvers;
     final com.vaticle.typedb.core.pattern.Disjunction disjunction;
 
-    public DisjunctionResolver(Driver<RESOLVER> driver, String name, com.vaticle.typedb.core.pattern.Disjunction disjunction,
-                               ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                               boolean resolutionTracing) {
+    protected DisjunctionResolver(Driver<RESOLVER> driver, String name,
+                                  com.vaticle.typedb.core.pattern.Disjunction disjunction,
+                                  ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
+                                  boolean resolutionTracing) {
         super(driver, name, registry, traversalEngine, conceptMgr, resolutionTracing);
         this.disjunction = disjunction;
         this.downstreamResolvers = new HashMap<>();
@@ -96,14 +94,14 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
             Compound.Nestable downstream = fromUpstream.partialAnswer().asCompound()
                     .filterToNestable(conjunctionRetrievedIds(conjunctionResolver));
             Request request = Request.create(driver(), conjunctionResolver, downstream);
-            requestState.addDownstreamProducer(request);
+            requestState.downstreamManager().addDownstream(request);
         }
         return requestState;
     }
 
     @Override
     protected RequestState requestStateReiterate(Request fromUpstream, RequestState requestStatePrior,
-                                                 int newIteration) {
+                                                  int newIteration) {
         LOG.debug("{}: Updating RequestState for iteration '{}'", name(), newIteration);
 
         assert newIteration > requestStatePrior.iteration() && fromUpstream.partialAnswer().isCompound();
@@ -113,7 +111,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
             Compound.Nestable downstream = fromUpstream.partialAnswer().asCompound()
                     .filterToNestable(conjunctionRetrievedIds(conjunctionResolver));
             Request request = Request.create(driver(), conjunctionResolver, downstream);
-            requestStateNextIteration.addDownstreamProducer(request);
+            requestStateNextIteration.downstreamManager().addDownstream(request);
         }
         return requestStateNextIteration;
     }
@@ -126,32 +124,6 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
                 .map(v -> v.id().asRetrievable()).toSet();
     }
 
-    static class RequestState extends CompoundResolver.RequestState {
-
-        private final Set<ConceptMap> produced;
-
-        public RequestState(int iteration) {
-            this(iteration, new HashSet<>());
-        }
-
-        public RequestState(int iteration, Set<ConceptMap> produced) {
-            super(iteration);
-            this.produced = produced;
-        }
-
-        public void recordProduced(ConceptMap conceptMap) {
-            produced.add(conceptMap);
-        }
-
-        public boolean hasProduced(ConceptMap conceptMap) {
-            return produced.contains(conceptMap);
-        }
-
-        public Set<ConceptMap> produced() {
-            return produced;
-        }
-    }
-
     public static class Nested extends DisjunctionResolver<Nested> {
 
         public Nested(Driver<Nested> driver, Disjunction disjunction, ResolverRegistry registry,
@@ -161,9 +133,9 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         }
 
         @Override
-        protected void nextAnswer(Request fromUpstream, DisjunctionResolver.RequestState requestState, int iteration) {
-            if (requestState.hasDownstreamProducer()) {
-                requestFromDownstream(requestState.nextDownstreamProducer(), fromUpstream, iteration);
+        protected void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
+            if (requestState.downstreamManager().hasDownstream()) {
+                requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
             } else {
                 failToUpstream(fromUpstream, iteration);
             }
@@ -182,8 +154,8 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         }
 
         @Override
-        protected DisjunctionResolver.RequestState requestStateForIteration(DisjunctionResolver.RequestState requestStatePrior, int newIteration) {
-            return new DisjunctionResolver.RequestState(newIteration);
+        protected RequestState requestStateForIteration(RequestState requestStatePrior, int newIteration) {
+            return new RequestState(newIteration);
         }
 
     }

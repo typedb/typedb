@@ -18,11 +18,10 @@
 
 package com.vaticle.typedb.core.rocks;
 
-import com.vaticle.typedb.common.collection.Collections;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.common.concurrent.NamedThreadFactory;
 import com.vaticle.typedb.core.TypeDB;
-import com.vaticle.typedb.core.common.exception.ErrorMessage;
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
@@ -33,13 +32,11 @@ import com.vaticle.typedb.core.logic.LogicCache;
 import com.vaticle.typedb.core.traversal.TraversalCache;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.RocksDBException;
-import org.rocksdb.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
@@ -379,12 +376,12 @@ public class RocksDatabase implements TypeDB.Database {
         }
 
         private void validateModifiedKeys(RocksStorage.Data storage, RocksStorage.Data committed) {
-            NavigableSet<ByteBuffer> active = storage.modifiedKeys();
-            NavigableSet<ByteBuffer> other = committed.deletedKeys();
+            NavigableSet<ByteArray> active = storage.modifiedKeys();
+            NavigableSet<ByteArray> other = committed.deletedKeys();
             if (active.isEmpty()) return;
-            ByteBuffer currentKey = active.first();
+            ByteArray currentKey = active.first();
             while (currentKey != null) {
-                ByteBuffer otherKey = other.ceiling(currentKey);
+                ByteArray otherKey = other.ceiling(currentKey);
                 if (otherKey != null && otherKey.equals(currentKey)) {
                     if (storage.isModifiedValidatedKey(currentKey)) {
                         throw TypeDBException.of(TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION);
@@ -393,7 +390,7 @@ public class RocksDatabase implements TypeDB.Database {
                     }
                 }
                 currentKey = otherKey;
-                NavigableSet<ByteBuffer> tmp = other;
+                NavigableSet<ByteArray> tmp = other;
                 other = active;
                 active = tmp;
             }
@@ -411,7 +408,8 @@ public class RocksDatabase implements TypeDB.Database {
             private final AtomicBoolean cleanupRunning;
 
             enum Event {OPENED, COMMITTED}
-            enum CommitState {UNCOMMITTED, COMMITTING};
+
+            enum CommitState {UNCOMMITTED, COMMITTING}
 
             public StorageTimeline() {
                 this.events = new ConcurrentSkipListMap<>();
@@ -614,15 +612,12 @@ public class RocksDatabase implements TypeDB.Database {
                 } catch (TypeDBException e) {
                     if (e.code().isPresent() && e.code().get().equals(DATABASE_CLOSED.code())) {
                         break;
+                    } else if (e.code().isPresent() && (e.code().get().equals(TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION.code()) ||
+                            e.code().get().equals(TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION.code()) ||
+                            e.code().get().equals(TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION.code()))) {
+                        countJobNotifications.release();
                     } else {
-                        // TODO: Add specific code indicating rocksdb conflict to TypeDBException status code
-                        boolean txConflicted = e.getCause() instanceof RocksDBException &&
-                                ((RocksDBException) e.getCause()).getStatus().getCode() == Status.Code.Busy;
-                        if (txConflicted) {
-                            countJobNotifications.release();
-                        } else {
-                            throw e;
-                        }
+                        throw e;
                     }
                 }
                 waitForCountJob();

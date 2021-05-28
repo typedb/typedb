@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.logic.resolvable;
 
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options.Database;
@@ -47,7 +48,6 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.map;
@@ -139,8 +139,8 @@ public class UnifyAttributeConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.requirements().roleTypes().size());
-        assertEquals(0, unifier.requirements().isaExplicit().size());
+        assertEquals(0, unifier.requirements().types().size());
+        assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(1, unifier.requirements().predicates().size());
 
         // test forward unification can reject an invalid partial answer
@@ -151,15 +151,15 @@ public class UnifyAttributeConcludableTest {
         Map<Identifier.Variable, Concept> concepts = map(
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "john"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
-        assertTrue(unified.isPresent());
-        assertEquals(1, unified.get().concepts().size());
+        FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
+        assertTrue(unified.hasNext());
+        assertEquals(1, unified.next().concepts().size());
 
         concepts = map(
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "abe"))
         );
         unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
-        assertFalse(unified.isPresent());
+        assertFalse(unified.hasNext());
 
     }
 
@@ -185,8 +185,8 @@ public class UnifyAttributeConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.requirements().roleTypes().size());
-        assertEquals(0, unifier.requirements().isaExplicit().size());
+        assertEquals(0, unifier.requirements().types().size());
+        assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(0, unifier.requirements().predicates().size());
 
         Rule rule2 = createRule("isa-rule-2", "{ " + var + " isa person; }", "(employee: " + var + ") isa employment", logicMgr);

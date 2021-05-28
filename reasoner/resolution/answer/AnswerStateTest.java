@@ -66,7 +66,7 @@ public class AnswerStateTest {
         concepts.put(Identifier.Variable.name("a"), new MockConcept(0));
         Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
         Concludable.Match<?> mapped = InitialImpl.create(filter, new ConceptMap(), null, false).toDownstream()
-                .with(new ConceptMap(concepts), false)
+                .with(new ConceptMap(concepts))
                 .toDownstream(Mapping.of(mapping), null);
 
         Map<Identifier.Variable.Retrievable, Concept> expectedMapped = new HashMap<>();
@@ -94,7 +94,7 @@ public class AnswerStateTest {
         concepts.put(Identifier.Variable.name("c"), new MockConcept(2));
         Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
         Concludable.Match<?> mapped = InitialImpl.create(filter, new ConceptMap(), null, false).toDownstream()
-                .with(new ConceptMap(concepts), false)
+                .with(new ConceptMap(concepts))
                 .toDownstream(Mapping.of(mapping), null);
 
         Map<Identifier.Variable.Retrievable, Concept> expectedMapped = new HashMap<>();

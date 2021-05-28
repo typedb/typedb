@@ -48,6 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -73,7 +74,6 @@ public class ResolverRegistry {
     private final ConcurrentMap<Rule, Actor.Driver<ConclusionResolver>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
     private final Set<Actor.Driver<? extends Resolver<?>>> resolvers;
     private final TraversalEngine traversalEngine;
-    private final Planner planner;
     private final boolean resolutionTracing;
     private final AtomicBoolean terminated;
     private ActorExecutorGroup executorService;
@@ -88,9 +88,12 @@ public class ResolverRegistry {
         this.ruleConditions = new ConcurrentHashMap<>();
         this.ruleConclusions = new ConcurrentHashMap<>();
         this.resolvers = new ConcurrentSet<>();
-        this.planner = new Planner(conceptMgr, logicMgr);
         this.terminated = new AtomicBoolean(false);
         this.resolutionTracing = resolutionTracing;
+    }
+
+    public Set<Actor.Driver<ConcludableResolver>> concludableResolvers() {
+        return new HashSet<>(concludableResolvers.values());
     }
 
     public void terminateResolvers(Throwable cause) {
@@ -106,7 +109,7 @@ public class ResolverRegistry {
         LOG.debug("Creating Root.Conjunction for: '{}'", conjunction);
         Actor.Driver<RootResolver.Conjunction> resolver = Actor.driver(driver -> new RootResolver.Conjunction(
                 driver, conjunction, onAnswer, onFail, onException, this,
-                traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing
+                traversalEngine, conceptMgr, logicMgr, resolutionTracing
         ), executorService);
         resolvers.add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
@@ -147,7 +150,7 @@ public class ResolverRegistry {
         LOG.debug("Register retrieval for rule condition actor: '{}'", ruleCondition);
         Actor.Driver<ConditionResolver> resolver = ruleConditions.computeIfAbsent(ruleCondition.rule(), (r) -> Actor.driver(
                 driver -> new ConditionResolver(driver, ruleCondition, this, traversalEngine,
-                                                conceptMgr, logicMgr, planner, resolutionTracing), executorService
+                                                conceptMgr, logicMgr, resolutionTracing), executorService
         ));
         resolvers.add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
@@ -208,7 +211,7 @@ public class ResolverRegistry {
     public Actor.Driver<ConjunctionResolver.Nested> nested(Conjunction conjunction) {
         LOG.debug("Creating Conjunction resolver for : {}", conjunction);
         Actor.Driver<ConjunctionResolver.Nested> resolver = Actor.driver(driver -> new ConjunctionResolver.Nested(
-                driver, conjunction, this, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing
+                driver, conjunction, this, traversalEngine, conceptMgr, logicMgr, resolutionTracing
         ), executorService);
         resolvers.add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
@@ -217,9 +220,12 @@ public class ResolverRegistry {
 
     public Actor.Driver<DisjunctionResolver.Nested> nested(Disjunction disjunction) {
         LOG.debug("Creating Disjunction resolver for : {}", disjunction);
-        return Actor.driver(driver -> new DisjunctionResolver.Nested(
+        Actor.Driver<DisjunctionResolver.Nested> resolver = Actor.driver(driver -> new DisjunctionResolver.Nested(
                 driver, disjunction, this, traversalEngine, conceptMgr, resolutionTracing
         ), executorService);
+        resolvers.add(resolver);
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        return resolver;
     }
 
     private Map<Variable.Retrievable, Variable.Retrievable> identity(Resolvable<Conjunction> conjunctionResolvable) {
@@ -228,10 +234,13 @@ public class ResolverRegistry {
 
     public Actor.Driver<RootResolver.Explain> explainer(Conjunction conjunction, Consumer<Explain.Finished> requestAnswered,
                                                         Consumer<Integer> requestFailed, Consumer<Throwable> exception) {
-        return Actor.driver(driver -> new RootResolver.Explain(
+        Actor.Driver<RootResolver.Explain> resolver = Actor.driver(driver -> new RootResolver.Explain(
                 driver, conjunction, requestAnswered, requestFailed, exception,
-                this, traversalEngine, conceptMgr, logicMgr, planner, resolutionTracing
+                this, traversalEngine, conceptMgr, logicMgr, resolutionTracing
         ), executorService);
+        resolvers.add(resolver);
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        return resolver;
     }
 
     public void setExecutorService(ActorExecutorGroup executorService) {

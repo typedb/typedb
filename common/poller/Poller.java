@@ -16,23 +16,17 @@
  *
  */
 
-package com.vaticle.typedb.core.graph.iid;
+package com.vaticle.typedb.core.common.poller;
 
-import com.vaticle.typedb.core.common.collection.ByteArray;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 
-public class SuffixIID extends IID {
+import java.util.Optional;
+import java.util.function.Function;
 
-    private SuffixIID(ByteArray bytes) {
-        super(bytes);
-    }
+public interface Poller<T> {
 
-    public static SuffixIID of(ByteArray bytes) {
-        return new SuffixIID(bytes);
-    }
+    Optional<T> poll();
 
-    @Override
-    public String toString() {
-        if (readableString == null) readableString = "Suffix: " + bytes.toString();
-        return readableString;
-    }
+    <U> Poller<U> flatMap(Function<T, FunctionalIterator<U>> flatMappingFn);
+
 }

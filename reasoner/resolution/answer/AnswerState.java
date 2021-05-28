@@ -18,6 +18,7 @@
 package com.vaticle.typedb.core.reasoner.resolution.answer;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
@@ -45,8 +46,6 @@ public interface AnswerState {
 
     ConceptMap conceptMap();
 
-    boolean requiresReiteration();
-
     Actor.Driver<? extends Resolver<?>> root();
 
     default boolean isTop() { return false; }
@@ -59,8 +58,10 @@ public interface AnswerState {
 
     interface Top extends AnswerState {
 
+        @Override
         default boolean isTop() { return true; }
 
+        @Override
         default Top asTop() { return this; }
 
         default boolean isMatch() { return false; }
@@ -93,7 +94,7 @@ public interface AnswerState {
 
                 Partial.Compound.Root.Root.Match toDownstream();
 
-                Finished finish(ConceptMap conceptMap, boolean requiresReiteration);
+                Finished finish(ConceptMap conceptMap);
 
             }
 
@@ -125,7 +126,7 @@ public interface AnswerState {
 
                 Partial.Compound.Root.Explain toDownstream();
 
-                Finished finish(ConceptMap conceptMap, boolean requiresReiteration, Explanation explanation);
+                Finished finish(ConceptMap conceptMap, Explanation explanation);
 
             }
 
@@ -169,7 +170,7 @@ public interface AnswerState {
             throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Concludable.class));
         }
 
-        default Conclusion<?, ?> asConclusion() {
+        default Conclusion<?, ? extends Concludable<?>> asConclusion() {
             throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Conclusion.class));
         }
 
@@ -179,7 +180,7 @@ public interface AnswerState {
 
         interface Compound<SLF extends Compound<SLF, PRNT>, PRNT extends AnswerState> extends Partial<PRNT> {
 
-            SLF with(ConceptMap extension, boolean requiresReiteration);
+            SLF with(ConceptMap extension);
 
             Concludable<SLF> toDownstream(Mapping mapping, com.vaticle.typedb.core.logic.resolvable.Concludable concludable);
 
@@ -255,7 +256,7 @@ public interface AnswerState {
 
                 interface Explain extends Root<Explain, Top.Explain.Initial> {
 
-                    Explain with(ConceptMap extension, boolean requiresReiteration, Explanation explanation);
+                    Explain with(ConceptMap extension, Explanation explanation);
 
                     @Override
                     Concludable.Explain toDownstream(Mapping mapping, com.vaticle.typedb.core.logic.resolvable.Concludable concludable);
@@ -274,6 +275,7 @@ public interface AnswerState {
             interface Condition<S extends Condition<S, P>, P extends Conclusion<P, ?>> extends Compound<S, P> {
 
                 // merge point where Match and Explain all become Match states
+                @Override
                 Concludable.Match<S> toDownstream(Mapping mapping, com.vaticle.typedb.core.logic.resolvable.Concludable concludable);
 
                 Conclusion<?, ?> toUpstream();
@@ -290,6 +292,7 @@ public interface AnswerState {
 
                 interface Match extends Condition<Match, Conclusion.Match> {
 
+                    @Override
                     Conclusion.Match toUpstream();
 
                     @Override
@@ -302,6 +305,7 @@ public interface AnswerState {
 
                 interface Explain extends Condition<Explain, Conclusion.Explain> {
 
+                    @Override
                     Conclusion.Explain toUpstream();
 
                     @Override
@@ -343,7 +347,7 @@ public interface AnswerState {
                 @Override
                 Optional<Conclusion.Match> toDownstream(Unifier unifier, Rule rule);
 
-                Match<P> with(ConceptMap extension, boolean requiresReiteration);
+                Match<P> with(ConceptMap extension);
 
                 P toUpstreamLookup(ConceptMap additionalConcepts, boolean isInferredConclusion);
 
@@ -360,7 +364,7 @@ public interface AnswerState {
                 @Override
                 Optional<Conclusion.Explain> toDownstream(Unifier unifier, Rule rule);
 
-                Explain with(ConceptMap extension, boolean requiresReiteration, Rule rule, ConceptMap conclusionAnswer,
+                Explain with(ConceptMap extension, Rule rule, ConceptMap conclusionAnswer,
                              Unifier unifier, ConceptMap conditionAnswer);
 
                 @Override
@@ -382,7 +386,7 @@ public interface AnswerState {
 
             Unifier.Requirements.Instance instanceRequirements();
 
-            Optional<? extends PRNT> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts);
+            FunctionalIterator<? extends PRNT> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts);
 
             SLF extend(ConceptMap ans);
 
@@ -392,17 +396,31 @@ public interface AnswerState {
             default boolean isConclusion() { return true; }
 
             @Override
-            default Conclusion<?, ?> asConclusion() { return this; }
+            default Conclusion<?, PRNT> asConclusion() { return this; }
+
+            default boolean isMatch() { return false; }
+
+            default Match asMatch() { throw TypeDBException.of(ILLEGAL_CAST, this.getClass(), Top.Match.class); }
+
+            default boolean isExplain() { return false; }
+
+            default Explain asExplain() { throw TypeDBException.of(ILLEGAL_CAST, this.getClass(), Top.Explain.class); }
 
             interface Match extends Conclusion<Match, Concludable.Match<?>>, Explainable {
 
                 @Override
-                Optional<Concludable.Match<?>> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts);
+                FunctionalIterator<Concludable.Match<?>> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts);
 
-                Match with(ConceptMap extension, boolean requiresReiteration);
+                Match with(ConceptMap extension);
 
                 @Override
                 Compound.Root.Condition.Match toDownstream(Set<Identifier.Variable.Retrievable> filter);
+
+                @Override
+                default boolean isMatch() { return true; }
+
+                @Override
+                default Match asMatch() { return this; }
 
             }
 
@@ -410,13 +428,19 @@ public interface AnswerState {
 
                 ConceptMap conditionAnswer();
 
-                Explain with(ConceptMap conditionAnswer, boolean requiresReiteration);
+                Explain with(ConceptMap conditionAnswer);
 
                 @Override
-                Optional<Concludable.Explain> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts);
+                FunctionalIterator<Concludable.Explain> aggregateToUpstream(Map<Identifier.Variable, Concept> concepts);
 
                 @Override
                 Compound.Condition.Explain toDownstream(Set<Identifier.Variable.Retrievable> filter);
+
+                @Override
+                default boolean isExplain() { return true; }
+
+                @Override
+                default Explain asExplain() { return this; }
 
             }
 

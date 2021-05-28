@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.logic.resolvable;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Options;
@@ -49,7 +50,6 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.map;
@@ -158,8 +158,8 @@ public class UnifyIsaConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.requirements().roleTypes().size());
-        assertEquals(0, unifier.requirements().isaExplicit().size());
+        assertEquals(1, unifier.requirements().types().size());
+        assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(0, unifier.requirements().predicates().size());
     }
 
@@ -183,8 +183,8 @@ public class UnifyIsaConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.requirements().roleTypes().size());
-        assertEquals(0, unifier.requirements().isaExplicit().size());
+        assertEquals(1, unifier.requirements().types().size());
+        assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(0, unifier.requirements().predicates().size());
     }
 
@@ -209,8 +209,8 @@ public class UnifyIsaConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.requirements().roleTypes().size());
-        assertEquals(0, unifier.requirements().isaExplicit().size());
+        assertEquals(1, unifier.requirements().types().size());
+        assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(0, unifier.requirements().predicates().size());
     }
 
@@ -259,9 +259,9 @@ public class UnifyIsaConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.requirements().roleTypes().size());
+        assertEquals(1, unifier.requirements().types().size());
         assertEquals(1, unifier.requirements().isaExplicit().size());
-        assertEquals(set(Label.of("name"), Label.of("first-name"), Label.of("last-name")),
+        assertEquals(set(Label.of("first-name"), Label.of("last-name")),
                      unifier.requirements().isaExplicit().values().iterator().next());
         assertEquals(0, unifier.requirements().predicates().size());
 
@@ -270,9 +270,9 @@ public class UnifyIsaConcludableTest {
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "john")),
                 pair(Identifier.Variable.label("first-name"), conceptMgr.getThingType("first-name"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
-        assertTrue(unified.isPresent());
-        assertEquals(1, unified.get().concepts().size());
+        FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
+        assertTrue(unified.hasNext());
+        assertEquals(1, unified.next().concepts().size());
 
         // filter out invalid type
         concepts = map(
@@ -280,7 +280,7 @@ public class UnifyIsaConcludableTest {
                 pair(Identifier.Variable.label("first-name"), conceptMgr.getThingType("age"))
         );
         unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
-        assertFalse(unified.isPresent());
+        assertFalse(unified.hasNext());
     }
 
     @Test
@@ -301,9 +301,9 @@ public class UnifyIsaConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.requirements().roleTypes().size());
+        assertEquals(1, unifier.requirements().types().size());
         assertEquals(1, unifier.requirements().isaExplicit().size());
-        assertEquals(set(Label.of("relation"), Label.of("employment")), unifier.requirements().isaExplicit().get(Identifier.Variable.name("a")));
+        assertEquals(set(Label.of("employment")), unifier.requirements().isaExplicit().get(Identifier.Variable.name("a")));
         assertEquals(0, unifier.requirements().predicates().size());
 
         // test filter allows a valid answer
@@ -311,9 +311,9 @@ public class UnifyIsaConcludableTest {
                 pair(Identifier.Variable.anon(0), instanceOf("employment")),
                 pair(Identifier.Variable.label("employment"), conceptMgr.getThingType("employment"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
-        assertTrue(unified.isPresent());
-        assertEquals(1, unified.get().concepts().size());
+        FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
+        assertTrue(unified.hasNext());
+        assertEquals(1, unified.next().concepts().size());
 
         // filter out invalid type
         concepts = map(
@@ -321,7 +321,7 @@ public class UnifyIsaConcludableTest {
                 pair(Identifier.Variable.label("employment"), conceptMgr.getThingType("age"))
         );
         unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
-        assertFalse(unified.isPresent());
+        assertFalse(unified.hasNext());
     }
 
     @Test
@@ -344,9 +344,9 @@ public class UnifyIsaConcludableTest {
         assertEquals(expected, result);
 
         // test requirements
-        assertEquals(0, unifier.requirements().roleTypes().size());
+        assertEquals(1, unifier.requirements().types().size());
         assertEquals(1, unifier.requirements().isaExplicit().size());
-        assertEquals(set(Label.of("relation"), Label.of("employment")), unifier.requirements().isaExplicit().get(Identifier.Variable.name("a")));
+        assertEquals(set(Label.of("employment")), unifier.requirements().isaExplicit().get(Identifier.Variable.name("a")));
         assertEquals(0, unifier.requirements().predicates().size());
 
         // test filter allows a valid answer
@@ -354,9 +354,9 @@ public class UnifyIsaConcludableTest {
                 pair(Identifier.Variable.anon(0), instanceOf("employment")),
                 pair(Identifier.Variable.name("rel-type"), conceptMgr.getThingType("employment"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
-        assertTrue(unified.isPresent());
-        assertEquals(1, unified.get().concepts().size());
+        FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
+        assertTrue(unified.hasNext());
+        assertEquals(1, unified.next().concepts().size());
 
         // filter out invalid type
         concepts = map(
@@ -364,7 +364,7 @@ public class UnifyIsaConcludableTest {
                 pair(Identifier.Variable.name("rel-type"), conceptMgr.getThingType("age"))
         );
         unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
-        assertFalse(unified.isPresent());
+        assertFalse(unified.hasNext());
     }
 
     @Test
@@ -420,7 +420,7 @@ public class UnifyIsaConcludableTest {
         Unifier unifier = unifiers.get(0);
 
         // test requirements
-        assertEquals(0, unifier.requirements().roleTypes().size());
+        assertEquals(0, unifier.requirements().types().size());
         assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(3, unifier.requirements().predicates().size());
 
@@ -429,30 +429,30 @@ public class UnifyIsaConcludableTest {
         Map<Identifier.Variable, Concept> concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("first-name", "johnny"))
         );
-        Optional<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
-        assertTrue(unified.isPresent());
-        assertEquals(1, unified.get().concepts().size());
+        FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
+        assertTrue(unified.hasNext());
+        assertEquals(1, unified.next().concepts().size());
 
         // filter out using >
         concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("first-name", "abe"))
         );
         unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
-        assertFalse(unified.isPresent());
+        assertFalse(unified.hasNext());
 
         // filter out using <
         concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("first-name", "zack"))
         );
         unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
-        assertFalse(unified.isPresent());
+        assertFalse(unified.hasNext());
 
         // filter out using contains
         concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("first-name", "carol"))
         );
         unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
-        assertFalse(unified.isPresent());
+        assertFalse(unified.hasNext());
 
     }
 }

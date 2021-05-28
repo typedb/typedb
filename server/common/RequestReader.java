@@ -19,6 +19,7 @@ package com.vaticle.typedb.core.server.common;
 
 import com.google.protobuf.ByteString;
 import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic;
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.type.AttributeType.ValueType;
@@ -30,7 +31,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import static com.vaticle.typedb.core.common.collection.Bytes.bytesToUUID;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
 import static com.vaticle.typedb.protocol.OptionsProto.Options.ExplainOptCase.EXPLAIN;
 import static com.vaticle.typedb.protocol.OptionsProto.Options.InferOptCase.INFER;
@@ -44,7 +44,7 @@ import static com.vaticle.typedb.protocol.OptionsProto.Options.TraceInferenceOpt
 public class RequestReader {
 
     public static UUID byteStringAsUUID(ByteString byteString) {
-        return bytesToUUID(byteString.toByteArray());
+        return ByteArray.of(byteString.toByteArray()).decodeUUID();
     }
 
     public static <T extends Options<?, ?>> T applyDefaultOptions(T options, OptionsProto.Options request) {

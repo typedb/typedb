@@ -18,6 +18,7 @@
 package com.vaticle.typedb.core.server.concept;
 
 import com.vaticle.typedb.common.collection.Pair;
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.Concept;
@@ -70,7 +71,7 @@ public class ThingService {
     public void execute(Transaction.Req req) {
         ConceptProto.Thing.Req thingReq = req.getThingReq();
         assert thingReq != null;
-        Thing thing = notNull(conceptMgr.getThing(thingReq.getIid().toByteArray()));
+        Thing thing = notNull(conceptMgr.getThing(ByteArray.of(thingReq.getIid().toByteArray())));
         UUID reqID = byteStringAsUUID(req.getReqId());
         switch (thingReq.getReqCase()) {
             case THING_DELETE_REQ:
@@ -124,7 +125,7 @@ public class ThingService {
     }
 
     private Thing getThing(ConceptProto.Thing protoThing) {
-        return conceptMgr.getThing(protoThing.getIid().toByteArray());
+        return conceptMgr.getThing(ByteArray.of(protoThing.getIid().toByteArray()));
     }
 
     private ThingType getThingType(ConceptProto.Type protoType) {

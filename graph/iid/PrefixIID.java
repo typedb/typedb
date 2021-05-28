@@ -18,15 +18,16 @@
 
 package com.vaticle.typedb.core.graph.iid;
 
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.graph.common.Encoding;
 
 public class PrefixIID extends IID {
 
     public static final int LENGTH = 1;
 
-    private PrefixIID(byte[] bytes) {
+    private PrefixIID(ByteArray bytes) {
         super(bytes);
-        assert bytes.length == LENGTH;
+        assert bytes.length() == LENGTH;
     }
 
     public static PrefixIID of(Encoding.Prefix prefix) {
@@ -39,7 +40,7 @@ public class PrefixIID extends IID {
 
     @Override
     public String toString() {
-        if (readableString == null) readableString = "[" + Encoding.Prefix.of(bytes[0]).toString() + "]";
+        if (readableString == null) readableString = "[" + Encoding.Prefix.of(bytes.get(0)).toString() + "]";
         return readableString;
     }
 }
