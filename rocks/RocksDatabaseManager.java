@@ -23,14 +23,17 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NAME_RESERVED;
 
 public class RocksDatabaseManager implements TypeDB.DatabaseManager {
+
+    protected static final String RESERVED_NAME_PREFIX = "_";
 
     protected final RocksTypeDB typedb;
     protected final ConcurrentMap<String, RocksDatabase> databases;
@@ -55,11 +58,13 @@ public class RocksDatabaseManager implements TypeDB.DatabaseManager {
 
     @Override
     public boolean contains(String name) {
+        if (isReservedName(name)) throw TypeDBException.of(DATABASE_NAME_RESERVED);
         return databases.containsKey(name);
     }
 
     @Override
     public RocksDatabase create(String name) {
+        if (isReservedName(name)) throw TypeDBException.of(DATABASE_NAME_RESERVED);
         if (databases.containsKey(name)) throw TypeDBException.of(DATABASE_EXISTS, name);
 
         RocksDatabase database = databaseFactory.databaseCreateAndOpen(typedb, name);
@@ -69,12 +74,13 @@ public class RocksDatabaseManager implements TypeDB.DatabaseManager {
 
     @Override
     public RocksDatabase get(String name) {
+        if (isReservedName(name)) throw TypeDBException.of(DATABASE_NAME_RESERVED);
         return databases.get(name);
     }
 
     @Override
     public Set<RocksDatabase> all() {
-        return new HashSet<>(databases.values());
+        return databases.values().stream().filter(database -> !isReservedName(database.name())).collect(Collectors.toSet());
     }
 
     void remove(RocksDatabase database) {
@@ -83,5 +89,9 @@ public class RocksDatabaseManager implements TypeDB.DatabaseManager {
 
     protected void close() {
         all().parallelStream().forEach(RocksDatabase::close);
+    }
+
+    protected boolean isReservedName(String name) {
+        return name.startsWith(RESERVED_NAME_PREFIX);
     }
 }
