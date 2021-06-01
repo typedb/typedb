@@ -177,7 +177,7 @@ public class GraphProcedure implements Procedure {
         }
         assertWithinFilterBounds(filter);
         return async(startVertex().iterator(graphMgr, params).map(
-                // TODO we should push the distinct() into the GraphIterator
+                // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
                 v -> new GraphIterator(graphMgr, v, this, params, filter).distinct()
         ), parallelisation);
     }
@@ -191,7 +191,7 @@ public class GraphProcedure implements Procedure {
         }
         assertWithinFilterBounds(filter);
         return startVertex().iterator(graphMgr, params).flatMap(
-                // TODO we should push the distinct() into the GraphIterator
+                // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
                 sv -> new GraphIterator(graphMgr, sv, this, params, filter).distinct()
         );
     }
