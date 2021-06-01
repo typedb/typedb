@@ -30,6 +30,7 @@ import com.vaticle.typedb.core.graph.common.KeyGenerator;
 import com.vaticle.typedb.core.graph.common.StatisticsBytes;
 import com.vaticle.typedb.core.graph.common.Storage;
 import com.vaticle.typedb.core.graph.iid.EdgeIID;
+import com.vaticle.typedb.core.graph.iid.IID;
 import com.vaticle.typedb.core.graph.iid.PrefixIID;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
@@ -144,14 +145,12 @@ public class ThingGraph {
 
     public ThingVertex convert(VertexIID.Thing iid, boolean getForUpdate) {
         assert storage.isOpen();
-        if (iid.encoding().equals(ATTRIBUTE)) return convert(iid.asAttribute(), getForUpdate);
-        else {
-            // TODO flatten nested ifs
-            if (getForUpdate || !storage.isReadOnly()) {
-                return thingsByIID.computeIfAbsent(iid, i -> ThingVertexImpl.of(this, i));
-            } else {
-                return thingsByIID.getOrDefault(iid, ThingVertexImpl.of(this, iid));
-            }
+        if (iid.encoding().equals(ATTRIBUTE)) {
+            return convert(iid.asAttribute(), getForUpdate);
+        } else if (getForUpdate || !storage.isReadOnly()) {
+            return thingsByIID.computeIfAbsent(iid, i -> ThingVertexImpl.of(this, i));
+        } else {
+            return thingsByIID.getOrDefault(iid, ThingVertexImpl.of(this, iid));
         }
     }
 
@@ -168,34 +167,34 @@ public class ThingGraph {
             case LONG:
                 if (getForUpdate || !storage.isReadOnly()) {
                     return attributesByIID.longs.computeIfAbsent(attIID.asLong(),
-                                                                    i -> new AttributeVertexImpl.Long(this, attIID.asLong()));
+                                                                 i -> new AttributeVertexImpl.Long(this, attIID.asLong()));
                 } else {
                     return attributesByIID.longs.getOrDefault(attIID.asLong(),
-                                                                 new AttributeVertexImpl.Long(this, attIID.asLong()));
+                                                              new AttributeVertexImpl.Long(this, attIID.asLong()));
                 }
             case DOUBLE:
                 if (getForUpdate || !storage.isReadOnly()) {
                     return attributesByIID.doubles.computeIfAbsent(attIID.asDouble(),
-                                                                    i -> new AttributeVertexImpl.Double(this, attIID.asDouble()));
+                                                                   i -> new AttributeVertexImpl.Double(this, attIID.asDouble()));
                 } else {
                     return attributesByIID.doubles.getOrDefault(attIID.asDouble(),
-                                                                 new AttributeVertexImpl.Double(this, attIID.asDouble()));
+                                                                new AttributeVertexImpl.Double(this, attIID.asDouble()));
                 }
             case STRING:
                 if (getForUpdate || !storage.isReadOnly()) {
                     return attributesByIID.strings.computeIfAbsent(attIID.asString(),
-                                                                    i -> new AttributeVertexImpl.String(this, attIID.asString()));
+                                                                   i -> new AttributeVertexImpl.String(this, attIID.asString()));
                 } else {
                     return attributesByIID.strings.getOrDefault(attIID.asString(),
-                                                                 new AttributeVertexImpl.String(this, attIID.asString()));
+                                                                new AttributeVertexImpl.String(this, attIID.asString()));
                 }
             case DATETIME:
                 if (getForUpdate || !storage.isReadOnly()) {
                     return attributesByIID.dateTimes.computeIfAbsent(attIID.asDateTime(),
-                                                                    i -> new AttributeVertexImpl.DateTime(this, attIID.asDateTime()));
+                                                                     i -> new AttributeVertexImpl.DateTime(this, attIID.asDateTime()));
                 } else {
                     return attributesByIID.dateTimes.getOrDefault(attIID.asDateTime(),
-                                                                 new AttributeVertexImpl.DateTime(this, attIID.asDateTime()));
+                                                                  new AttributeVertexImpl.DateTime(this, attIID.asDateTime()));
                 }
             default:
                 assert false;
@@ -220,12 +219,20 @@ public class ThingGraph {
 
     private <VALUE, ATT_IID extends VertexIID.Attribute<VALUE>, ATT_VERTEX extends AttributeVertex<VALUE>>
     ATT_VERTEX getOrReadFromStorage(Map<ATT_IID, ATT_VERTEX> map, ATT_IID attIID, Function<ATT_IID, ATT_VERTEX> vertexConstructor) {
-        ATT_VERTEX vertex = map.get(attIID);
-        if (vertex == null && storage.get(attIID.bytes()) != null) {
-            vertex = vertexConstructor.apply(attIID);
-            if (!storage.isReadOnly()) map.put(attIID, vertex);
+        if (!storage.isReadOnly()) {
+            return map.computeIfAbsent(attIID, id -> {
+                ByteArray val = storage.get(id.bytes());
+                if (val != null) return vertexConstructor.apply(id);
+                else return null;
+            });
+        } else {
+            ATT_VERTEX vertex = map.get(attIID);
+            if (vertex == null && storage.get(attIID.bytes()) != null) {
+                return vertexConstructor.apply(attIID);
+            } else {
+                return vertex;
+            }
         }
-        return vertex;
     }
 
     public FunctionalIterator<ThingVertex> get(TypeVertex typeVertex) {
@@ -450,13 +457,10 @@ public class ThingGraph {
         } else delete(vertex.asAttribute());
     }
 
-    public void setModified(ThingVertex vertex) {
+    public void setModified(IID iid) {
         assert storage.isOpen();
         if (!isModified) isModified = true;
-        storage.trackModified(vertex.iid().bytes());
-        if (vertex.isAttribute()) attributesByIID.add(vertex.asAttribute());
-        else thingsByIID.put(vertex.iid(), vertex);
-        modifiedThingsByTypeIID.computeIfAbsent(vertex.type().iid(), t -> new ConcurrentSet<>()).add(vertex);
+        storage.trackModified(iid.bytes());
     }
 
     public boolean isModified() {
