@@ -21,10 +21,13 @@ package com.vaticle.typedb.core.graph.adjacency;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.edge.Edge;
 import com.vaticle.typedb.core.graph.edge.ThingEdge;
+import com.vaticle.typedb.core.graph.iid.EdgeIID;
 import com.vaticle.typedb.core.graph.iid.IID;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import java.util.Arrays;
+import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -163,6 +166,8 @@ public interface ThingAdjacency {
 
     }
 
+    EdgeSortable asSortable(ThingEdge edge);
+
     interface ThingIteratorBuilder {
 
         FunctionalIterator<ThingVertex> from();
@@ -174,10 +179,48 @@ public interface ThingAdjacency {
 
     interface ThingIteratorSortedBuilder {
 
+        // TODO we could specialise into In and Out subtypes that returns sorted from() or to() if we require it
         FunctionalIterator<ThingVertex> from();
 
         FunctionalIterator<ThingVertex> to();
 
-        FunctionalIterator.Sorted<ThingEdge> get();
+        FunctionalIterator.Sorted<EdgeSortable> get();
+    }
+
+    abstract class EdgeSortable implements Comparable<EdgeSortable> {
+
+        public final ThingEdge edge;
+        public final Function<ThingEdge, EdgeIID.Thing> keyFn;
+        public final EdgeIID.Thing key;
+
+        EdgeSortable(ThingEdge edge, Function<ThingEdge, EdgeIID.Thing> keyFn) {
+            this.edge = edge;
+            this.keyFn = keyFn;
+            this.key = keyFn.apply(edge);
+        }
+
+        public static EdgeSortable in(ThingEdge edge) { return new In(edge); }
+        public static EdgeSortable out(ThingEdge edge) { return new Out(edge);}
+
+        public ThingEdge getEdge() {
+            return edge;
+        }
+
+        @Override
+        public int compareTo(EdgeSortable other) {
+            return key.compareTo(other.key);
+        }
+
+        public static class In extends EdgeSortable {
+            In(ThingEdge edge) {
+                super(edge, Edge::inIID);
+            }
+        }
+
+        public static class Out extends EdgeSortable {
+            Out(ThingEdge edge) {
+                super(edge, Edge::outIID);
+            }
+        }
     }
 }
