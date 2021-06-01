@@ -331,7 +331,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         @Override
         protected FunctionalIterator<? extends Partial<?>> toUpstream(ConceptMap conceptMap) {
             return Iterators.single(fromUpstream.partialAnswer().asConcludable().asMatch().toUpstreamLookup(
-                    conceptMap, concludable.isInferredAnswer(conceptMap)));
+                    conceptMap, concludable.isInferredAnswer(conceptMap, conceptMgr)));
         }
 
     }
@@ -376,7 +376,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         @Override
         protected FunctionalIterator<? extends Partial<?>> toUpstream(ConceptMap conceptMap) {
             return Iterators.single(fromUpstream.partialAnswer().asConcludable().asMatch().toUpstreamLookup(
-                    conceptMap, concludable.isInferredAnswer(conceptMap)));
+                    conceptMap, concludable.isInferredAnswer(conceptMap, conceptMgr)));
         }
     }
 
