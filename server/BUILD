@@ -59,7 +59,7 @@ native_java_libraries(
         "@vaticle_typeql_lang_java//:typeql-lang",
         "@vaticle_typeql_lang_java//query",
         "@vaticle_typeql_lang_java//common",
-        "@vaticle_typedb_protocol//grpc/java:protocol",
+        "@vaticle_typedb_protocol//grpc/java:typedb-protocol",
 
         # External dependencies from Maven
         "@maven//:com_google_code_findbugs_jsr305",
