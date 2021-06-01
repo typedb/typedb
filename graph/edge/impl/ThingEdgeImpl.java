@@ -227,7 +227,6 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         private final VertexIID.Thing toIID;
         private final VertexIID.Thing optimisedIID;
         private final int hash;
-        private final ByteArray persistedBytes;
         private ThingVertex from;
         private ThingVertex to;
         private ThingVertex optimised;
@@ -269,13 +268,12 @@ public abstract class ThingEdgeImpl implements ThingEdge {
                 optimisedIID = null;
             }
 
-            this.persistedBytes = iid.bytes();
             this.hash = hash(Persisted.class, encoding, fromIID.hashCode(), toIID.hashCode());
         }
 
         @Override
         public ByteArray getBytes() {
-            return persistedBytes;
+            return outIID.bytes();
         }
 
         @Override

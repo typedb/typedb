@@ -597,13 +597,13 @@ public class TypeGraph {
 
                 private Set<RuleStructure> loadConcludesVertex(TypeVertex type) {
                     Rule scanPrefix = Rule.Prefix.concludedVertex(type.iid());
-                    return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of((key.view(scanPrefix.length()))))
+                    return storage.iterate(scanPrefix.bytes(), (key, value) -> key).map(key -> StructureIID.Rule.of((key.view(scanPrefix.length()))))
                             .map(Rules.this::convert).toSet();
                 }
 
                 private Set<RuleStructure> loadConcludesEdgeTo(TypeVertex attrType) {
                     Rule scanPrefix = Rule.Prefix.concludedEdgeTo(attrType.iid());
-                    return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(key.view(scanPrefix.length())))
+                    return storage.iterate(scanPrefix.bytes(), (key, value) -> key).map(key -> StructureIID.Rule.of(key.view(scanPrefix.length())))
                             .map(Rules.this::convert).toSet();
                 }
 
@@ -734,7 +734,7 @@ public class TypeGraph {
 
                 private Set<RuleStructure> loadIndex(TypeVertex type) {
                     Rule scanPrefix = Rule.Prefix.contained(type.iid());
-                    return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(key.view(scanPrefix.length())))
+                    return storage.iterate(scanPrefix.bytes(), (key, value) -> key).map(key -> StructureIID.Rule.of(key.view(scanPrefix.length())))
                             .map(Rules.this::convert).toSet();
                 }
 

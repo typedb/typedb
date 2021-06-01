@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.TypeGraph;
+import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.edge.ThingEdge;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
@@ -1038,16 +1039,22 @@ public abstract class ProcedureEdge<
                                 // TODO: the following code can be optimised if we have an API to directly get the
                                 //       roleplayer edge when we have the roleplayer vertex
                                 iter = resolveRoleTypesIter.flatMap(
-                                        rt -> rel.outs().edgeRolePlayer(rt.iid(), player.iid().prefix(), player.iid().type()).get()
+                                        rt -> rel.outs()
+                                                .edgeRolePlayer(rt.iid(), player.iid().prefix(), player.iid().type()).get()
+                                                .map(ThingAdjacency.EdgeSortable::getEdge)
                                 ).filter(e -> e.to().equals(player));
                             } else if (!to.props().types().isEmpty()) {
                                 filteredTypes = true;
                                 iter = resolveRoleTypesIter.flatMap(
                                         rt -> iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).noNulls()
-                                                .flatMap(t -> rel.outs().edgeRolePlayer(rt.iid(), PrefixIID.of(t.encoding().instance()), t.iid()).get())
+                                                .flatMap(t -> rel.outs()
+                                                        .edgeRolePlayer(rt.iid(), PrefixIID.of(t.encoding().instance()), t.iid()).get()
+                                                        .map(ThingAdjacency.EdgeSortable::getEdge))
                                 );
                             } else {
-                                iter = resolveRoleTypesIter.flatMap(rt -> rel.outs().edgeRolePlayer(rt.iid()).get());
+                                iter = resolveRoleTypesIter.flatMap(rt -> rel.outs()
+                                        .edgeRolePlayer(rt.iid()).get()
+                                        .map(ThingAdjacency.EdgeSortable::getEdge));
                             }
                         } else {
                             iter = rel.outs().edge(ROLEPLAYER).get();
@@ -1066,7 +1073,9 @@ public abstract class ProcedureEdge<
                         Optional<ThingEdge> validEdge;
                         if (!roleTypes.isEmpty()) {
                             validEdge = iterate(resolvedRoleTypes(graphMgr.schema())).flatMap(
-                                    rt -> rel.outs().edgeRolePlayer(rt.iid(), player.iid().prefix(), player.iid().type()).get()
+                                    rt -> rel.outs()
+                                            .edgeRolePlayer(rt.iid(), player.iid().prefix(), player.iid().type()).get()
+                                            .map(ThingAdjacency.EdgeSortable::getEdge)
                                             .filter(e -> e.to().equals(player) && !scoped.contains(e.optimised().get())))
                                     .first();
                         } else {
@@ -1101,15 +1110,19 @@ public abstract class ProcedureEdge<
                                 ThingVertex relation = graphMgr.data().get(params.getIID(to.id().asVariable()));
                                 if (relation == null) return empty();
                                 iter = resolveRoleTypesIter.flatMap(
-                                        rt -> player.ins().edgeRolePlayer(rt.iid(), relation.iid().prefix(), relation.iid().type())
-                                                .get().filter(r -> r.from().equals(relation)));
+                                        rt -> player.ins()
+                                                .edgeRolePlayer(rt.iid(), relation.iid().prefix(), relation.iid().type()).get()
+                                                .map(ThingAdjacency.EdgeSortable::getEdge)
+                                                .filter(r -> r.from().equals(relation)));
                             } else if (!to.props().types().isEmpty()) {
                                 filteredTypes = true;
                                 iter = resolveRoleTypesIter.flatMap(
                                         rt -> iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).noNulls()
-                                                .flatMap(t -> player.ins().edgeRolePlayer(rt.iid(), PrefixIID.of(t.encoding().instance()), t.iid()).get()));
+                                                .flatMap(t -> player.ins()
+                                                        .edgeRolePlayer(rt.iid(), PrefixIID.of(t.encoding().instance()), t.iid()).get()
+                                                        .map(ThingAdjacency.EdgeSortable::getEdge)));
                             } else {
-                                iter = resolveRoleTypesIter.flatMap(rt -> player.ins().edgeRolePlayer(rt.iid()).get());
+                                iter = resolveRoleTypesIter.flatMap(rt -> player.ins().edgeRolePlayer(rt.iid()).get().map(ThingAdjacency.EdgeSortable::getEdge));
                             }
                         } else {
                             iter = player.ins().edge(ROLEPLAYER).get();
@@ -1128,6 +1141,7 @@ public abstract class ProcedureEdge<
                         if (!roleTypes.isEmpty()) {
                             validEdge = iterate(resolvedRoleTypes(graphMgr.schema())).flatMap(
                                     rt -> player.ins().edgeRolePlayer(rt.iid(), rel.iid().prefix(), rel.iid().type()).get()
+                                            .map(ThingAdjacency.EdgeSortable::getEdge)
                                             .filter(e -> e.from().equals(rel) && !scoped.contains(e.optimised().get())))
                                     .first();
                         } else {
