@@ -20,6 +20,8 @@ package com.vaticle.typedb.core.common.iterator;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
 import java.util.function.Function;
@@ -30,16 +32,16 @@ public class FlatMergeSortedIterator<T, U extends Comparable<U>> extends Abstrac
 
     private final FunctionalIterator<T> source;
     private final Function<T, FunctionalIterator.Sorted<U>> flatMappingFn;
-    private final PriorityQueue<QueueNode> nextQueue;
+    private final PriorityQueue<QueueNode> next;
     private State state;
-    private FunctionalIterator.Sorted<U> notInQueue;
+    private List<FunctionalIterator.Sorted<U>> notInQueue;
 
     public FlatMergeSortedIterator(FunctionalIterator<T> source, Function<T, FunctionalIterator.Sorted<U>> flatMappingFn) {
         this.source = source;
         this.flatMappingFn = flatMappingFn;
-        nextQueue = new PriorityQueue<>();
+        next = new PriorityQueue<>();
         this.state = State.INIT;
-        this.notInQueue = null;
+        this.notInQueue = new ArrayList<>();
     }
 
     private enum State {
@@ -79,12 +81,13 @@ public class FlatMergeSortedIterator<T, U extends Comparable<U>> extends Abstrac
     }
 
     private boolean fetchAndCheck() {
-        if (notInQueue != null) {
-            assert notInQueue.hasNext();
-            nextQueue.add(new QueueNode(notInQueue, notInQueue.peek()));
-            notInQueue = null;
+        if (!notInQueue.isEmpty()) {
+            notInQueue.forEach(sorted -> {
+                if (sorted.hasNext()) next.add(new QueueNode(sorted, sorted.peek()));
+            });
+            notInQueue.clear();
         }
-        if (nextQueue.isEmpty()) state = State.COMPLETED;
+        if (next.isEmpty()) state = State.COMPLETED;
         else state = State.READY;
         return state == State.READY;
     }
@@ -93,11 +96,11 @@ public class FlatMergeSortedIterator<T, U extends Comparable<U>> extends Abstrac
         source.forEachRemaining(value -> {
             FunctionalIterator.Sorted<U> sortedIterator = flatMappingFn.apply(value);
             if (sortedIterator.hasNext()) {
-                nextQueue.add(new QueueNode(sortedIterator, sortedIterator.peek()));
+                next.add(new QueueNode(sortedIterator, sortedIterator.peek()));
             }
         });
         source.recycle();
-        if (nextQueue.isEmpty()) state = State.COMPLETED;
+        if (next.isEmpty()) state = State.COMPLETED;
         else state = State.READY;
         return state == State.READY;
     }
@@ -105,27 +108,36 @@ public class FlatMergeSortedIterator<T, U extends Comparable<U>> extends Abstrac
     @Override
     public U next() {
         if (!hasNext()) throw new NoSuchElementException();
-        QueueNode lowest = this.nextQueue.poll();
+        QueueNode lowest = this.next.poll();
         FunctionalIterator.Sorted<U> iter = lowest.iter;
         U value = iter.next();
         state = State.NOT_READY;
-        if (iter.hasNext()) notInQueue = iter;
+        notInQueue.add(iter);
         return value;
     }
 
     @Override
     public U peek() {
         if (!hasNext()) throw new NoSuchElementException();
-        return nextQueue.peek().iter.peek();
+        return next.peek().iter.peek();
     }
 
     @Override
     public void seek(U target) {
-        // TODO
+        next.forEach(queueNode -> {
+            FunctionalIterator.Sorted<U> iter = queueNode.iter;
+            iter.seek(target);
+            notInQueue.add(iter);
+        });
+        next.clear();
     }
 
     @Override
     public void recycle() {
+        next.forEach(queueNode -> queueNode.iter.recycle());
+        next.clear();
+        notInQueue.forEach(FunctionalIterator::recycle);
+        notInQueue.clear();
         source.recycle();
     }
 }

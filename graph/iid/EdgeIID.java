@@ -113,7 +113,6 @@ public abstract class EdgeIID<
         }
     }
 
-    // TODO get rid of comparables here
     public static class Thing extends EdgeIID<Encoding.Edge.Thing, InfixIID.Thing, VertexIID.Thing, VertexIID.Thing> implements Comparable<Thing> {
 
         Thing(ByteArray bytes) {
