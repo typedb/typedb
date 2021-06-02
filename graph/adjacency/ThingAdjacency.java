@@ -166,7 +166,7 @@ public interface ThingAdjacency {
 
     }
 
-    EdgeSortable asSortable(ThingEdge edge);
+    EdgeDirected asSortable(ThingEdge edge);
 
     interface ThingIteratorBuilder {
 
@@ -184,40 +184,53 @@ public interface ThingAdjacency {
 
         FunctionalIterator<ThingVertex> to();
 
-        FunctionalIterator.Sorted<EdgeSortable> get();
+        FunctionalIterator.Sorted<EdgeDirected> get();
     }
 
-    abstract class EdgeSortable implements Comparable<EdgeSortable> {
+    abstract class EdgeDirected implements Comparable<EdgeDirected> {
 
         public final ThingEdge edge;
         public final Function<ThingEdge, EdgeIID.Thing> keyFn;
         public final EdgeIID.Thing key;
 
-        EdgeSortable(ThingEdge edge, Function<ThingEdge, EdgeIID.Thing> keyFn) {
+        EdgeDirected(ThingEdge edge, Function<ThingEdge, EdgeIID.Thing> keyFn) {
             this.edge = edge;
             this.keyFn = keyFn;
             this.key = keyFn.apply(edge);
         }
 
-        public static EdgeSortable in(ThingEdge edge) { return new In(edge); }
-        public static EdgeSortable out(ThingEdge edge) { return new Out(edge);}
+        public static EdgeDirected in(ThingEdge edge) { return new In(edge); }
+        public static EdgeDirected out(ThingEdge edge) { return new Out(edge);}
 
         public ThingEdge getEdge() {
             return edge;
         }
 
         @Override
-        public int compareTo(EdgeSortable other) {
+        public int compareTo(EdgeDirected other) {
             return key.compareTo(other.key);
         }
 
-        public static class In extends EdgeSortable {
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            final EdgeDirected that = (EdgeDirected) o;
+            return edge.equals(that.edge);
+        }
+
+        @Override
+        public int hashCode() {
+            return edge.hashCode();
+        }
+
+        public static class In extends EdgeDirected {
             In(ThingEdge edge) {
                 super(edge, Edge::inIID);
             }
         }
 
-        public static class Out extends EdgeSortable {
+        public static class Out extends EdgeDirected {
             Out(ThingEdge edge) {
                 super(edge, Edge::outIID);
             }

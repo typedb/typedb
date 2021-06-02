@@ -125,8 +125,6 @@ public class Undefiner {
             if (!variable.owns().isEmpty()) undefineOwns(type, variable.owns());
             if (!variable.relates().isEmpty()) undefineRelates(type.asRelationType(), variable.relates());
 
-            // TODO: if (variable.then().isPresent()) undefineThen(variable);
-            // TODO: if (variable.when().isPresent()) undefineWhen(variable);
             if (variable.regex().isPresent()) undefineRegex(type.asAttributeType().asString(), variable.regex().get());
             if (variable.abstractConstraint().isPresent()) undefineAbstract(type);
 

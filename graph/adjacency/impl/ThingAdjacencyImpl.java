@@ -86,9 +86,9 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
     static class ThingIteratorSortedBuilderImpl implements ThingIteratorSortedBuilder {
 
-        private final FunctionalIterator.Sorted<EdgeSortable> sortableEdges;
+        private final FunctionalIterator.Sorted<EdgeDirected> sortableEdges;
 
-        ThingIteratorSortedBuilderImpl(FunctionalIterator.Sorted<EdgeSortable> sortableEdges) {
+        ThingIteratorSortedBuilderImpl(FunctionalIterator.Sorted<EdgeDirected> sortableEdges) {
             this.sortableEdges = sortableEdges;
         }
 
@@ -103,7 +103,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         }
 
         @Override
-        public FunctionalIterator.Sorted<EdgeSortable> get() {
+        public FunctionalIterator.Sorted<EdgeDirected> get() {
             return sortableEdges;
         }
     }
@@ -158,7 +158,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
         final ThingVertex.Write owner;
         final ConcurrentMap<InfixIID.Thing, ConcurrentSet<InfixIID.Thing>> infixes;
-        public final ConcurrentMap<InfixIID.Thing, ConcurrentNavigableMap<EdgeSortable, ThingEdge>> edges; // edges must be updateable
+        public final ConcurrentMap<InfixIID.Thing, ConcurrentNavigableMap<EdgeDirected, ThingEdge>> edges; // edges must be updateable
 
         Write(ThingVertex.Write owner, Encoding.Direction.Adjacency direction) {
             super(direction);
@@ -168,8 +168,8 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         }
 
         @Override
-    public EdgeSortable asSortable(ThingEdge edge) {
-            return direction.isIn() ? EdgeSortable.in(edge) : EdgeSortable.out(edge);
+    public EdgeDirected asSortable(ThingEdge edge) {
+            return direction.isIn() ? EdgeDirected.in(edge) : EdgeDirected.out(edge);
         }
 
         InfixIID.Thing infixIID(Encoding.Edge.Thing encoding, IID... lookAhead) {
@@ -190,8 +190,8 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             }
         }
 
-        FunctionalIterator.Sorted<EdgeSortable> bufferedEdgeIterator(Encoding.Edge.Thing encoding, IID[] lookAhead) {
-            ConcurrentNavigableMap<EdgeSortable, ThingEdge> result;
+        FunctionalIterator.Sorted<EdgeDirected> bufferedEdgeIterator(Encoding.Edge.Thing encoding, IID[] lookAhead) {
+            ConcurrentNavigableMap<EdgeDirected, ThingEdge> result;
             InfixIID.Thing infixIID = infixIID(encoding, lookAhead);
             if (lookAhead.length == encoding.lookAhead()) {
                 return (result = edges.get(infixIID)) != null ? iterateSorted(result.keySet()) : emptySorted();
@@ -210,7 +210,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             }
 
             return iterate(iids).flatMerge(iid -> {
-                ConcurrentNavigableMap<EdgeSortable, ThingEdge> res;
+                ConcurrentNavigableMap<EdgeDirected, ThingEdge> res;
                 return (res = edges.get(iid)) != null ? iterateSorted(res.keySet()) : emptySorted();
             });
         }
@@ -221,7 +221,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             Predicate<ThingEdge> predicate = direction.isOut()
                     ? e -> e.to().equals(adjacent) && e.outIID().suffix().equals(SuffixIID.of(optimised.iid().key()))
                     : e -> e.from().equals(adjacent) && e.inIID().suffix().equals(SuffixIID.of(optimised.iid().key()));
-            FunctionalIterator<EdgeSortable> iterator = bufferedEdgeIterator(
+            FunctionalIterator<EdgeDirected> iterator = bufferedEdgeIterator(
                     encoding, new IID[]{optimised.iid().type(), adjacent.iid().prefix(), adjacent.iid().type()}
             );
             ThingEdge edge = null;
@@ -237,7 +237,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
     public ThingEdge edge(Encoding.Edge.Thing encoding, ThingVertex adjacent) {
         assert !encoding.isOptimisation();
         Predicate<ThingEdge> predicate = direction.isOut() ? e -> e.to().equals(adjacent) : e -> e.from().equals(adjacent);
-        FunctionalIterator<EdgeSortable> iterator = bufferedEdgeIterator(encoding, new IID[]{adjacent.iid().prefix(), adjacent.iid().type()});
+        FunctionalIterator<EdgeDirected> iterator = bufferedEdgeIterator(encoding, new IID[]{adjacent.iid().prefix(), adjacent.iid().type()});
         ThingEdge edge = null;
         while (iterator.hasNext()) {
             if (predicate.test(edge = iterator.next().getEdge())) break;
@@ -257,16 +257,16 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
                 );
             }
 
-            edges.compute(infixIID, (iid, edgesByOutIID) -> {
-                if (edgesByOutIID == null) edgesByOutIID = new ConcurrentSkipListMap<>();
-                EdgeSortable sortableEdge = asSortable(edge);
-                ThingEdge thingEdge = edgesByOutIID.get(sortableEdge);
+            edges.compute(infixIID, (iid, cachedEdges) -> {
+                if (cachedEdges == null) cachedEdges = new ConcurrentSkipListMap<>();
+                EdgeDirected sortableEdge = asSortable(edge);
+                ThingEdge thingEdge = cachedEdges.get(sortableEdge);
                 if (thingEdge != null) {
                     if (thingEdge.isInferred() && !edge.isInferred()) thingEdge.isInferred(false);
                 } else {
-                    edgesByOutIID.put(sortableEdge, edge);
+                    cachedEdges.put(sortableEdge, sortableEdge.getEdge());
                 }
-                return edgesByOutIID;
+                return cachedEdges;
             });
 
             if (isModified) {
@@ -340,7 +340,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
             @Override
             public ThingIteratorBuilderImpl edge(Encoding.Edge.Thing encoding) {
-                return new ThingIteratorBuilderImpl(bufferedEdgeIterator(encoding, new IID[]{}).map(EdgeSortable::getEdge));
+                return new ThingIteratorBuilderImpl(bufferedEdgeIterator(encoding, new IID[]{}).map(EdgeDirected::getEdge));
             }
 
             @Override
@@ -388,17 +388,17 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
                 FunctionalIterator<ThingEdge> storageIterator = owner.graph().storage().iterate(
                         iid, (key, value) -> key).map(key -> cache(newPersistedEdge(EdgeIID.Thing.of(key)))
                 );
-                FunctionalIterator<ThingEdge> bufferedIterator = bufferedEdgeIterator(encoding, lookahead).map(EdgeSortable::getEdge);
+                FunctionalIterator<ThingEdge> bufferedIterator = bufferedEdgeIterator(encoding, lookahead).map(EdgeDirected::getEdge);
                 return link(bufferedIterator, storageIterator).distinct();
             }
 
-            private FunctionalIterator.Sorted<EdgeSortable> edgeIteratorSorted(Encoding.Edge.Thing encoding, IID... lookahead) {
+            private FunctionalIterator.Sorted<EdgeDirected> edgeIteratorSorted(Encoding.Edge.Thing encoding, IID... lookahead) {
                 assert encoding != Encoding.Edge.Thing.ROLEPLAYER || lookahead.length >= 1;
                 ByteArray prefix = join(owner.iid().bytes(), infixIID(encoding, lookahead).bytes());
-                FunctionalIterator.Sorted<EdgeSortable> storageIterator = owner.graph().storage()
+                FunctionalIterator.Sorted<EdgeDirected> storageIterator = owner.graph().storage()
                         .iterate(prefix, (key, value) -> key)
                     .mapSorted(key -> asSortable(cache(newPersistedEdge(EdgeIID.Thing.of(key)))), sortable -> sortable.key.bytes());
-                FunctionalIterator.Sorted<EdgeSortable> bufferedIterator = bufferedEdgeIterator(encoding, lookahead);
+                FunctionalIterator.Sorted<EdgeDirected> bufferedIterator = bufferedEdgeIterator(encoding, lookahead);
                 return bufferedIterator.merge(storageIterator).distinct();
             }
 

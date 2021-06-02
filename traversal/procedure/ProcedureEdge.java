@@ -1041,7 +1041,7 @@ public abstract class ProcedureEdge<
                                 iter = resolveRoleTypesIter.flatMap(
                                         rt -> rel.outs()
                                                 .edgeRolePlayer(rt.iid(), player.iid().prefix(), player.iid().type()).get()
-                                                .map(ThingAdjacency.EdgeSortable::getEdge)
+                                                .map(ThingAdjacency.EdgeDirected::getEdge)
                                 ).filter(e -> e.to().equals(player));
                             } else if (!to.props().types().isEmpty()) {
                                 filteredTypes = true;
@@ -1049,12 +1049,12 @@ public abstract class ProcedureEdge<
                                         rt -> iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).noNulls()
                                                 .flatMap(t -> rel.outs()
                                                         .edgeRolePlayer(rt.iid(), PrefixIID.of(t.encoding().instance()), t.iid()).get()
-                                                        .map(ThingAdjacency.EdgeSortable::getEdge))
+                                                        .map(ThingAdjacency.EdgeDirected::getEdge))
                                 );
                             } else {
                                 iter = resolveRoleTypesIter.flatMap(rt -> rel.outs()
                                         .edgeRolePlayer(rt.iid()).get()
-                                        .map(ThingAdjacency.EdgeSortable::getEdge));
+                                        .map(ThingAdjacency.EdgeDirected::getEdge));
                             }
                         } else {
                             iter = rel.outs().edge(ROLEPLAYER).get();
@@ -1075,7 +1075,7 @@ public abstract class ProcedureEdge<
                             validEdge = iterate(resolvedRoleTypes(graphMgr.schema())).flatMap(
                                     rt -> rel.outs()
                                             .edgeRolePlayer(rt.iid(), player.iid().prefix(), player.iid().type()).get()
-                                            .map(ThingAdjacency.EdgeSortable::getEdge)
+                                            .map(ThingAdjacency.EdgeDirected::getEdge)
                                             .filter(e -> e.to().equals(player) && !scoped.contains(e.optimised().get())))
                                     .first();
                         } else {
@@ -1112,7 +1112,7 @@ public abstract class ProcedureEdge<
                                 iter = resolveRoleTypesIter.flatMap(
                                         rt -> player.ins()
                                                 .edgeRolePlayer(rt.iid(), relation.iid().prefix(), relation.iid().type()).get()
-                                                .map(ThingAdjacency.EdgeSortable::getEdge)
+                                                .map(ThingAdjacency.EdgeDirected::getEdge)
                                                 .filter(r -> r.from().equals(relation)));
                             } else if (!to.props().types().isEmpty()) {
                                 filteredTypes = true;
@@ -1120,9 +1120,9 @@ public abstract class ProcedureEdge<
                                         rt -> iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).noNulls()
                                                 .flatMap(t -> player.ins()
                                                         .edgeRolePlayer(rt.iid(), PrefixIID.of(t.encoding().instance()), t.iid()).get()
-                                                        .map(ThingAdjacency.EdgeSortable::getEdge)));
+                                                        .map(ThingAdjacency.EdgeDirected::getEdge)));
                             } else {
-                                iter = resolveRoleTypesIter.flatMap(rt -> player.ins().edgeRolePlayer(rt.iid()).get().map(ThingAdjacency.EdgeSortable::getEdge));
+                                iter = resolveRoleTypesIter.flatMap(rt -> player.ins().edgeRolePlayer(rt.iid()).get().map(ThingAdjacency.EdgeDirected::getEdge));
                             }
                         } else {
                             iter = player.ins().edge(ROLEPLAYER).get();
@@ -1141,7 +1141,7 @@ public abstract class ProcedureEdge<
                         if (!roleTypes.isEmpty()) {
                             validEdge = iterate(resolvedRoleTypes(graphMgr.schema())).flatMap(
                                     rt -> player.ins().edgeRolePlayer(rt.iid(), rel.iid().prefix(), rel.iid().type()).get()
-                                            .map(ThingAdjacency.EdgeSortable::getEdge)
+                                            .map(ThingAdjacency.EdgeDirected::getEdge)
                                             .filter(e -> e.from().equals(rel) && !scoped.contains(e.optimised().get())))
                                     .first();
                         } else {
