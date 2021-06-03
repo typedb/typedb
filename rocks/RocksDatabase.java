@@ -303,7 +303,7 @@ public class RocksDatabase implements TypeDB.Database {
         }
     }
 
-    void close() {
+    protected void close() {
         if (isOpen.compareAndSet(true, false)) {
             closeResources();
         }

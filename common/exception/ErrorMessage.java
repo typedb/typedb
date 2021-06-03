@@ -115,16 +115,18 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
     }
 
     public static class Database extends ErrorMessage {
+        public static final Database DATABASE_MANAGER_CLOSED =
+                new Database(1, "Attempted to use database manager when it has been closed.");
         public static final Database DATABASE_EXISTS =
-                new Database(1, "The database with the name '%s' already exists.");
+                new Database(2, "The database with the name '%s' already exists.");
         public static final Database DATABASE_NOT_FOUND =
-                new Database(2, "The database with the name '%s' does not exist.");
+                new Database(3, "The database with the name '%s' does not exist.");
         public static final Database DATABASE_DELETED =
-                new Database(3, "Database with the name '%s' has been deleted.");
+                new Database(4, "Database with the name '%s' has been deleted.");
         public static final Database DATABASE_CLOSED =
-                new Database(4, "Attempted to open a new session from the database '%s' that has been closed.");
+                new Database(5, "Attempted to open a new session from the database '%s' that has been closed.");
         public static final Database DATABASE_NAME_RESERVED =
-                new Database(5, "Database name must not start with an underscore.");
+                new Database(6, "Database name must not start with an underscore.");
 
         private static final String codePrefix = "DBS";
         private static final String messagePrefix = "Invalid Database Operations";
