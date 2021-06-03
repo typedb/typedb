@@ -26,9 +26,11 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_MANAGER_CLOSED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NAME_RESERVED;
 
 public class RocksDatabaseManager implements TypeDB.DatabaseManager {
@@ -38,11 +40,13 @@ public class RocksDatabaseManager implements TypeDB.DatabaseManager {
     protected final RocksTypeDB typedb;
     protected final ConcurrentMap<String, RocksDatabase> databases;
     protected final Factory.Database databaseFactory;
+    protected final AtomicBoolean isOpen;
 
     protected RocksDatabaseManager(RocksTypeDB typedb, Factory.Database databaseFactory) {
         this.typedb = typedb;
         this.databaseFactory = databaseFactory;
         databases = new ConcurrentHashMap<>();
+        isOpen = new AtomicBoolean(true);
     }
 
     protected void loadAll() {
@@ -58,12 +62,14 @@ public class RocksDatabaseManager implements TypeDB.DatabaseManager {
 
     @Override
     public boolean contains(String name) {
+        if (!isOpen.get()) throw TypeDBException.of(DATABASE_MANAGER_CLOSED);
         if (isReservedName(name)) throw TypeDBException.of(DATABASE_NAME_RESERVED);
         return databases.containsKey(name);
     }
 
     @Override
     public RocksDatabase create(String name) {
+        if (!isOpen.get()) throw TypeDBException.of(DATABASE_MANAGER_CLOSED);
         if (isReservedName(name)) throw TypeDBException.of(DATABASE_NAME_RESERVED);
         if (databases.containsKey(name)) throw TypeDBException.of(DATABASE_EXISTS, name);
 
@@ -74,12 +80,14 @@ public class RocksDatabaseManager implements TypeDB.DatabaseManager {
 
     @Override
     public RocksDatabase get(String name) {
+        if (!isOpen.get()) throw TypeDBException.of(DATABASE_MANAGER_CLOSED);
         if (isReservedName(name)) throw TypeDBException.of(DATABASE_NAME_RESERVED);
         return databases.get(name);
     }
 
     @Override
     public Set<RocksDatabase> all() {
+        if (!isOpen.get()) throw TypeDBException.of(DATABASE_MANAGER_CLOSED);
         return databases.values().stream().filter(database -> !isReservedName(database.name())).collect(Collectors.toSet());
     }
 
@@ -88,7 +96,9 @@ public class RocksDatabaseManager implements TypeDB.DatabaseManager {
     }
 
     protected void close() {
-        all().parallelStream().forEach(RocksDatabase::close);
+        if (isOpen.compareAndSet(true, false)) {
+            all().parallelStream().forEach(RocksDatabase::close);
+        }
     }
 
     protected boolean isReservedName(String name) {
