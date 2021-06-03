@@ -88,7 +88,7 @@ public class RocksDatabaseManager implements TypeDB.DatabaseManager {
     @Override
     public Set<RocksDatabase> all() {
         if (!isOpen.get()) throw TypeDBException.of(DATABASE_MANAGER_CLOSED);
-        return allUnreserved();
+        return databases.values().stream().filter(database -> !isReservedName(database.name())).collect(Collectors.toSet());
     }
 
     void remove(RocksDatabase database) {
@@ -97,12 +97,8 @@ public class RocksDatabaseManager implements TypeDB.DatabaseManager {
 
     protected void close() {
         if (isOpen.compareAndSet(true, false)) {
-            allUnreserved().parallelStream().forEach(RocksDatabase::close);
+            all().parallelStream().forEach(RocksDatabase::close);
         }
-    }
-
-    private Set<RocksDatabase> allUnreserved() {
-        return databases.values().stream().filter(database -> !isReservedName(database.name())).collect(Collectors.toSet());
     }
 
     protected boolean isReservedName(String name) {
