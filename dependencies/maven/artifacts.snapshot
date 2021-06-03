@@ -43,7 +43,7 @@
 @maven//:commons_logging_commons_logging
 @maven//:commons_logging_commons_logging_1_2
 @maven//:info_picocli_picocli
-@maven//:info_picocli_picocli_4_3_2
+@maven//:info_picocli_picocli_4_6_1
 @maven//:io_cucumber_cucumber_core
 @maven//:io_cucumber_cucumber_core_5_1_3
 @maven//:io_cucumber_cucumber_expressions
