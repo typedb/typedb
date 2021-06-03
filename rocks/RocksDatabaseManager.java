@@ -97,7 +97,7 @@ public class RocksDatabaseManager implements TypeDB.DatabaseManager {
 
     protected void close() {
         if (isOpen.compareAndSet(true, false)) {
-            all().parallelStream().forEach(RocksDatabase::close);
+            databases.values().parallelStream().forEach(RocksDatabase::close);
         }
     }
 
