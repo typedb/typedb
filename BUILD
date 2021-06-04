@@ -17,6 +17,7 @@
 
 load("//:deployment.bzl", deployment_github = "deployment", deployment_docker = "deployment")
 load("@vaticle_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
+load("@vaticle_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
 load("@vaticle_bazel_distribution//brew:rules.bzl", "deploy_brew")
 load("@vaticle_bazel_distribution//common:rules.bzl", "assemble_targz", "assemble_zip", "checksum", "assemble_versioned")
 load("@vaticle_bazel_distribution//github:rules.bzl", "deploy_github")
@@ -92,6 +93,33 @@ assemble_zip(
     additional_files = assemble_files,
     permissions = permissions,
     output_filename = "typedb-all-windows",
+)
+
+deploy_artifact(
+    name = "deploy-linux-targz",
+    target = ":assemble-linux-targz",
+    artifact_group = "vaticle_typedb",
+    artifact_name = "typedb-all-linux-{version}.tar.gz",
+    release = deployment['artifact.release'],
+    snapshot = deployment['artifact.snapshot'],
+)
+
+deploy_artifact(
+    name = "deploy-mac-zip",
+    target = ":assemble-mac-zip",
+    artifact_group = "vaticle_typedb",
+    artifact_name = "typedb-all-mac-{version}.zip",
+    release = deployment['artifact.release'],
+    snapshot = deployment['artifact.snapshot'],
+)
+
+deploy_artifact(
+    name = "deploy-windows-zip",
+    target = ":assemble-windows-zip",
+    artifact_group = "vaticle_typedb",
+    artifact_name = "typedb-all-windows-{version}.zip",
+    release = deployment['artifact.release'],
+    snapshot = deployment['artifact.snapshot'],
 )
 
 assemble_versioned(
