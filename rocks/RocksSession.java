@@ -117,7 +117,7 @@ public abstract class RocksSession implements TypeDB.Session {
     }
 
     public static class Schema extends RocksSession {
-        private final Factory.TransactionSchema txSchemaFactory;
+        protected final Factory.TransactionSchema txSchemaFactory;
         protected final Lock writeLock;
 
         public Schema(RocksDatabase database, Arguments.Session.Type type, Options.Session options,
@@ -183,7 +183,7 @@ public abstract class RocksSession implements TypeDB.Session {
 
     public static class Data extends RocksSession {
 
-        private final Factory.TransactionData txDataFactory;
+        protected final Factory.TransactionData txDataFactory;
 
         public Data(RocksDatabase database, Arguments.Session.Type type, Options.Session options, Factory.TransactionData txDataFactory) {
             super(database, type, options);

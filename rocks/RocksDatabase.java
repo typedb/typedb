@@ -260,7 +260,7 @@ public class RocksDatabase implements TypeDB.Database {
      *
      * @return a {@code StampedLock} to protect data writes from concurrent schema modification
      */
-    StampedLock schemaLock() {
+    protected StampedLock schemaLock() {
         return schemaLock;
     }
 
