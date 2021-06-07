@@ -138,6 +138,9 @@ build:
         bazel run --define version=$(git rev-parse HEAD) //server:deploy-linux-targz -- snapshot
         bazel run --define version=$(git rev-parse HEAD) //server:deploy-mac-zip -- snapshot
         bazel run --define version=$(git rev-parse HEAD) //server:deploy-windows-zip -- snapshot
+        bazel run --define version=$(git rev-parse HEAD) //:deploy-linux-targz -- snapshot
+        bazel run --define version=$(git rev-parse HEAD) //:deploy-mac-zip -- snapshot
+        bazel run --define version=$(git rev-parse HEAD) //:deploy-windows-zip -- snapshot
     deploy-apt-snapshot:
       image: vaticle-ubuntu-20.04
       filter:
@@ -233,3 +236,6 @@ release:
         bazel run --define version=$(cat VERSION) //server:deploy-linux-targz -- release
         bazel run --define version=$(cat VERSION) //server:deploy-mac-zip -- release
         bazel run --define version=$(cat VERSION) //server:deploy-windows-zip -- release
+        bazel run --define version=$(cat VERSION) //:deploy-linux-targz -- release
+        bazel run --define version=$(cat VERSION) //:deploy-mac-zip -- release
+        bazel run --define version=$(cat VERSION) //:deploy-windows-zip -- release
