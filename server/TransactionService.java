@@ -56,10 +56,7 @@ import java.util.function.Predicate;
 
 import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.continueTraceOnThread;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DUPLICATE_REQUEST;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.EMPTY_TRANSACTION_REQUEST;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.ITERATION_WITH_UNKNOWN_ID;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.*;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.*;
 import static com.vaticle.typedb.core.server.common.RequestReader.applyDefaultOptions;
