@@ -307,12 +307,12 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                        Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn) {
             this.iterator = iterator;
             this.requestID = requestID;
-            this.prefetchSize = prefetchSize;
+            this.prefetchSize = Math.max(1, prefetchSize);
             this.resPartFn = resPartFn;
         }
 
         private void streamResParts() {
-            streamResPartsWhile(i -> i < Math.max(prefetchSize, 1) && iterator.hasNext());
+            streamResPartsWhile(i -> i < prefetchSize && iterator.hasNext());
             if (mayClose()) return;
 
             respondStreamState(CONTINUE);
