@@ -61,10 +61,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.EMPTY
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.ITERATION_WITH_UNKNOWN_ID;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.BAD_TRANSACTION_TYPE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_ALREADY_OPENED;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_NOT_OPENED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.*;
 import static com.vaticle.typedb.core.server.common.RequestReader.applyDefaultOptions;
 import static com.vaticle.typedb.core.server.common.RequestReader.byteStringAsUUID;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Transaction.serverMsg;
@@ -307,7 +304,8 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                        Function<List<T>, TransactionProto.Transaction.ResPart> resPartFn) {
             this.iterator = iterator;
             this.requestID = requestID;
-            this.prefetchSize = Math.max(1, prefetchSize);
+            if (prefetchSize < 1) throw TypeDBException.of(RPC_PREFETCH_SIZE_TOO_SMALL, prefetchSize);
+            this.prefetchSize = prefetchSize;
             this.resPartFn = resPartFn;
         }
 
