@@ -312,7 +312,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         }
 
         private void streamResParts() {
-            streamResPartsWhile(i -> i < prefetchSize && iterator.hasNext());
+            streamResPartsWhile(i -> i < Math.max(prefetchSize, 1) && iterator.hasNext());
             if (mayClose()) return;
 
             respondStreamState(CONTINUE);
