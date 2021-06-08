@@ -185,6 +185,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Transaction(15, "The transaction type '%s' was not recognised.");
         public static final Transaction DATA_ACQUIRE_LOCK_TIMEOUT =
                 new Transaction(16, "Could not acquire lock for data transaction. A schema session may have been left open.");
+        public static final Transaction RPC_PREFETCH_SIZE_TOO_SMALL =
+                new Transaction(17, "RPC answer streaming prefetch size must be at least 1, is set to: %d.");
 
         private static final String codePrefix = "TXN";
         private static final String messagePrefix = "Invalid Transaction Operation";
