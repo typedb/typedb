@@ -10,45 +10,45 @@ city-name sub attribute,
     value string;
 
 transaction sub entity,
-    has currency,
-    plays locates_located;
+    owns currency,
+    plays locates:located;
 
 locates sub relation,
-    relates locates_location,
-    relates locates_located;
+    relates location,
+    relates located;
 
 location-hierarchy sub relation,
-    relates location-hierarchy_superior,
-    relates location-hierarchy_subordinate;
+    relates superior,
+    relates subordinate;
 
 location sub entity,
     abstract,
-    plays location-hierarchy_superior,
-    plays location-hierarchy_subordinate;
+    plays location-hierarchy:superior,
+    plays location-hierarchy:subordinate;
 
 country sub location,
-    key country-name,
-    has currency,
-    plays locates_location;
+    owns country-name @key,
+    owns currency,
+    plays locates:location;
 
 city sub location,
-    key city-name,
-    plays locates_location;
+    owns city-name @key,
+    plays locates:location;
 
 locates-is-transitive sub rule,
 when {
     $city isa city;
     $country isa country;
-    $lh(location-hierarchy_superior: $country, location-hierarchy_subordinate: $city) isa location-hierarchy;
-    $l1(locates_located: $transaction, locates_location: $city) isa locates;
+    $lh(superior: $country, subordinate: $city) isa location-hierarchy;
+    $l1(located: $transaction, location: $city) isa locates;
 }, then {
-    (locates_located: $transaction, locates_location: $country) isa locates;
+    (located: $transaction, location: $country) isa locates;
 };
 
 transaction-currency-is-that-of-the-country sub rule,
 when {
     $transaction isa transaction;
-    $locates(locates_located: $transaction, locates_location: $country) isa locates;
+    $locates(located: $transaction, location: $country) isa locates;
     $country isa country, has currency $currency;
 }, then {
     $transaction has currency $currency;

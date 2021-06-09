@@ -18,50 +18,62 @@
 
 package com.vaticle.typedb.core.test.behaviour.resolution.framework.test;
 
+import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.TypeDB.Transaction;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.TypeDB.Session;
-import com.vaticle.typedb.core.TypeDB.Transaction;;
+import com.vaticle.typedb.core.pattern.variable.Variable;
+import com.vaticle.typedb.core.rocks.RocksTypeDB;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.TypeQLHelpers;
-import com.vaticle.typedb.core.test.rule.GraknTestServer;
+import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.pattern.variable.BoundVariable;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
-import com.vaticle.typeql.lang.statement.Statement;
-import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.Utils.getStatements;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadTestStub;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadComplexRecursionTest;
 import static org.junit.Assert.assertEquals;
+
 
 public class ResolutionQueryBuilderIT {
 
-    @ClassRule
-    public static final GraknTestServer graknTestServer = new GraknTestServer();
+    private static final String database = "complex-recursion";
+    private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
+    private static final Path logDir = dataDir.resolve("logs");
+    private static final Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logDir);
 
     @Test
-    public void testKeysStatementsAreGeneratedCorrectly() {
-        TypeQLMatch inferenceQuery = TypeQL.parse("match $transaction isa transaction, has currency $currency;");
+    public void testKeysVariablesAreGeneratedCorrectly() throws IOException {
+        Util.resetDirectory(dataDir);
+        TypeQLMatch inferenceQuery = TypeQL.parseQuery("match $transaction isa transaction, has currency $currency;").asMatch();
 
-        Set<Statement> keyStatements;
+        try (TypeDB typedb = RocksTypeDB.open(options)) {
+            typedb.databases().create(database);
 
-        try (Session session = graknTestServer.sessionWithNewKeyspace()) {
+            Set<Variable> keyVariables;
 
-            loadTestStub(session, "complex_recursion");
+            loadComplexRecursionTest(typedb, database);
 
-            try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
-                ConceptMap answer = tx.execute(inferenceQuery).get(0);
-                keyStatements = TypeQLHelpers.generateKeyStatements(answer.map());
+            try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.DATA)) {
+                try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
+                    ConceptMap answer = tx.query().match(inferenceQuery).next();
+                    keyVariables = TypeQLHelpers.generateKeyVariables(answer.concepts());
+                }
             }
+
+            Set<BoundVariable> expectedVariables = TypeQL.parsePattern(
+                    "$currency \"GBP\" isa currency;\n" +
+                            "$transaction has currency \"GBP\";\n"
+            ).asConjunction().variables().collect(Collectors.toSet());
+
+            assertEquals(expectedVariables, keyVariables);
         }
-
-        Set<Statement> expectedStatements = getStatements(TypeQL.parsePatternList(
-                "$currency \"GBP\" isa currency;\n" +
-                "$transaction has currency \"GBP\";\n"
-
-        ));
-
-        assertEquals(expectedStatements, keyStatements);
     }
 }

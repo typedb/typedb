@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.test.behaviour.exception.ScenarioDefinitionException;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.Resolution;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
 import com.vaticle.typeql.lang.query.TypeQLInsert;
@@ -48,6 +49,7 @@ public class ResolutionSteps {
 
     private TypeQLMatch queryToTest;
     private Set<ConceptMap> answers;
+    private Resolution resolution;
 
     @Given("for each session, typeql define")
     public void typeql_define(String defineQueryStatements) {
@@ -61,7 +63,7 @@ public class ResolutionSteps {
 
     @When("materialised database is completed")
     public void materialised_database_is_completed() {
-        resolution = Resolution(materialisedSession(), reasonedSession());
+        resolution = new Resolution(materialisedSession(), reasonedSession());
     }
 
     @Then("for typeql query")

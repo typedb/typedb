@@ -18,57 +18,67 @@
 
 package com.vaticle.typedb.core.test.behaviour.resolution.framework.test;
 
-import com.vaticle.typedb.core.logic.Rule;
+import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.TypeDB.Session;
-import com.vaticle.typedb.core.TypeDB.Transaction;;
+import com.vaticle.typedb.core.TypeDB.Transaction;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.logic.Rule;
+import com.vaticle.typedb.core.rocks.RocksTypeDB;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager;
-import com.vaticle.typedb.core.test.rule.GraknTestServer;
+import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.addResolutionSchema;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.connectResolutionSchema;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadTestStub;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadComplexRecursionTest;
 import static org.junit.Assert.assertEquals;
 
 public class TestSchemaManager {
 
-    private static final String KEYSPACE = "test_schema_manager";
+    private static final String database = "TestSchemaManager";
+    private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
+    private static final Path logDir = dataDir.resolve("logs");
+    private static final Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logDir);
+    private TypeDB typeDB;
 
-    @ClassRule
-    public static final GraknTestServer graknTestServer = new GraknTestServer();
+    @Before
+    public void setUp() throws IOException {
+        Util.resetDirectory(dataDir);
+        this.typeDB = RocksTypeDB.open(options);
+        this.typeDB.databases().create(database);
+        loadComplexRecursionTest(typeDB, database);
+    }
 
-    @BeforeClass
-    public static void beforeClass() {
-        loadTestStub(graknTestServer.session(KEYSPACE), "complex_recursion");
+    @After
+    public void tearDown() {
+        this.typeDB.close();
     }
 
     @Test
     public void testResolutionSchemaRolesPlayedAreCorrect() {
-
-        try (Session session = graknTestServer.session(KEYSPACE)) {
-
+        try (Session session = typeDB.session(database, Arguments.Session.Type.SCHEMA)) {
             addResolutionSchema(session);
             connectResolutionSchema(session);
-
-            try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-
+            try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 TypeQLMatch roleplayersQuery = TypeQL.match(
-                        TypeQL.var("x").plays("instance"),
-                        TypeQL.var("x").plays("owner"),
-                        TypeQL.var("x").plays("roleplayer")
-                ).get();
-
-                Set<String> roleplayers = tx.stream(roleplayersQuery).map(r -> r.get("x").asType().label().toString()).collect(Collectors.toSet());
-
+                        TypeQL.var("x").plays("isa-property", "instance"),
+                        TypeQL.var("x").plays("has-attribute-property", "owner"),
+                        TypeQL.var("x").plays("relation-property", "roleplayer")
+                );
+                Set<String> roleplayers = tx.query().match(roleplayersQuery).map(r -> r.get("x").asType().getLabel().toString()).toSet();
                 HashSet<String> expectedRoleplayers = new HashSet<String>() {
                     {
                         add("currency");
@@ -82,29 +92,21 @@ public class TestSchemaManager {
                         add("city");
                     }
                 };
-
                 assertEquals(expectedRoleplayers, roleplayers);
             }
         }
-
     }
 
     @Test
     public void testResolutionSchemaRelationRolePlayedIsCorrect() {
-
-        try (Session session = graknTestServer.session(KEYSPACE)) {
-
+        try (Session session = typeDB.session(database, Arguments.Session.Type.SCHEMA)) {
             addResolutionSchema(session);
             connectResolutionSchema(session);
-
-            try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-
+            try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 TypeQLMatch roleplayersQuery = TypeQL.match(
-                        TypeQL.var("x").plays("rel")
-                ).get();
-
-                Set<String> roleplayers = tx.stream(roleplayersQuery).map(r -> r.get("x").asType().label().toString()).collect(Collectors.toSet());
-
+                        TypeQL.var("x").plays("relation-property", "rel")
+                );
+                Set<String> roleplayers = tx.query().match(roleplayersQuery).map(r -> r.get("x").asType().getLabel().toString()).toSet();
                 HashSet<String> expectedRoleplayers = new HashSet<String>() {
                     {
                         add("locates");
@@ -114,30 +116,24 @@ public class TestSchemaManager {
                 assertEquals(expectedRoleplayers, roleplayers);
             }
         }
-
     }
 
     @Test
     public void testResolutionSchemaAttributesOwnedAreCorrect() {
 
-        try (Session session = graknTestServer.session(KEYSPACE)) {
-
+        try (Session session = typeDB.session(database, Arguments.Session.Type.SCHEMA)) {
             addResolutionSchema(session);
             connectResolutionSchema(session);
-
-            try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-
-                TypeQLMatch clauseAttributesQuery = TypeQL.match(TypeQL.var("x").sub("has-attribute-property")).get();
-
-                Set<String> roles = tx.execute(clauseAttributesQuery).get(0).get("x").asRelationType().roles().map(a -> a.label().toString()).collect(Collectors.toSet());
-
+            try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
+                TypeQLMatch clauseAttributesQuery = TypeQL.match(TypeQL.var("x").sub("has-attribute-property"));
+                Set<String> roles = tx.query().match(clauseAttributesQuery).next().get("x").asRelationType()
+                        .getRelates().map(a -> a.getLabel().toString()).toSet();
                 HashSet<String> expectedRoles = new HashSet<String>() {
                     {
                         add("owned");
                         add("owner");
                     }
                 };
-
                 assertEquals(expectedRoles, roles);
             }
         }
@@ -145,30 +141,32 @@ public class TestSchemaManager {
 
     @Test
     public void testGetAllRulesReturnsExpectedRules() {
-        try (Session session = graknTestServer.session(KEYSPACE)) {
-            try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (Session session = typeDB.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 Set<Rule> rules = SchemaManager.getAllRules(tx);
                 assertEquals(2, rules.size());
-
                 HashSet<String> expectedRuleLabels = new HashSet<String>(){
                     {
                         add("transaction-currency-is-that-of-the-country");
                         add("locates-is-transitive");
                     }
                 };
-                assertEquals(expectedRuleLabels, rules.stream().map(rule -> rule.label().toString()).collect(Collectors.toSet()));
+                assertEquals(expectedRuleLabels, rules.stream().map(Rule::getLabel).collect(Collectors.toSet()));
             }
         }
     }
 
+    @Ignore // TODO: Ignored because we are unable to query for all of the rules present
     @Test
     public void testUndefineAllRulesSuccessfullyUndefinesAllRules() {
-        try (Session session = graknTestServer.session(KEYSPACE)) {
+        try (Session session = typeDB.session(database, Arguments.Session.Type.SCHEMA)) {
             SchemaManager.undefineAllRules(session);
-            try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                List<String> ruleLabels = tx.stream(TypeQL.match(TypeQL.var("x").sub("rule")).get("x")).map(ans -> ans.get("x").asRule().label().toString()).collect(Collectors.toList());
-                assertEquals(1, ruleLabels.size());
-                assertEquals("rule", ruleLabels.get(0));
+            try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
+                // List<String> ruleLabels = tx.query().match(
+                //         TypeQL.match(TypeQL.var("x").sub("rule")).get("x"))
+                //         .map(ans -> ans.get("x").asRule().label().toString()).collect(Collectors.toList());
+                // assertEquals(1, ruleLabels.size());
+                // assertEquals("rule", ruleLabels.get(0));
             }
         }
     }

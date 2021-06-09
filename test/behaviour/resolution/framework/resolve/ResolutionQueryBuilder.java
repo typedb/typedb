@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.Conjun
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.TypeQLHelpers;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.ResolutionConstraintException;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.RuleResolutionBuilder;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.StatementVisitor;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.VariableVisitor;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.pattern.Conjunction;
 import com.vaticle.typeql.lang.pattern.Pattern;
@@ -62,7 +62,7 @@ public class ResolutionQueryBuilder {
             final LinkedHashSet<Pattern> resolutionPatterns = buildResolutionPattern(tx, answer, 0);
             final LinkedHashSet<Pattern> replacedResolutionPatterns = new LinkedHashSet<>();
             for (Pattern p : resolutionPatterns) {
-                StatementVisitor sv = new StatementVisitor(this::deduplicateVars);
+                VariableVisitor sv = new VariableVisitor(this::deduplicateVars);
                 Pattern rp = sv.visitPattern(p);
                 replacedResolutionPatterns.add(rp);
             }
@@ -82,14 +82,14 @@ public class ResolutionQueryBuilder {
         }
         Integer finalRuleResolutionIndex1 = ruleResolutionIndex;
 
-        StatementVisitor statementVisitor = new StatementVisitor(p -> {
-            Statement withoutIds = removeIdProperties(TypeQLHelpers.makeAnonVarsExplicit(p));
+        VariableVisitor variableVisitor = new VariableVisitor(p -> {
+            Variable withoutIds = removeIdProperties(TypeQLHelpers.makeAnonVarsExplicit(p));
             return withoutIds == null ? null : prefixVars(withoutIds, finalRuleResolutionIndex1);
         });
 
-        resolutionPatterns.add(statementVisitor.visitPattern(answerPattern));
+        resolutionPatterns.add(variableVisitor.visitPattern(answerPattern));
 
-        resolutionPatterns.addAll(generateAttrValueStatements(answer.map(), ruleResolutionIndex));
+        resolutionPatterns.addAll(generateAttrValueVariables(answer.map(), ruleResolutionIndex));
 
         categoriseVarsByConceptId(answer.map(), ruleResolutionIndex);
 
@@ -104,14 +104,14 @@ public class ResolutionQueryBuilder {
                 ruleResolutionIndex += 1;
                 Integer finalRuleResolutionIndex0 = ruleResolutionIndex;
 
-                StatementVisitor ruleStatementVisitor = new StatementVisitor(p -> prefixVars(TypeQLHelpers.makeAnonVarsExplicit(p), finalRuleResolutionIndex0));
+                VariableVisitor ruleVariableVisitor = new VariableVisitor(p -> prefixVars(TypeQLHelpers.makeAnonVarsExplicit(p), finalRuleResolutionIndex0));
 
                 Pattern whenPattern = Objects.requireNonNull(((RuleExplanation) explanation).getRule().when());
-                whenPattern = ruleStatementVisitor.visitPattern(whenPattern);
+                whenPattern = ruleVariableVisitor.visitPattern(whenPattern);
                 resolutionPatterns.add(whenPattern);
 
                 Pattern thenPattern = Objects.requireNonNull(((RuleExplanation) explanation).getRule().then());
-                thenPattern = ruleStatementVisitor.visitPattern(thenPattern);
+                thenPattern = ruleVariableVisitor.visitPattern(thenPattern);
                 resolutionPatterns.add(thenPattern);
 
                 String ruleLabel = ((RuleExplanation)explanation).getRule().label().toString();
@@ -119,15 +119,15 @@ public class ResolutionQueryBuilder {
                 resolutionPatterns.add(TypeQL.and(buildResolutionPattern(tx, explAns, ruleResolutionIndex)));
             } else {
                 if (explanation.isLookupExplanation()) {
-                    for (final Statement statement : answer.getPattern().statements()) {
-                        if (statement instanceof StatementRelation) {
+                    for (final Variable variable : answer.getPattern().variables()) {
+                        if (variable instanceof VariableRelation) {
                             Pattern p = TypeQL.not(prefixVars(TypeQLHelpers.makeAnonVarsExplicit(TypeQL.var().isa("isa-property"))
-                                    .rel(statement.var().name())
+                                    .rel(variable.var().name())
                                     .has("inferred", true), ruleResolutionIndex));
                             resolutionPatterns.add(p);
-                            Statement s = TypeQL.var().isa("relation-property")
+                            Variable s = TypeQL.var().isa("relation-property")
                                     .has("inferred", true);
-                            for (Variable v : statement.variables()) {
+                            for (Variable v : variable.variables()) {
                                 s = s.rel(v.name());
                             }
                             Pattern p2 = TypeQL.not(prefixVars(TypeQLHelpers.makeAnonVarsExplicit(s), ruleResolutionIndex));
@@ -150,8 +150,8 @@ public class ResolutionQueryBuilder {
      * During resolution, attributes can be easily identified by their value. Adding their value to the resolution
      * query allows us to easily ensure we are querying for the correct attributes.
      */
-    private Set<Statement> generateAttrValueStatements(Map<Variable, Concept> varMap, int ruleResolutionIndex) {
-        LinkedHashSet<Statement> statements = new LinkedHashSet<>();
+    private Set<Variable> generateAttrValueVariables(Map<Variable, Concept> varMap, int ruleResolutionIndex) {
+        LinkedHashSet<Variable> variables = new LinkedHashSet<>();
 
         for (Map.Entry<Variable, Concept> entry : varMap.entrySet()) {
             Variable var = entry.getKey();
@@ -160,32 +160,32 @@ public class ResolutionQueryBuilder {
             if (concept.isAttribute()) {
 
                 String typeLabel = concept.asAttribute().type().label().toString();
-                Statement statement = TypeQL.var(var).isa(typeLabel);
-                StatementAttribute s = null;
+                Variable variable = TypeQL.var(var).isa(typeLabel);
+                VariableAttribute s = null;
 
                 Object attrValue = concept.asAttribute().value();
                 if (attrValue instanceof String) {
-                    s = statement.val((String) attrValue);
+                    s = variable.val((String) attrValue);
                 } else if (attrValue instanceof Double) {
-                    s = statement.val((Double) attrValue);
+                    s = variable.val((Double) attrValue);
                 } else if (attrValue instanceof Long) {
-                    s = statement.val((Long) attrValue);
+                    s = variable.val((Long) attrValue);
                 } else if (attrValue instanceof LocalDateTime) {
-                    s = statement.val((LocalDateTime) attrValue);
+                    s = variable.val((LocalDateTime) attrValue);
                 } else if (attrValue instanceof Boolean) {
-                    s = statement.val((Boolean) attrValue);
+                    s = variable.val((Boolean) attrValue);
                 }
-                statements.add(prefixVars(s, ruleResolutionIndex));
+                variables.add(prefixVars(s, ruleResolutionIndex));
             }
         }
-        return statements;
+        return variables;
     }
 
     /**
-     * During resolution we frequently get two variables from distinct statements that actually refer to the same
+     * During resolution we frequently get two variables from distinct variables that actually refer to the same
      * concept. Here, we identify sets of variables, where variables within each set all refer to the same concept,
-     * and then construct a mapping that, when applied to all variables in a statement, will ensure that any two
-     * distinct variables in that statement refer to distinct concepts.
+     * and then construct a mapping that, when applied to all variables in a variable, will ensure that any two
+     * distinct variables in that variable refer to distinct concepts.
      */
     private void categoriseVarsByConceptId(Map<Variable, Concept> varMap, int ruleResolutionIndex) {
         for (Map.Entry<Variable, Concept> entry : varMap.entrySet()) {
@@ -210,26 +210,26 @@ public class ResolutionQueryBuilder {
         return "r" + ruleResolutionIndex + "-" + varName;
     }
 
-    private Statement prefixVars(Statement statement, Integer ruleResolutionIndex) {
-        return replaceVars(statement, name -> prefixVar(name, ruleResolutionIndex));
+    private Variable prefixVars(Variable variable, Integer ruleResolutionIndex) {
+        return replaceVars(variable, name -> prefixVar(name, ruleResolutionIndex));
     }
 
     /**
-     * During resolution we frequently get two variables from distinct statements that actually refer to the same
+     * During resolution we frequently get two variables from distinct variables that actually refer to the same
      * concept. Here, we "merge" the variables into having the same variable label, to avoid getting extra answers.
      */
-    private Statement deduplicateVars(Statement statement) {
-        return replaceVars(statement, name -> replacementVars.getOrDefault(name, name));
+    private Variable deduplicateVars(Variable variable) {
+        return replaceVars(variable, name -> replacementVars.getOrDefault(name, name));
     }
 
     /**
-     * Replaces all variables in the given statement according to the specified string replacement function.
+     * Replaces all variables in the given variable according to the specified string replacement function.
      */
-    private Statement replaceVars(Statement statement, Function<String, String> nameMapper) {
-        String newVarName = nameMapper.apply(statement.var().name());
+    private Variable replaceVars(Variable variable, Function<String, String> nameMapper) {
+        String newVarName = nameMapper.apply(variable.var().name());
 
         LinkedHashSet<VarProperty> newProperties = new LinkedHashSet<>();
-        for (VarProperty prop : statement.properties()) {
+        for (VarProperty prop : variable.properties()) {
 
             // TODO implement the rest of these replacements
             if (prop instanceof RelationProperty) {
@@ -238,8 +238,8 @@ public class ResolutionQueryBuilder {
                 List<RelationProperty.RolePlayer> newRps = roleplayers.stream().map(rp -> {
 
                     String rpVarName = nameMapper.apply(rp.getPlayer().var().name());
-                    Statement newPlayerStatement = new Statement(new Variable(rpVarName));
-                    return new RelationProperty.RolePlayer(rp.getRole().orElse(null), newPlayerStatement);
+                    Variable newPlayerVariable = new Variable(new Variable(rpVarName));
+                    return new RelationProperty.RolePlayer(rp.getRole().orElse(null), newPlayerVariable);
                 }).collect(Collectors.toList());
 
                 newProperties.add(new RelationProperty(newRps));
@@ -249,29 +249,29 @@ public class ResolutionQueryBuilder {
                 if (hasProp.attribute().var().isVisible()) {
                     // If the attribute has a variable, rather than a value
                     String newAttributeName = nameMapper.apply(((HasAttributeProperty) prop).attribute().var().name());
-                    newProperties.add(new HasAttributeProperty(hasProp.type(), new Statement(new Variable(newAttributeName))));
+                    newProperties.add(new HasAttributeProperty(hasProp.type(), new Variable(new Variable(newAttributeName))));
                 } else {
                     newProperties.add(hasProp);
                 }
             } else if (prop instanceof NeqProperty) {
                 NeqProperty neqProp = (NeqProperty) prop;
-                String newComparedVarName = nameMapper.apply(neqProp.statement().var().name());
+                String newComparedVarName = nameMapper.apply(neqProp.variable().var().name());
                 newProperties.add(new NeqProperty(TypeQL.var(newComparedVarName)));
             } else {
                 newProperties.add(prop);
             }
         }
-        return Statement.create(new Variable(newVarName), newProperties);
+        return Variable.create(new Variable(newVarName), newProperties);
     }
 
     /**
-     * Remove properties that stipulate ConceptIds from a given statement
-     * @param statement statement to remove from
-     * @return statement without any ID properties, null if an ID property was the only property
+     * Remove properties that stipulate ConceptIds from a given variable
+     * @param variable variable to remove from
+     * @return variable without any ID properties, null if an ID property was the only property
      */
-    public static Statement removeIdProperties(Statement statement) {
+    public static Variable removeIdProperties(Variable variable) {
         LinkedHashSet<VarProperty> propertiesWithoutIds = new LinkedHashSet<>();
-        statement.properties().forEach(varProperty -> {
+        variable.properties().forEach(varProperty -> {
             if (!(varProperty instanceof IdProperty)) {
                 propertiesWithoutIds.add(varProperty);
             }
@@ -279,7 +279,7 @@ public class ResolutionQueryBuilder {
         if (propertiesWithoutIds.isEmpty()) {
             return null;
         }
-        return Statement.create(statement.var(), propertiesWithoutIds);
+        return Variable.create(variable.var(), propertiesWithoutIds);
     }
 
 }

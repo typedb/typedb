@@ -29,13 +29,13 @@ import java.util.Set;
 
 public class TypeQLHelpers {
     /**
-     * Create a set of statements that will query for the keys of the concepts given in the map. Attributes given in
+     * Create a set of variables that will query for the keys of the concepts given in the map. Attributes given in
      * the map are simply queried for by their own type and value.
      * @param varMap variable map of concepts
-     * @return Statements that check for the keys of the given concepts
+     * @return Variables that check for the keys of the given concepts
      */
-    public static Set<Statement> generateKeyStatements(Map<Variable, Concept> varMap) {
-        LinkedHashSet<Statement> statements = new LinkedHashSet<>();
+    public static Set<Variable> generateKeyVariables(Map<Variable, Concept> varMap) {
+        LinkedHashSet<Variable> variables = new LinkedHashSet<>();
 
         for (Map.Entry<Variable, Concept> entry : varMap.entrySet()) {
             Variable var = entry.getKey();
@@ -44,58 +44,58 @@ public class TypeQLHelpers {
             if (concept.isAttribute()) {
 
                 String typeLabel = concept.asAttribute().type().label().toString();
-                Statement statement = TypeQL.var(var).isa(typeLabel);
-                StatementAttribute s = null;
+                Variable variable = TypeQL.var(var).isa(typeLabel);
+                VariableAttribute s = null;
 
                 Object attrValue = concept.asAttribute().value();
                 if (attrValue instanceof String) {
-                    s = statement.val((String) attrValue);
+                    s = variable.val((String) attrValue);
                 } else if (attrValue instanceof Double) {
-                    s = statement.val((Double) attrValue);
+                    s = variable.val((Double) attrValue);
                 } else if (attrValue instanceof Long) {
-                    s = statement.val((Long) attrValue);
+                    s = variable.val((Long) attrValue);
                 } else if (attrValue instanceof LocalDateTime) {
-                    s = statement.val((LocalDateTime) attrValue);
+                    s = variable.val((LocalDateTime) attrValue);
                 } else if (attrValue instanceof Boolean) {
-                    s = statement.val((Boolean) attrValue);
+                    s = variable.val((Boolean) attrValue);
                 }
-                statements.add(s);
+                variables.add(s);
 
             } else if (concept.isEntity() | concept.isRelation()){
 
                 concept.asThing().keys().forEach(attribute -> {
 
                     String typeLabel = attribute.type().label().toString();
-                    Statement statement = TypeQL.var(var);
+                    Variable variable = TypeQL.var(var);
                     Object attrValue = attribute.value();
 
-                    StatementInstance s = null;
+                    VariableInstance s = null;
                     if (attrValue instanceof String) {
-                        s = statement.has(typeLabel, (String) attrValue);
+                        s = variable.has(typeLabel, (String) attrValue);
                     } else if (attrValue instanceof Double) {
-                        s = statement.has(typeLabel, (Double) attrValue);
+                        s = variable.has(typeLabel, (Double) attrValue);
                     } else if (attrValue instanceof Long) {
-                        s = statement.has(typeLabel, (Long) attrValue);
+                        s = variable.has(typeLabel, (Long) attrValue);
                     } else if (attrValue instanceof LocalDateTime) {
-                        s = statement.has(typeLabel, (LocalDateTime) attrValue);
+                        s = variable.has(typeLabel, (LocalDateTime) attrValue);
                     } else if (attrValue instanceof Boolean) {
-                        s = statement.has(typeLabel, (Boolean) attrValue);
+                        s = variable.has(typeLabel, (Boolean) attrValue);
                     }
-                    statements.add(s);
+                    variables.add(s);
                 });
 
             } else {
                 throw new ResolutionConstraintException("Presently we only handle queries concerning Things, not Types");
             }
         }
-        return statements;
+        return variables;
     }
 
-    public static Statement makeAnonVarsExplicit(Statement statement) {
-        if (statement.var().isReturned()) {
-            return statement;
+    public static Variable makeAnonVarsExplicit(Variable variable) {
+        if (variable.var().isReturned()) {
+            return variable;
         } else {
-            return Statement.create(statement.var().asReturnedVar(), statement.properties());
+            return Variable.create(variable.var().asReturnedVar(), variable.properties());
         }
     }
 }

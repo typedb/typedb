@@ -22,16 +22,11 @@ import com.vaticle.typedb.core.TypeDB.Session;
 import com.vaticle.typedb.core.TypeDB.Transaction;
 import com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type;
 import com.vaticle.typeql.lang.TypeQL;
-import com.vaticle.typeql.lang.pattern.Conjunction;
-import com.vaticle.typeql.lang.pattern.Pattern;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
 
 public class Utils {
 
@@ -46,8 +41,4 @@ public class Utils {
         }
     }
 
-    public static Set<Statement> getStatements(List<Pattern> patternList) {
-        LinkedHashSet<Pattern> patternSet = new LinkedHashSet<>(patternList);
-        return new Conjunction<>(patternSet).statements();
-    }
 }

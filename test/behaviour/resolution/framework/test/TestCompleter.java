@@ -18,33 +18,57 @@
 
 package com.vaticle.typedb.core.test.behaviour.resolution.framework.test;
 
-import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.TypeDB.Session;
-import com.vaticle.typedb.core.TypeDB.Transaction;;
+import com.vaticle.typedb.core.TypeDB.Transaction;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.logic.Rule;
+import com.vaticle.typedb.core.rocks.RocksTypeDB;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.Completer;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager;
-import com.vaticle.typedb.core.test.rule.GraknTestServer;
+import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.pattern.Pattern;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
-import com.vaticle.typeql.lang.statement.Statement;
-import org.junit.ClassRule;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
 
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.Utils.getStatements;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadTestStub;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadBasicRecursionTest;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadTransitivityTest;
 import static org.junit.Assert.assertEquals;
 
 public class TestCompleter {
 
-    @ClassRule
-    public static final GraknTestServer graknTestServer = new GraknTestServer();
+    private static final String database = "TestCompleter";
+    private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
+    private static final Path logDir = dataDir.resolve("logs");
+    private static final Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logDir);
+    private TypeDB typeDB;
+
+    @Before
+    public void setUp() throws IOException {
+        Util.resetDirectory(dataDir);
+        this.typeDB = RocksTypeDB.open(options);
+        this.typeDB.databases().create(database);
+    }
+
+    @After
+    public void tearDown() {
+        this.typeDB.close();
+    }
 
     @Test
     public void testValidResolutionHasExactlyOneAnswer() {
-        Set<Statement> expectedResolutionStatements = getStatements(TypeQL.parsePatternList("" +
+        Pattern expectedResolutionVariables = TypeQL.parsePattern("" +
                 "$r0-com isa company;" +
                 "$r0-com has is-liable $r0-lia;" +
                 "$r0-com has company-id 0;" +
@@ -68,25 +92,25 @@ public class TestCompleter {
                 "$x4 (owned: $r2-n1, owner: $r2-c1) isa has-attribute-property;" +
                 "$_ (body: $x3, head: $x4) isa resolution, has rule-label \"company-has-name\";" +
                 "$r2-c1 has company-id 0;"
-        ));
+        );
 
-        try (Session session = graknTestServer.sessionWithNewKeyspace()) {
+        loadBasicRecursionTest(typeDB, database);
 
-            loadTestStub(session, "basic_recursion");
-
-            Completer completer = new Completer(session);
+        Set<Rule> rules;
+        try (Session session = typeDB.session(database, Arguments.Session.Type.SCHEMA)) {
             try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                completer.loadRules(SchemaManager.getAllRules(tx));
+                rules = SchemaManager.getAllRules(tx);
             }
-
             SchemaManager.undefineAllRules(session);
             SchemaManager.addResolutionSchema(session);
             SchemaManager.connectResolutionSchema(session);
+        }
+        try (Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+            Completer completer = new Completer(session);
+            completer.loadRules(rules);
             completer.complete();
-
             try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
-                List<ConceptMap> answers = tx.execute(TypeQL.match(expectedResolutionStatements).get());
-
+                List<ConceptMap> answers = tx.query().match(TypeQL.match(expectedResolutionVariables)).toList();
                 assertEquals(answers.size(), 1);
             }
         }
@@ -94,27 +118,27 @@ public class TestCompleter {
 
     @Test
     public void testDeduplicationOfInferredConcepts() {
-        try (Session session = graknTestServer.sessionWithNewKeyspace()) {
-
-            loadTestStub(session, "transitivity");
-
-            Completer completer = new Completer(session);
+        loadTransitivityTest(typeDB, database);
+        Set<Rule> rules;
+        try (Session session = typeDB.session(database, Arguments.Session.Type.SCHEMA)) {
             try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                completer.loadRules(SchemaManager.getAllRules(tx));
+                rules = SchemaManager.getAllRules(tx);
             }
-
             SchemaManager.undefineAllRules(session);
             SchemaManager.addResolutionSchema(session);
             SchemaManager.connectResolutionSchema(session);
+        }
+        try (Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+            Completer completer = new Completer(session);
+            completer.loadRules(rules);
             completer.complete();
-
             try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
-                TypeQLMatch inferredAnswersQuery = TypeQL.match(TypeQL.var("lh").isa("location-hierarchy")).get();
-                List<ConceptMap> inferredAnswers = tx.execute(inferredAnswersQuery);
+                TypeQLMatch inferredAnswersQuery = TypeQL.match(TypeQL.var("lh").isa("location-hierarchy"));
+                List<ConceptMap> inferredAnswers = tx.query().match(inferredAnswersQuery).toList();
                 assertEquals(6, inferredAnswers.size());
 
-                TypeQLMatch resolutionsQuery = TypeQL.match(TypeQL.var("res").isa("resolution")).get();
-                List<ConceptMap> resolutionAnswers = tx.execute(resolutionsQuery);
+                TypeQLMatch resolutionsQuery = TypeQL.match(TypeQL.var("res").isa("resolution"));
+                List<ConceptMap> resolutionAnswers = tx.query().match(resolutionsQuery).toList();
                 assertEquals(4, resolutionAnswers.size());
             }
         }

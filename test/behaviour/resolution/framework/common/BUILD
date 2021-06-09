@@ -26,7 +26,7 @@ java_library(
         "PatternVisitor.java",
         "ResolutionConstraintException.java",
         "RuleResolutionBuilder.java",
-        "StatementVisitor.java",
+        "VariableVisitor.java",
         "Utils.java",
     ],
     visibility = ["//visibility:public"],

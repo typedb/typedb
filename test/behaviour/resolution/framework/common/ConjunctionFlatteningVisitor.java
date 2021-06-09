@@ -22,18 +22,20 @@ import com.vaticle.typeql.lang.pattern.Conjunction;
 import com.vaticle.typeql.lang.pattern.Pattern;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
 
 public class ConjunctionFlatteningVisitor extends PatternVisitor {
+    @Override
     Pattern visitConjunction(Conjunction<? extends Pattern> pattern) {
-        Set<? extends Pattern> patterns = pattern.getPatterns();
-        HashSet<Pattern> newPatterns = new HashSet<>();
+        List<? extends Pattern> patterns = pattern.patterns();
+        Set<Pattern> newPatterns = new HashSet<>();
         patterns.forEach(p -> {
             Pattern childPattern = visitPattern(p);
-            if (childPattern instanceof Conjunction) {
-                newPatterns.addAll(((Conjunction<? extends Pattern>) childPattern).getPatterns());
+            if (childPattern.isConjunction()) {
+                newPatterns.addAll(((Conjunction<? extends Pattern>) childPattern).patterns());
             } else if (childPattern != null) {
                 newPatterns.add(visitPattern(childPattern));
             }

@@ -22,31 +22,33 @@ import com.vaticle.typeql.lang.pattern.Conjunction;
 import com.vaticle.typeql.lang.pattern.Disjunction;
 import com.vaticle.typeql.lang.pattern.Negation;
 import com.vaticle.typeql.lang.pattern.Pattern;
+import com.vaticle.typeql.lang.pattern.variable.BoundVariable;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public abstract class PatternVisitor {
     public Pattern visitPattern(Pattern pattern) {
-        if (pattern instanceof Statement) {
-            return visitStatement((Statement) pattern);
-        } else if (pattern instanceof Conjunction) {
+        if (pattern.isVariable()) {
+            return visitVariable(pattern.asVariable());
+        } else if (pattern.isConjunction()) {
             return visitConjunction((Conjunction<? extends Pattern>) pattern);
-        } else if (pattern instanceof Negation) {
+        } else if (pattern.isNegation()) {
             return visitNegation((Negation<? extends Pattern>) pattern);
-        } else if (pattern instanceof Disjunction) {
+        } else if (pattern.isDisjunction()) {
             return visitDisjunction((Disjunction<? extends Pattern>) pattern);
         }
         throw new UnsupportedOperationException();
     }
 
-    Pattern visitStatement(Statement pattern) {
+    Pattern visitVariable(BoundVariable pattern) {
         return pattern;
     }
 
     Pattern visitConjunction(Conjunction<? extends Pattern> pattern) {
-        Set<? extends Pattern> patterns = pattern.getPatterns();
-        HashSet<Pattern> newPatterns = new HashSet<>();
+        List<? extends Pattern> patterns = pattern.patterns();
+        Set<Pattern> newPatterns = new HashSet<>();
         patterns.forEach(p -> {
             Pattern childPattern = visitPattern(p);
             if (childPattern != null) {
@@ -57,12 +59,12 @@ public abstract class PatternVisitor {
     }
 
     Pattern visitNegation(Negation<? extends Pattern> pattern) {
-        return new Negation<>(visitPattern(pattern.getPattern()));
+        return new Negation<>(visitPattern(pattern.asNegation().pattern()));
     }
 
     private Pattern visitDisjunction(Disjunction<? extends Pattern> pattern) {
-        Set<? extends Pattern> patterns = pattern.getPatterns();
-        HashSet<Pattern> newPatterns = new HashSet<>();
+        List<? extends Pattern> patterns = pattern.patterns();
+        Set<Pattern> newPatterns = new HashSet<>();
         patterns.forEach(p -> {
             Pattern childPattern = visitPattern(p);
             if (childPattern != null) {

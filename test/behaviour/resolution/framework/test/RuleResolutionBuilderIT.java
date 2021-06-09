@@ -18,95 +18,109 @@
 
 package com.vaticle.typedb.core.test.behaviour.resolution.framework.test;
 
+import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.TypeDB.Session;
-import com.vaticle.typedb.core.TypeDB.Transaction;;
+import com.vaticle.typedb.core.TypeDB.Transaction;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.rocks.RocksTypeDB;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.RuleResolutionBuilder;
-import com.vaticle.typedb.core.test.rule.GraknTestServer;
+import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.pattern.Pattern;
-import com.vaticle.typeql.lang.statement.Statement;
-import org.junit.ClassRule;
+import com.vaticle.typeql.lang.pattern.variable.Variable;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.Utils.getStatements;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadTestStub;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadBasicRecursionTest;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadComplexRecursionTest;
 
 public class RuleResolutionBuilderIT {
-    @ClassRule
-    public static final GraknTestServer graknTestServer = new GraknTestServer();
+    private static final String database = "RuleResolutionBuilderIT";
+    private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
+    private static final Path logDir = dataDir.resolve("logs");
+    private static final Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logDir);
+    private TypeDB typeDB;
+
+    @Before
+    public void setUp() throws IOException {
+        Util.resetDirectory(dataDir);
+        this.typeDB = RocksTypeDB.open(options);
+        this.typeDB.databases().create(database);
+    }
+
+    @After
+    public void tearDown() {
+        this.typeDB.close();
+    }
 
     @Test
-    public void testStatementToResolutionPropertiesForVariableAttributeOwnership() {
-        try (Session session = graknTestServer.sessionWithNewKeyspace()) {
-
-            loadTestStub(session, "basic_recursion");
-
+    public void testVariableToResolutionPropertiesForVariableAttributeOwnership() {
+        loadBasicRecursionTest(typeDB, database);
+        try (Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
             try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
-                Statement statement = getOnlyElement(TypeQL.parsePattern("$company has name $name;").statements());
-                Statement expectedPropsStatement = getOnlyElement(TypeQL.parsePattern("$x0 (owned: $name, owner: $company) isa has-attribute-property;").statements());
-                Statement propsStatement = getOnlyElement(new RuleResolutionBuilder().statementToResolutionProperties(tx, statement, null).values());
-                assertEquals(expectedPropsStatement, propsStatement);
+                Variable variable = TypeQL.parsePattern("$company has name $name;").asVariable();
+                Variable expectedPropsVariable = TypeQL.parsePattern("$x0 (owned: $name, owner: $company) isa has-attribute-property;").asVariable();
+                Variable propsVariable = getOnlyElement(new RuleResolutionBuilder().variableToResolutionProperties(tx, variable, null).values());
+                Assert.assertEquals(expectedPropsVariable, propsVariable);
             }
         }
     }
 
     @Test
-    public void testStatementToResolutionPropertiesForAttributeOwnership() {
-        try (Session session = graknTestServer.sessionWithNewKeyspace()) {
-
-            loadTestStub(session, "basic_recursion");
-
+    public void testVariableToResolutionPropertiesForAttributeOwnership() {
+        loadBasicRecursionTest(typeDB, database);
+        try (Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
             try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
-                Statement statement = getOnlyElement(TypeQL.parsePattern("$company has name \"Apple\";").statements());
+                Variable variable = TypeQL.parsePattern("$company has name \"Apple\";").asVariable();
                 String regex = "^\\$x0 \\(owned: \\$\\d+, owner: \\$company\\) isa has-attribute-property;$";
-                Statement propsStatement = getOnlyElement(new RuleResolutionBuilder().statementToResolutionProperties(tx, statement, null).values());
-                assertTrue(propsStatement.toString().matches(regex));
+                Variable propsVariable = getOnlyElement(new RuleResolutionBuilder().variableToResolutionProperties(tx, variable, null).values());
+                Assert.assertTrue(propsVariable.toString().matches(regex));
             }
         }
     }
 
     @Test
-    public void testStatementToResolutionPropertiesForRelation() {
-        try (Session session = graknTestServer.sessionWithNewKeyspace()) {
-
-            loadTestStub(session, "complex_recursion");
-
+    public void testVariableToResolutionPropertiesForRelation() {
+        loadComplexRecursionTest(typeDB, database);
+        try (Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
             try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
-                Statement statement = getOnlyElement(TypeQL.parsePattern("$locates (locates_located: $transaction, locates_location: $country);").statements());
-                Set<Statement> expectedPropsStatements = getStatements(TypeQL.parsePatternList("" +
+                Variable variable = TypeQL.parsePattern("$locates (locates_located: $transaction, locates_location: $country);").asVariable();
+                Set<Variable> expectedPropsVariables = TypeQL.parsePattern("" +
                         "$x0 (rel: $locates, roleplayer: $transaction) isa relation-property, has role-label \"locates_located\", has role-label \"role\";" +
                         "$x1 (rel: $locates, roleplayer: $country) isa relation-property, has role-label \"locates_location\", has role-label \"role\";"
-                ));
-                Set<Statement> propsStatements = new HashSet<>(new RuleResolutionBuilder().statementToResolutionProperties(tx, statement, null).values());
-                assertEquals(expectedPropsStatements, propsStatements);
+                ).asConjunction().variables().collect(Collectors.toSet());
+                Set<Variable> propsVariables = new HashSet<>(new RuleResolutionBuilder().variableToResolutionProperties(tx, variable, null).values());
+                Assert.assertEquals(expectedPropsVariables, propsVariables);
             }
         }
     }
 
     @Test
-    public void testStatementToResolutionPropertiesForIsa() {
-        try (Session session = graknTestServer.sessionWithNewKeyspace()) {
-
-            loadTestStub(session, "basic_recursion");
-
+    public void testVariableToResolutionPropertiesForIsa() {
+        loadBasicRecursionTest(typeDB, database);
+        try (Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
             try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
-                Statement statement = getOnlyElement(TypeQL.parsePattern("$company isa company;").statements());
-                Statement propStatement = getOnlyElement(new RuleResolutionBuilder().statementToResolutionProperties(tx, statement, null).values());
-                Statement expectedPropStatement = getOnlyElement(TypeQL.parsePattern("$x0 (instance: $company) isa isa-property, has type-label \"company\", has type-label \"entity\";").statements());
-                assertEquals(expectedPropStatement, propStatement);
+                Variable variable = TypeQL.parsePattern("$company isa company;").asVariable();
+                Variable propVariable = getOnlyElement(new RuleResolutionBuilder().variableToResolutionProperties(tx, variable, null).values());
+                Variable expectedPropVariable = TypeQL.parsePattern("$x0 (instance: $company) isa isa-property, has type-label \"company\", has type-label \"entity\";").asVariable();
+                Assert.assertEquals(expectedPropVariable, propVariable);
             }
         }
     }
 
     @Test
-    public void testStatementsForRuleApplication() {
-
+    public void testVariablesForRuleApplication() {
         Pattern when = TypeQL.parsePattern("" +
                 "{ $country isa country; " +
                 "$transaction isa transaction;" +
@@ -131,13 +145,12 @@ public class RuleResolutionBuilderIT {
                 "$_ (body: $x0, body: $x1, body: $x2, body: $x3, body: $x4, body: $x5, head: $x6) isa resolution, " +
                 "has rule-label \"transaction-currency-is-that-of-the-country\"; };");
 
-        try (Session session = graknTestServer.sessionWithNewKeyspace()) {
+        loadComplexRecursionTest(typeDB, database);
 
-            loadTestStub(session, "complex_recursion");
-
+        try (Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
             try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 Pattern resolution = new RuleResolutionBuilder().ruleResolutionConjunction(tx, when, then, "transaction-currency-is-that-of-the-country");
-                assertEquals(expected, resolution);
+                Assert.assertEquals(expected, resolution);
             }
         }
     }

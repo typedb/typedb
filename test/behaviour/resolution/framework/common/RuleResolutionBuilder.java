@@ -52,26 +52,26 @@ public class RuleResolutionBuilder {
 //        String inferenceType = "resolution";
 //        String inferenceRuleLabelType = "rule-label";
 //        Variable ruleVar = new Variable(getNextVar("rule"));
-//        Statement relation = TypeQL.var(ruleVar).isa(inferenceType).has(inferenceRuleLabelType, ruleLabel);
-//        StatementVisitor bodyVisitor = new StatementVisitor(p -> statementToResolutionConjunction(p, ruleVar, "body"));
-//        StatementVisitor headVisitor = new StatementVisitor(p -> statementToResolutionConjunction(p, ruleVar, "head"));
+//        Variable relation = TypeQL.var(ruleVar).isa(inferenceType).has(inferenceRuleLabelType, ruleLabel);
+//        VariableVisitor bodyVisitor = new VariableVisitor(p -> variableToResolutionConjunction(p, ruleVar, "body"));
+//        VariableVisitor headVisitor = new VariableVisitor(p -> variableToResolutionConjunction(p, ruleVar, "head"));
 //        NegationRemovalVisitor negationStripper = new NegationRemovalVisitor();
 //        Pattern body = bodyVisitor.visitPattern(negationStripper.visitPattern(whenPattern));
 //        Pattern head = headVisitor.visitPattern(thenPattern);
 //        return TypeQL.and(body, head, relation);
 //    }
 //
-//    private Pattern statementToResolutionConjunction(Statement statement, Variable ruleVar, String ruleRole) {
-//        LinkedHashMap<String, Statement> resolutionProperties = statementToResolutionProperties(statement);
+//    private Pattern variableToResolutionConjunction(Variable variable, Variable ruleVar, String ruleRole) {
+//        LinkedHashMap<String, Variable> resolutionProperties = variableToResolutionProperties(variable);
 //        if (resolutionProperties.isEmpty()) {
 //            return null;
 //        } else {
-//            LinkedHashSet<Statement> s = new LinkedHashSet<>();
-//            Statement ruleStatement = TypeQL.var(ruleVar);
+//            LinkedHashSet<Variable> s = new LinkedHashSet<>();
+//            Variable ruleVariable = TypeQL.var(ruleVar);
 //            for (String var : resolutionProperties.keySet()) {
-//                ruleStatement = ruleStatement.rel(ruleRole, TypeQL.var(var));
+//                ruleVariable = ruleVariable.rel(ruleRole, TypeQL.var(var));
 //            }
-//            s.add(ruleStatement);
+//            s.add(ruleVariable);
 //            s.addAll(resolutionProperties.values());
 //            return TypeQL.and(s);
 //        }
@@ -81,88 +81,88 @@ public class RuleResolutionBuilder {
     public Conjunction<? extends Pattern> ruleResolutionConjunction(Transaction tx, Pattern whenPattern, Pattern thenPattern, String ruleLabel) {
 
         NegationRemovalVisitor negationStripper = new NegationRemovalVisitor();
-        Set<Statement> whenStatements = negationStripper.visitPattern(whenPattern).statements();
-        Set<Statement> thenStatements = negationStripper.visitPattern(thenPattern).statements();
+        Set<Variable> whenVariables = negationStripper.visitPattern(whenPattern).variables();
+        Set<Variable> thenVariables = negationStripper.visitPattern(thenPattern).variables();
 
         String inferenceType = "resolution";
         String inferenceRuleLabelType = "rule-label";
 
-        Statement relation = TypeQL.var().isa(inferenceType).has(inferenceRuleLabelType, ruleLabel);
+        Variable relation = TypeQL.var().isa(inferenceType).has(inferenceRuleLabelType, ruleLabel);
 
-        LinkedHashMap<String, Statement> whenProps = new LinkedHashMap<>();
+        LinkedHashMap<String, Variable> whenProps = new LinkedHashMap<>();
 
-        for (Statement whenStatement : whenStatements) {
-            whenProps.putAll(statementToResolutionProperties(tx, whenStatement, null));
+        for (Variable whenVariable : whenVariables) {
+            whenProps.putAll(variableToResolutionProperties(tx, whenVariable, null));
         }
 
         for (String whenVar : whenProps.keySet()) {
             relation = relation.rel("body", TypeQL.var(whenVar));
         }
 
-        LinkedHashMap<String, Statement> thenProps = new LinkedHashMap<>();
+        LinkedHashMap<String, Variable> thenProps = new LinkedHashMap<>();
 
-        for (Statement thenStatement : thenStatements) {
-            thenProps.putAll(statementToResolutionProperties(tx, thenStatement, true));
+        for (Variable thenVariable : thenVariables) {
+            thenProps.putAll(variableToResolutionProperties(tx, thenVariable, true));
         }
 
         for (String thenVar : thenProps.keySet()) {
             relation = relation.rel("head", TypeQL.var(thenVar));
         }
 
-        LinkedHashSet<Statement> result = new LinkedHashSet<>();
+        LinkedHashSet<Variable> result = new LinkedHashSet<>();
         result.addAll(whenProps.values());
         result.addAll(thenProps.values());
         result.add(relation);
         return TypeQL.and(result);
     }
 
-    public LinkedHashMap<String, Statement> statementToResolutionProperties(final Transaction tx, Statement statement, @Nullable final Boolean inferred) {
-        LinkedHashMap<String, Statement> props = new LinkedHashMap<>();
+    public LinkedHashMap<String, Variable> variableToResolutionProperties(final Transaction tx, Variable variable, @Nullable final Boolean inferred) {
+        LinkedHashMap<String, Variable> props = new LinkedHashMap<>();
 
-        String statementVarName = statement.var().name();
+        String variableVarName = variable.var().name();
 
-        for (VarProperty varProp : statement.properties()) {
+        for (VarProperty varProp : variable.properties()) {
 
             if (varProp instanceof HasAttributeProperty) {
                 String nextVar = getNextVar("x");
-                StatementInstance propStatement = TypeQL.var(nextVar).isa("has-attribute-property")
+                VariableInstance propVariable = TypeQL.var(nextVar).isa("has-attribute-property")
                         .rel("owned", ((HasAttributeProperty) varProp).attribute().var().name())
-                        .rel("owner", statementVarName);
+                        .rel("owner", variableVarName);
                 if (inferred != null) {
-                    propStatement = propStatement.has("inferred", inferred);
+                    propVariable = propVariable.has("inferred", inferred);
                 }
-                props.put(nextVar, propStatement);
+                props.put(nextVar, propVariable);
 
             } else if (varProp instanceof RelationProperty) {
                 for (RelationProperty.RolePlayer rolePlayer : ((RelationProperty)varProp).relationPlayers()) {
-                    Optional<Statement> role = rolePlayer.getRole();
+                    Optional<Variable> role = rolePlayer.getRole();
 
                     String nextVar = getNextVar("x");
 
-                    StatementInstance propStatement = TypeQL.var(nextVar).isa("relation-property").rel("rel", statementVarName).rel("roleplayer", TypeQL.var(rolePlayer.getPlayer().var()));
+                    VariableInstance propVariable = TypeQL.var(nextVar).isa("relation-property").rel("rel", variableVarName).rel("roleplayer", TypeQL.var(rolePlayer.getPlayer().var()));
                     if (role.isPresent()) {
                         String roleLabel = ((TypeProperty) getOnlyElement(role.get().properties())).name();
                         final Set<Role> roles = tx.getRole(roleLabel).sups().collect(Collectors.toSet());
                         for (Role r : roles) {
-                            propStatement = propStatement.has("role-label", r.label().getValue());
+                            propVariable = propVariable.has("role-label", r.label().getValue());
                         }
                     }
                     if (inferred != null) {
-                        propStatement = propStatement.has("inferred", inferred);
+                        propVariable = propVariable.has("inferred", inferred);
                     }
-                    props.put(nextVar, propStatement);
+                    props.put(nextVar, propVariable);
                 }
             } else if (varProp instanceof IsaProperty){
                 String nextVar = getNextVar("x");
-                StatementInstance propStatement = TypeQL.var(nextVar).isa("isa-property").rel("instance", statementVarName);
+                VariableInstance propVariable = TypeQL.var(nextVar).isa("isa-property").rel("instance", variableVarName);
                 final Set<Type> types = tx.getType(new Label(varProp.property())).sups().collect(Collectors.toSet());
                 for (Type type : types) {
-                    propStatement = propStatement.has("type-label", type.label().getValue());
+                    propVariable = propVariable.has("type-label", type.label().getValue());
                 }
                 if (inferred != null) {
-                    propStatement = propStatement.has("inferred", inferred);
+                    propVariable = propVariable.has("inferred", inferred);
                 }
-                props.put(nextVar, propStatement);
+                props.put(nextVar, propVariable);
             }
         }
         return props;

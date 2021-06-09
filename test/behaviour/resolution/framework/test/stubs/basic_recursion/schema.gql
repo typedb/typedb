@@ -1,26 +1,20 @@
 define
-
 name sub attribute,
     value string;
-
 is-liable sub attribute,
     value boolean;
-
 company-id sub attribute,
     value long;
-
 company sub entity,
-    key company-id,
-    has name,
-    has is-liable;
-
+    owns company-id @key,
+    owns name,
+    owns is-liable;
 company-has-name sub rule,
 when {
     $c1 isa company;
 }, then {
     $c1 has name $n1; $n1 "the-company";
 };
-
 company-is-liable sub rule,
 when {
     $c2 isa company, has name $n2; $n2 "the-company";

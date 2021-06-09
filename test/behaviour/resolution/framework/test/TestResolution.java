@@ -18,34 +18,58 @@
 
 package com.vaticle.typedb.core.test.behaviour.resolution.framework.test;
 
+import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.TypeDB.Session;
 import com.vaticle.typedb.core.TypeDB.Transaction;;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.rocks.RocksTypeDB;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.Resolution;
+import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.test.rule.GraknTestServer;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadBasicRecursionTest;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadComplexRecursionTest;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadTestStub;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadTransitivityTest;
 import static junit.framework.TestCase.assertNotNull;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
 
 public class TestResolution {
 
+    private static final String databaseCompletion = "TestResolutionCompletion";
+    private static final String databaseTest = "TestResolutionTest";
+    private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
+    private static final Path logDir = dataDir.resolve("logs");
+    private static final Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logDir);
+    private TypeDB typeDB;
 
-    @ClassRule
-    public static final GraknTestServer graknTestServer = new GraknTestServer();
+    @Before
+    public void setUp() throws IOException {
+        Util.resetDirectory(dataDir);
+        this.typeDB = RocksTypeDB.open(options);
+        this.typeDB.databases().create(databaseCompletion);
+        this.typeDB.databases().create(databaseTest);
+    }
 
-    private void resolutionHappyPathTest(String stubName, TypeQLMatch inferenceQuery) {
-        Session completionSession = graknTestServer.sessionWithNewKeyspace();
-        loadTestStub(completionSession, stubName);
+    @After
+    public void tearDown() {
+        this.typeDB.close();
+    }
 
-        Session testSession = graknTestServer.sessionWithNewKeyspace();
-        loadTestStub(testSession, stubName);
-
+    private void resolutionHappyPathTest(TypeQLMatch inferenceQuery) {
         Resolution resolution_test = new Resolution(completionSession, testSession);
         resolution_test.testQuery(inferenceQuery);
         resolution_test.testResolution(inferenceQuery);
@@ -57,32 +81,30 @@ public class TestResolution {
     @Test
     @Ignore
     public void testResolutionPassesForTransitivity() {
-        TypeQLMatch inferenceQuery = TypeQL.parse("" +
+        TypeQLMatch inferenceQuery = TypeQL.parseQuery("" +
                 "match $lh (location-hierarchy_superior: $continent, " +
                 "location-hierarchy_subordinate: $area) isa location-hierarchy; " +
                 "$continent isa continent; " +
                 "$area isa area;").asMatch();
-        resolutionHappyPathTest("transitivity", inferenceQuery);
+        loadTransitivityTest(typeDB, databaseCompletion);
+        loadTransitivityTest(typeDB, databaseTest);
+        resolutionHappyPathTest(inferenceQuery);
     }
 
     @Test
     public void testResolutionThrowsForTransitivityWhenRuleIsNotTriggered() {
-        TypeQLMatch inferenceQuery = TypeQL.parse("" +
+        TypeQLMatch inferenceQuery = TypeQL.parseQuery("" +
                 "match $lh (location-hierarchy_superior: $continent, " +
                 "location-hierarchy_subordinate: $area) isa location-hierarchy; " +
                 "$continent isa continent; " +
                 "$area isa area;").asMatch();
 
-
-        Session completionSession = graknTestServer.sessionWithNewKeyspace();
-        loadTestStub(completionSession, "transitivity");
-
-        Session testSession = graknTestServer.sessionWithNewKeyspace();
-        loadTestStub(testSession, "transitivity");
+        loadTransitivityTest(typeDB, databaseCompletion);
+        loadTransitivityTest(typeDB, databaseTest);
 
         // Undefine a rule in the keyspace under test such that the expected facts will not be inferred
         Transaction tx = testSession.transaction(Arguments.Transaction.Type.WRITE);
-        tx.execute(TypeQL.undefine(TypeQL.type("location-hierarchy-transitivity").sub("rule")));
+        tx.query().undefine(TypeQL.undefine(TypeQL.type("location-hierarchy-transitivity").sub("rule")));
         tx.commit();
 
         Resolution resolution_test = new Resolution(completionSession, testSession);
@@ -119,30 +141,27 @@ public class TestResolution {
 
     @Test
     public void testResolutionThrowsForTransitivityWhenRuleTriggersTooOften() {
-        TypeQLMatch inferenceQuery = TypeQL.parse("" +
+        TypeQLMatch inferenceQuery = TypeQL.parseQuery("" +
                 "match $lh (location-hierarchy_superior: $continent, " +
                 "location-hierarchy_subordinate: $area) isa location-hierarchy; " +
                 "$continent isa continent; " +
                 "$area isa area;").asMatch();
 
+        loadTransitivityTest(typeDB, databaseCompletion);
+        loadTransitivityTest(typeDB, databaseTest);
 
-        Session completionSession = graknTestServer.sessionWithNewKeyspace();
-        loadTestStub(completionSession, "transitivity");
-
-        Session testSession = graknTestServer.sessionWithNewKeyspace();
-        loadTestStub(testSession, "transitivity");
-
-        // Undefine a rule in the keyspace under test such that the expected facts will not be inferred
+        // Undefine a rule in the database under test such that the expected facts will not be inferred
         Transaction tx = testSession.transaction(Arguments.Transaction.Type.WRITE);
-        tx.execute(TypeQL.undefine(TypeQL.type("location-hierarchy-transitivity").sub("rule")));
-        tx.execute(TypeQL.define(TypeQL.parsePattern("location-hierarchy-transitivity sub rule,\n" +
+        tx.query().undefine(TypeQL.undefine(TypeQL.type("location-hierarchy-transitivity").sub("rule")));
+        tx.query().define(TypeQL.parseQuery("define " +
+                "location-hierarchy-transitivity sub rule,\n" +
                 "when {\n" +
                 "  ($a, $b) isa location-hierarchy;\n" +
                 "  ($b, $c) isa location-hierarchy;\n" +
                 "  $a != $c;\n" +
                 "}, then {\n" +
                 "  (location-hierarchy_superior: $a, location-hierarchy_subordinate: $c) isa location-hierarchy;\n" +
-                "};").statements()));
+                "};").asDefine());
         tx.commit();
 
         Resolution resolution_test = new Resolution(completionSession, testSession);
@@ -166,30 +185,27 @@ public class TestResolution {
 
     @Test
     public void testResolutionThrowsForTransitivityWhenRuleTriggersTooOftenAndResultCountIsIncorrect() {
-        TypeQLMatch inferenceQuery = TypeQL.parse("" +
+        TypeQLMatch inferenceQuery = TypeQL.parseQuery("" +
                 "match $lh ($continent, " +
                 "$area) isa location-hierarchy; " +
                 "$continent isa continent; " +
                 "$area isa area;").asMatch();
 
-
-        Session completionSession = graknTestServer.sessionWithNewKeyspace();
-        loadTestStub(completionSession, "transitivity");
-
-        Session testSession = graknTestServer.sessionWithNewKeyspace();
-        loadTestStub(testSession, "transitivity");
+        loadTransitivityTest(typeDB, databaseCompletion);
+        loadTransitivityTest(typeDB, databaseTest);
 
         // Undefine a rule in the keyspace under test such that the expected facts will not be inferred
         Transaction tx = testSession.transaction(Arguments.Transaction.Type.WRITE);
-        tx.execute(TypeQL.undefine(TypeQL.type("location-hierarchy-transitivity").sub("rule")));
-        tx.execute(TypeQL.define(TypeQL.parsePattern("location-hierarchy-transitivity sub rule,\n" +
+        tx.query().undefine(TypeQL.undefine(TypeQL.type("location-hierarchy-transitivity").sub("rule")));
+        tx.query().define(TypeQL.parseQuery("define" +
+                "location-hierarchy-transitivity sub rule,\n" +
                 "when {\n" +
                 "  ($a, $b) isa location-hierarchy;\n" +
                 "  ($b, $c) isa location-hierarchy;\n" +
                 "  $a != $c;\n" +
                 "}, then {\n" +
                 "  (location-hierarchy_superior: $a, location-hierarchy_subordinate: $c) isa location-hierarchy;\n" +
-                "};").statements()));
+                "};").asDefine());
         tx.commit();
 
         Resolution resolution_test = new Resolution(completionSession, testSession);
@@ -220,14 +236,18 @@ public class TestResolution {
 
     @Test
     public void testResolutionPassesForTwoRecursiveRules() {
-        TypeQLMatch inferenceQuery = TypeQL.parse("match $transaction has currency $currency;").asMatch();
-        resolutionHappyPathTest("complex_recursion", inferenceQuery);
+        loadComplexRecursionTest(typeDB, databaseCompletion);
+        loadComplexRecursionTest(typeDB, databaseTest);
+        TypeQLMatch inferenceQuery = TypeQL.parseQuery("match $transaction has currency $currency;").asMatch();
+        resolutionHappyPathTest(inferenceQuery);
     }
 
     @Test
     public void testBasicRecursion() {
-        TypeQLMatch inferenceQuery = TypeQL.parse("match $com isa company, has is-liable $lia;").asMatch();
-        resolutionHappyPathTest("basic_recursion", inferenceQuery);
+        loadBasicRecursionTest(typeDB, databaseCompletion);
+        loadBasicRecursionTest(typeDB, databaseTest);
+        TypeQLMatch inferenceQuery = TypeQL.parseQuery("match $com isa company, has is-liable $lia;").asMatch();
+        resolutionHappyPathTest(inferenceQuery);
     }
 }
 

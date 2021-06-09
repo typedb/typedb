@@ -19,19 +19,20 @@
 package com.vaticle.typedb.core.test.behaviour.resolution.framework.common;
 
 import com.vaticle.typeql.lang.pattern.Pattern;
+import com.vaticle.typeql.lang.pattern.variable.BoundVariable;
 
 import java.util.function.Function;
 
-public class StatementVisitor extends PatternVisitor {
+public class VariableVisitor extends PatternVisitor {
 
-    private Function<Statement, Pattern> function;
+    private final Function<BoundVariable, Pattern> function;
 
-    public StatementVisitor(Function<Statement, Pattern> function) {
+    public VariableVisitor(Function<BoundVariable, Pattern> function) {
         this.function = function;
     }
 
     @Override
-    Pattern visitStatement(Statement pattern) {
+    Pattern visitVariable(BoundVariable pattern) {
         return function.apply(pattern);
     }
 }

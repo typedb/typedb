@@ -20,34 +20,34 @@ package com.vaticle.typedb.core.test.behaviour.resolution.framework.test;
 
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.resolve.ResolutionQueryBuilder;
 import com.vaticle.typeql.lang.TypeQL;
-import com.vaticle.typeql.lang.statement.Statement;
+import com.vaticle.typeql.lang.pattern.variable.Variable;
 import org.junit.Test;
 
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.Utils.getStatements;
 import static org.junit.Assert.assertEquals;
 
 public class TestResolutionQueryBuilder {
 
     @Test
-    public void testIdStatementsAreRemovedCorrectly() {
-        Set<Statement> statementsWithIds = getStatements(TypeQL.parsePatternList(
+    public void testIdVariablesAreRemovedCorrectly() {
+        Set<Variable> variablesWithIds = TypeQL.parsePattern(
                 "$transaction has currency $currency;\n" +
                 "$transaction id V86232;\n" +
                 "$currency id V36912;\n" +
                 "$transaction isa transaction;\n"
-        ));
+        ).asConjunction().variables().collect(Collectors.toSet());
 
-        Set<Statement> expectedStatements = getStatements(TypeQL.parsePatternList(
+        Set<Variable> expectedVariables = TypeQL.parsePattern(
                 "$transaction has currency $currency;\n" +
                 "$transaction isa transaction;\n"
-        ));
-        expectedStatements.add(null);
+        ).asConjunction().variables().collect(Collectors.toSet());
+        expectedVariables.add(null);
 
-        Set<Statement> statementsWithoutIds = statementsWithIds.stream().map(ResolutionQueryBuilder::removeIdProperties).collect(Collectors.toSet());
+        Set<Variable> variablesWithoutIds = variablesWithIds.stream()
+                .map(ResolutionQueryBuilder::removeIdProperties).collect(Collectors.toSet());
 
-        assertEquals(expectedStatements, statementsWithoutIds);
+        assertEquals(expectedVariables, variablesWithoutIds);
     }
 }
