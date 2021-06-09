@@ -18,40 +18,25 @@
 load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
-    name = "resolution-lib",
+    name = "resolve",
     srcs = [
-        "Resolution.java",
-        ],
+        "ResolutionQueryBuilder.java",
+    ],
     visibility = ["//visibility:public"],
     deps = [
+        "//concept/answer",
         "@maven//:com_google_guava_guava",
-        "//test/behaviour/resolution/framework/complete",
-        "//test/behaviour/resolution/framework/resolve",
-        "//kb/server:server",
-        "//concept/answer:answer",
+        "//graql/reasoner",
+        "//kb/server",
+        "//kb/concept/api",
+        "//test/behaviour/resolution/framework/common",
         "@graknlabs_graql//java:graql",
     ],
-)
-
-java_binary(
-    name = "resolution",
-    main_class = "grakn.verification.resolution.framework.Resolution",
-    runtime_deps = [":resolution-lib"],
-)
-
-java_binary(
-    name = "resolution-debug",
-    jvm_flags = [
-        "-Xdebug",
-        "-Xrunjdwp:transport=dt_socket,server=y,address=5005",
-    ],
-    main_class = "grakn.verification.resolution.framework.Resolution",
-        runtime_deps = [":resolution-lib"],
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":resolution-lib",
+        ":resolve",
     ],
 )
