@@ -227,7 +227,7 @@ public class Unifier {
 
         public Builder clone() {
             Map<Retrievable, Set<Variable>> unifierCopy = new HashMap<>();
-            unifier.forEach(((identifier, unifieds) -> unifierCopy.put(identifier, set(unifieds))));
+            unifier.forEach(((identifier, unifieds) -> unifierCopy.put(identifier, new HashSet<>(unifieds))));
             Requirements.Constraint requirementsCopy = requirements.duplicate();
             Requirements.Constraint unifiedRequirementsCopy = unifiedRequirements.duplicate();
             return new Builder(unifierCopy, requirementsCopy, unifiedRequirementsCopy);
@@ -352,7 +352,7 @@ public class Unifier {
                 Map<Retrievable, Set<Label>> isaExplicitCopy = new HashMap<>();
                 Map<Retrievable, Function<Attribute, Boolean>> predicatesCopy = new HashMap<>();
                 types.forEach(((identifier, labels) -> typesCopy.put(identifier, set(labels))));
-                isaExplicit.forEach(((identifier, labels) -> isaExplicitCopy.put(identifier, set(labels))));
+                isaExplicit.forEach(((identifier, labels) -> isaExplicitCopy.put(identifier, new HashSet<>(labels))));
                 predicates.forEach((predicatesCopy::put));
                 return new Constraint(typesCopy, isaExplicitCopy, predicatesCopy);
             }
