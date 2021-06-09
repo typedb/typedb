@@ -22,6 +22,10 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.ConceptImpl;
+import com.vaticle.typedb.core.concept.type.AttributeType;
+import com.vaticle.typedb.core.concept.type.EntityType;
+import com.vaticle.typedb.core.concept.type.RelationType;
+import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.common.Encoding;
@@ -39,6 +43,7 @@ import java.util.function.Function;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CASTING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_BEEN_DELETED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_REFERENCED_IN_RULES;
@@ -162,6 +167,26 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
 
     @Override
     public TypeImpl asType() { return this; }
+
+    @Override
+    public EntityTypeImpl asEntityType() {
+        throw exception(TypeDBException.of(INVALID_TYPE_CASTING, getLabel(), className(EntityType.class)));
+    }
+
+    @Override
+    public RelationTypeImpl asRelationType() {
+        throw exception(TypeDBException.of(INVALID_TYPE_CASTING, getLabel(), className(RelationType.class)));
+    }
+
+    @Override
+    public AttributeTypeImpl asAttributeType() {
+        throw exception(TypeDBException.of(INVALID_TYPE_CASTING, getLabel(), className(AttributeType.class)));
+    }
+
+    @Override
+    public RoleTypeImpl asRoleType() {
+        throw exception(TypeDBException.of(INVALID_TYPE_CASTING, getLabel(), className(RoleType.class)));
+    }
 
     void validateCanHaveInstances(Class<?> instanceClass) {
         validateIsNotDeleted();
