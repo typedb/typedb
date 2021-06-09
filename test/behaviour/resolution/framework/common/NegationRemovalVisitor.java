@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,10 +16,10 @@
  *
  */
 
-package grakn.core.test.behaviour.resolution.framework.common;
+package com.vaticle.typedb.core.test.behaviour.resolution.framework.common;
 
-import graql.lang.pattern.Negation;
-import graql.lang.pattern.Pattern;
+import com.vaticle.typeql.lang.pattern.Negation;
+import com.vaticle.typeql.lang.pattern.Pattern;
 
 public class NegationRemovalVisitor extends PatternVisitor {
     @Override

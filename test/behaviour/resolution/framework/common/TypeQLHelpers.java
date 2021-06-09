@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,21 +16,18 @@
  *
  */
 
-package grakn.core.test.behaviour.resolution.framework.common;
+package com.vaticle.typedb.core.test.behaviour.resolution.framework.common;
 
-import grakn.core.kb.concept.api.Concept;
-import graql.lang.Graql;
-import graql.lang.statement.Statement;
-import graql.lang.statement.StatementAttribute;
-import graql.lang.statement.StatementInstance;
-import graql.lang.statement.Variable;
+import com.vaticle.typedb.core.concept.Concept;
+import com.vaticle.typedb.core.pattern.variable.Variable;
+import com.vaticle.typeql.lang.TypeQL;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class GraqlHelpers {
+public class TypeQLHelpers {
     /**
      * Create a set of statements that will query for the keys of the concepts given in the map. Attributes given in
      * the map are simply queried for by their own type and value.
@@ -47,7 +44,7 @@ public class GraqlHelpers {
             if (concept.isAttribute()) {
 
                 String typeLabel = concept.asAttribute().type().label().toString();
-                Statement statement = Graql.var(var).isa(typeLabel);
+                Statement statement = TypeQL.var(var).isa(typeLabel);
                 StatementAttribute s = null;
 
                 Object attrValue = concept.asAttribute().value();
@@ -69,7 +66,7 @@ public class GraqlHelpers {
                 concept.asThing().keys().forEach(attribute -> {
 
                     String typeLabel = attribute.type().label().toString();
-                    Statement statement = Graql.var(var);
+                    Statement statement = TypeQL.var(var);
                     Object attrValue = attribute.value();
 
                     StatementInstance s = null;

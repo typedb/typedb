@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,25 +16,25 @@
  *
  */
 
-package grakn.core.test.behaviour.resolution.framework.test;
+package com.vaticle.typedb.core.test.behaviour.resolution.framework.test;
 
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.server.Session;
-import grakn.core.kb.server.Transaction;
-import grakn.core.test.behaviour.resolution.framework.complete.Completer;
-import grakn.core.test.behaviour.resolution.framework.complete.SchemaManager;
-import grakn.core.test.rule.GraknTestServer;
-import graql.lang.Graql;
-import graql.lang.query.GraqlGet;
-import graql.lang.statement.Statement;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.TypeDB.Session;
+import com.vaticle.typedb.core.TypeDB.Transaction;;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.Completer;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager;
+import com.vaticle.typedb.core.test.rule.GraknTestServer;
+import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.query.TypeQLMatch;
+import com.vaticle.typeql.lang.statement.Statement;
 import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.List;
 import java.util.Set;
 
-import static grakn.core.test.behaviour.resolution.framework.common.Utils.getStatements;
-import static grakn.core.test.behaviour.resolution.framework.test.LoadTest.loadTestStub;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.Utils.getStatements;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadTestStub;
 import static org.junit.Assert.assertEquals;
 
 public class TestCompleter {
@@ -44,7 +44,7 @@ public class TestCompleter {
 
     @Test
     public void testValidResolutionHasExactlyOneAnswer() {
-        Set<Statement> expectedResolutionStatements = getStatements(Graql.parsePatternList("" +
+        Set<Statement> expectedResolutionStatements = getStatements(TypeQL.parsePatternList("" +
                 "$r0-com isa company;" +
                 "$r0-com has is-liable $r0-lia;" +
                 "$r0-com has company-id 0;" +
@@ -75,7 +75,7 @@ public class TestCompleter {
             loadTestStub(session, "basic_recursion");
 
             Completer completer = new Completer(session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 completer.loadRules(SchemaManager.getAllRules(tx));
             }
 
@@ -84,8 +84,8 @@ public class TestCompleter {
             SchemaManager.connectResolutionSchema(session);
             completer.complete();
 
-            try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-                List<ConceptMap> answers = tx.execute(Graql.match(expectedResolutionStatements).get());
+            try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
+                List<ConceptMap> answers = tx.execute(TypeQL.match(expectedResolutionStatements).get());
 
                 assertEquals(answers.size(), 1);
             }
@@ -99,7 +99,7 @@ public class TestCompleter {
             loadTestStub(session, "transitivity");
 
             Completer completer = new Completer(session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 completer.loadRules(SchemaManager.getAllRules(tx));
             }
 
@@ -108,12 +108,12 @@ public class TestCompleter {
             SchemaManager.connectResolutionSchema(session);
             completer.complete();
 
-            try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-                GraqlGet inferredAnswersQuery = Graql.match(Graql.var("lh").isa("location-hierarchy")).get();
+            try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
+                TypeQLMatch inferredAnswersQuery = TypeQL.match(TypeQL.var("lh").isa("location-hierarchy")).get();
                 List<ConceptMap> inferredAnswers = tx.execute(inferredAnswersQuery);
                 assertEquals(6, inferredAnswers.size());
 
-                GraqlGet resolutionsQuery = Graql.match(Graql.var("res").isa("resolution")).get();
+                TypeQLMatch resolutionsQuery = TypeQL.match(TypeQL.var("res").isa("resolution")).get();
                 List<ConceptMap> resolutionAnswers = tx.execute(resolutionsQuery);
                 assertEquals(4, resolutionAnswers.size());
             }

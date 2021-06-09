@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,15 +16,15 @@
  *
  */
 
-package grakn.core.test.behaviour.resolution.framework.test;
+package com.vaticle.typedb.core.test.behaviour.resolution.framework.test;
 
-import grakn.core.kb.concept.api.Rule;
-import grakn.core.kb.server.Session;
-import grakn.core.kb.server.Transaction;
-import grakn.core.test.behaviour.resolution.framework.complete.SchemaManager;
-import grakn.core.test.rule.GraknTestServer;
-import graql.lang.Graql;
-import graql.lang.query.GraqlGet;
+import com.vaticle.typedb.core.logic.Rule;
+import com.vaticle.typedb.core.TypeDB.Session;
+import com.vaticle.typedb.core.TypeDB.Transaction;;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager;
+import com.vaticle.typedb.core.test.rule.GraknTestServer;
+import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.query.TypeQLMatch;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -34,9 +34,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.test.behaviour.resolution.framework.complete.SchemaManager.addResolutionSchema;
-import static grakn.core.test.behaviour.resolution.framework.complete.SchemaManager.connectResolutionSchema;
-import static grakn.core.test.behaviour.resolution.framework.test.LoadTest.loadTestStub;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.addResolutionSchema;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.connectResolutionSchema;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadTestStub;
 import static org.junit.Assert.assertEquals;
 
 public class TestSchemaManager {
@@ -59,12 +59,12 @@ public class TestSchemaManager {
             addResolutionSchema(session);
             connectResolutionSchema(session);
 
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
 
-                GraqlGet roleplayersQuery = Graql.match(
-                        Graql.var("x").plays("instance"),
-                        Graql.var("x").plays("owner"),
-                        Graql.var("x").plays("roleplayer")
+                TypeQLMatch roleplayersQuery = TypeQL.match(
+                        TypeQL.var("x").plays("instance"),
+                        TypeQL.var("x").plays("owner"),
+                        TypeQL.var("x").plays("roleplayer")
                 ).get();
 
                 Set<String> roleplayers = tx.stream(roleplayersQuery).map(r -> r.get("x").asType().label().toString()).collect(Collectors.toSet());
@@ -97,10 +97,10 @@ public class TestSchemaManager {
             addResolutionSchema(session);
             connectResolutionSchema(session);
 
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
 
-                GraqlGet roleplayersQuery = Graql.match(
-                        Graql.var("x").plays("rel")
+                TypeQLMatch roleplayersQuery = TypeQL.match(
+                        TypeQL.var("x").plays("rel")
                 ).get();
 
                 Set<String> roleplayers = tx.stream(roleplayersQuery).map(r -> r.get("x").asType().label().toString()).collect(Collectors.toSet());
@@ -125,9 +125,9 @@ public class TestSchemaManager {
             addResolutionSchema(session);
             connectResolutionSchema(session);
 
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
 
-                GraqlGet clauseAttributesQuery = Graql.match(Graql.var("x").sub("has-attribute-property")).get();
+                TypeQLMatch clauseAttributesQuery = TypeQL.match(TypeQL.var("x").sub("has-attribute-property")).get();
 
                 Set<String> roles = tx.execute(clauseAttributesQuery).get(0).get("x").asRelationType().roles().map(a -> a.label().toString()).collect(Collectors.toSet());
 
@@ -146,7 +146,7 @@ public class TestSchemaManager {
     @Test
     public void testGetAllRulesReturnsExpectedRules() {
         try (Session session = graknTestServer.session(KEYSPACE)) {
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 Set<Rule> rules = SchemaManager.getAllRules(tx);
                 assertEquals(2, rules.size());
 
@@ -165,8 +165,8 @@ public class TestSchemaManager {
     public void testUndefineAllRulesSuccessfullyUndefinesAllRules() {
         try (Session session = graknTestServer.session(KEYSPACE)) {
             SchemaManager.undefineAllRules(session);
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                List<String> ruleLabels = tx.stream(Graql.match(Graql.var("x").sub("rule")).get("x")).map(ans -> ans.get("x").asRule().label().toString()).collect(Collectors.toList());
+            try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                List<String> ruleLabels = tx.stream(TypeQL.match(TypeQL.var("x").sub("rule")).get("x")).map(ans -> ans.get("x").asRule().label().toString()).collect(Collectors.toList());
                 assertEquals(1, ruleLabels.size());
                 assertEquals("rule", ruleLabels.get(0));
             }

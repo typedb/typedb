@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,31 +16,31 @@
  *
  */
 
-package grakn.core.test.behaviour.resolution.framework.test;
+package com.vaticle.typedb.core.test.behaviour.resolution.framework.test;
 
-import grakn.core.test.behaviour.resolution.framework.resolve.ResolutionQueryBuilder;
-import graql.lang.Graql;
-import graql.lang.statement.Statement;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.resolve.ResolutionQueryBuilder;
+import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.statement.Statement;
 import org.junit.Test;
 
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.test.behaviour.resolution.framework.common.Utils.getStatements;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.Utils.getStatements;
 import static org.junit.Assert.assertEquals;
 
 public class TestResolutionQueryBuilder {
 
     @Test
     public void testIdStatementsAreRemovedCorrectly() {
-        Set<Statement> statementsWithIds = getStatements(Graql.parsePatternList(
+        Set<Statement> statementsWithIds = getStatements(TypeQL.parsePatternList(
                 "$transaction has currency $currency;\n" +
                 "$transaction id V86232;\n" +
                 "$currency id V36912;\n" +
                 "$transaction isa transaction;\n"
         ));
 
-        Set<Statement> expectedStatements = getStatements(Graql.parsePatternList(
+        Set<Statement> expectedStatements = getStatements(TypeQL.parsePatternList(
                 "$transaction has currency $currency;\n" +
                 "$transaction isa transaction;\n"
         ));

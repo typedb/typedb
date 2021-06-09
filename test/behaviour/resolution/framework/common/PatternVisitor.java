@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,13 +16,12 @@
  *
  */
 
-package grakn.core.test.behaviour.resolution.framework.common;
+package com.vaticle.typedb.core.test.behaviour.resolution.framework.common;
 
-import graql.lang.pattern.Conjunction;
-import graql.lang.pattern.Disjunction;
-import graql.lang.pattern.Negation;
-import graql.lang.pattern.Pattern;
-import graql.lang.statement.Statement;
+import com.vaticle.typeql.lang.pattern.Conjunction;
+import com.vaticle.typeql.lang.pattern.Disjunction;
+import com.vaticle.typeql.lang.pattern.Negation;
+import com.vaticle.typeql.lang.pattern.Pattern;
 
 import java.util.HashSet;
 import java.util.Set;

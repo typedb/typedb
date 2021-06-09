@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,16 +16,16 @@
  *
  */
 
-package grakn.core.test.behaviour.resolution.framework.complete;
+package com.vaticle.typedb.core.test.behaviour.resolution.framework.complete;
 
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.concept.api.Role;
-import grakn.core.kb.concept.api.Rule;
-import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.server.Session;
-import grakn.core.kb.server.Transaction;
-import graql.lang.Graql;
-import graql.lang.query.GraqlGet;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.TypeDB.Session;
+import com.vaticle.typedb.core.TypeDB.Transaction;;
+import com.vaticle.typedb.core.concept.type.Type;
+import com.vaticle.typedb.core.logic.Rule;
+import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -35,7 +35,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.test.behaviour.resolution.framework.common.Utils.loadGqlFile;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.Utils.loadGqlFile;
 
 
 public class SchemaManager {
@@ -68,17 +68,17 @@ public class SchemaManager {
     };
 
     public static void undefineAllRules(Session session) {
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
             Set<String> ruleLabels = getAllRules(tx).stream().map(rule -> rule.label().toString()).collect(Collectors.toSet());
             for (String ruleLabel : ruleLabels) {
-                tx.execute(Graql.undefine(Graql.type(ruleLabel).sub("rule")));
+                tx.execute(TypeQL.undefine(TypeQL.type(ruleLabel).sub("rule")));
             }
             tx.commit();
         }
     }
 
     public static Set<Rule> getAllRules(Transaction tx) {
-        return tx.stream(Graql.match(Graql.var("r").sub("rule")).get()).map(ans -> ans.get("r").asRule()).filter(rule -> !rule.label().toString().equals("rule")).collect(Collectors.toSet());
+        return tx.stream(TypeQL.match(TypeQL.var("r").sub("rule")).get()).map(ans -> ans.get("r").asRule()).filter(rule -> !rule.label().toString().equals("rule")).collect(Collectors.toSet());
     }
 
     public static void addResolutionSchema(Session session) {
@@ -91,20 +91,20 @@ public class SchemaManager {
     }
 
     private static Role getRole(Transaction tx, String roleLabel) {
-        GraqlGet roleQuery = Graql.match(Graql.var("x").sub(roleLabel)).get();
+        TypeQLMatch roleQuery = TypeQL.match(TypeQL.var("x").sub(roleLabel)).get();
         return tx.execute(roleQuery).get(0).get("x").asRole();
     }
 
     public static void connectResolutionSchema(Session session) {
-        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+        try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
             Role instanceRole = getRole(tx, "instance");
             Role ownerRole = getRole(tx, "owner");
             Role ownedRole = getRole(tx, "owned");
             Role roleplayerRole = getRole(tx, "roleplayer");
             Role relRole = getRole(tx, "rel");
             
-            GraqlGet typesToConnectQuery = Graql.match(
-                    Graql.var("x").sub("thing")
+            TypeQLMatch typesToConnectQuery = TypeQL.match(
+                    TypeQL.var("x").sub("thing")
             ).get();
             tx.stream(typesToConnectQuery).map(ans -> ans.get("x").asType()).forEach(type -> {
                 if (EXCLUDED_TYPES.contains(type.label().toString())) {

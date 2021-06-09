@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,27 +16,28 @@
  *
  */
 
-package grakn.core.test.behaviour.resolution.framework;
+package com.vaticle.typedb.core.test.behaviour.resolution.framework;
 
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.server.Session;
-import grakn.core.kb.server.Transaction;
-import grakn.core.test.behaviour.resolution.framework.complete.Completer;
-import grakn.core.test.behaviour.resolution.framework.complete.SchemaManager;
-import grakn.core.test.behaviour.resolution.framework.resolve.ResolutionQueryBuilder;
-import graql.lang.Graql;
-import graql.lang.query.GraqlGet;
-import graql.lang.query.GraqlQuery;
+import com.vaticle.typedb.core.TypeDB.Session;
+import com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.Completer;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.resolve.ResolutionQueryBuilder;
+import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.query.TypeQLMatch;
+import com.vaticle.typeql.lang.query.TypeQLQuery;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static grakn.core.test.behaviour.resolution.framework.complete.SchemaManager.filterCompletionSchema;
+import static com.vaticle.typedb.core.TypeDB.Transaction;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.filterCompletionSchema;
 
 public class Resolution {
 
-    private Session materialisedSession;
-    private Session reasonedSession;
+    private final Session materialisedSession;
+    private final Session reasonedSession;
 
     /**
      * Resolution Testing Framework's entry point. Takes in sessions each for a `Completion` and `Test` keyspace. Each
@@ -53,7 +54,7 @@ public class Resolution {
 
         // Complete the KB-complete
         Completer completer = new Completer(this.materialisedSession);
-        try (Transaction tx = this.materialisedSession.transaction(Transaction.Type.WRITE)) {
+        try (Transaction tx = this.materialisedSession.transaction(Type.WRITE)) {
             completer.loadRules(SchemaManager.getAllRules(tx));
         }
 
@@ -73,12 +74,12 @@ public class Resolution {
      * of answers.
      * @param inferenceQuery The reference query to make against both keyspaces
      */
-    public void testQuery(GraqlGet inferenceQuery) {
-        Transaction reasonedTx = reasonedSession.transaction(Transaction.Type.READ);
+    public void testQuery(TypeQLQuery inferenceQuery) {
+        Transaction reasonedTx = reasonedSession.transaction(Type.READ);
         int testResultsCount = reasonedTx.execute(inferenceQuery).size();
         reasonedTx.close();
 
-        Transaction completionTx = materialisedSession.transaction(Transaction.Type.READ);
+        Transaction completionTx = materialisedSession.transaction(Type.READ);
         int completionResultsCount = filterCompletionSchema(completionTx.stream(inferenceQuery)).collect(Collectors.toSet()).size();
         completionTx.close();
         if (completionResultsCount != testResultsCount) {
@@ -91,11 +92,11 @@ public class Resolution {
      * as expected. Run this query on the completion keyspace to verify.
      * @param inferenceQuery The reference query to make against both keyspaces
      */
-    public void testResolution(GraqlGet inferenceQuery) {
+    public void testResolution(TypeQLMatch inferenceQuery) {
         ResolutionQueryBuilder resolutionQueryBuilder = new ResolutionQueryBuilder();
-        List<GraqlGet> queries;
+        List<TypeQLMatch> queries;
 
-        try (Transaction tx = reasonedSession.transaction(Transaction.Type.READ)) {
+        try (Transaction tx = reasonedSession.transaction(Arguments.Transaction.Type.READ)) {
             queries = resolutionQueryBuilder.buildMatchGet(tx, inferenceQuery);
         }
 
@@ -104,8 +105,8 @@ public class Resolution {
             throw new CorrectnessException(msg);
         }
 
-        try (Transaction tx = materialisedSession.transaction(Transaction.Type.READ)) {
-            for (GraqlGet query: queries) {
+        try (Transaction tx = materialisedSession.transaction(Arguments.Transaction.Type.READ)) {
+            for (TypeQLMatch query: queries) {
                 List<ConceptMap> answers = tx.execute(query);
                 if (answers.isEmpty()) {
                     String msg = String.format("Resolution query had %d answers, it should have had some. The query is:\n %s", answers.size(), query);
@@ -121,9 +122,9 @@ public class Resolution {
      */
     public void testCompleteness() {
         try {
-            testQuery(Graql.parse("match $x isa thing; get;").asGet());
-            testQuery(Graql.parse("match $r ($x) isa relation; get;").asGet());
-            testQuery(Graql.parse("match $x has attribute $y; get;").asGet());
+            testQuery(TypeQL.parseQuery("match $x isa thing;").asMatch());
+            testQuery(TypeQL.parseQuery("match $r ($x) isa relation;").asMatch());
+            testQuery(TypeQL.parseQuery("match $x has attribute $y;").asMatch());
         } catch (WrongAnswerSizeException ex) {
             String msg = String.format("Failed completeness test: [%s]. The complete KB contains %d inferred concepts, whereas the test KB contains %d inferred concepts.",
                     ex.getInferenceQuery(), ex.getExpectedAnswers(), ex.getActualAnswers());
@@ -146,9 +147,9 @@ public class Resolution {
     public static class WrongAnswerSizeException extends RuntimeException {
         private final int expectedAnswers;
         private final int actualAnswers;
-        private final GraqlQuery inferenceQuery;
+        private final TypeQLQuery inferenceQuery;
 
-        public WrongAnswerSizeException(final int expectedAnswers, final int actualAnswers, final GraqlQuery inferenceQuery) {
+        public WrongAnswerSizeException(final int expectedAnswers, final int actualAnswers, final TypeQLQuery inferenceQuery) {
             super(String.format("Query had an incorrect number of answers. Expected %d answers, but found %d " +
                     "answers, for query :\n %s", expectedAnswers, actualAnswers, inferenceQuery));
             this.actualAnswers = actualAnswers;
@@ -164,7 +165,7 @@ public class Resolution {
             return expectedAnswers;
         }
 
-        public GraqlQuery getInferenceQuery() {
+        public TypeQLQuery getInferenceQuery() {
             return inferenceQuery;
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,11 +16,11 @@
  *
  */
 
-package grakn.core.test.behaviour.resolution.framework.test;
+package com.vaticle.typedb.core.test.behaviour.resolution.framework.test;
 
-import grakn.core.kb.server.Session;
+import com.vaticle.typedb.core.TypeDB.Session;
 
-import static grakn.core.test.common.GraqlTestUtil.loadFromFileAndCommit;
+import static com.vaticle.typedb.core.test.common.TypeQLTestUtil.loadFromFileAndCommit;
 
 
 public class LoadTest {

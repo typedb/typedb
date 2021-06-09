@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2020 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
     name = "resolve",
@@ -24,13 +24,12 @@ java_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//concept/answer",
         "@maven//:com_google_guava_guava",
-        "//graql/reasoner",
-        "//kb/server",
-        "//kb/concept/api",
+        "//:typedb",
+        "//concept/answer",
+        "//concept:concept",
         "//test/behaviour/resolution/framework/common",
-        "@graknlabs_graql//java:graql",
+        "@vaticle_typeql_lang_java//:typeql-lang",
     ],
 )
 

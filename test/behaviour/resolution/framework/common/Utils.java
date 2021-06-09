@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,15 +16,14 @@
  *
  */
 
-package grakn.core.test.behaviour.resolution.framework.common;
+package com.vaticle.typedb.core.test.behaviour.resolution.framework.common;
 
-import grakn.core.kb.server.Session;
-import grakn.core.kb.server.Transaction;
-import graql.lang.Graql;
-import graql.lang.pattern.Conjunction;
-import graql.lang.pattern.Pattern;
-import graql.lang.query.GraqlQuery;
-import graql.lang.statement.Statement;
+import com.vaticle.typedb.core.TypeDB.Session;
+import com.vaticle.typedb.core.TypeDB.Transaction;
+import com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type;
+import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.pattern.Conjunction;
+import com.vaticle.typeql.lang.pattern.Pattern;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -40,8 +39,8 @@ public class Utils {
         for (Path path : gqlPath) {
             String query = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
 
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-                tx.execute((GraqlQuery) Graql.parse(query));
+            try (Transaction tx = session.transaction(Type.WRITE)) {
+                tx.query().match(TypeQL.parseQuery(query).asMatch()).toList();
                 tx.commit();
             }
         }

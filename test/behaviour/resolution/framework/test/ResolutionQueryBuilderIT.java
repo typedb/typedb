@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,23 +16,23 @@
  *
  */
 
-package grakn.core.test.behaviour.resolution.framework.test;
+package com.vaticle.typedb.core.test.behaviour.resolution.framework.test;
 
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.server.Session;
-import grakn.core.kb.server.Transaction;
-import grakn.core.test.behaviour.resolution.framework.common.GraqlHelpers;
-import grakn.core.test.rule.GraknTestServer;
-import graql.lang.Graql;
-import graql.lang.query.GraqlGet;
-import graql.lang.statement.Statement;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.TypeDB.Session;
+import com.vaticle.typedb.core.TypeDB.Transaction;;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.TypeQLHelpers;
+import com.vaticle.typedb.core.test.rule.GraknTestServer;
+import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.query.TypeQLMatch;
+import com.vaticle.typeql.lang.statement.Statement;
 import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.Set;
 
-import static grakn.core.test.behaviour.resolution.framework.common.Utils.getStatements;
-import static grakn.core.test.behaviour.resolution.framework.test.LoadTest.loadTestStub;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.Utils.getStatements;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadTestStub;
 import static org.junit.Assert.assertEquals;
 
 public class ResolutionQueryBuilderIT {
@@ -42,7 +42,7 @@ public class ResolutionQueryBuilderIT {
 
     @Test
     public void testKeysStatementsAreGeneratedCorrectly() {
-        GraqlGet inferenceQuery = Graql.parse("match $transaction isa transaction, has currency $currency; get;");
+        TypeQLMatch inferenceQuery = TypeQL.parse("match $transaction isa transaction, has currency $currency;");
 
         Set<Statement> keyStatements;
 
@@ -50,13 +50,13 @@ public class ResolutionQueryBuilderIT {
 
             loadTestStub(session, "complex_recursion");
 
-            try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+            try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 ConceptMap answer = tx.execute(inferenceQuery).get(0);
-                keyStatements = GraqlHelpers.generateKeyStatements(answer.map());
+                keyStatements = TypeQLHelpers.generateKeyStatements(answer.map());
             }
         }
 
-        Set<Statement> expectedStatements = getStatements(Graql.parsePatternList(
+        Set<Statement> expectedStatements = getStatements(TypeQL.parsePatternList(
                 "$currency \"GBP\" isa currency;\n" +
                 "$transaction has currency \"GBP\";\n"
 

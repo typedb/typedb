@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2020 Grakn Labs
+# Copyright (C) 2021 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -15,14 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@graknlabs_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
     name = "load-test",
     srcs = ["LoadTest.java"],
     visibility = ["//visibility:public"],
     deps = [
-        "//kb/server",
+        "//:typedb",
         "//test/common:graql-test-util",
     ],
 )
@@ -43,10 +43,10 @@ java_test(
         "//test/behaviour/resolution/framework/test:load-test",
         "//test/rule:grakn-test-server",
         "//concept/answer",
-        "//kb/server",
+        "//:typedb",
 
-        # External dependencies from @graknlabs
-        "@graknlabs_graql//java:graql",
+        # External dependencies from @vaticle
+        "@vaticle_typeql_lang_java//:typeql-lang",
     ],
 )
 
@@ -63,8 +63,8 @@ java_test(
         "//test/behaviour/resolution/framework/resolve",
         "@maven//:com_google_guava_guava",
 
-        # External dependencies from @graknlabs
-        "@graknlabs_graql//java:graql",
+        # External dependencies from @vaticle
+        "@vaticle_typeql_lang_java//:typeql-lang",
     ],
 )
 
@@ -84,11 +84,11 @@ java_test(
         "//test/behaviour/resolution/framework/common",
         "//test/rule:grakn-test-server",
         "//test/behaviour/resolution/framework/test:load-test",
-        "//kb/server",
+        "//:typedb",
         "@maven//:com_google_guava_guava",
 
-        # External dependencies from @graknlabs
-        "@graknlabs_graql//java:graql",
+        # External dependencies from @vaticle
+        "@vaticle_typeql_lang_java//:typeql-lang",
     ],
 )
 
@@ -107,11 +107,11 @@ java_test(
         "//test/behaviour/resolution/framework/test:load-test",
         "//test/behaviour/resolution/framework/complete",
         "//test/rule:grakn-test-server",
-        "//kb/server",
-        "//kb/concept/api",
+        "//:typedb",
+        "//concept:concept",
 
-        # External dependencies from @graknlabs
-        "@graknlabs_graql//java:graql",
+        # External dependencies from @vaticle
+        "@vaticle_typeql_lang_java//:typeql-lang",
     ],
 )
 
@@ -133,10 +133,10 @@ java_test(
         "//test/rule:grakn-test-server",
         "//test/behaviour/resolution/framework/test:load-test",
         "//concept/answer",
-        "//kb/server",
+        "//:typedb",
 
-        # External dependencies from @graknlabs
-        "@graknlabs_graql//java:graql",
+        # External dependencies from @vaticle
+        "@vaticle_typeql_lang_java//:typeql-lang",
     ],
 )
 
@@ -157,10 +157,10 @@ java_test(
         "//test/behaviour/resolution/framework/test:load-test",
         "//test/behaviour/resolution/framework:resolution-lib",
         "//test/rule:grakn-test-server",
-        "//kb/server",
+        "//:typedb",
 
-        # External dependencies from @graknlabs
-        "@graknlabs_graql//java:graql",
+        # External dependencies from @vaticle
+        "@vaticle_typeql_lang_java//:typeql-lang",
     ],
 )
 

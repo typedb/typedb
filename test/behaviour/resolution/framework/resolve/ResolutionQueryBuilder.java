@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,32 +16,21 @@
  *
  */
 
-package grakn.core.test.behaviour.resolution.framework.resolve;
+package com.vaticle.typedb.core.test.behaviour.resolution.framework.resolve;
 
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.Explanation;
-import grakn.core.graql.reasoner.explanation.RuleExplanation;
-import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.server.Transaction;
-import grakn.core.test.behaviour.resolution.framework.common.ConjunctionFlatteningVisitor;
-import grakn.core.test.behaviour.resolution.framework.common.GraqlHelpers;
-import grakn.core.test.behaviour.resolution.framework.common.ResolutionConstraintException;
-import grakn.core.test.behaviour.resolution.framework.common.RuleResolutionBuilder;
-import grakn.core.test.behaviour.resolution.framework.common.StatementVisitor;
-import graql.lang.Graql;
-import graql.lang.pattern.Conjunction;
-import graql.lang.pattern.Pattern;
-import graql.lang.property.HasAttributeProperty;
-import graql.lang.property.IdProperty;
-import graql.lang.property.NeqProperty;
-import graql.lang.property.RelationProperty;
-import graql.lang.property.VarProperty;
-import graql.lang.query.GraqlGet;
-import graql.lang.statement.Statement;
-import graql.lang.statement.StatementAttribute;
-import graql.lang.statement.StatementRelation;
-import graql.lang.statement.Variable;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concept.Concept;
+import com.vaticle.typedb.core.TypeDB.Transaction;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.ConjunctionFlatteningVisitor;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.TypeQLHelpers;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.ResolutionConstraintException;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.RuleResolutionBuilder;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.StatementVisitor;
+import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.pattern.Conjunction;
+import com.vaticle.typeql.lang.pattern.Pattern;
+import com.vaticle.typeql.lang.query.TypeQLMatch;
+import com.vaticle.typedb.core.pattern.variable.Variable;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -62,10 +51,10 @@ public class ResolutionQueryBuilder {
     private Map<ConceptId, List<String>> varsForIds;
     private Map<String, String> replacementVars;
 
-    public List<GraqlGet> buildMatchGet(Transaction tx, GraqlGet query) {
+    public List<TypeQLMatch> buildMatchGet(Transaction tx, TypeQLMatch query) {
         List<ConceptMap> answers = tx.execute(query, true, true);
 
-        ArrayList<GraqlGet> resolutionQueries = new ArrayList<>();
+        ArrayList<TypeQLMatch> resolutionQueries = new ArrayList<>();
         for (ConceptMap answer : answers) {
             varsForIds = new HashMap<>();
             replacementVars = new HashMap<>();
@@ -77,8 +66,8 @@ public class ResolutionQueryBuilder {
                 Pattern rp = sv.visitPattern(p);
                 replacedResolutionPatterns.add(rp);
             }
-            final Conjunction<Pattern> conjunction = Graql.and(replacedResolutionPatterns);
-            resolutionQueries.add(Graql.match(flattener.visitPattern(conjunction)).get());
+            final Conjunction<Pattern> conjunction = TypeQL.and(replacedResolutionPatterns);
+            resolutionQueries.add(TypeQL.match(flattener.visitPattern(conjunction)).get());
         }
         return resolutionQueries;
     }
@@ -94,7 +83,7 @@ public class ResolutionQueryBuilder {
         Integer finalRuleResolutionIndex1 = ruleResolutionIndex;
 
         StatementVisitor statementVisitor = new StatementVisitor(p -> {
-            Statement withoutIds = removeIdProperties(GraqlHelpers.makeAnonVarsExplicit(p));
+            Statement withoutIds = removeIdProperties(TypeQLHelpers.makeAnonVarsExplicit(p));
             return withoutIds == null ? null : prefixVars(withoutIds, finalRuleResolutionIndex1);
         });
 
@@ -115,7 +104,7 @@ public class ResolutionQueryBuilder {
                 ruleResolutionIndex += 1;
                 Integer finalRuleResolutionIndex0 = ruleResolutionIndex;
 
-                StatementVisitor ruleStatementVisitor = new StatementVisitor(p -> prefixVars(GraqlHelpers.makeAnonVarsExplicit(p), finalRuleResolutionIndex0));
+                StatementVisitor ruleStatementVisitor = new StatementVisitor(p -> prefixVars(TypeQLHelpers.makeAnonVarsExplicit(p), finalRuleResolutionIndex0));
 
                 Pattern whenPattern = Objects.requireNonNull(((RuleExplanation) explanation).getRule().when());
                 whenPattern = ruleStatementVisitor.visitPattern(whenPattern);
@@ -127,21 +116,21 @@ public class ResolutionQueryBuilder {
 
                 String ruleLabel = ((RuleExplanation)explanation).getRule().label().toString();
                 resolutionPatterns.add(ruleResolutionBuilder.ruleResolutionConjunction(tx, whenPattern, thenPattern, ruleLabel));
-                resolutionPatterns.add(Graql.and(buildResolutionPattern(tx, explAns, ruleResolutionIndex)));
+                resolutionPatterns.add(TypeQL.and(buildResolutionPattern(tx, explAns, ruleResolutionIndex)));
             } else {
                 if (explanation.isLookupExplanation()) {
                     for (final Statement statement : answer.getPattern().statements()) {
                         if (statement instanceof StatementRelation) {
-                            Pattern p = Graql.not(prefixVars(GraqlHelpers.makeAnonVarsExplicit(Graql.var().isa("isa-property"))
+                            Pattern p = TypeQL.not(prefixVars(TypeQLHelpers.makeAnonVarsExplicit(TypeQL.var().isa("isa-property"))
                                     .rel(statement.var().name())
                                     .has("inferred", true), ruleResolutionIndex));
                             resolutionPatterns.add(p);
-                            Statement s = Graql.var().isa("relation-property")
+                            Statement s = TypeQL.var().isa("relation-property")
                                     .has("inferred", true);
                             for (Variable v : statement.variables()) {
                                 s = s.rel(v.name());
                             }
-                            Pattern p2 = Graql.not(prefixVars(GraqlHelpers.makeAnonVarsExplicit(s), ruleResolutionIndex));
+                            Pattern p2 = TypeQL.not(prefixVars(TypeQLHelpers.makeAnonVarsExplicit(s), ruleResolutionIndex));
                             resolutionPatterns.add(p2);
                         } /* else {
                             // TODO: support attribute ownerships?
@@ -171,7 +160,7 @@ public class ResolutionQueryBuilder {
             if (concept.isAttribute()) {
 
                 String typeLabel = concept.asAttribute().type().label().toString();
-                Statement statement = Graql.var(var).isa(typeLabel);
+                Statement statement = TypeQL.var(var).isa(typeLabel);
                 StatementAttribute s = null;
 
                 Object attrValue = concept.asAttribute().value();
@@ -267,7 +256,7 @@ public class ResolutionQueryBuilder {
             } else if (prop instanceof NeqProperty) {
                 NeqProperty neqProp = (NeqProperty) prop;
                 String newComparedVarName = nameMapper.apply(neqProp.statement().var().name());
-                newProperties.add(new NeqProperty(Graql.var(newComparedVarName)));
+                newProperties.add(new NeqProperty(TypeQL.var(newComparedVarName)));
             } else {
                 newProperties.add(prop);
             }

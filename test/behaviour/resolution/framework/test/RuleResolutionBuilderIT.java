@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,15 +16,15 @@
  *
  */
 
-package grakn.core.test.behaviour.resolution.framework.test;
+package com.vaticle.typedb.core.test.behaviour.resolution.framework.test;
 
-import grakn.core.kb.server.Session;
-import grakn.core.kb.server.Transaction;
-import grakn.core.test.behaviour.resolution.framework.common.RuleResolutionBuilder;
-import grakn.core.test.rule.GraknTestServer;
-import graql.lang.Graql;
-import graql.lang.pattern.Pattern;
-import graql.lang.statement.Statement;
+import com.vaticle.typedb.core.TypeDB.Session;
+import com.vaticle.typedb.core.TypeDB.Transaction;;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.RuleResolutionBuilder;
+import com.vaticle.typedb.core.test.rule.GraknTestServer;
+import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.pattern.Pattern;
+import com.vaticle.typeql.lang.statement.Statement;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -32,8 +32,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
-import static grakn.core.test.behaviour.resolution.framework.common.Utils.getStatements;
-import static grakn.core.test.behaviour.resolution.framework.test.LoadTest.loadTestStub;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.Utils.getStatements;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadTestStub;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -47,9 +47,9 @@ public class RuleResolutionBuilderIT {
 
             loadTestStub(session, "basic_recursion");
 
-            try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-                Statement statement = getOnlyElement(Graql.parsePattern("$company has name $name;").statements());
-                Statement expectedPropsStatement = getOnlyElement(Graql.parsePattern("$x0 (owned: $name, owner: $company) isa has-attribute-property;").statements());
+            try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
+                Statement statement = getOnlyElement(TypeQL.parsePattern("$company has name $name;").statements());
+                Statement expectedPropsStatement = getOnlyElement(TypeQL.parsePattern("$x0 (owned: $name, owner: $company) isa has-attribute-property;").statements());
                 Statement propsStatement = getOnlyElement(new RuleResolutionBuilder().statementToResolutionProperties(tx, statement, null).values());
                 assertEquals(expectedPropsStatement, propsStatement);
             }
@@ -62,8 +62,8 @@ public class RuleResolutionBuilderIT {
 
             loadTestStub(session, "basic_recursion");
 
-            try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-                Statement statement = getOnlyElement(Graql.parsePattern("$company has name \"Apple\";").statements());
+            try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
+                Statement statement = getOnlyElement(TypeQL.parsePattern("$company has name \"Apple\";").statements());
                 String regex = "^\\$x0 \\(owned: \\$\\d+, owner: \\$company\\) isa has-attribute-property;$";
                 Statement propsStatement = getOnlyElement(new RuleResolutionBuilder().statementToResolutionProperties(tx, statement, null).values());
                 assertTrue(propsStatement.toString().matches(regex));
@@ -77,9 +77,9 @@ public class RuleResolutionBuilderIT {
 
             loadTestStub(session, "complex_recursion");
 
-            try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-                Statement statement = getOnlyElement(Graql.parsePattern("$locates (locates_located: $transaction, locates_location: $country);").statements());
-                Set<Statement> expectedPropsStatements = getStatements(Graql.parsePatternList("" +
+            try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
+                Statement statement = getOnlyElement(TypeQL.parsePattern("$locates (locates_located: $transaction, locates_location: $country);").statements());
+                Set<Statement> expectedPropsStatements = getStatements(TypeQL.parsePatternList("" +
                         "$x0 (rel: $locates, roleplayer: $transaction) isa relation-property, has role-label \"locates_located\", has role-label \"role\";" +
                         "$x1 (rel: $locates, roleplayer: $country) isa relation-property, has role-label \"locates_location\", has role-label \"role\";"
                 ));
@@ -95,10 +95,10 @@ public class RuleResolutionBuilderIT {
 
             loadTestStub(session, "basic_recursion");
 
-            try (Transaction tx = session.transaction(Transaction.Type.READ)) {
-                Statement statement = getOnlyElement(Graql.parsePattern("$company isa company;").statements());
+            try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
+                Statement statement = getOnlyElement(TypeQL.parsePattern("$company isa company;").statements());
                 Statement propStatement = getOnlyElement(new RuleResolutionBuilder().statementToResolutionProperties(tx, statement, null).values());
-                Statement expectedPropStatement = getOnlyElement(Graql.parsePattern("$x0 (instance: $company) isa isa-property, has type-label \"company\", has type-label \"entity\";").statements());
+                Statement expectedPropStatement = getOnlyElement(TypeQL.parsePattern("$x0 (instance: $company) isa isa-property, has type-label \"company\", has type-label \"entity\";").statements());
                 assertEquals(expectedPropStatement, propStatement);
             }
         }
@@ -107,19 +107,19 @@ public class RuleResolutionBuilderIT {
     @Test
     public void testStatementsForRuleApplication() {
 
-        Pattern when = Graql.parsePattern("" +
+        Pattern when = TypeQL.parsePattern("" +
                 "{ $country isa country; " +
                 "$transaction isa transaction;" +
                 "$country has currency $currency; " +
                 "$locates (locates_located: $transaction, locates_location: $country) isa locates; };"
         );
 
-        Pattern then = Graql.parsePattern("" +
+        Pattern then = TypeQL.parsePattern("" +
                 "{ $transaction has currency $currency; };"
         );
 
         // TODO: The ordering of role-labels and type-labels seems a bit arbitrary.
-        Pattern expected = Graql.parsePattern("" +
+        Pattern expected = TypeQL.parsePattern("" +
                 "{ $x0 (owned: $currency, owner: $country) isa has-attribute-property; " +
                 // TODO Should we also have an isa-property for $currency?
                 "$x1 (instance: $country) isa isa-property, has type-label \"location\", has type-label \"entity\", has type-label \"country\"; " +
@@ -135,7 +135,7 @@ public class RuleResolutionBuilderIT {
 
             loadTestStub(session, "complex_recursion");
 
-            try (Transaction tx = session.transaction(Transaction.Type.READ)) {
+            try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 Pattern resolution = new RuleResolutionBuilder().ruleResolutionConjunction(tx, when, then, "transaction-currency-is-that-of-the-country");
                 assertEquals(expected, resolution);
             }

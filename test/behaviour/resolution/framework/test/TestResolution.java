@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,19 +16,19 @@
  *
  */
 
-package grakn.core.test.behaviour.resolution.framework.test;
+package com.vaticle.typedb.core.test.behaviour.resolution.framework.test;
 
-import grakn.core.kb.server.Session;
-import grakn.core.kb.server.Transaction;
-import grakn.core.test.behaviour.resolution.framework.Resolution;
-import grakn.core.test.rule.GraknTestServer;
-import graql.lang.Graql;
-import graql.lang.query.GraqlGet;
+import com.vaticle.typedb.core.TypeDB.Session;
+import com.vaticle.typedb.core.TypeDB.Transaction;;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.Resolution;
+import com.vaticle.typedb.core.test.rule.GraknTestServer;
+import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.query.TypeQLMatch;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static grakn.core.test.behaviour.resolution.framework.test.LoadTest.loadTestStub;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadTestStub;
 import static junit.framework.TestCase.assertNotNull;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
@@ -39,7 +39,7 @@ public class TestResolution {
     @ClassRule
     public static final GraknTestServer graknTestServer = new GraknTestServer();
 
-    private void resolutionHappyPathTest(String stubName, GraqlGet inferenceQuery) {
+    private void resolutionHappyPathTest(String stubName, TypeQLMatch inferenceQuery) {
         Session completionSession = graknTestServer.sessionWithNewKeyspace();
         loadTestStub(completionSession, stubName);
 
@@ -57,21 +57,21 @@ public class TestResolution {
     @Test
     @Ignore
     public void testResolutionPassesForTransitivity() {
-        GraqlGet inferenceQuery = Graql.parse("" +
+        TypeQLMatch inferenceQuery = TypeQL.parse("" +
                 "match $lh (location-hierarchy_superior: $continent, " +
                 "location-hierarchy_subordinate: $area) isa location-hierarchy; " +
                 "$continent isa continent; " +
-                "$area isa area; get;").asGet();
+                "$area isa area;").asMatch();
         resolutionHappyPathTest("transitivity", inferenceQuery);
     }
 
     @Test
     public void testResolutionThrowsForTransitivityWhenRuleIsNotTriggered() {
-        GraqlGet inferenceQuery = Graql.parse("" +
+        TypeQLMatch inferenceQuery = TypeQL.parse("" +
                 "match $lh (location-hierarchy_superior: $continent, " +
                 "location-hierarchy_subordinate: $area) isa location-hierarchy; " +
                 "$continent isa continent; " +
-                "$area isa area; get;").asGet();
+                "$area isa area;").asMatch();
 
 
         Session completionSession = graknTestServer.sessionWithNewKeyspace();
@@ -81,8 +81,8 @@ public class TestResolution {
         loadTestStub(testSession, "transitivity");
 
         // Undefine a rule in the keyspace under test such that the expected facts will not be inferred
-        Transaction tx = testSession.transaction(Transaction.Type.WRITE);
-        tx.execute(Graql.undefine(Graql.type("location-hierarchy-transitivity").sub("rule")));
+        Transaction tx = testSession.transaction(Arguments.Transaction.Type.WRITE);
+        tx.execute(TypeQL.undefine(TypeQL.type("location-hierarchy-transitivity").sub("rule")));
         tx.commit();
 
         Resolution resolution_test = new Resolution(completionSession, testSession);
@@ -119,11 +119,11 @@ public class TestResolution {
 
     @Test
     public void testResolutionThrowsForTransitivityWhenRuleTriggersTooOften() {
-        GraqlGet inferenceQuery = Graql.parse("" +
+        TypeQLMatch inferenceQuery = TypeQL.parse("" +
                 "match $lh (location-hierarchy_superior: $continent, " +
                 "location-hierarchy_subordinate: $area) isa location-hierarchy; " +
                 "$continent isa continent; " +
-                "$area isa area; get;").asGet();
+                "$area isa area;").asMatch();
 
 
         Session completionSession = graknTestServer.sessionWithNewKeyspace();
@@ -133,9 +133,9 @@ public class TestResolution {
         loadTestStub(testSession, "transitivity");
 
         // Undefine a rule in the keyspace under test such that the expected facts will not be inferred
-        Transaction tx = testSession.transaction(Transaction.Type.WRITE);
-        tx.execute(Graql.undefine(Graql.type("location-hierarchy-transitivity").sub("rule")));
-        tx.execute(Graql.define(Graql.parsePattern("location-hierarchy-transitivity sub rule,\n" +
+        Transaction tx = testSession.transaction(Arguments.Transaction.Type.WRITE);
+        tx.execute(TypeQL.undefine(TypeQL.type("location-hierarchy-transitivity").sub("rule")));
+        tx.execute(TypeQL.define(TypeQL.parsePattern("location-hierarchy-transitivity sub rule,\n" +
                 "when {\n" +
                 "  ($a, $b) isa location-hierarchy;\n" +
                 "  ($b, $c) isa location-hierarchy;\n" +
@@ -166,11 +166,11 @@ public class TestResolution {
 
     @Test
     public void testResolutionThrowsForTransitivityWhenRuleTriggersTooOftenAndResultCountIsIncorrect() {
-        GraqlGet inferenceQuery = Graql.parse("" +
+        TypeQLMatch inferenceQuery = TypeQL.parse("" +
                 "match $lh ($continent, " +
                 "$area) isa location-hierarchy; " +
                 "$continent isa continent; " +
-                "$area isa area; get;").asGet();
+                "$area isa area;").asMatch();
 
 
         Session completionSession = graknTestServer.sessionWithNewKeyspace();
@@ -180,9 +180,9 @@ public class TestResolution {
         loadTestStub(testSession, "transitivity");
 
         // Undefine a rule in the keyspace under test such that the expected facts will not be inferred
-        Transaction tx = testSession.transaction(Transaction.Type.WRITE);
-        tx.execute(Graql.undefine(Graql.type("location-hierarchy-transitivity").sub("rule")));
-        tx.execute(Graql.define(Graql.parsePattern("location-hierarchy-transitivity sub rule,\n" +
+        Transaction tx = testSession.transaction(Arguments.Transaction.Type.WRITE);
+        tx.execute(TypeQL.undefine(TypeQL.type("location-hierarchy-transitivity").sub("rule")));
+        tx.execute(TypeQL.define(TypeQL.parsePattern("location-hierarchy-transitivity sub rule,\n" +
                 "when {\n" +
                 "  ($a, $b) isa location-hierarchy;\n" +
                 "  ($b, $c) isa location-hierarchy;\n" +
@@ -220,13 +220,13 @@ public class TestResolution {
 
     @Test
     public void testResolutionPassesForTwoRecursiveRules() {
-        GraqlGet inferenceQuery = Graql.parse("match $transaction has currency $currency; get;").asGet();
+        TypeQLMatch inferenceQuery = TypeQL.parse("match $transaction has currency $currency;").asMatch();
         resolutionHappyPathTest("complex_recursion", inferenceQuery);
     }
 
     @Test
     public void testBasicRecursion() {
-        GraqlGet inferenceQuery = Graql.parse("match $com isa company, has is-liable $lia; get;").asGet();
+        TypeQLMatch inferenceQuery = TypeQL.parse("match $com isa company, has is-liable $lia;").asMatch();
         resolutionHappyPathTest("basic_recursion", inferenceQuery);
     }
 }

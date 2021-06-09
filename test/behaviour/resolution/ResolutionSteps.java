@@ -61,7 +61,7 @@ public class ResolutionSteps {
 
     @When("materialised database is completed")
     public void materialised_database_is_completed() {
-        // TODO
+        resolution = Resolution(materialisedSession(), reasonedSession());
     }
 
     @Then("for typeql query")
@@ -107,12 +107,14 @@ public class ResolutionSteps {
 
     @Then("all answers are correct in reasoned database")
     public void reasoned_database_all_answers_are_correct() {
-        // TODO
+        // TODO: refactor these into a single method that compares the set of expected answers to the actual answers
+        resolution.testQuery(queryToTest);
+        resolution.testResolution(queryToTest);
     }
 
     @Then("materialised and reasoned databases are the same size")
     public void databases_are_the_same_size() {
-        // TODO
+        resolution.testCompleteness();
     }
 
     private void typeql_query(String queryStatements) {

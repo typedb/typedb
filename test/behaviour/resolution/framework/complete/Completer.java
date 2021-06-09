@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Grakn Labs
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,18 +16,19 @@
  *
  */
 
-package grakn.core.test.behaviour.resolution.framework.complete;
+package com.vaticle.typedb.core.test.behaviour.resolution.framework.complete;
 
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.server.Session;
-import grakn.core.kb.server.Transaction;
-import grakn.core.test.behaviour.resolution.framework.common.GraqlHelpers;
-import grakn.core.test.behaviour.resolution.framework.common.NegationRemovalVisitor;
-import grakn.core.test.behaviour.resolution.framework.common.RuleResolutionBuilder;
-import grakn.core.test.behaviour.resolution.framework.common.StatementVisitor;
-import graql.lang.Graql;
-import graql.lang.pattern.Conjunction;
-import graql.lang.pattern.Pattern;
+import com.vaticle.typedb.core.TypeDB.Session;
+import com.vaticle.typedb.core.TypeDB.Transaction;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.NegationRemovalVisitor;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.RuleResolutionBuilder;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.StatementVisitor;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.TypeQLHelpers;
+import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.pattern.Conjunction;
+import com.vaticle.typeql.lang.pattern.Pattern;
 
 import java.util.HashSet;
 import java.util.List;
@@ -41,16 +42,16 @@ public class Completer {
     private int numInferredConcepts;
     private final Session session;
     private Set<Rule> rules;
-    private RuleResolutionBuilder ruleResolutionBuilder = new RuleResolutionBuilder();
+    private final RuleResolutionBuilder ruleResolutionBuilder = new RuleResolutionBuilder();
 
     public Completer(Session session) {
         this.session = session;
     }
 
-    public void loadRules(Set<grakn.core.kb.concept.api.Rule> graknRules) {
+    public void loadRules(Set<Rule> typeDBRules) {
         Set<Rule> rules = new HashSet<>();
-        for (grakn.core.kb.concept.api.Rule graknRule : graknRules) {
-            rules.add(new Rule(Objects.requireNonNull(graknRule.when()), Objects.requireNonNull(graknRule.then()), graknRule.label().toString()));
+        for (Rule typeDBRule : typeDBRules) {
+            rules.add(new Rule(Objects.requireNonNull(typeDBRule.when()), Objects.requireNonNull(typeDBRule.then()), typeDBRule.label().toString()));
         }
         this.rules = rules;
     }
@@ -60,7 +61,7 @@ public class Completer {
 
         while (allRulesRerun) {
             allRulesRerun = false;
-            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
 
                 for (Rule rule : rules) {
                     allRulesRerun = allRulesRerun | completeRule(tx, rule);
@@ -81,7 +82,7 @@ public class Completer {
         Set<Conjunction<Pattern>> disjunctiveWhens = rule.when.getNegationDNF().getPatterns();
         for (Conjunction<Pattern> when : disjunctiveWhens) {
             // Get all the places where the `when` of the rule is satisfied, but the `then` is not
-            List<ConceptMap> inferredConcepts = tx.execute(Graql.match(when, Graql.not(rule.then)).insert(rule.then.statements()));
+            List<ConceptMap> inferredConcepts = tx.query().match(TypeQL.match(when, TypeQL.not(rule.then)).insert(rule.then.statements()));
             if (inferredConcepts.isEmpty()) {
                 continue;
             }
@@ -94,7 +95,7 @@ public class Completer {
             numInferredConcepts += inferredConcepts.size();
 
             // Record how the inference was made
-            List<ConceptMap> inserted = tx.execute(Graql.match(rule.when, rule.then, Graql.not(ruleResolutionConjunction)).insert(ruleResolutionConjunction.statements()));
+            List<ConceptMap> inserted = tx.query().match(TypeQL.match(rule.when, rule.then, TypeQL.not(ruleResolutionConjunction)).insert(ruleResolutionConjunction.statements()));
             assert inserted.size() >= 1;
             foundResult.set(true);
         }
@@ -107,7 +108,7 @@ public class Completer {
         private String label;
 
         Rule(Pattern when, Pattern then, String label) {
-            StatementVisitor visitor = new StatementVisitor(GraqlHelpers::makeAnonVarsExplicit);
+            StatementVisitor visitor = new StatementVisitor(TypeQLHelpers::makeAnonVarsExplicit);
             this.when = visitor.visitPattern(when);
             this.then = visitor.visitPattern(then);
             this.label = label;
