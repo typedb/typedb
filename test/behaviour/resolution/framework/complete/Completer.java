@@ -79,7 +79,7 @@ public class Completer {
         //  completion schema. These results should be filtered out.
 
         // Use the DNF so that we can know each `when` if free of disjunctions. Disjunctions in the `when` will otherwise complicate things significantly
-        Set<Conjunction<Pattern>> disjunctiveWhens = rule.when.getNegationDNF().getPatterns();
+        Set<Conjunction<Pattern>> disjunctiveWhens = rule.when.normalise().patterns();
         for (Conjunction<Pattern> when : disjunctiveWhens) {
             // Get all the places where the `when` of the rule is satisfied, but the `then` is not
             List<ConceptMap> inferredConcepts = tx.query().match(TypeQL.match(when, TypeQL.not(rule.then)).insert(rule.then.variables()));
