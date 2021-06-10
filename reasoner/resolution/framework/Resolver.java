@@ -139,14 +139,14 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
     protected FunctionalIterator<ConceptMap> traversalIterator(Conjunction conjunction, ConceptMap bounds) {
         return compatibleBounds(conjunction, bounds).map(c -> {
             Traversal traversal = boundTraversal(conjunction.traversal(), c);
-            return traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
+            return traversalEngine.iterator(traversal).map(vm -> conceptMgr.conceptMap(vm, false));
         }).orElse(Iterators.empty());
     }
 
     protected Producer<ConceptMap> traversalProducer(Conjunction conjunction, ConceptMap bounds, int parallelisation) {
         return compatibleBounds(conjunction, bounds).map(b -> {
             Traversal traversal = boundTraversal(conjunction.traversal(), b);
-            return traversalEngine.producer(traversal, Either.first(INCREMENTAL), parallelisation).map(conceptMgr::conceptMap);
+            return traversalEngine.producer(traversal, Either.first(INCREMENTAL), parallelisation).map(vm -> conceptMgr.conceptMap(vm, false));
         }).orElse(Producers.empty());
     }
 

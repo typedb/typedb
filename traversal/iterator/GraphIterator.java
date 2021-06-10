@@ -331,17 +331,14 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     public VertexMap next() {
         if (!hasNext()) throw new NoSuchElementException();
         state = State.EMPTY;
-        return toPinnedVertexMap(answer);
+        return toVertexMap(answer);
     }
 
-    private VertexMap toPinnedVertexMap(Map<Identifier, Vertex<?, ?>> answer) {
+    private VertexMap toVertexMap(Map<Identifier, Vertex<?, ?>> answer) {
         return VertexMap.of(
                 answer.entrySet().stream()
                         .filter(e -> e.getKey().isRetrievable() && filter.contains(e.getKey().asVariable().asRetrievable()))
-                        .collect(toMap(e -> e.getKey().asVariable().asRetrievable(), e -> {
-                            if (e.getValue().isThing()) return graphMgr.data().get(e.getValue().asThing().iid());
-                            else return e.getValue();
-                        }))
+                        .collect(toMap(e -> e.getKey().asVariable().asRetrievable(), Map.Entry::getValue))
         );
     }
 
