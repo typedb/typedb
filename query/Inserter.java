@@ -36,6 +36,8 @@ import com.vaticle.typedb.core.pattern.constraint.thing.IsaConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.ValueConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.LabelConstraint;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.pattern.variable.TypeVariable;
+import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.reasoner.Reasoner;
 import com.vaticle.typedb.core.traversal.common.Identifier;
@@ -94,9 +96,7 @@ public class Inserter {
     public static Inserter create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLInsert query, Context.Query context) {
         try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             VariableRegistry registry = VariableRegistry.createFromThings(query.variables());
-            iterate(registry.types()).filter(t -> !t.reference().isLabel()).forEachRemaining(t -> {
-                throw TypeDBException.of(ILLEGAL_TYPE_VARIABLE_IN_INSERT, t.reference());
-            });
+            registry.variables().forEach(Inserter::validate);
 
             Matcher matcher = null;
             if (query.match().isPresent()) {
@@ -108,6 +108,26 @@ public class Inserter {
             }
 
             return new Inserter(matcher, conceptMgr, registry.things(), context);
+        }
+    }
+
+    public static void validate(Variable var) {
+        try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "validate")) {
+            if (var.isType()) validate(var.asType());
+            else validate(var.asThing());
+        }
+    }
+
+    private static void validate(TypeVariable var) {
+        if (!var.reference().isLabel()) throw TypeDBException.of(ILLEGAL_TYPE_VARIABLE_IN_INSERT, var.reference());
+    }
+
+    private static void validate(ThingVariable var) {
+        Identifier id = var.id();
+        if (var.iid().isPresent()) {
+            throw TypeDBException.of(THING_IID_NOT_INSERTABLE, id, var.iid().get());
+        } else if (!var.is().isEmpty()) {
+            throw TypeDBException.of(ILLEGAL_IS_CONSTRAINT, var, var.is().iterator().next());
         }
     }
 
@@ -176,7 +196,6 @@ public class Inserter {
 
                 if (id.isName() && (thing = inserted.get(id)) != null) return thing;
                 else if (matchedContains(var) && var.constraints().isEmpty()) return matchedGet(var);
-                else validate(var);
 
                 if (matchedContains(var)) {
                     thing = matchedGet(var);
@@ -191,17 +210,6 @@ public class Inserter {
                 if (var.relation().isPresent()) insertRolePlayers(thing.asRelation(), var);
                 if (!var.has().isEmpty()) insertHas(thing, var.has());
                 return thing;
-            }
-        }
-
-        private void validate(ThingVariable var) {
-            try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "validate")) {
-                Identifier id = var.id();
-                if (var.iid().isPresent()) {
-                    throw TypeDBException.of(THING_IID_NOT_INSERTABLE, id, var.iid().get());
-                } else if (!var.is().isEmpty()) {
-                    throw TypeDBException.of(ILLEGAL_IS_CONSTRAINT, var, var.is().iterator().next());
-                }
             }
         }
 
