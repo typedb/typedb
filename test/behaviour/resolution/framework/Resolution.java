@@ -29,6 +29,7 @@ import com.vaticle.typeql.lang.query.TypeQLMatch;
 import com.vaticle.typeql.lang.query.TypeQLQuery;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -97,8 +98,10 @@ public class Resolution {
      * @return filtered stream of answers
      */
     public static Stream<ConceptMap> filterCompletionSchema(Stream<ConceptMap> answerStream) {
+        Set<String> completionSchemaTypes =iterate(SchemaManager.CompletionSchemaType.values())
+                .map(SchemaManager.CompletionSchemaType::toString).toSet();
         return answerStream.filter(a -> iterate(a.concepts().values())
-                .noneMatch(concept -> COMPLETION_SCHEMA_TYPES
+                .noneMatch(concept -> completionSchemaTypes
                         .contains(concept.asThing().getType().getLabel().toString())));
     }
 

@@ -24,47 +24,78 @@ import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashSet;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.Utils.loadGqlFile;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaRole.INSTANCE;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaRole.OWNED;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaRole.OWNER;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaRole.REL;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaRole.ROLEPLAYER;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaType.HAS_ATTRIBUTE_PROPERTY;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaType.ISA_PROPERTY;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaType.RELATION_PROPERTY;
 
 
 public class SchemaManager {
     private static final Path SCHEMA_PATH = Paths.get("test", "behaviour", "resolution", "framework", "complete", "completion_schema.gql").toAbsolutePath();
 
-    // TODO: Use Enums
-    public static final HashSet<String> COMPLETION_SCHEMA_TYPES = new HashSet<String>() {
-        {
-            // Concept
-            add("thing");
+    public enum CompletionSchemaType {
+        // Relations
+        VAR_PROPERTY("var-property"),
+        ISA_PROPERTY("isa-property"),
+        HAS_ATTRIBUTE_PROPERTY("has-attribute-property"),
+        RELATION_PROPERTY("relation-property"),
+        RESOLUTION("resolution"),
 
-            // Entity
-            add("entity");
+        // Attributes
+        LABEL("label"),
+        RULE_LABEL("rule-label"),
+        TYPE_LABEL("type-label"),
+        ROLE_LABEL("role-label"),
+        INFERRED("inferred");
 
-            // Relation
-            add("relation");
-            add("var-property");
-            add("isa-property");
-            add("has-attribute-property");
-            add("relation-property");
-            add("resolution");
+        private final String name;
 
-            // Attribute
-            add("attribute");
-            add("label");
-            add("rule-label");
-            add("type-label");
-            add("role-label");
-            add("inferred");
+        CompletionSchemaType(String name) {
+            this.name = name;
         }
-    };
+
+        @Override
+        public String toString() {
+            return name;
+        }
+    }
+
+    public enum CompletionSchemaRole {
+        INSTANCE("instance"),
+        OWNER("owner"),
+        OWNED("owned"),
+        ROLEPLAYER("roleplayer"),
+        REL("rel");
+
+        private final String label;
+
+        CompletionSchemaRole(String label) {
+            this.label = label;
+        }
+
+        public String label() {
+            return label;
+        }
+
+        @Override
+        public String toString() {
+            return label;
+        }
+    }
 
     public static void undefineAllRules(Session session) {
         try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -94,16 +125,20 @@ public class SchemaManager {
     }
 
     public static void connectCompletionSchema(Session session) {
+        // TODO: Check that the user hasn't defined anything that conflicts with the CompletionSchema
         try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-            RoleType instanceRole = getRole(tx, "isa-property:instance");
-            RoleType ownerRole = getRole(tx, "has-attribute-property:owner");
-            RoleType ownedRole = getRole(tx, "has-attribute-property:owned");
-            RoleType roleplayerRole = getRole(tx, "relation-property:roleplayer");
-            RoleType relationRole = getRole(tx, "relation-property:rel");
-            
-            TypeQLMatch typesToConnectQuery = TypeQL.match(TypeQL.var("x").sub("thing"));
+            RoleType instanceRole = getRole(tx, ISA_PROPERTY + ":" + INSTANCE);
+            RoleType ownerRole = getRole(tx, HAS_ATTRIBUTE_PROPERTY + ":" + OWNER);
+            RoleType ownedRole = getRole(tx, HAS_ATTRIBUTE_PROPERTY + ":" + OWNED);
+            RoleType roleplayerRole = getRole(tx, RELATION_PROPERTY + ":" + ROLEPLAYER);
+            RoleType relationRole = getRole(tx, RELATION_PROPERTY + ":" + REL);
+            Set<String> completionSchemaTypes =
+                    iterate(CompletionSchemaType.values()).map(CompletionSchemaType::toString).toSet();
+
+            TypeQLMatch typesToConnectQuery = TypeQL.match(TypeQL.var("x").sub(TypeQLToken.Type.THING.toString()));
+
             tx.query().match(typesToConnectQuery).map(ans -> ans.get("x").asThingType()).forEachRemaining(type -> {
-                if (COMPLETION_SCHEMA_TYPES.contains(type.getLabel().toString())) return;
+                if (completionSchemaTypes.contains(type.getLabel().toString())) return;  // TODO: Why do we need to do this? Surely we should throw if anything
                 type.setPlays(instanceRole);
                 type.setPlays(ownerRole);
                 type.setPlays(roleplayerRole);
