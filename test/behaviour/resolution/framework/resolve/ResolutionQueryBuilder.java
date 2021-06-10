@@ -57,7 +57,6 @@ public class ResolutionQueryBuilder {
         for (ConceptMap answer : answers) {
             varsForIds = new HashMap<>();
             replacementVars = new HashMap<>();
-            PatternVisitor.ConjunctionFlatteningVisitor flattener = new PatternVisitor.ConjunctionFlatteningVisitor();
             final LinkedHashSet<Pattern> resolutionPatterns = buildResolutionPattern(tx, answer, 0);
             final LinkedHashSet<Pattern> replacedResolutionPatterns = new LinkedHashSet<>();
             for (Pattern p : resolutionPatterns) {
@@ -66,7 +65,7 @@ public class ResolutionQueryBuilder {
                 replacedResolutionPatterns.add(rp);
             }
             final Conjunction<Pattern> conjunction = TypeQL.and(replacedResolutionPatterns);
-            resolutionQueries.add(TypeQL.match(flattener.visitPattern(conjunction)));
+            resolutionQueries.add(TypeQL.match(conjunction));
         }
         return resolutionQueries;
     }

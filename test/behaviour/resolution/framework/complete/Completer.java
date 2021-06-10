@@ -86,7 +86,7 @@ public class Completer {
             // We already know that the rule doesn't contain any disjunctions as we previously used negationDNF,
             // now we make sure negation blocks are removed, so that we know it must be a conjunct set of variables
             PatternVisitor.NegationRemovalVisitor negationRemover = new PatternVisitor.NegationRemovalVisitor();
-            Pattern ruleResolutionConjunction = negationRemover.visitPattern(ruleResolutionBuilder.ruleResolutionConjunction(tx, rule.when, rule.then, rule.label));
+            Pattern ruleResolutionConjunction = negationRemover.visitConjunction(ruleResolutionBuilder.ruleResolutionConjunction(tx, rule.when, rule.then, rule.label));
 
             // Record how the inference was made
             List<ConceptMap> inserted = tx.query().match(TypeQL.match(rule.when, rule.then, TypeQL.not(ruleResolutionConjunction)).insert(ruleResolutionConjunction.variables()));
@@ -97,14 +97,14 @@ public class Completer {
     }
 
     private static class Rule {
-        private final Pattern when;
-        private final Pattern then;
-        private String label;
+        private final com.vaticle.typedb.core.pattern.Conjunction when;
+        private final com.vaticle.typedb.core.pattern.Conjunction then;
+        private final String label;
 
-        Rule(Pattern when, Pattern then, String label) {
+        Rule(com.vaticle.typedb.core.pattern.Conjunction when, com.vaticle.typedb.core.pattern.Conjunction then, String label) {
             PatternVisitor.VariableVisitor visitor = new PatternVisitor.VariableVisitor(TypeQLHelpers::makeAnonVarsExplicit);
-            this.when = visitor.visitPattern(when);
-            this.then = visitor.visitPattern(then);
+            this.when = visitor.visitConjunction(when);
+            this.then = visitor.visitConjunction(then);
             this.label = label;
         }
     }

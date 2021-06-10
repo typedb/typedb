@@ -18,105 +18,69 @@
 
 package com.vaticle.typedb.core.test.behaviour.resolution.framework.common;
 
-import com.vaticle.typeql.lang.pattern.Conjunction;
-import com.vaticle.typeql.lang.pattern.Disjunction;
-import com.vaticle.typeql.lang.pattern.Negation;
-import com.vaticle.typeql.lang.pattern.Pattern;
-import com.vaticle.typeql.lang.pattern.variable.BoundVariable;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.pattern.Negation;
+import com.vaticle.typedb.core.pattern.variable.Variable;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-import static com.google.common.collect.Iterables.getOnlyElement;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public abstract class PatternVisitor {
-    public Pattern visitPattern(Pattern pattern) {
-        if (pattern.isVariable()) {
-            return visitVariable(pattern.asVariable());
-        } else if (pattern.isConjunction()) {
-            return visitConjunction((Conjunction<? extends Pattern>) pattern);
-        } else if (pattern.isNegation()) {
-            return visitNegation((Negation<? extends Pattern>) pattern);
-        } else if (pattern.isDisjunction()) {
-            return visitDisjunction((Disjunction<? extends Pattern>) pattern);
-        }
-        throw new UnsupportedOperationException();
+
+    private Disjunction visitDisjunction(Disjunction disjunction) {
+        return new Disjunction(iterate(disjunction.conjunctions()).map(this::visitConjunction).toList());
     }
 
-    Pattern visitVariable(BoundVariable pattern) {
+    public Conjunction visitConjunction(Conjunction conjunction) {
+        return new Conjunction(visitVariables(conjunction.variables()), visitNegations(conjunction.negations()));
+    }
+
+    protected Set<Negation> visitNegations(Set<Negation> negations) {
+        return iterate(negations).map(this::visitNegation).toSet();
+    }
+
+    Negation visitNegation(Negation negation) {
+        return new Negation(visitDisjunction(negation.disjunction()));
+    }
+
+    protected Set<Variable> visitVariables(Set<Variable> variables) {
+        return iterate(variables).map(this::visitVariable).toSet();
+    }
+
+    protected Variable visitVariable(Variable pattern) {
         return pattern;
-    }
-
-    Pattern visitConjunction(Conjunction<? extends Pattern> pattern) {
-        List<? extends Pattern> patterns = pattern.patterns();
-        Set<Pattern> newPatterns = new HashSet<>();
-        patterns.forEach(p -> {
-            Pattern childPattern = visitPattern(p);
-            if (childPattern != null) {
-                newPatterns.add(childPattern);
-            }
-        });
-        return new Conjunction<>(newPatterns);
-    }
-
-    Pattern visitNegation(Negation<? extends Pattern> pattern) {
-        return new Negation<>(visitPattern(pattern.asNegation().pattern()));
-    }
-
-    private Pattern visitDisjunction(Disjunction<? extends Pattern> pattern) {
-        List<? extends Pattern> patterns = pattern.patterns();
-        Set<Pattern> newPatterns = new HashSet<>();
-        patterns.forEach(p -> {
-            Pattern childPattern = visitPattern(p);
-            if (childPattern != null) {
-                newPatterns.add(childPattern);
-            }
-        });
-        return new Disjunction<>(newPatterns);
     }
 
     public static class VariableVisitor extends PatternVisitor {
 
-        private final Function<BoundVariable, Pattern> function;
+        private final Function<Variable, Variable> function;
 
-        public VariableVisitor(Function<BoundVariable, Pattern> function) {
+        public VariableVisitor(Function<Variable, Variable> function) {
             this.function = function;
         }
 
         @Override
-        Pattern visitVariable(BoundVariable pattern) {
-            return function.apply(pattern);
-        }
-    }
-
-    public static class ConjunctionFlatteningVisitor extends PatternVisitor {
-        @Override
-        Pattern visitConjunction(Conjunction<? extends Pattern> pattern) {
-            List<? extends Pattern> patterns = pattern.patterns();
-            Set<Pattern> newPatterns = new HashSet<>();
-            patterns.forEach(p -> {
-                Pattern childPattern = visitPattern(p);
-                if (childPattern.isConjunction()) {
-                    newPatterns.addAll(((Conjunction<? extends Pattern>) childPattern).patterns());
-                } else if (childPattern != null) {
-                    newPatterns.add(visitPattern(childPattern));
-                }
-            });
-            if (newPatterns.size() == 0) {
-                return null;
-            } else if (newPatterns.size() == 1) {
-                return getOnlyElement(newPatterns);
-            }
-            return new Conjunction<>(newPatterns);
+        protected Variable visitVariable(Variable variable) {
+            return function.apply(variable);
         }
     }
 
     public static class NegationRemovalVisitor extends PatternVisitor {
+
         @Override
-        Pattern visitNegation(Negation<? extends Pattern> pattern) {
-            return null;
+        protected Set<Negation> visitNegations(Set<Negation> negations) {
+            return new HashSet<>();
+        }
+
+        @Override
+        Negation visitNegation(Negation negation) {
+            throw TypeDBException.of(ILLEGAL_STATE);
         }
     }
 }

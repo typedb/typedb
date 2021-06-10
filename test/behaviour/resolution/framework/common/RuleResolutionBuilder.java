@@ -81,8 +81,8 @@ public class RuleResolutionBuilder {
     public Conjunction<? extends Pattern> ruleResolutionConjunction(Transaction tx, Pattern whenPattern, Pattern thenPattern, String ruleLabel) {
 
         PatternVisitor.NegationRemovalVisitor negationStripper = new PatternVisitor.NegationRemovalVisitor();
-        Set<Variable> whenVariables = negationStripper.visitPattern(whenPattern).variables();
-        Set<Variable> thenVariables = negationStripper.visitPattern(thenPattern).variables();
+        com.vaticle.typedb.core.pattern.Conjunction whenVariables = negationStripper.visitConjunction(whenPattern).variables();
+        com.vaticle.typedb.core.pattern.Conjunction thenVariables = negationStripper.visitConjunction(thenPattern).variables();
 
         String inferenceType = "resolution";
         String inferenceRuleLabelType = "rule-label";
