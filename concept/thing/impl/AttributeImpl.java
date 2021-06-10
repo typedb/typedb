@@ -85,11 +85,6 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
     }
 
     @Override
-    public void validate() {
-        super.validate();
-    }
-
-    @Override
     public boolean isAttribute() {
         return true;
     }

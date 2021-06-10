@@ -206,7 +206,7 @@ public abstract class ProcedureEdge<
                 assert !to.isStartingVertex();
                 toIter = iterate(fromVertex.asThing().asAttribute().valueType().comparables())
                         .flatMap(vt -> graphMgr.schema().attributeTypes(vt))
-                        .flatMap(at -> graphMgr.data().get(at, true)).map(ThingVertex::asAttribute);
+                        .flatMap(at -> graphMgr.data().getAll(at, true)).map(ThingVertex::asAttribute);
                 if (!to.props().predicates().isEmpty()) {
                     toIter = to.filterPredicates(toIter, params);
                 }
@@ -316,7 +316,7 @@ public abstract class ProcedureEdge<
 
                     if (!toTypes.isEmpty()) typeIter = typeIter.filter(t -> toTypes.contains(t.properLabel()));
 
-                    FunctionalIterator<? extends ThingVertex> iter = typeIter.flatMap(t -> graphMgr.data().get(t, true));
+                    FunctionalIterator<? extends ThingVertex> iter = typeIter.flatMap(t -> graphMgr.data().getAll(t, true));
                     if (to.id().isVariable()) iter = to.filterReferableThings(iter);
                     if (to.props().hasIID()) iter = to.filterIID(iter, params);
                     if (!to.props().predicates().isEmpty()) iter = to.filterPredicates(filterAttributes(iter), params);

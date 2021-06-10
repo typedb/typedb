@@ -41,11 +41,6 @@ public class EntityImpl extends ThingImpl implements Entity {
     }
 
     @Override
-    public void validate() {
-        super.validate();
-    }
-
-    @Override
     public boolean isEntity() {
         return true;
     }

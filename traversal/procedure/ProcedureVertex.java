@@ -194,7 +194,7 @@ public abstract class ProcedureVertex<
                 } else {
                     attTypes = tree(graph.schema().rootAttributeType(), a -> a.ins().edge(SUB).from());
                 }
-                iter = attTypes.flatMap(t -> graph.data().get(t, true)).map(ThingVertex::asAttribute);
+                iter = attTypes.flatMap(t -> graph.data().getAll(t, true)).map(ThingVertex::asAttribute);
             }
 
             if (props().predicates().isEmpty()) return iter;
@@ -202,7 +202,7 @@ public abstract class ProcedureVertex<
         }
 
         private FunctionalIterator<ThingVertex> iterateFromAll(GraphManager graphMgr, TypeVertex rootType) {
-            return tree(rootType, t -> t.ins().edge(SUB).from()).flatMap(t -> graphMgr.data().get(t, true));
+            return tree(rootType, t -> t.ins().edge(SUB).from()).flatMap(t -> graphMgr.data().getAll(t, true));
         }
 
         FunctionalIterator<? extends ThingVertex> iterateAndFilterFromIID(GraphManager graphMgr, Traversal.Parameters parameters) {
@@ -222,7 +222,7 @@ public abstract class ProcedureVertex<
             if (eq.isPresent()) iter = iteratorOfAttributesWithTypes(graphMgr, parameters, eq.get());
             else iter = iterate(props().types().iterator())
                     .map(l -> assertTypeNotNull(graphMgr.schema().getType(l), l))
-                    .flatMap(t -> graphMgr.data().get(t, true));
+                    .flatMap(t -> graphMgr.data().getAll(t, true));
 
             if (id().isVariable()) iter = filterReferableThings(iter);
             if (props().predicates().isEmpty()) return iter;
