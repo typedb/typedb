@@ -111,7 +111,7 @@ public class Inserter {
         }
     }
 
-    private static void validate(Variable var) {
+    public static void validate(Variable var) {
         try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "validate")) {
             if (var.isType()) validate(var.asType());
             else validate(var.asThing());
