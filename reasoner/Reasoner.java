@@ -41,6 +41,7 @@ import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 import org.slf4j.Logger;
@@ -158,11 +159,11 @@ public class Reasoner {
         if (conjunction.negations().isEmpty()) {
             return traversalEng.producer(
                     conjunction.traversal(filter), context.producer(), PARALLELISATION_FACTOR
-            ).map(conceptMgr::conceptMap);
+            ).map(this::conceptMap);
         } else {
             return traversalEng.producer(
                     conjunction.traversal(), context.producer(), PARALLELISATION_FACTOR
-            ).map(conceptMgr::conceptMap).filter(answer -> !iterate(conjunction.negations()).flatMap(
+            ).map(this::conceptMap).filter(answer -> !iterate(conjunction.negations()).flatMap(
                     negation -> iterator(negation.disjunction(), answer)
             ).hasNext()).map(answer -> answer.filter(filter)).distinct();
         }
@@ -180,12 +181,16 @@ public class Reasoner {
                                                     Context.Query context) {
         if (!conjunction.isCoherent()) return Iterators.empty();
         if (conjunction.negations().isEmpty()) {
-            return traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
+            return traversalEng.iterator(conjunction.traversal(filter)).map(this::conceptMap);
         } else {
-            return traversalEng.iterator(conjunction.traversal()).map(conceptMgr::conceptMap).filter(
+            return traversalEng.iterator(conjunction.traversal()).map(this::conceptMap).filter(
                     ans -> !iterate(conjunction.negations()).flatMap(n -> iterator(n.disjunction(), ans)).hasNext()
             ).map(conceptMap -> conceptMap.filter(filter)).distinct();
         }
+    }
+
+    private ConceptMap conceptMap(VertexMap vertexMap) {
+        return conceptMgr.conceptMap(vertexMap, defaultContext.transactionType().isWrite());
     }
 
     private Conjunction bound(Conjunction conjunction, ConceptMap bounds) {

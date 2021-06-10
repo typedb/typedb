@@ -85,7 +85,7 @@ public class ThingGraph {
     private final TypeGraph typeGraph;
     private final KeyGenerator.Data.Buffered keyGenerator;
     private final ConcurrentMap<VertexIID.Thing, ThingVertex> thingsByIID;
-    private final ConcurrentMap<VertexIID.Type, ConcurrentSet<ThingVertex>> thingByTypeIID;
+    private final ConcurrentMap<VertexIID.Type, ConcurrentSet<ThingVertex>> thingsByTypeIID;
     private final AttributesByIID attributesByIID;
     private final Statistics statistics;
     private boolean isModified;
@@ -95,7 +95,7 @@ public class ThingGraph {
         this.typeGraph = typeGraph;
         keyGenerator = new KeyGenerator.Data.Buffered();
         thingsByIID = new ConcurrentHashMap<>();
-        thingByTypeIID = new ConcurrentHashMap<>();
+        thingsByTypeIID = new ConcurrentHashMap<>();
         attributesByIID = new AttributesByIID();
         statistics = new Statistics(typeGraph, storage);
     }
@@ -117,79 +117,79 @@ public class ThingGraph {
     }
 
     public ThingVertex get(VertexIID.Thing iid) {
-        return get(iid, false);
+        return get(iid, true);
     }
 
-    public ThingVertex get(VertexIID.Thing iid, boolean doNotCache) {
+    public ThingVertex get(VertexIID.Thing iid, boolean cacheVertex) {
         assert storage.isOpen();
-        if (iid.encoding().equals(ATTRIBUTE)) return get(iid.asAttribute(), doNotCache);
+        if (iid.encoding().equals(ATTRIBUTE)) return get(iid.asAttribute(), cacheVertex);
         else if (!thingsByIID.containsKey(iid) && storage.get(iid.bytes()) == null) return null;
-        return convert(iid, doNotCache);
+        return convert(iid, cacheVertex);
     }
 
-    public AttributeVertex<?> get(VertexIID.Attribute<?> iid, boolean doNotCache) {
+    public AttributeVertex<?> get(VertexIID.Attribute<?> iid, boolean cacheVertex) {
         if (!attributesByIID.forValueType(iid.valueType()).containsKey(iid) && storage.get(iid.bytes()) == null) {
             return null;
         }
-        return convert(iid, doNotCache);
+        return convert(iid, cacheVertex);
     }
 
     public ThingVertex convert(VertexIID.Thing iid) {
-        return convert(iid, false);
+        return convert(iid, true);
     }
 
-    public ThingVertex convert(VertexIID.Thing iid, boolean doNotCache) {
+    public ThingVertex convert(VertexIID.Thing iid, boolean cacheVertex) {
         assert storage.isOpen();
         if (iid.encoding().equals(ATTRIBUTE)) {
-            return convert(iid.asAttribute(), doNotCache);
-        } else if (doNotCache) {
-            return thingsByIID.getOrDefault(iid, ThingVertexImpl.of(this, iid));
-        } else {
+            return convert(iid.asAttribute(), cacheVertex);
+        } else if (cacheVertex) {
             return thingsByIID.computeIfAbsent(iid, i -> ThingVertexImpl.of(this, i));
+        } else {
+            return thingsByIID.getOrDefault(iid, ThingVertexImpl.of(this, iid));
         }
     }
 
-    public AttributeVertex<?> convert(VertexIID.Attribute<?> attIID, boolean doNotCache) {
+    public AttributeVertex<?> convert(VertexIID.Attribute<?> attIID, boolean cacheVertex) {
         switch (attIID.valueType()) {
             case BOOLEAN:
-                if (doNotCache) {
-                    return attributesByIID.booleans.getOrDefault(attIID.asBoolean(),
-                            new AttributeVertexImpl.Boolean(this, attIID.asBoolean()));
-                } else {
+                if (cacheVertex) {
                     return attributesByIID.booleans.computeIfAbsent(attIID.asBoolean(),
                             i -> new AttributeVertexImpl.Boolean(this, attIID.asBoolean()));
+                } else {
+                    return attributesByIID.booleans.getOrDefault(attIID.asBoolean(),
+                            new AttributeVertexImpl.Boolean(this, attIID.asBoolean()));
                 }
             case LONG:
-                if (doNotCache) {
-                    return attributesByIID.longs.getOrDefault(attIID.asLong(),
-                            new AttributeVertexImpl.Long(this, attIID.asLong()));
-                } else {
+                if (cacheVertex) {
                     return attributesByIID.longs.computeIfAbsent(attIID.asLong(),
                             i -> new AttributeVertexImpl.Long(this, attIID.asLong()));
+                } else {
+                    return attributesByIID.longs.getOrDefault(attIID.asLong(),
+                            new AttributeVertexImpl.Long(this, attIID.asLong()));
                 }
             case DOUBLE:
-                if (doNotCache) {
-                    return attributesByIID.doubles.getOrDefault(attIID.asDouble(),
-                            new AttributeVertexImpl.Double(this, attIID.asDouble()));
-                } else {
+                if (cacheVertex) {
                     return attributesByIID.doubles.computeIfAbsent(attIID.asDouble(),
                             i -> new AttributeVertexImpl.Double(this, attIID.asDouble()));
+                } else {
+                    return attributesByIID.doubles.getOrDefault(attIID.asDouble(),
+                            new AttributeVertexImpl.Double(this, attIID.asDouble()));
                 }
             case STRING:
-                if (doNotCache) {
-                    return attributesByIID.strings.getOrDefault(attIID.asString(),
-                            new AttributeVertexImpl.String(this, attIID.asString()));
-                } else {
+                if (cacheVertex) {
                     return attributesByIID.strings.computeIfAbsent(attIID.asString(),
                             i -> new AttributeVertexImpl.String(this, attIID.asString()));
+                } else {
+                    return attributesByIID.strings.getOrDefault(attIID.asString(),
+                            new AttributeVertexImpl.String(this, attIID.asString()));
                 }
             case DATETIME:
-                if (doNotCache) {
-                    return attributesByIID.dateTimes.getOrDefault(attIID.asDateTime(),
-                            new AttributeVertexImpl.DateTime(this, attIID.asDateTime()));
-                } else {
+                if (cacheVertex) {
                     return attributesByIID.dateTimes.computeIfAbsent(attIID.asDateTime(),
                             i -> new AttributeVertexImpl.DateTime(this, attIID.asDateTime()));
+                } else {
+                    return attributesByIID.dateTimes.getOrDefault(attIID.asDateTime(),
+                            new AttributeVertexImpl.DateTime(this, attIID.asDateTime()));
                 }
             default:
                 assert false;
@@ -203,7 +203,7 @@ public class ThingGraph {
         VertexIID.Thing iid = generate(keyGenerator, typeVertex.iid(), typeVertex.properLabel());
         ThingVertex vertex = new ThingVertexImpl.Buffered(this, iid, isInferred);
         thingsByIID.put(iid, vertex);
-        thingByTypeIID.computeIfAbsent(typeVertex.iid(), t -> new ConcurrentSet<>()).add(vertex);
+        thingsByTypeIID.computeIfAbsent(typeVertex.iid(), t -> new ConcurrentSet<>()).add(vertex);
         if (!isInferred) statistics.vertexCreated(typeVertex.iid());
         return vertex;
     }
@@ -213,41 +213,41 @@ public class ThingGraph {
     }
 
     private <VALUE, ATT_IID extends VertexIID.Attribute<VALUE>, ATT_VERTEX extends AttributeVertex<VALUE>>
-    ATT_VERTEX getOrReadFromStorage(Map<ATT_IID, ATT_VERTEX> map, ATT_IID attIID, Function<ATT_IID, ATT_VERTEX> vertexConstructor, boolean doNotCache) {
-        if (doNotCache) {
+    ATT_VERTEX getOrReadFromStorage(Map<ATT_IID, ATT_VERTEX> map, ATT_IID attIID, Function<ATT_IID, ATT_VERTEX> vertexConstructor, boolean cacheVertex) {
+        if (cacheVertex) {
+            return map.computeIfAbsent(attIID, id -> {
+                ByteArray val = storage.get(id.bytes());
+                if (val != null) return vertexConstructor.apply(id);
+                else return null;
+            });
+        } else {
             ATT_VERTEX vertex = map.get(attIID);
             if (vertex == null && storage.get(attIID.bytes()) != null) {
                 return vertexConstructor.apply(attIID);
             } else {
                 return vertex;
             }
-        } else {
-            return map.computeIfAbsent(attIID, id -> {
-                ByteArray val = storage.get(id.bytes());
-                if (val != null) return vertexConstructor.apply(id);
-                else return null;
-            });
         }
     }
 
     public FunctionalIterator<ThingVertex> getAll(TypeVertex typeVertex) {
-        return getAll(typeVertex, false);
+        return getAll(typeVertex, true);
     }
 
-    public FunctionalIterator<ThingVertex> getAll(TypeVertex typeVertex, boolean doNotCache) {
+    public FunctionalIterator<ThingVertex> getAll(TypeVertex typeVertex, boolean cacheVertex) {
         FunctionalIterator<ThingVertex> storageIterator = storage.iterate(
                 join(typeVertex.iid().bytes(), Encoding.Edge.ISA.in().bytes()),
-                (key, value) -> convert(EdgeIID.InwardsISA.of(key).end(), doNotCache)
+                (key, value) -> convert(EdgeIID.InwardsISA.of(key).end(), cacheVertex)
         );
-        if (!thingByTypeIID.containsKey(typeVertex.iid())) return storageIterator;
-        else return link(thingByTypeIID.get(typeVertex.iid()).iterator(), storageIterator).distinct();
+        if (!thingsByTypeIID.containsKey(typeVertex.iid())) return storageIterator;
+        else return link(thingsByTypeIID.get(typeVertex.iid()).iterator(), storageIterator).distinct();
     }
 
     public AttributeVertex<Boolean> get(TypeVertex type, boolean value) {
-        return get(type, value, false);
+        return get(type, value, true);
     }
 
-    public AttributeVertex<Boolean> get(TypeVertex type, boolean value, boolean doNotCache) {
+    public AttributeVertex<Boolean> get(TypeVertex type, boolean value, boolean cacheVertex) {
         assert storage.isOpen();
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(Boolean.class);
@@ -256,15 +256,15 @@ public class ThingGraph {
                 attributesByIID.booleans,
                 new VertexIID.Attribute.Boolean(type.iid(), value),
                 iid -> new AttributeVertexImpl.Boolean(this, iid),
-                doNotCache
+                cacheVertex
         );
     }
 
     public AttributeVertex<Long> get(TypeVertex type, long value) {
-        return get(type, value, false);
+        return get(type, value, true);
     }
 
-    public AttributeVertex<Long> get(TypeVertex type, long value, boolean doNotCache) {
+    public AttributeVertex<Long> get(TypeVertex type, long value, boolean cacheVertex) {
         assert storage.isOpen();
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(Long.class);
@@ -273,15 +273,15 @@ public class ThingGraph {
                 attributesByIID.longs,
                 new VertexIID.Attribute.Long(type.iid(), value),
                 iid -> new AttributeVertexImpl.Long(this, iid),
-                doNotCache
+                cacheVertex
         );
     }
 
     public AttributeVertex<Double> get(TypeVertex type, double value) {
-        return get(type, value, false);
+        return get(type, value, true);
     }
 
-    public AttributeVertex<Double> get(TypeVertex type, double value, boolean doNotCache) {
+    public AttributeVertex<Double> get(TypeVertex type, double value, boolean cacheVertex) {
         assert storage.isOpen();
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(Double.class);
@@ -290,15 +290,15 @@ public class ThingGraph {
                 attributesByIID.doubles,
                 new VertexIID.Attribute.Double(type.iid(), value),
                 iid -> new AttributeVertexImpl.Double(this, iid),
-                doNotCache
+                cacheVertex
         );
     }
 
     public AttributeVertex<String> get(TypeVertex type, String value) {
-        return get(type, value, false);
+        return get(type, value, true);
     }
 
-    public AttributeVertex<String> get(TypeVertex type, String value, boolean doNotCache) {
+    public AttributeVertex<String> get(TypeVertex type, String value, boolean cacheVertex) {
         assert storage.isOpen();
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(String.class);
@@ -314,15 +314,15 @@ public class ThingGraph {
         return getOrReadFromStorage(
                 attributesByIID.strings, attIID,
                 iid -> new AttributeVertexImpl.String(this, iid),
-                doNotCache
+                cacheVertex
         );
     }
 
     public AttributeVertex<LocalDateTime> get(TypeVertex type, LocalDateTime value) {
-        return get(type, value, false);
+        return get(type, value, true);
     }
 
-    public AttributeVertex<LocalDateTime> get(TypeVertex type, LocalDateTime value, boolean doNotCache) {
+    public AttributeVertex<LocalDateTime> get(TypeVertex type, LocalDateTime value, boolean cacheVertex) {
         assert storage.isOpen();
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(LocalDateTime.class);
@@ -331,7 +331,7 @@ public class ThingGraph {
                 attributesByIID.dateTimes,
                 new VertexIID.Attribute.DateTime(type.iid(), value),
                 iid -> new AttributeVertexImpl.DateTime(this, iid),
-                doNotCache
+                cacheVertex
         );
     }
 
@@ -345,12 +345,11 @@ public class ThingGraph {
                 new VertexIID.Attribute.Boolean(type.iid(), value),
                 iid -> {
                     AttributeVertexImpl.Boolean v = new AttributeVertexImpl.Boolean(this, iid, isInferred);
-                    thingByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     isNewVertex[0] = !v.isPersisted();
                     return v;
                 }
         );
-        // TODO should use isPersisted() to not count unnecessarily on all these methods
         if (!isInferred && (isNewVertex[0] || vertex.isInferred())) {
             vertex.isInferred(false);
             statistics.attributeVertexCreated(vertex.iid());
@@ -368,7 +367,7 @@ public class ThingGraph {
                 new VertexIID.Attribute.Long(type.iid(), value),
                 iid -> {
                     AttributeVertexImpl.Long v = new AttributeVertexImpl.Long(this, iid, isInferred);
-                    thingByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     isNewVertex[0] = !v.isPersisted();
                     return v;
                 }
@@ -392,7 +391,7 @@ public class ThingGraph {
                 new VertexIID.Attribute.Double(type.iid(), value),
                 iid -> {
                     AttributeVertexImpl.Double v = new AttributeVertexImpl.Double(this, iid, isInferred);
-                    thingByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     isNewVertex[0] = !v.isPersisted();
                     return v;
                 }
@@ -425,7 +424,7 @@ public class ThingGraph {
         AttributeVertex<String> vertex = attributesByIID.strings.computeIfAbsent(
                 attIID, iid -> {
                     AttributeVertexImpl.String v = new AttributeVertexImpl.String(this, iid, isInferred);
-                    thingByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     isNewVertex[0] = !v.isPersisted();
                     return v;
                 }
@@ -448,7 +447,7 @@ public class ThingGraph {
                 new VertexIID.Attribute.DateTime(type.iid(), value),
                 iid -> {
                     AttributeVertexImpl.DateTime v = new AttributeVertexImpl.DateTime(this, iid, isInferred);
-                    thingByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     isNewVertex[0] = !v.isPersisted();
                     return v;
                 }
@@ -464,8 +463,8 @@ public class ThingGraph {
     public void delete(AttributeVertex<?> vertex) {
         assert storage.isOpen();
         attributesByIID.remove(vertex.iid());
-        if (thingByTypeIID.containsKey(vertex.type().iid())) {
-            thingByTypeIID.get(vertex.type().iid()).remove(vertex);
+        if (thingsByTypeIID.containsKey(vertex.type().iid())) {
+            thingsByTypeIID.get(vertex.type().iid()).remove(vertex);
         }
         if (!vertex.isInferred()) statistics.attributeVertexDeleted(vertex.iid());
     }
@@ -474,8 +473,8 @@ public class ThingGraph {
         assert storage.isOpen();
         if (!vertex.isAttribute()) {
             thingsByIID.remove(vertex.iid());
-            if (thingByTypeIID.containsKey(vertex.type().iid())) {
-                thingByTypeIID.get(vertex.type().iid()).remove(vertex);
+            if (thingsByTypeIID.containsKey(vertex.type().iid())) {
+                thingsByTypeIID.get(vertex.type().iid()).remove(vertex);
             }
             if (!vertex.isInferred()) statistics.vertexDeleted(vertex.type().iid());
         } else delete(vertex.asAttribute());
@@ -493,14 +492,14 @@ public class ThingGraph {
 
     public void clear() {
         thingsByIID.clear();
-        thingByTypeIID.clear();
+        thingsByTypeIID.clear();
         attributesByIID.clear();
         statistics.clear();
     }
 
     /**
      * Commits all the writes captured in this graph into storage.
-     * <p>
+     *
      * We start off by generating new IIDs for every {@code ThingVertex} (which
      * does not actually include {@code AttributeVertex}). We then write the every
      * {@code ThingVertex} onto the storage. Once all commit operations for every

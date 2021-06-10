@@ -79,9 +79,16 @@ public final class ConceptManager {
     }
 
     public ConceptMap conceptMap(VertexMap vertexMap) {
+        return conceptMap(vertexMap, true);
+    }
+
+    public ConceptMap conceptMap(VertexMap vertexMap, boolean useCache) {
         Map<Retrievable, Concept> map = new HashMap<>();
         vertexMap.forEach((id, vertex) -> {
-            if (vertex.isThing()) map.put(id, ThingImpl.of(vertex.asThing()));
+            if (vertex.isThing()) {
+                if (useCache) map.put(id, ThingImpl.of(graphMgr.data().get(vertex.asThing().iid())));
+                else map.put(id, ThingImpl.of(vertex.asThing()));
+            }
             else if (vertex.isType()) map.put(id, TypeImpl.of(graphMgr, vertex.asType()));
             else throw exception(TypeDBException.of(ILLEGAL_STATE));
         });

@@ -124,7 +124,7 @@ public interface ThingAdjacency {
 
     void deleteAll();
 
-    ThingEdge register(ThingEdge edge);
+    ThingEdge cache(ThingEdge edge);
 
     void remove(ThingEdge edge);
 
@@ -134,11 +134,11 @@ public interface ThingAdjacency {
 
         FunctionalIterator<ThingVertex> from();
 
-        FunctionalIterator<ThingVertex> from(boolean doNotCacheVertex);
+        FunctionalIterator<ThingVertex> from(boolean cache);
 
         FunctionalIterator<ThingVertex> to();
 
-        FunctionalIterator<ThingVertex> to(boolean doNotCacheVertex);
+        FunctionalIterator<ThingVertex> to(boolean cache);
 
         FunctionalIterator<ThingEdge> get();
     }

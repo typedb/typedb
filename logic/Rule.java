@@ -567,7 +567,7 @@ public class Rule {
                         playersWithIIDs.add(playerId);
                     }
                 });
-                return traversalEng.iterator(traversal).map(conceptMgr::conceptMap)
+                return traversalEng.iterator(traversal).map(vm -> conceptMgr.conceptMap(vm, false))
                         .map(conceptMap -> conceptMap.get(relationId).asRelation());
             }
 

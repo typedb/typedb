@@ -293,13 +293,13 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             Identifier.Variable scope = edge.asRolePlayer().scope();
             Scopes.Scoped scoped = scopes.getOrInitialise(scope);
             toIter = edge.asRolePlayer().branchEdge(graphMgr, fromVertex, params).filter(e -> {
-                if (scoped.contains(e.optimised().get())) return false;
+                if (scoped.contains(e.optimised(false).get())) return false;
                 else {
-                    if (scoped.orderVisited(edge.order())) scoped.replaceLast(e.optimised().get(), edge.order());
-                    else scoped.push(e.optimised().get(), edge.order());
+                    if (scoped.orderVisited(edge.order())) scoped.replaceLast(e.optimised(false).get(), edge.order());
+                    else scoped.push(e.optimised(false).get(), edge.order());
                     return true;
                 }
-            }).map(e -> edge.direction().isForward() ? e.to(true) : e.from(true));
+            }).map(e -> edge.direction().isForward() ? e.to(false) : e.from(false));
         } else {
             toIter = edge.branch(graphMgr, fromVertex, params);
         }
@@ -331,17 +331,14 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     public VertexMap next() {
         if (!hasNext()) throw new NoSuchElementException();
         state = State.EMPTY;
-        return toPinnedVertexMap(answer);
+        return toVertexMap(answer);
     }
 
-    private VertexMap toPinnedVertexMap(Map<Identifier, Vertex<?, ?>> answer) {
+    private VertexMap toVertexMap(Map<Identifier, Vertex<?, ?>> answer) {
         return VertexMap.of(
                 answer.entrySet().stream()
                         .filter(e -> e.getKey().isRetrievable() && filter.contains(e.getKey().asVariable().asRetrievable()))
-                        .collect(toMap(e -> e.getKey().asVariable().asRetrievable(), e -> {
-                            if (e.getValue().isThing()) return graphMgr.data().get(e.getValue().asThing().iid());
-                            else return e.getValue();
-                        }))
+                        .collect(toMap(e -> e.getKey().asVariable().asRetrievable(), Map.Entry::getValue))
         );
     }
 

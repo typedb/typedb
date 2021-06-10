@@ -128,7 +128,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         }
 
         @Override
-        public ThingVertex from(boolean doNotCacheVertex) {
+        public ThingVertex from(boolean cacheVertex) {
             return from;
         }
 
@@ -143,7 +143,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         }
 
         @Override
-        public ThingVertex to(boolean doNotCacheVertex) {
+        public ThingVertex to(boolean cacheVertex) {
             return to;
         }
 
@@ -153,7 +153,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         }
 
         @Override
-        public Optional<ThingVertex> optimised() {
+        public Optional<ThingVertex> optimised(boolean cacheVertex) {
             return Optional.ofNullable(optimised);
         }
 
@@ -299,20 +299,20 @@ public abstract class ThingEdgeImpl implements ThingEdge {
 
         @Override
         public ThingVertex from() {
-            return from(false);
+            return from(true);
         }
 
         @Override
-        public ThingVertex from(boolean doNotCacheVertex) {
-            if (doNotCacheVertex) {
-                ThingVertex f = graph.convert(fromIID, doNotCacheVertex);
-                f.outs().register(this);
-                return f;
-            } else {
+        public ThingVertex from(boolean cacheVertex) {
+            if (cacheVertex) {
                 if (from != null) return from;
-                from = graph.convert(fromIID, doNotCacheVertex);
-                from.outs().register(this);
+                from = graph.convert(fromIID, cacheVertex);
+                from.outs().cache(this);
                 return from;
+            } else {
+                ThingVertex f = graph.convert(fromIID, cacheVertex);
+                f.outs().cache(this);
+                return f;
             }
         }
 
@@ -323,20 +323,20 @@ public abstract class ThingEdgeImpl implements ThingEdge {
 
         @Override
         public ThingVertex to() {
-            return to(false);
+            return to(true);
         }
 
         @Override
-        public ThingVertex to(boolean doNotCacheVertex) {
-            if (doNotCacheVertex) {
-                ThingVertex t = graph.convert(toIID, doNotCacheVertex);
-                t.outs().register(this);
-                return t;
-            } else {
+        public ThingVertex to(boolean cacheVertex) {
+            if (cacheVertex) {
                 if (to != null) return to;
                 to = graph.convert(toIID);
-                to.ins().register(this);
+                to.ins().cache(this);
                 return to;
+            } else {
+                ThingVertex t = graph.convert(toIID, cacheVertex);
+                t.ins().cache(this);
+                return t;
             }
         }
 
@@ -346,9 +346,9 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         }
 
         @Override
-        public Optional<ThingVertex> optimised() {
+        public Optional<ThingVertex> optimised(boolean cacheVertex) {
             if (optimised != null) return Optional.of(optimised);
-            if (optimisedIID != null) optimised = graph.convert(optimisedIID);
+            if (optimisedIID != null) optimised = graph.convert(optimisedIID, cacheVertex);
             return Optional.ofNullable(optimised);
         }
 

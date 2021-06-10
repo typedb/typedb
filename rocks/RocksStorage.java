@@ -343,12 +343,7 @@ public abstract class RocksStorage implements Storage {
             this.deletedKeys = new ConcurrentSkipListSet<>();
             this.exclusiveInsertKeys = new ConcurrentSkipListSet<>();
             this.snapshotEnd = null;
-            this.database.consistencyMgr().register(this);
-        }
-
-        @Override
-        public boolean isReadOnly() {
-            return isReadOnly;
+            if (transaction.type().isWrite()) this.database.consistencyMgr().register(this);
         }
 
         @Override
@@ -429,7 +424,7 @@ public abstract class RocksStorage implements Storage {
         @Override
         public void close() {
             super.close();
-            database.consistencyMgr().closed(this);
+            if (transaction.type().isWrite()) database.consistencyMgr().closed(this);
         }
 
         @Override
