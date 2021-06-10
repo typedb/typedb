@@ -20,16 +20,7 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 native_java_libraries(
     name = "common",
-    srcs = [
-        "ConjunctionFlatteningVisitor.java",
-        "TypeQLHelpers.java",
-        "NegationRemovalVisitor.java",
-        "PatternVisitor.java",
-        "ResolutionConstraintException.java",
-        "RuleResolutionBuilder.java",
-        "VariableVisitor.java",
-        "Utils.java",
-    ],
+    srcs = glob(["*.java"]),
     visibility = ["//visibility:public"],
     native_libraries_deps = [
         "//concept:concept",

@@ -23,7 +23,6 @@ import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.TypeDB.Transaction;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.PatternVisitor;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.TypeQLHelpers;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.ResolutionConstraintException;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.RuleResolutionBuilder;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.pattern.Conjunction;
@@ -280,4 +279,9 @@ public class ResolutionQueryBuilder {
         return Variable.create(variable.var(), propertiesWithoutIds);
     }
 
+    public static class ResolutionConstraintException extends RuntimeException {
+        public ResolutionConstraintException(String message) {
+            super(message);
+        }
+    }
 }
