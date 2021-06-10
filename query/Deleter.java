@@ -90,11 +90,11 @@ public class Deleter {
         }
     }
 
-    public static void validate(TypeVariable var) {
+    private static void validate(TypeVariable var) {
         if (!var.reference().isLabel()) throw TypeDBException.of(ILLEGAL_TYPE_VARIABLE_IN_DELETE, var.reference());
     }
 
-    public static void validate(ThingVariable var) {
+    private static void validate(ThingVariable var) {
         if (!var.reference().isName()) {
             ErrorMessage.ThingWrite msg = var.relation().isPresent()
                     ? ILLEGAL_ANONYMOUS_RELATION_IN_DELETE
