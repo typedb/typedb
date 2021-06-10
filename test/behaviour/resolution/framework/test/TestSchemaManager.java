@@ -38,12 +38,14 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.addResolutionSchema;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.connectResolutionSchema;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadComplexRecursionTest;
+import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;
 
 public class TestSchemaManager {
@@ -156,17 +158,13 @@ public class TestSchemaManager {
         }
     }
 
-    @Ignore // TODO: Ignored because we are unable to query for all of the rules present
+    @Ignore
     @Test
     public void testUndefineAllRulesSuccessfullyUndefinesAllRules() {
         try (Session session = typeDB.session(database, Arguments.Session.Type.SCHEMA)) {
             SchemaManager.undefineAllRules(session);
             try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
-                // List<String> ruleLabels = tx.query().match(
-                //         TypeQL.match(TypeQL.var("x").sub("rule")).get("x"))
-                //         .map(ans -> ans.get("x").asRule().label().toString()).collect(Collectors.toList());
-                // assertEquals(1, ruleLabels.size());
-                // assertEquals("rule", ruleLabels.get(0));
+                assertFalse(tx.logic().rules().hasNext());
             }
         }
     }

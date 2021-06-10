@@ -32,9 +32,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.Utils.loadGqlFile;
 
 
@@ -69,16 +69,15 @@ public class SchemaManager {
 
     public static void undefineAllRules(Session session) {
         try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-            Set<String> ruleLabels = getAllRules(tx).stream().map(rule -> rule.label().toString()).collect(Collectors.toSet());
-            for (String ruleLabel : ruleLabels) {
-                tx.execute(TypeQL.undefine(TypeQL.type(ruleLabel).sub("rule")));
+            for (String ruleLabel : iterate(getAllRules(tx)).map(Rule::getLabel).toSet()) {
+                tx.query().undefine(TypeQL.undefine(TypeQL.rule(ruleLabel).asTypeVariable()));
             }
             tx.commit();
         }
     }
 
     public static Set<Rule> getAllRules(Transaction tx) {
-        return tx.stream(TypeQL.match(TypeQL.var("r").sub("rule")).get()).map(ans -> ans.get("r").asRule()).filter(rule -> !rule.label().toString().equals("rule")).collect(Collectors.toSet());
+        return tx.logic().rules().toSet();
     }
 
     public static void addResolutionSchema(Session session) {
