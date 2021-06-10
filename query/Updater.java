@@ -38,6 +38,7 @@ import java.util.function.Function;
 
 import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.traceOnThread;
 import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ANONYMOUS_VARIABLE_IN_DELETE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_DELETE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_INSERT;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -71,6 +72,9 @@ public class Updater {
             VariableRegistry deleteRegistry = VariableRegistry.createFromThings(query.deleteVariables(), false);
             iterate(deleteRegistry.types()).filter(t -> !t.reference().isLabel()).forEachRemaining(t -> {
                 throw TypeDBException.of(ILLEGAL_TYPE_VARIABLE_IN_DELETE, t.reference());
+            });
+            iterate(deleteRegistry.things()).filter(t -> t.reference().isAnonymous()).forEachRemaining(t -> {
+                throw TypeDBException.of(ILLEGAL_ANONYMOUS_VARIABLE_IN_DELETE, t.reference());
             });
 
             VariableRegistry insertRegistry = VariableRegistry.createFromThings(query.insertVariables());
