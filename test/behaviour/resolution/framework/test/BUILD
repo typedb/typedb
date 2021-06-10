@@ -16,14 +16,15 @@
 #
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
+load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
-java_library(
+native_java_libraries(
     name = "load-test",
     srcs = ["LoadTest.java"],
     visibility = ["//visibility:public"],
-    deps = [
+    native_libraries_deps = [
         "//:typedb",
-        "//test/common:graql-test-util",
     ],
 )
 
@@ -33,16 +34,12 @@ java_test(
     srcs = [
         "ResolutionQueryBuilderIT.java",
     ],
-    classpath_resources = ["//test/resources:logback-test"],
-    resources = [
-        "//test/behaviour/resolution/framework/test/stubs/complex_recursion",
-    ],
+    classpath_resources = ["//common/test:logback-test"],
     test_class = "grakn.core.test.behaviour.resolution.framework.test.ResolutionQueryBuilderIT",
     deps = [
         "//test/behaviour/resolution/framework/common",
         "//test/behaviour/resolution/framework/test:load-test",
-        "//test/rule:grakn-test-server",
-        "//concept/answer",
+        "//concept:concept",
         "//:typedb",
 
         # External dependencies from @vaticle
@@ -56,7 +53,7 @@ java_test(
     srcs = [
         "TestResolutionQueryBuilder.java",
     ],
-    classpath_resources = ["//test/resources:logback-test"],
+    classpath_resources = ["//common/test:logback-test"],
     test_class = "grakn.core.test.behaviour.resolution.framework.test.TestResolutionQueryBuilder",
     deps = [
         "//test/behaviour/resolution/framework/common",
@@ -74,15 +71,10 @@ java_test(
     srcs = [
         "RuleResolutionBuilderIT.java",
     ],
-    classpath_resources = ["//test/resources:logback-test"],
-    resources = [
-        "//test/behaviour/resolution/framework/test/stubs/basic_recursion",
-        "//test/behaviour/resolution/framework/test/stubs/complex_recursion",
-    ],
+    classpath_resources = ["//common/test:logback-test"],
     test_class = "grakn.core.test.behaviour.resolution.framework.test.RuleResolutionBuilderIT",
     deps = [
         "//test/behaviour/resolution/framework/common",
-        "//test/rule:grakn-test-server",
         "//test/behaviour/resolution/framework/test:load-test",
         "//:typedb",
         "@maven//:com_google_guava_guava",
@@ -92,24 +84,21 @@ java_test(
     ],
 )
 
-java_test(
+host_compatible_java_test(
     name = "test-schema-manager",
     size = "medium",
     srcs = [
         "TestSchemaManager.java",
     ],
-    classpath_resources = ["//test/resources:logback-test"],
-    resources = [
-        "//test/behaviour/resolution/framework/test/stubs/complex_recursion",
-    ],
+    classpath_resources = ["//common/test:logback-test"],
     test_class = "grakn.core.test.behaviour.resolution.framework.test.TestSchemaManager",
-    deps = [
-        "//test/behaviour/resolution/framework/test:load-test",
-        "//test/behaviour/resolution/framework/complete",
-        "//test/rule:grakn-test-server",
+    native_libraries_deps = [
         "//:typedb",
         "//concept:concept",
-
+        "//test/behaviour/resolution/framework/complete",
+        "//test/behaviour/resolution/framework/test:load-test",
+    ],
+    deps = [
         # External dependencies from @vaticle
         "@vaticle_typeql_lang_java//:typeql-lang",
     ],
@@ -121,18 +110,13 @@ java_test(
     srcs = [
         "TestCompleter.java",
     ],
-    classpath_resources = ["//test/resources:logback-test"],
-    resources = [
-        "//test/behaviour/resolution/framework/test/stubs/basic_recursion",
-        "//test/behaviour/resolution/framework/test/stubs/transitivity",
-    ],
+    classpath_resources = ["//common/test:logback-test"],
     test_class = "grakn.core.test.behaviour.resolution.framework.test.TestCompleter",
     deps = [
         "//test/behaviour/resolution/framework/common",
         "//test/behaviour/resolution/framework/complete",
-        "//test/rule:grakn-test-server",
         "//test/behaviour/resolution/framework/test:load-test",
-        "//concept/answer",
+        "//concept:concept",
         "//:typedb",
 
         # External dependencies from @vaticle
@@ -146,17 +130,11 @@ java_test(
     srcs = [
         "TestResolution.java",
     ],
-    classpath_resources = ["//test/resources:logback-test"],
-    resources = [
-        "//test/behaviour/resolution/framework/test/stubs/basic_recursion",
-        "//test/behaviour/resolution/framework/test/stubs/complex_recursion",
-        "//test/behaviour/resolution/framework/test/stubs/transitivity",
-    ],
+    classpath_resources = ["//common/test:logback-test"],
     test_class = "grakn.core.test.behaviour.resolution.framework.test.TestResolution",
     deps = [
         "//test/behaviour/resolution/framework/test:load-test",
         "//test/behaviour/resolution/framework:resolution-lib",
-        "//test/rule:grakn-test-server",
         "//:typedb",
 
         # External dependencies from @vaticle
@@ -166,13 +144,7 @@ java_test(
 
 checkstyle_test(
     name = "checkstyle",
-    targets = [
-        ":load-test",
-        ":resolution-query-builder-it",
-        ":test-resolution-query-builder",
-        ":rule-resolution-builder-it",
-        ":test-schema-manager",
-        ":test-completer",
-        ":test-resolution",
-    ],
+    include = glob(["*"]),
+    license_type = "agpl",
 )
+

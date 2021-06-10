@@ -27,7 +27,6 @@ java_library(
         "@maven//:com_google_guava_guava",
         "//:typedb",
         "//concept/answer",
-        "//concept:concept",
         "//test/behaviour/resolution/framework/common",
         "@vaticle_typeql_lang_java//:typeql-lang",
     ],
@@ -35,7 +34,6 @@ java_library(
 
 checkstyle_test(
     name = "checkstyle",
-    targets = [
-        ":resolve",
-    ],
+    include = glob(["*"]),
+    license_type = "agpl",
 )

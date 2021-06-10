@@ -15,9 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
-java_library(
+native_java_libraries(
     name = "common",
     srcs = [
         "ConjunctionFlatteningVisitor.java",
@@ -30,18 +31,19 @@ java_library(
         "Utils.java",
     ],
     visibility = ["//visibility:public"],
-    deps = [
-        "@maven//:com_google_guava_guava",
+    native_libraries_deps = [
         "//concept:concept",
         "//:typedb",
-        "@vaticle_typeql_lang_java//:typeql-lang",
+    ],
+    deps = [
+        "@maven//:com_google_guava_guava",
         "@maven//:com_google_code_findbugs_jsr305",
+        "@vaticle_typeql_lang_java//:typeql-lang",
     ],
 )
 
 checkstyle_test(
     name = "checkstyle",
-    targets = [
-        ":common",
-    ],
+    include = glob(["*"]),
+    license_type = "agpl",
 )

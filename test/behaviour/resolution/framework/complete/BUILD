@@ -16,9 +16,10 @@
 #
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
 exports_files(["completion_schema.gql"])
 
-java_library(
+native_java_libraries(
     name = "complete",
     srcs = [
         "Completer.java",
@@ -28,18 +29,18 @@ java_library(
         "//test/behaviour/resolution/framework/complete:completion_schema.gql",
     ],
     visibility = ["//visibility:public"],
-    deps = [
-        "//concept/answer",
-        "//concept:concept",
+    native_libraries_deps = [
         "//:typedb",
-        "//test/behaviour/resolution/framework/common",
+        "//concept:concept",
+        "//test/behaviour/resolution/framework/common:common",
+    ],
+    deps = [
         "@vaticle_typeql_lang_java//:typeql-lang",
     ],
 )
 
 checkstyle_test(
     name = "checkstyle",
-    targets = [
-        ":complete",
-    ],
+    include = glob(["*"]),
+    license_type = "agpl",
 )

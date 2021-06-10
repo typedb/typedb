@@ -28,7 +28,7 @@ java_library(
         "//test/behaviour/resolution/framework/complete",
         "//test/behaviour/resolution/framework/resolve",
         "//:typedb",
-        "//concept/answer:answer",
+        "//concept:concept",
         "@vaticle_typeql_lang_java//:typeql-lang",
     ],
 )
@@ -51,7 +51,6 @@ java_binary(
 
 checkstyle_test(
     name = "checkstyle",
-    targets = [
-        ":resolution-lib",
-    ],
+    include = glob(["*"]),
+    license_type = "agpl",
 )
