@@ -21,11 +21,10 @@ package com.vaticle.typedb.core.test.behaviour.resolution.framework.resolve;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.TypeDB.Transaction;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.ConjunctionFlatteningVisitor;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.PatternVisitor;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.TypeQLHelpers;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.ResolutionConstraintException;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.RuleResolutionBuilder;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.VariableVisitor;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.pattern.Conjunction;
 import com.vaticle.typeql.lang.pattern.Pattern;
@@ -51,23 +50,23 @@ public class ResolutionQueryBuilder {
     private Map<ConceptId, List<String>> varsForIds;
     private Map<String, String> replacementVars;
 
-    public List<TypeQLMatch> buildMatchGet(Transaction tx, TypeQLMatch query) {
-        List<ConceptMap> answers = tx.execute(query, true, true);
+    public List<TypeQLMatch> buildMatch(Transaction tx, TypeQLMatch query) {
+        List<ConceptMap> answers = tx.query().match(query).toList();
 
         ArrayList<TypeQLMatch> resolutionQueries = new ArrayList<>();
         for (ConceptMap answer : answers) {
             varsForIds = new HashMap<>();
             replacementVars = new HashMap<>();
-            ConjunctionFlatteningVisitor flattener = new ConjunctionFlatteningVisitor();
+            PatternVisitor.ConjunctionFlatteningVisitor flattener = new PatternVisitor.ConjunctionFlatteningVisitor();
             final LinkedHashSet<Pattern> resolutionPatterns = buildResolutionPattern(tx, answer, 0);
             final LinkedHashSet<Pattern> replacedResolutionPatterns = new LinkedHashSet<>();
             for (Pattern p : resolutionPatterns) {
-                VariableVisitor sv = new VariableVisitor(this::deduplicateVars);
+                PatternVisitor.VariableVisitor sv = new PatternVisitor.VariableVisitor(this::deduplicateVars);
                 Pattern rp = sv.visitPattern(p);
                 replacedResolutionPatterns.add(rp);
             }
             final Conjunction<Pattern> conjunction = TypeQL.and(replacedResolutionPatterns);
-            resolutionQueries.add(TypeQL.match(flattener.visitPattern(conjunction)).get());
+            resolutionQueries.add(TypeQL.match(flattener.visitPattern(conjunction)));
         }
         return resolutionQueries;
     }
@@ -82,7 +81,7 @@ public class ResolutionQueryBuilder {
         }
         Integer finalRuleResolutionIndex1 = ruleResolutionIndex;
 
-        VariableVisitor variableVisitor = new VariableVisitor(p -> {
+        PatternVisitor.VariableVisitor variableVisitor = new PatternVisitor.VariableVisitor(p -> {
             Variable withoutIds = removeIdProperties(TypeQLHelpers.makeAnonVarsExplicit(p));
             return withoutIds == null ? null : prefixVars(withoutIds, finalRuleResolutionIndex1);
         });
@@ -104,7 +103,7 @@ public class ResolutionQueryBuilder {
                 ruleResolutionIndex += 1;
                 Integer finalRuleResolutionIndex0 = ruleResolutionIndex;
 
-                VariableVisitor ruleVariableVisitor = new VariableVisitor(p -> prefixVars(TypeQLHelpers.makeAnonVarsExplicit(p), finalRuleResolutionIndex0));
+                PatternVisitor.VariableVisitor ruleVariableVisitor = new PatternVisitor.VariableVisitor(p -> prefixVars(TypeQLHelpers.makeAnonVarsExplicit(p), finalRuleResolutionIndex0));
 
                 Pattern whenPattern = Objects.requireNonNull(((RuleExplanation) explanation).getRule().when());
                 whenPattern = ruleVariableVisitor.visitPattern(whenPattern);

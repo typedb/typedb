@@ -28,12 +28,13 @@ import com.vaticle.typeql.lang.common.TypeQLToken;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.Utils.loadGqlFile;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaRole.INSTANCE;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaRole.OWNED;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaRole.OWNER;
@@ -116,6 +117,17 @@ public class SchemaManager {
         } catch (IOException e) {
             e.printStackTrace();
             System.exit(1);
+        }
+    }
+
+    private static void loadGqlFile(Session session, Path... gqlPath) throws IOException {
+        for (Path path : gqlPath) {
+            String query = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
+
+            try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                tx.query().match(TypeQL.parseQuery(query).asMatch()).toList();
+                tx.commit();
+            }
         }
     }
 

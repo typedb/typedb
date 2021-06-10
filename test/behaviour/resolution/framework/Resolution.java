@@ -113,7 +113,7 @@ public class Resolution {
         List<TypeQLMatch> queries;
 
         try (Transaction tx = reasonedSession.transaction(Arguments.Transaction.Type.READ)) {
-            queries = resolutionQueryBuilder.buildMatchGet(tx, inferenceQuery);
+            queries = resolutionQueryBuilder.buildMatch(tx, inferenceQuery);
         }
 
         if (queries.size() == 0) {

@@ -80,7 +80,7 @@ public class RuleResolutionBuilder {
     // This implementation doesn't handle disjunctions in rules.
     public Conjunction<? extends Pattern> ruleResolutionConjunction(Transaction tx, Pattern whenPattern, Pattern thenPattern, String ruleLabel) {
 
-        NegationRemovalVisitor negationStripper = new NegationRemovalVisitor();
+        PatternVisitor.NegationRemovalVisitor negationStripper = new PatternVisitor.NegationRemovalVisitor();
         Set<Variable> whenVariables = negationStripper.visitPattern(whenPattern).variables();
         Set<Variable> thenVariables = negationStripper.visitPattern(thenPattern).variables();
 

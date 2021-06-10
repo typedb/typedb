@@ -27,6 +27,9 @@ import com.vaticle.typeql.lang.pattern.variable.BoundVariable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
+
+import static com.google.common.collect.Iterables.getOnlyElement;
 
 public abstract class PatternVisitor {
     public Pattern visitPattern(Pattern pattern) {
@@ -72,5 +75,48 @@ public abstract class PatternVisitor {
             }
         });
         return new Disjunction<>(newPatterns);
+    }
+
+    public static class VariableVisitor extends PatternVisitor {
+
+        private final Function<BoundVariable, Pattern> function;
+
+        public VariableVisitor(Function<BoundVariable, Pattern> function) {
+            this.function = function;
+        }
+
+        @Override
+        Pattern visitVariable(BoundVariable pattern) {
+            return function.apply(pattern);
+        }
+    }
+
+    public static class ConjunctionFlatteningVisitor extends PatternVisitor {
+        @Override
+        Pattern visitConjunction(Conjunction<? extends Pattern> pattern) {
+            List<? extends Pattern> patterns = pattern.patterns();
+            Set<Pattern> newPatterns = new HashSet<>();
+            patterns.forEach(p -> {
+                Pattern childPattern = visitPattern(p);
+                if (childPattern.isConjunction()) {
+                    newPatterns.addAll(((Conjunction<? extends Pattern>) childPattern).patterns());
+                } else if (childPattern != null) {
+                    newPatterns.add(visitPattern(childPattern));
+                }
+            });
+            if (newPatterns.size() == 0) {
+                return null;
+            } else if (newPatterns.size() == 1) {
+                return getOnlyElement(newPatterns);
+            }
+            return new Conjunction<>(newPatterns);
+        }
+    }
+
+    public static class NegationRemovalVisitor extends PatternVisitor {
+        @Override
+        Pattern visitNegation(Negation<? extends Pattern> pattern) {
+            return null;
+        }
     }
 }

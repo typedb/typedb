@@ -22,9 +22,8 @@ import com.vaticle.typedb.core.TypeDB.Session;
 import com.vaticle.typedb.core.TypeDB.Transaction;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.NegationRemovalVisitor;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.PatternVisitor;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.RuleResolutionBuilder;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.VariableVisitor;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.TypeQLHelpers;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.pattern.Conjunction;
@@ -32,14 +31,12 @@ import com.vaticle.typeql.lang.pattern.Pattern;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 
 public class Completer {
 
-    private int numInferredConcepts;
     private final Session session;
     private Set<Rule> rules;
     private final RuleResolutionBuilder ruleResolutionBuilder = new RuleResolutionBuilder();
@@ -51,12 +48,12 @@ public class Completer {
     public void loadRules(Set<com.vaticle.typedb.core.logic.Rule> typeDBRules) {
         Set<Rule> rules = new HashSet<>();
         for (com.vaticle.typedb.core.logic.Rule typeDBRule : typeDBRules) {
-            rules.add(new Rule(Objects.requireNonNull(typeDBRule.when()), Objects.requireNonNull(typeDBRule.then()), typeDBRule.label().toString()));
+            rules.add(new Rule(typeDBRule.when(), typeDBRule.then(), typeDBRule.getLabel()));
         }
         this.rules = rules;
     }
 
-    public int complete() {
+    public void complete() {
         boolean allRulesRerun = true;
 
         while (allRulesRerun) {
@@ -69,7 +66,6 @@ public class Completer {
                 tx.commit();
             }
         }
-        return numInferredConcepts;
     }
 
     private boolean completeRule(Transaction tx, Rule rule) {
@@ -89,10 +85,8 @@ public class Completer {
 
             // We already know that the rule doesn't contain any disjunctions as we previously used negationDNF,
             // now we make sure negation blocks are removed, so that we know it must be a conjunct set of variables
-            NegationRemovalVisitor negationRemover = new NegationRemovalVisitor();
+            PatternVisitor.NegationRemovalVisitor negationRemover = new PatternVisitor.NegationRemovalVisitor();
             Pattern ruleResolutionConjunction = negationRemover.visitPattern(ruleResolutionBuilder.ruleResolutionConjunction(tx, rule.when, rule.then, rule.label));
-
-            numInferredConcepts += inferredConcepts.size();
 
             // Record how the inference was made
             List<ConceptMap> inserted = tx.query().match(TypeQL.match(rule.when, rule.then, TypeQL.not(ruleResolutionConjunction)).insert(ruleResolutionConjunction.variables()));
@@ -108,7 +102,7 @@ public class Completer {
         private String label;
 
         Rule(Pattern when, Pattern then, String label) {
-            VariableVisitor visitor = new VariableVisitor(TypeQLHelpers::makeAnonVarsExplicit);
+            PatternVisitor.VariableVisitor visitor = new PatternVisitor.VariableVisitor(TypeQLHelpers::makeAnonVarsExplicit);
             this.when = visitor.visitPattern(when);
             this.then = visitor.visitPattern(then);
             this.label = label;
