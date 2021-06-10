@@ -128,7 +128,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         }
 
         @Override
-        public ThingVertex from(boolean doNotCacheVertex) {
+        public ThingVertex from(boolean cacheVertex) {
             return from;
         }
 
@@ -143,7 +143,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         }
 
         @Override
-        public ThingVertex to(boolean doNotCacheVertex) {
+        public ThingVertex to(boolean cacheVertex) {
             return to;
         }
 
