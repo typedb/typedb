@@ -19,6 +19,8 @@
 package com.vaticle.typedb.core.test.behaviour.resolution.framework;
 
 import com.vaticle.typedb.core.TypeDB.Session;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.Completer;
@@ -30,13 +32,9 @@ import com.vaticle.typeql.lang.query.TypeQLQuery;
 
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.vaticle.typedb.core.TypeDB.Transaction;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.COMPLETION_SCHEMA_TYPES;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.filterCompletionSchema;
 
 public class Resolution {
 
@@ -78,14 +76,14 @@ public class Resolution {
      * of answers.
      * @param inferenceQuery The reference query to make against both keyspaces
      */
-    public void testQuery(TypeQLQuery inferenceQuery) {
+    public void testQuery(TypeQLMatch inferenceQuery) {
         Transaction reasonedTx = reasonedSession.transaction(Type.READ);
-        int testResultsCount = reasonedTx.execute(inferenceQuery).size();
+        int testResultsCount = reasonedTx.query().match(inferenceQuery).toList().size();
         reasonedTx.close();
 
         Transaction completionTx = materialisedSession.transaction(Type.READ);
         // TODO: Consider negating the completion schema instead of filtering
-        int completionResultsCount = filterCompletionSchema(completionTx.stream(inferenceQuery)).collect(Collectors.toSet()).size();
+        int completionResultsCount = filterCompletionSchema(completionTx.query().match(inferenceQuery)).toSet().size();
         completionTx.close();
         if (completionResultsCount != testResultsCount) {
             throw new WrongAnswerSizeException(completionResultsCount, testResultsCount, inferenceQuery);
@@ -97,8 +95,8 @@ public class Resolution {
      * @param answerStream stream of answers to filter
      * @return filtered stream of answers
      */
-    public static Stream<ConceptMap> filterCompletionSchema(Stream<ConceptMap> answerStream) {
-        Set<String> completionSchemaTypes =iterate(SchemaManager.CompletionSchemaType.values())
+    public static FunctionalIterator<ConceptMap> filterCompletionSchema(FunctionalIterator<ConceptMap> answerStream) {
+        Set<String> completionSchemaTypes = iterate(SchemaManager.CompletionSchemaType.values())
                 .map(SchemaManager.CompletionSchemaType::toString).toSet();
         return answerStream.filter(a -> iterate(a.concepts().values())
                 .noneMatch(concept -> completionSchemaTypes
@@ -125,9 +123,10 @@ public class Resolution {
 
         try (Transaction tx = materialisedSession.transaction(Arguments.Transaction.Type.READ)) {
             for (TypeQLMatch query: queries) {
-                List<ConceptMap> answers = tx.execute(query);
+                List<ConceptMap> answers = tx.query().match(query).toList();
                 if (answers.isEmpty()) {
-                    String msg = String.format("Resolution query had %d answers, it should have had some. The query is:\n %s", answers.size(), query);
+                    String msg = String.format("Resolution query found no answers, it should have had one or more " +
+                                                       "for query:\n %s", query);
                     throw new CorrectnessException(msg);
                 }
             }
@@ -144,7 +143,8 @@ public class Resolution {
             testQuery(TypeQL.parseQuery("match $r ($x) isa relation;").asMatch());
             testQuery(TypeQL.parseQuery("match $x has attribute $y;").asMatch());
         } catch (WrongAnswerSizeException ex) {
-            String msg = String.format("Failed completeness test: [%s]. The complete KB contains %d inferred concepts, whereas the test KB contains %d inferred concepts.",
+            String msg = String.format("Failed completeness test: [%s]. The complete database contains %d inferred " +
+                                               "concepts, whereas the test database contains %d inferred concepts.",
                     ex.getInferenceQuery(), ex.getExpectedAnswers(), ex.getActualAnswers());
             throw new CompletenessException(msg);
         }
@@ -169,7 +169,7 @@ public class Resolution {
 
         public WrongAnswerSizeException(final int expectedAnswers, final int actualAnswers, final TypeQLQuery inferenceQuery) {
             super(String.format("Query had an incorrect number of answers. Expected %d answers, but found %d " +
-                    "answers, for query :\n %s", expectedAnswers, actualAnswers, inferenceQuery));
+                    "answers for query:\n %s", expectedAnswers, actualAnswers, inferenceQuery));
             this.actualAnswers = actualAnswers;
             this.expectedAnswers = expectedAnswers;
             this.inferenceQuery = inferenceQuery;
