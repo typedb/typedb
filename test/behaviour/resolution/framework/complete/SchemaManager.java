@@ -18,11 +18,10 @@
 
 package com.vaticle.typedb.core.test.behaviour.resolution.framework.complete;
 
-import com.vaticle.typedb.core.common.parameters.Arguments;
-import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.TypeDB.Session;
-import com.vaticle.typedb.core.TypeDB.Transaction;;
-import com.vaticle.typedb.core.concept.type.Type;
+import com.vaticle.typedb.core.TypeDB.Transaction;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
@@ -32,7 +31,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.Utils.loadGqlFile;
@@ -41,7 +39,8 @@ import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common
 public class SchemaManager {
     private static final Path SCHEMA_PATH = Paths.get("test", "behaviour", "resolution", "framework", "complete", "completion_schema.gql").toAbsolutePath();
 
-    private static HashSet<String> EXCLUDED_TYPES = new HashSet<String>() {
+    // TODO: Use Enums
+    public static final HashSet<String> COMPLETION_SCHEMA_TYPES = new HashSet<String>() {
         {
             // Concept
             add("thing");
@@ -80,7 +79,7 @@ public class SchemaManager {
         return tx.logic().rules().toSet();
     }
 
-    public static void addResolutionSchema(Session session) {
+    public static void addCompletionSchema(Session session) {
         try {
             loadGqlFile(session, SCHEMA_PATH);
         } catch (IOException e) {
@@ -89,52 +88,32 @@ public class SchemaManager {
         }
     }
 
-    private static Role getRole(Transaction tx, String roleLabel) {
-        TypeQLMatch roleQuery = TypeQL.match(TypeQL.var("x").sub(roleLabel)).get();
-        return tx.execute(roleQuery).get(0).get("x").asRole();
+    private static RoleType getRole(Transaction tx, String roleLabel) {
+        TypeQLMatch roleQuery = TypeQL.match(TypeQL.var("x").type(roleLabel));
+        return tx.query().match(roleQuery).next().get("x").asRoleType();
     }
 
-    public static void connectResolutionSchema(Session session) {
+    public static void connectCompletionSchema(Session session) {
         try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-            Role instanceRole = getRole(tx, "instance");
-            Role ownerRole = getRole(tx, "owner");
-            Role ownedRole = getRole(tx, "owned");
-            Role roleplayerRole = getRole(tx, "roleplayer");
-            Role relRole = getRole(tx, "rel");
+            RoleType instanceRole = getRole(tx, "isa-property:instance");
+            RoleType ownerRole = getRole(tx, "has-attribute-property:owner");
+            RoleType ownedRole = getRole(tx, "has-attribute-property:owned");
+            RoleType roleplayerRole = getRole(tx, "relation-property:roleplayer");
+            RoleType relationRole = getRole(tx, "relation-property:rel");
             
-            TypeQLMatch typesToConnectQuery = TypeQL.match(
-                    TypeQL.var("x").sub("thing")
-            ).get();
-            tx.stream(typesToConnectQuery).map(ans -> ans.get("x").asType()).forEach(type -> {
-                if (EXCLUDED_TYPES.contains(type.label().toString())) {
-                    return;
-                }
-                type.plays(instanceRole);
-                type.plays(ownerRole);
-                type.plays(roleplayerRole);
+            TypeQLMatch typesToConnectQuery = TypeQL.match(TypeQL.var("x").sub("thing"));
+            tx.query().match(typesToConnectQuery).map(ans -> ans.get("x").asThingType()).forEachRemaining(type -> {
+                if (COMPLETION_SCHEMA_TYPES.contains(type.getLabel().toString())) return;
+                type.setPlays(instanceRole);
+                type.setPlays(ownerRole);
+                type.setPlays(roleplayerRole);
                 if (type.isAttributeType()) {
-                    type.plays(ownedRole);
+                    type.setPlays(ownedRole);
                 } else if (type.isRelationType()) {
-                    type.plays(relRole);
+                    type.setPlays(relationRole);
                 }
             });
             tx.commit();
         }
-    }
-
-    private static boolean typeIsMemberOfCompletionSchema(Type type) {
-        if (type.isEntityType() || type.isAttributeType() || type.isRelationType()) {
-            return EXCLUDED_TYPES.contains(type.label().toString());
-        }
-        throw new UnsupportedOperationException("Type not recognised");
-    }
-
-    /**
-     * Filters out answers that contain any Thing instance that is derived from the completion schema.
-     * @param answerStream stream of answers to filter
-     * @return filtered stream of answers
-     */
-    public static Stream<ConceptMap> filterCompletionSchema(Stream<ConceptMap> answerStream) {
-        return answerStream.filter(a -> a.map().values().stream().noneMatch(concept -> typeIsMemberOfCompletionSchema(concept.asThing().type())));
     }
 }

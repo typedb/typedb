@@ -38,12 +38,11 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.addResolutionSchema;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.connectResolutionSchema;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.addCompletionSchema;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.connectCompletionSchema;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadComplexRecursionTest;
 import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;
@@ -70,10 +69,10 @@ public class TestSchemaManager {
     }
 
     @Test
-    public void testResolutionSchemaRolesPlayedAreCorrect() {
+    public void testCompletionSchemaRolesPlayedAreCorrect() {
         try (Session session = typeDB.session(database, Arguments.Session.Type.SCHEMA)) {
-            addResolutionSchema(session);
-            connectResolutionSchema(session);
+            addCompletionSchema(session);
+            connectCompletionSchema(session);
             try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 TypeQLMatch roleplayersQuery = TypeQL.match(
                         TypeQL.var("x").plays("isa-property", "instance"),
@@ -100,10 +99,10 @@ public class TestSchemaManager {
     }
 
     @Test
-    public void testResolutionSchemaRelationRolePlayedIsCorrect() {
+    public void testCompletionSchemaRelationRolePlayedIsCorrect() {
         try (Session session = typeDB.session(database, Arguments.Session.Type.SCHEMA)) {
-            addResolutionSchema(session);
-            connectResolutionSchema(session);
+            addCompletionSchema(session);
+            connectCompletionSchema(session);
             try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 TypeQLMatch roleplayersQuery = TypeQL.match(
                         TypeQL.var("x").plays("relation-property", "rel")
@@ -121,11 +120,11 @@ public class TestSchemaManager {
     }
 
     @Test
-    public void testResolutionSchemaAttributesOwnedAreCorrect() {
+    public void testCompletionSchemaAttributesOwnedAreCorrect() {
 
         try (Session session = typeDB.session(database, Arguments.Session.Type.SCHEMA)) {
-            addResolutionSchema(session);
-            connectResolutionSchema(session);
+            addCompletionSchema(session);
+            connectCompletionSchema(session);
             try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 TypeQLMatch clauseAttributesQuery = TypeQL.match(TypeQL.var("x").sub("has-attribute-property"));
                 Set<String> roles = tx.query().match(clauseAttributesQuery).next().get("x").asRelationType()

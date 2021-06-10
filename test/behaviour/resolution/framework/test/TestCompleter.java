@@ -102,8 +102,8 @@ public class TestCompleter {
                 rules = SchemaManager.getAllRules(tx);
             }
             SchemaManager.undefineAllRules(session);
-            SchemaManager.addResolutionSchema(session);
-            SchemaManager.connectResolutionSchema(session);
+            SchemaManager.addCompletionSchema(session);
+            SchemaManager.connectCompletionSchema(session);
         }
         try (Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
             Completer completer = new Completer(session);
@@ -125,8 +125,8 @@ public class TestCompleter {
                 rules = SchemaManager.getAllRules(tx);
             }
             SchemaManager.undefineAllRules(session);
-            SchemaManager.addResolutionSchema(session);
-            SchemaManager.connectResolutionSchema(session);
+            SchemaManager.addCompletionSchema(session);
+            SchemaManager.connectCompletionSchema(session);
         }
         try (Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
             Completer completer = new Completer(session);

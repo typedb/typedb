@@ -40,6 +40,7 @@ public class LoadTest {
         loadFromFileAndCommit(path, "data.gql", session);
     }
 
+    // TODO: These should use TypeQL builder to make them robust to change
     static void loadTransitivityTest(TypeDB typeDB, String databaseName) {
         try (TypeDB.Session session = typeDB.session(databaseName, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {

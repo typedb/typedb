@@ -30,8 +30,11 @@ import com.vaticle.typeql.lang.query.TypeQLQuery;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.vaticle.typedb.core.TypeDB.Transaction;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.COMPLETION_SCHEMA_TYPES;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.filterCompletionSchema;
 
 public class Resolution {
@@ -59,8 +62,8 @@ public class Resolution {
         }
 
         SchemaManager.undefineAllRules(this.materialisedSession);
-        SchemaManager.addResolutionSchema(this.materialisedSession);
-        SchemaManager.connectResolutionSchema(this.materialisedSession);
+        SchemaManager.addCompletionSchema(this.materialisedSession);
+        SchemaManager.connectCompletionSchema(this.materialisedSession);
         completer.complete();
     }
 
@@ -80,11 +83,23 @@ public class Resolution {
         reasonedTx.close();
 
         Transaction completionTx = materialisedSession.transaction(Type.READ);
+        // TODO: Consider negating the completion schema instead of filtering
         int completionResultsCount = filterCompletionSchema(completionTx.stream(inferenceQuery)).collect(Collectors.toSet()).size();
         completionTx.close();
         if (completionResultsCount != testResultsCount) {
             throw new WrongAnswerSizeException(completionResultsCount, testResultsCount, inferenceQuery);
         }
+    }
+
+    /**
+     * Filters out answers that contain any Thing instance that is derived from the completion schema.
+     * @param answerStream stream of answers to filter
+     * @return filtered stream of answers
+     */
+    public static Stream<ConceptMap> filterCompletionSchema(Stream<ConceptMap> answerStream) {
+        return answerStream.filter(a -> iterate(a.concepts().values())
+                .noneMatch(concept -> COMPLETION_SCHEMA_TYPES
+                        .contains(concept.asThing().getType().getLabel().toString())));
     }
 
     /**
