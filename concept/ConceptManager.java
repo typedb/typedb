@@ -79,10 +79,6 @@ public final class ConceptManager {
         this.graphMgr = graphMgr;
     }
 
-    public FunctionalIterator<ConceptMap> conceptMaps(FunctionalIterator<VertexMap> vertexMap) {
-        return vertexMap.map(this::conceptMap);
-    }
-
     public ConceptMap conceptMap(VertexMap vertexMap) {
         Map<Retrievable, Concept> map = new HashMap<>();
         vertexMap.forEach((id, vertex) -> {
@@ -180,11 +176,7 @@ public final class ConceptManager {
     }
 
     public Thing getThing(ByteArray iid) {
-        return getThing(iid, false);
-    }
-
-    public Thing getThing(ByteArray iid, boolean getForUpdate) {
-        ThingVertex thingVertex = graphMgr.data().get(VertexIID.Thing.of(iid), getForUpdate);
+        ThingVertex thingVertex = graphMgr.data().get(VertexIID.Thing.of(iid));
         if (thingVertex != null) return ThingImpl.of(thingVertex);
         else return null;
     }

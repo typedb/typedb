@@ -497,7 +497,7 @@ public class Rule {
                 relation().players().forEach(rp -> {
                     RoleType role = getRole(rp, relationType, whenConcepts);
                     Thing player = whenConcepts.get(rp.player().id()).asThing();
-                    Thing refreshedPlayer = conceptMgr.getThing(player.getIID(), true);
+                    Thing refreshedPlayer = conceptMgr.getThing(player.getIID());
                     relation.addPlayer(role, refreshedPlayer, true);
                     thenConcepts.putIfAbsent(rp.roleType().get().id(), role);
                     thenConcepts.putIfAbsent(rp.player().id(), refreshedPlayer);
@@ -666,7 +666,7 @@ public class Rule {
                     Identifier.Variable.Retrievable ownerId = has().owner().id();
                     assert whenConcepts.contains(ownerId) && whenConcepts.get(ownerId).isThing();
                     Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
-                    Thing refreshedOwner = conceptMgr.getThing(whenConcepts.get(ownerId.reference().asName()).asThing().getIID(), true);
+                    Thing refreshedOwner = conceptMgr.getThing(whenConcepts.get(ownerId.reference().asName()).asThing().getIID());
                     Attribute attribute = putAttribute(conceptMgr);
                     refreshedOwner.setHas(attribute, true);
                     TypeVariable declaredType = has().attribute().isa().get().type();
@@ -786,11 +786,11 @@ public class Rule {
                                                                                          ConceptManager conceptMgr) {
                     Identifier.Variable.Retrievable ownerId = has().owner().id();
                     assert whenConcepts.contains(ownerId) && whenConcepts.get(ownerId).isThing();
-                    Thing refreshedOwner = conceptMgr.getThing(whenConcepts.get(ownerId).asThing().getIID(), true);
+                    Thing refreshedOwner = conceptMgr.getThing(whenConcepts.get(ownerId).asThing().getIID());
                     Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
                     assert whenConcepts.contains(has().attribute().id())
                             && whenConcepts.get(has().attribute().id()).isAttribute();
-                    Attribute refreshedAttr = conceptMgr.getThing(whenConcepts.get(has().attribute().id()).asThing().getIID(), true).asAttribute();
+                    Attribute refreshedAttr = conceptMgr.getThing(whenConcepts.get(has().attribute().id()).asThing().getIID()).asAttribute();
                     refreshedOwner.setHas(refreshedAttr, true);
                     thenConcepts.put(has().attribute().id(), refreshedAttr);
                     thenConcepts.put(has().owner().id(), refreshedOwner);

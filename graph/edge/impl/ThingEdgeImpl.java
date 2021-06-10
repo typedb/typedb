@@ -128,7 +128,17 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         }
 
         @Override
+        public ThingVertex from(boolean doNotCacheVertex) {
+            return from;
+        }
+
+        @Override
         public ThingVertex to() {
+            return to;
+        }
+
+        @Override
+        public ThingVertex to(boolean doNotCacheVertex) {
             return to;
         }
 
@@ -279,17 +289,27 @@ public abstract class ThingEdgeImpl implements ThingEdge {
 
         @Override
         public ThingVertex from() {
+            return from(false);
+        }
+
+        @Override
+        public ThingVertex from(boolean doNotCacheVertex) {
             if (from != null) return from;
-            from = graph.convert(fromIID);
-            from.outs().cache(this);
+            from = graph.convert(fromIID, doNotCacheVertex);
+            from.outs().register(this);
             return from;
         }
 
         @Override
         public ThingVertex to() {
+            return to(false);
+        }
+
+        @Override
+        public ThingVertex to(boolean doNotCacheVertex) {
             if (to != null) return to;
             to = graph.convert(toIID);
-            to.ins().cache(this);
+            to.ins().register(this);
             return to;
         }
 
