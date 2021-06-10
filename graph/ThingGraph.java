@@ -55,7 +55,6 @@ import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLong;
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
@@ -231,17 +230,21 @@ public class ThingGraph {
         }
     }
 
-    public FunctionalIterator<ThingVertex> get(TypeVertex typeVertex) {
-        return get(typeVertex, true);
+    public FunctionalIterator<ThingVertex> getAll(TypeVertex typeVertex) {
+        return getAll(typeVertex, false);
     }
 
-    public FunctionalIterator<ThingVertex> get(TypeVertex typeVertex, boolean doNotCache) {
+    public FunctionalIterator<ThingVertex> getAll(TypeVertex typeVertex, boolean doNotCache) {
         FunctionalIterator<ThingVertex> storageIterator = storage.iterate(
                 join(typeVertex.iid().bytes(), Encoding.Edge.ISA.in().bytes()),
                 (key, value) -> convert(EdgeIID.InwardsISA.of(key).end(), doNotCache)
         );
         if (!thingByTypeIID.containsKey(typeVertex.iid())) return storageIterator;
         else return link(thingByTypeIID.get(typeVertex.iid()).iterator(), storageIterator).distinct();
+    }
+
+    public AttributeVertex<Boolean> get(TypeVertex type, boolean value) {
+        return get(type, value, false);
     }
 
     public AttributeVertex<Boolean> get(TypeVertex type, boolean value, boolean doNotCache) {
@@ -257,6 +260,10 @@ public class ThingGraph {
         );
     }
 
+    public AttributeVertex<Long> get(TypeVertex type, long value) {
+        return get(type, value, false);
+    }
+
     public AttributeVertex<Long> get(TypeVertex type, long value, boolean doNotCache) {
         assert storage.isOpen();
         assert type.isAttributeType();
@@ -270,6 +277,10 @@ public class ThingGraph {
         );
     }
 
+    public AttributeVertex<Double> get(TypeVertex type, double value) {
+        return get(type, value, false);
+    }
+
     public AttributeVertex<Double> get(TypeVertex type, double value, boolean doNotCache) {
         assert storage.isOpen();
         assert type.isAttributeType();
@@ -281,6 +292,10 @@ public class ThingGraph {
                 iid -> new AttributeVertexImpl.Double(this, iid),
                 doNotCache
         );
+    }
+
+    public AttributeVertex<String> get(TypeVertex type, String value) {
+        return get(type, value, false);
     }
 
     public AttributeVertex<String> get(TypeVertex type, String value, boolean doNotCache) {
@@ -301,6 +316,10 @@ public class ThingGraph {
                 iid -> new AttributeVertexImpl.String(this, iid),
                 doNotCache
         );
+    }
+
+    public AttributeVertex<LocalDateTime> get(TypeVertex type, LocalDateTime value) {
+        return get(type, value, false);
     }
 
     public AttributeVertex<LocalDateTime> get(TypeVertex type, LocalDateTime value, boolean doNotCache) {
@@ -481,7 +500,7 @@ public class ThingGraph {
 
     /**
      * Commits all the writes captured in this graph into storage.
-     *
+     * <p>
      * We start off by generating new IIDs for every {@code ThingVertex} (which
      * does not actually include {@code AttributeVertex}). We then write the every
      * {@code ThingVertex} onto the storage. Once all commit operations for every

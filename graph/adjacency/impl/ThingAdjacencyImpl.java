@@ -66,13 +66,13 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
     IID[] infixTails(ThingEdge edge) {
         if (edge.encoding().isOptimisation()) {
             if (direction.isOut()) {
-                return new IID[]{edge.outIID().infix().asRolePlayer().tail(), edge.to(true).iid().prefix(), edge.to(true).iid().type()};
+                return new IID[]{edge.outIID().infix().asRolePlayer().tail(), edge.toIID().prefix(), edge.toIID().type()};
             } else {
-                return new IID[]{edge.inIID().infix().asRolePlayer().tail(), edge.from(true).iid().prefix(), edge.from(true).iid().type()};
+                return new IID[]{edge.inIID().infix().asRolePlayer().tail(), edge.fromIID().prefix(), edge.fromIID().type()};
             }
         } else {
-            if (direction.isOut()) return new IID[]{edge.to(true).iid().prefix(), edge.to(true).iid().type()};
-            else return new IID[]{edge.from(true).iid().prefix(), edge.from(true).iid().type()};
+            if (direction.isOut()) return new IID[]{edge.toIID().prefix(), edge.toIID().type()};
+            else return new IID[]{edge.fromIID().prefix(), edge.fromIID().type()};
         }
     }
 

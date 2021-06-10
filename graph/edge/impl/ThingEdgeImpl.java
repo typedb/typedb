@@ -133,6 +133,11 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         }
 
         @Override
+        public VertexIID.Thing fromIID() {
+            return from.iid();
+        }
+
+        @Override
         public ThingVertex to() {
             return to;
         }
@@ -140,6 +145,11 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         @Override
         public ThingVertex to(boolean doNotCacheVertex) {
             return to;
+        }
+
+        @Override
+        public VertexIID.Thing toIID() {
+            return to.iid();
         }
 
         @Override
@@ -294,10 +304,21 @@ public abstract class ThingEdgeImpl implements ThingEdge {
 
         @Override
         public ThingVertex from(boolean doNotCacheVertex) {
-            if (from != null) return from;
-            from = graph.convert(fromIID, doNotCacheVertex);
-            from.outs().register(this);
-            return from;
+            if (doNotCacheVertex) {
+                ThingVertex f = graph.convert(fromIID, doNotCacheVertex);
+                f.outs().register(this);
+                return f;
+            } else {
+                if (from != null) return from;
+                from = graph.convert(fromIID, doNotCacheVertex);
+                from.outs().register(this);
+                return from;
+            }
+        }
+
+        @Override
+        public VertexIID.Thing fromIID() {
+            return fromIID;
         }
 
         @Override
@@ -307,10 +328,21 @@ public abstract class ThingEdgeImpl implements ThingEdge {
 
         @Override
         public ThingVertex to(boolean doNotCacheVertex) {
-            if (to != null) return to;
-            to = graph.convert(toIID);
-            to.ins().register(this);
-            return to;
+            if (doNotCacheVertex) {
+                ThingVertex t = graph.convert(toIID, doNotCacheVertex);
+                t.outs().register(this);
+                return t;
+            } else {
+                if (to != null) return to;
+                to = graph.convert(toIID);
+                to.ins().register(this);
+                return to;
+            }
+        }
+
+        @Override
+        public VertexIID.Thing toIID() {
+            return toIID;
         }
 
         @Override

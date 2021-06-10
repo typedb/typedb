@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.graph.edge;
 
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.iid.EdgeIID;
+import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 
 import java.util.Optional;
@@ -33,7 +34,11 @@ public interface ThingEdge extends Edge<Encoding.Edge.Thing, EdgeIID.Thing, Thin
 
     ThingVertex from(boolean doNotCacheVertex);
 
+    VertexIID.Thing fromIID();
+
     ThingVertex to(boolean doNotCacheVertex);
+
+    VertexIID.Thing toIID();
 
     Optional<ThingVertex> optimised();
 
