@@ -105,8 +105,8 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
     public ThingEdge edge(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised) {
         assert encoding.isOptimisation();
         Predicate<ThingEdge> predicate = direction.isOut()
-                ? e -> e.to(true).equals(adjacent) && e.outIID().suffix().equals(SuffixIID.of(optimised.iid().key()))
-                : e -> e.from(true).equals(adjacent) && e.inIID().suffix().equals(SuffixIID.of(optimised.iid().key()));
+                ? e -> e.to(false).equals(adjacent) && e.outIID().suffix().equals(SuffixIID.of(optimised.iid().key()))
+                : e -> e.from(false).equals(adjacent) && e.inIID().suffix().equals(SuffixIID.of(optimised.iid().key()));
         FunctionalIterator<ThingEdge> iterator = bufferedEdgeIterator(
                 encoding, new IID[]{optimised.iid().type(), adjacent.iid().prefix(), adjacent.iid().type()}
         );
@@ -123,7 +123,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
     public ThingEdge edge(Encoding.Edge.Thing encoding, ThingVertex adjacent) {
         assert !encoding.isOptimisation();
         Predicate<ThingEdge> predicate =
-                direction.isOut() ? e -> e.to(true).equals(adjacent) : e -> e.from(true).equals(adjacent);
+                direction.isOut() ? e -> e.to(false).equals(adjacent) : e -> e.from(false).equals(adjacent);
         FunctionalIterator<ThingEdge> iterator =
                 bufferedEdgeIterator(encoding, new IID[]{adjacent.iid().prefix(), adjacent.iid().type()});
         ThingEdge edge = null;
@@ -229,22 +229,22 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
         @Override
         public FunctionalIterator<ThingVertex> from() {
-            return from(false);
+            return from(true);
         }
 
         @Override
-        public FunctionalIterator<ThingVertex> from(boolean doNotCacheVertex) {
-            return edgeIterator.map(e -> e.from(doNotCacheVertex));
+        public FunctionalIterator<ThingVertex> from(boolean cacheVertex) {
+            return edgeIterator.map(e -> e.from(cacheVertex));
         }
 
         @Override
         public FunctionalIterator<ThingVertex> to() {
-            return to(false);
+            return to(true);
         }
 
         @Override
-        public FunctionalIterator<ThingVertex> to(boolean doNotCacheVertex) {
-            return edgeIterator.map(e -> e.to(doNotCacheVertex));
+        public FunctionalIterator<ThingVertex> to(boolean cacheVertex) {
+            return edgeIterator.map(e -> e.to(cacheVertex));
         }
 
         @Override
