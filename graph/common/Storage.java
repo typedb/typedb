@@ -67,8 +67,6 @@ public interface Storage {
 
     interface Data extends Storage {
 
-        boolean isReadOnly();
-
         KeyGenerator.Data dataKeyGenerator();
 
         void putTracked(ByteArray key);

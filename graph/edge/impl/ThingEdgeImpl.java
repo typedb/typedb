@@ -335,7 +335,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
                 return to;
             } else {
                 ThingVertex t = graph.convert(toIID, cacheVertex);
-                t.outs().register(this);
+                t.ins().register(this);
                 return t;
             }
         }
