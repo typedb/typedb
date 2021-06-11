@@ -18,16 +18,27 @@
 
 package com.vaticle.typedb.core.test.behaviour.resolution.framework.common;
 
-import com.vaticle.typedb.core.pattern.variable.Variable;
+import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.pattern.constraint.Constraint;
+import com.vaticle.typeql.lang.pattern.variable.BoundVariable;
+import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
+
+import java.util.List;
+
 
 public class TypeQLHelpers {
 
-    public static Variable makeAnonVarsExplicit(Variable variable) {
-//        if (variable.var().isReturned()) {
-//            return variable;
-//        } else {
-//            return Variable.create(variable.var().asReturnedVar(), variable.properties());
-//        }
-        return null;
+    public static BoundVariable makeAnonVarsExplicit(BoundVariable variable) {
+        if (variable.isNamed()) {
+            return variable;
+        } else {
+            List<? extends Constraint<?>> constraints = variable.constraints();
+            // TODO: Generate some new name
+            BoundVariable vb;
+            UnboundVariable v = TypeQL.var("bob");
+            // TODO: This needs to return a bound variable. The variables must have one or more constraints, but how can we know this?
+            constraints.forEach(constraint -> {vb = v.constrain(constraint)});
+            return vb;
+        }
     }
 }

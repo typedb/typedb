@@ -76,13 +76,13 @@ public class RuleResolutionBuilderIT {
                 Conjunction<? extends Pattern> conjunction = new Conjunction<>(Collections.singletonList(var));
                 Disjunction disjunction = Disjunction.create(conjunction.normalise());
                 tx.logic().typeResolver().resolve(disjunction);
-                Set<Variable> expectedResolutionVariables = new HashSet<>();
-                expectedResolutionVariables.add(TypeQL.parsePattern("$x1 (owned: $name, owner: $company) isa has-attribute-property").asVariable());
-                expectedResolutionVariables.add(TypeQL.parsePattern("$x0 (instance: $company) isa isa-property, has type-label \"company\"").asVariable());
+                Set<Variable> expected = new HashSet<>();
+                expected.add(TypeQL.parsePattern("$x1 (owned: $name, owner: $company) isa has-attribute-property").asVariable());
+                expected.add(TypeQL.parsePattern("$x0 (instance: $company) isa isa-property, has type-label \"company\"").asVariable());
                 com.vaticle.typedb.core.pattern.variable.Variable variable =
                         iterate(disjunction.conjunctions().get(0).variables()).filter(v -> v.reference().name().equals("company")).first().get();
                 Set<ThingVariable<?>> resolutionVariables = new HashSet<>(new RuleResolutionBuilder().addTrackingConstraints(variable, null));
-                Assert.assertEquals(expectedResolutionVariables, resolutionVariables);
+                Assert.assertEquals(expected, resolutionVariables);
             }
         }
     }

@@ -26,8 +26,10 @@ import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.Patter
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.RuleResolutionBuilder;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.TypeQLHelpers;
 import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.pattern.Conjunctable;
 import com.vaticle.typeql.lang.pattern.Conjunction;
 import com.vaticle.typeql.lang.pattern.Pattern;
+import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
 
 import java.util.HashSet;
 import java.util.List;
@@ -48,7 +50,7 @@ public class Completer {
     public void loadRules(Set<com.vaticle.typedb.core.logic.Rule> typeDBRules) {
         Set<Rule> rules = new HashSet<>();
         for (com.vaticle.typedb.core.logic.Rule typeDBRule : typeDBRules) {
-            rules.add(new Rule(typeDBRule.when(), typeDBRule.then(), typeDBRule.getLabel()));
+            rules.add(new Rule(typeDBRule.getWhenPreNormalised(), typeDBRule.getThenPreNormalised(), typeDBRule.getLabel()));
         }
         this.rules = rules;
     }
@@ -74,37 +76,36 @@ public class Completer {
         // TODO When making match queries be careful that user-provided rules could trigger due to elements of the
         //  completion schema. These results should be filtered out.
 
-        // Use the DNF so that we can know each `when` if free of disjunctions. Disjunctions in the `when` will otherwise complicate things significantly
-        Set<Conjunction<Pattern>> disjunctiveWhens = rule.when.normalise().patterns();
-        for (Conjunction<Pattern> when : disjunctiveWhens) {
-            // Get all the places where the `when` of the rule is satisfied, but the `then` is not
-            List<ConceptMap> inferredConcepts = tx.query().match(TypeQL.match(when, TypeQL.not(rule.then)).insert(rule.then.variables()));
-            if (inferredConcepts.isEmpty()) {
-                continue;
-            }
-
-            // We already know that the rule doesn't contain any disjunctions as we previously used negationDNF,
-            // now we make sure negation blocks are removed, so that we know it must be a conjunct set of variables
-            PatternVisitor.NegationRemovalVisitor negationRemover = new PatternVisitor.NegationRemovalVisitor();
-            Pattern ruleResolutionConjunction = negationRemover.visitConjunction(ruleResolutionBuilder.ruleResolutionConjunction(tx, rule.when, rule.then, rule.label));
-
-            // Record how the inference was made
-            List<ConceptMap> inserted = tx.query().match(TypeQL.match(rule.when, rule.then, TypeQL.not(ruleResolutionConjunction)).insert(ruleResolutionConjunction.variables()));
-            assert inserted.size() >= 1;
-            foundResult.set(true);
+        // Get all the places where the `when` of the rule is satisfied, but the `then` is not
+        List<ConceptMap> inferredConcepts = tx.query().insert(TypeQL.match(rule.when, TypeQL.not(rule.then)).insert(rule.then)).toList();
+        if (inferredConcepts.isEmpty()) {
+            continue;
         }
+
+        // We already know that the rule doesn't contain any disjunctions as we previously used negationDNF,
+        // now we make sure negation blocks are removed, so that we know it must be a conjunct set of variables
+        PatternVisitor.NegationRemovalVisitor negationRemover = new PatternVisitor.NegationRemovalVisitor();
+        Conjunction<Conjunctable> ruleResolutionConjunction = negationRemover.visitConjunction(ruleResolutionBuilder.ruleResolutionConjunction(tx, rule.when, rule.then, rule.label));
+
+        // Record how the inference was made
+        List<ConceptMap> inserted = tx.query().insert(TypeQL.match(rule.when, rule.then, TypeQL.not(ruleResolutionConjunction)).insert(ruleResolutionConjunction.variables()));
+        assert inserted.size() >= 1;
+        foundResult.set(true);
+
         return foundResult.get();
     }
 
     private static class Rule {
-        private final com.vaticle.typedb.core.pattern.Conjunction when;
-        private final com.vaticle.typedb.core.pattern.Conjunction then;
+        private final Conjunction<Conjunctable> when;
+        private final ThingVariable<?> then;
         private final String label;
 
-        Rule(com.vaticle.typedb.core.pattern.Conjunction when, com.vaticle.typedb.core.pattern.Conjunction then, String label) {
+        public Rule(Conjunction<? extends Pattern> whenPreNormalised, ThingVariable<?> thenPreNormalised, String label) {
             PatternVisitor.VariableVisitor visitor = new PatternVisitor.VariableVisitor(TypeQLHelpers::makeAnonVarsExplicit);
-            this.when = visitor.visitConjunction(when);
-            this.then = visitor.visitConjunction(then);
+            List<Conjunction<Conjunctable>> whenConjunctions = whenPreNormalised.normalise().patterns();
+            assert whenConjunctions.size() == 1;
+            this.when = visitor.visitConjunction(whenConjunctions.get(0));
+            this.then = visitor.visitVariable(thenPreNormalised.normalise()).asThing();
             this.label = label;
         }
     }

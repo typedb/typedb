@@ -19,13 +19,15 @@
 package com.vaticle.typedb.core.test.behaviour.resolution.framework.common;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.pattern.Conjunction;
-import com.vaticle.typedb.core.pattern.Disjunction;
-import com.vaticle.typedb.core.pattern.Negation;
-import com.vaticle.typedb.core.pattern.variable.Variable;
+import com.vaticle.typeql.lang.pattern.Conjunctable;
+import com.vaticle.typeql.lang.pattern.Conjunction;
+import com.vaticle.typeql.lang.pattern.Disjunction;
+import com.vaticle.typeql.lang.pattern.Negation;
+import com.vaticle.typeql.lang.pattern.Pattern;
+import com.vaticle.typeql.lang.pattern.variable.BoundVariable;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -33,54 +35,58 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public abstract class PatternVisitor {
 
-    private Disjunction visitDisjunction(Disjunction disjunction) {
-        return new Disjunction(iterate(disjunction.conjunctions()).map(this::visitConjunction).toList());
+    public Disjunction<Conjunction<Conjunctable>> visitDisjunction(Disjunction<Conjunction<Conjunctable>> disjunction) {
+        return new Disjunction<>(iterate(disjunction.patterns()).map(this::visitConjunction).toList());
     }
 
-    public Conjunction visitConjunction(Conjunction conjunction) {
-        return new Conjunction(visitVariables(conjunction.variables()), visitNegations(conjunction.negations()));
+    public Conjunction<Conjunctable> visitConjunction(Conjunction<Conjunctable> conjunction) {
+        List<Conjunctable> conjunctables = new ArrayList<>();
+        conjunction.patterns().forEach(pattern -> {
+            if (pattern.isVariable()) {
+                conjunctables.add(visitVariable(pattern.asVariable()));
+            } else if (pattern.isNegation()) {
+                conjunctables.add(visitNegation(pattern.asNegation()));
+            } else throw TypeDBException.of(ILLEGAL_STATE);
+        });
+        return new Conjunction<>(conjunctables);
     }
 
-    protected Set<Negation> visitNegations(Set<Negation> negations) {
-        return iterate(negations).map(this::visitNegation).toSet();
+    Negation<Disjunction<Conjunction<Conjunctable>>> visitNegation(Negation<? extends Pattern> negation) {
+        return new Negation<>(visitDisjunction(negation.normalise().pattern()));
     }
 
-    Negation visitNegation(Negation negation) {
-        return new Negation(visitDisjunction(negation.disjunction()));
-    }
-
-    protected Set<Variable> visitVariables(Set<Variable> variables) {
-        return iterate(variables).map(this::visitVariable).toSet();
-    }
-
-    protected Variable visitVariable(Variable pattern) {
-        return pattern;
+    protected BoundVariable visitVariable(BoundVariable variable) {
+        return variable;
     }
 
     public static class VariableVisitor extends PatternVisitor {
 
-        private final Function<Variable, Variable> function;
+        private final Function<BoundVariable, BoundVariable> function;
 
-        public VariableVisitor(Function<Variable, Variable> function) {
+        public VariableVisitor(Function<BoundVariable, BoundVariable> function) {
             this.function = function;
         }
 
         @Override
-        protected Variable visitVariable(Variable variable) {
+        public BoundVariable visitVariable(BoundVariable variable) {
             return function.apply(variable);
         }
     }
 
     public static class NegationRemovalVisitor extends PatternVisitor {
 
+        // TODO: Would like to return explicitly BoundVariables and not Negations
         @Override
-        protected Set<Negation> visitNegations(Set<Negation> negations) {
-            return new HashSet<>();
-        }
-
-        @Override
-        Negation visitNegation(Negation negation) {
-            throw TypeDBException.of(ILLEGAL_STATE);
+        public Conjunction<BoundVariable> visitConjunction(Conjunction<Conjunctable> conjunction) {
+            List<BoundVariable> variables = new ArrayList<>();
+            conjunction.patterns().forEach(pattern -> {
+                if (pattern.isVariable()) {
+                    variables.add(visitVariable(pattern.asVariable()));
+                } else {
+                    if (!pattern.isNegation()) throw TypeDBException.of(ILLEGAL_STATE);
+                }
+            });
+            return new Conjunction<BoundVariable>(variables);
         }
     }
 }
