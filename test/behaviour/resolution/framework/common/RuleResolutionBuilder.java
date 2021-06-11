@@ -33,8 +33,6 @@ import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -56,7 +54,7 @@ import static com.vaticle.typedb.core.test.behaviour.resolution.framework.comple
 
 public class RuleResolutionBuilder {
 
-    private HashMap<String, Integer> nextVarIndex = new HashMap<>();
+    private final HashMap<String, Integer> nextVarIndex = new HashMap<>();
 
     /**
      * Constructs the TypeDB structure that captures how the result of a rule was inferred
@@ -66,41 +64,10 @@ public class RuleResolutionBuilder {
      * @param ruleLabel   rule label
      * @return Pattern for the structure that *connects* the variables involved in the rule
      */
-    // This implementation for `ruleResolutionConjunction` takes account of disjunctions in rules, however it produces
-    // a format for the relation query that seems to be far slower (causing tests to run 2x slower overall), and so it
-    // has been put aside for now in favour of an adaptation of the old, simpler, implementation.
-//    public Conjunction<? extends Pattern> ruleResolutionConjunction(Pattern whenPattern, Pattern thenPattern, String ruleLabel) {
-//        String inferenceType = "resolution";
-//        String inferenceRuleLabelType = "rule-label";
-//        Variable ruleVar = new Variable(getNextVar("rule"));
-//        Variable relation = TypeQL.var(ruleVar).isa(inferenceType).has(inferenceRuleLabelType, ruleLabel);
-//        VariableVisitor bodyVisitor = new VariableVisitor(p -> variableToResolutionConjunction(p, ruleVar, "body"));
-//        VariableVisitor headVisitor = new VariableVisitor(p -> variableToResolutionConjunction(p, ruleVar, "head"));
-//        NegationRemovalVisitor negationStripper = new NegationRemovalVisitor();
-//        Pattern body = bodyVisitor.visitPattern(negationStripper.visitPattern(whenPattern));
-//        Pattern head = headVisitor.visitPattern(thenPattern);
-//        return TypeQL.and(body, head, relation);
-//    }
-//
-//    private Pattern variableToResolutionConjunction(Variable variable, Variable ruleVar, String ruleRole) {
-//        LinkedHashMap<String, Variable> resolutionProperties = variableToResolutionProperties(variable);
-//        if (resolutionProperties.isEmpty()) {
-//            return null;
-//        } else {
-//            LinkedHashSet<Variable> s = new LinkedHashSet<>();
-//            Variable ruleVariable = TypeQL.var(ruleVar);
-//            for (String var : resolutionProperties.keySet()) {
-//                ruleVariable = ruleVariable.rel(ruleRole, TypeQL.var(var));
-//            }
-//            s.add(ruleVariable);
-//            s.addAll(resolutionProperties.values());
-//            return TypeQL.and(s);
-//        }
-//    }
-
-    // This implementation doesn't handle disjunctions in rules.
-    public Conjunction<? extends Pattern> ruleResolutionConjunction(Transaction tx, com.vaticle.typedb.core.pattern.Conjunction when, com.vaticle.typedb.core.pattern.Conjunction then, String ruleLabel) {
-
+    public Conjunction<? extends Pattern> ruleResolutionConjunction(Transaction tx,
+                                                                    com.vaticle.typedb.core.pattern.Conjunction when,
+                                                                    com.vaticle.typedb.core.pattern.Conjunction then,
+                                                                    String ruleLabel) {
         PatternVisitor.NegationRemovalVisitor negationStripper = new PatternVisitor.NegationRemovalVisitor();
         com.vaticle.typedb.core.pattern.Conjunction strippedWhen = negationStripper.visitConjunction(when);
         com.vaticle.typedb.core.pattern.Conjunction strippedThen = negationStripper.visitConjunction(then);
@@ -109,34 +76,70 @@ public class RuleResolutionBuilder {
         List<ThingVariable<?>> constraints = new ArrayList<>();
         constraints.add(relationVar.isa(RESOLUTION.toString()).has(RULE_LABEL.toString(), ruleLabel));
 
-        LinkedHashMap<String, ThingVariable<?>> whenProps = new LinkedHashMap<>();
+        List<ThingVariable<?>> whenProps = new ArrayList<>();
 
         for (Variable whenVariable : strippedWhen.variables()) {
-            whenProps.putAll(addTrackingConstraints(tx, whenVariable, null));
+            whenProps.addAll(addTrackingConstraints(whenVariable, null));
         }
 
-        for (String whenVar : whenProps.keySet()) {
-            constraints.add(relationVar.rel(BODY.toString(), whenVar));
+        for (ThingVariable<?> whenVar : whenProps) {
+            constraints.add(relationVar.rel(BODY.toString(), whenVar.name()));
         }
 
-        LinkedHashMap<String, ThingVariable<?>> thenProps = new LinkedHashMap<>();
+        List<ThingVariable<?>> thenProps = new ArrayList<>();
 
         for (Variable thenVariable : strippedThen.variables()) {
-            thenProps.putAll(addTrackingConstraints(tx, thenVariable, true));
+            thenProps.addAll(addTrackingConstraints(thenVariable, true));
         }
 
-        for (String thenVar : thenProps.keySet()) {
-            constraints.add(relationVar.rel(HEAD.toString(), TypeQL.var(thenVar)));
+        for (ThingVariable<?> thenVar : thenProps) {
+            constraints.add(relationVar.rel(HEAD.toString(), thenVar.name()));
         }
 
-        Conjunction<ThingVariable<?>> conjunction = new Conjunction<>(constraints);
+        constraints.addAll(whenProps);
+        constraints.addAll(thenProps);
+        return new Conjunction<>(constraints);
+    }
 
-        com.vaticle.typedb.core.pattern.Conjunction.create(conjunction.normalise().patterns().get(0));
-        LinkedHashSet<Variable> result = new LinkedHashSet<>();
-        result.addAll(whenProps.values());
-        result.addAll(thenProps.values());
-        result.add(relation);
-        return TypeQL.and(result);
+    public List<ThingVariable<?>> addTrackingConstraints(Variable variable, @Nullable final Boolean inferred) {
+        List<ThingVariable<?>> newVariables = new ArrayList<>();
+        ThingVariable.Relation isaRelation = TypeQL.var(getNextVarName(VarPrefix.X.toString()))
+                .rel(INSTANCE.toString(), variable.toString())
+                .isa(ISA_PROPERTY.toString());
+        for (Label typeLabel : variable.resolvedTypes()) {
+            isaRelation = isaRelation.has(TYPE_LABEL.toString(), typeLabel.name());
+        }
+        if (inferred != null) isaRelation = isaRelation.has(INFERRED.toString(), inferred); // TODO: Remove null check
+        newVariables.add(isaRelation);
+
+        for (Constraint constraint : variable.constraints()) {
+            if (constraint.isThing()) {
+                if (constraint.asThing().isHas()) {
+                    ThingVariable.Relation relation = TypeQL.var(getNextVarName(VarPrefix.X.toString()))
+                            .rel(OWNED.toString(), constraint.asThing().asHas().attribute().toString())
+                            .rel(OWNER.toString(), variable.toString())
+                            .isa(HAS_ATTRIBUTE_PROPERTY.toString());
+                    if (inferred != null) relation = relation.has(INFERRED.toString(), inferred); // TODO: Remove null check
+                    newVariables.add(relation);
+                } else if (constraint.asThing().isRelation()) {
+                    for (RelationConstraint.RolePlayer rolePlayer : constraint.asThing().asRelation().players()) {
+                        ThingVariable.Relation relation = TypeQL.var(getNextVarName(VarPrefix.X.toString()))
+                                .rel(REL.toString(), variable.toString())
+                                .rel(ROLEPLAYER.toString(), TypeQL.var(rolePlayer.player().toString()))
+                                .isa(RELATION_PROPERTY.toString());
+                        Optional<TypeVariable> role = rolePlayer.roleType();
+                        if (role.isPresent()) {
+                            for (Label roleLabel : role.get().resolvedTypes()) {
+                                relation = relation.has(ROLE_LABEL.toString(), roleLabel.toString());
+                            }
+                        }
+                        if (inferred != null) relation = relation.has(INFERRED.toString(), inferred); // TODO: Remove null check
+                        newVariables.add(relation);
+                    }
+                }
+            }
+        }
+        return newVariables;
     }
 
     enum VarPrefix {
@@ -152,53 +155,6 @@ public class RuleResolutionBuilder {
         public String toString() {
             return name;
         }
-    }
-
-    public LinkedHashMap<String, ThingVariable<?>> addTrackingConstraints(final Transaction tx, Variable variable, @Nullable final Boolean inferred) {
-        LinkedHashMap<String, ThingVariable<?>> newVariables = new LinkedHashMap<>();
-
-        String variableVarName = variable.toString();
-
-        String nextVarName = getNextVarName(VarPrefix.X.toString());
-        ThingVariable.Relation isaRelation = TypeQL.var(nextVarName)
-                .rel(INSTANCE.toString(), variableVarName)
-                .isa(ISA_PROPERTY.toString());
-        for (Label typeLabel : variable.resolvedTypes()) {
-            isaRelation = isaRelation.has(TYPE_LABEL.toString(), typeLabel.name());
-        }
-        if (inferred != null) isaRelation = isaRelation.has(INFERRED.toString(), inferred); // TODO: Remove null check
-        newVariables.put(nextVarName, isaRelation);
-
-        for (Constraint constraint : variable.constraints()) {
-            if (constraint.isThing()) {
-                if (constraint.asThing().isHas()) {
-                    nextVarName = getNextVarName(VarPrefix.X.toString());
-                    ThingVariable.Relation relation = TypeQL.var(nextVarName)
-                            .rel(OWNED.toString(), constraint.asThing().asHas().attribute().toString())
-                            .rel(OWNER.toString(), variableVarName)
-                            .isa(HAS_ATTRIBUTE_PROPERTY.toString());
-                    if (inferred != null) relation = relation.has(INFERRED.toString(), inferred); // TODO: Remove null check
-                    newVariables.put(nextVarName, relation);
-                } else if (constraint.asThing().isRelation()) {
-                    for (RelationConstraint.RolePlayer rolePlayer : constraint.asThing().asRelation().players()) {
-                        nextVarName = getNextVarName(VarPrefix.X.toString());
-                        ThingVariable.Relation relation = TypeQL.var(nextVarName)
-                                .rel(REL.toString(), variableVarName)
-                                .rel(ROLEPLAYER.toString(), TypeQL.var(rolePlayer.player().toString()))
-                                .isa(RELATION_PROPERTY.toString());
-                        Optional<TypeVariable> role = rolePlayer.roleType();
-                        if (role.isPresent()) {
-                            for (Label roleLabel : role.get().resolvedTypes()) {
-                                relation = relation.has(ROLE_LABEL.toString(), roleLabel.toString());
-                            }
-                        }
-                        if (inferred != null) relation = relation.has(INFERRED.toString(), inferred); // TODO: Remove null check
-                        newVariables.put(nextVarName, relation);
-                    }
-                }
-            }
-        }
-        return newVariables;
     }
 
     /**

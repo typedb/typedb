@@ -71,7 +71,7 @@ public class RuleResolutionBuilderIT {
             try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 Variable variable = TypeQL.parsePattern("$company has name $name;").asVariable();
                 Variable expectedPropsVariable = TypeQL.parsePattern("$x0 (owned: $name, owner: $company) isa has-attribute-property;").asVariable();
-                Variable propsVariable = getOnlyElement(new RuleResolutionBuilder().addTrackingConstraints(tx, variable, null).values());
+                Variable propsVariable = getOnlyElement(new RuleResolutionBuilder().addTrackingConstraints(variable, null).values());
                 Assert.assertEquals(expectedPropsVariable, propsVariable);
             }
         }
@@ -84,7 +84,7 @@ public class RuleResolutionBuilderIT {
             try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 Variable variable = TypeQL.parsePattern("$company has name \"Apple\";").asVariable();
                 String regex = "^\\$x0 \\(owned: \\$\\d+, owner: \\$company\\) isa has-attribute-property;$";
-                Variable propsVariable = getOnlyElement(new RuleResolutionBuilder().addTrackingConstraints(tx, variable, null).values());
+                Variable propsVariable = getOnlyElement(new RuleResolutionBuilder().addTrackingConstraints(variable, null).values());
                 Assert.assertTrue(propsVariable.toString().matches(regex));
             }
         }
@@ -100,7 +100,7 @@ public class RuleResolutionBuilderIT {
                         "$x0 (rel: $locates, roleplayer: $transaction) isa relation-property, has role-label \"locates_located\", has role-label \"role\";" +
                         "$x1 (rel: $locates, roleplayer: $country) isa relation-property, has role-label \"locates_location\", has role-label \"role\";"
                 ).asConjunction().variables().collect(Collectors.toSet());
-                Set<Variable> propsVariables = new HashSet<>(new RuleResolutionBuilder().addTrackingConstraints(tx, variable, null).values());
+                Set<Variable> propsVariables = new HashSet<>(new RuleResolutionBuilder().addTrackingConstraints(variable, null).values());
                 Assert.assertEquals(expectedPropsVariables, propsVariables);
             }
         }
@@ -112,7 +112,7 @@ public class RuleResolutionBuilderIT {
         try (Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
             try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 Variable variable = TypeQL.parsePattern("$company isa company;").asVariable();
-                Variable propVariable = getOnlyElement(new RuleResolutionBuilder().addTrackingConstraints(tx, variable, null).values());
+                Variable propVariable = getOnlyElement(new RuleResolutionBuilder().addTrackingConstraints(variable, null).values());
                 Variable expectedPropVariable = TypeQL.parsePattern("$x0 (instance: $company) isa isa-property, has type-label \"company\", has type-label \"entity\";").asVariable();
                 Assert.assertEquals(expectedPropVariable, propVariable);
             }
