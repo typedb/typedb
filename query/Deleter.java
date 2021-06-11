@@ -31,6 +31,8 @@ import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.pattern.variable.TypeVariable;
+import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.reasoner.Reasoner;
 import com.vaticle.typeql.lang.pattern.variable.Reference;
@@ -73,13 +75,35 @@ public class Deleter {
     public static Deleter create(Reasoner reasoner, TypeQLDelete query, Context.Query context) {
         try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             VariableRegistry registry = VariableRegistry.createFromThings(query.variables(), false);
-            iterate(registry.types()).filter(t -> !t.reference().isLabel()).forEachRemaining(t -> {
-                throw TypeDBException.of(ILLEGAL_TYPE_VARIABLE_IN_DELETE, t.reference());
-            });
+            registry.variables().forEach(Deleter::validate);
 
             assert query.match().namedVariablesUnbound().containsAll(query.namedVariablesUnbound());
             Matcher matcher = Matcher.create(reasoner, query.match().get(query.namedVariablesUnbound()));
             return new Deleter(matcher, registry.things(), context);
+        }
+    }
+
+    public static void validate(Variable var) {
+        try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "validate")) {
+            if (var.isType()) validate(var.asType());
+            else validate(var.asThing());
+        }
+    }
+
+    private static void validate(TypeVariable var) {
+        if (!var.reference().isLabel()) throw TypeDBException.of(ILLEGAL_TYPE_VARIABLE_IN_DELETE, var.reference());
+    }
+
+    private static void validate(ThingVariable var) {
+        if (!var.reference().isName()) {
+            ErrorMessage.ThingWrite msg = var.relation().isPresent()
+                    ? ILLEGAL_ANONYMOUS_RELATION_IN_DELETE
+                    : ILLEGAL_ANONYMOUS_VARIABLE_IN_DELETE;
+            throw TypeDBException.of(msg, var);
+        } else if (var.iid().isPresent()) {
+            throw TypeDBException.of(THING_IID_NOT_INSERTABLE, var.reference(), var.iid().get());
+        } else if (!var.is().isEmpty()) {
+            throw TypeDBException.of(ILLEGAL_IS_CONSTRAINT, var, var.is().iterator().next());
         }
     }
 
@@ -121,20 +145,6 @@ public class Deleter {
             }
         }
 
-        private void validate(ThingVariable var) {
-            try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "validate")) {
-                if (!var.reference().isName()) {
-                    ErrorMessage.ThingWrite msg = var.relation().isPresent()
-                            ? ILLEGAL_ANONYMOUS_RELATION_IN_DELETE
-                            : ILLEGAL_ANONYMOUS_VARIABLE_IN_DELETE;
-                    throw TypeDBException.of(msg, var);
-                } else if (var.iid().isPresent()) {
-                    throw TypeDBException.of(THING_IID_NOT_INSERTABLE, var.reference(), var.iid().get());
-                } else if (!var.is().isEmpty()) {
-                    throw TypeDBException.of(ILLEGAL_IS_CONSTRAINT, var, var.is().iterator().next());
-                }
-            }
-        }
 
         private void deleteHas(ThingVariable var, Thing thing) {
             try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete_has")) {

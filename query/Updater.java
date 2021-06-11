@@ -38,6 +38,7 @@ import java.util.function.Function;
 
 import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.traceOnThread;
 import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ANONYMOUS_VARIABLE_IN_DELETE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_DELETE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_INSERT;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -69,14 +70,10 @@ public class Updater {
     public static Updater create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLUpdate query, Context.Query context) {
         try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
             VariableRegistry deleteRegistry = VariableRegistry.createFromThings(query.deleteVariables(), false);
-            iterate(deleteRegistry.types()).filter(t -> !t.reference().isLabel()).forEachRemaining(t -> {
-                throw TypeDBException.of(ILLEGAL_TYPE_VARIABLE_IN_DELETE, t.reference());
-            });
+            deleteRegistry.variables().forEach(Deleter::validate);
 
             VariableRegistry insertRegistry = VariableRegistry.createFromThings(query.insertVariables());
-            iterate(insertRegistry.types()).filter(t -> !t.reference().isLabel()).forEachRemaining(t -> {
-                throw TypeDBException.of(ILLEGAL_TYPE_VARIABLE_IN_INSERT, t.reference());
-            });
+            insertRegistry.variables().forEach(Inserter::validate);
 
             assert query.match().namedVariablesUnbound().containsAll(query.namedDeleteVariablesUnbound());
             HashSet<UnboundVariable> filter = new HashSet<>(query.namedDeleteVariablesUnbound());
