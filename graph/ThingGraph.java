@@ -597,7 +597,7 @@ public class ThingGraph {
 
     public static class Statistics {
 
-        private static final int COUNT_JOB_BATCH_SIZE = 10;
+        private static final int COUNT_JOB_BATCH_SIZE = 10_000;
         private final ConcurrentMap<VertexIID.Type, Long> persistedVertexCount;
         private final ConcurrentMap<VertexIID.Type, Long> persistedVertexTransitiveCount;
         private final ConcurrentMap<VertexIID.Type, Long> deltaVertexCount;
