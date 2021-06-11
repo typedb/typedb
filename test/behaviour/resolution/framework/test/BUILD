@@ -26,6 +26,10 @@ native_java_libraries(
     native_libraries_deps = [
         "//:typedb",
     ],
+    deps = [
+        "//common",
+        "@vaticle_typeql_lang_java//:typeql-lang",
+    ]
 )
 
 java_test(
@@ -35,7 +39,7 @@ java_test(
         "ResolutionQueryBuilderIT.java",
     ],
     classpath_resources = ["//common/test:logback-test"],
-    test_class = "grakn.core.test.behaviour.resolution.framework.test.ResolutionQueryBuilderIT",
+    test_class = "com.vaticle.typedb.core.test.behaviour.resolution.framework.test.ResolutionQueryBuilderIT",
     deps = [
         "//test/behaviour/resolution/framework/common",
         "//test/behaviour/resolution/framework/test:load-test",
@@ -54,7 +58,7 @@ java_test(
         "TestResolutionQueryBuilder.java",
     ],
     classpath_resources = ["//common/test:logback-test"],
-    test_class = "grakn.core.test.behaviour.resolution.framework.test.TestResolutionQueryBuilder",
+    test_class = "com.vaticle.typedb.core.test.behaviour.resolution.framework.test.TestResolutionQueryBuilder",
     deps = [
         "//test/behaviour/resolution/framework/common",
         "//test/behaviour/resolution/framework/resolve",
@@ -65,22 +69,28 @@ java_test(
     ],
 )
 
-java_test(
+host_compatible_java_test(
     name = "rule-resolution-builder-it",
     size = "medium",
     srcs = [
         "RuleResolutionBuilderIT.java",
     ],
     classpath_resources = ["//common/test:logback-test"],
-    test_class = "grakn.core.test.behaviour.resolution.framework.test.RuleResolutionBuilderIT",
-    deps = [
-        "//test/behaviour/resolution/framework/common",
-        "//test/behaviour/resolution/framework/test:load-test",
+    test_class = "com.vaticle.typedb.core.test.behaviour.resolution.framework.test.RuleResolutionBuilderIT",
+    native_libraries_deps = [
         "//:typedb",
+        "//rocks:rocks",
+        "//test/behaviour/resolution/framework/common:common",
+        "//test/behaviour/resolution/framework/test:load-test",
+        "//pattern:pattern",
+    ],
+    deps = [
+        "//common",
+        "//test/integration/util",
         "@maven//:com_google_guava_guava",
-
         # External dependencies from @vaticle
         "@vaticle_typeql_lang_java//:typeql-lang",
+        "@vaticle_typeql_lang_java//pattern:pattern",
     ],
 )
 
@@ -91,7 +101,7 @@ host_compatible_java_test(
         "TestSchemaManager.java",
     ],
     classpath_resources = ["//common/test:logback-test"],
-    test_class = "grakn.core.test.behaviour.resolution.framework.test.TestSchemaManager",
+    test_class = "com.vaticle.typedb.core.test.behaviour.resolution.framework.test.TestSchemaManager",
     native_libraries_deps = [
         "//:typedb",
         "//concept:concept",
@@ -111,7 +121,7 @@ java_test(
         "TestCompleter.java",
     ],
     classpath_resources = ["//common/test:logback-test"],
-    test_class = "grakn.core.test.behaviour.resolution.framework.test.TestCompleter",
+    test_class = "com.vaticle.typedb.core.test.behaviour.resolution.framework.test.TestCompleter",
     deps = [
         "//test/behaviour/resolution/framework/common",
         "//test/behaviour/resolution/framework/complete",
@@ -131,7 +141,7 @@ java_test(
         "TestResolution.java",
     ],
     classpath_resources = ["//common/test:logback-test"],
-    test_class = "grakn.core.test.behaviour.resolution.framework.test.TestResolution",
+    test_class = "com.vaticle.typedb.core.test.behaviour.resolution.framework.test.TestResolution",
     deps = [
         "//test/behaviour/resolution/framework/test:load-test",
         "//test/behaviour/resolution/framework:resolution-lib",

@@ -41,7 +41,6 @@ import java.nio.file.Paths;
 
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadBasicRecursionTest;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadComplexRecursionTest;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadTestStub;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadTransitivityTest;
 import static junit.framework.TestCase.assertNotNull;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -154,12 +153,12 @@ public class TestResolution {
         Transaction tx = testSession.transaction(Arguments.Transaction.Type.WRITE);
         tx.query().undefine(TypeQL.undefine(TypeQL.type("location-hierarchy-transitivity").sub("rule")));
         tx.query().define(TypeQL.parseQuery("define " +
-                "location-hierarchy-transitivity sub rule,\n" +
+rule                 "location-hierarchy-transitivity:\n" +
                 "when {\n" +
                 "  ($a, $b) isa location-hierarchy;\n" +
                 "  ($b, $c) isa location-hierarchy;\n" +
                 "  $a != $c;\n" +
-                "}, then {\n" +
+                "} then {\n" +
                 "  (location-hierarchy_superior: $a, location-hierarchy_subordinate: $c) isa location-hierarchy;\n" +
                 "};").asDefine());
         tx.commit();
@@ -198,12 +197,12 @@ public class TestResolution {
         Transaction tx = testSession.transaction(Arguments.Transaction.Type.WRITE);
         tx.query().undefine(TypeQL.undefine(TypeQL.type("location-hierarchy-transitivity").sub("rule")));
         tx.query().define(TypeQL.parseQuery("define" +
-                "location-hierarchy-transitivity sub rule,\n" +
+                "rule location-hierarchy-transitivity:\n" +
                 "when {\n" +
                 "  ($a, $b) isa location-hierarchy;\n" +
                 "  ($b, $c) isa location-hierarchy;\n" +
                 "  $a != $c;\n" +
-                "}, then {\n" +
+                "} then {\n" +
                 "  (location-hierarchy_superior: $a, location-hierarchy_subordinate: $c) isa location-hierarchy;\n" +
                 "};").asDefine());
         tx.commit();

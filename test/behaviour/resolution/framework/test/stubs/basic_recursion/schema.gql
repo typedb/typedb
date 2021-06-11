@@ -9,15 +9,15 @@ company sub entity,
     owns company-id @key,
     owns name,
     owns is-liable;
-company-has-name sub rule,
+rule company-has-name:
 when {
     $c1 isa company;
-}, then {
+} then {
     $c1 has name $n1; $n1 "the-company";
 };
-company-is-liable sub rule,
+rule company-is-liable:
 when {
     $c2 isa company, has name $n2; $n2 "the-company";
-}, then {
+} then {
     $c2 has is-liable $l2; $l2 true;
 };

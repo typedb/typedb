@@ -13,10 +13,10 @@ continent sub location;
 location-hierarchy sub relation,
     relates superior,
     relates subordinate;
-location-hierarchy-transitivity sub rule,
+rule location-hierarchy-transitivity:
 when {
     (superior: $a, subordinate: $b) isa location-hierarchy;
     (superior: $b, subordinate: $c) isa location-hierarchy;
-}, then {
+} then {
     (superior: $a, subordinate: $c) isa location-hierarchy;
 };

@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.TypeDB.Transaction;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.logic.Rule;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
@@ -35,70 +36,18 @@ import java.nio.file.Paths;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaRole.INSTANCE;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaRole.OWNED;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaRole.OWNER;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaRole.REL;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaRole.ROLEPLAYER;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaType.HAS_ATTRIBUTE_PROPERTY;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaType.ISA_PROPERTY;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaType.RELATION_PROPERTY;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaRole.INSTANCE;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaRole.OWNED;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaRole.OWNER;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaRole.REL;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaRole.ROLEPLAYER;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaType.HAS_ATTRIBUTE_PROPERTY;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaType.ISA_PROPERTY;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaType.RELATION_PROPERTY;
 
 
 public class SchemaManager {
     private static final Path SCHEMA_PATH = Paths.get("test", "behaviour", "resolution", "framework", "complete", "completion_schema.gql").toAbsolutePath();
-
-    public enum CompletionSchemaType {
-        // Relations
-        VAR_PROPERTY("var-property"),
-        ISA_PROPERTY("isa-property"),
-        HAS_ATTRIBUTE_PROPERTY("has-attribute-property"),
-        RELATION_PROPERTY("relation-property"),
-        RESOLUTION("resolution"),
-
-        // Attributes
-        LABEL("label"),
-        RULE_LABEL("rule-label"),
-        TYPE_LABEL("type-label"),
-        ROLE_LABEL("role-label"),
-        INFERRED("inferred");
-
-        private final String name;
-
-        CompletionSchemaType(String name) {
-            this.name = name;
-        }
-
-        @Override
-        public String toString() {
-            return name;
-        }
-    }
-
-    public enum CompletionSchemaRole {
-        INSTANCE("instance"),
-        OWNER("owner"),
-        OWNED("owned"),
-        ROLEPLAYER("roleplayer"),
-        REL("rel"),
-        BODY("body"),
-        HEAD("head");
-
-        private final String label;
-
-        CompletionSchemaRole(String label) {
-            this.label = label;
-        }
-
-        public String label() {
-            return label;
-        }
-
-        @Override
-        public String toString() {
-            return label;
-        }
-    }
 
     public static void undefineAllRules(Session session) {
         try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -147,7 +96,7 @@ public class SchemaManager {
             RoleType roleplayerRole = getRole(tx, RELATION_PROPERTY + ":" + ROLEPLAYER);
             RoleType relationRole = getRole(tx, RELATION_PROPERTY + ":" + REL);
             Set<String> completionSchemaTypes =
-                    iterate(CompletionSchemaType.values()).map(CompletionSchemaType::toString).toSet();
+                    iterate(CompletionSchema.CompletionSchemaType.values()).map(CompletionSchema.CompletionSchemaType::toString).toSet();
 
             TypeQLMatch typesToConnectQuery = TypeQL.match(TypeQL.var("x").sub(TypeQLToken.Type.THING.toString()));
 

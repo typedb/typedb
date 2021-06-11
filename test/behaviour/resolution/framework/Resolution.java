@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.Completer;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.resolve.ResolutionQueryBuilder;
@@ -96,8 +97,8 @@ public class Resolution {
      * @return filtered stream of answers
      */
     public static FunctionalIterator<ConceptMap> filterCompletionSchema(FunctionalIterator<ConceptMap> answerStream) {
-        Set<String> completionSchemaTypes = iterate(SchemaManager.CompletionSchemaType.values())
-                .map(SchemaManager.CompletionSchemaType::toString).toSet();
+        Set<String> completionSchemaTypes = iterate(CompletionSchema.CompletionSchemaType.values())
+                .map(CompletionSchema.CompletionSchemaType::toString).toSet();
         return answerStream.filter(a -> iterate(a.concepts().values())
                 .noneMatch(concept -> completionSchemaTypes
                         .contains(concept.asThing().getType().getLabel().toString())));

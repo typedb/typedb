@@ -19,26 +19,11 @@
 package com.vaticle.typedb.core.test.behaviour.resolution.framework.test;
 
 import com.vaticle.typedb.core.TypeDB;
-import com.vaticle.typedb.core.TypeDB.Session;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typeql.lang.TypeQL;
 
-import static com.vaticle.typedb.core.test.common.TypeQLTestUtil.loadFromFileAndCommit;
-
 
 public class LoadTest {
-
-    static void loadTestStub(Session session, String testStub) {
-
-        loadTestStub(session, "complex_recursion");
-
-        String stubsPath = "test/behaviour/resolution/framework/test/stubs/";
-        String path = stubsPath + testStub + "/";
-        // Load a schema incl. rules
-        loadFromFileAndCommit(path, "schema.gql", session);
-        // Load data
-        loadFromFileAndCommit(path, "data.gql", session);
-    }
 
     // TODO: These should use TypeQL builder to make them robust to change
     static void loadTransitivityTest(TypeDB typeDB, String databaseName) {
@@ -60,14 +45,15 @@ public class LoadTest {
                         "location-hierarchy sub relation,\n" +
                         "    relates superior,\n" +
                         "    relates subordinate;\n" +
-                        "location-hierarchy-transitivity sub rule,\n" +
+                        "rule location-hierarchy-transitivity:\n" +
                         "when {\n" +
                         "    (superior: $a, subordinate: $b) isa location-hierarchy;\n" +
                         "    (superior: $b, subordinate: $c) isa location-hierarchy;\n" +
-                        "}, then {\n" +
+                        "} then {\n" +
                         "    (superior: $a, subordinate: $c) isa location-hierarchy;\n" +
                         "};";
                 tx.query().define(TypeQL.parseQuery(schema).asDefine());
+                tx.commit();
             }
         }
         try (TypeDB.Session session = typeDB.session(databaseName, Arguments.Session.Type.DATA)) {
@@ -82,6 +68,7 @@ public class LoadTest {
                                 "(superior: $cntry, subordinate: $cit) isa location-hierarchy;\n" +
                                 "(superior: $cit, subordinate: $ar) isa location-hierarchy;"
                 ).asInsert());
+                tx.commit();
             }
         }
     }
@@ -100,24 +87,26 @@ public class LoadTest {
                         "    owns company-id @key,\n" +
                         "    owns name,\n" +
                         "    owns is-liable;\n" +
-                        "company-has-name sub rule,\n" +
+                        "rule company-has-name:\n" +
                         "when {\n" +
                         "    $c1 isa company;\n" +
-                        "}, then {\n" +
-                        "    $c1 has name $n1; $n1 \"the-company\";\n" +
+                        "} then {\n" +
+                        "    $c1 has name \"the-company\";\n" +
                         "};\n" +
-                        "company-is-liable sub rule,\n" +
+                        "rule company-is-liable:\n" +
                         "when {\n" +
                         "    $c2 isa company, has name $n2; $n2 \"the-company\";\n" +
-                        "}, then {\n" +
-                        "    $c2 has is-liable $l2; $l2 true;\n" +
+                        "} then {\n" +
+                        "    $c2 has is-liable true;\n" +
                         "};";
                 tx.query().define(TypeQL.parseQuery(schema).asDefine());
+                tx.commit();
             }
         }
         try (TypeDB.Session session = typeDB.session(databaseName, Arguments.Session.Type.DATA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().insert(TypeQL.parseQuery("insert $x isa company, has company-id 0;").asInsert());
+                tx.commit();
             }
         }
     }
@@ -152,24 +141,25 @@ public class LoadTest {
                         "city sub location,\n" +
                         "    owns city-name @key,\n" +
                         "    plays locates:location;\n" +
-                        "locates-is-transitive sub rule,\n" +
+                        "rule locates-is-transitive:\n" +
                         "when {\n" +
                         "    $city isa city;\n" +
                         "    $country isa country;\n" +
                         "    $lh(superior: $country, subordinate: $city) isa location-hierarchy;\n" +
                         "    $l1(located: $transaction, location: $city) isa locates;\n" +
-                        "}, then {\n" +
+                        "} then {\n" +
                         "    (located: $transaction, location: $country) isa locates;\n" +
                         "};\n" +
-                        "transaction-currency-is-that-of-the-country sub rule,\n" +
+                        "rule transaction-currency-is-that-of-the-country:\n" +
                         "when {\n" +
                         "    $transaction isa transaction;\n" +
                         "    $locates(located: $transaction, location: $country) isa locates;\n" +
                         "    $country isa country, has currency $currency;\n" +
-                        "}, then {\n" +
+                        "} then {\n" +
                         "    $transaction has currency $currency;\n" +
                         "};";
                 tx.query().define(TypeQL.parseQuery(schema).asDefine());
+                tx.commit();
             }
         }
         try (TypeDB.Session session = typeDB.session(databaseName, Arguments.Session.Type.DATA)) {
@@ -182,6 +172,7 @@ public class LoadTest {
                                 "$city isa city, has city-name \"London\";\n" +
                                 "$lh(hierarchy_superior: $country, hierarchy_subordinate: $city) isa location-hierarchy;"
                 ).asInsert());
+                tx.commit();
             }
         }
     }

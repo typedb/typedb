@@ -36,21 +36,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaRole.BODY;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaRole.HEAD;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaRole.INSTANCE;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaRole.OWNED;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaRole.OWNER;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaRole.REL;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaRole.ROLEPLAYER;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaType.HAS_ATTRIBUTE_PROPERTY;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaType.INFERRED;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaType.ISA_PROPERTY;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaType.RELATION_PROPERTY;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaType.RESOLUTION;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaType.ROLE_LABEL;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaType.RULE_LABEL;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager.CompletionSchemaType.TYPE_LABEL;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaRole.BODY;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaRole.HEAD;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaRole.INSTANCE;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaRole.OWNED;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaRole.OWNER;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaRole.REL;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaRole.ROLEPLAYER;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaType.HAS_ATTRIBUTE_PROPERTY;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaType.INFERRED;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaType.ISA_PROPERTY;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaType.RELATION_PROPERTY;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaType.RESOLUTION;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaType.ROLE_LABEL;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaType.RULE_LABEL;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaType.TYPE_LABEL;
 
 public class RuleResolutionBuilder {
 
@@ -76,35 +76,29 @@ public class RuleResolutionBuilder {
         List<ThingVariable<?>> constraints = new ArrayList<>();
         constraints.add(relationVar.isa(RESOLUTION.toString()).has(RULE_LABEL.toString(), ruleLabel));
 
-        List<ThingVariable<?>> whenProps = new ArrayList<>();
-
+        List<ThingVariable<?>> whenVars = new ArrayList<>();
         for (Variable whenVariable : strippedWhen.variables()) {
-            whenProps.addAll(addTrackingConstraints(whenVariable, null));
+            whenVars.addAll(addTrackingConstraints(whenVariable, null));
         }
-
-        for (ThingVariable<?> whenVar : whenProps) {
+        for (ThingVariable<?> whenVar : whenVars) {
             constraints.add(relationVar.rel(BODY.toString(), whenVar.name()));
         }
-
-        List<ThingVariable<?>> thenProps = new ArrayList<>();
-
+        List<ThingVariable<?>> thenVars = new ArrayList<>();
         for (Variable thenVariable : strippedThen.variables()) {
-            thenProps.addAll(addTrackingConstraints(thenVariable, true));
+            thenVars.addAll(addTrackingConstraints(thenVariable, true));
         }
-
-        for (ThingVariable<?> thenVar : thenProps) {
+        for (ThingVariable<?> thenVar : thenVars) {
             constraints.add(relationVar.rel(HEAD.toString(), thenVar.name()));
         }
-
-        constraints.addAll(whenProps);
-        constraints.addAll(thenProps);
+        constraints.addAll(whenVars);
+        constraints.addAll(thenVars);
         return new Conjunction<>(constraints);
     }
 
     public List<ThingVariable<?>> addTrackingConstraints(Variable variable, @Nullable final Boolean inferred) {
         List<ThingVariable<?>> newVariables = new ArrayList<>();
         ThingVariable.Relation isaRelation = TypeQL.var(getNextVarName(VarPrefix.X.toString()))
-                .rel(INSTANCE.toString(), variable.toString())
+                .rel(INSTANCE.toString(), variable.reference().name())
                 .isa(ISA_PROPERTY.toString());
         for (Label typeLabel : variable.resolvedTypes()) {
             isaRelation = isaRelation.has(TYPE_LABEL.toString(), typeLabel.name());
@@ -116,16 +110,16 @@ public class RuleResolutionBuilder {
             if (constraint.isThing()) {
                 if (constraint.asThing().isHas()) {
                     ThingVariable.Relation relation = TypeQL.var(getNextVarName(VarPrefix.X.toString()))
-                            .rel(OWNED.toString(), constraint.asThing().asHas().attribute().toString())
-                            .rel(OWNER.toString(), variable.toString())
+                            .rel(OWNED.toString(), constraint.asThing().asHas().attribute().reference().name())
+                            .rel(OWNER.toString(), variable.reference().name())
                             .isa(HAS_ATTRIBUTE_PROPERTY.toString());
                     if (inferred != null) relation = relation.has(INFERRED.toString(), inferred); // TODO: Remove null check
                     newVariables.add(relation);
                 } else if (constraint.asThing().isRelation()) {
                     for (RelationConstraint.RolePlayer rolePlayer : constraint.asThing().asRelation().players()) {
                         ThingVariable.Relation relation = TypeQL.var(getNextVarName(VarPrefix.X.toString()))
-                                .rel(REL.toString(), variable.toString())
-                                .rel(ROLEPLAYER.toString(), TypeQL.var(rolePlayer.player().toString()))
+                                .rel(REL.toString(), variable.reference().name())
+                                .rel(ROLEPLAYER.toString(), TypeQL.var(rolePlayer.player().reference().name()))
                                 .isa(RELATION_PROPERTY.toString());
                         Optional<TypeVariable> role = rolePlayer.roleType();
                         if (role.isPresent()) {

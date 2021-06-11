@@ -23,10 +23,11 @@ import com.vaticle.typedb.core.pattern.variable.Variable;
 public class TypeQLHelpers {
 
     public static Variable makeAnonVarsExplicit(Variable variable) {
-        if (variable.var().isReturned()) {
-            return variable;
-        } else {
-            return Variable.create(variable.var().asReturnedVar(), variable.properties());
-        }
+//        if (variable.var().isReturned()) {
+//            return variable;
+//        } else {
+//            return Variable.create(variable.var().asReturnedVar(), variable.properties());
+//        }
+        return null;
     }
 }
