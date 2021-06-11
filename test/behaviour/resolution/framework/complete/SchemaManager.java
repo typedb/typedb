@@ -80,7 +80,9 @@ public class SchemaManager {
         OWNER("owner"),
         OWNED("owned"),
         ROLEPLAYER("roleplayer"),
-        REL("rel");
+        REL("rel"),
+        BODY("body"),
+        HEAD("head");
 
         private final String label;
 
