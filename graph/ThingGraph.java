@@ -275,9 +275,9 @@ public class ThingGraph {
         AttributeVertex<Boolean> vertex = attributesByIID.booleans.computeIfAbsent(
                 new VertexIID.Attribute.Boolean(type.iid(), value),
                 iid -> {
-                    AttributeVertex<Boolean> v = new AttributeVertexImpl.Boolean(this, iid, isInferred);
+                    AttributeVertexImpl.Boolean v = new AttributeVertexImpl.Boolean(this, iid, isInferred);
                     thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
-                    isNewVertex[0] = true;
+                    isNewVertex[0] = !v.isPersisted();
                     return v;
                 }
         );
@@ -297,9 +297,9 @@ public class ThingGraph {
         AttributeVertex<Long> vertex = attributesByIID.longs.computeIfAbsent(
                 new VertexIID.Attribute.Long(type.iid(), value),
                 iid -> {
-                    AttributeVertex<Long> v = new AttributeVertexImpl.Long(this, iid, isInferred);
+                    AttributeVertexImpl.Long v = new AttributeVertexImpl.Long(this, iid, isInferred);
                     thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
-                    isNewVertex[0] = true;
+                    isNewVertex[0] = !v.isPersisted();
                     return v;
                 }
         );
@@ -321,9 +321,9 @@ public class ThingGraph {
         AttributeVertex<Double> vertex = attributesByIID.doubles.computeIfAbsent(
                 new VertexIID.Attribute.Double(type.iid(), value),
                 iid -> {
-                    AttributeVertex<Double> v = new AttributeVertexImpl.Double(this, iid, isInferred);
+                    AttributeVertexImpl.Double v = new AttributeVertexImpl.Double(this, iid, isInferred);
                     thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
-                    isNewVertex[0] = true;
+                    isNewVertex[0] = !v.isPersisted();
                     return v;
                 }
         );
@@ -354,9 +354,9 @@ public class ThingGraph {
         boolean[] isNewVertex = new boolean[]{false};
         AttributeVertex<String> vertex = attributesByIID.strings.computeIfAbsent(
                 attIID, iid -> {
-                    AttributeVertex<String> v = new AttributeVertexImpl.String(this, iid, isInferred);
+                    AttributeVertexImpl.String v = new AttributeVertexImpl.String(this, iid, isInferred);
                     thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
-                    isNewVertex[0] = true;
+                    isNewVertex[0] = !v.isPersisted();
                     return v;
                 }
         );
@@ -377,9 +377,9 @@ public class ThingGraph {
         AttributeVertex<LocalDateTime> vertex = attributesByIID.dateTimes.computeIfAbsent(
                 new VertexIID.Attribute.DateTime(type.iid(), value),
                 iid -> {
-                    AttributeVertex<LocalDateTime> v = new AttributeVertexImpl.DateTime(this, iid, isInferred);
+                    AttributeVertexImpl.DateTime v = new AttributeVertexImpl.DateTime(this, iid, isInferred);
                     thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
-                    isNewVertex[0] = true;
+                    isNewVertex[0] = !v.isPersisted();
                     return v;
                 }
         );
