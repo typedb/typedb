@@ -88,6 +88,9 @@ public class Completer {
         Conjunction<Conjunctable> ruleResolutionConjunction = negationRemover.visitConjunction(ruleResolutionBuilder.ruleResolutionConjunction(tx, rule.when, rule.then, rule.label));
 
         // Record how the inference was made
+        // TODO: This looks incorrect - it could add resolution between inserted facts not inferred ones. This can be
+        //  fixed by adding the inferred concepts into the match by iid. Or possibly by changing the initial
+        //  insertion of the inferred concepts to include the derivation.
         List<ConceptMap> inserted = tx.query().insert(TypeQL.match(rule.when, rule.then, TypeQL.not(ruleResolutionConjunction)).insert(ruleResolutionConjunction.variables()));
         assert inserted.size() >= 1;
         foundResult.set(true);
