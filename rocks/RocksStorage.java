@@ -223,6 +223,7 @@ public abstract class RocksStorage implements Storage {
                 deleteCloseSchemaWriteLock.readLock().lock();
                 if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
                 iterator.seekForPrev(upperBound);
+                if (!iterator.isValid()) return null;
                 byte[] key = iterator.key();
                 ByteArray array;
                 if (key != null && (array = ByteArray.of(key)).hasPrefix(prefix)) return array;
