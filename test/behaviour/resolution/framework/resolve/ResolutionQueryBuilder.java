@@ -112,7 +112,7 @@ public class ResolutionQueryBuilder {
                 resolutionPatterns.add(thenPattern);
 
                 String ruleLabel = ((RuleExplanation)explanation).getRule().label().toString();
-                resolutionPatterns.add(ruleResolutionBuilder.ruleResolutionConjunction(tx, whenPattern, thenPattern, ruleLabel));
+                resolutionPatterns.add(ruleResolutionBuilder.ruleResolutionConjunction(whenPattern, thenPattern, ruleLabel));
                 resolutionPatterns.add(TypeQL.and(buildResolutionPattern(tx, explAns, ruleResolutionIndex)));
             } else {
                 if (explanation.isLookupExplanation()) {

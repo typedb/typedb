@@ -81,7 +81,7 @@ public class RuleResolutionBuilderIT {
                 expected.add(TypeQL.parsePattern("$x0 (instance: $company) isa isa-property, has type-label \"company\"").asVariable());
                 com.vaticle.typedb.core.pattern.variable.Variable variable =
                         iterate(disjunction.conjunctions().get(0).variables()).filter(v -> v.reference().name().equals("company")).first().get();
-                Set<ThingVariable<?>> resolutionVariables = new HashSet<>(new RuleResolutionBuilder().addTrackingConstraints(variable, null));
+                Set<ThingVariable<?>> resolutionVariables = new HashSet<>(new RuleResolutionBuilder().resolutionVariables(variable, false));
                 Assert.assertEquals(expected, resolutionVariables);
             }
         }

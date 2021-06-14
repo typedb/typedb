@@ -75,9 +75,7 @@ public abstract class PatternVisitor {
 
     public static class NegationRemovalVisitor extends PatternVisitor {
 
-        // TODO: Would like to return explicitly BoundVariables and not Negations
-        @Override
-        public Conjunction<BoundVariable> visitConjunction(Conjunction<Conjunctable> conjunction) {
+        public Conjunction<BoundVariable> visitConjunctionVariables(Conjunction<Conjunctable> conjunction) {
             List<BoundVariable> variables = new ArrayList<>();
             conjunction.patterns().forEach(pattern -> {
                 if (pattern.isVariable()) {
@@ -86,7 +84,7 @@ public abstract class PatternVisitor {
                     if (!pattern.isNegation()) throw TypeDBException.of(ILLEGAL_STATE);
                 }
             });
-            return new Conjunction<BoundVariable>(variables);
+            return new Conjunction<>(variables);
         }
     }
 }

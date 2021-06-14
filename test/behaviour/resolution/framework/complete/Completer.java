@@ -29,6 +29,7 @@ import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.pattern.Conjunctable;
 import com.vaticle.typeql.lang.pattern.Conjunction;
 import com.vaticle.typeql.lang.pattern.Pattern;
+import com.vaticle.typeql.lang.pattern.variable.BoundVariable;
 import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
 
 import java.util.HashSet;
@@ -41,10 +42,11 @@ public class Completer {
 
     private final Session session;
     private Set<Rule> rules;
-    private final RuleResolutionBuilder ruleResolutionBuilder = new RuleResolutionBuilder();
+    private final RuleResolutionBuilder ruleResolutionBuilder;
 
     public Completer(Session session) {
         this.session = session;
+        this.ruleResolutionBuilder = new RuleResolutionBuilder();
     }
 
     public void loadRules(Set<com.vaticle.typedb.core.logic.Rule> typeDBRules) {
@@ -81,11 +83,7 @@ public class Completer {
         if (inferredConcepts.isEmpty()) {
             continue;
         }
-
-        // We already know that the rule doesn't contain any disjunctions as we previously used negationDNF,
-        // now we make sure negation blocks are removed, so that we know it must be a conjunct set of variables
-        PatternVisitor.NegationRemovalVisitor negationRemover = new PatternVisitor.NegationRemovalVisitor();
-        Conjunction<Conjunctable> ruleResolutionConjunction = negationRemover.visitConjunction(ruleResolutionBuilder.ruleResolutionConjunction(tx, rule.when, rule.then, rule.label));
+        Conjunction<BoundVariable> ruleResolutionConjunction = ruleResolutionBuilder.ruleResolutionConjunction(rule.when, rule.then, rule.label);
 
         // Record how the inference was made
         // TODO: This looks incorrect - it could add resolution between inserted facts not inferred ones. This can be
