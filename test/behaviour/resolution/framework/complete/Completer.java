@@ -24,12 +24,11 @@ import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.PatternVisitor;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.RuleResolutionBuilder;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.TypeQLHelpers;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.VarNameGenerator;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.pattern.Conjunctable;
 import com.vaticle.typeql.lang.pattern.Conjunction;
 import com.vaticle.typeql.lang.pattern.Pattern;
-import com.vaticle.typeql.lang.pattern.variable.BoundVariable;
 import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
 
 import java.util.HashSet;
@@ -80,16 +79,15 @@ public class Completer {
 
         // Get all the places where the `when` of the rule is satisfied, but the `then` is not
         List<ConceptMap> inferredConcepts = tx.query().insert(TypeQL.match(rule.when, TypeQL.not(rule.then)).insert(rule.then)).toList();
-        if (inferredConcepts.isEmpty()) {
-            continue;
-        }
-        Conjunction<BoundVariable> ruleResolutionConjunction = ruleResolutionBuilder.ruleResolutionConjunction(rule.when, rule.then, rule.label);
+        Conjunction<ThingVariable<?>> ruleResolutionConjunction = ruleResolutionBuilder.ruleResolutionConjunction(rule.when, rule.then, rule.label);
 
         // Record how the inference was made
         // TODO: This looks incorrect - it could add resolution between inserted facts not inferred ones. This can be
         //  fixed by adding the inferred concepts into the match by iid. Or possibly by changing the initial
         //  insertion of the inferred concepts to include the derivation.
-        List<ConceptMap> inserted = tx.query().insert(TypeQL.match(rule.when, rule.then, TypeQL.not(ruleResolutionConjunction)).insert(ruleResolutionConjunction.variables()));
+        List<ConceptMap> inserted = tx.query().insert(TypeQL.match(
+                rule.when, rule.then, TypeQL.not(ruleResolutionConjunction)
+        ).insert(ruleResolutionConjunction.patterns())).toList();
         assert inserted.size() >= 1;
         foundResult.set(true);
 
@@ -102,7 +100,7 @@ public class Completer {
         private final String label;
 
         public Rule(Conjunction<? extends Pattern> whenPreNormalised, ThingVariable<?> thenPreNormalised, String label) {
-            PatternVisitor.VariableVisitor visitor = new PatternVisitor.VariableVisitor(TypeQLHelpers::makeAnonVarsExplicit);
+            PatternVisitor.VariableVisitor visitor = new PatternVisitor.VariableVisitor(VarNameGenerator::makeAnonVarsExplicit);
             List<Conjunction<Conjunctable>> whenConjunctions = whenPreNormalised.normalise().patterns();
             assert whenConjunctions.size() == 1;
             this.when = visitor.visitConjunction(whenConjunctions.get(0));

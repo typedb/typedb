@@ -114,7 +114,7 @@ host_compatible_java_test(
     ],
 )
 
-java_test(
+host_compatible_java_test(
     name = "test-completer",
     size = "medium",
     srcs = [
@@ -122,13 +122,14 @@ java_test(
     ],
     classpath_resources = ["//common/test:logback-test"],
     test_class = "com.vaticle.typedb.core.test.behaviour.resolution.framework.test.TestCompleter",
-    deps = [
+    native_libraries_deps = [
+        "//concept:concept",
+        "//:typedb",
         "//test/behaviour/resolution/framework/common",
         "//test/behaviour/resolution/framework/complete",
         "//test/behaviour/resolution/framework/test:load-test",
-        "//concept:concept",
-        "//:typedb",
-
+    ],
+    deps = [
         # External dependencies from @vaticle
         "@vaticle_typeql_lang_java//:typeql-lang",
     ],

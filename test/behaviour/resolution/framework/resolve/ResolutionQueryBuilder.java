@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.TypeDB.Transaction;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.PatternVisitor;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.TypeQLHelpers;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.VarNameGenerator;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.RuleResolutionBuilder;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.pattern.Conjunction;
@@ -45,9 +45,13 @@ import static com.google.common.collect.Iterables.getOnlyElement;
 
 public class ResolutionQueryBuilder {
 
-    private RuleResolutionBuilder ruleResolutionBuilder = new RuleResolutionBuilder();
+    private RuleResolutionBuilder ruleResolutionBuilder;
     private Map<ConceptId, List<String>> varsForIds;
     private Map<String, String> replacementVars;
+
+    public ResolutionQueryBuilder() {
+        ruleResolutionBuilder = new RuleResolutionBuilder();
+    }
 
     public List<TypeQLMatch> buildMatch(Transaction tx, TypeQLMatch query) {
         List<ConceptMap> answers = tx.query().match(query).toList();
@@ -80,7 +84,7 @@ public class ResolutionQueryBuilder {
         Integer finalRuleResolutionIndex1 = ruleResolutionIndex;
 
         PatternVisitor.VariableVisitor variableVisitor = new PatternVisitor.VariableVisitor(p -> {
-            Variable withoutIds = removeIdProperties(TypeQLHelpers.makeAnonVarsExplicit(p));
+            Variable withoutIds = removeIdProperties(VarNameGenerator.makeAnonVarsExplicit(p));
             return withoutIds == null ? null : prefixVars(withoutIds, finalRuleResolutionIndex1);
         });
 
@@ -101,7 +105,7 @@ public class ResolutionQueryBuilder {
                 ruleResolutionIndex += 1;
                 Integer finalRuleResolutionIndex0 = ruleResolutionIndex;
 
-                PatternVisitor.VariableVisitor ruleVariableVisitor = new PatternVisitor.VariableVisitor(p -> prefixVars(TypeQLHelpers.makeAnonVarsExplicit(p), finalRuleResolutionIndex0));
+                PatternVisitor.VariableVisitor ruleVariableVisitor = new PatternVisitor.VariableVisitor(p -> prefixVars(VarNameGenerator.makeAnonVarsExplicit(p), finalRuleResolutionIndex0));
 
                 Pattern whenPattern = Objects.requireNonNull(((RuleExplanation) explanation).getRule().when());
                 whenPattern = ruleVariableVisitor.visitPattern(whenPattern);
@@ -118,7 +122,7 @@ public class ResolutionQueryBuilder {
                 if (explanation.isLookupExplanation()) {
                     for (final Variable variable : answer.getPattern().variables()) {
                         if (variable instanceof VariableRelation) {
-                            Pattern p = TypeQL.not(prefixVars(TypeQLHelpers.makeAnonVarsExplicit(TypeQL.var().isa("isa-property"))
+                            Pattern p = TypeQL.not(prefixVars(VarNameGenerator.makeAnonVarsExplicit(TypeQL.var().isa("isa-property"))
                                     .rel(variable.var().name())
                                     .has("inferred", true), ruleResolutionIndex));
                             resolutionPatterns.add(p);
@@ -127,7 +131,7 @@ public class ResolutionQueryBuilder {
                             for (Variable v : variable.variables()) {
                                 s = s.rel(v.name());
                             }
-                            Pattern p2 = TypeQL.not(prefixVars(TypeQLHelpers.makeAnonVarsExplicit(s), ruleResolutionIndex));
+                            Pattern p2 = TypeQL.not(prefixVars(VarNameGenerator.makeAnonVarsExplicit(s), ruleResolutionIndex));
                             resolutionPatterns.add(p2);
                         } /* else {
                             // TODO: support attribute ownerships?

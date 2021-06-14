@@ -19,19 +19,16 @@
 package com.vaticle.typedb.core.test.behaviour.resolution.framework.test;
 
 import com.vaticle.typedb.core.TypeDB;
-import com.vaticle.typedb.core.TypeDB.Session;
-import com.vaticle.typedb.core.TypeDB.Transaction;;
+import com.vaticle.typedb.core.TypeDB.Transaction;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.rocks.RocksTypeDB;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.Resolution;
 import com.vaticle.typedb.core.test.integration.util.Util;
-import com.vaticle.typedb.core.test.rule.GraknTestServer;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -45,6 +42,8 @@ import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.L
 import static junit.framework.TestCase.assertNotNull;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
+
+;
 
 public class TestResolution {
 

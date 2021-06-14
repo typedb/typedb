@@ -32,10 +32,12 @@ native_java_libraries(
     native_libraries_deps = [
         "//:typedb",
         "//concept:concept",
+        "//logic:logic",
         "//test/behaviour/resolution/framework/common:common",
     ],
     deps = [
         "@vaticle_typeql_lang_java//:typeql-lang",
+        "@vaticle_typeql_lang_java//pattern:pattern",
     ],
 )
 
