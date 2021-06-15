@@ -84,7 +84,7 @@ public class ResolutionQueryBuilder {
         Integer finalRuleResolutionIndex1 = ruleResolutionIndex;
 
         PatternVisitor.VariableVisitor variableVisitor = new PatternVisitor.VariableVisitor(p -> {
-            Variable withoutIds = removeIdProperties(VarNameGenerator.makeAnonVarsExplicit(p));
+            Variable withoutIds = removeIdProperties(VarNameGenerator.deanonymiseIfAnon(p));
             return withoutIds == null ? null : prefixVars(withoutIds, finalRuleResolutionIndex1);
         });
 
@@ -105,7 +105,7 @@ public class ResolutionQueryBuilder {
                 ruleResolutionIndex += 1;
                 Integer finalRuleResolutionIndex0 = ruleResolutionIndex;
 
-                PatternVisitor.VariableVisitor ruleVariableVisitor = new PatternVisitor.VariableVisitor(p -> prefixVars(VarNameGenerator.makeAnonVarsExplicit(p), finalRuleResolutionIndex0));
+                PatternVisitor.VariableVisitor ruleVariableVisitor = new PatternVisitor.VariableVisitor(p -> prefixVars(VarNameGenerator.deanonymiseIfAnon(p), finalRuleResolutionIndex0));
 
                 Pattern whenPattern = Objects.requireNonNull(((RuleExplanation) explanation).getRule().when());
                 whenPattern = ruleVariableVisitor.visitPattern(whenPattern);
@@ -122,7 +122,7 @@ public class ResolutionQueryBuilder {
                 if (explanation.isLookupExplanation()) {
                     for (final Variable variable : answer.getPattern().variables()) {
                         if (variable instanceof VariableRelation) {
-                            Pattern p = TypeQL.not(prefixVars(VarNameGenerator.makeAnonVarsExplicit(TypeQL.var().isa("isa-property"))
+                            Pattern p = TypeQL.not(prefixVars(VarNameGenerator.deanonymiseIfAnon(TypeQL.var().isa("isa-property"))
                                     .rel(variable.var().name())
                                     .has("inferred", true), ruleResolutionIndex));
                             resolutionPatterns.add(p);
@@ -131,7 +131,7 @@ public class ResolutionQueryBuilder {
                             for (Variable v : variable.variables()) {
                                 s = s.rel(v.name());
                             }
-                            Pattern p2 = TypeQL.not(prefixVars(VarNameGenerator.makeAnonVarsExplicit(s), ruleResolutionIndex));
+                            Pattern p2 = TypeQL.not(prefixVars(VarNameGenerator.deanonymiseIfAnon(s), ruleResolutionIndex));
                             resolutionPatterns.add(p2);
                         } /* else {
                             // TODO: support attribute ownerships?

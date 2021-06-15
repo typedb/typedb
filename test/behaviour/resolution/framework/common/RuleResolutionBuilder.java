@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.test.behaviour.resolution.framework.common;
 
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.VarNameGenerator.VarPrefix;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.pattern.Conjunctable;
@@ -28,14 +29,13 @@ import com.vaticle.typeql.lang.pattern.variable.BoundVariable;
 import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
 import com.vaticle.typeql.lang.pattern.variable.TypeVariable;
 import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaRole.BODY;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaRole.HEAD;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaRole.INSTANCE;
@@ -53,8 +53,6 @@ import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaType.TYPE_LABEL;
 
 public class RuleResolutionBuilder {
-
-    private final HashMap<String, Integer> nextVarIndex = new HashMap<>();
 
     /**
      * Constructs the TypeDB structure that captures how the result of a rule was inferred
@@ -96,7 +94,7 @@ public class RuleResolutionBuilder {
             if (constraint.isThing()) {
                 if (constraint.asThing().isHas()) {
                     ThingVariable.Relation hasResolutionVar =
-                            TypeQL.var(varNameGenerator.getNextVarName(VarPrefix.X.toString()))
+                            TypeQL.var(varNameGenerator.getNextVarName(VarPrefix.X))
                                     .rel(OWNED.toString(), constraint.asThing().asHas().attribute().reference().name())
                                     .rel(OWNER.toString(), variable.reference().name())
                                     .isa(HAS_ATTRIBUTE_PROPERTY.toString());
@@ -106,7 +104,7 @@ public class RuleResolutionBuilder {
                 } else if (constraint.asThing().isRelation()) {
                     for (ThingConstraint.Relation.RolePlayer roleplayer : constraint.asThing().asRelation().players()) {
                         ThingVariable.Relation roleplayerResolutionVar =
-                                TypeQL.var(varNameGenerator.getNextVarName(VarPrefix.X.toString()))
+                                TypeQL.var(varNameGenerator.getNextVarName(VarPrefix.X))
                                         .rel(REL.toString(), variable.reference().name())
                                         .rel(ROLEPLAYER.toString(), TypeQL.var(roleplayer.player().reference().name()))
                                         .isa(RELATION_PROPERTY.toString());
@@ -123,7 +121,7 @@ public class RuleResolutionBuilder {
                     }
                 } else if (constraint.asThing().isIsa() && constraint.asThing().asIsa().type().label().isPresent()) {
                     ThingVariable.Relation isaRelation =
-                            TypeQL.var(varNameGenerator.getNextVarName(VarPrefix.X.toString()))
+                            TypeQL.var(varNameGenerator.getNextVarName(VarPrefix.X))
                             .rel(INSTANCE.toString(), variable.reference().name())
                             .isa(ISA_PROPERTY.toString())
                             .has(TYPE_LABEL.toString(), constraint.asThing().asIsa().type().label().get().label());
@@ -132,7 +130,7 @@ public class RuleResolutionBuilder {
                     resolutionVars.add(isaRelation);
                 } else {
                     // TODO: Add all other constraint types
-                    throw new NotImplementedException();
+                    throw TypeDBException.of(ILLEGAL_STATE);
                 }
             }
         }

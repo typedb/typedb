@@ -125,13 +125,19 @@ host_compatible_java_test(
     native_libraries_deps = [
         "//concept:concept",
         "//:typedb",
+        "//logic:logic",
+        "//rocks:rocks",
         "//test/behaviour/resolution/framework/common",
         "//test/behaviour/resolution/framework/complete",
         "//test/behaviour/resolution/framework/test:load-test",
     ],
     deps = [
+        "//test/integration/util:util",
+        "//common",
         # External dependencies from @vaticle
         "@vaticle_typeql_lang_java//:typeql-lang",
+        "@vaticle_typeql_lang_java//pattern",
+        "@vaticle_typeql_lang_java//query",
     ],
 )
 

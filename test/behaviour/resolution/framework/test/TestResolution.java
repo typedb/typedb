@@ -43,8 +43,6 @@ import static junit.framework.TestCase.assertNotNull;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
 
-;
-
 public class TestResolution {
 
     private static final String databaseCompletion = "TestResolutionCompletion";

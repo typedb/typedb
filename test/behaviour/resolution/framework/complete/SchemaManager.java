@@ -44,15 +44,16 @@ import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaType.HAS_ATTRIBUTE_PROPERTY;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaType.ISA_PROPERTY;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema.CompletionSchemaType.RELATION_PROPERTY;
-
+import static com.vaticle.typedb.common.collection.Collections.list;
 
 public class SchemaManager {
     private static final Path SCHEMA_PATH = Paths.get("test", "behaviour", "resolution", "framework", "complete", "completion_schema.gql").toAbsolutePath();
+    private static final String var = "x";
 
     public static void undefineAllRules(Session session) {
         try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
             for (String ruleLabel : iterate(getAllRules(tx)).map(Rule::getLabel).toSet()) {
-                tx.query().undefine(TypeQL.undefine(TypeQL.rule(ruleLabel).asTypeVariable()));
+                tx.query().undefine(TypeQL.undefine(list(TypeQL.rule(ruleLabel))));
             }
             tx.commit();
         }
@@ -76,15 +77,15 @@ public class SchemaManager {
             String query = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
 
             try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                tx.query().match(TypeQL.parseQuery(query).asMatch()).toList();
+                tx.query().define(TypeQL.parseQuery(query).asDefine());
                 tx.commit();
             }
         }
     }
 
     private static RoleType getRole(Transaction tx, String roleLabel) {
-        TypeQLMatch roleQuery = TypeQL.match(TypeQL.var("x").type(roleLabel));
-        return tx.query().match(roleQuery).next().get("x").asRoleType();
+        TypeQLMatch roleQuery = TypeQL.match(TypeQL.var(var).type(roleLabel));
+        return tx.query().match(roleQuery).next().get(var).asRoleType();
     }
 
     public static void connectCompletionSchema(Session session) {
@@ -96,21 +97,23 @@ public class SchemaManager {
             RoleType roleplayerRole = getRole(tx, RELATION_PROPERTY + ":" + ROLEPLAYER);
             RoleType relationRole = getRole(tx, RELATION_PROPERTY + ":" + REL);
             Set<String> completionSchemaTypes =
-                    iterate(CompletionSchema.CompletionSchemaType.values()).map(CompletionSchema.CompletionSchemaType::toString).toSet();
+                    iterate(CompletionSchema.CompletionSchemaType.values())
+                            .map(CompletionSchema.CompletionSchemaType::toString).toSet();
+            TypeQLMatch allTypes = TypeQL.match(TypeQL.var(var).sub(TypeQLToken.Type.THING.toString()));
 
-            TypeQLMatch typesToConnectQuery = TypeQL.match(TypeQL.var("x").sub(TypeQLToken.Type.THING.toString()));
-
-            tx.query().match(typesToConnectQuery).map(ans -> ans.get("x").asThingType()).forEachRemaining(type -> {
-                if (completionSchemaTypes.contains(type.getLabel().toString())) return;  // TODO: Why do we need to do this? Surely we should throw if anything
-                type.setPlays(instanceRole);
-                type.setPlays(ownerRole);
-                type.setPlays(roleplayerRole);
-                if (type.isAttributeType()) {
-                    type.setPlays(ownedRole);
-                } else if (type.isRelationType()) {
-                    type.setPlays(relationRole);
-                }
-            });
+            tx.query().match(allTypes).map(ans -> ans.get(var).asThingType())
+                    .filter(type -> !type.isRoot())
+                    .filter(type -> !completionSchemaTypes.contains(type.getLabel().toString()))
+                    .forEachRemaining(type -> {
+                        if (!type.getPlays().toSet().contains(instanceRole)) type.setPlays(instanceRole);
+                        if (!type.getPlays().toSet().contains(ownerRole)) type.setPlays(ownerRole);
+                        if (!type.getPlays().toSet().contains(roleplayerRole)) type.setPlays(roleplayerRole);
+                        if (type.isAttributeType() && !type.getPlays().toSet().contains(ownedRole)) {
+                            type.setPlays(ownedRole);
+                        } else if (type.isRelationType() && !type.getPlays().toSet().contains(relationRole)) {
+                            type.setPlays(relationRole);
+                        }
+                    });
             tx.commit();
         }
     }

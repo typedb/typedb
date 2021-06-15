@@ -18,10 +18,11 @@
 define
 
 label sub attribute,
-    value string;
+  abstract,
+  value string;
 
 inferred sub attribute,
-    value boolean;
+  value boolean;
 
 # ===== Properties =====
 
@@ -30,23 +31,23 @@ type-label sub label;
 role-label sub label;
 
 var-property sub relation,
-    abstract,
-    plays body,
-    plays head,
-    has inferred;
+  abstract,
+  plays resolution:body,
+  plays resolution:head,
+  owns inferred;
 
 isa-property sub var-property,
-    relates instance,
-    has type-label;
+  relates instance,
+  owns type-label;
 
 has-attribute-property sub var-property,
-    relates owner,
-    relates owned;
+  relates owner,
+  relates owned;
 
 relation-property sub var-property,
-    relates roleplayer,
-    relates rel,
-    has role-label;
+  relates roleplayer,
+  relates rel,
+  owns role-label;
 
 
 # ===== Inference =====
@@ -54,6 +55,6 @@ relation-property sub var-property,
 rule-label sub label;
 
 resolution sub relation,
-    relates body,
-    relates head,
-    has rule-label;
+  relates body,
+  relates head,
+  owns rule-label;

@@ -100,7 +100,7 @@ public class Completer {
         private final String label;
 
         public Rule(Conjunction<? extends Pattern> whenPreNormalised, ThingVariable<?> thenPreNormalised, String label) {
-            PatternVisitor.VariableVisitor visitor = new PatternVisitor.VariableVisitor(VarNameGenerator::makeAnonVarsExplicit);
+            PatternVisitor.VariableVisitor visitor = new PatternVisitor.VariableVisitor(new VarNameGenerator().deanonymiseIfAnon());
             List<Conjunction<Conjunctable>> whenConjunctions = whenPreNormalised.normalise().patterns();
             assert whenConjunctions.size() == 1;
             this.when = visitor.visitConjunction(whenConjunctions.get(0));
