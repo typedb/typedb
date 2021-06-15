@@ -149,7 +149,7 @@ public class Encoding {
     /**
      * The values in this class will be used as 'prefixes' within an IID in the
      * of every object database, and must not overlap with each other.
-     * <p>
+     *
      * The size of a prefix is 1 unsigned byte; i.e. min-value = 0 and max-value = 255.
      */
     public enum Prefix {
@@ -252,7 +252,7 @@ public class Encoding {
     /**
      * The values in this class will be used as 'infixes' between two IIDs of
      * two objects in the database, and must not overlap with each other.
-     * <p>
+     *
      * The size of a prefix is 1 signed byte; i.e. min-value = -128 and max-value = 127.
      */
     public enum Infix {
