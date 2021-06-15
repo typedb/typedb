@@ -131,6 +131,7 @@ public class Encoding {
     }
 
     public enum PrefixType {
+        SYSTEM(-1),
         INDEX(0),
         STATISTICS(1),
         TYPE(2),
@@ -148,7 +149,7 @@ public class Encoding {
     /**
      * The values in this class will be used as 'prefixes' within an IID in the
      * of every object database, and must not overlap with each other.
-     *
+     * <p>
      * The size of a prefix is 1 unsigned byte; i.e. min-value = 0 and max-value = 255.
      */
     public enum Prefix {
@@ -160,6 +161,7 @@ public class Encoding {
         STATISTICS_COUNT_JOB(51, PrefixType.STATISTICS),
         STATISTICS_COUNTED(52, PrefixType.STATISTICS),
         STATISTICS_SNAPSHOT(53, PrefixType.STATISTICS),
+        SYSTEM(70, PrefixType.SYSTEM), // TODO reorganise SYSTEM to come first when releasing an incompatible storage
         VERTEX_THING_TYPE(100, PrefixType.TYPE),
         VERTEX_ENTITY_TYPE(110, PrefixType.TYPE),
         VERTEX_ATTRIBUTE_TYPE(120, PrefixType.TYPE),
@@ -172,6 +174,7 @@ public class Encoding {
         STRUCTURE_RULE(190, PrefixType.RULE);
 
         private static final ByteMap<Prefix> prefixByKey = ByteMap.create(
+                pair(SYSTEM.key, SYSTEM),
                 pair(INDEX_TYPE.key, INDEX_TYPE),
                 pair(INDEX_RULE.key, INDEX_RULE),
                 pair(INDEX_ATTRIBUTE.key, INDEX_ATTRIBUTE),
@@ -190,7 +193,6 @@ public class Encoding {
                 pair(VERTEX_ROLE.key, VERTEX_ROLE),
                 pair(STRUCTURE_RULE.key, STRUCTURE_RULE)
         );
-
 
         private final byte key;
         private final PrefixType type;
@@ -224,7 +226,9 @@ public class Encoding {
             return type.equals(PrefixType.INDEX);
         }
 
-        public boolean isStatistics() { return type.equals(PrefixType.STATISTICS); }
+        public boolean isStatistics() {
+            return type.equals(PrefixType.STATISTICS);
+        }
 
         public boolean isType() {
             return type.equals(PrefixType.TYPE);
@@ -238,12 +242,16 @@ public class Encoding {
             return type.equals(PrefixType.RULE);
         }
 
+        public boolean isSystem() {
+            return type.equals(PrefixType.SYSTEM);
+        }
+
     }
 
     /**
      * The values in this class will be used as 'infixes' between two IIDs of
      * two objects in the database, and must not overlap with each other.
-     *
+     * <p>
      * The size of a prefix is 1 signed byte; i.e. min-value = -128 and max-value = 127.
      */
     public enum Infix {
@@ -834,7 +842,9 @@ public class Encoding {
                 return prefix;
             }
 
-            public ByteArray bytes() { return prefix.bytes(); }
+            public ByteArray bytes() {
+                return prefix.bytes();
+            }
         }
 
         /**
@@ -861,7 +871,9 @@ public class Encoding {
                 else throw TypeDBException.of(UNRECOGNISED_VALUE);
             }
 
-            public ByteArray bytes() { return bytes; }
+            public ByteArray bytes() {
+                return bytes;
+            }
         }
     }
 
@@ -958,6 +970,29 @@ public class Encoding {
                 return bytes;
             }
         }
+    }
+
+    public interface System {
+
+        ByteArray bytes();
+
+        enum Core implements System {
+
+            TRANSACTION_DUMMY_WRITE(0);
+
+            private final ByteArray bytes;
+
+            Core(int key) {
+                byte b = unsignedByte(key);
+                this.bytes = ByteArray.join(Prefix.SYSTEM.bytes(), ByteArray.of(new byte[]{b}));
+            }
+
+            public ByteArray bytes() {
+                return bytes;
+            }
+
+        }
+
     }
 
     private static class ByteMap<T> {

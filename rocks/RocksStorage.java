@@ -54,6 +54,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_DATA_READ_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_SCHEMA_READ_VIOLATION;
+import static com.vaticle.typedb.core.graph.common.Encoding.System.Core.TRANSACTION_DUMMY_WRITE;
 
 public abstract class RocksStorage implements Storage {
 
@@ -274,6 +275,7 @@ public abstract class RocksStorage implements Storage {
 
         public void commit() throws RocksDBException {
             // We disable RocksDB indexing of uncommitted writes, as we're only about to write and never again reading
+            storageTransaction.putUntracked(TRANSACTION_DUMMY_WRITE.bytes().getBytes(), EMPTY_ARRAY.getBytes());
             // TODO: We should benchmark this
             storageTransaction.disableIndexing();
             storageTransaction.commit();
