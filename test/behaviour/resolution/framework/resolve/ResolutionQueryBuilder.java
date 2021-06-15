@@ -18,15 +18,23 @@
 
 package com.vaticle.typedb.core.test.behaviour.resolution.framework.resolve;
 
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.TypeDB.Transaction;
+import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.PatternVisitor;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.PatternVisitor.IIDConstraintThrower;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.PatternVisitor.VariableVisitor;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.VarNameGenerator;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.RuleResolutionBuilder;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.pattern.Conjunctable;
 import com.vaticle.typeql.lang.pattern.Conjunction;
+import com.vaticle.typeql.lang.pattern.Disjunction;
 import com.vaticle.typeql.lang.pattern.Pattern;
+import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 
@@ -45,17 +53,22 @@ import static com.google.common.collect.Iterables.getOnlyElement;
 
 public class ResolutionQueryBuilder {
 
-    private RuleResolutionBuilder ruleResolutionBuilder;
-    private Map<ConceptId, List<String>> varsForIds;
+    private final RuleResolutionBuilder ruleResolutionBuilder;
+    private final VarNameGenerator varNameGenerator;
+    private final PatternVisitor.Deanonymiser deanonymiser;
+    private Map<Concept, List<Retrievable>> varsForIds;
     private Map<String, String> replacementVars;
 
     public ResolutionQueryBuilder() {
-        ruleResolutionBuilder = new RuleResolutionBuilder();
+        this.ruleResolutionBuilder = new RuleResolutionBuilder();
+        this.varNameGenerator = new VarNameGenerator();
+        this.deanonymiser = PatternVisitor.Deanonymiser.create(varNameGenerator);
     }
 
     public List<TypeQLMatch> buildMatch(Transaction tx, TypeQLMatch query) {
-        List<ConceptMap> answers = tx.query().match(query).toList();
+        IIDConstraintThrower.create().visitDisjunction(query.conjunction().normalise());
 
+        List<ConceptMap> answers = tx.query().match(query).toList();
         ArrayList<TypeQLMatch> resolutionQueries = new ArrayList<>();
         for (ConceptMap answer : answers) {
             varsForIds = new HashMap<>();
@@ -63,7 +76,7 @@ public class ResolutionQueryBuilder {
             final LinkedHashSet<Pattern> resolutionPatterns = buildResolutionPattern(tx, answer, 0);
             final LinkedHashSet<Pattern> replacedResolutionPatterns = new LinkedHashSet<>();
             for (Pattern p : resolutionPatterns) {
-                PatternVisitor.VariableVisitor sv = new PatternVisitor.VariableVisitor(this::deduplicateVars);
+                VariableVisitor sv = VariableVisitor.from(this::deduplicateVars);
                 Pattern rp = sv.visitPattern(p);
                 replacedResolutionPatterns.add(rp);
             }
@@ -74,73 +87,81 @@ public class ResolutionQueryBuilder {
     }
 
     private LinkedHashSet<Pattern> buildResolutionPattern(Transaction tx, ConceptMap answer, Integer ruleResolutionIndex) {
+        FunctionalIterator<ConceptMap.Explainable> explainableIterator = answer.explainables().iterator();
+        if (!explainableIterator.hasNext()) {
+            // TODO: This will throw at the bottom of the recursion. It's actually the termination condition.
+            throw new RuntimeException("There were no explainables present in the answer");
+        }
+        ConceptMap.Explainable explainable = explainableIterator.toList().get(0);
+        FunctionalIterator<Explanation> explanations = tx.query().explain(explainable.id());
+        Explanation explanation = explanations.toList().get(0);
+        Map<Retrievable, Set<Retrievable>> varMapping = explanation.variableMapping();
+        // TODO: We could save this work by looking the normalised rule up as we already know them from the completion step
+        Disjunction<Conjunction<Conjunctable>> when = explanation.rule().getWhenPreNormalised().normalise();
+        when = deanonymiser.visitDisjunction(when);
+        ThingVariable<?> then = explanation.rule().getThenPreNormalised();
+        then = deanonymiser.deanonymiseIfAnon(then);
 
-        Pattern answerPattern = answer.getPattern();
+
+
+
         LinkedHashSet<Pattern> resolutionPatterns = new LinkedHashSet<>();
 
-        if (answerPattern == null) {
-            throw new RuntimeException("Answer is missing a pattern. Either patterns are broken or the initial query did not require inference.");
-        }
         Integer finalRuleResolutionIndex1 = ruleResolutionIndex;
 
-        PatternVisitor.VariableVisitor variableVisitor = new PatternVisitor.VariableVisitor(p -> {
-            Variable withoutIds = removeIdProperties(VarNameGenerator.deanonymiseIfAnon(p));
+        VariableVisitor variableVisitor = VariableVisitor.from(p -> {
+            Variable withoutIds = removeIdProperties(varNameGenerator.deanonymiseIfAnon(p));
             return withoutIds == null ? null : prefixVars(withoutIds, finalRuleResolutionIndex1);
         });
 
         resolutionPatterns.add(variableVisitor.visitPattern(answerPattern));
 
-        resolutionPatterns.addAll(generateAttrValueVariables(answer.map(), ruleResolutionIndex));
+        resolutionPatterns.addAll(generateAttrValueVariables(answer.concepts(), ruleResolutionIndex));
 
-        categoriseVarsByConceptId(answer.map(), ruleResolutionIndex);
+        categoriseVarsByConceptId(answer.concepts(), ruleResolutionIndex);
 
-        if (answer.explanation() != null) {
+        if (explanation.isRuleExplanation()) {
 
-            Explanation explanation = answer.explanation();
+            ConceptMap explAns = getOnlyElement(explanation.getAnswers());
 
-            if (explanation.isRuleExplanation()) {
+            ruleResolutionIndex += 1;
+            Integer finalRuleResolutionIndex0 = ruleResolutionIndex;
 
-                ConceptMap explAns = getOnlyElement(explanation.getAnswers());
+            VariableVisitor ruleVariableVisitor = VariableVisitor.from(p -> prefixVars(VarNameGenerator.deanonymiseIfAnon(p), finalRuleResolutionIndex0));
 
-                ruleResolutionIndex += 1;
-                Integer finalRuleResolutionIndex0 = ruleResolutionIndex;
+            Pattern whenPattern = Objects.requireNonNull(((RuleExplanation) explanation).getRule().when());
+            whenPattern = ruleVariableVisitor.visitPattern(whenPattern);
+            resolutionPatterns.add(whenPattern);
 
-                PatternVisitor.VariableVisitor ruleVariableVisitor = new PatternVisitor.VariableVisitor(p -> prefixVars(VarNameGenerator.deanonymiseIfAnon(p), finalRuleResolutionIndex0));
+            Pattern thenPattern = Objects.requireNonNull(((RuleExplanation) explanation).getRule().then());
+            thenPattern = ruleVariableVisitor.visitPattern(thenPattern);
+            resolutionPatterns.add(thenPattern);
 
-                Pattern whenPattern = Objects.requireNonNull(((RuleExplanation) explanation).getRule().when());
-                whenPattern = ruleVariableVisitor.visitPattern(whenPattern);
-                resolutionPatterns.add(whenPattern);
-
-                Pattern thenPattern = Objects.requireNonNull(((RuleExplanation) explanation).getRule().then());
-                thenPattern = ruleVariableVisitor.visitPattern(thenPattern);
-                resolutionPatterns.add(thenPattern);
-
-                String ruleLabel = ((RuleExplanation)explanation).getRule().label().toString();
-                resolutionPatterns.add(ruleResolutionBuilder.ruleResolutionConjunction(whenPattern, thenPattern, ruleLabel));
-                resolutionPatterns.add(TypeQL.and(buildResolutionPattern(tx, explAns, ruleResolutionIndex)));
-            } else {
-                if (explanation.isLookupExplanation()) {
-                    for (final Variable variable : answer.getPattern().variables()) {
-                        if (variable instanceof VariableRelation) {
-                            Pattern p = TypeQL.not(prefixVars(VarNameGenerator.deanonymiseIfAnon(TypeQL.var().isa("isa-property"))
-                                    .rel(variable.var().name())
-                                    .has("inferred", true), ruleResolutionIndex));
-                            resolutionPatterns.add(p);
-                            Variable s = TypeQL.var().isa("relation-property")
-                                    .has("inferred", true);
-                            for (Variable v : variable.variables()) {
-                                s = s.rel(v.name());
-                            }
-                            Pattern p2 = TypeQL.not(prefixVars(VarNameGenerator.deanonymiseIfAnon(s), ruleResolutionIndex));
-                            resolutionPatterns.add(p2);
-                        } /* else {
-                            // TODO: support attribute ownerships?
-                        } */
-                    }
+            String ruleLabel = ((RuleExplanation)explanation).getRule().label().toString();
+            resolutionPatterns.add(ruleResolutionBuilder.ruleResolutionConjunction(whenPattern, thenPattern, ruleLabel));
+            resolutionPatterns.add(TypeQL.and(buildResolutionPattern(tx, explAns, ruleResolutionIndex)));
+        } else {
+            if (explanation.isLookupExplanation()) {
+                for (final Variable variable : answer.getPattern().variables()) {
+                    if (variable instanceof VariableRelation) {
+                        Pattern p = TypeQL.not(prefixVars(VarNameGenerator.deanonymiseIfAnon(TypeQL.var().isa("isa-property"))
+                                .rel(variable.var().name())
+                                .has("inferred", true), ruleResolutionIndex));
+                        resolutionPatterns.add(p);
+                        Variable s = TypeQL.var().isa("relation-property")
+                                .has("inferred", true);
+                        for (Variable v : variable.variables()) {
+                            s = s.rel(v.name());
+                        }
+                        Pattern p2 = TypeQL.not(prefixVars(VarNameGenerator.deanonymiseIfAnon(s), ruleResolutionIndex));
+                        resolutionPatterns.add(p2);
+                    } /* else {
+                        // TODO: support attribute ownerships?
+                    } */
                 }
-                for (ConceptMap explAns : explanation.getAnswers()) {
-                    resolutionPatterns.addAll(buildResolutionPattern(tx, explAns, ruleResolutionIndex));
-                }
+            }
+            for (ConceptMap explAns : explanation.getAnswers()) {
+                resolutionPatterns.addAll(buildResolutionPattern(tx, explAns, ruleResolutionIndex));
             }
         }
 
@@ -183,10 +204,10 @@ public class ResolutionQueryBuilder {
     }
 
     /**
-     * During resolution we frequently get two variables from distinct variables that actually refer to the same
+     * During resolution we frequently get two variables from distinct statements that actually refer to the same
      * concept. Here, we identify sets of variables, where variables within each set all refer to the same concept,
-     * and then construct a mapping that, when applied to all variables in a variable, will ensure that any two
-     * distinct variables in that variable refer to distinct concepts.
+     * and then construct a mapping that, when applied to all variables in a conjunction, will ensure that any two
+     * distinct variables in that conjunction refer to distinct concepts.
      */
     private void categoriseVarsByConceptId(Map<Variable, Concept> varMap, int ruleResolutionIndex) {
         for (Map.Entry<Variable, Concept> entry : varMap.entrySet()) {
@@ -270,7 +291,7 @@ public class ResolutionQueryBuilder {
      * @param variable variable to remove from
      * @return variable without any ID properties, null if an ID property was the only property
      */
-    public static Variable removeIdProperties(Variable variable) {
+    static Variable removeIdProperties(Variable variable) {
         LinkedHashSet<VarProperty> propertiesWithoutIds = new LinkedHashSet<>();
         variable.properties().forEach(varProperty -> {
             if (!(varProperty instanceof IdProperty)) {

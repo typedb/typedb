@@ -22,7 +22,8 @@ import com.vaticle.typedb.core.TypeDB.Session;
 import com.vaticle.typedb.core.TypeDB.Transaction;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.PatternVisitor;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.PatternVisitor.Deanonymiser;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.PatternVisitor.IIDConstraintThrower;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.RuleResolutionBuilder;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.VarNameGenerator;
 import com.vaticle.typeql.lang.TypeQL;
@@ -100,11 +101,13 @@ public class Completer {
         private final String label;
 
         public Rule(Conjunction<? extends Pattern> whenPreNormalised, ThingVariable<?> thenPreNormalised, String label) {
-            PatternVisitor.VariableVisitor visitor = new PatternVisitor.VariableVisitor(new VarNameGenerator().deanonymiseIfAnon());
+            // TODO: check that the when doesn't contain any iid constraints since these are not transferable across dbs.
+            Deanonymiser deanonymiser = Deanonymiser.create(new VarNameGenerator());
             List<Conjunction<Conjunctable>> whenConjunctions = whenPreNormalised.normalise().patterns();
             assert whenConjunctions.size() == 1;
-            this.when = visitor.visitConjunction(whenConjunctions.get(0));
-            this.then = visitor.visitVariable(thenPreNormalised.normalise()).asThing();
+            this.when = deanonymiser.visitConjunction(whenConjunctions.get(0));
+            IIDConstraintThrower.create().visitConjunction(this.when);
+            this.then = deanonymiser.visitVariable(thenPreNormalised.normalise()).asThing();
             this.label = label;
         }
     }

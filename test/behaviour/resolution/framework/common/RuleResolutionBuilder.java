@@ -66,7 +66,7 @@ public class RuleResolutionBuilder {
                                                                    ThingVariable<?> then,
                                                                    String ruleLabel) {
         VarNameGenerator varNameGenerator = new VarNameGenerator();
-        PatternVisitor.NegationRemovalVisitor negationStripper = new PatternVisitor.NegationRemovalVisitor();
+        PatternVisitor.NegationRemover negationStripper = new PatternVisitor.NegationRemover();
         Conjunction<BoundVariable> strippedWhen = negationStripper.visitConjunctionVariables(when);
 
         UnboundVariable ruleResolutionRelation = TypeQL.var(REL.toString());

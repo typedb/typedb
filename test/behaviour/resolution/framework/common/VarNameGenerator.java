@@ -61,21 +61,4 @@ public class VarNameGenerator {
         nextVarIndex.put(prefix.toString(), currentIndex + 1);
         return nextVar;
     }
-
-    public Function<BoundVariable, BoundVariable> deanonymiseIfAnon() {
-        return this::deanonymiseIfAnon;
-    }
-
-    public BoundVariable deanonymiseIfAnon(BoundVariable variable) {
-        if (variable.isThing()) return deanonymiseIfAnon(variable.asThing());
-        else throw TypeDBException.of(ILLEGAL_STATE); // TODO: Check this is illegal
-    }
-
-    private ThingVariable<?> deanonymiseIfAnon(ThingVariable<?> variable) {
-        if (variable.isNamed()) {
-            return variable;
-        } else {
-            return variable.deanonymise(getNextVarName(ANON));
-        }
-    }
 }

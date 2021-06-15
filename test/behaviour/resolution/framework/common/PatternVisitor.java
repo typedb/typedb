@@ -19,12 +19,14 @@
 package com.vaticle.typedb.core.test.behaviour.resolution.framework.common;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.resolve.ResolutionQueryBuilder;
 import com.vaticle.typeql.lang.pattern.Conjunctable;
 import com.vaticle.typeql.lang.pattern.Conjunction;
 import com.vaticle.typeql.lang.pattern.Disjunction;
 import com.vaticle.typeql.lang.pattern.Negation;
 import com.vaticle.typeql.lang.pattern.Pattern;
 import com.vaticle.typeql.lang.pattern.variable.BoundVariable;
+import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +34,7 @@ import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.VarNameGenerator.VarPrefix.ANON;
 
 public abstract class PatternVisitor {
 
@@ -67,13 +70,60 @@ public abstract class PatternVisitor {
             this.function = function;
         }
 
+        public static VariableVisitor from(Function<BoundVariable, BoundVariable> function) {
+            return new VariableVisitor(function);
+        }
+
         @Override
         public BoundVariable visitVariable(BoundVariable variable) {
             return function.apply(variable);
         }
     }
 
-    public static class NegationRemovalVisitor extends PatternVisitor {
+    public static class IIDConstraintThrower extends PatternVisitor {
+
+        public static IIDConstraintThrower create() {
+            return new IIDConstraintThrower();
+        }
+
+        @Override
+        public BoundVariable visitVariable(BoundVariable variable) {
+            if (variable.isThing() && variable.asThing().iid().isPresent()) {
+                throw new ResolutionQueryBuilder.ResolutionConstraintException(
+                        "Patterns cannot use IIDs as these are not transferable between Databases for comparison");
+            }
+            return variable;
+        }
+    }
+
+    public static class Deanonymiser extends PatternVisitor {
+
+        private final VarNameGenerator varNameGenerator;
+
+        private Deanonymiser(VarNameGenerator varNameGenerator) {
+            this.varNameGenerator = varNameGenerator;
+        }
+
+        public static Deanonymiser create(VarNameGenerator varNameGenerator) {
+            return new Deanonymiser(varNameGenerator);
+        }
+
+        @Override
+        public BoundVariable visitVariable(BoundVariable variable) {
+            if (variable.isThing()) return deanonymiseIfAnon(variable.asThing());
+            else throw TypeDBException.of(ILLEGAL_STATE); // TODO: Check this is illegal
+        }
+
+        public ThingVariable<?> deanonymiseIfAnon(ThingVariable<?> variable) {
+            if (variable.isNamed()) {
+                return variable;
+            } else {
+                return variable.deanonymise(varNameGenerator.getNextVarName(ANON));
+            }
+        }
+    }
+
+    public static class NegationRemover extends PatternVisitor {
 
         public Conjunction<BoundVariable> visitConjunctionVariables(Conjunction<Conjunctable> conjunction) {
             List<BoundVariable> variables = new ArrayList<>();
@@ -87,4 +137,5 @@ public abstract class PatternVisitor {
             return new Conjunction<>(variables);
         }
     }
+
 }
