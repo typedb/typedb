@@ -199,6 +199,7 @@ public class Encoding {
         private final ByteArray bytes;
 
         Prefix(int key, PrefixType type) {
+            assert key < 200 : "Core prefix encoding should not use reserved range";
             this.key = unsignedByte(key);
             this.type = type;
             this.bytes = ByteArray.of(new byte[]{this.key});
