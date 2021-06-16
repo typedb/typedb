@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
@@ -506,11 +507,11 @@ public class RocksDatabase implements TypeDB.Database {
                     for (Map.Entry<Long, ConcurrentMap<RocksStorage.Data, Event>> entry : this.events.entrySet()) {
                         Long snapshot = entry.getKey();
                         ConcurrentMap<RocksStorage.Data, Event> events = entry.getValue();
-                        events.keySet().forEach(storage -> {
-                            if (storage.snapshotEnd().isPresent() && isDeletable(storage)) {
-                                events.remove(storage);
-                            }
-                        });
+                        RocksStorage.Data other;
+                        for (Iterator<RocksStorage.Data> iter = events.keySet().iterator(); iter.hasNext(); ) {
+                            other = iter.next();
+                            if (other.snapshotEnd().isPresent() && isDeletable(other)) iter.remove();
+                        }
                         if (events.isEmpty()) this.events.remove(snapshot);
                     }
                     cleanupRunning.set(false);

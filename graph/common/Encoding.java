@@ -131,18 +131,12 @@ public class Encoding {
     }
 
     public enum PrefixType {
-        INDEX(0),
-        STATISTICS(1),
-        TYPE(2),
-        THING(3),
-        RULE(4);
-
-        private final int key;
-
-        PrefixType(int key) {
-            this.key = key;
-        }
-
+        SYSTEM,
+        INDEX,
+        STATISTICS,
+        TYPE,
+        THING,
+        RULE;
     }
 
     /**
@@ -160,6 +154,7 @@ public class Encoding {
         STATISTICS_COUNT_JOB(51, PrefixType.STATISTICS),
         STATISTICS_COUNTED(52, PrefixType.STATISTICS),
         STATISTICS_SNAPSHOT(53, PrefixType.STATISTICS),
+        SYSTEM(70, PrefixType.SYSTEM), // TODO reorganise SYSTEM to come first when releasing an incompatible storage
         VERTEX_THING_TYPE(100, PrefixType.TYPE),
         VERTEX_ENTITY_TYPE(110, PrefixType.TYPE),
         VERTEX_ATTRIBUTE_TYPE(120, PrefixType.TYPE),
@@ -172,6 +167,7 @@ public class Encoding {
         STRUCTURE_RULE(190, PrefixType.RULE);
 
         private static final ByteMap<Prefix> prefixByKey = ByteMap.create(
+                pair(SYSTEM.key, SYSTEM),
                 pair(INDEX_TYPE.key, INDEX_TYPE),
                 pair(INDEX_RULE.key, INDEX_RULE),
                 pair(INDEX_ATTRIBUTE.key, INDEX_ATTRIBUTE),
@@ -191,12 +187,12 @@ public class Encoding {
                 pair(STRUCTURE_RULE.key, STRUCTURE_RULE)
         );
 
-
         private final byte key;
         private final PrefixType type;
         private final ByteArray bytes;
 
         Prefix(int key, PrefixType type) {
+            assert key < 200 : "The encoding range >= 200 is reserved for TypeDB Cluster.";
             this.key = unsignedByte(key);
             this.type = type;
             this.bytes = ByteArray.of(new byte[]{this.key});
@@ -224,7 +220,9 @@ public class Encoding {
             return type.equals(PrefixType.INDEX);
         }
 
-        public boolean isStatistics() { return type.equals(PrefixType.STATISTICS); }
+        public boolean isStatistics() {
+            return type.equals(PrefixType.STATISTICS);
+        }
 
         public boolean isType() {
             return type.equals(PrefixType.TYPE);
@@ -236,6 +234,10 @@ public class Encoding {
 
         public boolean isRule() {
             return type.equals(PrefixType.RULE);
+        }
+
+        public boolean isSystem() {
+            return type.equals(PrefixType.SYSTEM);
         }
 
     }
@@ -834,7 +836,9 @@ public class Encoding {
                 return prefix;
             }
 
-            public ByteArray bytes() { return prefix.bytes(); }
+            public ByteArray bytes() {
+                return prefix.bytes();
+            }
         }
 
         /**
@@ -861,7 +865,9 @@ public class Encoding {
                 else throw TypeDBException.of(UNRECOGNISED_VALUE);
             }
 
-            public ByteArray bytes() { return bytes; }
+            public ByteArray bytes() {
+                return bytes;
+            }
         }
     }
 
@@ -958,6 +964,23 @@ public class Encoding {
                 return bytes;
             }
         }
+    }
+
+    public enum System {
+
+        TRANSACTION_DUMMY_WRITE(0);
+
+        private final ByteArray bytes;
+
+        System(int key) {
+            byte b = unsignedByte(key);
+            this.bytes = ByteArray.join(Prefix.SYSTEM.bytes(), ByteArray.of(new byte[]{b}));
+        }
+
+        public ByteArray bytes() {
+            return bytes;
+        }
+
     }
 
     private static class ByteMap<T> {

@@ -145,7 +145,7 @@ public abstract class AttributeVertexImpl<VALUE> extends ThingVertexImpl impleme
         }
     }
 
-    private boolean isPersisted() {
+    public boolean isPersisted() {
         if (isPersisted == null) isPersisted = graph.storage().get(iid.bytes()) != null;
         return isPersisted;
     }
