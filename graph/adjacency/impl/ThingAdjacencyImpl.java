@@ -233,8 +233,8 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         }
 
         @Override
-        public FunctionalIterator<ThingVertex> from(boolean cacheVertex) {
-            return edgeIterator.map(e -> e.from(cacheVertex));
+        public FunctionalIterator<ThingVertex> from(boolean cache) {
+            return edgeIterator.map(e -> e.from(cache));
         }
 
         @Override
@@ -243,8 +243,8 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         }
 
         @Override
-        public FunctionalIterator<ThingVertex> to(boolean cacheVertex) {
-            return edgeIterator.map(e -> e.to(cacheVertex));
+        public FunctionalIterator<ThingVertex> to(boolean cache) {
+            return edgeIterator.map(e -> e.to(cache));
         }
 
         @Override

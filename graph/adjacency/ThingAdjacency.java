@@ -134,11 +134,11 @@ public interface ThingAdjacency {
 
         FunctionalIterator<ThingVertex> from();
 
-        FunctionalIterator<ThingVertex> from(boolean cacheVertex);
+        FunctionalIterator<ThingVertex> from(boolean cache);
 
         FunctionalIterator<ThingVertex> to();
 
-        FunctionalIterator<ThingVertex> to(boolean cacheVertex);
+        FunctionalIterator<ThingVertex> to(boolean cache);
 
         FunctionalIterator<ThingEdge> get();
     }
