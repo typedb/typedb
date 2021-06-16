@@ -85,7 +85,7 @@ public class ThingGraph {
     private final TypeGraph typeGraph;
     private final KeyGenerator.Data.Buffered keyGenerator;
     private final ConcurrentMap<VertexIID.Thing, ThingVertex> thingsByIID;
-    private final ConcurrentMap<VertexIID.Type, ConcurrentSet<ThingVertex>> thingByTypeIID;
+    private final ConcurrentMap<VertexIID.Type, ConcurrentSet<ThingVertex>> thingsByTypeIID;
     private final AttributesByIID attributesByIID;
     private final Statistics statistics;
     private boolean isModified;
@@ -95,7 +95,7 @@ public class ThingGraph {
         this.typeGraph = typeGraph;
         keyGenerator = new KeyGenerator.Data.Buffered();
         thingsByIID = new ConcurrentHashMap<>();
-        thingByTypeIID = new ConcurrentHashMap<>();
+        thingsByTypeIID = new ConcurrentHashMap<>();
         attributesByIID = new AttributesByIID();
         statistics = new Statistics(typeGraph, storage);
     }
@@ -203,7 +203,7 @@ public class ThingGraph {
         VertexIID.Thing iid = generate(keyGenerator, typeVertex.iid(), typeVertex.properLabel());
         ThingVertex vertex = new ThingVertexImpl.Buffered(this, iid, isInferred);
         thingsByIID.put(iid, vertex);
-        thingByTypeIID.computeIfAbsent(typeVertex.iid(), t -> new ConcurrentSet<>()).add(vertex);
+        thingsByTypeIID.computeIfAbsent(typeVertex.iid(), t -> new ConcurrentSet<>()).add(vertex);
         if (!isInferred) statistics.vertexCreated(typeVertex.iid());
         return vertex;
     }
@@ -239,8 +239,8 @@ public class ThingGraph {
                 join(typeVertex.iid().bytes(), Encoding.Edge.ISA.in().bytes()),
                 (key, value) -> convert(EdgeIID.InwardsISA.of(key).end(), cacheVertex)
         );
-        if (!thingByTypeIID.containsKey(typeVertex.iid())) return storageIterator;
-        else return link(thingByTypeIID.get(typeVertex.iid()).iterator(), storageIterator).distinct();
+        if (!thingsByTypeIID.containsKey(typeVertex.iid())) return storageIterator;
+        else return link(thingsByTypeIID.get(typeVertex.iid()).iterator(), storageIterator).distinct();
     }
 
     public AttributeVertex<Boolean> get(TypeVertex type, boolean value) {
@@ -345,7 +345,7 @@ public class ThingGraph {
                 new VertexIID.Attribute.Boolean(type.iid(), value),
                 iid -> {
                     AttributeVertex<Boolean> v = new AttributeVertexImpl.Boolean(this, iid, isInferred);
-                    thingByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     isNewVertex[0] = true;
                     return v;
                 }
@@ -367,7 +367,7 @@ public class ThingGraph {
                 new VertexIID.Attribute.Long(type.iid(), value),
                 iid -> {
                     AttributeVertex<Long> v = new AttributeVertexImpl.Long(this, iid, isInferred);
-                    thingByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     isNewVertex[0] = true;
                     return v;
                 }
@@ -391,7 +391,7 @@ public class ThingGraph {
                 new VertexIID.Attribute.Double(type.iid(), value),
                 iid -> {
                     AttributeVertex<Double> v = new AttributeVertexImpl.Double(this, iid, isInferred);
-                    thingByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     isNewVertex[0] = true;
                     return v;
                 }
@@ -424,7 +424,7 @@ public class ThingGraph {
         AttributeVertex<String> vertex = attributesByIID.strings.computeIfAbsent(
                 attIID, iid -> {
                     AttributeVertex<String> v = new AttributeVertexImpl.String(this, iid, isInferred);
-                    thingByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     isNewVertex[0] = true;
                     return v;
                 }
@@ -447,7 +447,7 @@ public class ThingGraph {
                 new VertexIID.Attribute.DateTime(type.iid(), value),
                 iid -> {
                     AttributeVertex<LocalDateTime> v = new AttributeVertexImpl.DateTime(this, iid, isInferred);
-                    thingByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
+                    thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSet<>()).add(v);
                     isNewVertex[0] = true;
                     return v;
                 }
@@ -463,8 +463,8 @@ public class ThingGraph {
     public void delete(AttributeVertex<?> vertex) {
         assert storage.isOpen();
         attributesByIID.remove(vertex.iid());
-        if (thingByTypeIID.containsKey(vertex.type().iid())) {
-            thingByTypeIID.get(vertex.type().iid()).remove(vertex);
+        if (thingsByTypeIID.containsKey(vertex.type().iid())) {
+            thingsByTypeIID.get(vertex.type().iid()).remove(vertex);
         }
         if (!vertex.isInferred()) statistics.attributeVertexDeleted(vertex.iid());
     }
@@ -473,8 +473,8 @@ public class ThingGraph {
         assert storage.isOpen();
         if (!vertex.isAttribute()) {
             thingsByIID.remove(vertex.iid());
-            if (thingByTypeIID.containsKey(vertex.type().iid())) {
-                thingByTypeIID.get(vertex.type().iid()).remove(vertex);
+            if (thingsByTypeIID.containsKey(vertex.type().iid())) {
+                thingsByTypeIID.get(vertex.type().iid()).remove(vertex);
             }
             if (!vertex.isInferred()) statistics.vertexDeleted(vertex.type().iid());
         } else delete(vertex.asAttribute());
@@ -492,7 +492,7 @@ public class ThingGraph {
 
     public void clear() {
         thingsByIID.clear();
-        thingByTypeIID.clear();
+        thingsByTypeIID.clear();
         attributesByIID.clear();
         statistics.clear();
     }
