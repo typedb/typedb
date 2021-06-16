@@ -195,7 +195,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
     }
 
     @Override
-    public ThingEdge register(ThingEdge edge) {
+    public ThingEdge cache(ThingEdge edge) {
         return put(edge.encoding(), (ThingEdgeImpl) edge, infixTails(edge), false, false);
     }
 
@@ -289,7 +289,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         private FunctionalIterator<ThingEdge> edgeIterator(Encoding.Edge.Thing encoding, IID... lookahead) {
             ByteArray iid = join(owner.iid().bytes(), infixIID(encoding, lookahead).bytes());
             FunctionalIterator<ThingEdge> storageIterator = owner.graph().storage()
-                    .iterate(iid, (key, value) -> register(newPersistedEdge(EdgeIID.Thing.of(key))));
+                    .iterate(iid, (key, value) -> cache(newPersistedEdge(EdgeIID.Thing.of(key))));
             FunctionalIterator<ThingEdge> bufferedIterator = bufferedEdgeIterator(encoding, lookahead);
             return link(bufferedIterator, storageIterator).distinct();
         }
@@ -316,7 +316,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
             EdgeIID.Thing edgeIID = EdgeIID.Thing.of(owner.iid(), infixIID(encoding), adjacent.iid());
             if (owner.graph().storage().get(edgeIID.bytes()) == null) return null;
-            else return register(newPersistedEdge(edgeIID));
+            else return cache(newPersistedEdge(edgeIID));
         }
 
         @Override
@@ -330,7 +330,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
                     adjacent.iid(), SuffixIID.of(optimised.iid().key())
             );
             if (owner.graph().storage().get(edgeIID.bytes()) == null) return null;
-            else return register(newPersistedEdge(edgeIID));
+            else return cache(newPersistedEdge(edgeIID));
         }
 
         @Override

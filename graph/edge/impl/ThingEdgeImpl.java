@@ -307,11 +307,11 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             if (cacheVertex) {
                 if (from != null) return from;
                 from = graph.convert(fromIID, cacheVertex);
-                from.outs().register(this);
+                from.outs().cache(this);
                 return from;
             } else {
                 ThingVertex f = graph.convert(fromIID, cacheVertex);
-                f.outs().register(this);
+                f.outs().cache(this);
                 return f;
             }
         }
@@ -331,11 +331,11 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             if (cacheVertex) {
                 if (to != null) return to;
                 to = graph.convert(toIID);
-                to.ins().register(this);
+                to.ins().cache(this);
                 return to;
             } else {
                 ThingVertex t = graph.convert(toIID, cacheVertex);
-                t.ins().register(this);
+                t.ins().cache(this);
                 return t;
             }
         }

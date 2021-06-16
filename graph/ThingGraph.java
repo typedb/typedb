@@ -350,7 +350,6 @@ public class ThingGraph {
                     return v;
                 }
         );
-        // TODO should use isPersisted() to not count unnecessarily on all these methods
         if (!isInferred && (isNewVertex[0] || vertex.isInferred())) {
             vertex.isInferred(false);
             statistics.attributeVertexCreated(vertex.iid());
@@ -500,7 +499,7 @@ public class ThingGraph {
 
     /**
      * Commits all the writes captured in this graph into storage.
-     * <p>
+     *
      * We start off by generating new IIDs for every {@code ThingVertex} (which
      * does not actually include {@code AttributeVertex}). We then write the every
      * {@code ThingVertex} onto the storage. Once all commit operations for every

@@ -124,7 +124,7 @@ public interface ThingAdjacency {
 
     void deleteAll();
 
-    ThingEdge register(ThingEdge edge);
+    ThingEdge cache(ThingEdge edge);
 
     void remove(ThingEdge edge);
 
