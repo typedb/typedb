@@ -131,19 +131,12 @@ public class Encoding {
     }
 
     public enum PrefixType {
-        SYSTEM(-1),
-        INDEX(0),
-        STATISTICS(1),
-        TYPE(2),
-        THING(3),
-        RULE(4);
-
-        private final int key;
-
-        PrefixType(int key) {
-            this.key = key;
-        }
-
+        SYSTEM,
+        INDEX,
+        STATISTICS,
+        TYPE,
+        THING,
+        RULE;
     }
 
     /**
@@ -199,7 +192,7 @@ public class Encoding {
         private final ByteArray bytes;
 
         Prefix(int key, PrefixType type) {
-            assert key < 200 : "Core prefix encoding should not use reserved range";
+            assert key < 200 : "The encoding range >= 200 is reserved for TypeDB Cluster.";
             this.key = unsignedByte(key);
             this.type = type;
             this.bytes = ByteArray.of(new byte[]{this.key});
@@ -973,25 +966,19 @@ public class Encoding {
         }
     }
 
-    public interface System {
+    public enum System {
 
-        ByteArray bytes();
+        TRANSACTION_DUMMY_WRITE(0);
 
-        enum Core implements System {
+        private final ByteArray bytes;
 
-            TRANSACTION_DUMMY_WRITE(0);
+        System(int key) {
+            byte b = unsignedByte(key);
+            this.bytes = ByteArray.join(Prefix.SYSTEM.bytes(), ByteArray.of(new byte[]{b}));
+        }
 
-            private final ByteArray bytes;
-
-            Core(int key) {
-                byte b = unsignedByte(key);
-                this.bytes = ByteArray.join(Prefix.SYSTEM.bytes(), ByteArray.of(new byte[]{b}));
-            }
-
-            public ByteArray bytes() {
-                return bytes;
-            }
-
+        public ByteArray bytes() {
+            return bytes;
         }
 
     }
