@@ -41,37 +41,20 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
     protected final ThingGraph graph;
     protected final GraphManager graphMgr;
-    protected final ThingAdjacency outs;
-    protected final ThingAdjacency ins;
-    protected final AtomicBoolean isDeleted;
-    protected boolean isInferred;
 
-    ThingVertexImpl(ThingGraph graph, VertexIID.Thing iid, boolean isInferred) {
+    ThingVertexImpl(ThingGraph graph, VertexIID.Thing iid) {
         super(iid);
         this.graph = graph;
         this.graphMgr = new GraphManager(graph.type(), graph);
-        this.outs = newAdjacency(Encoding.Direction.Adjacency.OUT);
-        this.ins = newAdjacency(Encoding.Direction.Adjacency.IN);
-        this.isInferred = isInferred;
-        this.isModified = false;
-        this.isDeleted = new AtomicBoolean(false);
     }
 
     public static ThingVertexImpl of(ThingGraph graph, VertexIID.Thing iid) {
         if (iid.encoding().equals(ATTRIBUTE)) {
             return AttributeVertexImpl.of(graph, iid.asAttribute());
         } else {
-            return new ThingVertexImpl.Persisted(graph, iid);
+            return new Write.Persisted(graph, iid);
         }
     }
-
-    /**
-     * Instantiates a new {@code ThingAdjacency} class
-     *
-     * @param direction the direction of the edges held in {@code ThingAdjacency}
-     * @return the new {@code ThingAdjacency} class
-     */
-    protected abstract ThingAdjacency newAdjacency(Encoding.Direction.Adjacency direction);
 
     @Override
     public ThingGraph graph() {
@@ -89,32 +72,8 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     }
 
     @Override
-    public ThingAdjacency outs() {
-        return outs;
-    }
-
-    @Override
-    public ThingAdjacency ins() {
-        return ins;
-    }
-
-    @Override
     public TypeVertex type() {
         return graph.type().convert(iid.type());
-    }
-
-    @Override
-    public void isInferred(boolean isInferred) {
-        this.isInferred = isInferred;
-    }
-
-    @Override
-    public boolean isInferred() {
-        return isInferred;
-    }
-
-    public boolean isDeleted() {
-        return isDeleted.get();
     }
 
     @Override
@@ -131,82 +90,165 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(AttributeVertex.class));
     }
 
-    void deleteEdges() {
-        outs.deleteAll();
-        ins.deleteAll();
-    }
+    public static abstract class Write extends ThingVertexImpl implements ThingVertex.Write {
 
-    void deleteVertexFromGraph() {
-        graph.delete(this);
-    }
+        protected final ThingAdjacency.Write outs;
+        protected final ThingAdjacency.Write ins;
+        protected final AtomicBoolean isDeleted;
+        protected boolean isInferred;
+        protected boolean isModified;
 
-    void deleteVertexFromStorage() {
-        graph.storage().deleteTracked(iid.bytes());
-        graph.storage().deleteUntracked(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
-    }
+        Write(ThingGraph graph, VertexIID.Thing iid, boolean isInferred) {
+            super(graph, iid);
+            this.isInferred = isInferred;
+            this.isModified = false;
+            this.isDeleted = new AtomicBoolean(false);
+            this.outs = newAdjacency(Encoding.Direction.Adjacency.OUT);
+            this.ins = newAdjacency(Encoding.Direction.Adjacency.IN);
+        }
 
-    void commitEdges() {
-        outs.commit();
-        ins.commit();
-    }
+        protected abstract ThingAdjacency.Write newAdjacency(Encoding.Direction direction);
 
-    public static class Buffered extends ThingVertexImpl {
-
-        public Buffered(ThingGraph graph, VertexIID.Thing iid, boolean isInferred) {
-            super(graph, iid, isInferred);
-            setModified();
+        @Override
+        public ThingAdjacency.Write outs() {
+            return outs;
         }
 
         @Override
-        protected ThingAdjacency newAdjacency(Encoding.Direction.Adjacency direction) {
-            return new ThingAdjacencyImpl.Buffered(this, direction);
+        public ThingAdjacency.Write ins() {
+            return ins;
         }
 
-        @Override
-        public Encoding.Status status() {
-            return Encoding.Status.BUFFERED;
-        }
-
-        @Override
-        public void commit() {
-            if (isInferred) throw TypeDBException.of(ILLEGAL_OPERATION);
-            commitVertex();
-            commitEdges();
-        }
-
-        private void commitVertex() {
-            graph.storage().putTracked(iid.bytes());
-            graph.storage().putUntracked(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
-        }
-
-        @Override
-        public void delete() {
-            if (isDeleted.compareAndSet(false, true)) {
-                deleteEdges();
-                deleteVertexFromGraph();
-            }
-        }
-
-        @Override
-        public void setModified() {
-            if (!isModified) isModified = true;
-        }
-    }
-
-    public static class Persisted extends ThingVertexImpl {
-
-        public Persisted(ThingGraph graph, VertexIID.Thing iid) {
-            super(graph, iid, false);
-        }
-
-        @Override
-        protected ThingAdjacency newAdjacency(Encoding.Direction.Adjacency direction) {
-            return new ThingAdjacencyImpl.Persisted(this, direction);
+        public boolean isModified() {
+            return isModified;
         }
 
         @Override
         public void isInferred(boolean isInferred) {
-            throw TypeDBException.of(ILLEGAL_OPERATION);
+            this.isInferred = isInferred;
+        }
+
+        @Override
+        public boolean isInferred() {
+            return isInferred;
+        }
+
+        public boolean isDeleted() {
+            return isDeleted.get();
+        }
+
+        void deleteVertexFromGraph() {
+            graph.delete(this);
+        }
+
+        void deleteEdges() {
+            outs.deleteAll();
+            ins.deleteAll();
+        }
+
+        void commitEdges() {
+            outs.commit();
+            ins.commit();
+        }
+
+        public static class Buffered extends ThingVertexImpl.Write {
+
+            public Buffered(ThingGraph graph, VertexIID.Thing iid, boolean isInferred) {
+                super(graph, iid, isInferred);
+                setModified();
+            }
+
+            @Override
+            protected ThingAdjacency.Write newAdjacency(Encoding.Direction.Adjacency direction) {
+                return new ThingAdjacencyImpl.Buffered(this, direction);
+            }
+
+            @Override
+            public Encoding.Status status() {
+                return Encoding.Status.BUFFERED;
+            }
+
+            @Override
+            public void commit() {
+                if (isInferred) throw TypeDBException.of(ILLEGAL_OPERATION);
+                commitVertex();
+                commitEdges();
+            }
+
+            private void commitVertex() {
+                graph.storage().putTracked(iid.bytes());
+                graph.storage().putUntracked(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
+            }
+
+            @Override
+            public void delete() {
+                if (isDeleted.compareAndSet(false, true)) {
+                    deleteEdges();
+                    deleteVertexFromGraph();
+                }
+            }
+
+            @Override
+            public void setModified() {
+                if (!isModified) isModified = true;
+            }
+
+        }
+
+        public static class Persisted extends ThingVertexImpl.Write {
+
+            public Persisted(ThingGraph graph, VertexIID.Thing iid) {
+                super(graph, iid, false);
+            }
+
+            @Override
+            protected ThingAdjacency.Write newAdjacency(Encoding.Direction.Adjacency direction) {
+                return new ThingAdjacencyImpl.Persisted(this, direction);
+            }
+
+            @Override
+            public void isInferred(boolean isInferred) {
+                throw TypeDBException.of(ILLEGAL_OPERATION);
+            }
+
+            @Override
+            public Encoding.Status status() {
+                return Encoding.Status.PERSISTED;
+            }
+
+            @Override
+            public void commit() {
+                commitEdges();
+            }
+
+            @Override
+            public void delete() {
+                if (isDeleted.compareAndSet(false, true)) {
+                    deleteEdges();
+                    deleteVertexFromStorage();
+                    deleteVertexFromGraph();
+                }
+            }
+
+            void deleteVertexFromStorage() {
+                graph.storage().deleteTracked(iid.bytes());
+                graph.storage().deleteUntracked(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
+            }
+
+            @Override
+            public void setModified() {
+                if (!isModified) {
+                    isModified = true;
+                    graph.setModified(iid());
+                }
+            }
+        }
+    }
+
+    public static class Read extends ThingVertexImpl implements ThingVertex.Read {
+
+        Read(ThingGraph graph, VertexIID.Thing iid) {
+            super(graph, iid);
         }
 
         @Override
@@ -215,25 +257,19 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         }
 
         @Override
-        public void commit() {
-            commitEdges();
+        protected ThingAdjacency newAdjacency(Encoding.Direction.Adjacency direction) {
+            return new ThingAdjacencyImpl.Persisted(this, direction);
         }
 
         @Override
-        public void delete() {
-            if (isDeleted.compareAndSet(false, true)) {
-                deleteEdges();
-                deleteVertexFromStorage();
-                deleteVertexFromGraph();
-            }
+        public ThingAdjacency outs() {
+            return null;
         }
 
         @Override
-        public void setModified() {
-            if (!isModified) {
-                isModified = true;
-                graph.setModified(iid());
-            }
+        public ThingAdjacency ins() {
+            return null;
         }
     }
+
 }

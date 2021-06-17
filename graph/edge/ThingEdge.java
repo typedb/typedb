@@ -32,6 +32,7 @@ import java.util.Optional;
  */
 public interface ThingEdge extends Edge<Encoding.Edge.Thing, EdgeIID.Thing, ThingVertex> {
 
+    // TODO always return readable, which may be a writable
     ThingVertex from(boolean cacheVertex);
 
     VertexIID.Thing fromIID();

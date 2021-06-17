@@ -35,14 +35,6 @@ public interface Vertex<VERTEX_IID extends VertexIID, VERTEX_ENCODING extends En
 
     VERTEX_ENCODING encoding();
 
-    void setModified();
-
-    boolean isModified();
-
-    void delete();
-
-    boolean isDeleted();
-
     default boolean isThing() { return false; }
 
     default boolean isType() { return false; }
@@ -55,8 +47,4 @@ public interface Vertex<VERTEX_IID extends VertexIID, VERTEX_ENCODING extends En
         throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(TypeVertex.class));
     }
 
-    /**
-     * Commits this {@code ThingVertex} to be persisted onto storage.
-     */
-    void commit();
 }

@@ -143,9 +143,9 @@ public class ThingGraph {
         if (iid.encoding().equals(ATTRIBUTE)) {
             return convert(iid.asAttribute(), cacheVertex);
         } else if (cacheVertex) {
-            return thingsByIID.computeIfAbsent(iid, i -> ThingVertexImpl.of(this, i));
+            return thingsByIID.computeIfAbsent(iid, i -> ThingVertexWritableImpl.of(this, i));
         } else {
-            return thingsByIID.getOrDefault(iid, ThingVertexImpl.of(this, iid));
+            return thingsByIID.getOrDefault(iid, ThingVertexReadableImpl.of(this, iid));
         }
     }
 
@@ -201,7 +201,7 @@ public class ThingGraph {
         assert storage.isOpen();
         assert !typeVertex.isAttributeType();
         VertexIID.Thing iid = generate(keyGenerator, typeVertex.iid(), typeVertex.properLabel());
-        ThingVertex vertex = new ThingVertexImpl.Buffered(this, iid, isInferred);
+        ThingVertex vertex = new ThingVertexImpl.Write.Buffered(this, iid, isInferred);
         thingsByIID.put(iid, vertex);
         thingsByTypeIID.computeIfAbsent(typeVertex.iid(), t -> new ConcurrentSet<>()).add(vertex);
         if (!isInferred) statistics.vertexCreated(typeVertex.iid());

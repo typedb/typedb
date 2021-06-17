@@ -61,6 +61,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
     final AtomicBoolean isDeleted;
     final TypeAdjacency outs;
     final TypeAdjacency ins;
+    boolean isModified;
     String label;
     String scope;
     Boolean isAbstract; // needs to be declared as the Boolean class
@@ -89,7 +90,6 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         inPlaysCount = UNSET_COUNT;
     }
 
-
     @Override
     public TypeGraph graph() {
         return graph;
@@ -101,6 +101,10 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
             isModified = true;
             graph.setModified();
         }
+    }
+
+    public boolean isModified() {
+        return isModified;
     }
 
     @Override
