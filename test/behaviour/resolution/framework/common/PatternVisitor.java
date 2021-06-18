@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.test.behaviour.resolution.framework.common;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.resolve.ResolutionQueryBuilder;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.pattern.Conjunctable;
 import com.vaticle.typeql.lang.pattern.Conjunction;
 import com.vaticle.typeql.lang.pattern.Disjunction;
@@ -29,7 +30,11 @@ import com.vaticle.typeql.lang.pattern.variable.BoundVariable;
 import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -118,7 +123,8 @@ public abstract class PatternVisitor {
             if (variable.isNamed()) {
                 return variable;
             } else {
-                return variable.deanonymise(varNameGenerator.getNextVarName(ANON));
+                String newName = varNameGenerator.getNextVarName(ANON);
+                return variable.deanonymise(newName);
             }
         }
     }
@@ -135,6 +141,30 @@ public abstract class PatternVisitor {
                 }
             });
             return new Conjunction<>(variables);
+        }
+    }
+
+    public static class GetVariables extends PatternVisitor {
+
+        private final Set<Identifier.Variable.Retrievable> variables;
+
+        private GetVariables() {
+            variables = new HashSet<>();
+        }
+
+        public static GetVariables create() {
+            return new GetVariables();
+        }
+
+        public Set<BoundVariable> variables() {
+            return variables;
+        }
+
+        @Override
+        protected BoundVariable visitVariable(BoundVariable variable) {
+            if (variable.reference().isName() || variable.reference().isAnonymous()) { // TODO: Are we missing isRetrievable()?
+            variables.add(variable);
+            return variable;
         }
     }
 

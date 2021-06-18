@@ -33,7 +33,7 @@ public class VarNameGenerator {
 
     private final HashMap<String, Integer> nextVarIndex = new HashMap<>();
 
-    enum VarPrefix {
+    public enum VarPrefix {
         X("x"), ANON("anon");
 
         private final String name;
