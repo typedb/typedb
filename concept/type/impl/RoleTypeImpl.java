@@ -65,26 +65,26 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     }
 
     void setAbstract() {
-        vertex.isAbstract(true);
+        vertex().isAbstract(true);
     }
 
     void unsetAbstract() {
-        vertex.isAbstract(false);
+        vertex().isAbstract(false);
     }
 
     void sup(RoleType superType) {
-        super.setSuperTypeVertex(((RoleTypeImpl) superType).vertex);
+        super.setSuperTypeVertex(((RoleTypeImpl) superType).vertex());
     }
 
     @Nullable
     @Override
     public RoleTypeImpl getSupertype() {
-        return vertex.outs().edge(SUB).to().map(t -> RoleTypeImpl.of(graphMgr, t)).firstOrNull();
+        return vertex().outs().edge(SUB).to().map(t -> RoleTypeImpl.of(graphMgr, t)).firstOrNull();
     }
 
     @Override
     public FunctionalIterator<RoleTypeImpl> getSupertypes() {
-        return loop(vertex, Objects::nonNull, v -> v.outs().edge(SUB).to().firstOrNull())
+        return loop(vertex(), Objects::nonNull, v -> v.outs().edge(SUB).to().firstOrNull())
                 .map(v -> RoleTypeImpl.of(graphMgr, v));
     }
 
@@ -100,7 +100,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Override
     public RelationTypeImpl getRelationType() {
-        return RelationTypeImpl.of(graphMgr, vertex.ins().edge(Encoding.Edge.Type.RELATES).from().next());
+        return RelationTypeImpl.of(graphMgr, vertex().ins().edge(Encoding.Edge.Type.RELATES).from().next());
     }
 
     @Override
@@ -110,13 +110,13 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Override
     public FunctionalIterator<ThingTypeImpl> getPlayers() {
-        return vertex.ins().edge(Encoding.Edge.Type.PLAYS).from().map(v -> ThingTypeImpl.of(graphMgr, v));
+        return vertex().ins().edge(Encoding.Edge.Type.PLAYS).from().map(v -> ThingTypeImpl.of(graphMgr, v));
     }
 
     @Override
     public void delete() {
         validateDelete();
-        vertex.delete();
+        vertex().delete();
     }
 
     @Override
@@ -148,7 +148,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     public RoleImpl create(boolean isInferred) {
         validateCanHaveInstances(Entity.class);
-        ThingVertex instance = graphMgr.data().create(vertex, isInferred);
+        ThingVertex.Write instance = graphMgr.data().create(vertex(), isInferred);
         return RoleImpl.of(instance);
     }
 

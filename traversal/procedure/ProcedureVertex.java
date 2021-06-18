@@ -194,7 +194,7 @@ public abstract class ProcedureVertex<
                 } else {
                     attTypes = tree(graph.schema().rootAttributeType(), a -> a.ins().edge(SUB).from());
                 }
-                iter = attTypes.flatMap(t -> graph.data().getAll(t, false)).map(ThingVertex::asAttribute);
+                iter = attTypes.flatMap(t -> graph.data().get(t)).map(ThingVertex::asAttribute);
             }
 
             if (props().predicates().isEmpty()) return iter;
@@ -202,7 +202,7 @@ public abstract class ProcedureVertex<
         }
 
         private FunctionalIterator<ThingVertex> iterateFromAll(GraphManager graphMgr, TypeVertex rootType) {
-            return tree(rootType, t -> t.ins().edge(SUB).from()).flatMap(t -> graphMgr.data().getAll(t, false));
+            return tree(rootType, t -> t.ins().edge(SUB).from()).flatMap(t -> graphMgr.data().get(t));
         }
 
         FunctionalIterator<? extends ThingVertex> iterateAndFilterFromIID(GraphManager graphMgr, Traversal.Parameters parameters) {
@@ -222,7 +222,7 @@ public abstract class ProcedureVertex<
             if (eq.isPresent()) iter = iteratorOfAttributesWithTypes(graphMgr, parameters, eq.get());
             else iter = iterate(props().types().iterator())
                     .map(l -> assertTypeNotNull(graphMgr.schema().getType(l), l))
-                    .flatMap(t -> graphMgr.data().getAll(t, false));
+                    .flatMap(t -> graphMgr.data().get(t));
 
             if (id().isVariable()) iter = filterReferableThings(iter);
             if (props().predicates().isEmpty()) return iter;
@@ -241,7 +241,7 @@ public abstract class ProcedureVertex<
 
         FunctionalIterator<ThingEdge> filterIIDOnEdge(FunctionalIterator<ThingEdge> iterator,
                                                       Traversal.Parameters parameters, boolean isForward) {
-            Function<ThingEdge, ThingVertex> fn = e -> isForward ? e.to(false) : e.from(false);
+            Function<ThingEdge, ThingVertex> fn = e -> isForward ? e.to() : e.from();
             return iterator.filter(e -> fn.apply(e).iid().equals(parameters.getIID(id().asVariable())));
         }
 
@@ -250,7 +250,7 @@ public abstract class ProcedureVertex<
         }
 
         FunctionalIterator<ThingEdge> filterTypesOnEdge(FunctionalIterator<ThingEdge> iterator, boolean isForward) {
-            Function<ThingEdge, ThingVertex> fn = e -> isForward ? e.to(false) : e.from(false);
+            Function<ThingEdge, ThingVertex> fn = e -> isForward ? e.to() : e.from();
             return iterator.filter(e -> props().types().contains(fn.apply(e).type().properLabel()));
         }
 
@@ -277,7 +277,7 @@ public abstract class ProcedureVertex<
         FunctionalIterator<ThingEdge> filterPredicatesOnEdge(FunctionalIterator<ThingEdge> iterator,
                                                              Traversal.Parameters parameters, boolean isForward) {
             assert id().isVariable();
-            Function<ThingEdge, ThingVertex> fn = e -> isForward ? e.to(false) : e.from(false);
+            Function<ThingEdge, ThingVertex> fn = e -> isForward ? e.to() : e.from();
             iterator = iterator.filter(e -> fn.apply(e).isAttribute());
             for (Predicate.Value<?> predicate : props().predicates()) {
                 for (Traversal.Parameters.Value value : parameters.getValues(id().asVariable(), predicate)) {
@@ -313,15 +313,15 @@ public abstract class ProcedureVertex<
             assert type.isAttributeType();
             switch (type.valueType()) {
                 case BOOLEAN:
-                    return graphMgr.data().get(type, value.getBoolean(), false);
+                    return graphMgr.data().get(type, value.getBoolean());
                 case LONG:
-                    return graphMgr.data().get(type, value.getLong(), false);
+                    return graphMgr.data().get(type, value.getLong());
                 case DOUBLE:
-                    return graphMgr.data().get(type, value.getDouble(), false);
+                    return graphMgr.data().get(type, value.getDouble());
                 case STRING:
-                    return graphMgr.data().get(type, value.getString(), false);
+                    return graphMgr.data().get(type, value.getString());
                 case DATETIME:
-                    return graphMgr.data().get(type, value.getDateTime(), false);
+                    return graphMgr.data().get(type, value.getDateTime());
                 default:
                     throw TypeDBException.of(ILLEGAL_STATE);
             }

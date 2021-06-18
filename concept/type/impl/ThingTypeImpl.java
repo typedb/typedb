@@ -103,24 +103,24 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if (getInstances().first().isPresent()) {
             throw exception(TypeDBException.of(TYPE_HAS_INSTANCES_SET_ABSTRACT, getLabel()));
         }
-        vertex.isAbstract(true);
+        vertex().isAbstract(true);
     }
 
     @Override
     public void unsetAbstract() {
         validateIsNotDeleted();
-        vertex.isAbstract(false);
+        vertex().isAbstract(false);
     }
 
     @Nullable
     @Override
     public ThingTypeImpl getSupertype() {
-        return vertex.outs().edge(SUB).to().map(t -> ThingTypeImpl.of(graphMgr, t)).firstOrNull();
+        return vertex().outs().edge(SUB).to().map(t -> ThingTypeImpl.of(graphMgr, t)).firstOrNull();
     }
 
     @Override
     public FunctionalIterator<ThingTypeImpl> getSupertypes() {
-        return loop(vertex, Objects::nonNull, v -> v.outs().edge(SUB).to().firstOrNull())
+        return loop(vertex(), Objects::nonNull, v -> v.outs().edge(SUB).to().firstOrNull())
                 .map(v -> ThingTypeImpl.of(graphMgr, v));
     }
 
@@ -159,12 +159,12 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public void unsetOwns(AttributeType attributeType) {
         validateIsNotDeleted();
         TypeEdge edge;
-        TypeVertex attVertex = ((AttributeTypeImpl) attributeType).vertex;
+        TypeVertex attVertex = ((AttributeTypeImpl) attributeType).vertex();
         if (getInstances().anyMatch(thing -> thing.getHas(attributeType).first().isPresent())) {
-            throw exception(TypeDBException.of(INVALID_UNDEFINE_OWNS_HAS_INSTANCES, vertex.label(), attVertex.label()));
+            throw exception(TypeDBException.of(INVALID_UNDEFINE_OWNS_HAS_INSTANCES, vertex().label(), attVertex.label()));
         }
-        if ((edge = vertex.outs().edge(OWNS_KEY, attVertex)) != null) edge.delete();
-        else if ((edge = vertex.outs().edge(OWNS, attVertex)) != null) edge.delete();
+        if ((edge = vertex().outs().edge(OWNS_KEY, attVertex)) != null) edge.delete();
+        else if ((edge = vertex().outs().edge(OWNS, attVertex)) != null) edge.delete();
         else if (this.getOwns().anyMatch(attr -> attr.equals(attributeType))) {
             throw exception(TypeDBException.of(INVALID_UNDEFINE_INHERITED_OWNS,
                                                this.getLabel().toString(), attributeType.getLabel().toString()));
@@ -182,16 +182,16 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             throw exception(TypeDBException.of(OVERRIDE_NOT_AVAILABLE, type.getLabel(), overriddenType.getLabel()));
         }
 
-        vertex.outs().edge(encoding, ((TypeImpl) type).vertex).overridden(((TypeImpl) overriddenType).vertex);
+        vertex().outs().edge(encoding, ((TypeImpl) type).vertex()).overridden(((TypeImpl) overriddenType).vertex());
     }
 
     private void ownsKey(AttributeTypeImpl attributeType) {
         validateIsNotDeleted();
 
-        TypeVertex attVertex = attributeType.vertex;
+        TypeVertex attVertex = attributeType.vertex();
         TypeEdge ownsEdge, ownsKeyEdge;
 
-        if (vertex.outs().edge(OWNS_KEY, attVertex) != null) return;
+        if (vertex().outs().edge(OWNS_KEY, attVertex) != null) return;
 
         if (!attributeType.isKeyable()) {
             throw exception(TypeDBException.of(OWNS_KEY_VALUE_TYPE, attributeType.getLabel(), attributeType.getValueType().name()));
@@ -200,22 +200,22 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             throw exception(TypeDBException.of(OWNS_KEY_NOT_AVAILABLE, attributeType.getLabel()));
         }
 
-        if ((ownsEdge = vertex.outs().edge(OWNS, attVertex)) != null) {
+        if ((ownsEdge = vertex().outs().edge(OWNS, attVertex)) != null) {
             // TODO: These ownership and uniqueness checks should be parallelised to scale better
             getInstances().forEachRemaining(thing -> {
                 FunctionalIterator<? extends Attribute> attrs = thing.getHas(attributeType);
-                if (!attrs.hasNext()) throw exception(TypeDBException.of(OWS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY, vertex.label(), attVertex.label()));
+                if (!attrs.hasNext()) throw exception(TypeDBException.of(OWS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY, vertex().label(), attVertex.label()));
                 Attribute attr = attrs.next();
-                if (attrs.hasNext()) throw exception(TypeDBException.of(OWS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING, vertex.label(), attVertex.label()));
+                if (attrs.hasNext()) throw exception(TypeDBException.of(OWS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING, vertex().label(), attVertex.label()));
                 else if (compareSize(attr.getOwners(this), 1) != 0) {
-                    throw exception(TypeDBException.of(OWNS_KEY_PRECONDITION_UNIQUENESS, attVertex.label(), vertex.label()));
+                    throw exception(TypeDBException.of(OWNS_KEY_PRECONDITION_UNIQUENESS, attVertex.label(), vertex().label()));
                 }
             });
             ownsEdge.delete();
         } else if (getInstances().first().isPresent()) {
-            throw exception(TypeDBException.of(OWNS_KEY_PRECONDITION_NO_INSTANCES, vertex.label(), attVertex.label()));
+            throw exception(TypeDBException.of(OWNS_KEY_PRECONDITION_NO_INSTANCES, vertex().label(), attVertex.label()));
         }
-        ownsKeyEdge = vertex.outs().put(OWNS_KEY, attVertex);
+        ownsKeyEdge = vertex().outs().put(OWNS_KEY, attVertex);
         if (getSupertype().declaredOwns(false).anyMatch(attributeType::equals)) ownsKeyEdge.overridden(attVertex);
     }
 
@@ -232,10 +232,10 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             throw exception(TypeDBException.of(OWNS_ATT_NOT_AVAILABLE, attributeType.getLabel()));
         }
 
-        TypeVertex attVertex = attributeType.vertex;
+        TypeVertex attVertex = attributeType.vertex();
         TypeEdge keyEdge;
-        if ((keyEdge = vertex.outs().edge(OWNS_KEY, attVertex)) != null) keyEdge.delete();
-        vertex.outs().put(OWNS, attVertex);
+        if ((keyEdge = vertex().outs().edge(OWNS_KEY, attVertex)) != null) keyEdge.delete();
+        vertex().outs().put(OWNS, attVertex);
     }
 
     private void ownsAttribute(AttributeTypeImpl attributeType, AttributeTypeImpl overriddenType) {
@@ -248,8 +248,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     private FunctionalIterator<AttributeTypeImpl> declaredOwns(boolean onlyKey) {
         if (isRoot()) return Iterators.empty();
         FunctionalIterator<TypeVertex> iterator;
-        if (onlyKey) iterator = vertex.outs().edge(OWNS_KEY).to();
-        else iterator = link(vertex.outs().edge(OWNS_KEY).to(), vertex.outs().edge(OWNS).to());
+        if (onlyKey) iterator = vertex().outs().edge(OWNS_KEY).to();
+        else iterator = link(vertex().outs().edge(OWNS_KEY).to(), vertex().outs().edge(OWNS).to());
         return iterator.map(v -> AttributeTypeImpl.of(graphMgr, v));
     }
 
@@ -257,12 +257,12 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if (isRoot()) return Iterators.empty();
         FunctionalIterator<AttributeTypeImpl> overriddenOwns;
         if (onlyKey) {
-            overriddenOwns = vertex.outs().edge(OWNS_KEY).overridden().filter(Objects::nonNull)
+            overriddenOwns = vertex().outs().edge(OWNS_KEY).overridden().filter(Objects::nonNull)
                     .map(v -> AttributeTypeImpl.of(graphMgr, v));
         } else {
             overriddenOwns = link(
-                    vertex.outs().edge(OWNS_KEY).overridden(),
-                    vertex.outs().edge(OWNS).overridden()
+                    vertex().outs().edge(OWNS_KEY).overridden(),
+                    vertex().outs().edge(OWNS).overridden()
             ).filter(Objects::nonNull).distinct().map(v -> AttributeTypeImpl.of(graphMgr, v));
         }
 
@@ -318,10 +318,10 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public AttributeType getOwnsOverridden(AttributeType attributeType) {
         TypeVertex attrVertex = graphMgr.schema().getType(attributeType.getLabel());
         if (attrVertex != null) {
-            TypeEdge ownsEdge = vertex.outs().edge(OWNS_KEY, attrVertex);
+            TypeEdge ownsEdge = vertex().outs().edge(OWNS_KEY, attrVertex);
             if (ownsEdge != null && ownsEdge.overridden() != null)
                 return AttributeTypeImpl.of(graphMgr, ownsEdge.overridden());
-            ownsEdge = vertex.outs().edge(OWNS, attrVertex);
+            ownsEdge = vertex().outs().edge(OWNS, attrVertex);
             if (ownsEdge != null && ownsEdge.overridden() != null)
                 return AttributeTypeImpl.of(graphMgr, ownsEdge.overridden());
         }
@@ -334,7 +334,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if (getSupertypes().filter(t -> !t.equals(this)).flatMap(ThingType::getPlays).anyMatch(a -> a.equals(roleType))) {
             throw exception(TypeDBException.of(PLAYS_ROLE_NOT_AVAILABLE, roleType.getLabel()));
         }
-        vertex.outs().put(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
+        vertex().outs().put(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex());
     }
 
     @Override
@@ -342,13 +342,13 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         validateIsNotDeleted();
         setPlays(roleType);
         override(Encoding.Edge.Type.PLAYS, roleType, overriddenType, getSupertype().getPlays(),
-                 vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().map(v -> RoleTypeImpl.of(graphMgr, v)));
+                 vertex().outs().edge(Encoding.Edge.Type.PLAYS).to().map(v -> RoleTypeImpl.of(graphMgr, v)));
     }
 
     @Override
     public void unsetPlays(RoleType roleType) {
         validateIsNotDeleted();
-        TypeEdge edge = vertex.outs().edge(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
+        TypeEdge edge = vertex().outs().edge(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex());
         if (edge == null) {
             if (this.getPlays().anyMatch(attr -> attr.equals(roleType))) {
                 throw exception(TypeDBException.of(INVALID_UNDEFINE_INHERITED_PLAYS,
@@ -359,7 +359,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             }
         }
         if (getInstances().anyMatch(thing -> thing.getRelations(roleType).first().isPresent())) {
-            throw exception(TypeDBException.of(INVALID_UNDEFINE_PLAYS_HAS_INSTANCES, vertex.label(), roleType.getLabel().toString()));
+            throw exception(TypeDBException.of(INVALID_UNDEFINE_PLAYS_HAS_INSTANCES, vertex().label(), roleType.getLabel().toString()));
         }
         edge.delete();
     }
@@ -368,25 +368,25 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public FunctionalIterator<RoleTypeImpl> getPlays() {
         if (isRoot()) return Iterators.empty();
         Set<TypeVertex> overridden = new HashSet<>();
-        vertex.outs().edge(Encoding.Edge.Type.PLAYS).overridden().filter(Objects::nonNull).forEachRemaining(overridden::add);
+        vertex().outs().edge(Encoding.Edge.Type.PLAYS).overridden().filter(Objects::nonNull).forEachRemaining(overridden::add);
         assert getSupertype() != null;
         return link(
-                vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().map(v -> RoleTypeImpl.of(graphMgr, v)),
-                getSupertype().getPlays().filter(att -> !overridden.contains(att.vertex))
+                vertex().outs().edge(Encoding.Edge.Type.PLAYS).to().map(v -> RoleTypeImpl.of(graphMgr, v)),
+                getSupertype().getPlays().filter(att -> !overridden.contains(att.vertex()))
         );
     }
 
     @Override
     public FunctionalIterator<RoleTypeImpl> getPlaysExplicit() {
         if (isRoot()) return Iterators.empty();
-        return vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().map(v -> RoleTypeImpl.of(graphMgr, v));
+        return vertex().outs().edge(Encoding.Edge.Type.PLAYS).to().map(v -> RoleTypeImpl.of(graphMgr, v));
     }
 
     @Override
     public RoleType getPlaysOverridden(RoleType roleType) {
         TypeVertex roleVertex = graphMgr.schema().getType(roleType.getLabel());
         if (roleVertex != null) {
-            TypeEdge playsEdge = vertex.outs().edge(PLAYS, roleVertex);
+            TypeEdge playsEdge = vertex().outs().edge(PLAYS, roleVertex);
             if (playsEdge != null && playsEdge.overridden() != null)
                 return RoleTypeImpl.of(graphMgr, playsEdge.overridden());
         }
@@ -396,7 +396,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void delete() {
         validateDelete();
-        vertex.delete();
+        vertex().delete();
     }
 
     @Override
@@ -466,7 +466,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             return getSubtypes(v -> {
                 switch (v.encoding()) {
                     case THING_TYPE:
-                        assert this.vertex == v;
+                        assert this.vertex() == v;
                         return this;
                     case ENTITY_TYPE:
                         return EntityTypeImpl.of(graphMgr, v);
@@ -501,11 +501,11 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             return instances(v -> {
                 switch (v.encoding()) {
                     case ENTITY:
-                        return EntityImpl.of(v);
+                        return EntityImpl.of(v.writable());
                     case ATTRIBUTE:
-                        return AttributeImpl.of(v);
+                        return AttributeImpl.of(v.writable());
                     case RELATION:
-                        return RelationImpl.of(v);
+                        return RelationImpl.of(v.writable());
                     default:
                         assert false;
                         throw exception(TypeDBException.of(UNRECOGNISED_VALUE));

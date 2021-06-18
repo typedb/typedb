@@ -24,7 +24,6 @@ public abstract class IID {
 
     String readableString; // for debugging
     final ByteArray bytes;
-    private int hash = 0;
 
     IID(ByteArray bytes) {
         this.bytes = bytes;
@@ -51,8 +50,7 @@ public abstract class IID {
 
     @Override
     public final int hashCode() {
-        if (hash == 0) hash = bytes.hashCode();
-        return hash;
+        return bytes.hashCode();
     }
 
 }

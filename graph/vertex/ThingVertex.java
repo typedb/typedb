@@ -75,6 +75,16 @@ public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thi
      */
     AttributeVertex<?> asAttribute();
 
+    boolean isWrite();
+
+    boolean isRead();
+
+    ThingVertex.Write asWrite();
+
+    ThingVertex.Read asRead();
+
+    ThingVertex.Write writable();
+
     interface Read extends ThingVertex {
 
         /**
@@ -91,11 +101,12 @@ public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thi
          */
         ThingAdjacency.Read ins();
 
+        @Override
+        AttributeVertex.Read<?> asAttribute();
+
     }
 
-    interface Write extends Read {
-
-        // TODO return ThingAdjacency.Write
+    interface Write extends ThingVertex {
 
         /**
          * Returns the {@code ThingAdjacency} set of outgoing edges.
@@ -134,6 +145,9 @@ public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thi
          * @param isInferred indicating whether this vertex was a result of inference
          */
         void isInferred(boolean isInferred);
+
+        @Override
+        AttributeVertex.Write<?> asAttribute();
 
     }
 

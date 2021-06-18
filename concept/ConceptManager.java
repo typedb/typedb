@@ -79,16 +79,9 @@ public final class ConceptManager {
     }
 
     public ConceptMap conceptMap(VertexMap vertexMap) {
-        return conceptMap(vertexMap, true);
-    }
-
-    public ConceptMap conceptMap(VertexMap vertexMap, boolean useCache) {
         Map<Retrievable, Concept> map = new HashMap<>();
         vertexMap.forEach((id, vertex) -> {
-            if (vertex.isThing()) {
-                if (useCache) map.put(id, ThingImpl.of(graphMgr.data().get(vertex.asThing().iid())));
-                else map.put(id, ThingImpl.of(vertex.asThing()));
-            }
+            if (vertex.isThing()) map.put(id, ThingImpl.of(vertex.asThing()));
             else if (vertex.isType()) map.put(id, TypeImpl.of(graphMgr, vertex.asType()));
             else throw exception(TypeDBException.of(ILLEGAL_STATE));
         });
@@ -182,14 +175,14 @@ public final class ConceptManager {
     }
 
     public Thing getThing(ByteArray iid) {
-        ThingVertex thingVertex = graphMgr.data().get(VertexIID.Thing.of(iid));
+        ThingVertex.Write thingVertex = graphMgr.data().getWritable(VertexIID.Thing.of(iid));
         if (thingVertex != null) return ThingImpl.of(thingVertex);
         else return null;
     }
 
     public void validateTypes() {
         List<TypeDBException> exceptions = graphMgr.schema().bufferedTypes().parallel()
-                .filter(Vertex::isModified)
+                .filter(TypeVertex::isModified)
                 .map(v -> TypeImpl.of(graphMgr, v).validate())
                 .collect(ArrayList::new, ArrayList::addAll, ArrayList::addAll);
         if (!exceptions.isEmpty()) throw exception(TypeDBException.of(exceptions));

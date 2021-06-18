@@ -48,14 +48,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         this.graphMgr = new GraphManager(graph.type(), graph);
     }
 
-    public static ThingVertexImpl of(ThingGraph graph, VertexIID.Thing iid) {
-        if (iid.encoding().equals(ATTRIBUTE)) {
-            return AttributeVertexImpl.of(graph, iid.asAttribute());
-        } else {
-            return new Write.Persisted(graph, iid);
-        }
-    }
-
     @Override
     public ThingGraph graph() {
         return graph;
@@ -85,9 +77,71 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     @Override
     public ThingVertex asThing() { return this; }
 
+
     @Override
-    public AttributeVertexImpl<?> asAttribute() {
-        throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(AttributeVertex.class));
+    public boolean isWrite() {
+        return false;
+    }
+
+    @Override
+    public boolean isRead() {
+        return false;
+    }
+
+    @Override
+    public ThingVertex.Write asWrite() {
+        throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(ThingVertex.Write.class));
+    }
+
+    @Override
+    public ThingVertex.Read asRead() {
+        throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(ThingVertex.Read.class));
+    }
+
+    public static class Read extends ThingVertexImpl implements ThingVertex.Read {
+
+        protected final ThingAdjacency.Read outs;
+        protected final ThingAdjacency.Read ins;
+
+        public Read(ThingGraph graph, VertexIID.Thing iid) {
+            super(graph, iid);
+            this.outs =  new ThingAdjacencyImpl.Read(this, Encoding.Direction.Adjacency.OUT);
+            this.ins =  new ThingAdjacencyImpl.Read(this, Encoding.Direction.Adjacency.IN);
+        }
+
+        public static ThingVertexImpl.Read of(ThingGraph graph, VertexIID.Thing iid) {
+            if (iid.encoding().equals(ATTRIBUTE)) {
+                return AttributeVertexImpl.Read.of(graph, iid.asAttribute());
+            } else {
+                return new ThingVertexImpl.Read(graph, iid);
+            }
+        }
+
+        @Override
+        public Encoding.Status status() {
+            return Encoding.Status.PERSISTED;
+        }
+
+        @Override
+        public ThingAdjacency.Read ins() {
+            return ins;
+        }
+
+        @Override
+        public ThingVertex.Write writable() {
+            return graph.convertWritable(iid);
+        }
+
+        @Override
+        public ThingAdjacency.Read outs() {
+            return outs;
+        }
+
+        @Override
+        public AttributeVertex.Read<?> asAttribute() {
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(AttributeVertex.Read.class));
+        }
+
     }
 
     public static abstract class Write extends ThingVertexImpl implements ThingVertex.Write {
@@ -107,7 +161,15 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
             this.ins = newAdjacency(Encoding.Direction.Adjacency.IN);
         }
 
-        protected abstract ThingAdjacency.Write newAdjacency(Encoding.Direction direction);
+        public static ThingVertexImpl.Write of(ThingGraph graph, VertexIID.Thing iid) {
+            if (iid.encoding().equals(ATTRIBUTE)) {
+                return AttributeVertexImpl.Write.of(graph, iid.asAttribute());
+            } else {
+                return new ThingVertexImpl.Write.Persisted(graph, iid);
+            }
+        }
+
+        protected abstract ThingAdjacency.Write newAdjacency(Encoding.Direction.Adjacency direction);
 
         @Override
         public ThingAdjacency.Write outs() {
@@ -141,6 +203,11 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
             graph.delete(this);
         }
 
+        void deleteVertexFromStorage() {
+            graph.storage().deleteTracked(iid.bytes());
+            graph.storage().deleteUntracked(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
+        }
+
         void deleteEdges() {
             outs.deleteAll();
             ins.deleteAll();
@@ -149,6 +216,32 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         void commitEdges() {
             outs.commit();
             ins.commit();
+        }
+
+        void commitVertex() {
+            graph.storage().putTracked(iid.bytes());
+            graph.storage().putUntracked(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
+        }
+
+        @Override
+        public boolean isWrite() {
+            return true;
+        }
+
+        // TODO do we need both of these methods?
+        @Override
+        public ThingVertex.Write asWrite() {
+            return this;
+        }
+
+        @Override
+        public ThingVertex.Write writable() {
+            return this;
+        }
+
+        @Override
+        public AttributeVertex.Write<?> asAttribute() {
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(AttributeVertex.Write.class));
         }
 
         public static class Buffered extends ThingVertexImpl.Write {
@@ -160,7 +253,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
             @Override
             protected ThingAdjacency.Write newAdjacency(Encoding.Direction.Adjacency direction) {
-                return new ThingAdjacencyImpl.Buffered(this, direction);
+                return new ThingAdjacencyImpl.Write.Buffered(this, direction);
             }
 
             @Override
@@ -173,11 +266,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
                 if (isInferred) throw TypeDBException.of(ILLEGAL_OPERATION);
                 commitVertex();
                 commitEdges();
-            }
-
-            private void commitVertex() {
-                graph.storage().putTracked(iid.bytes());
-                graph.storage().putUntracked(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
             }
 
             @Override
@@ -203,7 +291,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
             @Override
             protected ThingAdjacency.Write newAdjacency(Encoding.Direction.Adjacency direction) {
-                return new ThingAdjacencyImpl.Persisted(this, direction);
+                return new ThingAdjacencyImpl.Write.Persisted(this, direction);
             }
 
             @Override
@@ -230,11 +318,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
                 }
             }
 
-            void deleteVertexFromStorage() {
-                graph.storage().deleteTracked(iid.bytes());
-                graph.storage().deleteUntracked(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
-            }
-
             @Override
             public void setModified() {
                 if (!isModified) {
@@ -244,32 +327,4 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
             }
         }
     }
-
-    public static class Read extends ThingVertexImpl implements ThingVertex.Read {
-
-        Read(ThingGraph graph, VertexIID.Thing iid) {
-            super(graph, iid);
-        }
-
-        @Override
-        public Encoding.Status status() {
-            return Encoding.Status.PERSISTED;
-        }
-
-        @Override
-        protected ThingAdjacency newAdjacency(Encoding.Direction.Adjacency direction) {
-            return new ThingAdjacencyImpl.Persisted(this, direction);
-        }
-
-        @Override
-        public ThingAdjacency outs() {
-            return null;
-        }
-
-        @Override
-        public ThingAdjacency ins() {
-            return null;
-        }
-    }
-
 }

@@ -73,7 +73,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     private AttributeTypeImpl(GraphManager graphMgr, java.lang.String label, Class<?> valueType) {
         super(graphMgr, label, ATTRIBUTE_TYPE);
-        vertex.valueType(Encoding.ValueType.of(valueType));
+        vertex().valueType(Encoding.ValueType.of(valueType));
     }
 
     public static AttributeTypeImpl of(GraphManager graphMgr, TypeVertex vertex) {
@@ -100,7 +100,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         if (getInstances().first().isPresent()) {
             throw exception(TypeDBException.of(TYPE_HAS_INSTANCES_SET_ABSTRACT, getLabel()));
         }
-        vertex.isAbstract(true);
+        vertex().isAbstract(true);
     }
 
     @Override
@@ -108,7 +108,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         if (getSubtypes().anyMatch(sub -> !sub.equals(this))) {
             throw exception(TypeDBException.of(ATTRIBUTE_UNSET_ABSTRACT_HAS_SUBTYPES, getLabel()));
         }
-        vertex.isAbstract(false);
+        vertex().isAbstract(false);
     }
 
     @Override
@@ -121,11 +121,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     public abstract FunctionalIterator<? extends AttributeImpl<?>> getInstances();
 
     FunctionalIterator<TypeVertex> getSubtypeVertices(Encoding.ValueType valueType) {
-        return Iterators.tree(vertex, v -> v.ins().edge(SUB).from().filter(sv -> sv.valueType().equals(valueType)));
+        return Iterators.tree(vertex(), v -> v.ins().edge(SUB).from().filter(sv -> sv.valueType().equals(valueType)));
     }
 
     FunctionalIterator<TypeVertex> getSubtypeVerticesDirect(Encoding.ValueType valueType) {
-        return vertex.ins().edge(SUB).from().filter(sv -> sv.valueType().equals(valueType));
+        return vertex().ins().edge(SUB).from().filter(sv -> sv.valueType().equals(valueType));
     }
 
     @Override
@@ -137,12 +137,12 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         } else if (!superType.isAbstract()) {
             throw exception(TypeDBException.of(ATTRIBUTE_NEW_SUPERTYPE_NOT_ABSTRACT, superType.getLabel()));
         }
-        setSuperTypeVertex(((AttributeTypeImpl) superType).vertex);
+        setSuperTypeVertex(((AttributeTypeImpl) superType).vertex());
     }
 
     @Override
     public boolean isKeyable() {
-        return vertex.valueType().isKeyable();
+        return vertex().valueType().isKeyable();
     }
 
     @Override
@@ -166,9 +166,9 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         if (isRoot()) return Iterators.empty();
 
         if (onlyKey) {
-            return vertex.ins().edge(OWNS_KEY).from().map(v -> ThingTypeImpl.of(graphMgr, v));
+            return vertex().ins().edge(OWNS_KEY).from().map(v -> ThingTypeImpl.of(graphMgr, v));
         } else {
-            return link(vertex.ins().edge(OWNS_KEY).from(), vertex.ins().edge(OWNS).from())
+            return link(vertex().ins().edge(OWNS_KEY).from(), vertex().ins().edge(OWNS).from())
                     .map(v -> ThingTypeImpl.of(graphMgr, v));
         }
     }
@@ -238,7 +238,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         // such as: root type wrapped in AttributeTypeImpl.Root and as in AttributeType.Boolean.Root
 
         AttributeTypeImpl that = (AttributeTypeImpl) object;
-        return this.vertex.equals(that.vertex);
+        return this.vertex().equals(that.vertex());
     }
 
     private static class Root extends AttributeTypeImpl {
@@ -252,19 +252,19 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public ValueType getValueType() { return ValueType.OBJECT; }
 
         @Override
-        public AttributeTypeImpl.Boolean asBoolean() { return AttributeTypeImpl.Boolean.of(graphMgr, vertex); }
+        public AttributeTypeImpl.Boolean asBoolean() { return AttributeTypeImpl.Boolean.of(graphMgr, vertex()); }
 
         @Override
-        public AttributeTypeImpl.Long asLong() { return AttributeTypeImpl.Long.of(graphMgr, vertex); }
+        public AttributeTypeImpl.Long asLong() { return AttributeTypeImpl.Long.of(graphMgr, vertex()); }
 
         @Override
-        public AttributeTypeImpl.Double asDouble() { return AttributeTypeImpl.Double.of(graphMgr, vertex); }
+        public AttributeTypeImpl.Double asDouble() { return AttributeTypeImpl.Double.of(graphMgr, vertex()); }
 
         @Override
-        public AttributeTypeImpl.String asString() { return AttributeTypeImpl.String.of(graphMgr, vertex); }
+        public AttributeTypeImpl.String asString() { return AttributeTypeImpl.String.of(graphMgr, vertex()); }
 
         @Override
-        public AttributeTypeImpl.DateTime asDateTime() { return AttributeTypeImpl.DateTime.of(graphMgr, vertex); }
+        public AttributeTypeImpl.DateTime asDateTime() { return AttributeTypeImpl.DateTime.of(graphMgr, vertex()); }
 
         @Override
         public boolean isRoot() { return true; }
@@ -283,7 +283,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             return getSubtypes(v -> {
                 switch (v.valueType()) {
                     case OBJECT:
-                        assert this.vertex == v;
+                        assert this.vertex() == v;
                         return this;
                     case BOOLEAN:
                         return AttributeTypeImpl.Boolean.of(graphMgr, v);
@@ -405,13 +405,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.Boolean put(boolean value, boolean isInferred) {
             validateCanHaveInstances(Attribute.class);
-            AttributeVertex<java.lang.Boolean> attVertex = graphMgr.data().put(vertex, value, isInferred);
+            AttributeVertex.Write<java.lang.Boolean> attVertex = graphMgr.data().put(vertex(), value, isInferred);
             return new AttributeImpl.Boolean(attVertex);
         }
 
         @Override
         public Attribute.Boolean get(boolean value) {
-            AttributeVertex<java.lang.Boolean> attVertex = graphMgr.data().get(vertex, value);
+            AttributeVertex<java.lang.Boolean> attVertex = graphMgr.data().get(vertex(), value);
             if (attVertex != null) return new AttributeImpl.Boolean(attVertex);
             else return null;
         }
@@ -532,13 +532,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.Long put(long value, boolean isInferred) {
             validateCanHaveInstances(Attribute.class);
-            AttributeVertex<java.lang.Long> attVertex = graphMgr.data().put(vertex, value, isInferred);
+            AttributeVertex.Write<java.lang.Long> attVertex = graphMgr.data().put(vertex(), value, isInferred);
             return new AttributeImpl.Long(attVertex);
         }
 
         @Override
         public Attribute.Long get(long value) {
-            AttributeVertex<java.lang.Long> attVertex = graphMgr.data().get(vertex, value);
+            AttributeVertex<java.lang.Long> attVertex = graphMgr.data().get(vertex(), value);
             if (attVertex != null) return new AttributeImpl.Long(attVertex);
             else return null;
         }
@@ -659,13 +659,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.Double put(double value, boolean isInferred) {
             validateCanHaveInstances(Attribute.class);
-            AttributeVertex<java.lang.Double> attVertex = graphMgr.data().put(vertex, value, isInferred);
+            AttributeVertex.Write<java.lang.Double> attVertex = graphMgr.data().put(vertex(), value, isInferred);
             return new AttributeImpl.Double(attVertex);
         }
 
         @Override
         public Attribute.Double get(double value) {
-            AttributeVertex<java.lang.Double> attVertex = graphMgr.data().get(vertex, value);
+            AttributeVertex<java.lang.Double> attVertex = graphMgr.data().get(vertex(), value);
             if (attVertex != null) return new AttributeImpl.Double(attVertex);
             else return null;
         }
@@ -786,17 +786,17 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                     }
                 });
             }
-            vertex.regex(regex);
+            vertex().regex(regex);
         }
 
         @Override
         public void unsetRegex() {
-            vertex.regex(null);
+            vertex().regex(null);
         }
 
         @Override
         public Pattern getRegex() {
-            return vertex.regex();
+            return vertex().regex();
         }
 
         @Override
@@ -807,16 +807,16 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.String put(java.lang.String value, boolean isInferred) {
             validateCanHaveInstances(Attribute.class);
-            if (vertex.regex() != null && !getRegex().matcher(value).matches()) {
+            if (vertex().regex() != null && !getRegex().matcher(value).matches()) {
                 throw exception(TypeDBException.of(ATTRIBUTE_VALUE_UNSATISFIES_REGEX, getLabel(), value, getRegex()));
             }
-            AttributeVertex<java.lang.String> attVertex = graphMgr.data().put(vertex, value, isInferred);
+            AttributeVertex.Write<java.lang.String> attVertex = graphMgr.data().put(vertex(), value, isInferred);
             return new AttributeImpl.String(attVertex);
         }
 
         @Override
         public Attribute.String get(java.lang.String value) {
-            AttributeVertex<java.lang.String> attVertex = graphMgr.data().get(vertex, value);
+            AttributeVertex<java.lang.String> attVertex = graphMgr.data().get(vertex(), value);
             if (attVertex != null) return new AttributeImpl.String(attVertex);
             else return null;
         }
@@ -952,14 +952,14 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.DateTime put(LocalDateTime value, boolean isInferred) {
             validateCanHaveInstances(Attribute.class);
-            AttributeVertex<LocalDateTime> attVertex = graphMgr.data().put(vertex, value, isInferred);
+            AttributeVertex.Write<LocalDateTime> attVertex = graphMgr.data().put(vertex(), value, isInferred);
             if (!isInferred && attVertex.isInferred()) attVertex.isInferred(false);
             return new AttributeImpl.DateTime(attVertex);
         }
 
         @Override
         public Attribute.DateTime get(LocalDateTime value) {
-            AttributeVertex<java.time.LocalDateTime> attVertex = graphMgr.data().get(vertex, value);
+            AttributeVertex<java.time.LocalDateTime> attVertex = graphMgr.data().get(vertex(), value);
             if (attVertex != null) return new AttributeImpl.DateTime(attVertex);
             else return null;
         }

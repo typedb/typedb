@@ -32,16 +32,15 @@ import java.util.Optional;
  */
 public interface ThingEdge extends Edge<Encoding.Edge.Thing, EdgeIID.Thing, ThingVertex> {
 
-    // TODO always return readable, which may be a writable
-    ThingVertex from(boolean cacheVertex);
+    ThingVertex from();
 
     VertexIID.Thing fromIID();
 
-    ThingVertex to(boolean cacheVertex);
+    ThingVertex to();
 
     VertexIID.Thing toIID();
 
-    Optional<ThingVertex> optimised(boolean cacheVertex);
+    Optional<? extends ThingVertex> optimised();
 
     void isInferred(boolean isInferred);
 

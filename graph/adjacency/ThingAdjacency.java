@@ -29,15 +29,6 @@ TODO split into read and write
  */
 public interface ThingAdjacency {
 
-    interface Read extends ThingAdjacency {
-
-
-    }
-
-    interface Write extends Read {
-
-    }
-
     /**
      * Returns an {@code IteratorBuilder} to retrieve vertices of a set of edges.
      *
@@ -83,75 +74,84 @@ public interface ThingAdjacency {
      */
     ThingEdge edge(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised);
 
-    /**
-     * Puts an adjacent vertex over an edge with a given encoding.
-     *
-     * The owner of this {@code Adjacency} map will also be added as an adjacent
-     * vertex to the provided vertex, through an opposite facing edge stored in
-     * an {@code Adjacency} map with an opposite direction to this one. I.e.
-     * This is a recursive put operation.
-     *
-     * @param encoding   of the edge that will connect the owner to the adjacent vertex
-     * @param adjacent   the adjacent vertex
-     * @param isInferred
-     * @return an edge of type {@code encoding} that connects to {@code adjacent}.
-     */
-    ThingEdge put(Encoding.Edge.Thing encoding, ThingVertex adjacent, boolean isInferred);
-
-    /**
-     * Puts an edge of type {@code encoding} from the owner to an adjacent vertex,
-     * which is an optimisation edge over a given {@code optimised} vertex.
-     *
-     * The owner of this {@code Adjacency} map will also be added as an adjacent
-     * vertex to the provided vertex, through an opposite facing edge stored in
-     * an {@code Adjacency} map with an opposite direction to this one. I.e.
-     * This is a recursive put operation.
-     *
-     * @param encoding   type of the edge
-     * @param adjacent   the adjacent vertex
-     * @param optimised  vertex that this optimised edge is compressing
-     * @param isInferred
-     * @return an edge of type {@code encoding} that connects to {@code adjacent}.
-     */
-    ThingEdge put(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised, boolean isInferred);
-
-    /**
-     * Deletes all edges with a given encoding from the {@code Adjacency} map.
-     *
-     * This is a recursive delete operation. Deleting the edges from this
-     * {@code Adjacency} map will also delete it from the {@code Adjacency} map
-     * of the previously adjacent vertex.
-     *
-     * @param encoding type of the edge to the adjacent vertex
-     */
-    void delete(Encoding.Edge.Thing encoding);
-
-    /**
-     * Deletes a set of edges that match the provided properties.
-     *
-     * @param encoding  type of the edge to filter by
-     * @param lookAhead information of the adjacent edge to filter the edges with
-     */
-    void delete(Encoding.Edge.Thing encoding, IID... lookAhead);
-
-    void deleteAll();
-
-    ThingEdge cache(ThingEdge edge);
-
-    void remove(ThingEdge edge);
-
-    void commit();
-
     interface ThingIteratorBuilder {
 
         FunctionalIterator<ThingVertex> from();
 
-        FunctionalIterator<ThingVertex> from(boolean cache);
-
         FunctionalIterator<ThingVertex> to();
 
-        FunctionalIterator<ThingVertex> to(boolean cache);
-
         FunctionalIterator<ThingEdge> get();
+
     }
+
+    interface Read extends ThingAdjacency {
+
+        // TODO this feels weird, should we just use ThingAdjacency as Read?
+
+    }
+
+    interface Write extends ThingAdjacency {
+
+        /**
+         * Puts an adjacent vertex over an edge with a given encoding.
+         *
+         * The owner of this {@code Adjacency} map will also be added as an adjacent
+         * vertex to the provided vertex, through an opposite facing edge stored in
+         * an {@code Adjacency} map with an opposite direction to this one. I.e.
+         * This is a recursive put operation.
+         *
+         * @param encoding   of the edge that will connect the owner to the adjacent vertex
+         * @param adjacent   the adjacent vertex
+         * @param isInferred
+         * @return an edge of type {@code encoding} that connects to {@code adjacent}.
+         */
+        ThingEdge put(Encoding.Edge.Thing encoding, ThingVertex.Write adjacent, boolean isInferred);
+
+        /**
+         * Puts an edge of type {@code encoding} from the owner to an adjacent vertex,
+         * which is an optimisation edge over a given {@code optimised} vertex.
+         *
+         * The owner of this {@code Adjacency} map will also be added as an adjacent
+         * vertex to the provided vertex, through an opposite facing edge stored in
+         * an {@code Adjacency} map with an opposite direction to this one. I.e.
+         * This is a recursive put operation.
+         *
+         * @param encoding   type of the edge
+         * @param adjacent   the adjacent vertex
+         * @param optimised  vertex that this optimised edge is compressing
+         * @param isInferred
+         * @return an edge of type {@code encoding} that connects to {@code adjacent}.
+         */
+        ThingEdge put(Encoding.Edge.Thing encoding, ThingVertex.Write adjacent, ThingVertex.Write optimised, boolean isInferred);
+
+        /**
+         * Deletes all edges with a given encoding from the {@code Adjacency} map.
+         *
+         * This is a recursive delete operation. Deleting the edges from this
+         * {@code Adjacency} map will also delete it from the {@code Adjacency} map
+         * of the previously adjacent vertex.
+         *
+         * @param encoding type of the edge to the adjacent vertex
+         */
+        void delete(Encoding.Edge.Thing encoding);
+
+        /**
+         * Deletes a set of edges that match the provided properties.
+         *
+         * @param encoding  type of the edge to filter by
+         * @param lookAhead information of the adjacent edge to filter the edges with
+         */
+        void delete(Encoding.Edge.Thing encoding, IID... lookAhead);
+
+        void deleteAll();
+
+        ThingEdge cache(ThingEdge edge);
+
+        void remove(ThingEdge edge);
+
+        void commit();
+
+    }
+
+
 }

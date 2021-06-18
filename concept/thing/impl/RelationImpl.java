@@ -57,7 +57,7 @@ public class RelationImpl extends ThingImpl implements Relation {
 
     @Override
     public RelationTypeImpl getType() {
-        return RelationTypeImpl.of(vertex.graphs(), vertex.type());
+        return RelationTypeImpl.of(vertex().graphs(), vertex().type());
     }
 
     @Override
@@ -76,19 +76,19 @@ public class RelationImpl extends ThingImpl implements Relation {
         }
 
         RoleImpl role = ((RoleTypeImpl) roleType).create(isInferred);
-        vertex.outs().put(RELATING, role.vertex, isInferred);
-        ((ThingImpl) player).vertex.outs().put(PLAYING, role.vertex, isInferred);
+        vertexWritable().outs().put(RELATING, role.vertex, isInferred);
+        ((ThingImpl) player).vertexWritable().outs().put(PLAYING, role.vertex, isInferred);
         role.optimise();
     }
 
     @Override
     public void removePlayer(RoleType roleType, Thing player) {
         validateIsNotDeleted();
-        FunctionalIterator<ThingVertex> role = vertex.outs().edge(
-                RELATING, PrefixIID.of(ROLE), ((RoleTypeImpl) roleType).vertex.iid()
-        ).to().filter(v -> v.ins().edge(PLAYING, ((ThingImpl) player).vertex) != null);
+        FunctionalIterator<ThingVertex> role = vertexWritable().outs().edge(
+                RELATING, PrefixIID.of(ROLE), ((RoleTypeImpl) roleType).vertex().iid()
+        ).to().filter(v -> v.ins().edge(PLAYING, ((ThingImpl) player).vertexWritable()) != null);
         if (role.hasNext()) {
-            RoleImpl.of(role.next()).delete();
+            RoleImpl.of(role.next().writable()).delete();
             deleteIfNoPlayer();
         } else {
             throw exception(TypeDBException.of(DELETE_ROLEPLAYER_NOT_PRESENT, player.getType().getLabel(), roleType.getLabel().toString()));
@@ -97,12 +97,12 @@ public class RelationImpl extends ThingImpl implements Relation {
 
     @Override
     public void delete() {
-        vertex.outs().edge(RELATING).to().map(RoleImpl::of).forEachRemaining(RoleImpl::delete);
+        vertexWritable().outs().edge(RELATING).to().map(v -> RoleImpl.of(v.writable())).forEachRemaining(RoleImpl::delete);
         super.delete();
     }
 
     void deleteIfNoPlayer() {
-        if (!vertex.outs().edge(RELATING).to().hasNext()) this.delete();
+        if (!vertexWritable().outs().edge(RELATING).to().hasNext()) this.delete();
     }
 
     @Override
@@ -115,13 +115,13 @@ public class RelationImpl extends ThingImpl implements Relation {
     @Override
     public FunctionalIterator<ThingImpl> getPlayers(RoleType... roleTypes) {
         if (roleTypes.length == 0) {
-            return vertex.outs().edge(ROLEPLAYER).to().map(ThingImpl::of);
+            return vertex().outs().edge(ROLEPLAYER).to().map(ThingImpl::of);
         }
-        return getPlayers(iterate(roleTypes).flatMap(RoleType::getSubtypes).distinct().map(rt -> ((RoleTypeImpl) rt).vertex));
+        return getPlayers(iterate(roleTypes).flatMap(RoleType::getSubtypes).distinct().map(rt -> ((RoleTypeImpl) rt).vertex()));
     }
 
     private FunctionalIterator<ThingImpl> getPlayers(FunctionalIterator<TypeVertex> roleTypeVertices) {
-        return roleTypeVertices.flatMap(v -> vertex.outs().edge(ROLEPLAYER, v.iid()).to()).map(ThingImpl::of);
+        return roleTypeVertices.flatMap(v -> vertex().outs().edge(ROLEPLAYER, v.iid()).to()).map(ThingImpl::of);
     }
 
     @Override
@@ -136,15 +136,15 @@ public class RelationImpl extends ThingImpl implements Relation {
 
     @Override
     public FunctionalIterator<? extends RoleType> getRelating() {
-        return vertex.outs().edge(RELATING).to().map(ThingVertex::type)
-                .map(v -> RoleTypeImpl.of(vertex.graphs(), v))
+        return vertex().outs().edge(RELATING).to().map(ThingVertex::type)
+                .map(v -> RoleTypeImpl.of(vertex().graphs(), v))
                 .distinct();
     }
 
     @Override
     public void validate() {
         super.validate();
-        if (!vertex.outs().edge(RELATING).to().hasNext()) {
+        if (!vertex().outs().edge(RELATING).to().hasNext()) {
             throw exception(TypeDBException.of(RELATION_PLAYER_MISSING, getType().getLabel()));
         }
     }

@@ -26,6 +26,7 @@ import com.vaticle.typedb.core.concept.type.impl.AttributeTypeImpl;
 import com.vaticle.typedb.core.concept.type.impl.ThingTypeImpl;
 import com.vaticle.typedb.core.graph.iid.PrefixIID;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
+import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 
 import java.time.LocalDateTime;
 
@@ -40,7 +41,7 @@ import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
 
 public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribute {
 
-    final AttributeVertex<VALUE> attributeVertex;
+    AttributeVertex<VALUE> attributeVertex;
 
     private AttributeImpl(AttributeVertex<VALUE> vertex) {
         super(vertex);
@@ -68,19 +69,25 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
     public abstract VALUE getValue();
 
     @Override
+    protected AttributeVertex.Write<VALUE> vertexWritable() {
+        if (!attributeVertex.isWrite()) attributeVertex = attributeVertex.writable();
+        return attributeVertex.asWrite();
+    }
+
+    @Override
     public AttributeTypeImpl getType() {
-        return AttributeTypeImpl.of(vertex.graphs(), vertex.type());
+        return AttributeTypeImpl.of(vertex().graphs(), vertex().type());
     }
 
     @Override
     public FunctionalIterator<ThingImpl> getOwners() {
-        return vertex.ins().edge(HAS).from().map(ThingImpl::of);
+        return vertex().ins().edge(HAS).from().map(ThingImpl::of);
     }
 
     @Override
     public FunctionalIterator<ThingImpl> getOwners(ThingType ownerType) {
-        return ownerType.getSubtypes().map(ot -> ((ThingTypeImpl) ot).vertex).flatMap(
-                v -> vertex.ins().edge(HAS, PrefixIID.of(v.encoding().instance()), v.iid()).from()
+        return ownerType.getSubtypes().map(ot -> ((ThingTypeImpl) ot).vertex()).flatMap(
+                v -> vertex().ins().edge(HAS, PrefixIID.of(v.encoding().instance()), v.iid()).from()
         ).map(ThingImpl::of);
     }
 
@@ -96,7 +103,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     @Override
     public java.lang.String toString() {
-        return vertex.encoding().name() + ":" + vertex.type().properLabel() + ":" + getValue();
+        return vertex().encoding().name() + ":" + vertex().type().properLabel() + ":" + getValue();
     }
 
     @Override

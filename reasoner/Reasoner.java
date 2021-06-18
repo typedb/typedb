@@ -159,11 +159,11 @@ public class Reasoner {
         if (conjunction.negations().isEmpty()) {
             return traversalEng.producer(
                     conjunction.traversal(filter), context.producer(), PARALLELISATION_FACTOR
-            ).map(this::conceptMap);
+            ).map(conceptMgr::conceptMap);
         } else {
             return traversalEng.producer(
                     conjunction.traversal(), context.producer(), PARALLELISATION_FACTOR
-            ).map(this::conceptMap).filter(answer -> !iterate(conjunction.negations()).flatMap(
+            ).map(conceptMgr::conceptMap).filter(answer -> !iterate(conjunction.negations()).flatMap(
                     negation -> iterator(negation.disjunction(), answer)
             ).hasNext()).map(answer -> answer.filter(filter)).distinct();
         }
@@ -181,16 +181,12 @@ public class Reasoner {
                                                     Context.Query context) {
         if (!conjunction.isCoherent()) return Iterators.empty();
         if (conjunction.negations().isEmpty()) {
-            return traversalEng.iterator(conjunction.traversal(filter)).map(this::conceptMap);
+            return traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
         } else {
-            return traversalEng.iterator(conjunction.traversal()).map(this::conceptMap).filter(
+            return traversalEng.iterator(conjunction.traversal()).map(conceptMgr::conceptMap).filter(
                     ans -> !iterate(conjunction.negations()).flatMap(n -> iterator(n.disjunction(), ans)).hasNext()
             ).map(conceptMap -> conceptMap.filter(filter)).distinct();
         }
-    }
-
-    private ConceptMap conceptMap(VertexMap vertexMap) {
-        return conceptMgr.conceptMap(vertexMap, defaultContext.transactionType().isWrite());
     }
 
     private Conjunction bound(Conjunction conjunction, ConceptMap bounds) {
