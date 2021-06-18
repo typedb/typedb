@@ -190,10 +190,6 @@ public class Reasoner {
         }
     }
 
-    private ConceptMap conceptMap(VertexMap vertexMap) {
-        return conceptMgr.conceptMap(vertexMap, defaultContext.transactionType().isWrite());
-    }
-
     private Conjunction bound(Conjunction conjunction, ConceptMap bounds) {
         Conjunction newClone = conjunction.clone();
         newClone.bound(bounds.toMap(Type::getLabel, Thing::getIID));

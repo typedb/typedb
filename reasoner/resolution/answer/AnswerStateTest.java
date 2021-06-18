@@ -43,7 +43,7 @@ public class AnswerStateTest {
         Map<Identifier.Variable.Retrievable, Identifier.Variable.Retrievable> mapping = new HashMap<>();
         mapping.put(Identifier.Variable.name("a"), Identifier.Variable.name("x"));
         mapping.put(Identifier.Variable.name("b"), Identifier.Variable.name("y"));
-        Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
+        Set<Identifier.Variable.Retrievable> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
         Concludable.Match<?> mapped = InitialImpl.create(filter, new ConceptMap(), null, false).toDownstream().toDownstream(Mapping.of(mapping), null);
         assertTrue(mapped.conceptMap().concepts().isEmpty());
 
@@ -64,7 +64,7 @@ public class AnswerStateTest {
         mapping.put(Identifier.Variable.name("b"), Identifier.Variable.name("y"));
         Map<Identifier.Variable.Retrievable, Concept> concepts = new HashMap<>();
         concepts.put(Identifier.Variable.name("a"), new MockConcept(0));
-        Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
+        Set<Identifier.Variable.Retrievable> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
         Concludable.Match<?> mapped = InitialImpl.create(filter, new ConceptMap(), null, false).toDownstream()
                 .with(new ConceptMap(concepts))
                 .toDownstream(Mapping.of(mapping), null);
@@ -92,7 +92,7 @@ public class AnswerStateTest {
         Map<Identifier.Variable.Retrievable, Concept> concepts = new HashMap<>();
         concepts.put(Identifier.Variable.name("a"), new MockConcept(0));
         concepts.put(Identifier.Variable.name("c"), new MockConcept(2));
-        Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
+        Set<Identifier.Variable.Retrievable> filter = set(Identifier.Variable.name("a"), Identifier.Variable.name("b"));
         Concludable.Match<?> mapped = InitialImpl.create(filter, new ConceptMap(), null, false).toDownstream()
                 .with(new ConceptMap(concepts))
                 .toDownstream(Mapping.of(mapping), null);

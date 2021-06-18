@@ -119,8 +119,9 @@ public class ReiterationTest {
         try (RocksSession session = dataSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 Conjunction conjunction = resolvedConjunction("{ $y isa Y; }", transaction.logic());
-                Set<Identifier.Variable.Name> filter = iterate(conjunction.variables()).map(Variable::id).filter(Identifier::isName)
-                        .map(Identifier.Variable::asName).toSet();
+                Set<Identifier.Variable.Retrievable> filter = new HashSet<>();
+                iterate(conjunction.variables()).map(Variable::id).filter(Identifier::isName)
+                        .map(Identifier.Variable::asName).forEachRemaining(filter::add);
                 ResolverRegistry registry = transaction.reasoner().resolverRegistry();
                 LinkedBlockingQueue<Match.Finished> responses = new LinkedBlockingQueue<>();
                 LinkedBlockingQueue<Integer> failed = new LinkedBlockingQueue<>();
@@ -179,7 +180,7 @@ public class ReiterationTest {
         }
     }
 
-    private void sendRootRequest(Actor.Driver<RootResolver.Conjunction> root, Set<Identifier.Variable.Name> filter, int iteration) {
+    private void sendRootRequest(Actor.Driver<RootResolver.Conjunction> root, Set<Identifier.Variable.Retrievable> filter, int iteration) {
         Root.Match downstream = InitialImpl.create(filter, new ConceptMap(), root, true).toDownstream();
         root.execute(actor -> actor.receiveRequest(
                 Request.create(root, downstream), iteration)
