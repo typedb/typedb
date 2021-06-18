@@ -74,7 +74,7 @@ public interface AnswerState {
 
         interface Match extends Top, Explainable {
 
-            Set<Identifier.Variable.Name> getFilter();
+            Set<Identifier.Variable.Retrievable> filter();
 
             @Override
             default boolean isMatch() {
