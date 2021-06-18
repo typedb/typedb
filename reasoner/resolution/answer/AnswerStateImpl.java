@@ -80,21 +80,21 @@ public abstract class AnswerStateImpl implements AnswerState {
 
         public static abstract class MatchImpl extends TopImpl implements Match {
 
-            private final Set<Identifier.Variable.Name> getFilter;
+            private final Set<Identifier.Variable.Retrievable> filter;
             private final boolean explainable;
             private final int hash;
 
-            MatchImpl(Set<Identifier.Variable.Name> getFilter, ConceptMap conceptMap,
+            MatchImpl(Set<Identifier.Variable.Retrievable> getFilter, ConceptMap conceptMap,
                       Actor.Driver<? extends Resolver<?>> root, boolean explainable) {
                 super(conceptMap, root);
-                this.getFilter = getFilter;
+                this.filter = getFilter;
                 this.explainable = explainable;
-                this.hash = Objects.hash(root(), conceptMap(), getFilter(), explainable());
+                this.hash = Objects.hash(root(), conceptMap(), filter(), explainable());
             }
 
             @Override
-            public Set<Identifier.Variable.Name> getFilter() {
-                return getFilter;
+            public Set<Identifier.Variable.Retrievable> filter() {
+                return filter;
             }
 
             @Override
@@ -109,7 +109,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                 AnswerStateImpl.TopImpl.MatchImpl that = (AnswerStateImpl.TopImpl.MatchImpl) o;
                 return Objects.equals(root(), that.root()) &&
                         Objects.equals(conceptMap(), that.conceptMap()) &&
-                        Objects.equals(getFilter(), that.getFilter()) &&
+                        Objects.equals(filter(), that.filter()) &&
                         explainable() == that.explainable();
             }
 
@@ -120,12 +120,12 @@ public abstract class AnswerStateImpl implements AnswerState {
 
             public static class InitialImpl extends MatchImpl implements Initial {
 
-                private InitialImpl(Set<Identifier.Variable.Name> getFilter, ConceptMap conceptMap,
+                private InitialImpl(Set<Identifier.Variable.Retrievable> getFilter, ConceptMap conceptMap,
                                     Actor.Driver<? extends Resolver<?>> root, boolean explainable) {
                     super(getFilter, conceptMap, root, explainable);
                 }
 
-                public static InitialImpl create(Set<Identifier.Variable.Name> getFilter, ConceptMap conceptMap,
+                public static InitialImpl create(Set<Identifier.Variable.Retrievable> getFilter, ConceptMap conceptMap,
                                                  Actor.Driver<? extends Resolver<?>> root, boolean explainable) {
                     return new InitialImpl(getFilter, conceptMap, root, explainable);
                 }
@@ -138,24 +138,24 @@ public abstract class AnswerStateImpl implements AnswerState {
                 @Override
                 public FinishedImpl finish(ConceptMap conceptMap) {
                     ConceptMap answer = conceptMap;
-                    if (!explainable()) answer = conceptMap.filter(getFilter());
-                    return FinishedImpl.create(getFilter(), answer, root(), explainable());
+                    if (!explainable()) answer = conceptMap.filter(filter());
+                    return FinishedImpl.create(filter(), answer, root(), explainable());
                 }
 
             }
 
             public static class FinishedImpl extends MatchImpl implements Finished {
 
-                private FinishedImpl(Set<Identifier.Variable.Name> getFilter, ConceptMap conceptMap,
+                private FinishedImpl(Set<Identifier.Variable.Retrievable> filter, ConceptMap conceptMap,
                                      Actor.Driver<? extends Resolver<?>> root, boolean explainable) {
-                    super(getFilter, conceptMap, root, explainable);
+                    super(filter, conceptMap, root, explainable);
                 }
 
-                public static FinishedImpl create(Set<Identifier.Variable.Name> getFilter, ConceptMap conceptMap,
+                public static FinishedImpl create(Set<Identifier.Variable.Retrievable> filter, ConceptMap conceptMap,
                                                   Actor.Driver<? extends Resolver<?>> root, boolean explainable) {
                     ConceptMap initialAns = conceptMap;
-                    if (!explainable) initialAns = conceptMap.filter(getFilter);
-                    return new FinishedImpl(getFilter, initialAns, root, explainable);
+                    if (!explainable) initialAns = conceptMap.filter(filter);
+                    return new FinishedImpl(filter, initialAns, root, explainable);
                 }
             }
         }

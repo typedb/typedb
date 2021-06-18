@@ -115,12 +115,14 @@ public class Reasoner {
             throw TypeDBException.of(UNSATISFIABLE_PATTERN, disjunction, causes);
         }
 
-        if (mayReason(disjunction, context)) return executeReasoner(disjunction, modifiers, context);
+        if (mayReason(disjunction, context)) return executeReasoner(disjunction, filter(modifiers.filter()), context);
         else return executeTraversal(disjunction, context, filter(modifiers.filter()));
     }
 
-    private Set<Identifier.Variable.Name> filter(List<UnboundVariable> typeQLVars) {
-        return iterate(typeQLVars).map(v -> v.reference().asName()).map(Identifier.Variable::of).toSet();
+    private Set<Identifier.Variable.Retrievable> filter(List<UnboundVariable> typeQLVars) {
+        Set<Identifier.Variable.Retrievable> names = new HashSet<>();
+        iterate(typeQLVars).map(v -> v.reference().asName()).map(Identifier.Variable::of).forEachRemaining(names::add);
+        return names;
     }
 
     private Set<Conjunction> incoherentConjunctions(Disjunction disjunction) {
@@ -135,16 +137,16 @@ public class Reasoner {
         return causes;
     }
 
-    private FunctionalIterator<ConceptMap> executeReasoner(Disjunction disjunction, TypeQLMatch.Modifiers modifiers,
+    public FunctionalIterator<ConceptMap> executeReasoner(Disjunction disjunction, Set<Identifier.Variable.Retrievable> filter,
                                                            Context.Query context) {
         ReasonerProducer producer = disjunction.conjunctions().size() == 1
-                ? new ReasonerProducer(disjunction.conjunctions().get(0), modifiers, context.options(), resolverRegistry, explainablesManager)
-                : new ReasonerProducer(disjunction, modifiers, context.options(), resolverRegistry, explainablesManager);
+                ? new ReasonerProducer(disjunction.conjunctions().get(0), filter, context.options(), resolverRegistry, explainablesManager)
+                : new ReasonerProducer(disjunction, filter, context.options(), resolverRegistry, explainablesManager);
         return produce(producer, context.producer(), async1());
     }
 
-    private FunctionalIterator<ConceptMap> executeTraversal(Disjunction disjunction, Context.Query context,
-                                                            Set<Identifier.Variable.Name> filter) {
+    public FunctionalIterator<ConceptMap> executeTraversal(Disjunction disjunction, Context.Query context,
+                                                            Set<Identifier.Variable.Retrievable> filter) {
         FunctionalIterator<ConceptMap> answers;
         FunctionalIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
         if (!context.options().parallel()) answers = conjs.flatMap(conj -> iterator(conj, filter, context));
@@ -153,7 +155,7 @@ public class Reasoner {
         return answers;
     }
 
-    private Producer<ConceptMap> producer(Conjunction conjunction, Set<Identifier.Variable.Name> filter,
+    private Producer<ConceptMap> producer(Conjunction conjunction, Set<Identifier.Variable.Retrievable> filter,
                                           Context.Query context) {
         if (conjunction.negations().isEmpty()) {
             return traversalEng.producer(
@@ -176,7 +178,7 @@ public class Reasoner {
         return iterator(bound(conjunction, bounds), set(), defaultContext);
     }
 
-    private FunctionalIterator<ConceptMap> iterator(Conjunction conjunction, Set<Identifier.Variable.Name> filter,
+    private FunctionalIterator<ConceptMap> iterator(Conjunction conjunction, Set<Identifier.Variable.Retrievable> filter,
                                                     Context.Query context) {
         if (!conjunction.isCoherent()) return Iterators.empty();
         if (conjunction.negations().isEmpty()) {

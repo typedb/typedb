@@ -46,6 +46,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -169,7 +170,7 @@ public class ResolutionTest {
         }
         try (RocksSession session = dataSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                Set<Identifier.Variable.Name> filter = set(Identifier.Variable.name("t"),
+                Set<Identifier.Variable.Retrievable> filter = set(Identifier.Variable.name("t"),
                                                            Identifier.Variable.name("p1"),
                                                            Identifier.Variable.name("p2"));
                 Disjunction disjunction = resolvedDisjunction("{ $t(twin1: $p1, twin2: $p2) isa twins; { $p1 has age 24; } or { $p1 has age 26; }; }", transaction.logic());
@@ -447,7 +448,7 @@ public class ResolutionTest {
     }
 
     private void createRootAndAssertResponses(RocksTransaction transaction, Disjunction disjunction,
-                                              Set<Identifier.Variable.Name> filter, long answerCount,
+                                              Set<Identifier.Variable.Retrievable> filter, long answerCount,
                                               long explainableAnswers) throws InterruptedException {
         ResolverRegistry registry = transaction.reasoner().resolverRegistry();
         LinkedBlockingQueue<Match.Finished> responses = new LinkedBlockingQueue<>();
@@ -467,8 +468,9 @@ public class ResolutionTest {
         ResolverRegistry registry = transaction.reasoner().resolverRegistry();
         LinkedBlockingQueue<Match.Finished> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
-        Set<Identifier.Variable.Name> filter = iterate(conjunction.variables()).map(Variable::id)
-                .filter(Identifier::isName).map(Identifier.Variable::asName).toSet();
+        Set<Identifier.Variable.Retrievable> filter = new HashSet<>();
+        iterate(conjunction.variables()).map(Variable::id).filter(Identifier::isName).map(Identifier.Variable::asName)
+                .forEachRemaining(filter::add);
         Actor.Driver<RootResolver.Conjunction> root;
         try {
             root = registry.root(conjunction, responses::add, iterDone -> doneReceived.incrementAndGet(), (throwable) -> fail());
@@ -479,7 +481,7 @@ public class ResolutionTest {
         assertResponses(root, filter, responses, doneReceived, answerCount, explainableAnswers);
     }
 
-    private void assertResponses(Actor.Driver<? extends Resolver<?>> root, Set<Identifier.Variable.Name> filter,
+    private void assertResponses(Actor.Driver<? extends Resolver<?>> root, Set<Identifier.Variable.Retrievable> filter,
                                  LinkedBlockingQueue<Match.Finished> responses, AtomicLong doneReceived,
                                  long answerCount, long explainableAnswers) throws InterruptedException {
         long startTime = System.currentTimeMillis();

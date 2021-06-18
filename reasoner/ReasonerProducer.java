@@ -69,7 +69,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private boolean sentReiterationRequests;
 
     // TODO: this class should not be a Producer, it implements a different async processing mechanism
-    public ReasonerProducer(Conjunction conjunction, TypeQLMatch.Modifiers modifiers, Options.Query options,
+    public ReasonerProducer(Conjunction conjunction, Set<Identifier.Variable.Retrievable> filter, Options.Query options,
                             ResolverRegistry resolverRegistry, ExplainablesManager explainablesManager) {
         this.options = options;
         this.resolverRegistry = resolverRegistry;
@@ -82,7 +82,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.rootResolver = this.resolverRegistry.root(conjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
-        Root<?, ?> downstream = InitialImpl.create(filter(modifiers.filter()), new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
+        Root<?, ?> downstream = InitialImpl.create(filter, new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
         this.resolveRequest = Request.create(rootResolver, downstream);
         this.reiterationRequest = ReiterationQuery.Request.create(rootResolver, this::receiveReiterationResponse);
         this.sentReiterationRequests = false;
@@ -90,7 +90,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
-    public ReasonerProducer(Disjunction disjunction, TypeQLMatch.Modifiers modifiers, Options.Query options,
+    public ReasonerProducer(Disjunction disjunction, Set<Identifier.Variable.Retrievable> filter, Options.Query options,
                             ResolverRegistry resolverRegistry, ExplainablesManager explainablesManager) {
         this.options = options;
         this.resolverRegistry = resolverRegistry;
@@ -103,7 +103,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.rootResolver = this.resolverRegistry.root(disjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
-        Root<?, ?> downstream = InitialImpl.create(filter(modifiers.filter()), new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
+        Root<?, ?> downstream = InitialImpl.create(filter, new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
         this.resolveRequest = Request.create(rootResolver, downstream);
         this.reiterationRequest = ReiterationQuery.Request.create(rootResolver, this::receiveReiterationResponse);
         this.sentReiterationRequests = false;
@@ -126,10 +126,6 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     @Override
     public void recycle() {
-    }
-
-    private Set<Identifier.Variable.Name> filter(List<UnboundVariable> filter) {
-        return iterate(filter).map(v -> Identifier.Variable.of(v.reference().asName())).toSet();
     }
 
     // note: root resolver calls this single-threaded, so is thread safe
