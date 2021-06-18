@@ -51,24 +51,6 @@ java_test(
     ],
 )
 
-java_test(
-    name = "test-resolution-query-builder",
-    size = "small",
-    srcs = [
-        "TestResolutionQueryBuilder.java",
-    ],
-    classpath_resources = ["//common/test:logback-test"],
-    test_class = "com.vaticle.typedb.core.test.behaviour.resolution.framework.test.TestResolutionQueryBuilder",
-    deps = [
-        "//test/behaviour/resolution/framework/common",
-        "//test/behaviour/resolution/framework/resolve",
-        "@maven//:com_google_guava_guava",
-
-        # External dependencies from @vaticle
-        "@vaticle_typeql_lang_java//:typeql-lang",
-    ],
-)
-
 host_compatible_java_test(
     name = "rule-resolution-builder-it",
     size = "medium",

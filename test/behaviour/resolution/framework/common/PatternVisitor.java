@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.test.behaviour.resolution.framework.common;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.resolve.ResolutionQueryBuilder;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.resolve.ResolutionTestingException;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.pattern.Conjunctable;
 import com.vaticle.typeql.lang.pattern.Conjunction;
@@ -30,10 +30,8 @@ import com.vaticle.typeql.lang.pattern.variable.BoundVariable;
 import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -94,7 +92,7 @@ public abstract class PatternVisitor {
         @Override
         public BoundVariable visitVariable(BoundVariable variable) {
             if (variable.isThing() && variable.asThing().iid().isPresent()) {
-                throw new ResolutionQueryBuilder.ResolutionConstraintException(
+                throw new ResolutionTestingException(
                         "Patterns cannot use IIDs as these are not transferable between Databases for comparison");
             }
             return variable;

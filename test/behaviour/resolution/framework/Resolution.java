@@ -26,11 +26,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.Completer;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.resolve.ResolutionQueryBuilder;
 import com.vaticle.typeql.lang.TypeQL;
-import com.vaticle.typeql.lang.pattern.Conjunctable;
-import com.vaticle.typeql.lang.pattern.Conjunction;
-import com.vaticle.typeql.lang.pattern.Disjunction;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 import com.vaticle.typeql.lang.query.TypeQLQuery;
 
