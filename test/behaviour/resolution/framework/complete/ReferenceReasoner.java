@@ -32,7 +32,6 @@ import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -41,49 +40,44 @@ import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static java.util.Collections.singletonList;
 
 
-public class Completer {
+public class ReferenceReasoner {
 
-    private final RocksSession session;
-    private final Set<CompletionRule> rules;
+    private final Set<RuleWrapper> rules;
 
-    public Completer(RocksSession session) {
-        this.session = session;
+    public ReferenceReasoner() {
         this.rules = new HashSet<>();
     }
 
-    public void loadRules(Set<com.vaticle.typedb.core.logic.Rule> typeDBRules) {
-        for (com.vaticle.typedb.core.logic.Rule typeDBRule : typeDBRules) {
-            rules.add(new CompletionRule(typeDBRule));
-        }
-    }
-
-    public void complete() {
-        boolean allRulesRerun = true;
-        while (allRulesRerun) {
-            allRulesRerun = false;
-            try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                for (CompletionRule rule : rules) {
+    public void run(RocksSession.Data session) {
+        try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+            tx.logic().rules().forEachRemaining(r -> this.rules.add(new RuleWrapper(r)));
+            boolean reiterateRules = true;
+            while (reiterateRules) {
+                reiterateRules = false;
+                for (RuleWrapper rule : this.rules) {
                     rule.resetRequiresReiteration();
                     runRule(tx, rule);
-                    allRulesRerun = allRulesRerun || rule.requiresReiteration();
+                    reiterateRules = reiterateRules || rule.requiresReiteration();
                 }
             }
+            // Let the transaction close, therefore deleting the materialised concepts
         }
     }
 
-    private static void runRule(RocksTransaction tx, CompletionRule completionRule) {
+    private static void runRule(RocksTransaction tx, RuleWrapper rule) {
         // Get all the places where the `when` of the rule is satisfied and materialise for each
         tx.reasoner().executeTraversal(
-                new Disjunction(Collections.singletonList(completionRule.rule().when())),
+                new Disjunction(singletonList(rule.rule().when())),
                 new Context.Query(tx.context(), new Options.Query().infer(false)),
-                filterRetrievableVars(completionRule.rule().when().identifiers()))
-                .forEachRemaining(whenConcepts -> completionRule.rule().conclusion()
+                filterRetrievableVars(rule.rule().when().identifiers()))
+                .forEachRemaining(whenConcepts -> rule.rule().conclusion()
                         .materialise(whenConcepts, tx.traversal(), tx.concepts())
                         .map(thenConcepts -> new ConceptMap(filterRetrievableVars(thenConcepts)))
-                        .filter(thenConceptMap -> completionRule.thenConcludable().isInferredAnswer(thenConceptMap))
-                        .forEachRemaining(ans -> completionRule.addLineages(whenConcepts, ans)));
+                        .filter(rule::isInferredAnswer)
+                        .forEachRemaining(ans -> rule.recordApplication(whenConcepts, ans)));
     }
 
     private static Set<Variable.Retrievable> filterRetrievableVars(Set<Variable> vars) {
@@ -103,20 +97,21 @@ public class Completer {
         return newMap;
     }
 
-    private static class CompletionRule {
+    private static class RuleWrapper {
         private final Rule rule;
         private final Concludable thenConcludable;
-        private final Set<Lineage> lineages;
+        private final Set<RuleApplication> ruleApplications;
         private boolean requiresReiteration;
 
-        public CompletionRule(Rule typeDBRule) {
+        public RuleWrapper(Rule typeDBRule) {
             this.rule = typeDBRule;
-            this.lineages = new HashSet<>();
+            this.ruleApplications = new HashSet<>();
             this.requiresReiteration = false;
 
             Set<Concludable> concludables = Concludable.create(this.rule.then());
             assert concludables.size() == 1;
             FunctionalIterator<Concludable> iterator = iterate(concludables);
+            // Use a concludable for the `then` as a convenient way to check if an answer is inferred
             this.thenConcludable = iterator.next();
             iterator.recycle();
         }
@@ -125,16 +120,15 @@ public class Completer {
             return rule;
         }
 
-        public Concludable thenConcludable() {
-            return thenConcludable;
+        public boolean isInferredAnswer(ConceptMap thenConceptMap) {
+            return thenConcludable.isInferredAnswer(thenConceptMap);
         }
 
-        public void addLineages(ConceptMap whenConcepts, ConceptMap thenConcepts) {
-            Lineage newLineage = new Lineage(whenConcepts, thenConcepts);
-            if (!lineages.contains(newLineage)) {
-                // TODO: New lineage found, trigger another iteration of the rules
+        public void recordApplication(ConceptMap whenConcepts, ConceptMap thenConcepts) {
+            RuleApplication newApplication = new RuleApplication(whenConcepts, thenConcepts);
+            if (!ruleApplications.contains(newApplication)) {
                 this.requiresReiteration = true;
-                lineages.add(newLineage);
+                ruleApplications.add(newApplication);
             }
         }
 
@@ -146,11 +140,11 @@ public class Completer {
             requiresReiteration = false;
         }
 
-        private static class Lineage {
+        private static class RuleApplication {
             private final ConceptMap whenConceptMap;
             private final ConceptMap thenConceptMap;
 
-            Lineage(ConceptMap whenConceptMap, ConceptMap thenConceptMap) {
+            RuleApplication(ConceptMap whenConceptMap, ConceptMap thenConceptMap) {
                 this.whenConceptMap = whenConceptMap;
                 this.thenConceptMap = thenConceptMap;
             }
@@ -159,9 +153,9 @@ public class Completer {
             public boolean equals(Object o) {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
-                Lineage lineage = (Lineage) o;
-                return whenConceptMap.equals(lineage.whenConceptMap) &&
-                        thenConceptMap.equals(lineage.thenConceptMap);
+                RuleApplication ruleApplication = (RuleApplication) o;
+                return whenConceptMap.equals(ruleApplication.whenConceptMap) &&
+                        thenConceptMap.equals(ruleApplication.thenConceptMap);
             }
 
             @Override

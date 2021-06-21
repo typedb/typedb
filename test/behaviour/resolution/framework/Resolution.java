@@ -18,13 +18,13 @@
 
 package com.vaticle.typedb.core.test.behaviour.resolution.framework;
 
-import com.vaticle.typedb.core.TypeDB.Session;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.Completer;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.ReferenceReasoner;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
@@ -38,8 +38,8 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class Resolution {
 
-    private final Session materialisedSession;
-    private final Session reasonedSession;
+    private final RocksSession.Data materialisedSession;
+    private final RocksSession.Data reasonedSession;
 
     /**
      * Resolution Testing Framework's entry point. Takes in sessions each for a `Completion` and `Test` keyspace. Each
@@ -48,22 +48,22 @@ public class Resolution {
      * @param materialisedSession a session for the `materialised` keyspace with base data included
      * @param reasonedSession a session for the `reasoned` keyspace with base data included
      */
-    public Resolution(Session materialisedSession, Session reasonedSession) {
+    public Resolution(RocksSession.Data materialisedSession, RocksSession.Data reasonedSession) {
         this.materialisedSession = materialisedSession;
         this.reasonedSession = reasonedSession;
 
         // TODO Check that nothing in the given schema conflicts with the resolution schema
 
         // Complete the KB-complete
-        Completer completer = new Completer(this.materialisedSession);
+        ReferenceReasoner completer;
         try (Transaction tx = this.materialisedSession.transaction(Type.WRITE)) {
-            completer.loadRules(SchemaManager.getAllRules(tx));
+            completer = new ReferenceReasoner();
         }
 
         SchemaManager.undefineAllRules(this.materialisedSession);
         SchemaManager.addCompletionSchema(this.materialisedSession);
         SchemaManager.connectCompletionSchema(this.materialisedSession);
-        completer.complete();
+        completer.run();
     }
 
     public void close() {

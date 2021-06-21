@@ -25,7 +25,7 @@ java_library(
     visibility = ["//visibility:public"],
     deps = [
         "@maven//:com_google_guava_guava",
-        "//test/behaviour/resolution/framework/complete",
+        "//test/behaviour/resolution/framework/reference-reasoner",
         "//test/behaviour/resolution/framework/resolve",
         "//:typedb",
         "//concept:concept",

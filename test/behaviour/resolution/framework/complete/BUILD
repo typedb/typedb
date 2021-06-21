@@ -20,13 +20,10 @@ load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
 exports_files(["completion_schema.gql"])
 
 native_java_libraries(
-    name = "complete",
+    name = "reference-reasoner",
     srcs = [
-        "Completer.java",
+        "ReferenceReasoner.java",
         "SchemaManager.java",
-    ],
-    data = [
-        "//test/behaviour/resolution/framework/complete:completion_schema.gql",
     ],
     visibility = ["//visibility:public"],
     native_libraries_deps = [

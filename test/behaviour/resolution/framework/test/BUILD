@@ -87,7 +87,7 @@ host_compatible_java_test(
     native_libraries_deps = [
         "//:typedb",
         "//concept:concept",
-        "//test/behaviour/resolution/framework/complete",
+        "//test/behaviour/resolution/framework/reference-reasoner",
         "//test/behaviour/resolution/framework/test:load-test",
     ],
     deps = [
@@ -100,7 +100,7 @@ host_compatible_java_test(
     name = "test-completer",
     size = "medium",
     srcs = [
-        "TestCompleter.java",
+        "TestReferenceReasoner.java",
     ],
     classpath_resources = ["//common/test:logback-test"],
     test_class = "com.vaticle.typedb.core.test.behaviour.resolution.framework.test.TestCompleter",
@@ -110,7 +110,7 @@ host_compatible_java_test(
         "//logic:logic",
         "//rocks:rocks",
         "//test/behaviour/resolution/framework/common",
-        "//test/behaviour/resolution/framework/complete",
+        "//test/behaviour/resolution/framework/reference-reasoner",
         "//test/behaviour/resolution/framework/test:load-test",
     ],
     deps = [
