@@ -82,6 +82,10 @@ public abstract class Concludable extends Resolvable<Conjunction> {
                 .map(Identifier.Variable::asRetrievable).toSet();
     }
 
+    public static Set<Concludable> create(com.vaticle.typedb.core.pattern.Conjunction conjunction) {
+        return new Extractor(conjunction).concludables();
+    }
+
     @Override
     public Set<Retrievable> retrieves() {
         return retrievableIds;
@@ -96,10 +100,6 @@ public abstract class Concludable extends Resolvable<Conjunction> {
     }
 
     public abstract Set<Constraint> concludableConstraints();
-
-    public static Set<Concludable> create(com.vaticle.typedb.core.pattern.Conjunction conjunction) {
-        return new Extractor(conjunction).concludables();
-    }
 
     public FunctionalIterator<Unifier> getUnifiers(Rule rule) {
         assert applicableRules != null;
