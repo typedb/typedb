@@ -18,97 +18,156 @@
 
 package com.vaticle.typedb.core.test.behaviour.resolution.framework.complete;
 
-import com.vaticle.typedb.core.TypeDB.Session;
-import com.vaticle.typedb.core.TypeDB.Transaction;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Context;
+import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.PatternVisitor.Deanonymiser;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.PatternVisitor.IIDConstraintThrower;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.RuleResolutionBuilder;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.VarNameGenerator;
-import com.vaticle.typeql.lang.TypeQL;
-import com.vaticle.typeql.lang.pattern.Conjunctable;
-import com.vaticle.typeql.lang.pattern.Conjunction;
-import com.vaticle.typeql.lang.pattern.Pattern;
-import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.logic.Rule;
+import com.vaticle.typedb.core.logic.resolvable.Concludable;
+import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.rocks.RocksSession;
+import com.vaticle.typedb.core.rocks.RocksTransaction;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
+
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 
 public class Completer {
 
-    private final Session session;
-    private Set<Rule> rules;
-    private final RuleResolutionBuilder ruleResolutionBuilder;
+    private final RocksSession session;
+    private final Set<CompletionRule> rules;
 
-    public Completer(Session session) {
+    public Completer(RocksSession session) {
         this.session = session;
-        this.ruleResolutionBuilder = new RuleResolutionBuilder();
+        this.rules = new HashSet<>();
     }
 
     public void loadRules(Set<com.vaticle.typedb.core.logic.Rule> typeDBRules) {
-        Set<Rule> rules = new HashSet<>();
         for (com.vaticle.typedb.core.logic.Rule typeDBRule : typeDBRules) {
-            rules.add(new Rule(typeDBRule.getWhenPreNormalised(), typeDBRule.getThenPreNormalised(), typeDBRule.getLabel()));
+            rules.add(new CompletionRule(typeDBRule));
         }
-        this.rules = rules;
     }
 
     public void complete() {
         boolean allRulesRerun = true;
-
         while (allRulesRerun) {
             allRulesRerun = false;
-            try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-
-                for (Rule rule : rules) {
-                    allRulesRerun = allRulesRerun | completeRule(tx, rule);
+            try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                for (CompletionRule rule : rules) {
+                    rule.resetRequiresReiteration();
+                    runRule(tx, rule);
+                    allRulesRerun = allRulesRerun || rule.requiresReiteration();
                 }
-                tx.commit();
             }
         }
     }
 
-    private boolean completeRule(Transaction tx, Rule rule) {
-
-        AtomicBoolean foundResult = new AtomicBoolean(false);
-        // TODO When making match queries be careful that user-provided rules could trigger due to elements of the
-        //  completion schema. These results should be filtered out.
-
-        // Get all the places where the `when` of the rule is satisfied, but the `then` is not
-        List<ConceptMap> inferredConcepts = tx.query().insert(TypeQL.match(rule.when, TypeQL.not(rule.then)).insert(rule.then)).toList();
-        Conjunction<ThingVariable<?>> ruleResolutionConjunction = ruleResolutionBuilder.ruleResolutionConjunction(rule.when, rule.then, rule.label);
-
-        // Record how the inference was made
-        // TODO: This looks incorrect - it could add resolution between inserted facts not inferred ones. This can be
-        //  fixed by adding the inferred concepts into the match by iid. Or possibly by changing the initial
-        //  insertion of the inferred concepts to include the derivation.
-        List<ConceptMap> inserted = tx.query().insert(TypeQL.match(
-                rule.when, rule.then, TypeQL.not(ruleResolutionConjunction)
-        ).insert(ruleResolutionConjunction.patterns())).toList();
-        assert inserted.size() >= 1;
-        foundResult.set(true);
-
-        return foundResult.get();
+    private static void runRule(RocksTransaction tx, CompletionRule completionRule) {
+        // Get all the places where the `when` of the rule is satisfied and materialise for each
+        tx.reasoner().executeTraversal(
+                new Disjunction(Collections.singletonList(completionRule.rule().when())),
+                new Context.Query(tx.context(), new Options.Query().infer(false)),
+                filterRetrievableVars(completionRule.rule().when().identifiers()))
+                .forEachRemaining(whenConcepts -> completionRule.rule().conclusion()
+                        .materialise(whenConcepts, tx.traversal(), tx.concepts())
+                        .map(thenConcepts -> new ConceptMap(filterRetrievableVars(thenConcepts)))
+                        .filter(thenConceptMap -> completionRule.thenConcludable().isInferredAnswer(thenConceptMap))
+                        .forEachRemaining(ans -> completionRule.addLineages(whenConcepts, ans)));
     }
 
-    private static class Rule {
-        private final Conjunction<Conjunctable> when;
-        private final ThingVariable<?> then;
-        private final String label;
+    private static Set<Variable.Retrievable> filterRetrievableVars(Set<Variable> vars) {
+        return iterate(vars).filter(var -> var.isName() || var.isAnonymous()).map(var -> {
+            if (var.isName()) return var.asName();
+            if (var.isAnonymous()) return var.asAnonymous();
+            throw TypeDBException.of(ILLEGAL_STATE);
+        }).toSet();
+    }
 
-        public Rule(Conjunction<? extends Pattern> whenPreNormalised, ThingVariable<?> thenPreNormalised, String label) {
-            // TODO: check that the when doesn't contain any iid constraints since these are not transferable across dbs.
-            Deanonymiser deanonymiser = Deanonymiser.create(new VarNameGenerator());
-            List<Conjunction<Conjunctable>> whenConjunctions = whenPreNormalised.normalise().patterns();
-            assert whenConjunctions.size() == 1;
-            this.when = deanonymiser.visitConjunction(whenConjunctions.get(0));
-            IIDConstraintThrower.create().visitConjunction(this.when);
-            this.then = deanonymiser.visitVariable(thenPreNormalised.normalise()).asThing();
-            this.label = label;
+    private static Map<Variable.Retrievable, Concept> filterRetrievableVars(Map<Variable, Concept> concepts) {
+        Map<Variable.Retrievable, Concept> newMap = new HashMap<>();
+        concepts.forEach((var, concept) -> {
+            if (var.isName()) newMap.put(var.asName(), concept);
+            else if (var.isAnonymous()) newMap.put(var.asAnonymous(), concept);
+        });
+        return newMap;
+    }
+
+    private static class CompletionRule {
+        private final Rule rule;
+        private final Concludable thenConcludable;
+        private final Set<Lineage> lineages;
+        private boolean requiresReiteration;
+
+        public CompletionRule(Rule typeDBRule) {
+            this.rule = typeDBRule;
+            this.lineages = new HashSet<>();
+            this.requiresReiteration = false;
+
+            Set<Concludable> concludables = Concludable.create(this.rule.then());
+            assert concludables.size() == 1;
+            FunctionalIterator<Concludable> iterator = iterate(concludables);
+            this.thenConcludable = iterator.next();
+            iterator.recycle();
+        }
+
+        public Rule rule() {
+            return rule;
+        }
+
+        public Concludable thenConcludable() {
+            return thenConcludable;
+        }
+
+        public void addLineages(ConceptMap whenConcepts, ConceptMap thenConcepts) {
+            Lineage newLineage = new Lineage(whenConcepts, thenConcepts);
+            if (!lineages.contains(newLineage)) {
+                // TODO: New lineage found, trigger another iteration of the rules
+                this.requiresReiteration = true;
+                lineages.add(newLineage);
+            }
+        }
+
+        public boolean requiresReiteration() {
+            return requiresReiteration;
+        }
+
+        public void resetRequiresReiteration() {
+            requiresReiteration = false;
+        }
+
+        private static class Lineage {
+            private final ConceptMap whenConceptMap;
+            private final ConceptMap thenConceptMap;
+
+            Lineage(ConceptMap whenConceptMap, ConceptMap thenConceptMap) {
+                this.whenConceptMap = whenConceptMap;
+                this.thenConceptMap = thenConceptMap;
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+                Lineage lineage = (Lineage) o;
+                return whenConceptMap.equals(lineage.whenConceptMap) &&
+                        thenConceptMap.equals(lineage.thenConceptMap);
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(whenConceptMap, thenConceptMap);
+            }
         }
     }
 }

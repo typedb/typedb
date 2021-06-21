@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
+import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTypeDB;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.Completer;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager;
@@ -52,7 +53,7 @@ public class TestCompleter {
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
     private static final Path logDir = dataDir.resolve("logs");
     private static final Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logDir);
-    private TypeDB typeDB;
+    private RocksTypeDB typeDB;
 
     @Before
     public void setUp() throws IOException {
@@ -97,7 +98,7 @@ public class TestCompleter {
         loadBasicRecursionTest(typeDB, database);
 
         Set<Rule> rules;
-        try (Session session = typeDB.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.SCHEMA)) {
             try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 rules = SchemaManager.getAllRules(tx);
             }
@@ -105,7 +106,7 @@ public class TestCompleter {
             SchemaManager.addCompletionSchema(session);
             SchemaManager.connectCompletionSchema(session);
         }
-        try (Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
             Completer completer = new Completer(session);
             completer.loadRules(rules);
             completer.complete();
@@ -120,7 +121,7 @@ public class TestCompleter {
     public void testDeduplicationOfInferredConcepts() {
         loadTransitivityTest(typeDB, database);
         Set<Rule> rules;
-        try (Session session = typeDB.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.SCHEMA)) {
             try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 rules = SchemaManager.getAllRules(tx);
             }
@@ -128,7 +129,7 @@ public class TestCompleter {
             SchemaManager.addCompletionSchema(session);
             SchemaManager.connectCompletionSchema(session);
         }
-        try (Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
             Completer completer = new Completer(session);
             completer.loadRules(rules);
             completer.complete();
