@@ -27,7 +27,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.rocks.RocksTypeDB;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.resolve.ResolutionTestingException;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.soundness.ResolutionTestingException;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.TypeQL;

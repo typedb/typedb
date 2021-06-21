@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.test.behaviour.resolution.framework.common;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.resolve.ResolutionTestingException;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.soundness.ResolutionTestingException;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.pattern.Conjunctable;
 import com.vaticle.typeql.lang.pattern.Conjunction;

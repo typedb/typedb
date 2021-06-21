@@ -45,19 +45,23 @@ import static java.util.Collections.singletonList;
 
 public class Reasoner {
 
-    private final Set<RuleWrapper> rules;
+    private final Map<Rule, RuleRecorder> ruleRecorders;
 
     public Reasoner() {
-        this.rules = new HashSet<>();
+        this.ruleRecorders = new HashMap<>();
+    }
+
+    public Map<Rule, RuleRecorder> ruleRecorderMap() {
+        return ruleRecorders;
     }
 
     public void run(RocksSession.Data session) {
         try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-            tx.logic().rules().forEachRemaining(r -> this.rules.add(new RuleWrapper(r)));
+            tx.logic().rules().forEachRemaining(r -> this.ruleRecorders.put(r, new RuleRecorder(r)));
             boolean reiterateRules = true;
             while (reiterateRules) {
                 reiterateRules = false;
-                for (RuleWrapper rule : this.rules) {
+                for (RuleRecorder rule : this.ruleRecorders.values()) {
                     rule.resetRequiresReiteration();
                     runRule(tx, rule);
                     reiterateRules = reiterateRules || rule.requiresReiteration();
@@ -67,17 +71,17 @@ public class Reasoner {
         }
     }
 
-    private static void runRule(RocksTransaction tx, RuleWrapper rule) {
+    private static void runRule(RocksTransaction tx, RuleRecorder ruleRecorder) {
         // Get all the places where the `when` of the rule is satisfied and materialise for each
         tx.reasoner().executeTraversal(
-                new Disjunction(singletonList(rule.rule().when())),
+                new Disjunction(singletonList(ruleRecorder.rule().when())),
                 new Context.Query(tx.context(), new Options.Query().infer(false)),
-                filterRetrievableVars(rule.rule().when().identifiers()))
-                .forEachRemaining(whenConcepts -> rule.rule().conclusion()
+                filterRetrievableVars(ruleRecorder.rule().when().identifiers()))
+                .forEachRemaining(whenConcepts -> ruleRecorder.rule().conclusion()
                         .materialise(whenConcepts, tx.traversal(), tx.concepts())
                         .map(thenConcepts -> new ConceptMap(filterRetrievableVars(thenConcepts)))
-                        .filter(rule::isInferredAnswer)
-                        .forEachRemaining(ans -> rule.recordApplication(whenConcepts, ans)));
+                        .filter(ruleRecorder::isInferredAnswer)
+                        .forEachRemaining(ans -> ruleRecorder.recordApplication(whenConcepts, ans)));
     }
 
     private static Set<Variable.Retrievable> filterRetrievableVars(Set<Variable> vars) {
@@ -97,13 +101,14 @@ public class Reasoner {
         return newMap;
     }
 
-    private static class RuleWrapper {
+    public static class RuleRecorder {
         private final Rule rule;
         private final Concludable thenConcludable;
-        private final Set<RuleApplication> ruleApplications;
+        private final Set<RuleApplication> ruleApplications;  // TODO: Can we remove this and just use a map from when to then?
         private boolean requiresReiteration;
+        private Map<ConceptMap, ConceptMap> whenToThenBindings;
 
-        public RuleWrapper(Rule typeDBRule) {
+        public RuleRecorder(Rule typeDBRule) {
             this.rule = typeDBRule;
             this.ruleApplications = new HashSet<>();
             this.requiresReiteration = false;
@@ -116,6 +121,10 @@ public class Reasoner {
             iterator.recycle();
         }
 
+        public Map<ConceptMap, ConceptMap> whenToThenBindings() {
+            return whenToThenBindings;
+        }
+
         public Rule rule() {
             return rule;
         }
@@ -124,11 +133,12 @@ public class Reasoner {
             return thenConcludable.isInferredAnswer(thenConceptMap);
         }
 
-        public void recordApplication(ConceptMap whenConcepts, ConceptMap thenConcepts) {
-            RuleApplication newApplication = new RuleApplication(whenConcepts, thenConcepts);
+        public void recordApplication(ConceptMap whenConceptMap, ConceptMap thenConceptMap) {
+            RuleApplication newApplication = new RuleApplication(whenConceptMap, thenConceptMap);
             if (!ruleApplications.contains(newApplication)) {
                 this.requiresReiteration = true;
                 ruleApplications.add(newApplication);
+                whenToThenBindings.put(whenConceptMap, thenConceptMap);
             }
         }
 
