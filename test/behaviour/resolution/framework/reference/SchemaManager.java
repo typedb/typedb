@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.test.behaviour.resolution.framework.complete;
+package com.vaticle.typedb.core.test.behaviour.resolution.framework.reference;
 
 import com.vaticle.typedb.core.TypeDB.Session;
 import com.vaticle.typedb.core.TypeDB.Transaction;

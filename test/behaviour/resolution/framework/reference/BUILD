@@ -22,8 +22,7 @@ exports_files(["completion_schema.gql"])
 native_java_libraries(
     name = "reference-reasoner",
     srcs = [
-        "ReferenceReasoner.java",
-        "SchemaManager.java",
+        "Reasoner.java",
     ],
     visibility = ["//visibility:public"],
     native_libraries_deps = [

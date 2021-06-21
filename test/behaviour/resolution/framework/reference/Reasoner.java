@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.test.behaviour.resolution.framework.complete;
+package com.vaticle.typedb.core.test.behaviour.resolution.framework.reference;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
@@ -43,11 +43,11 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static java.util.Collections.singletonList;
 
 
-public class ReferenceReasoner {
+public class Reasoner {
 
     private final Set<RuleWrapper> rules;
 
-    public ReferenceReasoner() {
+    public Reasoner() {
         this.rules = new HashSet<>();
     }
 

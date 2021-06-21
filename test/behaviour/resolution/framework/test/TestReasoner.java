@@ -25,8 +25,8 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTypeDB;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.ReferenceReasoner;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.complete.SchemaManager;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.reference.Reasoner;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.reference.SchemaManager;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.pattern.Pattern;
@@ -45,9 +45,9 @@ import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.L
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadTransitivityTest;
 import static org.junit.Assert.assertEquals;
 
-public class TestReferenceReasoner {
+public class TestReasoner {
 
-    private static final String database = "TestReferenceReasoner";
+    private static final String database = "TestReasoner";
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
     private static final Path logDir = dataDir.resolve("logs");
     private static final Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logDir);
@@ -105,7 +105,7 @@ public class TestReferenceReasoner {
             SchemaManager.connectCompletionSchema(session);
         }
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            ReferenceReasoner completer = new ReferenceReasoner();
+            Reasoner completer = new Reasoner();
             completer.run();
             try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 List<ConceptMap> answers = tx.query().match(TypeQL.match(expectedResolutionVariables)).toList();
@@ -127,7 +127,7 @@ public class TestReferenceReasoner {
             SchemaManager.connectCompletionSchema(session);
         }
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            ReferenceReasoner completer = new ReferenceReasoner();
+            Reasoner completer = new Reasoner();
             completer.run();
             try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 TypeQLMatch inferredAnswersQuery = TypeQL.match(TypeQL.var("lh").isa("location-hierarchy"));

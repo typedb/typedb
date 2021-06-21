@@ -100,7 +100,7 @@ host_compatible_java_test(
     name = "test-completer",
     size = "medium",
     srcs = [
-        "TestReferenceReasoner.java",
+        "TestReasoner.java",
     ],
     classpath_resources = ["//common/test:logback-test"],
     test_class = "com.vaticle.typedb.core.test.behaviour.resolution.framework.test.TestCompleter",
