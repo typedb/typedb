@@ -22,11 +22,9 @@ import com.vaticle.typedb.core.TypeDB.Transaction;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTypeDB;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.reference.Reasoner;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.reference.SchemaManager;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.pattern.Pattern;
@@ -39,7 +37,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Set;
 
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadBasicRecursionTest;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadTransitivityTest;
@@ -95,18 +92,9 @@ public class TestReasoner {
 
         loadBasicRecursionTest(typeDB, database);
 
-        Set<Rule> rules;
-        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.SCHEMA)) {
-            try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                rules = SchemaManager.getAllRules(tx);
-            }
-            SchemaManager.undefineAllRules(session);
-            SchemaManager.addCompletionSchema(session);
-            SchemaManager.connectCompletionSchema(session);
-        }
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
             Reasoner completer = new Reasoner();
-            completer.run();
+            completer.run(session);
             try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 List<ConceptMap> answers = tx.query().match(TypeQL.match(expectedResolutionVariables)).toList();
                 assertEquals(answers.size(), 1);
@@ -117,18 +105,9 @@ public class TestReasoner {
     @Test
     public void testDeduplicationOfInferredConcepts() {
         loadTransitivityTest(typeDB, database);
-        Set<Rule> rules;
-        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.SCHEMA)) {
-            try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                rules = SchemaManager.getAllRules(tx);
-            }
-            SchemaManager.undefineAllRules(session);
-            SchemaManager.addCompletionSchema(session);
-            SchemaManager.connectCompletionSchema(session);
-        }
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
             Reasoner completer = new Reasoner();
-            completer.run();
+            completer.run(session);
             try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 TypeQLMatch inferredAnswersQuery = TypeQL.match(TypeQL.var("lh").isa("location-hierarchy"));
                 List<ConceptMap> inferredAnswers = tx.query().match(inferredAnswersQuery).toList();

@@ -77,26 +77,6 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "test-schema-manager",
-    size = "medium",
-    srcs = [
-        "TestSchemaManager.java",
-    ],
-    classpath_resources = ["//common/test:logback-test"],
-    test_class = "com.vaticle.typedb.core.test.behaviour.resolution.framework.test.TestSchemaManager",
-    native_libraries_deps = [
-        "//:typedb",
-        "//concept:concept",
-        "//test/behaviour/resolution/framework/reference-reasoner",
-        "//test/behaviour/resolution/framework/test:load-test",
-    ],
-    deps = [
-        # External dependencies from @vaticle
-        "@vaticle_typeql_lang_java//:typeql-lang",
-    ],
-)
-
-host_compatible_java_test(
     name = "test-completer",
     size = "medium",
     srcs = [

@@ -25,7 +25,6 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.reference.Reasoner;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.reference.SchemaManager;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 import com.vaticle.typeql.lang.query.TypeQLQuery;
@@ -55,15 +54,8 @@ public class Resolution {
         // TODO Check that nothing in the given schema conflicts with the resolution schema
 
         // Complete the KB-complete
-        Reasoner completer;
-        try (Transaction tx = this.materialisedSession.transaction(Type.WRITE)) {
-            completer = new Reasoner();
-        }
-
-        SchemaManager.undefineAllRules(this.materialisedSession);
-        SchemaManager.addCompletionSchema(this.materialisedSession);
-        SchemaManager.connectCompletionSchema(this.materialisedSession);
-        completer.run();
+        Reasoner reasoner = new Reasoner();
+        reasoner.run(this.materialisedSession);
     }
 
     public void close() {
