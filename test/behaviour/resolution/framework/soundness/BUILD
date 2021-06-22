@@ -20,26 +20,24 @@ load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
 exports_files(["completion_schema.gql"])
 
 native_java_libraries(
-    name = "reference",
+    name = "soundness",
     srcs = [
-        "Reasoner.java",
+        "SoundnessChecker.java",
+        "ResolutionTestingException.java",
     ],
     visibility = ["//visibility:public"],
     native_libraries_deps = [
         "//:typedb",
-        "//rocks:rocks",
         "//concept:concept",
-        "//traversal:traversal",
         "//logic:logic",
-        "//pattern:pattern",
+        "//test/behaviour/resolution/framework/reference:reference",
+        "//reasoner:reasoner",
+        "//traversal:traversal"
     ],
     deps = [
         "//common",
         "@vaticle_typedb_common//:common",
-        "@vaticle_typeql_lang_java//common",
-        "@vaticle_typeql_lang_java//:typeql-lang",
         "@vaticle_typeql_lang_java//query:query",
-        "@vaticle_typeql_lang_java//pattern:pattern",
     ],
 )
 

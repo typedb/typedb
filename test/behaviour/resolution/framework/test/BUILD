@@ -89,8 +89,7 @@ host_compatible_java_test(
         "//:typedb",
         "//logic:logic",
         "//rocks:rocks",
-        "//test/behaviour/resolution/framework/common",
-        "//test/behaviour/resolution/framework/reference-reasoner",
+        "//test/behaviour/resolution/framework/reference",
         "//test/behaviour/resolution/framework/test:load-test",
     ],
     deps = [
@@ -103,7 +102,7 @@ host_compatible_java_test(
     ],
 )
 
-java_test(
+host_compatible_java_test(
     name = "test-resolution",
     size = "large",
     srcs = [
@@ -111,13 +110,19 @@ java_test(
     ],
     classpath_resources = ["//common/test:logback-test"],
     test_class = "com.vaticle.typedb.core.test.behaviour.resolution.framework.test.TestResolution",
-    deps = [
+    native_libraries_deps = [
+        "//:typedb",
+        "//rocks:rocks",
+        "//test/behaviour/resolution/framework/soundness:soundness",
         "//test/behaviour/resolution/framework/test:load-test",
         "//test/behaviour/resolution/framework:resolution-lib",
-        "//:typedb",
-
+    ],
+    deps = [
+        "//common",
+        "//test/integration/util",
         # External dependencies from @vaticle
         "@vaticle_typeql_lang_java//:typeql-lang",
+        "@vaticle_typeql_lang_java//query",
     ],
 )
 

@@ -16,20 +16,26 @@
 #
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
 
-java_library(
+native_java_libraries(
     name = "resolution-lib",
     srcs = [
         "Resolution.java",
         ],
     visibility = ["//visibility:public"],
-    deps = [
-        "@maven//:com_google_guava_guava",
-        "//test/behaviour/resolution/framework/reference-reasoner",
-        "//test/behaviour/resolution/framework/resolve",
+    native_libraries_deps = [
         "//:typedb",
+        "//rocks:rocks",
         "//concept:concept",
+        "//test/behaviour/resolution/framework/reference:reference",
+        "//test/behaviour/resolution/framework/soundness:soundness",
+    ],
+    deps = [
+        "//common",
+        "@maven//:com_google_guava_guava",
         "@vaticle_typeql_lang_java//:typeql-lang",
+        "@vaticle_typeql_lang_java//query",
     ],
 )
 

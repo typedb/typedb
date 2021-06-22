@@ -18,12 +18,13 @@
 
 package com.vaticle.typedb.core.test.behaviour.resolution.framework.test;
 
-import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.TypeDB.Transaction;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTypeDB;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.Resolution;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.soundness.SoundnessChecker;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
@@ -39,25 +40,23 @@ import java.nio.file.Paths;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadBasicRecursionTest;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadComplexRecursionTest;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadTransitivityTest;
-import static junit.framework.TestCase.assertNotNull;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertThrows;
 
 public class TestResolution {
 
-    private static final String databaseCompletion = "TestResolutionCompletion";
-    private static final String databaseTest = "TestResolutionTest";
+    private static final String database = "TestResolution";
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
     private static final Path logDir = dataDir.resolve("logs");
     private static final Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logDir);
-    private TypeDB typeDB;
+    private RocksTypeDB typeDB;
+    private RocksSession session;
 
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
         this.typeDB = RocksTypeDB.open(options);
-        this.typeDB.databases().create(databaseCompletion);
-        this.typeDB.databases().create(databaseTest);
+        this.typeDB.databases().create(database);
+        this.session = typeDB.session(database, Arguments.Session.Type.DATA);
     }
 
     @After
@@ -65,118 +64,60 @@ public class TestResolution {
         this.typeDB.close();
     }
 
-    private void resolutionHappyPathTest(TypeQLMatch inferenceQuery) {
-        Resolution resolution_test = new Resolution(completionSession, testSession);
-        resolution_test.testQuery(inferenceQuery);
-        resolution_test.testSoundness(inferenceQuery);
-        resolution_test.testCompleteness();
-        resolution_test.close();
-    }
-
     // TODO: re-enable when 3-hop transitivity is resolvable
+
     @Test
     @Ignore
     public void testResolutionPassesForTransitivity() {
         TypeQLMatch inferenceQuery = TypeQL.parseQuery("" +
-                "match $lh (location-hierarchy_superior: $continent, " +
-                "location-hierarchy_subordinate: $area) isa location-hierarchy; " +
+                "match $lh (superior: $continent, subordinate: $area) isa location-hierarchy; " +
                 "$continent isa continent; " +
                 "$area isa area;").asMatch();
-        loadTransitivityTest(typeDB, databaseCompletion);
-        loadTransitivityTest(typeDB, databaseTest);
-        resolutionHappyPathTest(inferenceQuery);
+        loadTransitivityTest(typeDB, database);
+        testCorrectness(inferenceQuery);
     }
-
     @Test
     public void testResolutionThrowsForTransitivityWhenRuleIsNotTriggered() {
         TypeQLMatch inferenceQuery = TypeQL.parseQuery("" +
-                "match $lh (location-hierarchy_superior: $continent, " +
-                "location-hierarchy_subordinate: $area) isa location-hierarchy; " +
+                "match $lh (superior: $continent, location-hierarchy_subordinate: $area) isa location-hierarchy; " +
                 "$continent isa continent; " +
                 "$area isa area;").asMatch();
-
-        loadTransitivityTest(typeDB, databaseCompletion);
-        loadTransitivityTest(typeDB, databaseTest);
-
+        loadTransitivityTest(typeDB, database);
         // Undefine a rule in the keyspace under test such that the expected facts will not be inferred
-        Transaction tx = testSession.transaction(Arguments.Transaction.Type.WRITE);
-        tx.query().undefine(TypeQL.undefine(TypeQL.type("location-hierarchy-transitivity").sub("rule")));
-        tx.commit();
-
-        Resolution resolution_test = new Resolution(completionSession, testSession);
-
-        Exception testQueryThrows = null;
-        try {
-            resolution_test.testQuery(inferenceQuery);
-        } catch (Exception e) {
-            testQueryThrows = e;
+        try(Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+            tx.query().undefine(
+                    TypeQL.undefine(TypeQL.type("location-hierarchy-transitivity").sub("rule")));
+            tx.commit();
         }
-        assertNotNull(testQueryThrows);
-        assertThat(testQueryThrows, instanceOf(Resolution.WrongAnswerSizeException.class));
-
-        Exception testResolutionThrows = null;
-        try {
-            resolution_test.testSoundness(inferenceQuery);
-        } catch (Exception e) {
-            testResolutionThrows = e;
-        }
-        assertNotNull(testResolutionThrows);
-        assertThat(testResolutionThrows, instanceOf(Resolution.CorrectnessException.class));
-
-        Exception testCompletenessThrows = null;
-        try {
-            resolution_test.testCompleteness();
-        } catch (Exception e) {
-            testCompletenessThrows = e;
-        }
-        assertNotNull(testCompletenessThrows);
-        assertThat(testCompletenessThrows, instanceOf(Resolution.CompletenessException.class));
-
-        resolution_test.close();
+        Resolution resolution = new Resolution(session);
+        assertThrows(Resolution.CompletenessException.class, () -> resolution.testCompleteness(inferenceQuery));
+        session.close();
     }
 
     @Test
     public void testResolutionThrowsForTransitivityWhenRuleTriggersTooOften() {
         TypeQLMatch inferenceQuery = TypeQL.parseQuery("" +
-                "match $lh (location-hierarchy_superior: $continent, " +
-                "location-hierarchy_subordinate: $area) isa location-hierarchy; " +
+                "match $lh (superior: $continent, subordinate: $area) isa location-hierarchy; " +
                 "$continent isa continent; " +
                 "$area isa area;").asMatch();
-
-        loadTransitivityTest(typeDB, databaseCompletion);
-        loadTransitivityTest(typeDB, databaseTest);
-
+        loadTransitivityTest(typeDB, database);
         // Undefine a rule in the database under test such that the expected facts will not be inferred
-        Transaction tx = testSession.transaction(Arguments.Transaction.Type.WRITE);
+        Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE);
         tx.query().undefine(TypeQL.undefine(TypeQL.type("location-hierarchy-transitivity").sub("rule")));
         tx.query().define(TypeQL.parseQuery("define " +
-rule                 "location-hierarchy-transitivity:\n" +
+                "rule location-hierarchy-transitivity:\n" +
                 "when {\n" +
                 "  ($a, $b) isa location-hierarchy;\n" +
                 "  ($b, $c) isa location-hierarchy;\n" +
                 "  $a != $c;\n" +
                 "} then {\n" +
-                "  (location-hierarchy_superior: $a, location-hierarchy_subordinate: $c) isa location-hierarchy;\n" +
+                "  (superior: $a, subordinate: $c) isa location-hierarchy;\n" +
                 "};").asDefine());
         tx.commit();
 
-        Resolution resolution_test = new Resolution(completionSession, testSession);
-
-        resolution_test.testQuery(inferenceQuery);
-
-        // In this case we ignore `testResolution()` as it could be correct or incorrect, since it could pick a correct
-        // path, or one that has the location-hierarchy backwards
-
-        Exception testCompletenessThrows = null;
-        try {
-            resolution_test.testCompleteness();
-        } catch (Exception e) {
-            testCompletenessThrows = e;
-        }
-        assertNotNull(testCompletenessThrows);
-        assertThat(testCompletenessThrows, instanceOf(Resolution.CompletenessException.class));
-
-        resolution_test.close();
+        Resolution resolution = new Resolution(session);
+        assertThrows(SoundnessChecker.SoundnessException.class, () -> resolution.testSoundness(inferenceQuery));
+        session.close();
     }
 
     @Test
@@ -187,11 +128,10 @@ rule                 "location-hierarchy-transitivity:\n" +
                 "$continent isa continent; " +
                 "$area isa area;").asMatch();
 
-        loadTransitivityTest(typeDB, databaseCompletion);
-        loadTransitivityTest(typeDB, databaseTest);
+        loadTransitivityTest(typeDB, database);
 
         // Undefine a rule in the keyspace under test such that the expected facts will not be inferred
-        Transaction tx = testSession.transaction(Arguments.Transaction.Type.WRITE);
+        Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE);
         tx.query().undefine(TypeQL.undefine(TypeQL.type("location-hierarchy-transitivity").sub("rule")));
         tx.query().define(TypeQL.parseQuery("define" +
                 "rule location-hierarchy-transitivity:\n" +
@@ -200,50 +140,34 @@ rule                 "location-hierarchy-transitivity:\n" +
                 "  ($b, $c) isa location-hierarchy;\n" +
                 "  $a != $c;\n" +
                 "} then {\n" +
-                "  (location-hierarchy_superior: $a, location-hierarchy_subordinate: $c) isa location-hierarchy;\n" +
+                "  (superior: $a, subordinate: $c) isa location-hierarchy;\n" +
                 "};").asDefine());
         tx.commit();
 
-        Resolution resolution_test = new Resolution(completionSession, testSession);
-
-        Exception testQueryThrows = null;
-        try {
-            resolution_test.testQuery(inferenceQuery);
-        } catch (Exception e) {
-            testQueryThrows = e;
-        }
-        assertNotNull(testQueryThrows);
-        assertThat(testQueryThrows, instanceOf(Resolution.WrongAnswerSizeException.class));
-
-        // In this case we ignore `testResolution()` as it could be correct or incorrect, since it could pick a correct
-        // path, or one that has the location-hierarchy backwards
-
-        Exception testCompletenessThrows = null;
-        try {
-            resolution_test.testCompleteness();
-        } catch (Exception e) {
-            testCompletenessThrows = e;
-        }
-        assertNotNull(testCompletenessThrows);
-        assertThat(testCompletenessThrows, instanceOf(Resolution.CompletenessException.class));
-
-        resolution_test.close();
+        Resolution resolution = new Resolution(session);
+        assertThrows(Resolution.CompletenessException.class, () -> resolution.testCompleteness(inferenceQuery));
+        assertThrows(SoundnessChecker.SoundnessException.class, () -> resolution.testSoundness(inferenceQuery));
+        session.close();
     }
 
     @Test
     public void testResolutionPassesForTwoRecursiveRules() {
-        loadComplexRecursionTest(typeDB, databaseCompletion);
-        loadComplexRecursionTest(typeDB, databaseTest);
+        loadComplexRecursionTest(typeDB, database);
         TypeQLMatch inferenceQuery = TypeQL.parseQuery("match $transaction has currency $currency;").asMatch();
-        resolutionHappyPathTest(inferenceQuery);
+        testCorrectness(inferenceQuery);
     }
 
     @Test
     public void testBasicRecursion() {
-        loadBasicRecursionTest(typeDB, databaseCompletion);
-        loadBasicRecursionTest(typeDB, databaseTest);
+        loadBasicRecursionTest(typeDB, database);
         TypeQLMatch inferenceQuery = TypeQL.parseQuery("match $com isa company, has is-liable $lia;").asMatch();
-        resolutionHappyPathTest(inferenceQuery);
+        testCorrectness(inferenceQuery);
+    }
+
+    private void testCorrectness(TypeQLMatch inferenceQuery) {
+        Resolution resolutionTest = new Resolution(session);
+        resolutionTest.testSoundness(inferenceQuery);
+        resolutionTest.testCompleteness(inferenceQuery);
+        resolutionTest.close();
     }
 }
-

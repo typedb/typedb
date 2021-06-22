@@ -110,14 +110,13 @@ public class ResolutionSteps {
 
     @Then("all answers are correct in reasoned database")
     public void reasoned_database_all_answers_are_correct() {
-        // TODO: refactor these into a single method that compares the set of expected answers to the actual answers
-        resolution.testQuery(queryToTest);
         resolution.testSoundness(queryToTest);
+        resolution.testCompleteness(queryToTest);
     }
 
     @Then("materialised and reasoned databases are the same size")
     public void databases_are_the_same_size() {
-        resolution.testCompleteness();
+        resolution.testCompleteness(null);  //TODO: Change this step
     }
 
     private void typeql_query(String queryStatements) {

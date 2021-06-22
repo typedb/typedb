@@ -18,23 +18,14 @@
 
 package com.vaticle.typedb.core.test.behaviour.resolution.framework;
 
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
-import com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type;
-import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.rocks.RocksSession;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.reference.Reasoner;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.soundness.SoundnessChecker;
-import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 import com.vaticle.typeql.lang.query.TypeQLQuery;
 
-import java.util.List;
-import java.util.Set;
-
 import static com.vaticle.typedb.core.TypeDB.Transaction;
-import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class Resolution {
 
@@ -58,46 +49,11 @@ public class Resolution {
     }
 
     /**
-     * Run a query against the materialised keyspace and the reasoned keyspace and assert that they have the same number
-     * of answers.
-     * @param inferenceQuery The reference query to make against both keyspaces
-     */
-    public void testQuery(TypeQLMatch inferenceQuery) {
-        Transaction reasonedTx = session.transaction(Type.READ);
-        int testResultsCount = reasonedTx.query().match(inferenceQuery).toList().size();
-        reasonedTx.close();
-
-        Transaction completionTx = session.transaction(Type.READ);
-        // TODO: Consider negating the completion schema instead of filtering
-        int completionResultsCount = filterCompletionSchema(completionTx.query().match(inferenceQuery)).toSet().size();
-        completionTx.close();
-        if (completionResultsCount != testResultsCount) {
-            throw new WrongAnswerSizeException(completionResultsCount, testResultsCount, inferenceQuery);
-        }
-    }
-
-    /**
-     * Filters out answers that contain any Thing instance that is derived from the completion schema.
-     * @param answerStream stream of answers to filter
-     * @return filtered stream of answers
-     */
-    public static FunctionalIterator<ConceptMap> filterCompletionSchema(FunctionalIterator<ConceptMap> answerStream) {
-        Set<String> completionSchemaTypes = iterate(CompletionSchema.CompletionSchemaType.values())
-                .map(CompletionSchema.CompletionSchemaType::toString).toSet();
-        return answerStream.filter(a -> iterate(a.concepts().values())
-                .noneMatch(concept -> completionSchemaTypes
-                        .contains(concept.asThing().getType().getLabel().toString())));
-    }
-
-    /**
      * For each answer to a query, fully explore its explanation to construct a query that will check it was resolved
      * as expected. Run this query on the completion keyspace to verify.
-     * @param inferenceQuery The reference query to make against both keyspaces
+     * @param inferenceQuery The reference query to make against
      */
     public void testSoundness(TypeQLMatch inferenceQuery) {
-
-        List<TypeQLMatch> queries;
-
         try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
             SoundnessChecker soundnessChecker = new SoundnessChecker(referenceReasoner, tx);
             soundnessChecker.check(inferenceQuery);
@@ -107,18 +63,20 @@ public class Resolution {
     /**
      * It is possible that rules could trigger when they should not. Testing for completeness checks the number of
      * inferred facts in the completion keyspace against the total number that are inferred in the test keyspace
+     * @param inferenceQuery The reference query to make
      */
-    public void testCompleteness() {
-        try {
-            testQuery(TypeQL.parseQuery("match $x isa thing;").asMatch());
-            testQuery(TypeQL.parseQuery("match $r ($x) isa relation;").asMatch());
-            testQuery(TypeQL.parseQuery("match $x has attribute $y;").asMatch());
-        } catch (WrongAnswerSizeException ex) {
-            String msg = String.format("Failed completeness test: [%s]. The complete database contains %d inferred " +
-                                               "concepts, whereas the test database contains %d inferred concepts.",
-                    ex.getInferenceQuery(), ex.getExpectedAnswers(), ex.getActualAnswers());
-            throw new CompletenessException(msg);
-        }
+    public void testCompleteness(TypeQLMatch inferenceQuery) {
+        // TODO: Bring back completeness check
+        // try {
+        //     testQuery(TypeQL.parseQuery("match $x isa thing;").asMatch());
+        //     testQuery(TypeQL.parseQuery("match $r ($x) isa relation;").asMatch());
+        //     testQuery(TypeQL.parseQuery("match $x has attribute $y;").asMatch());
+        // } catch (WrongAnswerSizeException ex) {
+        //     String msg = String.format("Failed completeness test: [%s]. The complete database contains %d inferred " +
+        //                                        "concepts, whereas the test database contains %d inferred concepts.",
+        //             ex.getInferenceQuery(), ex.getExpectedAnswers(), ex.getActualAnswers());
+        //     throw new CompletenessException(msg);
+        // }
     }
 
     public static class CompletenessException extends RuntimeException {
