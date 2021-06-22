@@ -56,7 +56,8 @@ public class Reasoner {
     }
 
     public void run(RocksSession session) {
-        try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE,
+                                                       new Options.Transaction().infer(false))) {
             tx.logic().rules().forEachRemaining(r -> this.ruleRecorders.put(r, new RuleRecorder(r)));
             boolean reiterateRules = true;
             while (reiterateRules) {
@@ -75,7 +76,7 @@ public class Reasoner {
         // Get all the places where the `when` of the rule is satisfied and materialise for each
         tx.reasoner().executeTraversal(
                 new Disjunction(singletonList(ruleRecorder.rule().when())),
-                new Context.Query(tx.context(), new Options.Query().infer(false)),
+                new Context.Query(tx.context(), new Options.Query()),
                 filterRetrievableVars(ruleRecorder.rule().when().identifiers()))
                 .forEachRemaining(whenConcepts -> ruleRecorder.rule().conclusion()
                         .materialise(whenConcepts, tx.traversal(), tx.concepts())

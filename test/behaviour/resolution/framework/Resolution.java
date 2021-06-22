@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.test.behaviour.resolution.framework;
 
 import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.reference.Reasoner;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.soundness.SoundnessChecker;
@@ -54,7 +55,8 @@ public class Resolution {
      * @param inferenceQuery The reference query to make against
      */
     public void testSoundness(TypeQLMatch inferenceQuery) {
-        try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
+        try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ,
+                                                  new Options.Transaction().infer(true))) {
             SoundnessChecker soundnessChecker = new SoundnessChecker(referenceReasoner, tx);
             soundnessChecker.check(inferenceQuery);
         }
@@ -66,6 +68,7 @@ public class Resolution {
      * @param inferenceQuery The reference query to make
      */
     public void testCompleteness(TypeQLMatch inferenceQuery) {
+        throw new RuntimeException("Unimplemented");
         // TODO: Bring back completeness check
         // try {
         //     testQuery(TypeQL.parseQuery("match $x isa thing;").asMatch());

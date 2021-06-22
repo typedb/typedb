@@ -30,7 +30,6 @@ import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -64,10 +63,7 @@ public class TestResolution {
         this.typeDB.close();
     }
 
-    // TODO: re-enable when 3-hop transitivity is resolvable
-
     @Test
-    @Ignore
     public void testResolutionPassesForTransitivity() {
         TypeQLMatch inferenceQuery = TypeQL.parseQuery("" +
                 "match $lh (superior: $continent, subordinate: $area) isa location-hierarchy; " +
@@ -76,6 +72,7 @@ public class TestResolution {
         loadTransitivityTest(typeDB, database);
         testCorrectness(inferenceQuery);
     }
+
     @Test
     public void testResolutionThrowsForTransitivityWhenRuleIsNotTriggered() {
         TypeQLMatch inferenceQuery = TypeQL.parseQuery("" +
