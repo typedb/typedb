@@ -110,7 +110,7 @@ public class ResolutionSteps {
 
     @Then("all answers are correct in reasoned database")
     public void reasoned_database_all_answers_are_correct() {
-        resolution.testSoundness(queryToTest);
+        resolution.testSoundness(session, queryToTest);
         resolution.testCompleteness(queryToTest);
     }
 

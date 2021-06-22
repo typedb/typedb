@@ -30,29 +30,28 @@ import static com.vaticle.typedb.core.TypeDB.Transaction;
 
 public class Resolution {
 
-    private final RocksSession session;
     private final Reasoner referenceReasoner;
 
     /**
      * Resolution Testing Framework's entry point. Takes in sessions each for a `Completion` and `Test` keyspace. Each
      * keyspace loaded with the same schema and data. This should be true unless testing this code, in which case a
      * disparity between the two keyspaces is introduced to check that the framework throws an error when it should.
-     * @param session TypeDB session where, expects schema (inlc. rules) and data to be already present
+     * @param session TypeDB session, expects schema (including rules) and data to be already present
      */
     public Resolution(RocksSession session) {
-        this.session = session;
         this.referenceReasoner = new Reasoner();
-        this.referenceReasoner.run(this.session);
+        this.referenceReasoner.run(session);
     }
 
     /**
      * For each answer to a query, fully explore its explanation to construct a query that will check it was resolved
      * as expected. Run this query on the completion keyspace to verify.
+     * @param session TypeDB session, expects schema (including rules) and data to be already present
      * @param inferenceQuery The reference query to make against
      */
-    public void testSoundness(TypeQLMatch inferenceQuery) {
+    public void testSoundness(RocksSession session, TypeQLMatch inferenceQuery) {
         try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ,
-                                                  new Options.Transaction().infer(true))) {
+                                                  new Options.Transaction().infer(true).explain(true))) {
             SoundnessChecker soundnessChecker = new SoundnessChecker(referenceReasoner, tx);
             soundnessChecker.check(inferenceQuery);
         }

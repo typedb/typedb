@@ -38,6 +38,8 @@ public class SoundnessChecker {
     public SoundnessChecker(Reasoner referenceReasoner, Transaction tx) {
         this.referenceReasoner = referenceReasoner;
         this.tx = tx;
+        assert tx.context().options().infer();
+        assert tx.context().options().explain();
         this.inferredConceptMapping = new HashMap<>();
     }
 
@@ -60,6 +62,10 @@ public class SoundnessChecker {
 
     private void checkExplanation(Explanation explanation) {
         Reasoner.RuleRecorder recorder = referenceReasoner.ruleRecorderMap().get(explanation.rule());
+        if (recorder == null) {
+            throw new SoundnessException(String.format("Found an answer for rule \"%s\", which wasn't recorded by the" +
+                                                               " reference reasoner/", explanation.rule().getLabel()));
+        }
         ConceptMap recordedWhen = substituteInferredVarsForReferenceVars(explanation.conditionAnswer());
         if (recorder.whenToThenBindings().containsKey(recordedWhen)) {
             // Update the inferred variables mapping between the two reasoners

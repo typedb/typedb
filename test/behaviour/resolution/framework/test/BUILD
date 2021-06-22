@@ -119,6 +119,7 @@ host_compatible_java_test(
     ],
     deps = [
         "//common",
+        "//common/test:util",
         "//test/integration/util",
         # External dependencies from @vaticle
         "@vaticle_typeql_lang_java//:typeql-lang",
