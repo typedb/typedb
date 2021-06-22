@@ -47,6 +47,15 @@ public class Util {
         }
     }
 
+    public static <T extends RuntimeException> void assertThrows(Class<T> exceptionType, Runnable function) {
+        try {
+            function.run();
+            fail();
+        } catch (RuntimeException e) {
+            assertTrue(exceptionType.isInstance(e));
+        }
+    }
+
     public static void assertNotThrows(Runnable function) {
         try {
             function.run();
