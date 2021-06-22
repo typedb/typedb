@@ -45,7 +45,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadComplexRecursionTest;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadComplexRecursionExample;
 import static org.junit.Assert.assertEquals;
 
 
@@ -66,7 +66,7 @@ public class ResolutionQueryBuilderIT {
 
             Set<Variable> keyVariables;
 
-            loadComplexRecursionTest(typedb, database);
+            loadComplexRecursionExample(typedb, database);
 
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.DATA)) {
                 try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {

@@ -46,7 +46,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadBasicRecursionTest;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadBasicRecursionExample;
 
 public class RuleResolutionBuilderIT {
     private static final String database = "RuleResolutionBuilderIT";
@@ -69,7 +69,7 @@ public class RuleResolutionBuilderIT {
 
     @Test
     public void testVariableToResolutionPropertiesForVariableAttributeOwnership() {
-        loadBasicRecursionTest(typeDB, database);
+        loadBasicRecursionExample(typeDB, database);
         try (Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
             try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 BoundVariable var = TypeQL.parseVariable("$company has name $name").asVariable();

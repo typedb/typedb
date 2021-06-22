@@ -26,7 +26,37 @@ import com.vaticle.typeql.lang.TypeQL;
 public class LoadTest {
 
     // TODO: These should use TypeQL builder to make them robust to change
-    static void loadTransitivityTest(TypeDB typeDB, String databaseName) {
+    static void loadEmployableExample(TypeDB typeDB, String databaseName) {
+        try (TypeDB.Session session = typeDB.session(databaseName, Arguments.Session.Type.SCHEMA)) {
+            try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                String schema = "" +
+                        "define\n" +
+                        "employable sub attribute,\n" +
+                        "    value boolean;" +
+                        "animal sub entity," +
+                        "  owns employable;\n" +
+                        "person sub animal;" +
+                        "dog sub animal;" +
+                        "rule people-are-employable:\n" +
+                        "when {\n" +
+                        "    $p isa person;\n" +
+                        "} then {\n" +
+                        "    $p has employable true;\n" +
+                        "};";
+                tx.query().define(TypeQL.parseQuery(schema).asDefine());
+                tx.commit();
+            }
+        }
+        try (TypeDB.Session session = typeDB.session(databaseName, Arguments.Session.Type.DATA)) {
+            try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                tx.query().insert(TypeQL.parseQuery("insert $p isa person; $d isa dog;").asInsert());
+                tx.commit();
+            }
+        }
+    }
+
+    // TODO: These should use TypeQL builder to make them robust to change
+    static void loadTransitivityExample(TypeDB typeDB, String databaseName) {
         try (TypeDB.Session session = typeDB.session(databaseName, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 String schema = "" +
@@ -73,7 +103,7 @@ public class LoadTest {
         }
     }
 
-    static void loadBasicRecursionTest(TypeDB typeDB, String databaseName) {
+    static void loadBasicRecursionExample(TypeDB typeDB, String databaseName) {
         try (TypeDB.Session session = typeDB.session(databaseName, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 String schema = "define\n" +
@@ -111,7 +141,7 @@ public class LoadTest {
         }
     }
 
-    static void loadComplexRecursionTest(TypeDB typeDB, String databaseName) {
+    static void loadComplexRecursionExample(TypeDB typeDB, String databaseName) {
         try (TypeDB.Session session = typeDB.session(databaseName, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 String schema = "define\n" +

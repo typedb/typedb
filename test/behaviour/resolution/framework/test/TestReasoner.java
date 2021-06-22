@@ -38,8 +38,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadBasicRecursionTest;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadTransitivityTest;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadBasicRecursionExample;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadTransitivityExample;
 import static org.junit.Assert.assertEquals;
 
 public class TestReasoner {
@@ -90,7 +90,7 @@ public class TestReasoner {
                 "$r2-c1 has company-id 0;"
         );
 
-        loadBasicRecursionTest(typeDB, database);
+        loadBasicRecursionExample(typeDB, database);
 
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
             Reasoner completer = new Reasoner();
@@ -104,7 +104,7 @@ public class TestReasoner {
 
     @Test
     public void testDeduplicationOfInferredConcepts() {
-        loadTransitivityTest(typeDB, database);
+        loadTransitivityExample(typeDB, database);
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
             Reasoner completer = new Reasoner();
             completer.run(session);

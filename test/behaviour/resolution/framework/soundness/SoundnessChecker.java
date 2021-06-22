@@ -61,7 +61,7 @@ public class SoundnessChecker {
     }
 
     private void checkExplanation(Explanation explanation) {
-        Reasoner.RuleRecorder recorder = referenceReasoner.ruleRecorderMap().get(explanation.rule());
+        Reasoner.RuleRecorder recorder = referenceReasoner.ruleRecorderMap().get(explanation.rule().getLabel());
         if (recorder == null) {
             throw new SoundnessException(String.format("Found an answer for rule \"%s\", which wasn't recorded by the" +
                                                                " reference reasoner/", explanation.rule().getLabel()));
@@ -70,7 +70,7 @@ public class SoundnessChecker {
         if (recorder.whenToThenBindings().containsKey(recordedWhen)) {
             // Update the inferred variables mapping between the two reasoners
             ConceptMap recordedThen = recorder.whenToThenBindings().get(recordedWhen);
-            assert recordedThen.concepts().keySet().equals(explanation.conclusionAnswer().concepts());
+            assert recordedThen.concepts().keySet().equals(explanation.conclusionAnswer().concepts().keySet());
             recordedThen.concepts().forEach((var, recordedConcept) -> {
                 Concept inferredConcept = explanation.conclusionAnswer().concepts().get(var);
                 if (inferredConceptMapping.containsKey(inferredConcept)) {
@@ -82,8 +82,11 @@ public class SoundnessChecker {
             });
         } else {
             // We have detected an answer in the explanations that shouldn't be there!
-            throw new SoundnessException(String.format("Found an answer in the explanation given that should not be " +
-                                                               "present for rule %s", explanation.rule().getLabel()));
+            throw new SoundnessException(String.format("While explaining, testing found an answer that should not be " +
+                                                               "present for rule \"%s\".\nAnswer:\n%s\nIncorrectly " +
+                                                               "derived from condition:\n%s",
+                                                       explanation.rule().getLabel(), explanation.conclusionAnswer(),
+                                                       explanation.conditionAnswer()));
         }
     }
 

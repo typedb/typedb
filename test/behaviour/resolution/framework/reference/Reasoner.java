@@ -45,20 +45,21 @@ import static java.util.Collections.singletonList;
 
 public class Reasoner {
 
-    private final Map<Rule, RuleRecorder> ruleRecorders;
+    // TODO: Needs strings as keys rather than rules, only for testing the framework itself
+    private final Map<String, RuleRecorder> ruleRecorders;
 
     public Reasoner() {
         this.ruleRecorders = new HashMap<>();
     }
 
-    public Map<Rule, RuleRecorder> ruleRecorderMap() {
+    public Map<String, RuleRecorder> ruleRecorderMap() {
         return ruleRecorders;
     }
 
     public void run(RocksSession session) {
         try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE,
                                                        new Options.Transaction().infer(false))) {
-            tx.logic().rules().forEachRemaining(r -> this.ruleRecorders.put(r, new RuleRecorder(r)));
+            tx.logic().rules().forEachRemaining(r -> this.ruleRecorders.put(r.getLabel(), new RuleRecorder(r)));
             boolean reiterateRules = true;
             while (reiterateRules) {
                 reiterateRules = false;
