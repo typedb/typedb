@@ -501,11 +501,11 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             return instances(v -> {
                 switch (v.encoding()) {
                     case ENTITY:
-                        return EntityImpl.of(v.writable());
+                        return EntityImpl.of(v);
                     case ATTRIBUTE:
-                        return AttributeImpl.of(v.writable());
+                        return AttributeImpl.of(v);
                     case RELATION:
-                        return RelationImpl.of(v.writable());
+                        return RelationImpl.of(v);
                     default:
                         assert false;
                         throw exception(TypeDBException.of(UNRECOGNISED_VALUE));

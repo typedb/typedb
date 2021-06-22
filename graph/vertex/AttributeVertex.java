@@ -74,9 +74,9 @@ public interface AttributeVertex<VALUE> extends ThingVertex {
 
     interface Read<VALUE> extends ThingVertex.Read, AttributeVertex<VALUE> {
 
-        AttributeVertex.Write<VALUE> asWrite();
-
         AttributeVertex.Read<VALUE> asRead();
+
+        AttributeVertex.Write<VALUE> asWrite();
 
         AttributeVertex.Read<Boolean> asBoolean();
 
@@ -91,9 +91,9 @@ public interface AttributeVertex<VALUE> extends ThingVertex {
 
     interface Write<VALUE> extends ThingVertex.Write, AttributeVertex<VALUE> {
 
-        AttributeVertex.Write<VALUE> asWrite();
-
         AttributeVertex.Read<VALUE> asRead();
+
+        AttributeVertex.Write<VALUE> asWrite();
 
         AttributeVertex.Write<Boolean> asBoolean();
 

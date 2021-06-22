@@ -122,8 +122,8 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
     @Override
     public abstract FunctionalIterator<? extends Type> getSubtypesExplicit();
 
-    <THING> FunctionalIterator<THING> instances(Function<ThingVertex.Write, THING> thingConstructor) {
-        return getSubtypes().flatMap(t -> graphMgr.data().getWritable(t.vertex())).map(thingConstructor);
+    <THING> FunctionalIterator<THING> instances(Function<ThingVertex, THING> thingConstructor) {
+        return getSubtypes().flatMap(t -> graphMgr.data().get(t.vertex())).map(thingConstructor);
     }
 
     void setSuperTypeVertex(TypeVertex superTypeVertex) {

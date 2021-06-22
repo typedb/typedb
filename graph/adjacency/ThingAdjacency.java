@@ -24,9 +24,6 @@ import com.vaticle.typedb.core.graph.edge.ThingEdge;
 import com.vaticle.typedb.core.graph.iid.IID;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 
-/*
-TODO split into read and write
- */
 public interface ThingAdjacency {
 
     /**

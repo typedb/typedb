@@ -175,7 +175,7 @@ public final class ConceptManager {
     }
 
     public Thing getThing(ByteArray iid) {
-        ThingVertex.Write thingVertex = graphMgr.data().getWritable(VertexIID.Thing.of(iid));
+        ThingVertex thingVertex = graphMgr.data().get(VertexIID.Thing.of(iid));
         if (thingVertex != null) return ThingImpl.of(thingVertex);
         else return null;
     }
