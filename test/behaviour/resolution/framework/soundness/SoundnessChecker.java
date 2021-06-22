@@ -35,7 +35,7 @@ public class SoundnessChecker {
     private final Transaction tx;
     private final Map<Concept, Concept> inferredConceptMapping;
 
-    private SoundnessChecker(Reasoner referenceReasoner, Transaction tx) {
+    public SoundnessChecker(Reasoner referenceReasoner, Transaction tx) {
         this.referenceReasoner = referenceReasoner;
         this.tx = tx;
         this.inferredConceptMapping = new HashMap<>();

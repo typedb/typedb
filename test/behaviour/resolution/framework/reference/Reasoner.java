@@ -55,7 +55,7 @@ public class Reasoner {
         return ruleRecorders;
     }
 
-    public void run(RocksSession.Data session) {
+    public void run(RocksSession session) {
         try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
             tx.logic().rules().forEachRemaining(r -> this.ruleRecorders.put(r, new RuleRecorder(r)));
             boolean reiterateRules = true;

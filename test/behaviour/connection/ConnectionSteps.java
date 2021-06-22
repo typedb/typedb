@@ -18,9 +18,10 @@
 
 package com.vaticle.typedb.core.test.behaviour.connection;
 
-import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.rocks.RocksDatabase;
+import com.vaticle.typedb.core.rocks.RocksSession;
+import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.rocks.RocksTypeDB;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
@@ -54,13 +55,13 @@ public class ConnectionSteps {
     public static Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("typedb");
     public static Path logsDir = dataDir.resolve("logs");
     public static Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logsDir);
-    public static List<TypeDB.Session> sessions = new ArrayList<>();
-    public static List<CompletableFuture<TypeDB.Session>> sessionsParallel = new ArrayList<>();
-    public static Map<TypeDB.Session, List<TypeDB.Transaction>> sessionsToTransactions = new HashMap<>();
-    public static Map<TypeDB.Session, List<CompletableFuture<TypeDB.Transaction>>> sessionsToTransactionsParallel = new HashMap<>();
-    public static Map<CompletableFuture<TypeDB.Session>, List<CompletableFuture<TypeDB.Transaction>>> sessionsParallelToTransactionsParallel = new HashMap<>();
+    public static List<RocksSession> sessions = new ArrayList<>();
+    public static List<CompletableFuture<RocksSession>> sessionsParallel = new ArrayList<>();
+    public static Map<RocksSession, List<RocksTransaction>> sessionsToTransactions = new HashMap<>();
+    public static Map<RocksSession, List<CompletableFuture<RocksTransaction>>> sessionsToTransactionsParallel = new HashMap<>();
+    public static Map<CompletableFuture<RocksSession>, List<CompletableFuture<RocksTransaction>>> sessionsParallelToTransactionsParallel = new HashMap<>();
 
-    public static TypeDB.Transaction tx() {
+    public static RocksTransaction tx() {
         assertFalse("There is no open session", sessions.isEmpty());
         assertFalse("There is no open transaction", sessionsToTransactions.get(sessions.get(0)).isEmpty());
         return sessionsToTransactions.get(sessions.get(0)).get(0);
@@ -88,7 +89,7 @@ public class ConnectionSteps {
     @After
     public synchronized void after() {
         System.out.println("ConnectionSteps.after");
-        sessionsToTransactions.values().forEach(l -> l.forEach(TypeDB.Transaction::close));
+        sessionsToTransactions.values().forEach(l -> l.forEach(RocksTransaction::close));
         sessionsToTransactions.clear();
         sessionsToTransactionsParallel.values().forEach(l -> l.forEach(c -> {
             try { c.get().close(); } catch (Exception e) { e.printStackTrace(); }
@@ -98,9 +99,9 @@ public class ConnectionSteps {
             try { c.get().close(); } catch (Exception e) { e.printStackTrace(); }
         }));
         sessionsParallelToTransactionsParallel.clear();
-        sessions.forEach(TypeDB.Session::close);
+        sessions.forEach(RocksSession::close);
         sessions.clear();
-        sessionsParallel.forEach(c -> c.thenAccept(TypeDB.Session::close));
+        sessionsParallel.forEach(c -> c.thenAccept(RocksSession::close));
         sessionsParallel.clear();
         typedb.databases().all().forEach(RocksDatabase::delete);
         typedb.close();

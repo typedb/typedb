@@ -22,6 +22,8 @@ import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.rocks.RocksSession;
+import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.test.behaviour.exception.ScenarioDefinitionException;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.Resolution;
 import com.vaticle.typeql.lang.TypeQL;
@@ -44,7 +46,6 @@ import static org.junit.Assert.fail;
 
 public class ResolutionSteps {
 
-    private static final String MATERIALISED_DATABASE = "materialised";
     private static final String REASONED_DATABASE = "reasoned";
 
     private TypeQLMatch queryToTest;
@@ -63,7 +64,7 @@ public class ResolutionSteps {
 
     @When("materialised database is completed")
     public void materialised_database_is_completed() {
-        resolution = new Resolution(materialisedSession(), reasonedSession());
+        resolution = new Resolution(reasonedSession());
     }
 
     @Then("for typeql query")
@@ -111,7 +112,7 @@ public class ResolutionSteps {
     public void reasoned_database_all_answers_are_correct() {
         // TODO: refactor these into a single method that compares the set of expected answers to the actual answers
         resolution.testQuery(queryToTest);
-        resolution.testResolution(queryToTest);
+        resolution.testSoundness(queryToTest);
     }
 
     @Then("materialised and reasoned databases are the same size")
@@ -135,8 +136,8 @@ public class ResolutionSteps {
         });
     }
 
-    private TypeDB.Session reasonedSession() {
-        TypeDB.Session reasonedSession = sessions.stream()
+    private RocksSession reasonedSession() {
+        RocksSession reasonedSession = sessions.stream()
                 .filter(s -> s.database().name().equals(REASONED_DATABASE))
                 .findAny()
                 .orElse(null);
@@ -144,25 +145,12 @@ public class ResolutionSteps {
         return reasonedSession;
     }
 
-    private TypeDB.Session materialisedSession() {
-        TypeDB.Session materialisedSession = sessions.stream()
-                .filter(s -> s.database().name().equals(MATERIALISED_DATABASE))
-                .findAny()
-                .orElse(null);
-        assert materialisedSession != null : "Materialised session with database name " + MATERIALISED_DATABASE + " does not exist";
-        return materialisedSession;
-    }
-
     private TypeDB.Transaction reasonedDbTxn() {
         return getTransaction(reasonedSession());
     }
 
-    private TypeDB.Transaction materialisedDbTxn() {
-        return getTransaction(materialisedSession());
-    }
-
     private TypeDB.Transaction getTransaction(TypeDB.Session session) {
-        List<TypeDB.Transaction> transactions = sessionsToTransactions.get(session);
+        List<RocksTransaction> transactions = sessionsToTransactions.get(session);
         assert transactions.size() == 1;
         return transactions.get(0);
     }

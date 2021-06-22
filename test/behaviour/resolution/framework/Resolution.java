@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.CompletionSchema;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.reference.Reasoner;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.soundness.SoundnessChecker;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 import com.vaticle.typeql.lang.query.TypeQLQuery;
@@ -37,30 +38,23 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class Resolution {
 
-    private final RocksSession.Data materialisedSession;
-    private final RocksSession.Data reasonedSession;
+    private final RocksSession session;
+    private final Reasoner referenceReasoner;
 
     /**
      * Resolution Testing Framework's entry point. Takes in sessions each for a `Completion` and `Test` keyspace. Each
      * keyspace loaded with the same schema and data. This should be true unless testing this code, in which case a
      * disparity between the two keyspaces is introduced to check that the framework throws an error when it should.
-     * @param materialisedSession a session for the `materialised` keyspace with base data included
-     * @param reasonedSession a session for the `reasoned` keyspace with base data included
+     * @param session TypeDB session where, expects schema (inlc. rules) and data to be already present
      */
-    public Resolution(RocksSession.Data materialisedSession, RocksSession.Data reasonedSession) {
-        this.materialisedSession = materialisedSession;
-        this.reasonedSession = reasonedSession;
-
-        // TODO Check that nothing in the given schema conflicts with the resolution schema
-
-        // Complete the KB-complete
-        Reasoner reasoner = new Reasoner();
-        reasoner.run(this.materialisedSession);
+    public Resolution(RocksSession session) {
+        this.session = session;
+        this.referenceReasoner = new Reasoner();
+        this.referenceReasoner.run(this.session);
     }
 
     public void close() {
-        materialisedSession.close();
-        reasonedSession.close();
+        session.close();
     }
 
     /**
@@ -69,11 +63,11 @@ public class Resolution {
      * @param inferenceQuery The reference query to make against both keyspaces
      */
     public void testQuery(TypeQLMatch inferenceQuery) {
-        Transaction reasonedTx = reasonedSession.transaction(Type.READ);
+        Transaction reasonedTx = session.transaction(Type.READ);
         int testResultsCount = reasonedTx.query().match(inferenceQuery).toList().size();
         reasonedTx.close();
 
-        Transaction completionTx = materialisedSession.transaction(Type.READ);
+        Transaction completionTx = session.transaction(Type.READ);
         // TODO: Consider negating the completion schema instead of filtering
         int completionResultsCount = filterCompletionSchema(completionTx.query().match(inferenceQuery)).toSet().size();
         completionTx.close();
@@ -100,28 +94,13 @@ public class Resolution {
      * as expected. Run this query on the completion keyspace to verify.
      * @param inferenceQuery The reference query to make against both keyspaces
      */
-    public void testResolution(TypeQLMatch inferenceQuery) {
-        ResolutionQueryBuilder resolutionQueryBuilder = new ResolutionQueryBuilder();
+    public void testSoundness(TypeQLMatch inferenceQuery) {
+
         List<TypeQLMatch> queries;
 
-        try (Transaction tx = reasonedSession.transaction(Arguments.Transaction.Type.READ)) {
-            queries = resolutionQueryBuilder.buildMatch(tx, inferenceQuery);
-        }
-
-        if (queries.size() == 0) {
-            String msg = String.format("No resolution queries were constructed for query %s", inferenceQuery);
-            throw new CorrectnessException(msg);
-        }
-
-        try (Transaction tx = materialisedSession.transaction(Arguments.Transaction.Type.READ)) {
-            for (TypeQLMatch query: queries) {
-                List<ConceptMap> answers = tx.query().match(query).toList();
-                if (answers.isEmpty()) {
-                    String msg = String.format("Resolution query found no answers, it should have had one or more " +
-                                                       "for query:\n %s", query);
-                    throw new CorrectnessException(msg);
-                }
-            }
+        try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
+            SoundnessChecker soundnessChecker = new SoundnessChecker(referenceReasoner, tx);
+            soundnessChecker.check(inferenceQuery);
         }
     }
 
@@ -139,12 +118,6 @@ public class Resolution {
                                                "concepts, whereas the test database contains %d inferred concepts.",
                     ex.getInferenceQuery(), ex.getExpectedAnswers(), ex.getActualAnswers());
             throw new CompletenessException(msg);
-        }
-    }
-
-    public static class CorrectnessException extends RuntimeException {
-        public CorrectnessException(String message) {
-            super(message);
         }
     }
 
