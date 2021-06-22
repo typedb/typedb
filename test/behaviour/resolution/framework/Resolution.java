@@ -45,10 +45,6 @@ public class Resolution {
         this.referenceReasoner.run(this.session);
     }
 
-    public void close() {
-        session.close();
-    }
-
     /**
      * For each answer to a query, fully explore its explanation to construct a query that will check it was resolved
      * as expected. Run this query on the completion keyspace to verify.

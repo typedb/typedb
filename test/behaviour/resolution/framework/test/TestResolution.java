@@ -35,6 +35,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadBasicRecursionTest;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadComplexRecursionTest;
@@ -48,14 +49,12 @@ public class TestResolution {
     private static final Path logDir = dataDir.resolve("logs");
     private static final Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logDir);
     private RocksTypeDB typeDB;
-    private RocksSession session;
 
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
         this.typeDB = RocksTypeDB.open(options);
         this.typeDB.databases().create(database);
-        this.session = typeDB.session(database, Arguments.Session.Type.DATA);
     }
 
     @After
@@ -81,14 +80,17 @@ public class TestResolution {
                 "$area isa area;").asMatch();
         loadTransitivityTest(typeDB, database);
         // Undefine a rule in the keyspace under test such that the expected facts will not be inferred
-        try(Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-            tx.query().undefine(
-                    TypeQL.undefine(TypeQL.type("location-hierarchy-transitivity").sub("rule")));
-            tx.commit();
+        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                tx.query().undefine(
+                        TypeQL.undefine(TypeQL.type("location-hierarchy-transitivity").sub("rule")));
+                tx.commit();
+            }
         }
-        Resolution resolution = new Resolution(session);
-        assertThrows(Resolution.CompletenessException.class, () -> resolution.testCompleteness(inferenceQuery));
-        session.close();
+        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+            Resolution resolution = new Resolution(session);
+            assertThrows(Resolution.CompletenessException.class, () -> resolution.testCompleteness(inferenceQuery));
+        }
     }
 
     @Test
@@ -99,22 +101,26 @@ public class TestResolution {
                 "$area isa area;").asMatch();
         loadTransitivityTest(typeDB, database);
         // Undefine a rule in the database under test such that the expected facts will not be inferred
-        Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE);
-        tx.query().undefine(TypeQL.undefine(TypeQL.type("location-hierarchy-transitivity").sub("rule")));
-        tx.query().define(TypeQL.parseQuery("define " +
-                "rule location-hierarchy-transitivity:\n" +
-                "when {\n" +
-                "  ($a, $b) isa location-hierarchy;\n" +
-                "  ($b, $c) isa location-hierarchy;\n" +
-                "  $a != $c;\n" +
-                "} then {\n" +
-                "  (superior: $a, subordinate: $c) isa location-hierarchy;\n" +
-                "};").asDefine());
-        tx.commit();
-
-        Resolution resolution = new Resolution(session);
-        assertThrows(SoundnessChecker.SoundnessException.class, () -> resolution.testSoundness(inferenceQuery));
-        session.close();
+        try (RocksSession schemaSession = typeDB.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (Transaction tx = schemaSession.transaction(Arguments.Transaction.Type.WRITE)) {
+                tx.query().undefine(TypeQL.undefine(Collections.singletonList(
+                        TypeQL.rule("location-hierarchy-transitivity"))));
+                tx.query().define(TypeQL.parseQuery("define " +
+                                                            "rule location-hierarchy-transitivity:\n" +
+                                                            "when {\n" +
+                                                            "  ($a, $b) isa location-hierarchy;\n" +
+                                                            "  ($b, $c) isa location-hierarchy;\n" +
+                                                            "  $a != $c;\n" +
+                                                            "} then {\n" +
+                                                            "  (superior: $a, subordinate: $c) isa location-hierarchy;\n" +
+                                                            "};").asDefine());
+                tx.commit();
+            }
+        }
+        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+            Resolution resolution = new Resolution(session);
+            assertThrows(SoundnessChecker.SoundnessException.class, () -> resolution.testSoundness(inferenceQuery));
+        }
     }
 
     @Test
@@ -128,23 +134,25 @@ public class TestResolution {
         loadTransitivityTest(typeDB, database);
 
         // Undefine a rule in the keyspace under test such that the expected facts will not be inferred
-        Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE);
-        tx.query().undefine(TypeQL.undefine(TypeQL.type("location-hierarchy-transitivity").sub("rule")));
-        tx.query().define(TypeQL.parseQuery("define" +
-                "rule location-hierarchy-transitivity:\n" +
-                "when {\n" +
-                "  ($a, $b) isa location-hierarchy;\n" +
-                "  ($b, $c) isa location-hierarchy;\n" +
-                "  $a != $c;\n" +
-                "} then {\n" +
-                "  (superior: $a, subordinate: $c) isa location-hierarchy;\n" +
-                "};").asDefine());
-        tx.commit();
-
-        Resolution resolution = new Resolution(session);
-        assertThrows(Resolution.CompletenessException.class, () -> resolution.testCompleteness(inferenceQuery));
-        assertThrows(SoundnessChecker.SoundnessException.class, () -> resolution.testSoundness(inferenceQuery));
-        session.close();
+        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+            Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE);
+            tx.query().undefine(TypeQL.undefine(TypeQL.type("location-hierarchy-transitivity").sub("rule")));
+            tx.query().define(TypeQL.parseQuery("define" +
+                                                        "rule location-hierarchy-transitivity:\n" +
+                                                        "when {\n" +
+                                                        "  ($a, $b) isa location-hierarchy;\n" +
+                                                        "  ($b, $c) isa location-hierarchy;\n" +
+                                                        "  $a != $c;\n" +
+                                                        "} then {\n" +
+                                                        "  (superior: $a, subordinate: $c) isa location-hierarchy;\n" +
+                                                        "};").asDefine());
+            tx.commit();
+        }
+        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+            Resolution resolution = new Resolution(session);
+            assertThrows(Resolution.CompletenessException.class, () -> resolution.testCompleteness(inferenceQuery));
+            assertThrows(SoundnessChecker.SoundnessException.class, () -> resolution.testSoundness(inferenceQuery));
+        }
     }
 
     @Test
@@ -162,9 +170,10 @@ public class TestResolution {
     }
 
     private void testCorrectness(TypeQLMatch inferenceQuery) {
-        Resolution resolutionTest = new Resolution(session);
-        resolutionTest.testSoundness(inferenceQuery);
-        resolutionTest.testCompleteness(inferenceQuery);
-        resolutionTest.close();
+        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+            Resolution resolutionTest = new Resolution(session);
+            resolutionTest.testSoundness(inferenceQuery);
+            resolutionTest.testCompleteness(inferenceQuery);
+        }
     }
 }
