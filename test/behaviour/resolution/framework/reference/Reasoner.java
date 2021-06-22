@@ -106,12 +106,13 @@ public class Reasoner {
         private final Concludable thenConcludable;
         private final Set<RuleApplication> ruleApplications;  // TODO: Can we remove this and just use a map from when to then?
         private boolean requiresReiteration;
-        private Map<ConceptMap, ConceptMap> whenToThenBindings;
+        private final Map<ConceptMap, ConceptMap> whenToThenBindings;
 
         public RuleRecorder(Rule typeDBRule) {
             this.rule = typeDBRule;
             this.ruleApplications = new HashSet<>();
             this.requiresReiteration = false;
+            this.whenToThenBindings = new HashMap<>();
 
             Set<Concludable> concludables = Concludable.create(this.rule.then());
             assert concludables.size() == 1;
