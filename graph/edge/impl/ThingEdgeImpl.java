@@ -290,7 +290,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         @Override
         public ThingVertex from() {
             if (fromCache != null) return fromCache;
-            ThingVertex from = graph.convert(fromIID);
+            ThingVertex from = graph.convertToReadable(fromIID);
             if (from.isWrite()) {
                 fromCache = from.asWrite();
                 fromCache.outs().cache(this);
@@ -302,7 +302,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
 
         private ThingVertex.Write fromWritable() {
             if (fromCache != null) return fromCache;
-            fromCache = graph.convertWritable(fromIID);
+            fromCache = graph.convertToWritable(fromIID);
             fromCache.outs().cache(this);
             return fromCache;
         }
@@ -315,7 +315,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         @Override
         public ThingVertex to() {
             if (toCache != null) return toCache;
-            ThingVertex to = graph.convert(toIID);
+            ThingVertex to = graph.convertToReadable(toIID);
             if (to.isWrite()) {
                 toCache = to.asWrite();
                 toCache.ins().cache(this);
@@ -327,7 +327,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
 
         private ThingVertex.Write toWritable() {
             if (toCache != null) return toCache;
-            toCache = graph.convertWritable(toIID);
+            toCache = graph.convertToWritable(toIID);
             toCache.outs().cache(this);
             return toCache;
         }
@@ -340,7 +340,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         @Override
         public Optional<ThingVertex> optimised() {
             if (optimisedCache != null) return Optional.of(optimisedCache);
-            if (optimisedIID != null) optimisedCache = graph.convert(optimisedIID);
+            if (optimisedIID != null) optimisedCache = graph.convertToReadable(optimisedIID);
             return Optional.ofNullable(optimisedCache);
         }
 

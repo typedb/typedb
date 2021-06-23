@@ -129,7 +129,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
         @Override
         public ThingVertex.Write toWrite() {
-            return graph.convertWritable(iid);
+            return graph.convertToWritable(iid);
         }
 
         @Override

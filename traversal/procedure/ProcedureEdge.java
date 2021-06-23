@@ -206,7 +206,7 @@ public abstract class ProcedureEdge<
                 assert !to.isStartingVertex();
                 toIter = iterate(fromVertex.asThing().asAttribute().valueType().comparables())
                         .flatMap(vt -> graphMgr.schema().attributeTypes(vt))
-                        .flatMap(at -> graphMgr.data().get(at)).map(ThingVertex::asAttribute);
+                        .flatMap(at -> graphMgr.data().getReadable(at)).map(ThingVertex::asAttribute);
                 if (!to.props().predicates().isEmpty()) {
                     toIter = to.filterPredicates(toIter, params);
                 }
@@ -316,7 +316,7 @@ public abstract class ProcedureEdge<
 
                     if (!toTypes.isEmpty()) typeIter = typeIter.filter(t -> toTypes.contains(t.properLabel()));
 
-                    FunctionalIterator<? extends ThingVertex> iter = typeIter.flatMap(t -> graphMgr.data().get(t));
+                    FunctionalIterator<? extends ThingVertex> iter = typeIter.flatMap(t -> graphMgr.data().getReadable(t));
                     if (to.id().isVariable()) iter = to.filterReferableThings(iter);
                     if (to.props().hasIID()) iter = to.filterIID(iter, params);
                     if (!to.props().predicates().isEmpty()) iter = to.filterPredicates(filterAttributes(iter), params);
@@ -705,7 +705,7 @@ public abstract class ProcedureEdge<
             FunctionalIterator<? extends ThingVertex> backwardBranchToIIDFiltered(
                     GraphManager graphMgr, ThingVertex fromVertex,
                     Encoding.Edge.Thing encoding, VertexIID.Thing toIID, Set<Label> allowedToTypes) {
-                ThingVertex toVertex = graphMgr.data().get(toIID);
+                ThingVertex toVertex = graphMgr.data().getReadable(toIID);
                 if (toVertex != null && fromVertex.ins().edge(encoding, toVertex) != null &&
                         (allowedToTypes.isEmpty() || allowedToTypes.contains(toVertex.type().properLabel()))) {
                     return single(toVertex);
@@ -754,7 +754,7 @@ public abstract class ProcedureEdge<
                             VertexIID.Thing iid = params.getIID(to.id().asVariable());
                             AttributeVertex<?> att;
                             if (!iid.isAttribute()) att = null;
-                            else att = graphMgr.data().get(iid.asAttribute());
+                            else att = graphMgr.data().getReadable(iid.asAttribute());
                             if (att != null && owner.outs().edge(HAS, att) != null &&
                                     (to.props().types().isEmpty() || to.props().types().contains(att.type().properLabel()))) {
                                 iter = single(att);
@@ -1036,7 +1036,7 @@ public abstract class ProcedureEdge<
                             if (to.props().hasIID()) {
                                 assert to.id().isVariable();
                                 filteredIID = true;
-                                ThingVertex player = graphMgr.data().get(params.getIID(to.id().asVariable()));
+                                ThingVertex player = graphMgr.data().getReadable(params.getIID(to.id().asVariable()));
                                 if (player == null) return empty();
                                 // TODO: the following code can be optimised if we have an API to directly get the
                                 //       roleplayer edge when we have the roleplayer vertex
@@ -1101,7 +1101,7 @@ public abstract class ProcedureEdge<
                             if (to.props().hasIID()) {
                                 assert to.id().isVariable();
                                 filteredIID = true;
-                                ThingVertex relation = graphMgr.data().get(params.getIID(to.id().asVariable()));
+                                ThingVertex relation = graphMgr.data().getReadable(params.getIID(to.id().asVariable()));
                                 if (relation == null) return empty();
                                 iter = resolveRoleTypesIter.flatMap(
                                         rt -> player.ins().edge(ROLEPLAYER, rt.iid(), relation.iid().prefix(), relation.iid().type())

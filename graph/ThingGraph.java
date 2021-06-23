@@ -115,37 +115,23 @@ public class ThingGraph {
         return link(thingsByIID.values().iterator(), attributesByIID.valuesIterator());
     }
 
-    public ThingVertex get(VertexIID.Thing iid) {
+    public ThingVertex getReadable(VertexIID.Thing iid) {
         assert storage.isOpen();
-        if (iid.encoding().equals(ATTRIBUTE)) return get(iid.asAttribute());
+        if (iid.encoding().equals(ATTRIBUTE)) return getReadable(iid.asAttribute());
         else if (!thingsByIID.containsKey(iid) && storage.get(iid.bytes()) == null) return null;
-        return convert(iid);
+        return convertToReadable(iid);
     }
 
-    public AttributeVertex<?> get(VertexIID.Attribute<?> iid) {
+    public AttributeVertex<?> getReadable(VertexIID.Attribute<?> iid) {
         if (!attributesByIID.forValueType(iid.valueType()).containsKey(iid) && storage.get(iid.bytes()) == null) {
             return null;
         }
-        return convert(iid);
+        return convertToReadable(iid);
     }
 
-    public ThingVertex.Write getWritable(VertexIID.Thing iid) {
+    public ThingVertex convertToReadable(VertexIID.Thing iid) {
         assert storage.isOpen();
-        if (iid.encoding().equals(ATTRIBUTE)) return getWritable(iid.asAttribute());
-        else if (!thingsByIID.containsKey(iid) && storage.get(iid.bytes()) == null) return null;
-        return convertWritable(iid);
-    }
-
-    public AttributeVertex.Write<?> getWritable(VertexIID.Attribute<?> iid) {
-        if (!attributesByIID.forValueType(iid.valueType()).containsKey(iid) && storage.get(iid.bytes()) == null) {
-            return null;
-        }
-        return convertWritable(iid);
-    }
-
-    public ThingVertex convert(VertexIID.Thing iid) {
-        assert storage.isOpen();
-        if (iid.encoding().equals(ATTRIBUTE)) return convert(iid.asAttribute());
+        if (iid.encoding().equals(ATTRIBUTE)) return convertToReadable(iid.asAttribute());
         else {
             ThingVertex.Write vertex;
             if ((vertex = thingsByIID.get(iid)) != null) return vertex;
@@ -153,7 +139,7 @@ public class ThingGraph {
         }
     }
 
-    public AttributeVertex<?> convert(VertexIID.Attribute<?> attIID) {
+    public AttributeVertex<?> convertToReadable(VertexIID.Attribute<?> attIID) {
         AttributeVertex<?> vertex;
         switch (attIID.valueType()) {
             case BOOLEAN:
@@ -182,13 +168,13 @@ public class ThingGraph {
         }
     }
 
-    public ThingVertex.Write convertWritable(VertexIID.Thing iid) {
+    public ThingVertex.Write convertToWritable(VertexIID.Thing iid) {
         assert storage.isOpen();
-        if (iid.encoding().equals(ATTRIBUTE)) return convertWritable(iid.asAttribute());
+        if (iid.encoding().equals(ATTRIBUTE)) return convertToWritable(iid.asAttribute());
         else return thingsByIID.computeIfAbsent(iid, i -> ThingVertexImpl.Write.of(this, i));
     }
 
-    public AttributeVertex.Write<?> convertWritable(VertexIID.Attribute<?> attIID) {
+    public AttributeVertex.Write<?> convertToWritable(VertexIID.Attribute<?> attIID) {
         switch (attIID.valueType()) {
             case BOOLEAN:
                 return attributesByIID.booleans.computeIfAbsent(attIID.asBoolean(),
@@ -232,25 +218,16 @@ public class ThingGraph {
         }
     }
 
-    public FunctionalIterator<ThingVertex> get(TypeVertex typeVertex) {
+    public FunctionalIterator<ThingVertex> getReadable(TypeVertex typeVertex) {
         FunctionalIterator<ThingVertex> storageIterator = storage.iterate(
                 join(typeVertex.iid().bytes(), Encoding.Edge.ISA.in().bytes()),
-                (key, value) -> convert(EdgeIID.InwardsISA.of(key).end())
+                (key, value) -> convertToReadable(EdgeIID.InwardsISA.of(key).end())
         );
         if (!thingsByTypeIID.containsKey(typeVertex.iid())) return storageIterator;
         else return link(thingsByTypeIID.get(typeVertex.iid()).iterator(), storageIterator).distinct();
     }
 
-    public FunctionalIterator<ThingVertex.Write> getWritable(TypeVertex typeVertex) {
-        FunctionalIterator<ThingVertex.Write> storageIterator = storage.iterate(
-                join(typeVertex.iid().bytes(), Encoding.Edge.ISA.in().bytes()),
-                (key, value) -> convertWritable(EdgeIID.InwardsISA.of(key).end())
-        );
-        if (!thingsByTypeIID.containsKey(typeVertex.iid())) return storageIterator;
-        else return link(thingsByTypeIID.get(typeVertex.iid()).iterator(), storageIterator).distinct();
-    }
-
-    public AttributeVertex<Boolean> get(TypeVertex type, boolean value) {
+    public AttributeVertex<Boolean> getReadable(TypeVertex type, boolean value) {
         assert storage.isOpen();
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(Boolean.class);
@@ -262,7 +239,7 @@ public class ThingGraph {
         );
     }
 
-    public AttributeVertex<Long> get(TypeVertex type, long value) {
+    public AttributeVertex<Long> getReadable(TypeVertex type, long value) {
         assert storage.isOpen();
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(Long.class);
@@ -274,7 +251,7 @@ public class ThingGraph {
         );
     }
 
-    public AttributeVertex<Double> get(TypeVertex type, double value) {
+    public AttributeVertex<Double> getReadable(TypeVertex type, double value) {
         assert storage.isOpen();
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(Double.class);
@@ -286,7 +263,7 @@ public class ThingGraph {
         );
     }
 
-    public AttributeVertex<String> get(TypeVertex type, String value) {
+    public AttributeVertex<String> getReadable(TypeVertex type, String value) {
         assert storage.isOpen();
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(String.class);
@@ -305,7 +282,7 @@ public class ThingGraph {
         );
     }
 
-    public AttributeVertex<LocalDateTime> get(TypeVertex type, LocalDateTime value) {
+    public AttributeVertex<LocalDateTime> getReadable(TypeVertex type, LocalDateTime value) {
         assert storage.isOpen();
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(LocalDateTime.class);

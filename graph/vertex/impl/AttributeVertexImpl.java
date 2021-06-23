@@ -23,11 +23,9 @@ import com.vaticle.typedb.core.graph.ThingGraph;
 import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
 import com.vaticle.typedb.core.graph.adjacency.impl.ThingAdjacencyImpl;
 import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.iid.EdgeIID;
 import com.vaticle.typedb.core.graph.iid.IndexIID;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
-import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 
 import java.time.LocalDateTime;
 
@@ -98,7 +96,7 @@ public abstract class AttributeVertexImpl {
 
         @Override
         public AttributeVertex.Write<VALUE> toWrite() {
-            AttributeVertex.Write<?> writable = graph.convertWritable(iid());
+            AttributeVertex.Write<?> writable = graph.convertToWritable(iid());
             assert writable.valueType().equals(valueType());
             return (AttributeVertex.Write<VALUE>) writable;
         }
