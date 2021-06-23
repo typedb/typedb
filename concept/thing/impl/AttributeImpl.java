@@ -26,7 +26,6 @@ import com.vaticle.typedb.core.concept.type.impl.AttributeTypeImpl;
 import com.vaticle.typedb.core.concept.type.impl.ThingTypeImpl;
 import com.vaticle.typedb.core.graph.iid.PrefixIID;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
-import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 
 import java.time.LocalDateTime;
 
@@ -86,7 +85,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     @Override
     public FunctionalIterator<ThingImpl> getOwners(ThingType ownerType) {
-        return ownerType.getSubtypes().map(ot -> ((ThingTypeImpl) ot).vertex()).flatMap(
+        return ownerType.getSubtypes().map(ot -> ((ThingTypeImpl) ot).vertex).flatMap(
                 v -> vertex().ins().edge(HAS, PrefixIID.of(v.encoding().instance()), v.iid()).from()
         ).map(ThingImpl::of);
     }

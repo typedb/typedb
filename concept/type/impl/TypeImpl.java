@@ -53,7 +53,7 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
 public abstract class TypeImpl extends ConceptImpl implements Type {
 
     protected final GraphManager graphMgr;
-    private final TypeVertex vertex;
+    public final TypeVertex vertex;
 
     TypeImpl(GraphManager graphMgr, TypeVertex vertex) {
         this.graphMgr = graphMgr;
@@ -79,10 +79,6 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
             default:
                 return ThingTypeImpl.of(graphMgr, vertex);
         }
-    }
-
-    public TypeVertex vertex() {
-        return vertex;
     }
 
     @Override
@@ -123,7 +119,7 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
     public abstract FunctionalIterator<? extends Type> getSubtypesExplicit();
 
     <THING> FunctionalIterator<THING> instances(Function<ThingVertex, THING> thingConstructor) {
-        return getSubtypes().flatMap(t -> graphMgr.data().get(t.vertex())).map(thingConstructor);
+        return getSubtypes().flatMap(t -> graphMgr.data().get(t.vertex)).map(thingConstructor);
     }
 
     void setSuperTypeVertex(TypeVertex superTypeVertex) {

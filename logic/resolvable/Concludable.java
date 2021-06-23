@@ -332,7 +332,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
 
         @Override
         public boolean isInferredAnswer(ConceptMap conceptMap) {
-            return conceptMgr.getThing(conceptMap.get(generating().get().id()).asThing().getIID()).isInferred();
+            return conceptMap.get(generating().get().id()).asThing().isInferred();
         }
 
         @Override
@@ -636,7 +636,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
 
         @Override
         public boolean isInferredAnswer(ConceptMap conceptMap) {
-            return conceptMgr.getThing(conceptMap.get(generating().get().id()).asThing().getIID()).isInferred();
+            return conceptMap.get(generating().get().id()).asThing().isInferred();
         }
 
         FunctionalIterator<Unifier> unify(Rule.Conclusion.Isa isa, ConceptManager conceptMgr) {

@@ -124,7 +124,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
             } else if (attribute.getOwners(getType()).first().isPresent()) {
                 throw exception(TypeDBException.of(THING_KEY_TAKEN, attribute.getType().getLabel(), getType().getLabel()));
             }
-            vertex.graph().exclusiveOwnership(((ThingTypeImpl) this.getType()).vertex(), attrVertex);
+            vertex.graph().exclusiveOwnership(((TypeImpl) ((ThingTypeImpl) this.getType())).vertex, attrVertex);
         }
         vertexWritable().outs().put(HAS, attrVertex, isInferred);
     }
@@ -179,7 +179,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
         if (!attributeTypes.isEmpty()) {
             return iterate(attributeTypes)
                     .flatMap(AttributeType::getSubtypes).distinct()
-                    .map(t -> ((TypeImpl) t).vertex())
+                    .map(t -> ((TypeImpl) t).vertex)
                     .flatMap(type -> vertex().outs().edge(
                             HAS, PrefixIID.of(type.encoding().instance()), type.iid()
                     ).to()).map(ThingVertex::asAttribute);
@@ -217,7 +217,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
             return vertex().ins().edge(ROLEPLAYER).from().map(RelationImpl::of);
         } else {
             return iterate(roleTypes).flatMap(RoleType::getSubtypes).distinct().flatMap(
-                    rt -> vertex().ins().edge(ROLEPLAYER, ((RoleTypeImpl) rt).vertex().iid()).from()
+                    rt -> vertex().ins().edge(ROLEPLAYER, ((RoleTypeImpl) rt).vertex.iid()).from()
             ).map(RelationImpl::of);
         }
     }
