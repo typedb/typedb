@@ -116,6 +116,7 @@ host_compatible_java_test(
         "//test/behaviour/resolution/framework/soundness:soundness",
         "//test/behaviour/resolution/framework/test:load-test",
         "//test/behaviour/resolution/framework:resolution-lib",
+        "//test/behaviour/resolution/framework/common:common",
     ],
     deps = [
         "//common",

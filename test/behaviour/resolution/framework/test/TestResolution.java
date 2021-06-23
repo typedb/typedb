@@ -24,7 +24,6 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTypeDB;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.Resolution;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.soundness.SoundnessChecker;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
@@ -37,11 +36,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 
+import static com.vaticle.typedb.core.common.test.Util.assertThrows;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.Exceptions.CompletenessException;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.Exceptions.SoundnessException;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadBasicRecursionExample;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadComplexRecursionExample;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadEmployableExample;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadTransitivityExample;
-import static com.vaticle.typedb.core.common.test.Util.assertThrows;
 
 public class TestResolution {
 
@@ -89,7 +90,7 @@ public class TestResolution {
         }
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
             Resolution resolution = new Resolution(session);
-            assertThrows(Resolution.CompletenessException.class, () -> resolution.testCompleteness(inferenceQuery));
+            assertThrows(CompletenessException.class, () -> resolution.testCompleteness(inferenceQuery));
         }
     }
 
@@ -118,7 +119,7 @@ public class TestResolution {
             }
         }
         try (RocksSession session2 = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            assertThrows(SoundnessChecker.SoundnessException.class, () -> resolution.testSoundness(session2, inferenceQuery));
+            assertThrows(SoundnessException.class, () -> resolution.testSoundness(session2, inferenceQuery));
         }
     }
 
@@ -151,7 +152,7 @@ public class TestResolution {
             }
         }
         try (RocksSession session2 = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            assertThrows(SoundnessChecker.SoundnessException.class, () -> resolution.testSoundness(session2, inferenceQuery));
+            assertThrows(SoundnessException.class, () -> resolution.testSoundness(session2, inferenceQuery));
         }
     }
 
@@ -183,9 +184,9 @@ public class TestResolution {
         }
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
             Resolution resolution = new Resolution(session);
-            assertThrows(Resolution.CompletenessException.class, () -> resolution.testCompleteness(inferenceQuery));
-            assertThrows(SoundnessChecker.SoundnessException.class, () -> resolution.testSoundness(session,
-                                                                                                   inferenceQuery));
+            assertThrows(CompletenessException.class, () -> resolution.testCompleteness(inferenceQuery));
+            assertThrows(SoundnessException.class, () -> resolution.testSoundness(session,
+                                                                                  inferenceQuery));
         }
     }
 

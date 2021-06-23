@@ -29,6 +29,8 @@ import com.vaticle.typeql.lang.query.TypeQLMatch;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.Exceptions.SoundnessException;
+
 public class SoundnessChecker {
 
     private final Reasoner referenceReasoner;
@@ -85,8 +87,8 @@ public class SoundnessChecker {
             throw new SoundnessException(String.format("While explaining, testing found an answer that should not be " +
                                                                "present for rule \"%s\".\nAnswer:\n%s\nIncorrectly " +
                                                                "derived from condition:\n%s",
-                                                       explanation.rule().getLabel(), explanation.conclusionAnswer(),
-                                                       explanation.conditionAnswer()));
+                                                                  explanation.rule().getLabel(), explanation.conclusionAnswer(),
+                                                                  explanation.conditionAnswer()));
         }
     }
 
@@ -96,12 +98,6 @@ public class SoundnessChecker {
             substituted.put(var, inferredConceptMapping.getOrDefault(concept, concept));
         });
         return new ConceptMap(substituted);
-    }
-
-    public static class SoundnessException extends RuntimeException {
-        public SoundnessException(String message) {
-            super(message);
-        }
     }
 
 }

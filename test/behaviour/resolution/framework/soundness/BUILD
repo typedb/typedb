@@ -23,7 +23,6 @@ native_java_libraries(
     name = "soundness",
     srcs = [
         "SoundnessChecker.java",
-        "ResolutionTestingException.java",
     ],
     visibility = ["//visibility:public"],
     native_libraries_deps = [
@@ -32,7 +31,8 @@ native_java_libraries(
         "//logic:logic",
         "//test/behaviour/resolution/framework/reference:reference",
         "//reasoner:reasoner",
-        "//traversal:traversal"
+        "//traversal:traversal",
+        "//test/behaviour/resolution/framework/common:common",
     ],
     deps = [
         "//common",

@@ -22,18 +22,8 @@ native_java_libraries(
     name = "common",
     srcs = glob(["*.java"]),
     visibility = ["//visibility:public"],
-    native_libraries_deps = [
-        "//concept:concept",
-        "//:typedb",
-        "//pattern:pattern",
-    ],
-    deps = [
-        "//common:common",
-        "@maven//:com_google_guava_guava",
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@vaticle_typeql_lang_java//:typeql-lang",
-        "@vaticle_typeql_lang_java//pattern",
-    ],
+    native_libraries_deps = [],
+    deps = [],
 )
 
 checkstyle_test(

@@ -77,35 +77,4 @@ public class Resolution {
         // }
     }
 
-    public static class CompletenessException extends RuntimeException {
-        CompletenessException(String message) {
-            super(message);
-        }
-    }
-
-    public static class WrongAnswerSizeException extends RuntimeException {
-        private final int expectedAnswers;
-        private final int actualAnswers;
-        private final TypeQLQuery inferenceQuery;
-
-        public WrongAnswerSizeException(final int expectedAnswers, final int actualAnswers, final TypeQLQuery inferenceQuery) {
-            super(String.format("Query had an incorrect number of answers. Expected %d answers, but found %d " +
-                    "answers for query:\n %s", expectedAnswers, actualAnswers, inferenceQuery));
-            this.actualAnswers = actualAnswers;
-            this.expectedAnswers = expectedAnswers;
-            this.inferenceQuery = inferenceQuery;
-        }
-
-        public int getActualAnswers() {
-            return actualAnswers;
-        }
-
-        public int getExpectedAnswers() {
-            return expectedAnswers;
-        }
-
-        public TypeQLQuery getInferenceQuery() {
-            return inferenceQuery;
-        }
-    }
 }
