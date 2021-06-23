@@ -35,7 +35,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.
 
 public abstract class AttributeVertexImpl {
 
-    public static abstract class Read<VALUE> extends ThingVertexImpl.Read implements AttributeVertex.Read<VALUE> {
+    public static abstract class Read<VALUE> extends ThingVertexImpl.Read implements AttributeVertex<VALUE> {
 
         private final VertexIID.Attribute<VALUE> attributeIID;
         private java.lang.Boolean isPersisted;
@@ -105,11 +105,6 @@ public abstract class AttributeVertexImpl {
         public boolean isAttribute() { return true; }
 
         @Override
-        public boolean isRead() {
-            return true;
-        }
-
-        @Override
         public boolean isBoolean() { return false; }
 
         @Override
@@ -125,12 +120,7 @@ public abstract class AttributeVertexImpl {
         public boolean isDateTime() { return false; }
 
         @Override
-        public AttributeVertexImpl.Read<?> asAttribute() { return this; }
-
-        @Override
-        public AttributeVertexImpl.Read<VALUE> asRead() {
-            return this;
-        }
+        public AttributeVertex<?> asAttribute() { return this; }
 
         @Override
         public AttributeVertexImpl.Write<VALUE> asWrite() {
@@ -379,11 +369,6 @@ public abstract class AttributeVertexImpl {
         @Override
         public AttributeVertexImpl.Write<VALUE> asWrite() {
             return this;
-        }
-
-        @Override
-        public AttributeVertexImpl.Read<VALUE> asRead() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(AttributeVertex.Read.class));
         }
 
         @Override

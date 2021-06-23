@@ -84,24 +84,14 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     }
 
     @Override
-    public boolean isRead() {
-        return false;
-    }
-
-    @Override
     public ThingVertex.Write asWrite() {
         throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(ThingVertex.Write.class));
     }
 
-    @Override
-    public ThingVertex.Read asRead() {
-        throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(ThingVertex.Read.class));
-    }
+    public static class Read extends ThingVertexImpl {
 
-    public static class Read extends ThingVertexImpl implements ThingVertex.Read {
-
-        protected final ThingAdjacency.Read outs;
-        protected final ThingAdjacency.Read ins;
+        protected final ThingAdjacency outs;
+        protected final ThingAdjacency ins;
 
         public Read(ThingGraph graph, VertexIID.Thing iid) {
             super(graph, iid);
@@ -123,7 +113,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         }
 
         @Override
-        public ThingAdjacency.Read ins() {
+        public ThingAdjacency ins() {
             return ins;
         }
 
@@ -133,13 +123,13 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         }
 
         @Override
-        public ThingAdjacency.Read outs() {
+        public ThingAdjacency outs() {
             return outs;
         }
 
         @Override
-        public AttributeVertex.Read<?> asAttribute() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(AttributeVertex.Read.class));
+        public AttributeVertex<?> asAttribute() {
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(AttributeVertex.class));
         }
 
     }

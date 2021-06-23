@@ -81,12 +81,6 @@ public interface ThingAdjacency {
 
     }
 
-    interface Read extends ThingAdjacency {
-
-        // TODO this feels weird, should we just use ThingAdjacency as Read?
-
-    }
-
     interface Write extends ThingAdjacency {
 
         /**

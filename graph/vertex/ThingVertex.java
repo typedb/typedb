@@ -77,34 +77,9 @@ public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thi
 
     boolean isWrite();
 
-    boolean isRead();
-
     ThingVertex.Write asWrite();
 
-    ThingVertex.Read asRead();
-
     ThingVertex.Write toWrite();
-
-    interface Read extends ThingVertex {
-
-        /**
-         * Returns the {@code ThingAdjacency} set of outgoing edges.
-         *
-         * @return the {@code ThingAdjacency} set of outgoing edges
-         */
-        ThingAdjacency.Read outs();
-
-        /**
-         * Returns the {@code ThingAdjacency} set of incoming edges.
-         *
-         * @return the {@code ThingAdjacency} set of incoming edges
-         */
-        ThingAdjacency.Read ins();
-
-        @Override
-        AttributeVertex.Read<?> asAttribute();
-
-    }
 
     interface Write extends ThingVertex {
 

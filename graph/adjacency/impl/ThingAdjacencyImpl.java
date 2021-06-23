@@ -81,11 +81,11 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         }
     }
 
-    public static class Read extends ThingAdjacencyImpl implements ThingAdjacency.Read {
+    public static class Read extends ThingAdjacencyImpl {
 
-        final ThingVertex.Read owner;
+        final ThingVertex owner;
 
-        public Read(ThingVertex.Read owner, Encoding.Direction.Adjacency direction) {
+        public Read(ThingVertex owner, Encoding.Direction.Adjacency direction) {
             super(direction);
             this.owner = owner;
         }
