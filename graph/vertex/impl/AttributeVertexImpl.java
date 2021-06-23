@@ -97,7 +97,7 @@ public abstract class AttributeVertexImpl {
         }
 
         @Override
-        public AttributeVertex.Write<VALUE> writable() {
+        public AttributeVertex.Write<VALUE> toWrite() {
             AttributeVertex.Write<?> writable = graph.convertWritable(iid());
             assert writable.valueType().equals(valueType());
             return (AttributeVertex.Write<VALUE>) writable;
@@ -318,7 +318,7 @@ public abstract class AttributeVertexImpl {
         }
 
         @Override
-        public AttributeVertex.Write<VALUE> writable() {
+        public AttributeVertex.Write<VALUE> toWrite() {
             return this;
         }
 

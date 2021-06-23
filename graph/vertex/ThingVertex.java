@@ -83,7 +83,7 @@ public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thi
 
     ThingVertex.Read asRead();
 
-    ThingVertex.Write writable();
+    ThingVertex.Write toWrite();
 
     interface Read extends ThingVertex {
 

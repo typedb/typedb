@@ -46,7 +46,7 @@ public interface AttributeVertex<VALUE> extends ThingVertex {
      */
     VALUE value();
 
-    AttributeVertex.Write<VALUE> writable(); // TODO do we want both of these?
+    AttributeVertex.Write<VALUE> toWrite(); // TODO do we want both of these?
 
     AttributeVertex.Write<VALUE> asWrite();
 

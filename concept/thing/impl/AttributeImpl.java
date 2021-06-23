@@ -68,25 +68,25 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
     public abstract VALUE getValue();
 
     @Override
-    protected AttributeVertex.Write<VALUE> vertexWritable() {
-        if (!attributeVertex.isWrite()) attributeVertex = attributeVertex.writable();
+    protected AttributeVertex.Write<VALUE> writableVertex() {
+        if (!attributeVertex.isWrite()) attributeVertex = attributeVertex.toWrite();
         return attributeVertex.asWrite();
     }
 
     @Override
     public AttributeTypeImpl getType() {
-        return AttributeTypeImpl.of(vertex().graphs(), vertex().type());
+        return AttributeTypeImpl.of(readableVertex().graphs(), readableVertex().type());
     }
 
     @Override
     public FunctionalIterator<ThingImpl> getOwners() {
-        return vertex().ins().edge(HAS).from().map(ThingImpl::of);
+        return readableVertex().ins().edge(HAS).from().map(ThingImpl::of);
     }
 
     @Override
     public FunctionalIterator<ThingImpl> getOwners(ThingType ownerType) {
         return ownerType.getSubtypes().map(ot -> ((ThingTypeImpl) ot).vertex).flatMap(
-                v -> vertex().ins().edge(HAS, PrefixIID.of(v.encoding().instance()), v.iid()).from()
+                v -> readableVertex().ins().edge(HAS, PrefixIID.of(v.encoding().instance()), v.iid()).from()
         ).map(ThingImpl::of);
     }
 
@@ -102,7 +102,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     @Override
     public java.lang.String toString() {
-        return vertex().encoding().name() + ":" + vertex().type().properLabel() + ":" + getValue();
+        return readableVertex().encoding().name() + ":" + readableVertex().type().properLabel() + ":" + getValue();
     }
 
     @Override

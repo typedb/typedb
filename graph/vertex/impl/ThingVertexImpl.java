@@ -128,7 +128,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         }
 
         @Override
-        public ThingVertex.Write writable() {
+        public ThingVertex.Write toWrite() {
             return graph.convertWritable(iid);
         }
 
@@ -235,7 +235,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         }
 
         @Override
-        public ThingVertex.Write writable() {
+        public ThingVertex.Write toWrite() {
             return this;
         }
 
