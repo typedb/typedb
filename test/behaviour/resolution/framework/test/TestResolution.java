@@ -75,7 +75,7 @@ public class TestResolution {
     }
 
     @Test
-    public void testResolutionThrowsForTransitivityWhenRuleIsNotTriggered() {
+    public void testResolutionThrowsWhenRuleIsNotTriggeredTransitivityExample() {
         TypeQLMatch inferenceQuery = TypeQL.parseQuery("" +
                 "match $lh (superior: $continent, location-hierarchy_subordinate: $area) isa location-hierarchy; " +
                 "$continent isa continent; " +
@@ -95,7 +95,7 @@ public class TestResolution {
     }
 
     @Test
-    public void testSoundnessThrowsForTransitivityWhenRuleTriggersTooOftenEmployableExample() {
+    public void testSoundnessThrowsWhenRuleTriggersTooOftenEmployableExample() {
         TypeQLMatch inferenceQuery = TypeQL.parseQuery("match $x has employable true;").asMatch();
         loadEmployableExample(typeDB, database);
 
@@ -124,7 +124,7 @@ public class TestResolution {
     }
 
     @Test
-    public void testSoundnessThrowsForTransitivityWhenRuleTriggersTooOften() {
+    public void testSoundnessThrowsWhenRuleTriggersTooOftenTransitivityExample() {
         TypeQLMatch inferenceQuery = TypeQL.parseQuery("" +
                 "match $lh ($continent, $area) isa location-hierarchy; " +
                 "$continent isa continent; " +
@@ -157,7 +157,7 @@ public class TestResolution {
     }
 
     @Test
-    public void testResolutionThrowsForTransitivityWhenRuleTriggersTooOftenAndResultCountIsIncorrect() {
+    public void testResolutionThrowsWhenRuleTriggersTooOftenAndResultCountIsIncorrectTransitivityExample() {
         TypeQLMatch inferenceQuery = TypeQL.parseQuery("" +
                 "match $lh ($continent, " +
                 "$area) isa location-hierarchy; " +

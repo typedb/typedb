@@ -33,9 +33,7 @@ import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -69,12 +67,13 @@ public class Reasoner {
                     reiterateRules = reiterateRules || rule.requiresReiteration();
                 }
             }
-            // Let the transaction close, therefore deleting the materialised concepts
+            // Let the transaction close, therefore deleting the materialised concepts. The inferences recorded are
+            // held in memory instead.
         }
     }
 
     private static void runRule(RocksTransaction tx, RuleRecorder ruleRecorder) {
-        // Get all the places where the `when` of the rule is satisfied and materialise for each
+        // Get all the places where the rule condition is satisfied and materialise for each
         tx.reasoner().executeTraversal(
                 new Disjunction(singletonList(ruleRecorder.rule().when())),
                 new Context.Query(tx.context(), new Options.Query()),
@@ -83,7 +82,7 @@ public class Reasoner {
                         .materialise(whenConcepts, tx.traversal(), tx.concepts())
                         .map(thenConcepts -> new ConceptMap(filterRetrievableVars(thenConcepts)))
                         .filter(ruleRecorder::isInferredAnswer)
-                        .forEachRemaining(ans -> ruleRecorder.recordApplication(whenConcepts, ans)));
+                        .forEachRemaining(ans -> ruleRecorder.recordInference(whenConcepts, ans)));
     }
 
     private static Set<Variable.Retrievable> filterRetrievableVars(Set<Variable> vars) {
@@ -106,15 +105,14 @@ public class Reasoner {
     public static class RuleRecorder {
         private final Rule rule;
         private final Concludable thenConcludable;
-        private final Set<RuleApplication> ruleApplications;  // TODO: Can we remove this and just use a map from when to then?
         private boolean requiresReiteration;
-        private final Map<ConceptMap, ConceptMap> whenToThenBindings;
+        // Inferences from condition answer to conclusion answer
+        private final Map<ConceptMap, ConceptMap> recordedInferences;
 
         public RuleRecorder(Rule typeDBRule) {
             this.rule = typeDBRule;
-            this.ruleApplications = new HashSet<>();
             this.requiresReiteration = false;
-            this.whenToThenBindings = new HashMap<>();
+            this.recordedInferences = new HashMap<>();
 
             Set<Concludable> concludables = Concludable.create(this.rule.then());
             assert concludables.size() == 1;
@@ -124,8 +122,8 @@ public class Reasoner {
             iterator.recycle();
         }
 
-        public Map<ConceptMap, ConceptMap> whenToThenBindings() {
-            return whenToThenBindings;
+        public Map<ConceptMap, ConceptMap> recordedInferences() {
+            return recordedInferences;
         }
 
         public Rule rule() {
@@ -136,12 +134,12 @@ public class Reasoner {
             return thenConcludable.isInferredAnswer(thenConceptMap);
         }
 
-        public void recordApplication(ConceptMap whenConceptMap, ConceptMap thenConceptMap) {
-            RuleApplication newApplication = new RuleApplication(whenConceptMap, thenConceptMap);
-            if (!ruleApplications.contains(newApplication)) {
-                this.requiresReiteration = true;
-                ruleApplications.add(newApplication);
-                whenToThenBindings.put(whenConceptMap, thenConceptMap);
+        public void recordInference(ConceptMap whenConceptMap, ConceptMap thenConceptMap) {
+            if (!recordedInferences.containsKey(whenConceptMap)) {
+                requiresReiteration = true;
+                recordedInferences.put(whenConceptMap, thenConceptMap);
+            } else {
+                assert recordedInferences.get(whenConceptMap).equals(thenConceptMap);
             }
         }
 
@@ -153,28 +151,5 @@ public class Reasoner {
             requiresReiteration = false;
         }
 
-        private static class RuleApplication {
-            private final ConceptMap whenConceptMap;
-            private final ConceptMap thenConceptMap;
-
-            RuleApplication(ConceptMap whenConceptMap, ConceptMap thenConceptMap) {
-                this.whenConceptMap = whenConceptMap;
-                this.thenConceptMap = thenConceptMap;
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-                RuleApplication ruleApplication = (RuleApplication) o;
-                return whenConceptMap.equals(ruleApplication.whenConceptMap) &&
-                        thenConceptMap.equals(ruleApplication.thenConceptMap);
-            }
-
-            @Override
-            public int hashCode() {
-                return Objects.hash(whenConceptMap, thenConceptMap);
-            }
-        }
     }
 }

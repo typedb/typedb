@@ -69,9 +69,9 @@ public class SoundnessChecker {
                                                                " reference reasoner/", explanation.rule().getLabel()));
         }
         ConceptMap recordedWhen = substituteInferredVarsForReferenceVars(explanation.conditionAnswer());
-        if (recorder.whenToThenBindings().containsKey(recordedWhen)) {
+        if (recorder.recordedInferences().containsKey(recordedWhen)) {
             // Update the inferred variables mapping between the two reasoners
-            ConceptMap recordedThen = recorder.whenToThenBindings().get(recordedWhen);
+            ConceptMap recordedThen = recorder.recordedInferences().get(recordedWhen);
             assert recordedThen.concepts().keySet().equals(explanation.conclusionAnswer().concepts().keySet());
             recordedThen.concepts().forEach((var, recordedConcept) -> {
                 Concept inferredConcept = explanation.conclusionAnswer().concepts().get(var);
