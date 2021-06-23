@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.test.behaviour.resolution.framework.reference;
 
-import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Context;
@@ -30,13 +29,13 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.Utils;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static java.util.Collections.singletonList;
 
@@ -77,20 +76,12 @@ public class Reasoner {
         tx.reasoner().executeTraversal(
                 new Disjunction(singletonList(ruleRecorder.rule().when())),
                 new Context.Query(tx.context(), new Options.Query()),
-                filterRetrievableVars(ruleRecorder.rule().when().identifiers()))
-                .forEachRemaining(whenConcepts -> ruleRecorder.rule().conclusion()
-                        .materialise(whenConcepts, tx.traversal(), tx.concepts())
-                        .map(thenConcepts -> new ConceptMap(filterRetrievableVars(thenConcepts)))
-                        .filter(ruleRecorder::isInferredAnswer)
-                        .forEachRemaining(ans -> ruleRecorder.recordInference(whenConcepts, ans)));
-    }
-
-    private static Set<Variable.Retrievable> filterRetrievableVars(Set<Variable> vars) {
-        return iterate(vars).filter(var -> var.isName() || var.isAnonymous()).map(var -> {
-            if (var.isName()) return var.asName();
-            if (var.isAnonymous()) return var.asAnonymous();
-            throw TypeDBException.of(ILLEGAL_STATE);
-        }).toSet();
+                Utils.filterRetrievableVars(ruleRecorder.rule().when().identifiers())
+        ).forEachRemaining(whenConcepts -> ruleRecorder.rule().conclusion()
+                .materialise(whenConcepts, tx.traversal(), tx.concepts())
+                .map(thenConcepts -> new ConceptMap(filterRetrievableVars(thenConcepts)))
+                .filter(ruleRecorder::isInferredAnswer)
+                .forEachRemaining(ans -> ruleRecorder.recordInference(whenConcepts, ans)));
     }
 
     private static Map<Variable.Retrievable, Concept> filterRetrievableVars(Map<Variable, Concept> concepts) {
@@ -107,23 +98,27 @@ public class Reasoner {
         private final Concludable thenConcludable;
         private boolean requiresReiteration;
         // Inferences from condition answer to conclusion answer
-        private final Map<ConceptMap, ConceptMap> recordedInferences;
+        private final Map<ConceptMap, ConceptMap> inferencesByCondition;
+        private final Map<ConceptMap, ConceptMap> inferencesByConclusion;
 
         public RuleRecorder(Rule typeDBRule) {
             this.rule = typeDBRule;
             this.requiresReiteration = false;
-            this.recordedInferences = new HashMap<>();
+            this.inferencesByCondition = new HashMap<>();
+            this.inferencesByConclusion = new HashMap<>();
 
             Set<Concludable> concludables = Concludable.create(this.rule.then());
             assert concludables.size() == 1;
-            FunctionalIterator<Concludable> iterator = iterate(concludables);
             // Use a concludable for the `then` as a convenient way to check if an answer is inferred
-            this.thenConcludable = iterator.next();
-            iterator.recycle();
+            this.thenConcludable = iterate(concludables).next();
         }
 
-        public Map<ConceptMap, ConceptMap> recordedInferences() {
-            return recordedInferences;
+        public Map<ConceptMap, ConceptMap> inferencesByCondition() {
+            return inferencesByCondition;
+        }
+
+        public Map<ConceptMap, ConceptMap> inferencesByConclusion() {
+            return inferencesByConclusion;
         }
 
         public Rule rule() {
@@ -135,11 +130,12 @@ public class Reasoner {
         }
 
         public void recordInference(ConceptMap whenConceptMap, ConceptMap thenConceptMap) {
-            if (!recordedInferences.containsKey(whenConceptMap)) {
+            if (!inferencesByCondition.containsKey(whenConceptMap)) {
                 requiresReiteration = true;
-                recordedInferences.put(whenConceptMap, thenConceptMap);
+                inferencesByCondition.put(whenConceptMap, thenConceptMap);
+                inferencesByConclusion.put(thenConceptMap, whenConceptMap);
             } else {
-                assert recordedInferences.get(whenConceptMap).equals(thenConceptMap);
+                assert inferencesByCondition.get(whenConceptMap).equals(thenConceptMap);
             }
         }
 

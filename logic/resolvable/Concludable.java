@@ -117,7 +117,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
                                          .collect(Collectors.toList()));
     }
 
-    abstract Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr);
+    public abstract Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr);
 
     abstract FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr);
 
@@ -419,7 +419,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+        public Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
             assert generating().isPresent();
             Variable generatedRelation = generating().get();
             Set<Label> relationTypes = generatedRelation.resolvedTypes();
@@ -566,7 +566,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+        public Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
             assert generating().isPresent();
             Variable generatedAttribute = generating().get();
             Set<Label> attributeTypes = generatedAttribute.resolvedTypes();
@@ -680,7 +680,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+        public Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
             assert generating().isPresent();
             Variable generated = generating().get();
             Set<Label> types = generated.resolvedTypes();
@@ -786,7 +786,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+        public Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
             assert generating().isPresent();
             Variable generatedAttr = generating().get();
             Set<Label> attributeTypes = generatedAttr.resolvedTypes();

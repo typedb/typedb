@@ -24,7 +24,6 @@ import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.reference.Reasoner;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.soundness.SoundnessChecker;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
-import com.vaticle.typeql.lang.query.TypeQLQuery;
 
 import static com.vaticle.typedb.core.TypeDB.Transaction;
 
@@ -53,7 +52,7 @@ public class Resolution {
         try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ,
                                                   new Options.Transaction().infer(true).explain(true))) {
             SoundnessChecker soundnessChecker = new SoundnessChecker(referenceReasoner, tx);
-            soundnessChecker.check(inferenceQuery);
+            soundnessChecker.checkQuery(inferenceQuery);
         }
     }
 

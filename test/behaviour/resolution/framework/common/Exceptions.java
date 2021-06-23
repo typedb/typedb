@@ -9,7 +9,7 @@ public class Exceptions {
     }
 
     public static class CompletenessException extends RuntimeException {
-        CompletenessException(String message) {
+        public CompletenessException(String message) {
             super(message);
         }
     }

@@ -49,7 +49,7 @@ public class SoundnessChecker {
         return new SoundnessChecker(referenceReasoner, tx);
     }
 
-    public void check(TypeQLMatch inferenceQuery) {
+    public void checkQuery(TypeQLMatch inferenceQuery) {
         tx.query().match(inferenceQuery).forEachRemaining(this::checkAnswer);
     }
 
@@ -57,21 +57,21 @@ public class SoundnessChecker {
         answer.explainables().iterator().forEachRemaining(explainable -> {
             tx.query().explain(explainable.id()).forEachRemaining(explanation -> {
                 checkAnswer(explanation.conditionAnswer());
-                checkExplanation(explanation);
+                checkExplanationAgainstReference(explanation);
             });
         });
     }
 
-    private void checkExplanation(Explanation explanation) {
+    private void checkExplanationAgainstReference(Explanation explanation) {
         Reasoner.RuleRecorder recorder = referenceReasoner.ruleRecorderMap().get(explanation.rule().getLabel());
         if (recorder == null) {
             throw new SoundnessException(String.format("Found an answer for rule \"%s\", which wasn't recorded by the" +
                                                                " reference reasoner/", explanation.rule().getLabel()));
         }
         ConceptMap recordedWhen = substituteInferredVarsForReferenceVars(explanation.conditionAnswer());
-        if (recorder.recordedInferences().containsKey(recordedWhen)) {
+        if (recorder.inferencesByCondition().containsKey(recordedWhen)) {
             // Update the inferred variables mapping between the two reasoners
-            ConceptMap recordedThen = recorder.recordedInferences().get(recordedWhen);
+            ConceptMap recordedThen = recorder.inferencesByCondition().get(recordedWhen);
             assert recordedThen.concepts().keySet().equals(explanation.conclusionAnswer().concepts().keySet());
             recordedThen.concepts().forEach((var, recordedConcept) -> {
                 Concept inferredConcept = explanation.conclusionAnswer().concepts().get(var);
