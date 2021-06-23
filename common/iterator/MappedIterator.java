@@ -52,7 +52,7 @@ class MappedIterator<T, U> extends AbstractFunctionalIterator<U> {
     The user must guarantee the mapping function preserves the sort order that the the source provides,
     in the new domain.
      */
-    static class Sorted<T extends Comparable<T>, U extends Comparable<U>> extends AbstractFunctionalIterator.Sorted<U> {
+    static class Sorted<T extends Comparable<? super T>, U extends Comparable<? super U>> extends AbstractFunctionalIterator.Sorted<U> {
         private final FunctionalIterator.Sorted<T> source;
         private final Function<T, U> mappingFn;
         private final Function<U, T> reverseMappingFn;

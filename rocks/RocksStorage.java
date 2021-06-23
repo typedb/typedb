@@ -277,7 +277,7 @@ public abstract class RocksStorage implements Storage {
 
         public void commit() throws RocksDBException {
             // guarantee at least 1 write per tx
-            storageTransaction.putUntracked(TRANSACTION_DUMMY_WRITE.bytes().getBytes(), EMPTY_ARRAY.getBytes());
+            storageTransaction.putUntracked(TRANSACTION_DUMMY_WRITE.bytes().getBytes().getArray(), EMPTY_ARRAY.getArray());
             // We disable RocksDB indexing of uncommitted writes, as we're only about to write and never again reading
             // TODO: We should benchmark this
             storageTransaction.disableIndexing();

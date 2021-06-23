@@ -89,7 +89,7 @@ public interface FunctionalIterator<T> extends Iterator<T> {
 
     void recycle();
 
-    interface Sorted<T extends Comparable<T>> extends FunctionalIterator<T> {
+    interface Sorted<T extends Comparable<? super T>> extends FunctionalIterator<T> {
 
         void seek(T target);
 
@@ -101,7 +101,7 @@ public interface FunctionalIterator<T> extends Iterator<T> {
 
         Sorted<T> filter(Predicate<T> predicate);
 
-        <U extends Comparable<U>> Sorted<U> mapSorted(Function<T, U> mappingFn, Function<U, T> reverseMappingFn);
+        <U extends Comparable<? super U>> Sorted<U> mapSorted(Function<T, U> mappingFn, Function<U, T> reverseMappingFn);
 
 
 //        Sorted<T, K> offset(long offset);

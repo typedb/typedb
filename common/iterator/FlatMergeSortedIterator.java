@@ -28,7 +28,7 @@ import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
-public class FlatMergeSortedIterator<T, U extends Comparable<U>> extends AbstractFunctionalIterator.Sorted<U> {
+public class FlatMergeSortedIterator<T, U extends Comparable<? super U>> extends AbstractFunctionalIterator.Sorted<U> {
 
     private final FunctionalIterator<T> source;
     private final Function<T, FunctionalIterator.Sorted<U>> flatMappingFn;

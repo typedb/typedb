@@ -56,7 +56,7 @@ class FilteredIterator<T> extends AbstractFunctionalIterator<T> {
         iterator.recycle();
     }
 
-    public static class Sorted<T extends Comparable<T>> extends AbstractFunctionalIterator.Sorted<T> {
+    public static class Sorted<T extends Comparable<? super T>> extends AbstractFunctionalIterator.Sorted<T> {
 
         private final FunctionalIterator.Sorted<T> source;
         private final Predicate<T> predicate;

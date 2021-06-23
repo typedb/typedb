@@ -48,7 +48,7 @@ public class FinaliseHandledIterator<T> extends AbstractFunctionalIterator<T> im
         function.run();
     }
 
-    public static class Sorted<T extends Comparable<T>> extends AbstractFunctionalIterator.Sorted<T> {
+    public static class Sorted<T extends Comparable<? super T>> extends AbstractFunctionalIterator.Sorted<T> {
 
         private FunctionalIterator.Sorted<T> source;
         private Runnable function;

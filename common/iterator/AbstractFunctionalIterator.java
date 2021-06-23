@@ -233,7 +233,7 @@ public abstract class AbstractFunctionalIterator<T> implements FunctionalIterato
     @Override
     public abstract void recycle();
 
-    public static abstract class Sorted<T extends Comparable<T>> extends AbstractFunctionalIterator<T> implements FunctionalIterator.Sorted<T> {
+    public static abstract class Sorted<T extends Comparable<? super T>> extends AbstractFunctionalIterator<T> implements FunctionalIterator.Sorted<T> {
 
         @SafeVarargs
         @Override
@@ -243,7 +243,7 @@ public abstract class AbstractFunctionalIterator<T> implements FunctionalIterato
         }
 
         @Override
-        public <U extends Comparable<U>> FunctionalIterator.Sorted<U> mapSorted(Function<T, U> mappingFn, Function<U, T> reverseMappingFn) {
+        public <U extends Comparable<? super U>> FunctionalIterator.Sorted<U> mapSorted(Function<T, U> mappingFn, Function<U, T> reverseMappingFn) {
             return new MappedIterator.Sorted<>(this, mappingFn, reverseMappingFn);
         }
 
