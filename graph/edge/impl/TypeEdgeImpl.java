@@ -184,11 +184,6 @@ public abstract class TypeEdgeImpl implements TypeEdge {
             if (hash == 0) hash = hash(encoding, from, to);
             return hash;
         }
-
-        @Override
-        public ByteArray getBytes() {
-            return outIIDBytes;
-        }
     }
 
     /**
@@ -369,11 +364,6 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         public final int hashCode() {
             if (hash == 0) hash = hash(encoding, fromIID.hashCode(), toIID.hashCode());
             return hash;
-        }
-
-        @Override
-        public ByteArray getBytes() {
-            return persistedBytes;
         }
     }
 }

@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.graph.common.KeyGenerator;
 
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 
-public abstract class StructureIID<T extends StructureIID<T>> extends IID implements Bytes.ByteComparable<T> {
+public abstract class StructureIID<T extends StructureIID<T>> extends IID {
 
     StructureIID(ByteArray bytes) {
         super(bytes);
@@ -35,11 +35,6 @@ public abstract class StructureIID<T extends StructureIID<T>> extends IID implem
     @Override
     public String toString() {
         return null;
-    }
-
-    @Override
-    public ByteArray getBytes() {
-        return bytes;
     }
 
     public static class Rule extends StructureIID<Rule> {

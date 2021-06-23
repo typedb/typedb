@@ -854,6 +854,7 @@ public class ThingGraph {
         }
 
         public abstract static class CountJob implements Bytes.ByteComparable<CountJob> {
+
             private final Encoding.Statistics.JobOperation value;
             private final ByteArray key;
 

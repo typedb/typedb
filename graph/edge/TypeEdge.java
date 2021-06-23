@@ -28,7 +28,7 @@ import com.vaticle.typedb.core.graph.vertex.TypeVertex;
  *
  * This edge can only have a encoding of type {@code Encoding.Edge.Type}.
  */
-public interface TypeEdge extends Edge<Encoding.Edge.Type, EdgeIID.Type, TypeVertex>, Bytes.ByteComparable<TypeEdge> {
+public interface TypeEdge extends Edge<Encoding.Edge.Type, EdgeIID.Type, TypeVertex> {
 
     @Override
     TypeVertex from();

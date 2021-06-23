@@ -186,11 +186,6 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             }
         }
 
-        @Override
-        public ByteArray getBytes() {
-            return outIIDBytes;
-        }
-
         /**
          * Determine the equality of a {@code ThingEdgeImpl.Buffered} against another.
          *
@@ -279,11 +274,6 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             }
 
             this.hash = hash(Persisted.class, encoding, fromIID.hashCode(), toIID.hashCode());
-        }
-
-        @Override
-        public ByteArray getBytes() {
-            return outIID.bytes();
         }
 
         @Override

@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.graph.vertex.impl;
 
-import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.ThingGraph;
@@ -82,8 +81,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     @Override
     public boolean isAttribute() {
         return false;
-    }
-
+}
     @Override
     public ThingVertex asThing() {
         return this;
@@ -99,8 +97,8 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(ThingVertex.Write.class));
     }
     @Override
-    public ByteArray getBytes() {
-        return iid.bytes();
+    public int compareTo(ThingVertex o) {
+        return iid.bytes().compareTo(o.iid().bytes());
     }
     public static class Read extends ThingVertexImpl {
 
@@ -244,11 +242,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         @Override
         public AttributeVertex.Write<?> asAttribute() {
             throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(AttributeVertex.Write.class));
-        }
-
-        @Override
-        public ByteArray getBytes() {
-            return iid.bytes();
         }
 
         public static class Buffered extends ThingVertexImpl.Write {
