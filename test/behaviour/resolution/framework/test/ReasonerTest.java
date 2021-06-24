@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.test.behaviour.resolution.framework.test;
 
+import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
@@ -36,7 +37,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadTransitivityExample;
 import static org.junit.Assert.assertEquals;
 
 public class ReasonerTest {
@@ -61,12 +61,60 @@ public class ReasonerTest {
 
     @Test
     public void testDeduplicationOfInferredConcepts() {
-        loadTransitivityExample(typeDB, database);
+        loadTransitivityExample(typeDB);
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
             Reasoner referenceReasoner = Reasoner.runRules(session);
             TypeQLMatch inferredAnswersQuery = TypeQL.match(TypeQL.var("lh").isa("location-hierarchy"));
             List<ConceptMap> inferredAnswers = referenceReasoner.tx().query().match(inferredAnswersQuery).toList();
             assertEquals(6, inferredAnswers.size());
+        }
+    }
+
+    // TODO: These should use TypeQL builder to make them robust to change
+    static void loadTransitivityExample(TypeDB typeDB) {
+        try (TypeDB.Session session = typeDB.session(ReasonerTest.database, Arguments.Session.Type.SCHEMA)) {
+            try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                String schema = "" +
+                        "define\n" +
+                        "name sub attribute,\n" +
+                        "    value string;\n" +
+                        "location sub entity,\n" +
+                        "    abstract,\n" +
+                        "    owns name @key,\n" +
+                        "    plays location-hierarchy:superior,\n" +
+                        "    plays location-hierarchy:subordinate;\n" +
+                        "area sub location;\n" +
+                        "city sub location;\n" +
+                        "country sub location;\n" +
+                        "continent sub location;\n" +
+                        "location-hierarchy sub relation,\n" +
+                        "    relates superior,\n" +
+                        "    relates subordinate;\n" +
+                        "rule location-hierarchy-transitivity:\n" +
+                        "when {\n" +
+                        "    (superior: $a, subordinate: $b) isa location-hierarchy;\n" +
+                        "    (superior: $b, subordinate: $c) isa location-hierarchy;\n" +
+                        "} then {\n" +
+                        "    (superior: $a, subordinate: $c) isa location-hierarchy;\n" +
+                        "};";
+                tx.query().define(TypeQL.parseQuery(schema).asDefine());
+                tx.commit();
+            }
+        }
+        try (TypeDB.Session session = typeDB.session(ReasonerTest.database, Arguments.Session.Type.DATA)) {
+            try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                tx.query().insert(TypeQL.parseQuery(
+                        "insert\n" +
+                                "$ar isa area, has name \"King's Cross\";\n" +
+                                "$cit isa city, has name \"London\";\n" +
+                                "$cntry isa country, has name \"UK\";\n" +
+                                "$cont isa continent, has name \"Europe\";\n" +
+                                "(superior: $cont, subordinate: $cntry) isa location-hierarchy;\n" +
+                                "(superior: $cntry, subordinate: $cit) isa location-hierarchy;\n" +
+                                "(superior: $cit, subordinate: $ar) isa location-hierarchy;"
+                ).asInsert());
+                tx.commit();
+            }
         }
     }
 }

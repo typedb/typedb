@@ -1,8 +1,0 @@
-insert
-$ar isa area, has name "King's Cross";
-$cit isa city, has name "London";
-$cntry isa country, has name "UK";
-$cont isa continent, has name "Europe";
-(superior: $cont, subordinate: $cntry) isa location-hierarchy;
-(superior: $cntry, subordinate: $cit) isa location-hierarchy;
-(superior: $cit, subordinate: $ar) isa location-hierarchy;

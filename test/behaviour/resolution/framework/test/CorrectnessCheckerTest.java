@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.test.behaviour.resolution.framework.test;
 
+import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.rocks.RocksSession;
@@ -39,7 +40,6 @@ import static com.vaticle.typedb.core.common.test.Util.assertNotThrows;
 import static com.vaticle.typedb.core.common.test.Util.assertThrows;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.CompletenessChecker.CompletenessException;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.SoundnessChecker.SoundnessException;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadEmployableExample;
 
 public class CorrectnessCheckerTest {
 
@@ -64,7 +64,7 @@ public class CorrectnessCheckerTest {
     @Test
     public void testCorrectnessPassesForEmployableExample() {
         TypeQLMatch inferenceQuery = TypeQL.parseQuery("match $x has employable true;").asMatch();
-        loadEmployableExample(typeDB, database);
+        loadEmployableExample(typeDB);
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
             CorrectnessChecker resolutionTest = CorrectnessChecker.initialise(session);
             resolutionTest.checkCorrectness(inferenceQuery);
@@ -75,7 +75,7 @@ public class CorrectnessCheckerTest {
     @Test
     public void testSoundnessThrowsWhenRuleTriggersTooOftenEmployableExample() {
         TypeQLMatch inferenceQuery = TypeQL.parseQuery("match $x has employable true;").asMatch();
-        loadEmployableExample(typeDB, database);
+        loadEmployableExample(typeDB);
 
         CorrectnessChecker resolution;
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
@@ -92,7 +92,7 @@ public class CorrectnessCheckerTest {
     @Test
     public void testCompletenessThrowsWhenRuleIsNotTriggeredEmployableExample() {
         TypeQLMatch inferenceQuery = TypeQL.parseQuery("match $x has employable true;").asMatch();
-        loadEmployableExample(typeDB, database);
+        loadEmployableExample(typeDB);
 
         CorrectnessChecker resolution;
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
@@ -103,6 +103,34 @@ public class CorrectnessCheckerTest {
             }
             assertThrows(CompletenessException.class, () -> resolution.checkCompleteness(inferenceQuery));
             assertNotThrows(() -> resolution.checkSoundness(inferenceQuery));
+        }
+    }
+
+    // TODO: These should use TypeQL builder to make them robust to change
+    static void loadEmployableExample(TypeDB typeDB) {
+        try (TypeDB.Session session = typeDB.session(CorrectnessCheckerTest.database, Arguments.Session.Type.SCHEMA)) {
+            try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                String schema = "" +
+                        "define\n" +
+                        "employable sub attribute,\n" +
+                        "    value boolean;" +
+                        "person sub entity,\n" +
+                        "  owns employable;" +
+                        "rule people-are-employable:\n" +
+                        "when {\n" +
+                        "    $p isa person;\n" +
+                        "} then {\n" +
+                        "    $p has employable true;\n" +
+                        "};";
+                tx.query().define(TypeQL.parseQuery(schema).asDefine());
+                tx.commit();
+            }
+        }
+        try (TypeDB.Session session = typeDB.session(CorrectnessCheckerTest.database, Arguments.Session.Type.DATA)) {
+            try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                tx.query().insert(TypeQL.parseQuery("insert $p isa person;").asInsert());
+                tx.commit();
+            }
         }
     }
 
