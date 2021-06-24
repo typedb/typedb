@@ -103,6 +103,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
     }
 
+    @Override
     public boolean isModified() {
         return isModified;
     }
