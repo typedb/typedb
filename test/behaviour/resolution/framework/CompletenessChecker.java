@@ -42,6 +42,7 @@ public class CompletenessChecker {
     public void checkQuery(TypeQLMatch inferenceQuery) {
         // TODO: How do we handle disjunctions inside negations?
         Disjunction disjunction = Disjunction.create(inferenceQuery.conjunction().normalise());
+        referenceReasoner.tx().logic().typeResolver().resolve(disjunction);
         disjunction.conjunctions().forEach(conjunction -> {
             referenceReasoner.tx().reasoner().executeTraversal(
                     new Disjunction(Collections.singletonList(conjunction)),
