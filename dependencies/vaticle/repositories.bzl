@@ -28,21 +28,21 @@ def vaticle_typeql_lang_java():
     git_repository(
         name = "vaticle_typeql_lang_java",
         remote = "https://github.com/vaticle/typeql-lang-java",
-        commit = "033bb2d5bee1c6cfb2049a47bec856475f127d02", # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typeql_lang_java
+        tag = "2.1.0", # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typeql_lang_java
     )
 
 def vaticle_typedb_common():
     git_repository(
         name = "vaticle_typedb_common",
         remote = "https://github.com/vaticle/typedb-common",
-        commit = "7da7f81a3140d342602dac2dc3c6cc4c2796ac04", # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_common
+        tag = "2.1.1", # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_common
     )
 
 def vaticle_typedb_protocol():
     git_repository(
         name = "vaticle_typedb_protocol",
         remote = "https://github.com/vaticle/typedb-protocol",
-        commit = "008f0fc3bb11c221214a9b47899168680cf111be", # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_protocol
+        tag = "2.1.2", # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_protocol
     )
 
 def vaticle_typedb_behaviour():
