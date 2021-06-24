@@ -35,7 +35,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_VERTEX_CASTING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.UNSUPPORTED_OPERATION;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ATTRIBUTE;
 
 public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implements ThingVertex {
@@ -75,13 +74,19 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     }
 
     @Override
-    public boolean isThing() { return true; }
+    public boolean isThing() {
+        return true;
+    }
 
     @Override
-    public boolean isAttribute() { return false; }
+    public boolean isAttribute() {
+        return false;
+    }
 
     @Override
-    public ThingVertex asThing() { return this; }
+    public ThingVertex asThing() {
+        return this;
+    }
 
     @Override
     public boolean isWrite() {
@@ -100,8 +105,8 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
         public Read(ThingGraph graph, VertexIID.Thing iid) {
             super(graph, iid);
-            this.outs =  new ThingAdjacencyImpl.Read(this, Encoding.Direction.Adjacency.OUT);
-            this.ins =  new ThingAdjacencyImpl.Read(this, Encoding.Direction.Adjacency.IN);
+            this.outs = new ThingAdjacencyImpl.Read(this, Encoding.Direction.Adjacency.OUT);
+            this.ins = new ThingAdjacencyImpl.Read(this, Encoding.Direction.Adjacency.IN);
         }
 
         public static ThingVertexImpl.Read of(ThingGraph graph, VertexIID.Thing iid) {

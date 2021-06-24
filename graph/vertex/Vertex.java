@@ -37,9 +37,13 @@ public interface Vertex<VERTEX_IID extends VertexIID, VERTEX_ENCODING extends En
 
     boolean isModified();
 
-    default boolean isThing() { return false; }
+    default boolean isThing() {
+        return false;
+    }
 
-    default boolean isType() { return false; }
+    default boolean isType() {
+        return false;
+    }
 
     default ThingVertex asThing() {
         throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(ThingVertex.class));

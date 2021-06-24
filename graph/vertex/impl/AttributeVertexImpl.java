@@ -101,25 +101,39 @@ public abstract class AttributeVertexImpl {
         }
 
         @Override
-        public boolean isAttribute() { return true; }
+        public boolean isAttribute() {
+            return true;
+        }
 
         @Override
-        public boolean isBoolean() { return false; }
+        public boolean isBoolean() {
+            return false;
+        }
 
         @Override
-        public boolean isLong() { return false; }
+        public boolean isLong() {
+            return false;
+        }
 
         @Override
-        public boolean isDouble() { return false; }
+        public boolean isDouble() {
+            return false;
+        }
 
         @Override
-        public boolean isString() { return false; }
+        public boolean isString() {
+            return false;
+        }
 
         @Override
-        public boolean isDateTime() { return false; }
+        public boolean isDateTime() {
+            return false;
+        }
 
         @Override
-        public AttributeVertex<?> asAttribute() { return this; }
+        public AttributeVertex<?> asAttribute() {
+            return this;
+        }
 
         @Override
         public AttributeVertexImpl.Write<VALUE> asWrite() {
@@ -344,25 +358,39 @@ public abstract class AttributeVertexImpl {
         }
 
         @Override
-        public boolean isAttribute() { return true; }
+        public boolean isAttribute() {
+            return true;
+        }
 
         @Override
-        public boolean isBoolean() { return false; }
+        public boolean isBoolean() {
+            return false;
+        }
 
         @Override
-        public boolean isLong() { return false; }
+        public boolean isLong() {
+            return false;
+        }
 
         @Override
-        public boolean isDouble() { return false; }
+        public boolean isDouble() {
+            return false;
+        }
 
         @Override
-        public boolean isString() { return false; }
+        public boolean isString() {
+            return false;
+        }
 
         @Override
-        public boolean isDateTime() { return false; }
+        public boolean isDateTime() {
+            return false;
+        }
 
         @Override
-        public AttributeVertexImpl.Write<?> asAttribute() { return this; }
+        public AttributeVertexImpl.Write<?> asAttribute() {
+            return this;
+        }
 
         @Override
         public AttributeVertexImpl.Write<VALUE> asWrite() {

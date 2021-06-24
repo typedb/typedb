@@ -128,10 +128,14 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
     }
 
     @Override
-    public boolean isType() { return true; }
+    public boolean isType() {
+        return true;
+    }
 
     @Override
-    public TypeVertex asType() { return this; }
+    public TypeVertex asType() {
+        return this;
+    }
 
     @Override
     public String label() {
@@ -391,8 +395,8 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         public Persisted(TypeGraph graph, VertexIID.Type iid) {
             super(graph, iid,
-                  graph.storage().get(join(iid.bytes(), LABEL.infix().bytes())).decodeString(),
-                  getScope(graph, iid));
+                    graph.storage().get(join(iid.bytes(), LABEL.infix().bytes())).decodeString(),
+                    getScope(graph, iid));
         }
 
         @Nullable
