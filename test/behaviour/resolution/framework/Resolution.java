@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.test.behaviour.resolution.framework;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.rocks.RocksSession;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.completeness.CompletenessChecker;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.reference.Reasoner;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.soundness.SoundnessChecker;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
@@ -30,6 +31,7 @@ import static com.vaticle.typedb.core.TypeDB.Transaction;
 public class Resolution {
 
     private final Reasoner referenceReasoner;
+    private final RocksSession session;
 
     /**
      * Resolution Testing Framework's entry point. Takes in sessions each for a `Completion` and `Test` keyspace. Each
@@ -38,8 +40,8 @@ public class Resolution {
      * @param session TypeDB session, expects schema (including rules) and data to be already present
      */
     public Resolution(RocksSession session) {
-        this.referenceReasoner = new Reasoner();
-        this.referenceReasoner.run(session);
+        this.referenceReasoner = Reasoner.runRules(session);
+        this.session = session;
     }
 
     /**
@@ -62,18 +64,12 @@ public class Resolution {
      * @param inferenceQuery The reference query to make
      */
     public void testCompleteness(TypeQLMatch inferenceQuery) {
-        throw new RuntimeException("Unimplemented");
-        // TODO: Bring back completeness check
-        // try {
-        //     testQuery(TypeQL.parseQuery("match $x isa thing;").asMatch());
-        //     testQuery(TypeQL.parseQuery("match $r ($x) isa relation;").asMatch());
-        //     testQuery(TypeQL.parseQuery("match $x has attribute $y;").asMatch());
-        // } catch (WrongAnswerSizeException ex) {
-        //     String msg = String.format("Failed completeness test: [%s]. The complete database contains %d inferred " +
-        //                                        "concepts, whereas the test database contains %d inferred concepts.",
-        //             ex.getInferenceQuery(), ex.getExpectedAnswers(), ex.getActualAnswers());
-        //     throw new CompletenessException(msg);
-        // }
+        CompletenessChecker completenessChecker = CompletenessChecker.create(referenceReasoner, referenceTx, session);
+        completenessChecker.checkQuery(inferenceQuery);
+    }
+
+    public void close() {
+        referenceReasoner.close();
     }
 
 }

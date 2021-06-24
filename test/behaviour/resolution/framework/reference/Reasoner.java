@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.test.behaviour.resolution.framework.reference;
 
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.common.parameters.Options;
@@ -44,31 +43,36 @@ public class Reasoner {
 
     // TODO: Needs strings as keys rather than rules, only for testing the framework itself
     private final Map<String, RuleRecorder> ruleRecorders;
+    private final RocksTransaction tx;
 
-    public Reasoner() {
+    private Reasoner(RocksSession session) {
         this.ruleRecorders = new HashMap<>();
+        this.tx = session.transaction(Arguments.Transaction.Type.WRITE, new Options.Transaction().infer(false));
+    }
+
+    public static Reasoner runRules(RocksSession session) {
+        Reasoner reasoner = new Reasoner(session);
+        reasoner.runRules();
+        return reasoner;
     }
 
     public Map<String, RuleRecorder> ruleRecorderMap() {
         return ruleRecorders;
     }
 
-    public void run(RocksSession session) {
-        try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE,
-                                                       new Options.Transaction().infer(false))) {
-            tx.logic().rules().forEachRemaining(r -> this.ruleRecorders.put(r.getLabel(), new RuleRecorder(r)));
-            boolean reiterateRules = true;
-            while (reiterateRules) {
-                reiterateRules = false;
-                for (RuleRecorder rule : this.ruleRecorders.values()) {
-                    rule.resetRequiresReiteration();
-                    runRule(tx, rule);
-                    reiterateRules = reiterateRules || rule.requiresReiteration();
-                }
+    private void runRules() {
+        tx.logic().rules().forEachRemaining(r -> this.ruleRecorders.put(r.getLabel(), new RuleRecorder(r)));
+        boolean reiterateRules = true;
+        while (reiterateRules) {
+            reiterateRules = false;
+            for (RuleRecorder rule : this.ruleRecorders.values()) {
+                rule.resetRequiresReiteration();
+                runRule(tx, rule);
+                reiterateRules = reiterateRules || rule.requiresReiteration();
             }
-            // Let the transaction close, therefore deleting the materialised concepts. The inferences recorded are
-            // held in memory instead.
         }
+        // Let the transaction close, therefore deleting the materialised concepts. The inferences recorded are
+        // held in memory instead.
     }
 
     private static void runRule(RocksTransaction tx, RuleRecorder ruleRecorder) {
@@ -91,6 +95,10 @@ public class Reasoner {
             else if (var.isAnonymous()) newMap.put(var.asAnonymous(), concept);
         });
         return newMap;
+    }
+
+    public void close() {
+        tx.close();
     }
 
     public static class RuleRecorder {

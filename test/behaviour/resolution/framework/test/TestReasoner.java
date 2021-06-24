@@ -93,8 +93,7 @@ public class TestReasoner {
         loadBasicRecursionExample(typeDB, database);
 
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            Reasoner completer = new Reasoner();
-            completer.run(session);
+            Reasoner completer = Reasoner.runRules(session);
             try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 List<ConceptMap> answers = tx.query().match(TypeQL.match(expectedResolutionVariables)).toList();
                 assertEquals(answers.size(), 1);
@@ -106,8 +105,7 @@ public class TestReasoner {
     public void testDeduplicationOfInferredConcepts() {
         loadTransitivityExample(typeDB, database);
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            Reasoner completer = new Reasoner();
-            completer.run(session);
+            Reasoner completer = Reasoner.runRules(session);
             try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 TypeQLMatch inferredAnswersQuery = TypeQL.match(TypeQL.var("lh").isa("location-hierarchy"));
                 List<ConceptMap> inferredAnswers = tx.query().match(inferredAnswersQuery).toList();
