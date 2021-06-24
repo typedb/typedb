@@ -1,4 +1,4 @@
-package com.vaticle.typedb.core.test.behaviour.resolution.framework.common;
+package com.vaticle.typedb.core.test.behaviour.resolution.framework;
 
 public class Exceptions {
 

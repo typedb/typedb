@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.test.behaviour.connection.session;
 
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.rocks.RocksSession;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -127,7 +128,7 @@ public class SessionSteps {
     @Then("session(s) has/have database(s):")
     public void sessions_have_databases(List<String> names) {
         assertEquals(names.size(), sessions.size());
-        Iterator<TypeDB.Session> sessionIter = sessions.iterator();
+        Iterator<RocksSession> sessionIter = sessions.iterator();
 
         for (String name : names) {
             assertEquals(name, sessionIter.next().database().name());
@@ -137,7 +138,7 @@ public class SessionSteps {
     @Then("sessions in parallel have databases:")
     public void sessions_in_parallel_have_databases(List<String> names) {
         assertEquals(names.size(), sessionsParallel.size());
-        Iterator<CompletableFuture<TypeDB.Session>> futureSessionIter = sessionsParallel.iterator();
+        Iterator<CompletableFuture<RocksSession>> futureSessionIter = sessionsParallel.iterator();
         CompletableFuture<?>[] assertions = new CompletableFuture<?>[names.size()];
 
         int i = 0;

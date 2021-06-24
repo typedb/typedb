@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.test.behaviour.resolution.framework.soundness;
+package com.vaticle.typedb.core.test.behaviour.resolution.framework;
 
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.TypeDB.Transaction;
@@ -25,14 +25,13 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.reference.Reasoner;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.Exceptions.SoundnessException;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.Exceptions.SoundnessException;
 
 public class SoundnessChecker {
 

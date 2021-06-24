@@ -19,9 +19,6 @@
 package com.vaticle.typedb.core.test.behaviour.resolution.framework;
 
 import com.vaticle.typedb.core.rocks.RocksSession;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.completeness.CompletenessChecker;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.reference.Reasoner;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.soundness.SoundnessChecker;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 public class CorrectnessChecker {

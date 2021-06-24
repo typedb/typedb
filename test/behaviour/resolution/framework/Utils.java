@@ -1,4 +1,4 @@
-package com.vaticle.typedb.core.test.behaviour.resolution.framework.common;
+package com.vaticle.typedb.core.test.behaviour.resolution.framework;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.traversal.common.Identifier;

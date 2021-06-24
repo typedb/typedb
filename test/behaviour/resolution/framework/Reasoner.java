@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.test.behaviour.resolution.framework.reference;
+package com.vaticle.typedb.core.test.behaviour.resolution.framework;
 
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Context;
@@ -28,7 +28,6 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.Utils;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
 import java.util.HashMap;

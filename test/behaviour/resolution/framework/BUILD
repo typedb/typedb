@@ -20,22 +20,24 @@ load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
 
 native_java_libraries(
     name = "resolution-lib",
-    srcs = [
-        "CorrectnessChecker.java",
-        ],
+    srcs = glob(["*.java"]),
     visibility = ["//visibility:public"],
     native_libraries_deps = [
         "//:typedb",
         "//rocks:rocks",
         "//concept:concept",
-        "//test/behaviour/resolution/framework/reference:reference",
-        "//test/behaviour/resolution/framework/soundness:soundness",
+        "//traversal:traversal",
+        "//logic:logic",
+        "//pattern:pattern",
+        "//reasoner:reasoner",
     ],
     deps = [
         "//common",
-        "@maven//:com_google_guava_guava",
+        "@vaticle_typedb_common//:common",
         "@vaticle_typeql_lang_java//:typeql-lang",
+        "@vaticle_typeql_lang_java//common",
         "@vaticle_typeql_lang_java//query",
+        "@vaticle_typeql_lang_java//pattern",
     ],
 )
 

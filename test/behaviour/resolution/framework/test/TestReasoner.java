@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTypeDB;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.reference.Reasoner;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.Reasoner;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.pattern.Pattern;

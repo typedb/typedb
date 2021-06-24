@@ -1,4 +1,4 @@
-package com.vaticle.typedb.core.test.behaviour.resolution.framework.completeness;
+package com.vaticle.typedb.core.test.behaviour.resolution.framework;
 
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
@@ -13,8 +13,6 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.common.Exceptions;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.reference.Reasoner;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 
@@ -25,7 +23,7 @@ import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.Utils.filterRetrievableVars;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.Utils.filterRetrievableVars;
 
 public class CompletenessChecker {
 

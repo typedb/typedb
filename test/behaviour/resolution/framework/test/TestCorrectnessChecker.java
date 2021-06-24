@@ -37,8 +37,8 @@ import java.nio.file.Paths;
 import java.util.Collections;
 
 import static com.vaticle.typedb.core.common.test.Util.assertThrows;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.Exceptions.CompletenessException;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common.Exceptions.SoundnessException;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.Exceptions.CompletenessException;
+import static com.vaticle.typedb.core.test.behaviour.resolution.framework.Exceptions.SoundnessException;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadBasicRecursionExample;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadComplexRecursionExample;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadEmployableExample;

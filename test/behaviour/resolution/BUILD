@@ -28,6 +28,7 @@ host_compatible_java_library(
         "//common",
         "//test/behaviour/connection:steps",
         "//test/behaviour/exception",
+        "//test/behaviour/resolution/framework:resolution"
 
         # External dependencies from Vaticle
         "@vaticle_typeql_lang_java//:typeql-lang",
