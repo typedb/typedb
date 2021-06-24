@@ -958,7 +958,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         public Attribute.DateTime put(LocalDateTime value, boolean isInferred) {
             validateCanHaveInstances(Attribute.class);
             AttributeVertex.Write<LocalDateTime> attVertex = graphMgr.data().put(AttributeTypeImpl.DateTime.this.vertex, value, isInferred);
-            if (!isInferred && attVertex.isInferred()) attVertex.isInferred(false);
             return new AttributeImpl.DateTime(attVertex);
         }
 

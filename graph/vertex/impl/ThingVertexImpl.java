@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_VERTEX_CASTING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.UNSUPPORTED_OPERATION;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ATTRIBUTE;
 
 public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implements ThingVertex {
@@ -69,6 +70,11 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     }
 
     @Override
+    public boolean isInferred() {
+        return false;
+    }
+
+    @Override
     public boolean isThing() { return true; }
 
     @Override
@@ -76,7 +82,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
     @Override
     public ThingVertex asThing() { return this; }
-
 
     @Override
     public boolean isWrite() {
@@ -139,12 +144,10 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         protected final ThingAdjacency.Write outs;
         protected final ThingAdjacency.Write ins;
         protected final AtomicBoolean isDeleted;
-        protected boolean isInferred;
         protected boolean isModified;
 
-        Write(ThingGraph graph, VertexIID.Thing iid, boolean isInferred) {
+        Write(ThingGraph graph, VertexIID.Thing iid) {
             super(graph, iid);
-            this.isInferred = isInferred;
             this.isModified = false;
             this.isDeleted = new AtomicBoolean(false);
             this.outs = newAdjacency(Encoding.Direction.Adjacency.OUT);
@@ -173,16 +176,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
         public boolean isModified() {
             return isModified;
-        }
-
-        @Override
-        public void isInferred(boolean isInferred) {
-            this.isInferred = isInferred;
-        }
-
-        @Override
-        public boolean isInferred() {
-            return isInferred;
         }
 
         public boolean isDeleted() {
@@ -218,7 +211,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
             return true;
         }
 
-        // TODO do we need both of these methods?
         @Override
         public ThingVertex.Write asWrite() {
             return this;
@@ -236,8 +228,11 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
         public static class Buffered extends ThingVertexImpl.Write {
 
+            protected boolean isInferred;
+
             public Buffered(ThingGraph graph, VertexIID.Thing iid, boolean isInferred) {
-                super(graph, iid, isInferred);
+                super(graph, iid);
+                this.isInferred = isInferred;
                 setModified();
             }
 
@@ -249,6 +244,16 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
             @Override
             public Encoding.Status status() {
                 return Encoding.Status.BUFFERED;
+            }
+
+            @Override
+            public void isInferred(boolean isInferred) {
+                this.isInferred = isInferred;
+            }
+
+            @Override
+            public boolean isInferred() {
+                return isInferred;
             }
 
             @Override
@@ -276,7 +281,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         public static class Persisted extends ThingVertexImpl.Write {
 
             public Persisted(ThingGraph graph, VertexIID.Thing iid) {
-                super(graph, iid, false);
+                super(graph, iid);
             }
 
             @Override

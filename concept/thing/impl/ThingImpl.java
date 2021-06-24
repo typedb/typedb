@@ -104,7 +104,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
 
     @Override
     public boolean isInferred() {
-        return writableVertex().isInferred();
+        return readableVertex().isInferred();
     }
 
     @Override

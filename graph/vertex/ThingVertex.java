@@ -62,6 +62,13 @@ public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thi
     ThingAdjacency ins();
 
     /**
+     * Returns true if this {@code ThingVertex} is a result of inference.
+     *
+     * @return true if this {@code ThingVertex} is a result of inference
+     */
+    boolean isInferred();
+
+    /**
      * Returns true if this {@code ThingVertex} is an instance of {@code AttributeVertex}.
      *
      * @return true if this {@code ThingVertex} is an instance of {@code AttributeVertex}
@@ -106,13 +113,6 @@ public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thi
         boolean isDeleted();
 
         void commit();
-
-        /**
-         * Returns true if this {@code ThingVertex} is a result of inference.
-         *
-         * @return true if this {@code ThingVertex} is a result of inference
-         */
-        boolean isInferred();
 
         /**
          * Sets a boolean flag to indicate whether this vertex was a result of inference.
