@@ -53,9 +53,11 @@ host_compatible_java_test(
         "//test/integration/util:util",
         "//common",
         # External dependencies from @vaticle
+        "@vaticle_typedb_common//:common",
         "@vaticle_typeql_lang_java//:typeql-lang",
-        "@vaticle_typeql_lang_java//pattern",
         "@vaticle_typeql_lang_java//query",
+        "@vaticle_typeql_lang_java//common",
+        "@vaticle_typeql_lang_java//pattern",
     ],
 )
 
@@ -78,8 +80,11 @@ host_compatible_java_test(
         "//common/test:util",
         "//test/integration/util",
         # External dependencies from @vaticle
+        "@vaticle_typedb_common//:common",
         "@vaticle_typeql_lang_java//:typeql-lang",
         "@vaticle_typeql_lang_java//query",
+        "@vaticle_typeql_lang_java//common",
+        "@vaticle_typeql_lang_java//pattern",
     ],
 )
 

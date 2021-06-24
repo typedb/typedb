@@ -37,6 +37,16 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
+import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typeql.lang.TypeQL.and;
+import static com.vaticle.typeql.lang.TypeQL.define;
+import static com.vaticle.typeql.lang.TypeQL.rule;
+import static com.vaticle.typeql.lang.TypeQL.type;
+import static com.vaticle.typeql.lang.TypeQL.var;
+import static com.vaticle.typeql.lang.common.TypeQLArg.ValueType.STRING;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Type.ATTRIBUTE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Type.ENTITY;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Type.RELATION;
 import static org.junit.Assert.assertEquals;
 
 public class ReasonerTest {
@@ -70,49 +80,43 @@ public class ReasonerTest {
         }
     }
 
-    // TODO: These should use TypeQL builder to make them robust to change
     static void loadTransitivityExample(TypeDB typeDB) {
         try (TypeDB.Session session = typeDB.session(ReasonerTest.database, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                String schema = "" +
-                        "define\n" +
-                        "name sub attribute,\n" +
-                        "    value string;\n" +
-                        "location sub entity,\n" +
-                        "    abstract,\n" +
-                        "    owns name @key,\n" +
-                        "    plays location-hierarchy:superior,\n" +
-                        "    plays location-hierarchy:subordinate;\n" +
-                        "area sub location;\n" +
-                        "city sub location;\n" +
-                        "country sub location;\n" +
-                        "continent sub location;\n" +
-                        "location-hierarchy sub relation,\n" +
-                        "    relates superior,\n" +
-                        "    relates subordinate;\n" +
-                        "rule location-hierarchy-transitivity:\n" +
-                        "when {\n" +
-                        "    (superior: $a, subordinate: $b) isa location-hierarchy;\n" +
-                        "    (superior: $b, subordinate: $c) isa location-hierarchy;\n" +
-                        "} then {\n" +
-                        "    (superior: $a, subordinate: $c) isa location-hierarchy;\n" +
-                        "};";
-                tx.query().define(TypeQL.parseQuery(schema).asDefine());
+                tx.query().define(define(list(
+                        type("name").sub(ATTRIBUTE).value(STRING),
+                        type("location").sub(ENTITY)
+                                .isAbstract()
+                                .owns("name", true)
+                                .plays("location-hierarchy", "superior")
+                                .plays("location-hierarchy", "subordinate"),
+                        type("area").sub("location"),
+                        type("city").sub("location"),
+                        type("country").sub("location"),
+                        type("continent").sub("location"),
+                        type("location-hierarchy").sub(RELATION)
+                                .relates("superior")
+                                .relates("subordinate"),
+                        rule("location-hierarchy-transitivity")
+                                .when(and(
+                                        var().rel("superior", "a").rel("subordinate", "b").isa("location-hierarchy"),
+                                        var().rel("superior", "b").rel("subordinate", "c").isa("location-hierarchy")
+                                )).then(var().rel("superior", "a").rel("subordinate", "c").isa("location-hierarchy"))
+                )));
                 tx.commit();
             }
         }
         try (TypeDB.Session session = typeDB.session(ReasonerTest.database, Arguments.Session.Type.DATA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                tx.query().insert(TypeQL.parseQuery(
-                        "insert\n" +
-                                "$ar isa area, has name \"King's Cross\";\n" +
-                                "$cit isa city, has name \"London\";\n" +
-                                "$cntry isa country, has name \"UK\";\n" +
-                                "$cont isa continent, has name \"Europe\";\n" +
-                                "(superior: $cont, subordinate: $cntry) isa location-hierarchy;\n" +
-                                "(superior: $cntry, subordinate: $cit) isa location-hierarchy;\n" +
-                                "(superior: $cit, subordinate: $ar) isa location-hierarchy;"
-                ).asInsert());
+                tx.query().insert(TypeQL.insert(list(
+                        var("area").isa("area").has("name", "King's Cross"),
+                        var("city").isa("city").has("name", "London"),
+                        var("country").isa("country").has("name", "UK"),
+                        var("continent").isa("continent").has("name", "Europe"),
+                        var().rel("superior", "continent").rel("subordinate", "country").isa("location-hierarchy"),
+                        var().rel("superior", "country").rel("subordinate", "city").isa("location-hierarchy"),
+                        var().rel("superior", "city").rel("subordinate", "area").isa("location-hierarchy")
+                )).asInsert());
                 tx.commit();
             }
         }

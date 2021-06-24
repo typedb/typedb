@@ -26,7 +26,6 @@ import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.rocks.RocksTypeDB;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.CorrectnessChecker;
 import com.vaticle.typedb.core.test.integration.util.Util;
-import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 import org.junit.After;
 import org.junit.Before;
@@ -36,10 +35,20 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.test.Util.assertNotThrows;
 import static com.vaticle.typedb.core.common.test.Util.assertThrows;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.CompletenessChecker.CompletenessException;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.SoundnessChecker.SoundnessException;
+import static com.vaticle.typeql.lang.TypeQL.and;
+import static com.vaticle.typeql.lang.TypeQL.define;
+import static com.vaticle.typeql.lang.TypeQL.parseQuery;
+import static com.vaticle.typeql.lang.TypeQL.rule;
+import static com.vaticle.typeql.lang.TypeQL.type;
+import static com.vaticle.typeql.lang.TypeQL.var;
+import static com.vaticle.typeql.lang.common.TypeQLArg.ValueType.BOOLEAN;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Type.ATTRIBUTE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Type.ENTITY;
 
 public class CorrectnessCheckerTest {
 
@@ -63,7 +72,7 @@ public class CorrectnessCheckerTest {
 
     @Test
     public void testCorrectnessPassesForEmployableExample() {
-        TypeQLMatch inferenceQuery = TypeQL.parseQuery("match $x has employable true;").asMatch();
+        TypeQLMatch inferenceQuery = parseQuery("match $x has employable true;").asMatch();
         loadEmployableExample(typeDB);
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
             CorrectnessChecker resolutionTest = CorrectnessChecker.initialise(session);
@@ -74,14 +83,14 @@ public class CorrectnessCheckerTest {
 
     @Test
     public void testSoundnessThrowsWhenRuleTriggersTooOftenEmployableExample() {
-        TypeQLMatch inferenceQuery = TypeQL.parseQuery("match $x has employable true;").asMatch();
+        TypeQLMatch inferenceQuery = parseQuery("match $x has employable true;").asMatch();
         loadEmployableExample(typeDB);
 
         CorrectnessChecker resolution;
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
             resolution = CorrectnessChecker.initialise(session);
             try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                tx.query().insert(TypeQL.parseQuery("insert $p isa person;"));
+                tx.query().insert(parseQuery("insert $p isa person;"));
                 tx.commit();
             }
             assertThrows(SoundnessException.class, () -> resolution.checkSoundness(inferenceQuery));
@@ -91,14 +100,14 @@ public class CorrectnessCheckerTest {
 
     @Test
     public void testCompletenessThrowsWhenRuleIsNotTriggeredEmployableExample() {
-        TypeQLMatch inferenceQuery = TypeQL.parseQuery("match $x has employable true;").asMatch();
+        TypeQLMatch inferenceQuery = parseQuery("match $x has employable true;").asMatch();
         loadEmployableExample(typeDB);
 
         CorrectnessChecker resolution;
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
             resolution = CorrectnessChecker.initialise(session);
             try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                tx.query().delete(TypeQL.parseQuery("match $p isa person; delete $p isa person;"));
+                tx.query().delete(parseQuery("match $p isa person; delete $p isa person;"));
                 tx.commit();
             }
             assertThrows(CompletenessException.class, () -> resolution.checkCompleteness(inferenceQuery));
@@ -106,29 +115,22 @@ public class CorrectnessCheckerTest {
         }
     }
 
-    // TODO: These should use TypeQL builder to make them robust to change
     static void loadEmployableExample(TypeDB typeDB) {
         try (TypeDB.Session session = typeDB.session(CorrectnessCheckerTest.database, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                String schema = "" +
-                        "define\n" +
-                        "employable sub attribute,\n" +
-                        "    value boolean;" +
-                        "person sub entity,\n" +
-                        "  owns employable;" +
-                        "rule people-are-employable:\n" +
-                        "when {\n" +
-                        "    $p isa person;\n" +
-                        "} then {\n" +
-                        "    $p has employable true;\n" +
-                        "};";
-                tx.query().define(TypeQL.parseQuery(schema).asDefine());
+                tx.query().define(define(list(
+                        type("employable").sub(ATTRIBUTE).value(BOOLEAN),
+                        type("person").sub(ENTITY).owns("employable"),
+                        rule("people-are-employable")
+                                .when(and(var("p").isa("person")))
+                                .then(var("p").has("employable", true))
+                )));
                 tx.commit();
             }
         }
         try (TypeDB.Session session = typeDB.session(CorrectnessCheckerTest.database, Arguments.Session.Type.DATA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                tx.query().insert(TypeQL.parseQuery("insert $p isa person;").asInsert());
+                tx.query().insert(parseQuery("insert $p isa person;").asInsert());
                 tx.commit();
             }
         }
