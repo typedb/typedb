@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.traversal.structure.Structure;
 public class TraversalCache extends CommonCache<Structure, Planner> {
 
     public TraversalCache() {
-        super(500, CACHE_TIMEOUT_DAY);
+        super(500, CACHE_TIMEOUT_MINUTES);
     }
 
     public TraversalCache(int size, int timeOutMinutes) {
