@@ -5,6 +5,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
@@ -22,7 +23,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.Utils.filterRetrievableVars;
 
 public class CompletenessChecker {
@@ -75,8 +75,6 @@ public class CompletenessChecker {
     }
 
     private void checkConclusion(Rule.Conclusion conclusion, ConceptMap conclusionAnswer) {
-        // TODO: Do we need to assert somewhere that there should only be one rule used to find a particular
-        //  concludable answer across all of its explanations?
         ConceptMap conclusionBounds = removeGeneratingBound(conclusion, conclusionAnswer);
         validateNonInferred(conclusionBounds);
         Conjunction conclusionWithIIDs = constrainByIIDs(conclusion, conclusionAnswer);
@@ -92,7 +90,10 @@ public class CompletenessChecker {
                                                            conclusion.retrievableIds(),
                                                            new Context.Query(tx.context(), new Options.Query())).toList().size();
             if (numAnswers == 0) {
-                throw new CompletenessException("Expected an answer which is not present.");
+                throw new CompletenessException(String.format("Completeness testing found an answer which is expected" +
+                                                                      " but is not present.\nExpected exactly one " +
+                                                                      "answer for the query\n%s",
+                                                              concludableQuery.toString()));
             } else if (numAnswers > 1) {
                 throw TypeDBException.of(ILLEGAL_STATE);
             }

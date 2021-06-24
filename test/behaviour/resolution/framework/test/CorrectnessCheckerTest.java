@@ -18,10 +18,10 @@
 
 package com.vaticle.typedb.core.test.behaviour.resolution.framework.test;
 
-import com.vaticle.typedb.core.TypeDB.Transaction;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.rocks.RocksSession;
+import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.rocks.RocksTypeDB;
 import com.vaticle.typedb.core.test.behaviour.resolution.framework.CorrectnessChecker;
 import com.vaticle.typedb.core.test.integration.util.Util;
@@ -29,21 +29,17 @@ import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 
+import static com.vaticle.typedb.core.common.test.Util.assertNotThrows;
 import static com.vaticle.typedb.core.common.test.Util.assertThrows;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.CompletenessChecker.CompletenessException;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.SoundnessChecker.SoundnessException;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadBasicRecursionExample;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadComplexRecursionExample;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadEmployableExample;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadTransitivityExample;
 
 public class CorrectnessCheckerTest {
 
@@ -66,13 +62,14 @@ public class CorrectnessCheckerTest {
     }
 
     @Test
-    public void testResolutionPassesForTransitivity() {
-        TypeQLMatch inferenceQuery = TypeQL.parseQuery("" +
-                "match $lh (superior: $continent, subordinate: $area) isa location-hierarchy; " +
-                "$continent isa continent; " +
-                "$area isa area;").asMatch();
-        loadTransitivityExample(typeDB, database);
-        testCorrectness(inferenceQuery);
+    public void testCorrectnessPassesForEmployableExample() {
+        TypeQLMatch inferenceQuery = TypeQL.parseQuery("match $x has employable true;").asMatch();
+        loadEmployableExample(typeDB, database);
+        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+            CorrectnessChecker resolutionTest = CorrectnessChecker.initialise(session);
+            resolutionTest.checkCorrectness(inferenceQuery);
+            resolutionTest.close();
+        }
     }
 
     @Test
@@ -83,134 +80,30 @@ public class CorrectnessCheckerTest {
         CorrectnessChecker resolution;
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
             resolution = CorrectnessChecker.initialise(session);
-        }
-        // Undefine a rule in the database under test such that the expected facts will not be inferred
-        try (RocksSession schemaSession = typeDB.session(database, Arguments.Session.Type.SCHEMA)) {
-            try (Transaction tx = schemaSession.transaction(Arguments.Transaction.Type.WRITE)) {
-                tx.query().undefine(TypeQL.undefine(Collections.singletonList(
-                        TypeQL.rule("people-are-employable"))));
-                tx.query().define(TypeQL.parseQuery("define\n" +
-                                                            "rule people-are-employable:\n" +
-                                                            "when {\n" +
-                                                            "    $p isa animal;\n" +
-                                                            "} then {\n" +
-                                                            "    $p has employable true;\n" +
-                                                            "};").asDefine());
+            try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                tx.query().insert(TypeQL.parseQuery("insert $p isa person;"));
                 tx.commit();
             }
-        }
-        try (RocksSession session2 = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            assertThrows(SoundnessException.class, () -> resolution.checkSoundness(session2, inferenceQuery));
+            assertThrows(SoundnessException.class, () -> resolution.checkSoundness(inferenceQuery));
+            assertNotThrows(() -> resolution.checkCompleteness(inferenceQuery));
         }
     }
 
-    @Ignore  // Exposes a bug in explanations for transitivity, un-ignore when fixed
     @Test
-    public void testSoundnessThrowsWhenRuleTriggersTooOftenTransitivityExample() {
-        TypeQLMatch inferenceQuery = TypeQL.parseQuery("" +
-                                                               "match $lh ($continent, $area) isa location-hierarchy; " +
-                                                               "$continent isa continent; " +
-                                                               "$area isa area;").asMatch();
-        loadTransitivityExample(typeDB, database);
+    public void testCompletenessThrowsWhenRuleIsNotTriggeredEmployableExample() {
+        TypeQLMatch inferenceQuery = TypeQL.parseQuery("match $x has employable true;").asMatch();
+        loadEmployableExample(typeDB, database);
+
         CorrectnessChecker resolution;
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
             resolution = CorrectnessChecker.initialise(session);
-        }
-        // Undefine a rule in the database under test such that the expected facts will not be inferred
-        try (RocksSession schemaSession = typeDB.session(database, Arguments.Session.Type.SCHEMA)) {
-            try (Transaction tx = schemaSession.transaction(Arguments.Transaction.Type.WRITE)) {
-                tx.query().undefine(TypeQL.undefine(Collections.singletonList(
-                        TypeQL.rule("location-hierarchy-transitivity"))));
-                tx.query().define(TypeQL.parseQuery("define\n" +
-                                                            "rule location-hierarchy-transitivity:\n" +
-                                                            "when {\n" +
-                                                            "  ($a, $b) isa location-hierarchy;\n" +
-                                                            "  ($b, $c) isa location-hierarchy;\n" +
-                                                            "  not { $a is $c; };\n" +
-                                                            "} then {\n" +
-                                                            "  (superior: $a, subordinate: $c) isa location-hierarchy;\n" +
-                                                            "};").asDefine());
+            try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                tx.query().delete(TypeQL.parseQuery("match $p isa person; delete $p isa person;"));
                 tx.commit();
             }
-        }
-        try (RocksSession session2 = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            assertThrows(SoundnessException.class, () -> resolution.checkSoundness(session2, inferenceQuery));
-        }
-    }
-
-    @Test
-    public void testCompletenessThrowsWhenRuleIsNotTriggeredTransitivityExample() {
-        TypeQLMatch inferenceQuery = TypeQL.parseQuery("" +
-                "match $lh (superior: $continent, location-hierarchy_subordinate: $area) isa location-hierarchy; " +
-                "$continent isa continent; " +
-                "$area isa area;").asMatch();
-        loadTransitivityExample(typeDB, database);
-        // Undefine a rule in the keyspace under test such that the expected facts will not be inferred
-        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.SCHEMA)) {
-            try (Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                tx.query().undefine(TypeQL.undefine(TypeQL.type("location-hierarchy-transitivity").sub("rule")));
-                tx.commit();
-            }
-        }
-        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            CorrectnessChecker resolution = CorrectnessChecker.initialise(session);
             assertThrows(CompletenessException.class, () -> resolution.checkCompleteness(inferenceQuery));
+            assertNotThrows(() -> resolution.checkSoundness(inferenceQuery));
         }
     }
 
-    @Test
-    public void testResolutionThrowsWhenRuleTriggersTooOftenAndResultCountIsIncorrectTransitivityExample() {
-        TypeQLMatch inferenceQuery = TypeQL.parseQuery("" +
-                "match $lh ($continent, " +
-                "$area) isa location-hierarchy; " +
-                "$continent isa continent; " +
-                "$area isa area;").asMatch();
-
-        loadTransitivityExample(typeDB, database);
-
-        // Undefine a rule in the keyspace under test such that the expected facts will not be inferred
-        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE);
-            tx.query().undefine(TypeQL.undefine(Collections.singletonList(
-                    TypeQL.rule("location-hierarchy-transitivity"))));
-            tx.query().define(TypeQL.parseQuery("define" +
-                                                "rule location-hierarchy-transitivity:\n" +
-                                                "when {\n" +
-                                                "  ($a, $b) isa location-hierarchy;\n" +
-                                                "  ($b, $c) isa location-hierarchy;\n" +
-                                                "  $a != $c;\n" +
-                                                "} then {\n" +
-                                                "  (superior: $a, subordinate: $c) isa location-hierarchy;\n" +
-                                                "};").asDefine());
-            tx.commit();
-        }
-        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            CorrectnessChecker resolution = CorrectnessChecker.initialise(session);
-            assertThrows(CompletenessException.class, () -> resolution.checkCompleteness(inferenceQuery));
-            assertThrows(SoundnessException.class, () -> resolution.checkSoundness(session,
-                                                                                   inferenceQuery));
-        }
-    }
-
-    @Test
-    public void testResolutionPassesForTwoRecursiveRules() {
-        loadComplexRecursionExample(typeDB, database);
-        TypeQLMatch inferenceQuery = TypeQL.parseQuery("match $transaction has currency $currency;").asMatch();
-        testCorrectness(inferenceQuery);
-    }
-
-    @Test
-    public void testBasicRecursion() {
-        loadBasicRecursionExample(typeDB, database);
-        TypeQLMatch inferenceQuery = TypeQL.parseQuery("match $com isa company, has is-liable $lia;").asMatch();
-        testCorrectness(inferenceQuery);
-    }
-
-    private void testCorrectness(TypeQLMatch inferenceQuery) {
-        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            CorrectnessChecker resolutionTest = CorrectnessChecker.initialise(session);
-            resolutionTest.checkSoundness(session, inferenceQuery);
-            resolutionTest.checkCompleteness(inferenceQuery);
-        }
-    }
 }

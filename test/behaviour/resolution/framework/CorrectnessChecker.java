@@ -35,7 +35,12 @@ public class CorrectnessChecker {
         return new CorrectnessChecker(session, Reasoner.runRules(session));
     }
 
-    public void checkSoundness(RocksSession session, TypeQLMatch inferenceQuery) {
+    public void checkCorrectness(TypeQLMatch inferenceQuery) {
+        checkSoundness(inferenceQuery);
+        checkCompleteness(inferenceQuery);
+    }
+
+    public void checkSoundness(TypeQLMatch inferenceQuery) {
         SoundnessChecker.create(referenceReasoner, session).checkQuery(inferenceQuery);
     }
 

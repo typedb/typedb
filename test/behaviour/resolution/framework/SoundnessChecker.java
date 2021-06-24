@@ -85,11 +85,12 @@ public class SoundnessChecker {
             });
         } else {
             // We have detected an answer in the explanations that shouldn't be there!
-            throw new SoundnessException(String.format("While explaining, testing found an answer that should not be " +
-                                                               "present for rule \"%s\".\nAnswer:\n%s\nIncorrectly " +
-                                                               "derived from condition:\n%s",
-                                                                  explanation.rule().getLabel(), explanation.conclusionAnswer(),
-                                                                  explanation.conditionAnswer()));
+            throw new SoundnessException(String.format("Soundness testing found an answer within an answer " +
+                                                               "explanation that should not be present for rule " +
+                                                               "\"%s\".\nAnswer:\n%s\nIncorrectly derived from " +
+                                                               "condition:\n%s",
+                                                       explanation.rule().getLabel(), explanation.conclusionAnswer(),
+                                                       explanation.conditionAnswer()));
         }
     }
 
