@@ -1,6 +1,5 @@
 package com.vaticle.typedb.core.test.behaviour.resolution.framework;
 
-import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Context;
@@ -8,8 +7,6 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
-import com.vaticle.typedb.core.logic.resolvable.Concludable;
-import com.vaticle.typedb.core.logic.resolvable.Unifier.Requirements.Instance;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.rocks.RocksSession;
@@ -19,7 +16,6 @@ import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -40,27 +36,14 @@ public class CompletenessChecker {
 
     public void checkQuery(TypeQLMatch inferenceQuery) {
         referenceReasoner.query(inferenceQuery).forEach((conjunction, answers) -> {
-            answers.forEachRemaining(answer -> checkConjunctionConcludables(answer, conjunction));
+            answers.forEachRemaining(answer -> checkConjunction(conjunction, answer));
         });
     }
 
-    private void checkConjunctionConcludables(ConceptMap answer, Conjunction conjunction) {
-        Concludable.create(conjunction).forEach(concludable -> {
-            concludable.applicableRules(referenceReasoner.tx().concepts(), referenceReasoner.tx().logic())
-                    .forEach(((rule, unifiers) -> unifiers.forEach(unifier -> {
-                        Optional<Pair<ConceptMap, Instance>> unified =
-                                unifier.unify(answer.filter(concludable.retrieves()));
-                        if (unified.isPresent()) {
-                            ConceptMap conclusionAnswer = unified.get().first();
-                            ConceptMap conditionAnswer = referenceReasoner.ruleRecorderMap().get(rule.getLabel())
-                                    .inferencesByConclusion().get(conclusionAnswer);
-                            // Make sure that the unifier is valid for the particular answer we have
-                            if (conditionAnswer != null) {
-                                checkConjunctionConcludables(conditionAnswer, rule.when());
-                                checkConclusion(rule.conclusion(), conclusionAnswer);
-                            }
-                        }
-                    })));
+    private void checkConjunction(Conjunction inferred, ConceptMap answer) {
+        referenceReasoner.materialisationsForConcludables(answer, inferred).forEachRemaining(materialisation -> {
+            checkConjunction(materialisation.rule().when(), materialisation.conditionAnswer());
+            checkConclusion(materialisation.rule().conclusion(), materialisation.conclusionAnswer());
         });
     }
 
@@ -76,9 +59,11 @@ public class CompletenessChecker {
         Disjunction concludableQuery = new Disjunction(Collections.singletonList(conclusionWithIIDs));
         try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.READ,
                                                        new Options.Transaction().infer(true))) {
-            int numAnswers = tx.reasoner().executeReasoner(concludableQuery,
-                                                           conclusion.retrievableIds(),
-                                                           new Context.Query(tx.context(), new Options.Query())).toList().size();
+            int numAnswers = tx.reasoner().executeReasoner(
+                    concludableQuery,
+                    conclusion.retrievableIds(),
+                    new Context.Query(tx.context(), new Options.Query())
+            ).toList().size();
             if (numAnswers == 0) {
                 throw new CompletenessException(String.format("Completeness testing found an answer which is expected" +
                                                                       " but is not present.\nExpected exactly one " +

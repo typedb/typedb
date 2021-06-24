@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.test.behaviour.resolution.framework;
 
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -27,6 +28,7 @@ import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
+import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.rocks.RocksSession;
@@ -37,6 +39,7 @@ import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -68,6 +71,50 @@ public class Reasoner {
         HashMap<Conjunction, FunctionalIterator<ConceptMap>> conjunctionAnswers = new HashMap<>();
         disjunction.conjunctions().forEach(conjunction -> conjunctionAnswers.put(conjunction, traverse(conjunction)));
         return conjunctionAnswers;
+    }
+
+    public FunctionalIterator<Materialisation> materialisationsForConcludables(ConceptMap answer,
+                                                                               Conjunction conjunction) {
+        return iterate(Concludable.create(conjunction)).flatMap(concludable ->
+            iterate(concludable.applicableRules(tx.concepts(), tx.logic()))
+                    .flatMap(((rule, unifiers) -> iterate(unifiers).map(unifier -> {
+                        Optional<Pair<ConceptMap, Unifier.Requirements.Instance>> unified =
+                                unifier.unify(answer.filter(concludable.retrieves()));
+                        if (unified.isPresent()) {
+                            ConceptMap conclusionAnswer = unified.get().first();
+                            ConceptMap conditionAnswer = ruleRecorders.get(rule.getLabel())
+                                    .inferencesByConclusion().get(conclusionAnswer);
+                            // Make sure that the unifier is valid for the particular answer we have
+                            if (conditionAnswer != null) {
+                                return new Materialisation(rule, conditionAnswer, conclusionAnswer);
+                            }
+                        }
+                    })))
+        );
+    }
+
+    public class Materialisation {
+        private final Rule rule;
+        private final ConceptMap conditionAnswer;
+        private final ConceptMap conclusionAnswer;
+
+        Materialisation(Rule rule, ConceptMap conditionAnswer, ConceptMap conclusionAnswer) {
+            this.rule = rule;
+            this.conditionAnswer = conditionAnswer;
+            this.conclusionAnswer = conclusionAnswer;
+        }
+
+        public ConceptMap conditionAnswer() {
+            return conditionAnswer;
+        }
+
+        public ConceptMap conclusionAnswer() {
+            return conclusionAnswer;
+        }
+
+        public Rule rule() {
+            return rule;
+        }
     }
 
     public Map<String, RuleRecorder> ruleRecorderMap() {
