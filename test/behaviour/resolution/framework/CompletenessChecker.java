@@ -77,7 +77,7 @@ public class CompletenessChecker {
         // TODO: Do we need to assert somewhere that there should only be one rule used to find a particular
         //  concludable answer across all of its explanations?
         ConceptMap conclusionBounds = removeGeneratingBound(conclusion, conclusionAnswer);
-        validateFullyBound(conclusion, conclusionBounds);
+        validateNonInferred(conclusionBounds);
         Conjunction conclusionWithIIDs = constrainByIIDs(conclusion, conclusionAnswer);
         validateInference(conclusion, conclusionWithIIDs);
     }
@@ -117,14 +117,13 @@ public class CompletenessChecker {
         return conclusionBounds.filter(nonGenerating);
     }
 
-    private static void validateFullyBound(Rule.Conclusion conclusion, ConceptMap conclusionAnswer) {
-        // If any variable is unbound then throw
-        iterate(conclusion.retrievableIds()).forEachRemaining(v -> {
-            if (conclusionAnswer.concepts().get(v) == null) {
-                throw new UnsupportedOperationException("Completion testing does not yet support non-generated " +
+    private static void validateNonInferred(ConceptMap conclusionAnswer) {
+        for (Concept concept : conclusionAnswer.concepts().values()) {
+            if (concept.isThing() && concept.asThing().isInferred()) {
+                throw new UnsupportedOperationException("Completeness testing does not yet support non-generated " +
                                                                 "inferred concepts in rule conclusions.");
             }
-        });
+        }
     }
 
     public static class CompletenessException extends RuntimeException {
