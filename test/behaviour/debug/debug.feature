@@ -1,76 +1,26 @@
-Feature: Relation Inference Resolution
+#
+# Copyright (C) 2021 Vaticle
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
 
-  Background: Set up databases for resolution testing
+Feature: Debugging Space
+
+  Background:
     Given connection has been opened
+    Given connection delete all databases
     Given connection does not have any database
-    Given connection create database: typedb
-    Given connection open schema session for database: typedb
-    Given session opens transaction of type: write
-    Given typeql define
-      """
-      define
-      person sub entity,
-        owns name,
-        plays friendship:friend,
-        plays employment:employee;
-      company sub entity,
-        owns name,
-        plays employment:employer;
-      place sub entity,
-        owns name,
-        plays location-hierarchy:subordinate,
-        plays location-hierarchy:superior;
-      friendship sub relation,
-        relates friend;
-      employment sub relation,
-        relates employee,
-        relates employer;
-      location-hierarchy sub relation,
-        relates subordinate,
-        relates superior;
-      name sub attribute, value string;
-      """
-    Given transaction commits
-    # each scenario specialises the schema further
-    Given open transactions of type: write
 
-  #######################
-  # BASIC FUNCTIONALITY #
-  #######################
-
-  Scenario: a relation can be inferred on all concepts of a given type
-    Given typeql define
-      """
-      define
-      dog sub entity;
-      rule people-are-employed: when {
-        $p isa person;
-      } then {
-        (employee: $p) isa employment;
-      };
-      """
-    Given transaction commits
-    Given connection close all sessions
-    Given connection open data session for database: typedb
-    Given session opens transactions of type: write
-    Given typeql insert
-      """
-      insert
-      $x isa person;
-      $y isa dog;
-      $z isa person;
-      """
-    Given transaction commits
-    Given session opens transaction of type: write
-    Then materialise all possible inferences
-    Given session opens transaction of type: read
-    Then for typeql query
-      """
-      match
-        $x isa person;
-        ($x) isa employment;
-      """
-    Then all answers are correct in reasoned database
-    Then answer size in reasoned database is: 2
-    Then transaction closes
-    Given session opens transaction of type: read
+  # Paste any scenarios below for debugging.
+  # Do not commit any changes to this file.
