@@ -101,6 +101,10 @@ public class Reasoner {
         tx.close();
     }
 
+    public RocksTransaction tx() {
+        return tx;
+    }
+
     public static class RuleRecorder {
         private final Rule rule;
         private final Concludable thenConcludable;

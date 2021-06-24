@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTypeDB;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.Resolution;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.CorrectnessChecker;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
@@ -44,9 +44,9 @@ import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.L
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadEmployableExample;
 import static com.vaticle.typedb.core.test.behaviour.resolution.framework.test.LoadTest.loadTransitivityExample;
 
-public class TestResolution {
+public class TestCorrectnessChecker {
 
-    private static final String database = "TestResolution";
+    private static final String database = "TestCorrectnessChecker";
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
     private static final Path logDir = dataDir.resolve("logs");
     private static final Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logDir);
@@ -89,8 +89,8 @@ public class TestResolution {
             }
         }
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            Resolution resolution = new Resolution(session);
-            assertThrows(CompletenessException.class, () -> resolution.testCompleteness(inferenceQuery));
+            CorrectnessChecker resolution = CorrectnessChecker.initialise(session);
+            assertThrows(CompletenessException.class, () -> resolution.checkCompleteness(inferenceQuery));
         }
     }
 
@@ -99,9 +99,9 @@ public class TestResolution {
         TypeQLMatch inferenceQuery = TypeQL.parseQuery("match $x has employable true;").asMatch();
         loadEmployableExample(typeDB, database);
 
-        Resolution resolution;
+        CorrectnessChecker resolution;
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            resolution = new Resolution(session);
+            resolution = CorrectnessChecker.initialise(session);
         }
         // Undefine a rule in the database under test such that the expected facts will not be inferred
         try (RocksSession schemaSession = typeDB.session(database, Arguments.Session.Type.SCHEMA)) {
@@ -119,7 +119,7 @@ public class TestResolution {
             }
         }
         try (RocksSession session2 = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            assertThrows(SoundnessException.class, () -> resolution.testSoundness(session2, inferenceQuery));
+            assertThrows(SoundnessException.class, () -> resolution.checkSoundness(session2, inferenceQuery));
         }
     }
 
@@ -130,9 +130,9 @@ public class TestResolution {
                 "$continent isa continent; " +
                 "$area isa area;").asMatch();
         loadTransitivityExample(typeDB, database);
-        Resolution resolution;
+        CorrectnessChecker resolution;
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            resolution = new Resolution(session);
+            resolution = CorrectnessChecker.initialise(session);
         }
         // Undefine a rule in the database under test such that the expected facts will not be inferred
         try (RocksSession schemaSession = typeDB.session(database, Arguments.Session.Type.SCHEMA)) {
@@ -152,7 +152,7 @@ public class TestResolution {
             }
         }
         try (RocksSession session2 = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            assertThrows(SoundnessException.class, () -> resolution.testSoundness(session2, inferenceQuery));
+            assertThrows(SoundnessException.class, () -> resolution.checkSoundness(session2, inferenceQuery));
         }
     }
 
@@ -183,10 +183,10 @@ public class TestResolution {
             tx.commit();
         }
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            Resolution resolution = new Resolution(session);
-            assertThrows(CompletenessException.class, () -> resolution.testCompleteness(inferenceQuery));
-            assertThrows(SoundnessException.class, () -> resolution.testSoundness(session,
-                                                                                  inferenceQuery));
+            CorrectnessChecker resolution = CorrectnessChecker.initialise(session);
+            assertThrows(CompletenessException.class, () -> resolution.checkCompleteness(inferenceQuery));
+            assertThrows(SoundnessException.class, () -> resolution.checkSoundness(session,
+                                                                                   inferenceQuery));
         }
     }
 
@@ -206,9 +206,9 @@ public class TestResolution {
 
     private void testCorrectness(TypeQLMatch inferenceQuery) {
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            Resolution resolutionTest = new Resolution(session);
-            resolutionTest.testSoundness(session, inferenceQuery);
-            resolutionTest.testCompleteness(inferenceQuery);
+            CorrectnessChecker resolutionTest = CorrectnessChecker.initialise(session);
+            resolutionTest.checkSoundness(session, inferenceQuery);
+            resolutionTest.checkCompleteness(inferenceQuery);
         }
     }
 }

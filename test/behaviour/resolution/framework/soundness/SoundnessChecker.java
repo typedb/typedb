@@ -18,7 +18,10 @@
 
 package com.vaticle.typedb.core.test.behaviour.resolution.framework.soundness;
 
+import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.TypeDB.Transaction;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
@@ -34,29 +37,30 @@ import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common
 public class SoundnessChecker {
 
     private final Reasoner referenceReasoner;
-    private final Transaction tx;
+    private final TypeDB.Session session;
     private final Map<Concept, Concept> inferredConceptMapping;
 
-    public SoundnessChecker(Reasoner referenceReasoner, Transaction tx) {
+    private SoundnessChecker(Reasoner referenceReasoner, TypeDB.Session session) {
         this.referenceReasoner = referenceReasoner;
-        this.tx = tx;
-        assert tx.context().options().infer();
-        assert tx.context().options().explain();
+        this.session = session;
         this.inferredConceptMapping = new HashMap<>();
     }
 
-    public static SoundnessChecker create(Reasoner referenceReasoner, Transaction tx) {
-        return new SoundnessChecker(referenceReasoner, tx);
+    public static SoundnessChecker create(Reasoner referenceReasoner, TypeDB.Session session) {
+        return new SoundnessChecker(referenceReasoner, session);
     }
 
     public void checkQuery(TypeQLMatch inferenceQuery) {
-        tx.query().match(inferenceQuery).forEachRemaining(this::checkAnswer);
+        try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ,
+                                                  new Options.Transaction().infer(true).explain(true))) {
+            tx.query().match(inferenceQuery).forEachRemaining(ans -> checkAnswer(ans, tx));
+        }
     }
 
-    private void checkAnswer(ConceptMap answer) {
+    private void checkAnswer(ConceptMap answer, Transaction tx) {
         answer.explainables().iterator().forEachRemaining(explainable -> {
             tx.query().explain(explainable.id()).forEachRemaining(explanation -> {
-                checkAnswer(explanation.conditionAnswer());
+                checkAnswer(explanation.conditionAnswer(), tx);
                 checkExplanationAgainstReference(explanation);
             });
         });

@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.test.behaviour.exception.ScenarioDefinitionException;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.Resolution;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.CorrectnessChecker;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
 import com.vaticle.typeql.lang.query.TypeQLInsert;
@@ -50,7 +50,7 @@ public class ResolutionSteps {
 
     private TypeQLMatch queryToTest;
     private Set<ConceptMap> answers;
-    private Resolution resolution;
+    private CorrectnessChecker resolution;
 
     @Given("for each session, typeql define")
     public void typeql_define(String defineQueryStatements) {
@@ -64,7 +64,7 @@ public class ResolutionSteps {
 
     @When("materialised database is completed")
     public void materialised_database_is_completed() {
-        resolution = new Resolution(reasonedSession());
+        resolution = CorrectnessChecker.initialise(reasonedSession());
     }
 
     @Then("for typeql query")
@@ -110,13 +110,13 @@ public class ResolutionSteps {
 
     @Then("all answers are correct in reasoned database")
     public void reasoned_database_all_answers_are_correct() {
-        resolution.testSoundness(session, queryToTest);
-        resolution.testCompleteness(queryToTest);
+        resolution.checkSoundness(reasonedSession(), queryToTest);
+        resolution.checkCompleteness(queryToTest);
     }
 
     @Then("materialised and reasoned databases are the same size")
     public void databases_are_the_same_size() {
-        resolution.testCompleteness(null);  //TODO: Change this step
+        resolution.checkCompleteness(null);  //TODO: Change this step
     }
 
     private void typeql_query(String queryStatements) {

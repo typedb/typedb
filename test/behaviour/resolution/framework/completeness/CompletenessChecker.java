@@ -30,28 +30,24 @@ import static com.vaticle.typedb.core.test.behaviour.resolution.framework.common
 public class CompletenessChecker {
 
     private final Reasoner referenceReasoner;
-    private final RocksTransaction referenceTx;
     private final RocksSession session;
 
-    public CompletenessChecker(Reasoner referenceReasoner, RocksTransaction referenceTx, RocksSession session) {
+    private CompletenessChecker(Reasoner referenceReasoner, RocksSession session) {
         this.referenceReasoner = referenceReasoner;
         this.session = session;
-        this.referenceTx = referenceTx;
-        assert !referenceTx.context().options().infer();
     }
 
-    public static CompletenessChecker create(Reasoner referenceReasoner, RocksTransaction referenceTx,
-                                             RocksSession session) {
-        return new CompletenessChecker(referenceReasoner, referenceTx, session);
+    public static CompletenessChecker create(Reasoner referenceReasoner, RocksSession session) {
+        return new CompletenessChecker(referenceReasoner, session);
     }
 
     public void checkQuery(TypeQLMatch inferenceQuery) {
         // TODO: How do we handle disjunctions inside negations?
         Disjunction disjunction = Disjunction.create(inferenceQuery.conjunction().normalise());
         disjunction.conjunctions().forEach(conjunction -> {
-            referenceTx.reasoner().executeTraversal(
+            referenceReasoner.tx().reasoner().executeTraversal(
                     new Disjunction(Collections.singletonList(conjunction)),
-                    new Context.Query(referenceTx.context(), new Options.Query()),
+                    new Context.Query(referenceReasoner.tx().context(), new Options.Query()),
                     filterRetrievableVars(conjunction.identifiers())
             ).forEachRemaining(answer -> {
                 checkConjunctionConcludables(answer, conjunction);
@@ -61,8 +57,7 @@ public class CompletenessChecker {
 
     private void checkConjunctionConcludables(ConceptMap answer, Conjunction conjunction) {
         Concludable.create(conjunction).forEach(concludable -> {
-            concludable
-                    .applicableRules(referenceTx.concepts(), referenceTx.logic())
+            concludable.applicableRules(referenceReasoner.tx().concepts(), referenceReasoner.tx().logic())
                     .forEach(((rule, unifiers) -> unifiers.forEach(unifier -> {
                         Optional<Pair<ConceptMap, Instance>> unified =
                                 unifier.unify(answer.filter(concludable.retrieves()));

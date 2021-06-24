@@ -106,7 +106,7 @@ host_compatible_java_test(
     name = "test-resolution",
     size = "large",
     srcs = [
-        "TestResolution.java",
+        "TestCorrectnessChecker.java",
     ],
     classpath_resources = ["//common/test:logback-test"],
     test_class = "com.vaticle.typedb.core.test.behaviour.resolution.framework.test.TestResolution",

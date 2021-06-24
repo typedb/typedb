@@ -21,7 +21,7 @@ load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
 native_java_libraries(
     name = "resolution-lib",
     srcs = [
-        "Resolution.java",
+        "CorrectnessChecker.java",
         ],
     visibility = ["//visibility:public"],
     native_libraries_deps = [
@@ -41,7 +41,7 @@ native_java_libraries(
 
 java_binary(
     name = "resolution",
-    main_class = "grakn.verification.resolution.framework.Resolution",
+    main_class = "grakn.verification.resolution.framework.CorrectnessChecker",
     runtime_deps = [":resolution-lib"],
 )
 
@@ -51,7 +51,7 @@ java_binary(
         "-Xdebug",
         "-Xrunjdwp:transport=dt_socket,server=y,address=5005",
     ],
-    main_class = "grakn.verification.resolution.framework.Resolution",
+    main_class = "grakn.verification.resolution.framework.CorrectnessChecker",
         runtime_deps = [":resolution-lib"],
 )
 
