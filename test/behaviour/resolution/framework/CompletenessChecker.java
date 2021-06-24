@@ -23,7 +23,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.Utils.filterRetrievableVars;
 
 public class CompletenessChecker {
 
@@ -40,17 +39,8 @@ public class CompletenessChecker {
     }
 
     public void checkQuery(TypeQLMatch inferenceQuery) {
-        // TODO: How do we handle disjunctions inside negations?
-        Disjunction disjunction = Disjunction.create(inferenceQuery.conjunction().normalise());
-        referenceReasoner.tx().logic().typeResolver().resolve(disjunction);
-        disjunction.conjunctions().forEach(conjunction -> {
-            referenceReasoner.tx().reasoner().executeTraversal(
-                    new Disjunction(Collections.singletonList(conjunction)),
-                    new Context.Query(referenceReasoner.tx().context(), new Options.Query()),
-                    filterRetrievableVars(conjunction.identifiers())
-            ).forEachRemaining(answer -> {
-                checkConjunctionConcludables(answer, conjunction);
-            });
+        referenceReasoner.query(inferenceQuery).forEach((conjunction, answers) -> {
+            answers.forEachRemaining(answer -> checkConjunctionConcludables(answer, conjunction));
         });
     }
 

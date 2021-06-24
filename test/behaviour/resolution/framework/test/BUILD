@@ -19,20 +19,6 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
 load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
-native_java_libraries(
-    name = "load-test",
-    srcs = ["LoadTest.java"],
-    visibility = ["//visibility:public"],
-    native_libraries_deps = [
-        "//:typedb",
-    ],
-    deps = [
-        "//common",
-        "@vaticle_typeql_lang_java//:typeql-lang",
-    ]
-)
-
-
 host_compatible_java_test(
     name = "test-reasoner",
     size = "medium",
@@ -46,7 +32,6 @@ host_compatible_java_test(
         "//:typedb",
         "//logic:logic",
         "//rocks:rocks",
-        "//test/behaviour/resolution/framework/test:load-test",
         "//test/behaviour/resolution/framework:resolution",
     ],
     deps = [
@@ -72,7 +57,6 @@ host_compatible_java_test(
     native_libraries_deps = [
         "//:typedb",
         "//rocks:rocks",
-        "//test/behaviour/resolution/framework/test:load-test",
         "//test/behaviour/resolution/framework:resolution",
     ],
     deps = [
