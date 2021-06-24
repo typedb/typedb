@@ -59,7 +59,7 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.ROLEPLAYE
 
 public abstract class ThingImpl extends ConceptImpl implements Thing {
 
-    final ThingVertex vertex;
+    private ThingVertex vertex;
 
     ThingImpl(ThingVertex vertex) {
         this.vertex = Objects.requireNonNull(vertex);
@@ -78,24 +78,33 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
         }
     }
 
+    protected ThingVertex readableVertex() {
+        return vertex;
+    }
+
+    protected ThingVertex.Write writableVertex() {
+        if (!vertex.isWrite()) vertex = vertex.toWrite();
+        return vertex.asWrite();
+    }
+
     @Override
     public ByteArray getIID() {
-        return vertex.iid().bytes();
+        return readableVertex().iid().bytes();
     }
 
     @Override
     public String getIIDForPrinting() {
-        return vertex.iid().bytes().toHexString();
+        return readableVertex().iid().bytes().toHexString();
     }
 
     @Override
     public boolean isDeleted() {
-        return vertex.isDeleted();
+        return writableVertex().isDeleted();
     }
 
     @Override
     public boolean isInferred() {
-        return vertex.isInferred();
+        return readableVertex().isInferred();
     }
 
     @Override
@@ -106,24 +115,24 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     @Override
     public void setHas(Attribute attribute, boolean isInferred) {
         validateIsNotDeleted();
-        AttributeVertex<?> attrVertex = ((AttributeImpl<?>) attribute).vertex.asAttribute();
+        AttributeVertex.Write<?> attrVertex = ((AttributeImpl<?>) attribute).writableVertex();
         if (getType().getOwns().noneMatch(t -> t.equals(attribute.getType()))) {
-            throw exception(TypeDBException.of(THING_CANNOT_OWN_ATTRIBUTE, attribute.getType().getLabel(), vertex.type().label()));
+            throw exception(TypeDBException.of(THING_CANNOT_OWN_ATTRIBUTE, attribute.getType().getLabel(), readableVertex().type().label()));
         } else if (getType().getOwns(true).anyMatch(t -> t.equals(attribute.getType()))) {
             if (getHas(attribute.getType()).first().isPresent()) {
                 throw exception(TypeDBException.of(THING_KEY_OVER, attribute.getType().getLabel(), getType().getLabel()));
             } else if (attribute.getOwners(getType()).first().isPresent()) {
                 throw exception(TypeDBException.of(THING_KEY_TAKEN, attribute.getType().getLabel(), getType().getLabel()));
             }
-            this.vertex.graph().exclusiveOwnership(((ThingTypeImpl) this.getType()).vertex, attrVertex);
+            vertex.graph().exclusiveOwnership(((TypeImpl) ((ThingTypeImpl) this.getType())).vertex, attrVertex);
         }
-        this.vertex.outs().put(HAS, attrVertex, isInferred);
+        writableVertex().outs().put(HAS, attrVertex, isInferred);
     }
 
     @Override
     public void unsetHas(Attribute attribute) {
         validateIsNotDeleted();
-        ThingEdge hasEdge = vertex.outs().edge(HAS, ((AttributeImpl<?>) attribute).vertex);
+        ThingEdge hasEdge = vertex.outs().edge(HAS, ((AttributeImpl<?>) attribute).writableVertex());
         if (hasEdge == null) throw exception(TypeDBException.of(INVALID_DELETE_HAS, this, attribute));
         hasEdge.delete();
     }
@@ -171,24 +180,24 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
             return iterate(attributeTypes)
                     .flatMap(AttributeType::getSubtypes).distinct()
                     .map(t -> ((TypeImpl) t).vertex)
-                    .flatMap(type -> vertex.outs().edge(
+                    .flatMap(type -> readableVertex().outs().edge(
                             HAS, PrefixIID.of(type.encoding().instance()), type.iid()
                     ).to()).map(ThingVertex::asAttribute);
         } else {
-            return vertex.outs().edge(HAS).to().map(ThingVertex::asAttribute);
+            return readableVertex().outs().edge(HAS).to().map(ThingVertex::asAttribute);
         }
     }
 
     @Override
     public boolean hasInferred(Attribute attribute) {
-        ThingEdge hasEdge = vertex.outs().edge(HAS, ((ThingImpl) attribute).vertex);
+        ThingEdge hasEdge = readableVertex().outs().edge(HAS, ((ThingImpl) attribute).readableVertex());
         return hasEdge != null && hasEdge.isInferred();
     }
 
     @Override
     public FunctionalIterator<? extends RoleType> getPlaying() {
-        return vertex.outs().edge(PLAYING).to().map(ThingVertex::type)
-                .map(v -> RoleTypeImpl.of(vertex.graphs(), v));
+        return readableVertex().outs().edge(PLAYING).to().map(ThingVertex::type)
+                .map(v -> RoleTypeImpl.of(readableVertex().graphs(), v));
     }
 
     @Override
@@ -198,26 +207,26 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
                 throw exception(TypeDBException.of(INVALID_ROLE_TYPE_LABEL, scopedLabel));
             }
             String[] label = scopedLabel.split(":");
-            return RoleTypeImpl.of(vertex.graphs(), vertex.graph().type().getType(label[1], label[0]));
+            return RoleTypeImpl.of(readableVertex().graphs(), readableVertex().graph().type().getType(label[1], label[0]));
         }).stream().toArray(RoleType[]::new));
     }
 
     @Override
     public FunctionalIterator<RelationImpl> getRelations(RoleType... roleTypes) {
         if (roleTypes.length == 0) {
-            return vertex.ins().edge(ROLEPLAYER).from().map(RelationImpl::of);
+            return readableVertex().ins().edge(ROLEPLAYER).from().map(RelationImpl::of);
         } else {
             return iterate(roleTypes).flatMap(RoleType::getSubtypes).distinct().flatMap(
-                    rt -> vertex.ins().edge(ROLEPLAYER, ((RoleTypeImpl) rt).vertex.iid()).from()
+                    rt -> readableVertex().ins().edge(ROLEPLAYER, ((RoleTypeImpl) rt).vertex.iid()).from()
             ).map(RelationImpl::of);
         }
     }
 
     @Override
     public void delete() {
-        Set<RelationImpl> relations = vertex.ins().edge(ROLEPLAYER).from().map(RelationImpl::of).toSet();
-        vertex.outs().edge(PLAYING).to().map(RoleImpl::of).forEachRemaining(RoleImpl::delete);
-        vertex.delete();
+        Set<RelationImpl> relations = writableVertex().ins().edge(ROLEPLAYER).from().map(RelationImpl::of).toSet();
+        writableVertex().outs().edge(PLAYING).to().map(RoleImpl::of).forEachRemaining(RoleImpl::delete);
+        writableVertex().delete();
         relations.forEach(RelationImpl::deleteIfNoPlayer);
     }
 
@@ -232,7 +241,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     }
 
     void validateIsNotDeleted() {
-        if (vertex.isDeleted()) throw exception(TypeDBException.of(THING_HAS_BEEN_DELETED, getIIDForPrinting()));
+        if (writableVertex().isDeleted()) throw exception(TypeDBException.of(THING_HAS_BEEN_DELETED, getIIDForPrinting()));
     }
 
     @Override
@@ -253,12 +262,12 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
 
     @Override
     public TypeDBException exception(TypeDBException exception) {
-        return vertex.graphs().exception(exception);
+        return readableVertex().graphs().exception(exception);
     }
 
     @Override
     public String toString() {
-        return vertex.encoding().name() + ":" + vertex.type().properLabel() + ":" + getIIDForPrinting();
+        return readableVertex().encoding().name() + ":" + readableVertex().type().properLabel() + ":" + getIIDForPrinting();
     }
 
     @Override
@@ -266,11 +275,11 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
         ThingImpl that = (ThingImpl) object;
-        return this.vertex.equals(that.vertex);
+        return this.readableVertex().equals(that.readableVertex());
     }
 
     @Override
     public final int hashCode() {
-        return vertex.hashCode(); // does not need caching
+        return readableVertex().hashCode(); // does not need caching
     }
 }

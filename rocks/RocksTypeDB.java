@@ -83,7 +83,7 @@ public class RocksTypeDB implements TypeDB {
 
     private BlockBasedTableConfig initRocksDBTableOptions() {
         BlockBasedTableConfig rocksDBTableOptions = new BlockBasedTableConfig();
-        long blockSize = Math.round(Runtime.getRuntime().totalMemory() * 0.4); // TODO: generalise through typedb.properties
+        long blockSize = Math.round(Runtime.getRuntime().maxMemory() * 0.4); // TODO: generalise through typedb.properties
         ClockCache uncompressedCache = new ClockCache(blockSize);
         ClockCache compressedCache = new ClockCache(blockSize);
         rocksDBTableOptions.setBlockCache(uncompressedCache).setBlockCacheCompressed(compressedCache);

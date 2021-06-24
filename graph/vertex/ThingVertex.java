@@ -41,6 +41,13 @@ public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thi
     GraphManager graphs();
 
     /**
+     * Returns the {@code TypeVertex} in which this {@code ThingVertex} is an instance of.
+     *
+     * @return the {@code TypeVertex} in which this {@code ThingVertex} is an instance of
+     */
+    TypeVertex type();
+
+    /**
      * Returns the {@code ThingAdjacency} set of outgoing edges.
      *
      * @return the {@code ThingAdjacency} set of outgoing edges
@@ -55,25 +62,11 @@ public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thi
     ThingAdjacency ins();
 
     /**
-     * Returns the {@code TypeVertex} in which this {@code ThingVertex} is an instance of.
-     *
-     * @return the {@code TypeVertex} in which this {@code ThingVertex} is an instance of
-     */
-    TypeVertex type();
-
-    /**
      * Returns true if this {@code ThingVertex} is a result of inference.
      *
      * @return true if this {@code ThingVertex} is a result of inference
      */
     boolean isInferred();
-
-    /**
-     * Sets a boolean flag to indicate whether this vertex was a result of inference.
-     *
-     * @param isInferred indicating whether this vertex was a result of inference
-     */
-    void isInferred(boolean isInferred);
 
     /**
      * Returns true if this {@code ThingVertex} is an instance of {@code AttributeVertex}.
@@ -88,4 +81,47 @@ public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thi
      * @return this object as an {@code AttributeVertex}
      */
     AttributeVertex<?> asAttribute();
+
+    boolean isWrite();
+
+    ThingVertex.Write asWrite();
+
+    ThingVertex.Write toWrite();
+
+    interface Write extends ThingVertex {
+
+        /**
+         * Returns the {@code ThingAdjacency} set of outgoing edges.
+         *
+         * @return the {@code ThingAdjacency} set of outgoing edges
+         */
+        ThingAdjacency.Write outs();
+
+        /**
+         * Returns the {@code ThingAdjacency} set of incoming edges.
+         *
+         * @return the {@code ThingAdjacency} set of incoming edges
+         */
+        ThingAdjacency.Write ins();
+
+        void setModified();
+
+        void delete();
+
+        boolean isDeleted();
+
+        void commit();
+
+        /**
+         * Sets a boolean flag to indicate whether this vertex was a result of inference.
+         *
+         * @param isInferred indicating whether this vertex was a result of inference
+         */
+        void isInferred(boolean isInferred);
+
+        @Override
+        AttributeVertex.Write<?> asAttribute();
+
+    }
+
 }

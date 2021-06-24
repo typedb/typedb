@@ -30,7 +30,6 @@ public interface AttributeVertex<VALUE> extends ThingVertex {
      *
      * @return the IID of this {@code AttributeVertex}
      */
-    @Override
     VertexIID.Attribute<VALUE> iid();
 
     /**
@@ -46,6 +45,10 @@ public interface AttributeVertex<VALUE> extends ThingVertex {
      * @return the literal value stored in the vertex
      */
     VALUE value();
+
+    AttributeVertex.Write<VALUE> toWrite();
+
+    AttributeVertex.Write<VALUE> asWrite();
 
     boolean isBoolean();
 
@@ -66,4 +69,21 @@ public interface AttributeVertex<VALUE> extends ThingVertex {
     AttributeVertex<String> asString();
 
     AttributeVertex<LocalDateTime> asDateTime();
+
+    interface Write<VALUE> extends ThingVertex.Write, AttributeVertex<VALUE> {
+
+        AttributeVertex.Write<VALUE> asWrite();
+
+        AttributeVertex.Write<Boolean> asBoolean();
+
+        AttributeVertex.Write<Long> asLong();
+
+        AttributeVertex.Write<Double> asDouble();
+
+        AttributeVertex.Write<String> asString();
+
+        AttributeVertex.Write<LocalDateTime> asDateTime();
+
+    }
+
 }

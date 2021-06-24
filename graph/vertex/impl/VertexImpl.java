@@ -25,7 +25,6 @@ import static com.vaticle.typedb.common.util.Objects.className;
 public abstract class VertexImpl<VERTEX_IID extends VertexIID> {
 
     VERTEX_IID iid;
-    boolean isModified;
 
     VertexImpl(VERTEX_IID iid) {
         this.iid = iid;
@@ -39,10 +38,6 @@ public abstract class VertexImpl<VERTEX_IID extends VertexIID> {
         this.iid = iid;
     }
 
-    public boolean isModified() {
-        return isModified;
-    }
-
     @Override
     public String toString() {
         return className(this.getClass()) + ": " + iid.toString();
@@ -51,7 +46,7 @@ public abstract class VertexImpl<VERTEX_IID extends VertexIID> {
     @Override
     public boolean equals(Object object) {
         if (this == object) return true;
-        if (object == null || getClass() != object.getClass()) return false;
+        if (!(object instanceof VertexImpl)) return false; // instanceof includes null check
         VertexImpl<?> that = (VertexImpl<?>) object;
         return this.iid.equals(that.iid);
     }

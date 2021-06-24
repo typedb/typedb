@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.graph.edge;
 
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.iid.EdgeIID;
+import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 
 import java.util.Optional;
@@ -31,7 +32,15 @@ import java.util.Optional;
  */
 public interface ThingEdge extends Edge<Encoding.Edge.Thing, EdgeIID.Thing, ThingVertex> {
 
-    Optional<ThingVertex> optimised();
+    ThingVertex from();
+
+    VertexIID.Thing fromIID();
+
+    ThingVertex to();
+
+    VertexIID.Thing toIID();
+
+    Optional<? extends ThingVertex> optimised();
 
     void isInferred(boolean isInferred);
 

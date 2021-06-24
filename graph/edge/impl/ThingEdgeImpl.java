@@ -61,9 +61,9 @@ public abstract class ThingEdgeImpl implements ThingEdge {
     public static class Buffered extends ThingEdgeImpl implements ThingEdge {
 
         private final AtomicBoolean committed;
-        private final ThingVertex from;
-        private final ThingVertex to;
-        private final ThingVertex optimised;
+        private final ThingVertex.Write from;
+        private final ThingVertex.Write to;
+        private final ThingVertex.Write optimised;
         private final int hash;
 
         /**
@@ -74,7 +74,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
          * @param to         the head vertex
          * @param isInferred
          */
-        public Buffered(Encoding.Edge.Thing encoding, ThingVertex from, ThingVertex to, boolean isInferred) {
+        public Buffered(Encoding.Edge.Thing encoding, ThingVertex.Write from, ThingVertex.Write to, boolean isInferred) {
             this(encoding, from, to, null, isInferred);
         }
 
@@ -86,7 +86,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
          * @param to        the head vertex
          * @param optimised vertex that this optimised edge is compressing
          */
-        public Buffered(Encoding.Edge.Thing encoding, ThingVertex from, ThingVertex to, @Nullable ThingVertex optimised, boolean isInferred) {
+        public Buffered(Encoding.Edge.Thing encoding, ThingVertex.Write from, ThingVertex.Write to, @Nullable ThingVertex.Write optimised, boolean isInferred) {
             super(from.graph(), encoding, isInferred);
             assert this.graph == to.graph();
             assert encoding.isOptimisation() || optimised == null;
@@ -123,17 +123,27 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         }
 
         @Override
-        public ThingVertex from() {
+        public ThingVertex.Write from() {
             return from;
         }
 
         @Override
-        public ThingVertex to() {
+        public VertexIID.Thing fromIID() {
+            return from.iid();
+        }
+
+        @Override
+        public ThingVertex.Write to() {
             return to;
         }
 
         @Override
-        public Optional<ThingVertex> optimised() {
+        public VertexIID.Thing toIID() {
+            return to.iid();
+        }
+
+        @Override
+        public Optional<ThingVertex.Write> optimised() {
             return Optional.ofNullable(optimised);
         }
 
@@ -218,9 +228,9 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         private final VertexIID.Thing toIID;
         private final VertexIID.Thing optimisedIID;
         private final int hash;
-        private ThingVertex from;
-        private ThingVertex to;
-        private ThingVertex optimised;
+        private ThingVertex.Write fromCache;
+        private ThingVertex.Write toCache;
+        private ThingVertex optimisedCache;
 
         /**
          * Default constructor for {@code Edge.Persisted}.
@@ -279,25 +289,59 @@ public abstract class ThingEdgeImpl implements ThingEdge {
 
         @Override
         public ThingVertex from() {
-            if (from != null) return from;
-            from = graph.convert(fromIID);
-            from.outs().cache(this);
-            return from;
+            if (fromCache != null) return fromCache;
+            ThingVertex from = graph.convertToReadable(fromIID);
+            if (from.isWrite()) {
+                fromCache = from.asWrite();
+                fromCache.outs().cache(this);
+                return fromCache;
+            } else {
+                return from;
+            }
+        }
+
+        private ThingVertex.Write fromWritable() {
+            if (fromCache != null) return fromCache;
+            fromCache = graph.convertToWritable(fromIID);
+            fromCache.outs().cache(this);
+            return fromCache;
+        }
+
+        @Override
+        public VertexIID.Thing fromIID() {
+            return fromIID;
         }
 
         @Override
         public ThingVertex to() {
-            if (to != null) return to;
-            to = graph.convert(toIID);
-            to.ins().cache(this);
-            return to;
+            if (toCache != null) return toCache;
+            ThingVertex to = graph.convertToReadable(toIID);
+            if (to.isWrite()) {
+                toCache = to.asWrite();
+                toCache.ins().cache(this);
+                return toCache;
+            } else {
+                return to;
+            }
+        }
+
+        private ThingVertex.Write toWritable() {
+            if (toCache != null) return toCache;
+            toCache = graph.convertToWritable(toIID);
+            toCache.outs().cache(this);
+            return toCache;
+        }
+
+        @Override
+        public VertexIID.Thing toIID() {
+            return toIID;
         }
 
         @Override
         public Optional<ThingVertex> optimised() {
-            if (optimised != null) return Optional.of(optimised);
-            if (optimisedIID != null) optimised = graph.convert(optimisedIID);
-            return Optional.ofNullable(optimised);
+            if (optimisedCache != null) return Optional.of(optimisedCache);
+            if (optimisedIID != null) optimisedCache = graph.convertToReadable(optimisedIID);
+            return Optional.ofNullable(optimisedCache);
         }
 
         @Override
@@ -317,8 +361,8 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         @Override
         public void delete() {
             if (deleted.compareAndSet(false, true)) {
-                from().outs().remove(this);
-                to().ins().remove(this);
+                fromWritable().outs().remove(this);
+                toWritable().ins().remove(this);
                 graph.storage().deleteTracked(this.outIID.bytes());
                 graph.storage().deleteUntracked(this.inIID.bytes());
                 if (encoding == Encoding.Edge.Thing.HAS && !isInferred) {

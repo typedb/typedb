@@ -466,7 +466,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             return getSubtypes(v -> {
                 switch (v.encoding()) {
                     case THING_TYPE:
-                        assert this.vertex == v;
+                        assert vertex == v;
                         return this;
                     case ENTITY_TYPE:
                         return EntityTypeImpl.of(graphMgr, v);

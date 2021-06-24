@@ -43,6 +43,14 @@ public interface TypeVertex extends Vertex<VertexIID.Type, Encoding.Vertex.Type>
 
     String scopedLabel();
 
+    void setModified();
+
+    void delete();
+
+    boolean isDeleted();
+
+    void commit();
+
     void scope(String scope);
 
     TypeAdjacency outs();

@@ -194,7 +194,7 @@ public abstract class ProcedureVertex<
                 } else {
                     attTypes = tree(graph.schema().rootAttributeType(), a -> a.ins().edge(SUB).from());
                 }
-                iter = attTypes.flatMap(t -> graph.data().get(t)).map(ThingVertex::asAttribute);
+                iter = attTypes.flatMap(t -> graph.data().getReadable(t)).map(ThingVertex::asAttribute);
             }
 
             if (props().predicates().isEmpty()) return iter;
@@ -202,13 +202,13 @@ public abstract class ProcedureVertex<
         }
 
         private FunctionalIterator<ThingVertex> iterateFromAll(GraphManager graphMgr, TypeVertex rootType) {
-            return tree(rootType, t -> t.ins().edge(SUB).from()).flatMap(t -> graphMgr.data().get(t));
+            return tree(rootType, t -> t.ins().edge(SUB).from()).flatMap(t -> graphMgr.data().getReadable(t));
         }
 
         FunctionalIterator<? extends ThingVertex> iterateAndFilterFromIID(GraphManager graphMgr, Traversal.Parameters parameters) {
             assert props().hasIID() && id().isVariable();
             Identifier.Variable id = id().asVariable();
-            FunctionalIterator<? extends ThingVertex> iter = single(graphMgr.data().get(parameters.getIID(id))).noNulls();
+            FunctionalIterator<? extends ThingVertex> iter = single(graphMgr.data().getReadable(parameters.getIID(id))).noNulls();
             if (!props().types().isEmpty()) iter = filterTypes(iter);
             if (!props().predicates().isEmpty()) iter = filterPredicates(filterAttributes(iter), parameters);
             return iter;
@@ -222,7 +222,7 @@ public abstract class ProcedureVertex<
             if (eq.isPresent()) iter = iteratorOfAttributesWithTypes(graphMgr, parameters, eq.get());
             else iter = iterate(props().types().iterator())
                     .map(l -> assertTypeNotNull(graphMgr.schema().getType(l), l))
-                    .flatMap(t -> graphMgr.data().get(t));
+                    .flatMap(t -> graphMgr.data().getReadable(t));
 
             if (id().isVariable()) iter = filterReferableThings(iter);
             if (props().predicates().isEmpty()) return iter;
@@ -313,15 +313,15 @@ public abstract class ProcedureVertex<
             assert type.isAttributeType();
             switch (type.valueType()) {
                 case BOOLEAN:
-                    return graphMgr.data().get(type, value.getBoolean());
+                    return graphMgr.data().getReadable(type, value.getBoolean());
                 case LONG:
-                    return graphMgr.data().get(type, value.getLong());
+                    return graphMgr.data().getReadable(type, value.getLong());
                 case DOUBLE:
-                    return graphMgr.data().get(type, value.getDouble());
+                    return graphMgr.data().getReadable(type, value.getDouble());
                 case STRING:
-                    return graphMgr.data().get(type, value.getString());
+                    return graphMgr.data().getReadable(type, value.getString());
                 case DATETIME:
-                    return graphMgr.data().get(type, value.getDateTime());
+                    return graphMgr.data().getReadable(type, value.getDateTime());
                 default:
                     throw TypeDBException.of(ILLEGAL_STATE);
             }

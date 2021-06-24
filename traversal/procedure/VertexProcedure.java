@@ -106,7 +106,7 @@ public class VertexProcedure implements Procedure {
             iterator = iterator.filter(v -> e.isClosure(graphMgr, v, v, params));
         }
 
-        return iterator.map(v -> VertexMap.of(map(pair(vertex.id().asVariable().asRetrievable(), v)))).distinct();
+        return iterator.map(v -> VertexMap.of(map(pair(vertex.id().asVariable().asRetrievable(), v))));
     }
 
 }

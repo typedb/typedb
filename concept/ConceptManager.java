@@ -22,7 +22,6 @@ import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.util.StringBuilders;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Thing;
@@ -42,7 +41,6 @@ import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
-import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 
@@ -77,10 +75,6 @@ public final class ConceptManager {
 
     public ConceptManager(GraphManager graphMgr) {
         this.graphMgr = graphMgr;
-    }
-
-    public FunctionalIterator<ConceptMap> conceptMaps(FunctionalIterator<VertexMap> vertexMap) {
-        return vertexMap.map(this::conceptMap);
     }
 
     public ConceptMap conceptMap(VertexMap vertexMap) {
@@ -180,14 +174,14 @@ public final class ConceptManager {
     }
 
     public Thing getThing(ByteArray iid) {
-        ThingVertex thingVertex = graphMgr.data().get(VertexIID.Thing.of(iid));
+        ThingVertex thingVertex = graphMgr.data().getReadable(VertexIID.Thing.of(iid));
         if (thingVertex != null) return ThingImpl.of(thingVertex);
         else return null;
     }
 
     public void validateTypes() {
         List<TypeDBException> exceptions = graphMgr.schema().bufferedTypes().parallel()
-                .filter(Vertex::isModified)
+                .filter(TypeVertex::isModified)
                 .map(v -> TypeImpl.of(graphMgr, v).validate())
                 .collect(ArrayList::new, ArrayList::addAll, ArrayList::addAll);
         if (!exceptions.isEmpty()) throw exception(TypeDBException.of(exceptions));

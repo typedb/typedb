@@ -470,34 +470,38 @@ public class Rule {
                                                                                      ConceptManager conceptMgr) {
                 Identifier.Variable relationTypeIdentifier = isa().type().id();
                 RelationType relationType = relationType(whenConcepts, conceptMgr);
-                Set<RolePlayer> players = new HashSet<>();
-                relation().players().forEach(rp -> players.add(new RolePlayer(rp, relationType, whenConcepts)));
                 FunctionalIterator<com.vaticle.typedb.core.concept.thing.Relation> existingRelations = matchRelation(
-                        relationType, players, traversalEng, conceptMgr
+                        relationType, whenConcepts, traversalEng, conceptMgr
                 );
-
                 if (existingRelations.hasNext()) {
                     return existingRelations.map(rel -> {
                         Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
                         thenConcepts.put(relationTypeIdentifier, relationType);
                         thenConcepts.put(isa().owner().id(), rel);
-                        players.forEach(rp -> {
-                            thenConcepts.putIfAbsent(rp.roleTypeIdentifier, rp.roleType);
-                            thenConcepts.putIfAbsent(rp.playerIdentifier, rp.player);
+                        relation().players().forEach(rp -> {
+                            thenConcepts.putIfAbsent(rp.roleType().get().id(), getRole(rp, relationType, whenConcepts));
+                            thenConcepts.putIfAbsent(rp.player().id(), whenConcepts.get(rp.player().id()));
                         });
                         return thenConcepts;
                     });
                 } else {
-                    Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
-                    thenConcepts.put(relationTypeIdentifier, relationType);
-                    com.vaticle.typedb.core.concept.thing.Relation relation = insertRelation(relationType, players);
-                    thenConcepts.put(isa().owner().id(), relation);
-                    players.forEach(rp -> {
-                        thenConcepts.putIfAbsent(rp.roleTypeIdentifier, rp.roleType);
-                        thenConcepts.putIfAbsent(rp.playerIdentifier, rp.player);
-                    });
-                    return Iterators.single(thenConcepts);
+                    return insert(relationType, whenConcepts, conceptMgr);
                 }
+            }
+
+            private FunctionalIterator<Map<Identifier.Variable, Concept>> insert(RelationType relationType, ConceptMap whenConcepts, ConceptManager conceptMgr) {
+                Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
+                thenConcepts.put(isa().type().id(), relationType);
+                com.vaticle.typedb.core.concept.thing.Relation relation = relationType.create(true);
+                thenConcepts.put(isa().owner().id(), relation);
+                relation().players().forEach(rp -> {
+                    RoleType role = getRole(rp, relationType, whenConcepts);
+                    Thing player = whenConcepts.get(rp.player().id()).asThing();
+                    relation.addPlayer(role, player, true);
+                    thenConcepts.putIfAbsent(rp.roleType().get().id(), role);
+                    thenConcepts.putIfAbsent(rp.player().id(), player);
+                });
+                return Iterators.single(thenConcepts);
             }
 
             @Override
@@ -547,24 +551,19 @@ public class Rule {
                 return this;
             }
 
-            private com.vaticle.typedb.core.concept.thing.Relation insertRelation(RelationType relationType, Set<RolePlayer> players) {
-                com.vaticle.typedb.core.concept.thing.Relation relation = relationType.create(true);
-                players.forEach(rp -> relation.addPlayer(rp.roleType, rp.player, true));
-                return relation;
-            }
-
-            private FunctionalIterator<com.vaticle.typedb.core.concept.thing.Relation> matchRelation(RelationType relationType, Set<RolePlayer> players,
+            private FunctionalIterator<com.vaticle.typedb.core.concept.thing.Relation> matchRelation(RelationType relationType, ConceptMap whenConcepts,
                                                                                                      TraversalEngine traversalEng, ConceptManager conceptMgr) {
                 Traversal traversal = new Traversal();
                 Identifier.Variable.Retrievable relationId = relation().owner().id();
                 traversal.types(relationId, set(relationType.getLabel()));
-                Set<Identifier.Variable> playersWithIds = new HashSet<>();
-                players.forEach(rp -> {
-                    // note: NON-transitive role player types - we require an exact role being played
-                    traversal.rolePlayer(relationId, rp.playerIdentifier, set(rp.roleType.getLabel()), rp.repetition);
-                    if (!playersWithIds.contains(rp.playerIdentifier)) {
-                        traversal.iid(rp.playerIdentifier, rp.player.getIID());
-                        playersWithIds.add(rp.playerIdentifier);
+                Set<Identifier.Variable> playersWithIIDs = new HashSet<>();
+                relation().players().forEach(rp -> {
+                    Identifier.Variable.Retrievable playerId = rp.player().id();
+                    assert rp.roleType().isPresent() && rp.roleType().get().label().isPresent() && whenConcepts.contains(playerId);
+                    traversal.rolePlayer(relationId, playerId, set(getRole(rp, relationType, whenConcepts).getLabel()), rp.repetition());
+                    if (!playersWithIIDs.contains(playerId)) {
+                        traversal.iid(playerId, whenConcepts.get(playerId).asThing().getIID());
+                        playersWithIIDs.add(playerId);
                     }
                 });
                 return traversalEng.iterator(traversal).map(conceptMgr::conceptMap)
@@ -582,29 +581,14 @@ public class Rule {
                 }
             }
 
-            private static class RolePlayer {
-                private final Identifier.Variable roleTypeIdentifier;
-                private final RoleType roleType;
-                private final Identifier.Variable playerIdentifier;
-                private final Thing player;
-                private final int repetition;
-
-                public RolePlayer(RelationConstraint.RolePlayer rp, RelationType scope, ConceptMap whenConcepts) {
-                    assert rp.roleType().isPresent();
-                    roleTypeIdentifier = rp.roleType().get().id();
-                    if (rp.roleType().get().reference().isName()) {
-                        roleType = whenConcepts.get(rp.roleType().get().reference().asName()).asRoleType();
-                    } else {
-                        assert rp.roleType().get().reference().isLabel();
-                        roleType = scope.getRelates(rp.roleType().get().label().get().properLabel().name());
-                    }
-                    assert whenConcepts.contains(rp.player().reference().asName());
-                    playerIdentifier = Identifier.Variable.of(rp.player().reference().asName());
-                    player = whenConcepts.get(rp.player().reference().asName()).asThing();
-                    repetition = rp.repetition();
+            private RoleType getRole(RelationConstraint.RolePlayer rp, RelationType scope, ConceptMap whenConcepts) {
+                if (rp.roleType().get().reference().isName()) {
+                    return whenConcepts.get(rp.roleType().get().reference().asName()).asRoleType();
+                } else {
+                    assert rp.roleType().get().reference().isLabel();
+                    return scope.getRelates(rp.roleType().get().label().get().properLabel().name());
                 }
             }
-
         }
 
         public static abstract class Has extends Conclusion {
@@ -805,9 +789,9 @@ public class Rule {
                     Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
                     assert whenConcepts.contains(has().attribute().id())
                             && whenConcepts.get(has().attribute().id()).isAttribute();
-                    Attribute attribute = whenConcepts.get(has().attribute().id()).asAttribute();
-                    owner.setHas(attribute, true);
-                    thenConcepts.put(has().attribute().id(), attribute);
+                    Attribute attr = whenConcepts.get(has().attribute().id()).asAttribute();
+                    owner.setHas(attr, true);
+                    thenConcepts.put(has().attribute().id(), attr);
                     thenConcepts.put(has().owner().id(), owner);
                     return Iterators.single(thenConcepts);
                 }

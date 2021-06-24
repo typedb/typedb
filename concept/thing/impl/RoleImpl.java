@@ -27,10 +27,10 @@ import static java.util.Objects.requireNonNull;
 
 public class RoleImpl {
 
-    final ThingVertex vertex;
+    final ThingVertex.Write vertex;
 
     private RoleImpl(ThingVertex vertex) {
-        this.vertex = requireNonNull(vertex);
+        this.vertex = requireNonNull(vertex.toWrite());
     }
 
     public static RoleImpl of(ThingVertex vertex) {
@@ -38,14 +38,14 @@ public class RoleImpl {
     }
 
     void optimise() {
-        ThingVertex relation = vertex.ins().edge(RELATING).from().next();
-        ThingVertex player = vertex.ins().edge(PLAYING).from().next();
+        ThingVertex.Write relation = vertex.ins().edge(RELATING).from().next().toWrite();
+        ThingVertex.Write player = vertex.ins().edge(PLAYING).from().next().toWrite();
         relation.outs().put(ROLEPLAYER, player, vertex, vertex.isInferred());
     }
 
     public void delete() {
-        ThingVertex relation = vertex.ins().edge(RELATING).from().next();
-        ThingVertex player = vertex.ins().edge(PLAYING).from().next();
+        ThingVertex.Write relation = vertex.ins().edge(RELATING).from().next().toWrite();
+        ThingVertex.Write player = vertex.ins().edge(PLAYING).from().next().toWrite();
         relation.outs().edge(ROLEPLAYER, player, vertex).delete();
         vertex.delete();
     }

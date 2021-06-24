@@ -523,8 +523,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         @Override
         public boolean isInferredAnswer(ConceptMap conceptMap) {
             Thing owner = conceptMap.get(has.owner().id()).asThing();
-            com.vaticle.typedb.core.concept.thing.Attribute attribute = conceptMap.get(has.attribute().id()).asAttribute();
-            return owner.hasInferred(attribute);
+            return owner.hasInferred(conceptMap.get(has.attribute().id()).asAttribute());
         }
 
         public FunctionalIterator<Unifier> unify(Rule.Conclusion.Has hasConclusion, ConceptManager conceptMgr) {

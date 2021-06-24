@@ -95,7 +95,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     @Override
     public EntityImpl create(boolean isInferred) {
         validateCanHaveInstances(Entity.class);
-        ThingVertex instance = graphMgr.data().create(vertex, isInferred);
+        ThingVertex.Write instance = graphMgr.data().create(vertex, isInferred);
         return EntityImpl.of(instance);
     }
 

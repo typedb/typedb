@@ -126,7 +126,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
                 assert roleType.getSupertype() != null;
                 if (this.isAbstract()) roleType.setAbstract();
                 vertex.outs().put(RELATES, roleType.vertex);
-                vertex.outs().edge(RELATES, roleType.vertex).overridden(roleType.getSupertype().vertex);
+                vertex.outs().edge(RELATES, roleType.vertex).overridden(((TypeImpl) roleType.getSupertype()).vertex);
             }
         }
     }
@@ -148,7 +148,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         }
 
         roleType.sup(inherited.get());
-        vertex.outs().edge(RELATES, roleType.vertex).overridden(inherited.get().vertex);
+        vertex.outs().edge(RELATES, roleType.vertex).overridden(((TypeImpl) inherited.get()).vertex);
     }
 
     @Override
@@ -254,7 +254,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public RelationImpl create(boolean isInferred) {
         validateCanHaveInstances(Relation.class);
-        ThingVertex instance = graphMgr.data().create(vertex, isInferred);
+        ThingVertex.Write instance = graphMgr.data().create(vertex, isInferred);
         return RelationImpl.of(instance);
     }
 
