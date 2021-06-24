@@ -60,9 +60,10 @@ public class TraversalEngine {
         return iterator(traversal, false);
     }
 
-    public FunctionalIterator<VertexMap> iterator(Traversal traversal, boolean extraPlanningTime) {
-        traversal.initialise(cache);
-        return traversal.iterator(graphMgr, extraPlanningTime);
+    public FunctionalIterator<VertexMap> iterator(Traversal traversal, boolean singleUse) {
+        if (singleUse) traversal.initialise();
+        else traversal.initialise(cache);
+        return traversal.iterator(graphMgr, singleUse);
     }
 
     public FunctionalIterator<VertexMap> iterator(GraphProcedure procedure, Traversal.Parameters params) {
