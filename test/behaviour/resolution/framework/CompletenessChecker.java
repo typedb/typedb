@@ -91,7 +91,7 @@ public class CompletenessChecker {
                                                            conclusion.retrievableIds(),
                                                            new Context.Query(tx.context(), new Options.Query())).toList().size();
             if (numAnswers == 0) {
-                throw new Exceptions.CompletenessException("Expected an answer which is not present.");
+                throw new CompletenessException("Expected an answer which is not present.");
             } else if (numAnswers > 1) {
                 throw TypeDBException.of(ILLEGAL_STATE);
             }
@@ -127,4 +127,9 @@ public class CompletenessChecker {
         });
     }
 
+    public static class CompletenessException extends RuntimeException {
+        public CompletenessException(String message) {
+            super(message);
+        }
+    }
 }

@@ -31,8 +31,6 @@ import com.vaticle.typeql.lang.query.TypeQLMatch;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.vaticle.typedb.core.test.behaviour.resolution.framework.Exceptions.SoundnessException;
-
 public class SoundnessChecker {
 
     private final Reasoner referenceReasoner;
@@ -103,4 +101,9 @@ public class SoundnessChecker {
         return new ConceptMap(substituted);
     }
 
+    public static class SoundnessException extends RuntimeException {
+        public SoundnessException(String message) {
+            super(message);
+        }
+    }
 }
