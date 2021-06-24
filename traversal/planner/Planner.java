@@ -30,8 +30,8 @@ public interface Planner {
 
     Procedure procedure();
 
-    default void tryOptimise(GraphManager graphMgr, boolean extraTime) {
-        if (isGraph()) this.asGraph().mayOptimise(graphMgr, extraTime);
+    default void tryOptimise(GraphManager graphMgr, boolean singleUse) {
+        if (isGraph()) this.asGraph().mayOptimise(graphMgr, singleUse);
     }
 
     static Planner create(Structure structure) {

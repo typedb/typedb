@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.common.cache;
 
+import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
 import java.util.function.Function;
@@ -26,12 +27,12 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class CommonCache<KEY, VALUE> {
 
-    private static final int CACHE_SIZE = 10_000; // TODO: parameterise this through typedb.properties
-    private static final int CACHE_TIMEOUT_MINUTES = 1_440;
-    private final com.github.benmanes.caffeine.cache.Cache<KEY, VALUE> cache;
+    protected static final int CACHE_SIZE = 10_000; // TODO: parameterise this through typedb.properties
+    protected static final int CACHE_TIMEOUT_DAY = 1_440;
+    private final Cache<KEY, VALUE> cache;
 
     public CommonCache() {
-        this(CACHE_SIZE, CACHE_TIMEOUT_MINUTES);
+        this(CACHE_SIZE, CACHE_TIMEOUT_DAY);
     }
 
     public CommonCache(int size, int timeoutMinutes) {

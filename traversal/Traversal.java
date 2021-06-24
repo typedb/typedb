@@ -101,20 +101,28 @@ public class Traversal {
         return filter;
     }
 
-    void initialise(TraversalCache cache) {
-        planners = iterate(structure.asGraphs()).filter(p -> iterate(p.vertices()).anyMatch(
-                v -> v.id().isRetrievable() && filter().contains(v.id().asVariable().asRetrievable())
-        )).map(s -> cache.get(s, Planner::create)).toList();
+    void initialise() {
+        planners = structures().map(Planner::create).toList();
     }
 
-    FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, boolean extraPlanningTime) {
+    void initialise(TraversalCache cache) {
+        planners = structures().map(s -> cache.get(s, Planner::create)).toList();
+    }
+
+    private FunctionalIterator<Structure> structures() {
+        return iterate(structure.asGraphs()).filter(p -> iterate(p.vertices()).anyMatch(
+                v -> v.id().isRetrievable() && filter().contains(v.id().asVariable().asRetrievable())
+        ));
+    }
+
+    FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, boolean singleUse) {
         assert !planners.isEmpty();
         if (planners.size() == 1) {
-            planners.get(0).tryOptimise(graphMgr, extraPlanningTime);
+            planners.get(0).tryOptimise(graphMgr, singleUse);
             return planners.get(0).procedure().iterator(graphMgr, parameters, filter());
         } else {
             return cartesian(planners.parallelStream().map(planner -> {
-                planner.tryOptimise(graphMgr, extraPlanningTime);
+                planner.tryOptimise(graphMgr, singleUse);
                 return planner.procedure().iterator(graphMgr, parameters, filter());
             }).collect(toList())).map(partialAnswers -> {
                 Map<Retrievable, Vertex<?, ?>> combinedAnswers = new HashMap<>();
@@ -318,6 +326,10 @@ public class Traversal {
     @Override
     public int hashCode() {
         return Objects.hash(this.structure, this.parameters, this.filter);
+    }
+
+    public Structure structure() {
+        return structure;
     }
 
     public static class Parameters {

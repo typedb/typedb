@@ -328,18 +328,18 @@ public class GraphPlanner implements Planner {
         solver.setHint(new MPVariable[]{}, new double[]{});
     }
 
-    void mayOptimise(GraphManager graph, boolean extraTime) {
+    void mayOptimise(GraphManager graph, boolean singleUse) {
         if (procedure == null) {
             try {
                 firstOptimisingLock.writeLock().lock();
-                if (procedure == null) optimise(graph, extraTime);
+                if (procedure == null) optimise(graph, singleUse);
                 assert procedure != null;
             } finally {
                 firstOptimisingLock.writeLock().unlock();
             }
         } else if (isOptimising.compareAndSet(false, true)) {
             try {
-                optimise(graph, extraTime);
+                optimise(graph, singleUse);
             } finally {
                 isOptimising.set(false);
             }
@@ -347,7 +347,7 @@ public class GraphPlanner implements Planner {
     }
 
     @SuppressWarnings("NonAtomicOperationOnVolatileField")
-    private void optimise(GraphManager graph, boolean extraTime) {
+    private void optimise(GraphManager graph, boolean singleUse) {
         updateObjective(graph);
         if (isUpToDate() && isOptimal()) {
             if (LOG.isDebugEnabled()) LOG.debug("GraphPlanner still optimal and up-to-date");
@@ -355,7 +355,7 @@ public class GraphPlanner implements Planner {
         }
 
         // TODO: we should have a more clever logic to allocate extra time
-        long allocatedDuration = extraTime ? HIGHER_TIME_LIMIT_MILLIS : DEFAULT_TIME_LIMIT_MILLIS;
+        long allocatedDuration = singleUse ? HIGHER_TIME_LIMIT_MILLIS : DEFAULT_TIME_LIMIT_MILLIS;
         Instant start, endSolver, end;
         totalDuration += allocatedDuration;
         solver.setTimeLimit(totalDuration);

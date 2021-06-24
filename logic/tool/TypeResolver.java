@@ -182,9 +182,9 @@ public class TypeResolver {
     }
 
     private Map<Identifier.Variable.Retrievable, Set<Label>> executeTypeResolvers(TraversalBuilder traversalBuilder) {
-        return logicCache.resolver().get(traversalBuilder.traversal(), traversal -> {
+        return logicCache.resolver().get(traversalBuilder.traversal().structure(), structure -> {
             Map<Identifier.Variable.Retrievable, Set<Label>> mapping = new HashMap<>();
-            traversalEng.iterator(traversal, true)
+            traversalEng.iterator(traversalBuilder.traversal(), true)
                     // TODO: This filter should not be needed if we enforce traversal only to return non-abstract
                     .filter(result -> !containsAbstractThing(result, traversalBuilder))
                     .forEachRemaining(
