@@ -23,12 +23,17 @@ host_compatible_java_library(
     srcs = [
         "ResolutionSteps.java"
     ],
+    native_libraries_deps = [
+        "//:typedb",
+        "//rocks:rocks",
+        "//concept:concept",
+        "//test/behaviour/resolution/framework:resolution",
+    ],
     deps = [
         # Package dependencies
         "//common",
         "//test/behaviour/connection:steps",
         "//test/behaviour/exception",
-        "//test/behaviour/resolution/framework:resolution"
 
         # External dependencies from Vaticle
         "@vaticle_typeql_lang_java//:typeql-lang",
@@ -37,10 +42,6 @@ host_compatible_java_library(
         # External dependencies from Maven
         "@maven//:junit_junit",
         "@maven//:io_cucumber_cucumber_java",
-    ],
-    native_libraries_deps = [
-        "//:typedb",
-        "//concept:concept",
     ],
     runtime_deps = [
         "//test/behaviour/connection/database:steps",

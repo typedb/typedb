@@ -21,6 +21,8 @@ package com.vaticle.typedb.core.test.behaviour.connection.transaction;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.rocks.RocksSession;
+import com.vaticle.typedb.core.rocks.RocksTransaction;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -57,10 +59,10 @@ public class TransactionSteps {
 
     @When("(for each )session(,) open transaction(s) of type:")
     public void for_each_session_open_transactions_of_type(List<Arguments.Transaction.Type> types) {
-        for (TypeDB.Session session : sessions) {
-            List<TypeDB.Transaction> transactions = new ArrayList<>();
+        for (RocksSession session : sessions) {
+            List<RocksTransaction> transactions = new ArrayList<>();
             for (Arguments.Transaction.Type type : types) {
-                TypeDB.Transaction transaction = session.transaction(type, (new Options.Transaction()).infer(true));
+                RocksTransaction transaction = session.transaction(type, (new Options.Transaction()).infer(true));
                 transactions.add(transaction);
             }
             sessionsToTransactions.put(session, transactions);
@@ -149,11 +151,11 @@ public class TransactionSteps {
     @Then("(for each )session(,) transaction(s) has/have type:")
     public void for_each_session_transactions_have_type(List<Arguments.Transaction.Type> types) {
         for (TypeDB.Session session : sessions) {
-            List<TypeDB.Transaction> transactions = sessionsToTransactions.get(session);
+            List<RocksTransaction> transactions = sessionsToTransactions.get(session);
             assertEquals(types.size(), transactions.size());
 
             Iterator<Arguments.Transaction.Type> typesIterator = types.iterator();
-            Iterator<TypeDB.Transaction> transactionIterator = transactions.iterator();
+            Iterator<RocksTransaction> transactionIterator = transactions.iterator();
             while (typesIterator.hasNext()) {
                 assertEquals(typesIterator.next(), transactionIterator.next().type());
             }
@@ -167,8 +169,8 @@ public class TransactionSteps {
     @When("(for each )session(,) open transaction(s) in parallel of type:")
     public void for_each_session_open_transactions_in_parallel_of_type(List<Arguments.Transaction.Type> types) {
         assertTrue(THREAD_POOL_SIZE >= types.size());
-        for (TypeDB.Session session : sessions) {
-            List<CompletableFuture<TypeDB.Transaction>> transactionsParallel = new ArrayList<>();
+        for (RocksSession session : sessions) {
+            List<CompletableFuture<RocksTransaction>> transactionsParallel = new ArrayList<>();
             for (Arguments.Transaction.Type type : types) {
                 transactionsParallel.add(CompletableFuture.supplyAsync(() -> session.transaction(type), threadPool));
             }
@@ -188,8 +190,8 @@ public class TransactionSteps {
 
     private void for_each_session_transactions_in_parallel_are(Consumer<TypeDB.Transaction> assertion) {
         List<CompletableFuture<Void>> assertions = new ArrayList<>();
-        for (TypeDB.Session session : sessions) {
-            for (CompletableFuture<TypeDB.Transaction> futureTransaction :
+        for (RocksSession session : sessions) {
+            for (CompletableFuture<RocksTransaction> futureTransaction :
                     sessionsToTransactionsParallel.get(session)) {
 
                 assertions.add(futureTransaction.thenApply(transaction -> {
@@ -205,13 +207,13 @@ public class TransactionSteps {
     public void for_each_session_transactions_in_parallel_have_type(List<Arguments.Transaction.Type> types) {
         List<CompletableFuture<Void>> assertions = new ArrayList<>();
         for (TypeDB.Session session : sessions) {
-            List<CompletableFuture<TypeDB.Transaction>> futureTxs =
+            List<CompletableFuture<RocksTransaction>> futureTxs =
                     sessionsToTransactionsParallel.get(session);
 
             assertEquals(types.size(), futureTxs.size());
 
             Iterator<Arguments.Transaction.Type> typesIter = types.iterator();
-            Iterator<CompletableFuture<TypeDB.Transaction>> futureTxsIter = futureTxs.iterator();
+            Iterator<CompletableFuture<RocksTransaction>> futureTxsIter = futureTxs.iterator();
 
             while (typesIter.hasNext()) {
                 Arguments.Transaction.Type type = typesIter.next();
@@ -241,8 +243,8 @@ public class TransactionSteps {
 
     private void for_each_session_in_parallel_transactions_in_parallel_are(Consumer<TypeDB.Transaction> assertion) {
         List<CompletableFuture<Void>> assertions = new ArrayList<>();
-        for (CompletableFuture<TypeDB.Session> futureSession : sessionsParallel) {
-            for (CompletableFuture<TypeDB.Transaction> futureTransaction : sessionsParallelToTransactionsParallel.get(futureSession)) {
+        for (CompletableFuture<RocksSession> futureSession : sessionsParallel) {
+            for (CompletableFuture<RocksTransaction> futureTransaction : sessionsParallelToTransactionsParallel.get(futureSession)) {
                 assertions.add(futureTransaction.thenApply(transaction -> {
                     assertion.accept(transaction);
                     return null;

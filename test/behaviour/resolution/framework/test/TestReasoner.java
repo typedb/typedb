@@ -105,16 +105,14 @@ public class TestReasoner {
     public void testDeduplicationOfInferredConcepts() {
         loadTransitivityExample(typeDB, database);
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            Reasoner completer = Reasoner.runRules(session);
-            try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
-                TypeQLMatch inferredAnswersQuery = TypeQL.match(TypeQL.var("lh").isa("location-hierarchy"));
-                List<ConceptMap> inferredAnswers = tx.query().match(inferredAnswersQuery).toList();
-                assertEquals(6, inferredAnswers.size());
+            Reasoner referenceReasoner = Reasoner.runRules(session);
+            TypeQLMatch inferredAnswersQuery = TypeQL.match(TypeQL.var("lh").isa("location-hierarchy"));
+            List<ConceptMap> inferredAnswers = referenceReasoner.tx().query().match(inferredAnswersQuery).toList();
+            assertEquals(6, inferredAnswers.size());
 
-                TypeQLMatch resolutionsQuery = TypeQL.match(TypeQL.var("res").isa("resolution"));
-                List<ConceptMap> resolutionAnswers = tx.query().match(resolutionsQuery).toList();
-                assertEquals(4, resolutionAnswers.size());
-            }
+            TypeQLMatch resolutionsQuery = TypeQL.match(TypeQL.var("res").isa("resolution"));
+            List<ConceptMap> resolutionAnswers = referenceReasoner.tx().query().match(resolutionsQuery).toList();
+            assertEquals(4, resolutionAnswers.size());
         }
     }
 }

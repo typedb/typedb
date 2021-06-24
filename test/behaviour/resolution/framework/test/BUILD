@@ -32,65 +32,22 @@ native_java_libraries(
     ]
 )
 
-java_test(
-    name = "resolution-query-builder-it",
-    size = "medium",
-    srcs = [
-        "ResolutionQueryBuilderIT.java",
-    ],
-    classpath_resources = ["//common/test:logback-test"],
-    test_class = "com.vaticle.typedb.core.test.behaviour.resolution.framework.test.ResolutionQueryBuilderIT",
-    deps = [
-        "//test/behaviour/resolution/framework/common",
-        "//test/behaviour/resolution/framework/test:load-test",
-        "//concept:concept",
-        "//:typedb",
-
-        # External dependencies from @vaticle
-        "@vaticle_typeql_lang_java//:typeql-lang",
-    ],
-)
 
 host_compatible_java_test(
-    name = "rule-resolution-builder-it",
-    size = "medium",
-    srcs = [
-        "RuleResolutionBuilderIT.java",
-    ],
-    classpath_resources = ["//common/test:logback-test"],
-    test_class = "com.vaticle.typedb.core.test.behaviour.resolution.framework.test.RuleResolutionBuilderIT",
-    native_libraries_deps = [
-        "//:typedb",
-        "//rocks:rocks",
-        "//test/behaviour/resolution/framework/common:common",
-        "//test/behaviour/resolution/framework/test:load-test",
-        "//pattern:pattern",
-    ],
-    deps = [
-        "//common",
-        "//test/integration/util",
-        "@maven//:com_google_guava_guava",
-        # External dependencies from @vaticle
-        "@vaticle_typeql_lang_java//:typeql-lang",
-        "@vaticle_typeql_lang_java//pattern:pattern",
-    ],
-)
-
-host_compatible_java_test(
-    name = "test-completer",
+    name = "test-reasoner",
     size = "medium",
     srcs = [
         "TestReasoner.java",
     ],
     classpath_resources = ["//common/test:logback-test"],
-    test_class = "com.vaticle.typedb.core.test.behaviour.resolution.framework.test.TestCompleter",
+    test_class = "com.vaticle.typedb.core.test.behaviour.resolution.framework.test.TestReasoner",
     native_libraries_deps = [
         "//concept:concept",
         "//:typedb",
         "//logic:logic",
         "//rocks:rocks",
-        "//test/behaviour/resolution/framework/reference",
         "//test/behaviour/resolution/framework/test:load-test",
+        "//test/behaviour/resolution/framework:resolution",
     ],
     deps = [
         "//test/integration/util:util",
@@ -113,10 +70,8 @@ host_compatible_java_test(
     native_libraries_deps = [
         "//:typedb",
         "//rocks:rocks",
-        "//test/behaviour/resolution/framework/soundness:soundness",
         "//test/behaviour/resolution/framework/test:load-test",
-        "//test/behaviour/resolution/framework:resolution-lib",
-        "//test/behaviour/resolution/framework/common:common",
+        "//test/behaviour/resolution/framework:resolution",
     ],
     deps = [
         "//common",

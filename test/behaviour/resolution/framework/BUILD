@@ -19,7 +19,7 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
 
 native_java_libraries(
-    name = "resolution-lib",
+    name = "resolution",
     srcs = glob(["*.java"]),
     visibility = ["//visibility:public"],
     native_libraries_deps = [
@@ -39,22 +39,6 @@ native_java_libraries(
         "@vaticle_typeql_lang_java//query",
         "@vaticle_typeql_lang_java//pattern",
     ],
-)
-
-java_binary(
-    name = "resolution",
-    main_class = "grakn.verification.resolution.framework.CorrectnessChecker",
-    runtime_deps = [":resolution-lib"],
-)
-
-java_binary(
-    name = "resolution-debug",
-    jvm_flags = [
-        "-Xdebug",
-        "-Xrunjdwp:transport=dt_socket,server=y,address=5005",
-    ],
-    main_class = "grakn.verification.resolution.framework.CorrectnessChecker",
-        runtime_deps = [":resolution-lib"],
 )
 
 checkstyle_test(
