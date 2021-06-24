@@ -37,10 +37,10 @@ host_compatible_java_test(
     name = "test-reasoner",
     size = "medium",
     srcs = [
-        "TestReasoner.java",
+        "ReasonerTest.java",
     ],
     classpath_resources = ["//common/test:logback-test"],
-    test_class = "com.vaticle.typedb.core.test.behaviour.resolution.framework.test.TestReasoner",
+    test_class = "com.vaticle.typedb.core.test.behaviour.resolution.framework.test.ReasonerTest",
     native_libraries_deps = [
         "//concept:concept",
         "//:typedb",
@@ -63,10 +63,10 @@ host_compatible_java_test(
     name = "test-resolution",
     size = "large",
     srcs = [
-        "TestCorrectnessChecker.java",
+        "CorrectnessCheckerTest.java",
     ],
     classpath_resources = ["//common/test:logback-test"],
-    test_class = "com.vaticle.typedb.core.test.behaviour.resolution.framework.test.TestResolution",
+    test_class = "com.vaticle.typedb.core.test.behaviour.resolution.framework.test.CorrectnessCheckerTest",
     native_libraries_deps = [
         "//:typedb",
         "//rocks:rocks",
