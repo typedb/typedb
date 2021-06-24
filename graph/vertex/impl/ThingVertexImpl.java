@@ -133,6 +133,11 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         }
 
         @Override
+        public boolean isModified() {
+            return false;
+        }
+
+        @Override
         public AttributeVertex<?> asAttribute() {
             throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(AttributeVertex.class));
         }
@@ -172,6 +177,11 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         @Override
         public ThingAdjacency.Write ins() {
             return ins;
+        }
+
+        @Override
+        public void isInferred(boolean isInferred) {
+            throw TypeDBException.of(ILLEGAL_OPERATION);
         }
 
         public boolean isModified() {
@@ -287,11 +297,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
             @Override
             protected ThingAdjacency.Write newAdjacency(Encoding.Direction.Adjacency direction) {
                 return new ThingAdjacencyImpl.Write.Persisted(this, direction);
-            }
-
-            @Override
-            public void isInferred(boolean isInferred) {
-                throw TypeDBException.of(ILLEGAL_OPERATION);
             }
 
             @Override

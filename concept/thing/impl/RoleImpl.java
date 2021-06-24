@@ -29,11 +29,11 @@ public class RoleImpl {
 
     final ThingVertex.Write vertex;
 
-    private RoleImpl(ThingVertex.Write vertex) {
-        this.vertex = requireNonNull(vertex);
+    private RoleImpl(ThingVertex vertex) {
+        this.vertex = requireNonNull(vertex.toWrite());
     }
 
-    public static RoleImpl of(ThingVertex.Write vertex) {
+    public static RoleImpl of(ThingVertex vertex) {
         return new RoleImpl(vertex);
     }
 

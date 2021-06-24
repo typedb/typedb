@@ -31,7 +31,6 @@ import java.time.LocalDateTime;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_VERTEX_CASTING;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
 
 public abstract class AttributeVertexImpl {
 
@@ -245,7 +244,7 @@ public abstract class AttributeVertexImpl {
         private java.lang.Boolean isPersisted;
 
         Write(ThingGraph graph, VertexIID.Attribute<VALUE> iid, boolean isInferred) {
-            super(graph, iid, isInferred);
+            super(graph, iid);
             this.attributeIID = iid;
             this.isPersisted = null;
         }
@@ -340,7 +339,6 @@ public abstract class AttributeVertexImpl {
          */
         @Override
         public void commit() {
-            if (isInferred) throw TypeDBException.of(ILLEGAL_OPERATION);
             commitVertex();
             commitEdges();
         }

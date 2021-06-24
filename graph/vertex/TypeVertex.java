@@ -45,8 +45,6 @@ public interface TypeVertex extends Vertex<VertexIID.Type, Encoding.Vertex.Type>
 
     void setModified();
 
-    boolean isModified();
-
     void delete();
 
     boolean isDeleted();

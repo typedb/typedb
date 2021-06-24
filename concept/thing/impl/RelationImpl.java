@@ -88,7 +88,7 @@ public class RelationImpl extends ThingImpl implements Relation {
                 RELATING, PrefixIID.of(ROLE), ((RoleTypeImpl) roleType).vertex.iid()
         ).to().filter(v -> v.ins().edge(PLAYING, ((ThingImpl) player).writableVertex()) != null);
         if (role.hasNext()) {
-            RoleImpl.of(role.next().toWrite()).delete();
+            RoleImpl.of(role.next()).delete();
             deleteIfNoPlayer();
         } else {
             throw exception(TypeDBException.of(DELETE_ROLEPLAYER_NOT_PRESENT, player.getType().getLabel(), roleType.getLabel().toString()));
@@ -97,7 +97,7 @@ public class RelationImpl extends ThingImpl implements Relation {
 
     @Override
     public void delete() {
-        writableVertex().outs().edge(RELATING).to().map(v -> RoleImpl.of(v.toWrite())).forEachRemaining(RoleImpl::delete);
+        writableVertex().outs().edge(RELATING).to().map(RoleImpl::of).forEachRemaining(RoleImpl::delete);
         super.delete();
     }
 

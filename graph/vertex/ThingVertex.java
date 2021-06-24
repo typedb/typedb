@@ -106,8 +106,6 @@ public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thi
 
         void setModified();
 
-        boolean isModified();
-
         void delete();
 
         boolean isDeleted();

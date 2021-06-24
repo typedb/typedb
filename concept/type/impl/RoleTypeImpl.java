@@ -128,7 +128,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     }
 
     private FunctionalIterator<RoleImpl> getInstances() {
-        return instances(v -> RoleImpl.of(v.toWrite()));
+        return instances(RoleImpl::of);
     }
 
     @Override

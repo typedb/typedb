@@ -35,6 +35,8 @@ public interface Vertex<VERTEX_IID extends VertexIID, VERTEX_ENCODING extends En
 
     VERTEX_ENCODING encoding();
 
+    boolean isModified();
+
     default boolean isThing() { return false; }
 
     default boolean isType() { return false; }
