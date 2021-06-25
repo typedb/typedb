@@ -64,7 +64,7 @@ public class SoundnessChecker {
     }
 
     private void checkExplanationAgainstReference(Explanation explanation) {
-        Reasoner.RuleRecorder recorder = referenceReasoner.ruleRecorderMap().get(explanation.rule().getLabel());
+        Reasoner.RuleRecorder recorder = referenceReasoner.ruleRecorderMap().get(explanation.rule());
         if (recorder == null) {
             throw new SoundnessException(String.format("Found an answer for rule \"%s\", which wasn't recorded by the" +
                                                                " reference reasoner/", explanation.rule().getLabel()));

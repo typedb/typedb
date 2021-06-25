@@ -48,7 +48,7 @@ import static java.util.Collections.singletonList;
 public class Reasoner {
 
     // TODO: Needs strings as keys rather than rules, only for testing the framework itself
-    private final Map<String, RuleRecorder> ruleRecorders;
+    private final Map<Rule, RuleRecorder> ruleRecorders;
     private final RocksTransaction tx;
 
     private Reasoner(RocksSession session) {
@@ -84,7 +84,7 @@ public class Reasoner {
         ));
     }
 
-    public Map<String, RuleRecorder> ruleRecorderMap() {
+    public Map<Rule, RuleRecorder> ruleRecorderMap() {
         return ruleRecorders;
     }
 
@@ -97,7 +97,7 @@ public class Reasoner {
     }
 
     private void runRules() {
-        tx.logic().rules().forEachRemaining(r -> this.ruleRecorders.put(r.getLabel(), new RuleRecorder(r)));
+        tx.logic().rules().forEachRemaining(rule -> this.ruleRecorders.put(rule, new RuleRecorder(rule)));
         boolean reiterateRules = true;
         while (reiterateRules) {
             reiterateRules = false;
@@ -147,8 +147,8 @@ public class Reasoner {
     }
 
     private Optional<RuleRecorder.Materialisation> materialisationsByConclusion(Rule rule, ConceptMap conclusionAnswer) {
-        if (!ruleRecorders.containsKey(rule.getLabel())) return Optional.empty();
-        RuleRecorder recorder = ruleRecorders.get(rule.getLabel());
+        if (!ruleRecorders.containsKey(rule)) return Optional.empty();
+        RuleRecorder recorder = ruleRecorders.get(rule);
         if (!recorder.materialisationsByConclusion.containsKey(conclusionAnswer)) return Optional.empty();
         return Optional.of(recorder.materialisationsByConclusion.get(conclusionAnswer));
     }
