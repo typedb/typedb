@@ -68,7 +68,7 @@ class CompletenessChecker {
             if (numAnswers == 0) {
                 throw new CompletenessException(String.format("Completeness testing found an answer which is expected" +
                                                                       " but is not present.\nExpected exactly one " +
-                                                                      "answer for the query\n%s",
+                                                                      "answer for the query:\n%s",
                                                               concludableQuery.toString()));
             } else if (numAnswers > 1) {
                 throw TypeDBException.of(ILLEGAL_STATE);
