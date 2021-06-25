@@ -20,13 +20,13 @@ load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
 load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
 host_compatible_java_test(
-    name = "test-reasoner",
+    name = "test-materialiser",
     size = "medium",
     srcs = [
-        "ReasonerTest.java",
+        "MaterialiserTest.java",
     ],
     classpath_resources = ["//common/test:logback-test"],
-    test_class = "com.vaticle.typedb.core.test.behaviour.resolution.framework.test.ReasonerTest",
+    test_class = "com.vaticle.typedb.core.test.behaviour.resolution.framework.test.MaterialiserTest",
     native_libraries_deps = [
         "//concept:concept",
         "//:typedb",

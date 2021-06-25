@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTypeDB;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.Reasoner;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.Materialiser;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
@@ -36,8 +36,10 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typeql.lang.TypeQL.and;
 import static com.vaticle.typeql.lang.TypeQL.define;
 import static com.vaticle.typeql.lang.TypeQL.rule;
@@ -49,9 +51,9 @@ import static com.vaticle.typeql.lang.common.TypeQLToken.Type.ENTITY;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Type.RELATION;
 import static org.junit.Assert.assertEquals;
 
-public class ReasonerTest {
+public class MaterialiserTest {
 
-    private static final String database = "ReasonerTest";
+    private static final String database = "MaterialiserTest";
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
     private static final Path logDir = dataDir.resolve("logs");
     private static final Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logDir);
@@ -73,15 +75,16 @@ public class ReasonerTest {
     public void testDeduplicationOfInferredConcepts() {
         loadTransitivityExample(typeDB);
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            Reasoner referenceReasoner = Reasoner.runRules(session);
+            Materialiser referenceReasoner = Materialiser.materialiseAll(session);
             TypeQLMatch inferredAnswersQuery = TypeQL.match(TypeQL.var("lh").isa("location-hierarchy"));
-            List<ConceptMap> inferredAnswers = referenceReasoner.tx().query().match(inferredAnswersQuery).toList();
+            List<ConceptMap> inferredAnswers = iterate(referenceReasoner.query(inferredAnswersQuery).entrySet())
+                    .flatMap(Map.Entry::getValue).toList();
             assertEquals(6, inferredAnswers.size());
         }
     }
 
     static void loadTransitivityExample(TypeDB typeDB) {
-        try (TypeDB.Session session = typeDB.session(ReasonerTest.database, Arguments.Session.Type.SCHEMA)) {
+        try (TypeDB.Session session = typeDB.session(MaterialiserTest.database, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().define(define(list(
                         type("name").sub(ATTRIBUTE).value(STRING),
@@ -106,7 +109,7 @@ public class ReasonerTest {
                 tx.commit();
             }
         }
-        try (TypeDB.Session session = typeDB.session(ReasonerTest.database, Arguments.Session.Type.DATA)) {
+        try (TypeDB.Session session = typeDB.session(MaterialiserTest.database, Arguments.Session.Type.DATA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().insert(TypeQL.insert(list(
                         var("area").isa("area").has("name", "King's Cross"),

@@ -25,29 +25,32 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.CorrectnessChecker.SoundnessException;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.Materialiser.Materialisation;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
-public class SoundnessChecker {
+class SoundnessChecker {
 
-    private final Reasoner referenceReasoner;
+    private final Materialiser referenceReasoner;
     private final TypeDB.Session session;
     private final Map<Concept, Concept> inferredConceptMapping;
 
-    private SoundnessChecker(Reasoner referenceReasoner, TypeDB.Session session) {
+    private SoundnessChecker(Materialiser referenceReasoner, TypeDB.Session session) {
         this.referenceReasoner = referenceReasoner;
         this.session = session;
         this.inferredConceptMapping = new HashMap<>();
     }
 
-    public static SoundnessChecker create(Reasoner referenceReasoner, TypeDB.Session session) {
+    static SoundnessChecker create(Materialiser referenceReasoner, TypeDB.Session session) {
         return new SoundnessChecker(referenceReasoner, session);
     }
 
-    public void checkQuery(TypeQLMatch inferenceQuery) {
+    void checkQuery(TypeQLMatch inferenceQuery) {
         try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ,
                                                   new Options.Transaction().infer(true).explain(true))) {
             tx.query().match(inferenceQuery).forEachRemaining(ans -> checkAnswer(ans, tx));
@@ -64,17 +67,14 @@ public class SoundnessChecker {
     }
 
     private void checkExplanationAgainstReference(Explanation explanation) {
-        Reasoner.RuleRecorder recorder = referenceReasoner.ruleRecorderMap().get(explanation.rule());
-        if (recorder == null) {
-            throw new SoundnessException(String.format("Found an answer for rule \"%s\", which wasn't recorded by the" +
-                                                               " reference reasoner/", explanation.rule().getLabel()));
-        }
         ConceptMap recordedWhen = substituteInferredVarsForReferenceVars(explanation.conditionAnswer());
-        if (recorder.materialisationsByCondition().containsKey(recordedWhen)) {
+        Optional<ConceptMap> recordedThen = referenceReasoner
+                .materialisationForCondition(explanation.rule(), recordedWhen)
+                .map(Materialisation::conclusionAnswer);
+        if (recordedThen.isPresent()) {
             // Update the inferred variables mapping between the two reasoners
-            ConceptMap recordedThen = recorder.materialisationsByCondition().get(recordedWhen).conclusionAnswer();
-            assert recordedThen.concepts().keySet().equals(explanation.conclusionAnswer().concepts().keySet());
-            recordedThen.concepts().forEach((var, recordedConcept) -> {
+            assert recordedThen.get().concepts().keySet().equals(explanation.conclusionAnswer().concepts().keySet());
+            recordedThen.get().concepts().forEach((var, recordedConcept) -> {
                 Concept inferredConcept = explanation.conclusionAnswer().concepts().get(var);
                 if (inferredConceptMapping.containsKey(inferredConcept)) {
                     // Check that the mapping stored is one-to-one
@@ -84,10 +84,9 @@ public class SoundnessChecker {
                 }
             });
         } else {
-            // We have detected an answer in the explanations that shouldn't be there!
-            throw new SoundnessException(String.format("Soundness testing found an answer within an answer " +
-                                                               "explanation that should not be present for rule " +
-                                                               "\"%s\".\nAnswer:\n%s\nIncorrectly derived from " +
+            throw new SoundnessException(String.format("Soundness testing found an answer within an explanation that " +
+                                                               "should not be present for rule \"%s\"" +
+                                                               ".\nAnswer:\n%s\nIncorrectly derived from " +
                                                                "condition:\n%s",
                                                        explanation.rule().getLabel(), explanation.conclusionAnswer(),
                                                        explanation.conditionAnswer()));
@@ -102,9 +101,4 @@ public class SoundnessChecker {
         return new ConceptMap(substituted);
     }
 
-    public static class SoundnessException extends RuntimeException {
-        public SoundnessException(String message) {
-            super(message);
-        }
-    }
 }

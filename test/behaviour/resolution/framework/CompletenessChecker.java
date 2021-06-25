@@ -11,6 +11,7 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
+import com.vaticle.typedb.core.test.behaviour.resolution.framework.CorrectnessChecker.CompletenessException;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 
@@ -20,21 +21,21 @@ import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
-public class CompletenessChecker {
+class CompletenessChecker {
 
-    private final Reasoner referenceReasoner;
+    private final Materialiser referenceReasoner;
     private final RocksSession session;
 
-    private CompletenessChecker(Reasoner referenceReasoner, RocksSession session) {
+    private CompletenessChecker(Materialiser referenceReasoner, RocksSession session) {
         this.referenceReasoner = referenceReasoner;
         this.session = session;
     }
 
-    public static CompletenessChecker create(Reasoner referenceReasoner, RocksSession session) {
+    static CompletenessChecker create(Materialiser referenceReasoner, RocksSession session) {
         return new CompletenessChecker(referenceReasoner, session);
     }
 
-    public void checkQuery(TypeQLMatch inferenceQuery) {
+    void checkQuery(TypeQLMatch inferenceQuery) {
         referenceReasoner.query(inferenceQuery).forEach((conjunction, answers) -> {
             answers.forEachRemaining(answer -> checkConjunction(conjunction, answer));
         });
@@ -103,9 +104,4 @@ public class CompletenessChecker {
         }
     }
 
-    public static class CompletenessException extends RuntimeException {
-        public CompletenessException(String message) {
-            super(message);
-        }
-    }
 }

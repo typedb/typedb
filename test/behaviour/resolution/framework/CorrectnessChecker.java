@@ -23,16 +23,16 @@ import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 public class CorrectnessChecker {
 
-    private final Reasoner referenceReasoner;
+    private final Materialiser referenceReasoner;
     private final RocksSession session;
 
-    public CorrectnessChecker(RocksSession session, Reasoner referenceReasoner) {
+    public CorrectnessChecker(RocksSession session, Materialiser referenceReasoner) {
         this.session = session;
         this.referenceReasoner = referenceReasoner;
     }
 
     public static CorrectnessChecker initialise(RocksSession session) {
-        return new CorrectnessChecker(session, Reasoner.runRules(session));
+        return new CorrectnessChecker(session, Materialiser.materialiseAll(session));
     }
 
     public void checkCorrectness(TypeQLMatch inferenceQuery) {
@@ -52,4 +52,15 @@ public class CorrectnessChecker {
         referenceReasoner.close();
     }
 
+    public static class CompletenessException extends RuntimeException {
+        CompletenessException(String message) {
+            super(message);
+        }
+    }
+
+    public static class SoundnessException extends RuntimeException {
+        SoundnessException(String message) {
+            super(message);
+        }
+    }
 }
