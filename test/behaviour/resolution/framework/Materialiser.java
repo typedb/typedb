@@ -37,6 +37,7 @@ import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -168,6 +169,7 @@ public class Materialiser {
         Rule rule() {
             return rule;
         }
+
     }
 
     private static class RuleMaterialisationRecorder {
@@ -194,14 +196,14 @@ public class Materialiser {
         }
 
         private void recordMaterialisation(ConceptMap whenConceptMap, ConceptMap thenConceptMap) {
-            Materialiser.Materialisation materialisation = new Materialiser.Materialisation(rule, whenConceptMap,
-                                                                                            thenConceptMap);
             if (!materialisationsByCondition.containsKey(whenConceptMap)) {
+                Materialiser.Materialisation materialisation =
+                        new Materialiser.Materialisation(rule, whenConceptMap, thenConceptMap);
                 requiresReiteration = true;
                 materialisationsByCondition.put(whenConceptMap, materialisation);
                 materialisationsByConclusion.put(thenConceptMap, materialisation);
             } else {
-                assert materialisationsByCondition.get(whenConceptMap).equals(materialisation);
+                assert materialisationsByCondition.get(whenConceptMap).conclusionAnswer().equals(thenConceptMap);
             }
         }
 
