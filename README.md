@@ -209,7 +209,7 @@ with TypeDB.core_client("localhost:1729") as client:
 
 #### Node.js
 
-```nodejs
+```js
 let client, session, tx;
 try {
     client = TypeDB.coreClient("localhost:1729");
