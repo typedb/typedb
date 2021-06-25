@@ -65,7 +65,7 @@ public class Iterators {
         return new BaseIterator<>(Either.second(iterator));
     }
 
-    public static <T extends Comparable<T>> FunctionalIterator.Sorted<T> iterateSorted(NavigableSet<T> set) {
+    public static <T extends Comparable<? super T>> FunctionalIterator.Sorted<T> iterateSorted(NavigableSet<T> set) {
         return new BaseIterator.Sorted<>(set);
     }
 

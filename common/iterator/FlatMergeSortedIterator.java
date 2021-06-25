@@ -33,8 +33,8 @@ public class FlatMergeSortedIterator<T, U extends Comparable<? super U>> extends
     private final FunctionalIterator<T> source;
     private final Function<T, FunctionalIterator.Sorted<U>> flatMappingFn;
     private final PriorityQueue<QueueNode> next;
+    private final List<FunctionalIterator.Sorted<U>> notInQueue;
     private State state;
-    private List<FunctionalIterator.Sorted<U>> notInQueue;
 
     public FlatMergeSortedIterator(FunctionalIterator<T> source, Function<T, FunctionalIterator.Sorted<U>> flatMappingFn) {
         this.source = source;
@@ -50,8 +50,8 @@ public class FlatMergeSortedIterator<T, U extends Comparable<? super U>> extends
 
     private class QueueNode implements Comparable<QueueNode> {
 
-        private FunctionalIterator.Sorted<U> iter;
-        private U value;
+        private final FunctionalIterator.Sorted<U> iter;
+        private final U value;
 
         private QueueNode(FunctionalIterator.Sorted<U> iter, U value){
             this.iter = iter;

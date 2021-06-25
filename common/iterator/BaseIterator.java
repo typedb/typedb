@@ -47,7 +47,7 @@ class BaseIterator<T> extends AbstractFunctionalIterator<T> {
         iterator.ifFirst(FunctionalIterator::recycle);
     }
 
-    static class Sorted<T extends Comparable<T>> extends AbstractFunctionalIterator.Sorted<T> {
+    static class Sorted<T extends Comparable<? super T>> extends AbstractFunctionalIterator.Sorted<T> {
 
         private final NavigableSet<T> source;
         private Iterator<T> iterator;
