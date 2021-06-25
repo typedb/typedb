@@ -279,6 +279,10 @@ $ bazel build //:assemble-windows-zip
 ```
 Outputs to: `bazel-bin/typedb-all-windows.zip`
 
+## Contributions
+
+TypeDB & TypeQL has been built using various open-source frameworks throughout its evolution. Today TypeDB & TypeQL is built using [RocksDB](https://rocksdb.org), [ANTLR](http://www.antlr.org), [SCIP](https://www.scipopt.org), [Bazel](https://bazel.build), [GRPC](https://grpc.io), and [ZeroMQ](https://zeromq.org), and [Caffeine](https://github.com/ben-manes/caffeine). In the past, TypeDB was enabled by various open-source technologies and communities that we are hugely thankful to: [Apache Cassandra](http://cassandra.apache.org), [Apache Hadoop](https://hadoop.apache.org), [Apache Spark](http://spark.apache.org), [Apache TinkerPop](http://tinkerpop.apache.org), and [JanusGraph](http://janusgraph.org). Thank you!
+
 ## Licensing
 
 This product includes software developed by [Vaticle](https://vaticle.com/).  It's released under the GNU Affero GENERAL PUBLIC LICENSE, Version 3, 19 November 2007. For license information, please see [LICENSE](https://github.com/vaticle/typedb/blob/master/LICENSE). Vaticle also provides a commercial license for TypeDB Cluster - get in touch with our team at enterprise@vaticle.com.
