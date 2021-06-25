@@ -26,13 +26,13 @@ host_compatible_java_test(
         "MaterialiserTest.java",
     ],
     classpath_resources = ["//common/test:logback-test"],
-    test_class = "com.vaticle.typedb.core.test.behaviour.resolution.framework.test.MaterialiserTest",
+    test_class = "com.vaticle.typedb.core.test.behaviour.resolution.correctness.test.MaterialiserTest",
     native_libraries_deps = [
         "//concept:concept",
         "//:typedb",
         "//logic:logic",
         "//rocks:rocks",
-        "//test/behaviour/resolution/framework:resolution",
+        "//test/behaviour/resolution/correctness:correctness",
     ],
     deps = [
         "//test/integration/util:util",
@@ -47,17 +47,17 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "test-resolution",
+    name = "test-correctness-checker",
     size = "large",
     srcs = [
         "CorrectnessCheckerTest.java",
     ],
     classpath_resources = ["//common/test:logback-test"],
-    test_class = "com.vaticle.typedb.core.test.behaviour.resolution.framework.test.CorrectnessCheckerTest",
+    test_class = "com.vaticle.typedb.core.test.behaviour.resolution.correctness.test.CorrectnessCheckerTest",
     native_libraries_deps = [
         "//:typedb",
         "//rocks:rocks",
-        "//test/behaviour/resolution/framework:resolution",
+        "//test/behaviour/resolution/correctness:correctness",
     ],
     deps = [
         "//common",
@@ -77,4 +77,3 @@ checkstyle_test(
     include = glob(["*"]),
     license_type = "agpl",
 )
-

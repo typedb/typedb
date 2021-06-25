@@ -19,7 +19,7 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
 
 native_java_libraries(
-    name = "resolution",
+    name = "correctness",
     srcs = glob(["*.java"]),
     visibility = ["//visibility:public"],
     native_libraries_deps = [

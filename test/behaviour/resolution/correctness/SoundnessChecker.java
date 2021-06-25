@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.test.behaviour.resolution.framework;
+package com.vaticle.typedb.core.test.behaviour.resolution.correctness;
 
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.TypeDB.Transaction;
@@ -25,8 +25,8 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.CorrectnessChecker.SoundnessException;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.Materialiser.Materialisation;
+import com.vaticle.typedb.core.test.behaviour.resolution.correctness.CorrectnessChecker.SoundnessException;
+import com.vaticle.typedb.core.test.behaviour.resolution.correctness.Materialiser.Materialisation;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 

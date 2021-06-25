@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.test.behaviour.resolution.framework;
+package com.vaticle.typedb.core.test.behaviour.resolution.correctness;
 
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typeql.lang.query.TypeQLMatch;

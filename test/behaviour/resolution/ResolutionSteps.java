@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.CorrectnessChecker;
+import com.vaticle.typedb.core.test.behaviour.resolution.correctness.CorrectnessChecker;
 import com.vaticle.typedb.core.test.behaviour.typeql.TypeQLSteps;
 import com.vaticle.typeql.lang.TypeQL;
 import io.cucumber.java.en.Given;

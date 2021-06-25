@@ -27,7 +27,7 @@ host_compatible_java_library(
         "//:typedb",
         "//rocks:rocks",
         "//concept:concept",
-        "//test/behaviour/resolution/framework:resolution",
+        "//test/behaviour/resolution/correctness:correctness",
     ],
     deps = [
         # Package dependencies

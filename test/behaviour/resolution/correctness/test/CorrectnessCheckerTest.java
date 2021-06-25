@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.test.behaviour.resolution.framework.test;
+package com.vaticle.typedb.core.test.behaviour.resolution.correctness.test;
 
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -24,9 +24,9 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.rocks.RocksTypeDB;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.CorrectnessChecker;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.CorrectnessChecker.CompletenessException;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.CorrectnessChecker.SoundnessException;
+import com.vaticle.typedb.core.test.behaviour.resolution.correctness.CorrectnessChecker;
+import com.vaticle.typedb.core.test.behaviour.resolution.correctness.CorrectnessChecker.CompletenessException;
+import com.vaticle.typedb.core.test.behaviour.resolution.correctness.CorrectnessChecker.SoundnessException;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 import org.junit.After;
@@ -75,9 +75,9 @@ public class CorrectnessCheckerTest {
         TypeQLMatch inferenceQuery = parseQuery("match $x has employable true;").asMatch();
         loadEmployableExample(typeDB);
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            CorrectnessChecker resolutionTest = CorrectnessChecker.initialise(session);
-            resolutionTest.checkCorrectness(inferenceQuery);
-            resolutionTest.close();
+            CorrectnessChecker correctnessChecker = CorrectnessChecker.initialise(session);
+            correctnessChecker.checkCorrectness(inferenceQuery);
+            correctnessChecker.close();
         }
     }
 
@@ -86,15 +86,15 @@ public class CorrectnessCheckerTest {
         TypeQLMatch inferenceQuery = parseQuery("match $x has employable true;").asMatch();
         loadEmployableExample(typeDB);
 
-        CorrectnessChecker resolution;
+        CorrectnessChecker correctnessChecker;
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            resolution = CorrectnessChecker.initialise(session);
+            correctnessChecker = CorrectnessChecker.initialise(session);
             try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().insert(parseQuery("insert $p isa person;"));
                 tx.commit();
             }
-            assertThrows(SoundnessException.class, () -> resolution.checkSoundness(inferenceQuery));
-            assertNotThrows(() -> resolution.checkCompleteness(inferenceQuery));
+            assertThrows(SoundnessException.class, () -> correctnessChecker.checkSoundness(inferenceQuery));
+            assertNotThrows(() -> correctnessChecker.checkCompleteness(inferenceQuery));
         }
     }
 
@@ -103,15 +103,15 @@ public class CorrectnessCheckerTest {
         TypeQLMatch inferenceQuery = parseQuery("match $x has employable true;").asMatch();
         loadEmployableExample(typeDB);
 
-        CorrectnessChecker resolution;
+        CorrectnessChecker correctnessChecker;
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            resolution = CorrectnessChecker.initialise(session);
+            correctnessChecker = CorrectnessChecker.initialise(session);
             try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().delete(parseQuery("match $p isa person; delete $p isa person;"));
                 tx.commit();
             }
-            assertThrows(CompletenessException.class, () -> resolution.checkCompleteness(inferenceQuery));
-            assertNotThrows(() -> resolution.checkSoundness(inferenceQuery));
+            assertThrows(CompletenessException.class, () -> correctnessChecker.checkCompleteness(inferenceQuery));
+            assertNotThrows(() -> correctnessChecker.checkSoundness(inferenceQuery));
         }
     }
 

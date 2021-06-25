@@ -1,4 +1,4 @@
-package com.vaticle.typedb.core.test.behaviour.resolution.framework;
+package com.vaticle.typedb.core.test.behaviour.resolution.correctness;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -11,7 +11,7 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
-import com.vaticle.typedb.core.test.behaviour.resolution.framework.CorrectnessChecker.CompletenessException;
+import com.vaticle.typedb.core.test.behaviour.resolution.correctness.CorrectnessChecker.CompletenessException;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 
