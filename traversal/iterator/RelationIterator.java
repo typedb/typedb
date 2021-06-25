@@ -86,7 +86,7 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
         assert withoutIID.size() == 1;
         relationId = withoutIID.iterator().next();
         for (Identifier.Variable withIID : parameters.withIID()) {
-            ThingVertex thingVertex = graphMgr.data().get(parameters.getIID(withIID));
+            ThingVertex thingVertex = graphMgr.data().getReadable(parameters.getIID(withIID));
             if (thingVertex == null) return false;
             answer.put(withIID, thingVertex);
         }

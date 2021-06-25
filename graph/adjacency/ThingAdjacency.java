@@ -100,8 +100,18 @@ public interface ThingAdjacency {
         FunctionalIterator<ThingVertex> to();
 
         FunctionalIterator<ThingEdge> get();
-
     }
+
+    interface ThingIteratorSortedBuilder {
+
+        // TODO we could specialise into In and Out subtypes that returns sorted from() or to() if we require it
+        FunctionalIterator<ThingVertex> from();
+
+        FunctionalIterator<ThingVertex> to();
+
+        FunctionalIterator.Sorted<EdgeDirected> get();
+    }
+
 
     interface Write extends ThingAdjacency {
 
@@ -168,24 +178,6 @@ public interface ThingAdjacency {
 
     EdgeDirected asSortable(ThingEdge edge);
 
-    interface ThingIteratorBuilder {
-
-        FunctionalIterator<ThingVertex> from();
-
-        FunctionalIterator<ThingVertex> to();
-
-        FunctionalIterator<ThingEdge> get();
-    }
-
-    interface ThingIteratorSortedBuilder {
-
-        // TODO we could specialise into In and Out subtypes that returns sorted from() or to() if we require it
-        FunctionalIterator<ThingVertex> from();
-
-        FunctionalIterator<ThingVertex> to();
-
-        FunctionalIterator.Sorted<EdgeDirected> get();
-    }
 
     abstract class EdgeDirected implements Comparable<EdgeDirected> {
 
