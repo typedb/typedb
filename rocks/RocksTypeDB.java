@@ -43,7 +43,6 @@ import static java.lang.Math.max;
 
 public class RocksTypeDB implements TypeDB {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RocksTypeDB.class);
     private static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
 
     static {
