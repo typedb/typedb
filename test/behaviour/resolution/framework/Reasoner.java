@@ -39,6 +39,7 @@ import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -76,20 +77,20 @@ public class Reasoner {
     public FunctionalIterator<Materialisation> materialisationsForConcludables(ConceptMap answer,
                                                                                Conjunction conjunction) {
         return iterate(Concludable.create(conjunction)).flatMap(concludable ->
-            iterate(concludable.applicableRules(tx.concepts(), tx.logic()))
-                    .flatMap(((rule, unifiers) -> iterate(unifiers).map(unifier -> {
+            iterate(concludable.applicableRules(tx.concepts(), tx.logic()).entrySet())
+                    .flatMap((applicableRule -> iterate(applicableRule.getValue()).map(unifier -> {
                         Optional<Pair<ConceptMap, Unifier.Requirements.Instance>> unified =
                                 unifier.unify(answer.filter(concludable.retrieves()));
                         if (unified.isPresent()) {
                             ConceptMap conclusionAnswer = unified.get().first();
-                            ConceptMap conditionAnswer = ruleRecorders.get(rule.getLabel())
+                            ConceptMap conditionAnswer = ruleRecorders.get(applicableRule.getKey().getLabel())
                                     .inferencesByConclusion().get(conclusionAnswer);
                             // Make sure that the unifier is valid for the particular answer we have
                             if (conditionAnswer != null) {
-                                return new Materialisation(rule, conditionAnswer, conclusionAnswer);
-                            }
-                        }
-                    })))
+                                return new Materialisation(applicableRule.getKey(), conditionAnswer, conclusionAnswer);
+                            } else return null;
+                        } else return null;
+                    }))).filter(Objects::nonNull)
         );
     }
 
