@@ -37,7 +37,6 @@ import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -67,9 +66,9 @@ public class Materialiser {
         while (reiterateRules) {
             reiterateRules = false;
             for (RuleMaterialisationRecorder ruleRecorder : this.ruleRecorders.values()) {
-                ruleRecorder.resetRequiresReiteration();
+                ruleRecorder.requiresReiteration = false;
                 materialiseFromRule(ruleRecorder);
-                reiterateRules = reiterateRules || ruleRecorder.requiresReiteration();
+                reiterateRules = reiterateRules || ruleRecorder.requiresReiteration;
             }
         }
     }
@@ -114,7 +113,7 @@ public class Materialiser {
     }
 
     public Map<Conjunction, FunctionalIterator<ConceptMap>> query(TypeQLMatch inferenceQuery) {
-        // TODO: How do we handle disjunctions inside negations?
+        // TODO: How do we handle disjunctions inside negations and negations in general?
         Disjunction disjunction = Disjunction.create(inferenceQuery.conjunction().normalise());
         tx.logic().typeResolver().resolve(disjunction);
         HashMap<Conjunction, FunctionalIterator<ConceptMap>> conjunctionAnswers = new HashMap<>();
@@ -205,14 +204,6 @@ public class Materialiser {
             } else {
                 assert materialisationsByCondition.get(whenConceptMap).conclusionAnswer().equals(thenConceptMap);
             }
-        }
-
-        private boolean requiresReiteration() {
-            return requiresReiteration;
-        }
-
-        private void resetRequiresReiteration() {
-            requiresReiteration = false;
         }
 
     }
