@@ -285,6 +285,6 @@ TypeDB & TypeQL has been built using various open-source frameworks throughout i
 
 ## Licensing
 
-This product includes software developed by [Vaticle](https://vaticle.com/).  It's released under the GNU Affero GENERAL PUBLIC LICENSE, Version 3, 19 November 2007. For license information, please see [LICENSE](https://github.com/vaticle/typedb/blob/master/LICENSE). Vaticle also provides a commercial license for TypeDB Cluster - get in touch with our team at enterprise@vaticle.com.
+This product includes software developed by [Vaticle](https://vaticle.com/).  It's released under the GNU Affero GENERAL PUBLIC LICENSE, Version 3, 19 November 2007. For license information, please see [LICENSE](https://github.com/vaticle/typedb/blob/master/LICENSE). Vaticle also provides a commercial license for TypeDB Cluster - get in touch with our team at commercial@vaticle.com.
 
 Copyright (C) 2021 Vaticle
