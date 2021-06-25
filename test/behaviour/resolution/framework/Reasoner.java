@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.test.behaviour.resolution.framework;
 
-import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -28,7 +27,6 @@ import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
-import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.rocks.RocksSession;
@@ -39,7 +37,6 @@ import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -74,48 +71,17 @@ public class Reasoner {
         return conjunctionAnswers;
     }
 
-    public FunctionalIterator<Materialisation> materialisationsForConcludables(ConceptMap answer,
+    public FunctionalIterator<RuleRecorder.Materialisation> explainConjunction(ConceptMap answer,
                                                                                Conjunction conjunction) {
-        return iterate(Concludable.create(conjunction)).flatMap(concludable ->
-            iterate(concludable.applicableRules(tx.concepts(), tx.logic()).entrySet())
-                    .flatMap((applicableRule -> iterate(applicableRule.getValue()).map(unifier -> {
-                        Optional<Pair<ConceptMap, Unifier.Requirements.Instance>> unified =
-                                unifier.unify(answer.filter(concludable.retrieves()));
-                        if (unified.isPresent()) {
-                            ConceptMap conclusionAnswer = unified.get().first();
-                            ConceptMap conditionAnswer = ruleRecorders.get(applicableRule.getKey().getLabel())
-                                    .inferencesByConclusion().get(conclusionAnswer);
-                            // Make sure that the unifier is valid for the particular answer we have
-                            if (conditionAnswer != null) {
-                                return new Materialisation(applicableRule.getKey(), conditionAnswer, conclusionAnswer);
-                            } else return null;
-                        } else return null;
-                    }))).filter(Objects::nonNull)
-        );
-    }
-
-    public class Materialisation {
-        private final Rule rule;
-        private final ConceptMap conditionAnswer;
-        private final ConceptMap conclusionAnswer;
-
-        Materialisation(Rule rule, ConceptMap conditionAnswer, ConceptMap conclusionAnswer) {
-            this.rule = rule;
-            this.conditionAnswer = conditionAnswer;
-            this.conclusionAnswer = conclusionAnswer;
-        }
-
-        public ConceptMap conditionAnswer() {
-            return conditionAnswer;
-        }
-
-        public ConceptMap conclusionAnswer() {
-            return conclusionAnswer;
-        }
-
-        public Rule rule() {
-            return rule;
-        }
+        return iterate(Concludable.create(conjunction)).flatMap(concludable -> iterate(
+                concludable.applicableRules(tx.concepts(), tx.logic()).entrySet()
+        ).flatMap(applicableRule -> iterate(applicableRule.getValue())
+                .map(unifier -> unifier.unify(answer.filter(concludable.retrieves()))
+                        .flatMap(unified -> materialisationsByConclusion(applicableRule.getKey(),
+                                                                         unified.first())))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+        ));
     }
 
     public Map<String, RuleRecorder> ruleRecorderMap() {
@@ -152,7 +118,7 @@ public class Reasoner {
                 .materialise(whenConcepts, tx.traversal(), tx.concepts())
                 .map(thenConcepts -> new ConceptMap(filterRetrievableVars(thenConcepts)))
                 .filter(ruleRecorder::isInferredAnswer)
-                .forEachRemaining(ans -> ruleRecorder.recordInference(whenConcepts, ans)));
+                .forEachRemaining(ans -> ruleRecorder.recordMaterialisation(whenConcepts, ans)));
     }
 
     private FunctionalIterator<ConceptMap> traverse(Conjunction conjunction) {
@@ -180,19 +146,26 @@ public class Reasoner {
         }).toSet();
     }
 
+    private Optional<RuleRecorder.Materialisation> materialisationsByConclusion(Rule rule, ConceptMap conclusionAnswer) {
+        if (!ruleRecorders.containsKey(rule.getLabel())) return Optional.empty();
+        RuleRecorder recorder = ruleRecorders.get(rule.getLabel());
+        if (!recorder.materialisationsByConclusion.containsKey(conclusionAnswer)) return Optional.empty();
+        return Optional.of(recorder.materialisationsByConclusion.get(conclusionAnswer));
+    }
+
     public static class RuleRecorder {
         private final Rule rule;
         private final Concludable thenConcludable;
         private boolean requiresReiteration;
         // Inferences from condition answer to conclusion answer
-        private final Map<ConceptMap, ConceptMap> inferencesByCondition;
-        private final Map<ConceptMap, ConceptMap> inferencesByConclusion;
+        private final Map<ConceptMap, Materialisation> materialisationsByCondition;
+        private final Map<ConceptMap, Materialisation> materialisationsByConclusion;
 
         public RuleRecorder(Rule typeDBRule) {
             this.rule = typeDBRule;
             this.requiresReiteration = false;
-            this.inferencesByCondition = new HashMap<>();
-            this.inferencesByConclusion = new HashMap<>();
+            this.materialisationsByCondition = new HashMap<>();
+            this.materialisationsByConclusion = new HashMap<>();
 
             Set<Concludable> concludables = Concludable.create(this.rule.then());
             assert concludables.size() == 1;
@@ -200,12 +173,12 @@ public class Reasoner {
             this.thenConcludable = iterate(concludables).next();
         }
 
-        public Map<ConceptMap, ConceptMap> inferencesByCondition() {
-            return inferencesByCondition;
+        public Map<ConceptMap, Materialisation> materialisationsByCondition() {
+            return materialisationsByCondition;
         }
 
-        public Map<ConceptMap, ConceptMap> inferencesByConclusion() {
-            return inferencesByConclusion;
+        public Map<ConceptMap, Materialisation> materialisationsByConclusion() {
+            return materialisationsByConclusion;
         }
 
         public Rule rule() {
@@ -216,13 +189,14 @@ public class Reasoner {
             return thenConcludable.isInferredAnswer(thenConceptMap);
         }
 
-        public void recordInference(ConceptMap whenConceptMap, ConceptMap thenConceptMap) {
-            if (!inferencesByCondition.containsKey(whenConceptMap)) {
+        public void recordMaterialisation(ConceptMap whenConceptMap, ConceptMap thenConceptMap) {
+            Materialisation materialisation = new Materialisation(rule, whenConceptMap, thenConceptMap);
+            if (!materialisationsByCondition.containsKey(whenConceptMap)) {
                 requiresReiteration = true;
-                inferencesByCondition.put(whenConceptMap, thenConceptMap);
-                inferencesByConclusion.put(thenConceptMap, whenConceptMap);
+                materialisationsByCondition.put(whenConceptMap, materialisation);
+                materialisationsByConclusion.put(thenConceptMap, materialisation);
             } else {
-                assert inferencesByCondition.get(whenConceptMap).equals(thenConceptMap);
+                assert materialisationsByCondition.get(whenConceptMap).equals(materialisation);
             }
         }
 
@@ -232,6 +206,30 @@ public class Reasoner {
 
         public void resetRequiresReiteration() {
             requiresReiteration = false;
+        }
+
+        public static class Materialisation {
+            private final Rule rule;
+            private final ConceptMap conditionAnswer;
+            private final ConceptMap conclusionAnswer;
+
+            Materialisation(Rule rule, ConceptMap conditionAnswer, ConceptMap conclusionAnswer) {
+                this.rule = rule;
+                this.conditionAnswer = conditionAnswer;
+                this.conclusionAnswer = conclusionAnswer;
+            }
+
+            public ConceptMap conditionAnswer() {
+                return conditionAnswer;
+            }
+
+            public ConceptMap conclusionAnswer() {
+                return conclusionAnswer;
+            }
+
+            public Rule rule() {
+                return rule;
+            }
         }
 
     }
