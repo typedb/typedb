@@ -74,8 +74,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class RocksDatabase implements TypeDB.Database {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RocksDatabase.class);
-
     protected final OptimisticTransactionDB rocksSchema;
     protected final OptimisticTransactionDB rocksData;
     protected final ConcurrentMap<UUID, Pair<RocksSession, Long>> sessions;
