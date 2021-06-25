@@ -128,7 +128,7 @@ public abstract class RocksStorage implements Storage {
     @Override
     public TypeDBException exception(ErrorMessage error) {
         TypeDBException e = TypeDBException.of(error);
-        LOG.debug(e.getMessage(), e);
+        logger().debug(e.getMessage(), e);
         return e;
     }
 
@@ -137,7 +137,7 @@ public abstract class RocksStorage implements Storage {
         TypeDBException e;
         if (exception instanceof TypeDBException) e = (TypeDBException) exception;
         else e = TypeDBException.of(exception);
-        LOG.debug(e.getMessage(), e);
+        logger().debug(e.getMessage(), e);
         return e;
     }
 
@@ -157,6 +157,10 @@ public abstract class RocksStorage implements Storage {
         } finally {
             deleteCloseSchemaWriteLock.writeLock().unlock();
         }
+    }
+
+    protected Logger logger() {
+        return LOG;
     }
 
     static class Cache extends RocksStorage {
