@@ -60,7 +60,6 @@ import static com.vaticle.typedb.core.server.common.Util.printASCIILogo;
 
 
 public class TypeDBServer implements AutoCloseable {
-
     private static final Logger LOG = LoggerFactory.getLogger(TypeDBServer.class);
 
     protected final Factory factory;
@@ -79,7 +78,7 @@ public class TypeDBServer implements AutoCloseable {
         configureAndVerifyDataDir();
         configureTracing();
 
-        if (command.debug()) LOG.info("Running {} in debug mode.", name());
+        if (command.debug()) logger().info("Running {} in debug mode.", name());
 
         Options.Database options = new Options.Database()
                 .typeDBDir(ServerDefaults.TYPEDB_DIR)
@@ -89,7 +88,7 @@ public class TypeDBServer implements AutoCloseable {
         typedb = factory.typedb(options);
         server = rpcServer();
         Thread.setDefaultUncaughtExceptionHandler(
-                (t, e) -> LOG.error(UNCAUGHT_EXCEPTION.message(t.getName() + ": " + e.getMessage()), e)
+                (t, e) -> logger().error(UNCAUGHT_EXCEPTION.message(t.getName() + ": " + e.getMessage()), e)
         );
         Runtime.getRuntime().addShutdownHook(
                 NamedThreadFactory.create(TypeDBServer.class, "shutdown").newThread(this::close)
@@ -101,7 +100,7 @@ public class TypeDBServer implements AutoCloseable {
     private void configureAndVerifyJavaVersion() {
         int majorVersion = Java.getMajorVersion();
         if (majorVersion == Java.UNKNOWN_VERSION) {
-            LOG.warn("Could not detect Java version from version string '{}'. Will start {} anyway.", System.getProperty("java.version"), name());
+            logger().warn("Could not detect Java version from version string '{}'. Will start {} anyway.", System.getProperty("java.version"), name());
         } else if (majorVersion < 11) {
             throw TypeDBException.of(INCOMPATIBLE_JAVA_RUNTIME, majorVersion);
         }
@@ -134,7 +133,7 @@ public class TypeDBServer implements AutoCloseable {
                     command.factoryToken()
             ).withLogging();
             FactoryTracingThreadStatic.setGlobalTracingClient(factoryTracingClient);
-            LOG.info("Vaticle Factory tracing is enabled");
+            logger().info("Vaticle Factory tracing is enabled");
         }
     }
 
@@ -174,9 +173,9 @@ public class TypeDBServer implements AutoCloseable {
     protected void start() {
         try {
             server.start();
-            LOG.info("{} is now running and will keep this process alive.", name());
-            LOG.info("You can press CTRL+C to shutdown this server.");
-            LOG.info("");
+            logger().info("{} is now running and will keep this process alive.", name());
+            logger().info("You can press CTRL+C to shutdown this server.");
+            logger().info("");
         } catch (IOException e) {
             if (e.getCause() != null && e.getCause() instanceof BindException) {
                 throw TypeDBException.of(ALREADY_RUNNING, port());
@@ -198,8 +197,8 @@ public class TypeDBServer implements AutoCloseable {
 
     @Override
     public void close() {
-        LOG.info("");
-        LOG.info("Shutting down {}...", name());
+        logger().info("");
+        logger().info("Shutting down {}...", name());
         try {
             assert typeDBService != null;
             typeDBService.close();
@@ -207,11 +206,15 @@ public class TypeDBServer implements AutoCloseable {
             server.awaitTermination();
             typedb.close();
             System.runFinalization();
-            LOG.info("{} has been shutdown", name());
+            logger().info("{} has been shutdown", name());
         } catch (InterruptedException e) {
-            LOG.error(FAILED_AT_STOPPING.message(), e);
+            logger().error(FAILED_AT_STOPPING.message(), e);
             Thread.currentThread().interrupt();
         }
+    }
+
+    protected Logger logger() {
+        return LOG;
     }
 
     public static void main(String[] args) {
