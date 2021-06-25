@@ -262,7 +262,7 @@ You can visit the [Setup Guide](https://docs.vaticle.com/docs/running-typedb/ins
 1. Make sure you have the following dependencies installed on your machine:
     - Java JDK 11 or higher
     - Python 3 and Pip 18.1 or higher
-    - [Bazel 3.3.1 or higher](http://bazel.build/). We use [Bazelisk](https://github.com/bazelbuild/bazelisk) to manage Bazel versions which runs the build with the Bazel version specified in [`.bazelversion`](https://github.com/vaticle/typedb/blob/master/.bazelversion). In order to install it, follow the platform-specific guide:
+    - [Bazel 4 or higher](http://bazel.build/). We use [Bazelisk](https://github.com/bazelbuild/bazelisk) to manage Bazel versions which runs the build with the Bazel version specified in [`.bazelversion`](https://github.com/vaticle/typedb/blob/master/.bazelversion). In order to install it, follow the platform-specific guide:
         - macOS (Darwin): `brew install bazelbuild/tap/bazelisk`
         - Linux: `wget https://github.com/bazelbuild/bazelisk/releases/download/v1.4.0/bazelisk-linux-amd64 -O /usr/local/bin/bazel`
 1. Depending on your Operating System, you can build TypeDB with either one of the following commands: 
@@ -285,6 +285,6 @@ TypeDB & TypeQL has been built using various open-source frameworks throughout i
 
 ## Licensing
 
-This product includes software developed by [Vaticle](https://vaticle.com/).  It's released under the GNU Affero GENERAL PUBLIC LICENSE, Version 3, 19 November 2007. For license information, please see [LICENSE](https://github.com/vaticle/typedb/blob/master/LICENSE). Vaticle also provides a commercial license for TypeDB Cluster - get in touch with our team at commercial@vaticle.com.
+This software is developed by [Vaticle](https://vaticle.com/).  It's released under the GNU Affero GENERAL PUBLIC LICENSE, Version 3, 19 November 2007. For license information, please see [LICENSE](https://github.com/vaticle/typedb/blob/master/LICENSE). Vaticle also provides a commercial license for TypeDB Cluster - get in touch with our team at commercial@vaticle.com.
 
 Copyright (C) 2021 Vaticle
