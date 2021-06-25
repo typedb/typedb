@@ -226,9 +226,11 @@ public class ThingGraph {
         FunctionalIterator.Sorted<ThingVertex> storageIterator = storage.iterate(
                 prefix, (key, value) -> key
         ).mapSorted(inEdge -> convertToReadable(EdgeIID.InwardsISA.of(inEdge).end()), vertex -> join(prefix, vertex.iid().bytes()));
-        FunctionalIterator.Sorted<ThingVertex> buffered = iterateSorted(thingsByTypeIID.get(typeVertex.iid())).mapSorted(e -> e, ThingVertex::toWrite);
         if (!thingsByTypeIID.containsKey(typeVertex.iid())) return storageIterator;
-        else return storageIterator.merge(buffered).distinct();
+        else {
+            FunctionalIterator.Sorted<ThingVertex> buffered = iterateSorted(thingsByTypeIID.get(typeVertex.iid())).mapSorted(e -> e, ThingVertex::toWrite);
+            return storageIterator.merge(buffered).distinct();
+        }
     }
 
     public AttributeVertex<Boolean> getReadable(TypeVertex type, boolean value) {
