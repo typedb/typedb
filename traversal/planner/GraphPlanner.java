@@ -257,11 +257,11 @@ public class GraphPlanner implements Planner {
 
     private void updateObjective(GraphManager graph) {
         if (snapshot < graph.data().stats().snapshot()) {
-            snapshot = graph.data().stats().snapshot();
             totalCostNext = 0.1;
             setBranchingFactor(graph);
             setCostExponentUnit(graph);
             computeTotalCostNext(graph);
+            snapshot = graph.data().stats().snapshot();
             hasObjective = true;
 
             assert !Double.isNaN(totalCostNext) && !Double.isNaN(totalCostLastRecorded) && totalCostLastRecorded > 0;
