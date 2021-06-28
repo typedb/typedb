@@ -51,7 +51,7 @@ class CompletenessChecker {
     private void checkConclusion(Rule.Conclusion conclusion, ConceptMap conclusionAnswer) {
         ConceptMap conclusionBounds = removeGeneratingBound(conclusion, conclusionAnswer);
         validateNonInferred(conclusionBounds);
-        Conjunction conclusionWithIIDs = constrainByIIDs(conclusion, conclusionAnswer);
+        Conjunction conclusionWithIIDs = constrainByIIDs(conclusion, conclusionBounds);
         validateInference(conclusion, conclusionWithIIDs);
     }
 
