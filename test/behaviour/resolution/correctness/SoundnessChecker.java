@@ -31,23 +31,27 @@ import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 class SoundnessChecker {
 
-    private final Materialiser referenceReasoner;
+    private final Materialiser materialiser;
     private final TypeDB.Session session;
     private final Map<Concept, Concept> inferredConceptMapping;
+    private final Set<Explanation> checked;
 
-    private SoundnessChecker(Materialiser referenceReasoner, TypeDB.Session session) {
-        this.referenceReasoner = referenceReasoner;
+    private SoundnessChecker(Materialiser materialiser, TypeDB.Session session) {
+        this.materialiser = materialiser;
         this.session = session;
         this.inferredConceptMapping = new HashMap<>();
+        this.checked = new HashSet<>();
     }
 
-    static SoundnessChecker create(Materialiser referenceReasoner, TypeDB.Session session) {
-        return new SoundnessChecker(referenceReasoner, session);
+    static SoundnessChecker create(Materialiser materialiser, TypeDB.Session session) {
+        return new SoundnessChecker(materialiser, session);
     }
 
     void checkQuery(TypeQLMatch inferenceQuery) {
@@ -60,6 +64,10 @@ class SoundnessChecker {
     private void checkAnswer(ConceptMap answer, Transaction tx) {
         answer.explainables().iterator().forEachRemaining(explainable -> {
             tx.query().explain(explainable.id()).forEachRemaining(explanation -> {
+                // This check is valid given that there is no mechanism for recursion termination given by the UX of
+                // explanations, so we do it ourselves
+                if (checked.contains(explanation)) return;
+                else checked.add(explanation);
                 checkAnswer(explanation.conditionAnswer(), tx);
                 checkExplanationAgainstReference(explanation);
             });
@@ -68,7 +76,7 @@ class SoundnessChecker {
 
     private void checkExplanationAgainstReference(Explanation explanation) {
         ConceptMap recordedWhen = substituteInferredVarsForReferenceVars(explanation.conditionAnswer());
-        Optional<ConceptMap> recordedThen = referenceReasoner
+        Optional<ConceptMap> recordedThen = materialiser
                 .materialisationForCondition(explanation.rule(), recordedWhen)
                 .map(Materialisation::conclusionAnswer);
         if (recordedThen.isPresent()) {

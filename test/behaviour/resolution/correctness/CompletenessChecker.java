@@ -1,5 +1,6 @@
 package com.vaticle.typedb.core.test.behaviour.resolution.correctness;
 
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Context;
@@ -23,26 +24,34 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 
 class CompletenessChecker {
 
-    private final Materialiser referenceReasoner;
+    private final Materialiser materialiser;
     private final RocksSession session;
+    private final Set<Pair<Conjunction, ConceptMap>> checked;
 
-    private CompletenessChecker(Materialiser referenceReasoner, RocksSession session) {
-        this.referenceReasoner = referenceReasoner;
+    private CompletenessChecker(Materialiser materialiser, RocksSession session) {
+        this.materialiser = materialiser;
         this.session = session;
+        this.checked = new HashSet<>();
     }
 
-    static CompletenessChecker create(Materialiser referenceReasoner, RocksSession session) {
-        return new CompletenessChecker(referenceReasoner, session);
+    static CompletenessChecker create(Materialiser materialiser, RocksSession session) {
+        return new CompletenessChecker(materialiser, session);
     }
 
     void checkQuery(TypeQLMatch inferenceQuery) {
-        referenceReasoner.query(inferenceQuery).forEach((conjunction, answers) -> {
+        materialiser.query(inferenceQuery).forEach((conjunction, answers) -> {
             answers.forEachRemaining(answer -> checkConjunction(conjunction, answer));
         });
     }
 
     private void checkConjunction(Conjunction inferred, ConceptMap answer) {
-        referenceReasoner.materialisationsForConjunction(answer, inferred).forEachRemaining(materialisation -> {
+        materialiser.materialisationsForConjunction(answer, inferred).forEachRemaining(materialisation -> {
+            Pair<Conjunction, ConceptMap> check = new Pair<>(materialisation.rule().when(),
+                                                             materialisation.conditionAnswer());
+            // TODO: This check represents a deficiency. We should know how each fact was inferred such that we don't
+            //  end up in infinite recursion over the reference materialised facts
+            if (checked.contains(check)) return;
+            else checked.add(check);
             checkConjunction(materialisation.rule().when(), materialisation.conditionAnswer());
             checkConclusion(materialisation.rule().conclusion(), materialisation.conclusionAnswer());
         });

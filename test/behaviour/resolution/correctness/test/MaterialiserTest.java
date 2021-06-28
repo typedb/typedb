@@ -75,9 +75,9 @@ public class MaterialiserTest {
     public void testDeduplicationOfInferredConcepts() {
         loadTransitivityExample(typeDB);
         try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            Materialiser referenceReasoner = Materialiser.materialiseAll(session);
+            Materialiser materialiser = Materialiser.materialiseAll(session);
             TypeQLMatch inferredAnswersQuery = TypeQL.match(TypeQL.var("lh").isa("location-hierarchy"));
-            List<ConceptMap> inferredAnswers = iterate(referenceReasoner.query(inferredAnswersQuery).entrySet())
+            List<ConceptMap> inferredAnswers = iterate(materialiser.query(inferredAnswersQuery).entrySet())
                     .flatMap(Map.Entry::getValue).toList();
             assertEquals(6, inferredAnswers.size());
         }
