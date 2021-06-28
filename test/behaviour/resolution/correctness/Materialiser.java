@@ -121,7 +121,7 @@ public class Materialiser {
         return conjunctionAnswers;
     }
 
-    FunctionalIterator<Materialisation> explainConjunction(ConceptMap answer, Conjunction conjunction) {
+    FunctionalIterator<Materialisation> materialisationsForConjunction(ConceptMap answer, Conjunction conjunction) {
         return iterate(Concludable.create(conjunction)).flatMap(concludable -> iterate(
                 concludable.applicableRules(tx.concepts(), tx.logic()).entrySet()
         ).flatMap(applicableRule -> iterate(applicableRule.getValue())

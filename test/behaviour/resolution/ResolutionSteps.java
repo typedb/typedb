@@ -55,7 +55,7 @@ public class ResolutionSteps {
         correctnessChecker = CorrectnessChecker.initialise(session());
     }
 
-    @Then("answers are consistent across {int} executions in reasoned database")
+    @Then("answers are consistent across {int} executions")
     public static void answers_are_consistent_across_n_executions_in_reasoned_database(int executionCount) {
         Set<ConceptMap> oldAnswers;
         oldAnswers = tx().query().match(TypeQLSteps.typeQLQuery).toSet();

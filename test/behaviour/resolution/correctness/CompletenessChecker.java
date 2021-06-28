@@ -42,7 +42,7 @@ class CompletenessChecker {
     }
 
     private void checkConjunction(Conjunction inferred, ConceptMap answer) {
-        referenceReasoner.explainConjunction(answer, inferred).forEachRemaining(materialisation -> {
+        referenceReasoner.materialisationsForConjunction(answer, inferred).forEachRemaining(materialisation -> {
             checkConjunction(materialisation.rule().when(), materialisation.conditionAnswer());
             checkConclusion(materialisation.rule().conclusion(), materialisation.conclusionAnswer());
         });
