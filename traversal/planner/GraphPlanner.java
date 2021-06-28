@@ -273,7 +273,7 @@ public class GraphPlanner implements Planner {
                 setInitialValues();
             }
         }
-        assert hasObjective;
+        assert hasObjective : String.format("Failed to set objective function. Planner snapshot: %d; statistics snapshot: %d", snapshot, graph.data().stats().snapshot());
         if (LOG.isTraceEnabled()) LOG.trace(solver.exportModelAsLpFormat());
     }
 
