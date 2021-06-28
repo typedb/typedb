@@ -170,6 +170,10 @@ public class TypeDBServer implements AutoCloseable {
         return command.dataDir();
     }
 
+    protected Logger logger() {
+        return LOG;
+    }
+
     protected void start() {
         try {
             server.start();
@@ -211,10 +215,6 @@ public class TypeDBServer implements AutoCloseable {
             logger().error(FAILED_AT_STOPPING.message(), e);
             Thread.currentThread().interrupt();
         }
-    }
-
-    protected Logger logger() {
-        return LOG;
     }
 
     public static void main(String[] args) {

@@ -117,6 +117,10 @@ public abstract class RocksStorage implements Storage {
         else return storageTransaction.getIterator(readOptions);
     }
 
+    protected Logger logger() {
+        return LOG;
+    }
+
     void recycle(org.rocksdb.RocksIterator rocksIterator) {
         recycled.add(rocksIterator);
     }
@@ -157,10 +161,6 @@ public abstract class RocksStorage implements Storage {
         } finally {
             deleteCloseSchemaWriteLock.writeLock().unlock();
         }
-    }
-
-    protected Logger logger() {
-        return LOG;
     }
 
     static class Cache extends RocksStorage {
