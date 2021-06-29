@@ -121,7 +121,6 @@ public final class RocksIterator<T extends Bytes.ByteComparable<T>> extends Abst
             return false;
         }
         next = constructor.apply(key, ByteArray.of(internalRocksIterator.value()));
-        assert next.getBytes().equals(key);
         state = State.FETCHED;
         return true;
     }

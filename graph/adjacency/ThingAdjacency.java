@@ -57,7 +57,7 @@ public interface ThingAdjacency {
      * @param lookAhead information of the adjacent edge to filter the edges with
      * @return an {@code IteratorBuilder} to retrieve vertices of a set of edges.
      */
-    default ThingIteratorSortedBuilder edge(Encoding.Edge.Thing encoding, IID... lookAhead) {
+    default ThingIteratorBuilder edge(Encoding.Edge.Thing encoding, IID... lookAhead) {
         if (encoding == Encoding.Edge.Thing.HAS) return edgeHas(lookAhead);
         else if (encoding == Encoding.Edge.Thing.PLAYING) return edgeHas(lookAhead);
         else if (encoding == Encoding.Edge.Thing.RELATING) return edgeHas(lookAhead);
@@ -67,10 +67,10 @@ public interface ThingAdjacency {
         }
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
-    ThingIteratorSortedBuilder edgeHas(IID... lookAhead);
-    ThingIteratorSortedBuilder edgePlaying(IID... lookAhead);
-    ThingIteratorSortedBuilder edgeRelating(IID... lookAhead);
-    ThingIteratorSortedBuilder edgeRolePlayer(IID roleType, IID... lookAhead);
+    ThingIteratorBuilder edgeHas(IID... lookAhead);
+    ThingIteratorBuilder edgePlaying(IID... lookAhead);
+    ThingIteratorBuilder edgeRelating(IID... lookAhead);
+    ThingIteratorBuilder edgeRolePlayer(IID roleType, IID... lookAhead);
 
     /**
      * Returns an edge of type {@code encoding} that connects to an {@code adjacent}
@@ -101,17 +101,6 @@ public interface ThingAdjacency {
 
         FunctionalIterator<ThingEdge> get();
     }
-
-    interface ThingIteratorSortedBuilder {
-
-        // TODO we could specialise into In and Out subtypes that returns sorted from() or to() if we require it
-        FunctionalIterator<ThingVertex> from();
-
-        FunctionalIterator<ThingVertex> to();
-
-        FunctionalIterator.Sorted<EdgeDirected> get();
-    }
-
 
     interface Write extends ThingAdjacency {
 
