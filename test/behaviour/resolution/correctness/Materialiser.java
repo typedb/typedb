@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.test.behaviour.resolution.correctness;
 
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -25,6 +26,9 @@ import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.thing.Relation;
+import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.pattern.Conjunction;
@@ -36,11 +40,13 @@ import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static java.util.Collections.singletonList;
 
@@ -48,10 +54,14 @@ public class Materialiser {
 
     private final Map<Rule, RuleMaterialisationRecorder> ruleRecorders;
     private final RocksTransaction tx;
+    private final Map<Concept, Set<Materialisation>> conceptMaterialisations;
+    private final Map<Pair<Thing, Attribute>, Set<Materialisation>> hasMaterialisations;
 
     private Materialiser(RocksSession session) {
         this.ruleRecorders = new HashMap<>();
         this.tx = session.transaction(Arguments.Transaction.Type.WRITE, new Options.Transaction().infer(false));
+        this.conceptMaterialisations = new HashMap<>();
+        this.hasMaterialisations = new HashMap<>();
     }
 
     public static Materialiser materialiseAll(RocksSession session) {
@@ -122,20 +132,33 @@ public class Materialiser {
     }
 
     FunctionalIterator<Materialisation> materialisationsForConjunction(ConceptMap answer, Conjunction conjunction) {
-        return iterate(Concludable.create(conjunction)).flatMap(concludable -> iterate(
-                concludable.applicableRules(tx.concepts(), tx.logic()).entrySet()
-        ).flatMap(applicableRule -> iterate(applicableRule.getValue())
-                .map(unifier -> unifier.unify(answer.filter(concludable.retrieves()))
-                        .flatMap(unified -> materialisationForConclusion(applicableRule.getKey(),
-                                                                         unified.first())))
-                .filter(Optional::isPresent).map(Optional::get)
-        ));
-    }
-
-    private Optional<Materialisation> materialisationForConclusion(Rule rule, ConceptMap conclusionAnswer) {
-        if (!ruleRecorders.containsKey(rule)) return Optional.empty();
-        if (!ruleRecorders.get(rule).materialisationsByConclusion.containsKey(conclusionAnswer)) return Optional.empty();
-        return Optional.of(ruleRecorders.get(rule).materialisationsByConclusion.get(conclusionAnswer));
+        return iterate(Concludable.create(conjunction)).flatMap(concludable -> {
+            ConceptMap concludableAnswer = answer.filter(filterRetrievableVars(concludable.pattern().identifiers()));
+            FunctionalIterator<Materialisation> materialisations = empty();
+            if (concludable.isIsa()) {
+                Concept concept = concludableAnswer.get(concludable.asIsa().isa().owner().id());
+                Set<Materialisation> attrMats = conceptMaterialisations.get(concept);
+                if (concept.asThing().isInferred() && attrMats != null) materialisations.link(iterate(attrMats));
+            } else if (concludable.isHas()) {
+                Thing owner = concludableAnswer.get(concludable.asHas().owner().id()).asThing();
+                Attribute attribute = concludableAnswer.get(concludable.asHas().attribute().id()).asAttribute();
+                Set<Materialisation> attrMats = conceptMaterialisations.get(attribute);
+                if (attribute.isInferred() && attrMats != null) materialisations.link(iterate(attrMats));
+                Set<Materialisation> hasMats = hasMaterialisations.get(new Pair<>(owner, attribute));
+                if (owner.hasInferred(attribute) && hasMats != null) materialisations.link(iterate(hasMats));
+            } else if (concludable.isAttribute()) {
+                Attribute attribute = concludableAnswer.get(concludable.asAttribute().attribute().id()).asAttribute();
+                Set<Materialisation> attrMats = conceptMaterialisations.get(attribute);
+                if (attribute.isInferred() && attrMats != null) materialisations.link(iterate(attrMats));
+            } else if (concludable.isRelation()) {
+                Relation rel = concludableAnswer.get(concludable.asRelation().relation().owner().id()).asRelation();
+                Set<Materialisation> relMats = conceptMaterialisations.get(rel);
+                if (rel.isInferred() && relMats != null) materialisations.link(iterate(relMats));
+            } else {
+                if (!concludable.isNegated()) throw TypeDBException.of(ILLEGAL_STATE);
+            }
+            return materialisations;
+        });
     }
 
     Optional<Materialisation> materialisationForCondition(Rule rule, ConceptMap conditionAnswer) {
@@ -170,18 +193,16 @@ public class Materialiser {
 
     }
 
-    private static class RuleMaterialisationRecorder {
+    private class RuleMaterialisationRecorder {
         private final Rule rule;
         private final Concludable thenConcludable;
         private boolean requiresReiteration;
-        private final Map<ConceptMap, Materialiser.Materialisation> materialisationsByCondition;
-        private final Map<ConceptMap, Materialiser.Materialisation> materialisationsByConclusion;
+        private final Map<ConceptMap, Materialisation> materialisationsByCondition;
 
         private RuleMaterialisationRecorder(Rule typeDBRule) {
             this.rule = typeDBRule;
             this.requiresReiteration = false;
             this.materialisationsByCondition = new HashMap<>();
-            this.materialisationsByConclusion = new HashMap<>();
 
             Set<Concludable> concludables = Concludable.create(this.rule.then());
             assert concludables.size() == 1;
@@ -195,11 +216,22 @@ public class Materialiser {
 
         private void recordMaterialisation(ConceptMap whenConceptMap, ConceptMap thenConceptMap) {
             if (!materialisationsByCondition.containsKey(whenConceptMap)) {
-                Materialiser.Materialisation materialisation =
-                        new Materialiser.Materialisation(rule, whenConceptMap, thenConceptMap);
+                Materialisation materialisation = new Materialisation(rule, whenConceptMap, thenConceptMap);
                 requiresReiteration = true;
                 materialisationsByCondition.put(whenConceptMap, materialisation);
-                materialisationsByConclusion.put(thenConceptMap, materialisation);
+                if (rule.conclusion().isIsa()) {
+                    Concept concept = thenConceptMap.get(rule.conclusion().asIsa().isa().owner().id());
+                    conceptMaterialisations.putIfAbsent(concept, new HashSet<>());
+                    conceptMaterialisations.get(concept).add(materialisation);
+                }
+                if (rule.conclusion().isHas()) {
+                    Thing owner = thenConceptMap.get(rule.conclusion().asHas().has().owner().id()).asThing();
+                    Attribute attribute =
+                            thenConceptMap.get(rule.conclusion().asHas().has().attribute().id()).asAttribute();
+                    Pair<Thing, Attribute> has = new Pair<>(owner, attribute);
+                    hasMaterialisations.putIfAbsent(has, new HashSet<>());
+                    hasMaterialisations.get(has).add(materialisation);
+                }
             } else {
                 assert materialisationsByCondition.get(whenConceptMap).conclusionAnswer().equals(thenConceptMap);
             }

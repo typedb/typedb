@@ -749,6 +749,10 @@ public abstract class Concludable extends Resolvable<Conjunction> {
             return new HashSet<>(equalsConstantConstraints(values));
         }
 
+        public ThingVariable attribute() {
+            return attribute;
+        }
+
         @Override
         FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
             if (conclusion.isValue()) return unify(conclusion.asValue());
