@@ -281,19 +281,16 @@ public abstract class ByteArray implements ByteComparable<ByteArray> {
 
     @Override
     public int compareTo(ByteArray that) {
-        int n = Math.min(length(), that.length());
-//        if (n == 0) return Integer.compare(length(), that.length());
-//        int cmp = Byte.compare((byte)(get(0) ^ 0x80), (byte)(that.get(0) ^ 0x80));
-//        if (cmp != 0) return cmp;
-        for (int i = 1; i < n; i++) {
-            int a = unsignedValue(get(i));
-            int b = unsignedValue(that.get(i));
-            if (a != b) return a - b;
-        }
-        return Integer.compare(length(), that.length());
+//        int n = Math.min(length(), that.length());
+//        for (int i = 1; i < n; i++) {
+//            int a = unsignedValue(get(i));
+//            int b = unsignedValue(that.get(i));
+//            if (a != b) return a - b;
+//        }
+//        return Integer.compare(length(), that.length());
 
-//        if (that instanceof Base) return compareToBase((Base) that);
-//        else return compareToView((View) that);
+        if (that instanceof Base) return compareToBase((Base) that);
+        else return compareToView((View) that);
     }
 
     abstract int compareToView(View that);
