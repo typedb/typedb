@@ -166,7 +166,7 @@ public class Reasoner {
                     conjunction.traversal(), context.producer(), PARALLELISATION_FACTOR
             ).map(conceptMgr::conceptMap).filter(answer -> !iterate(conjunction.negations()).flatMap(
                     negation -> iterator(negation.disjunction(), answer)
-            ).hasNext()).map(answer -> answer.filter(filter));//.distinct();
+            ).hasNext()).map(answer -> answer.filter(filter)).distinct();
         }
     }
 
@@ -186,7 +186,7 @@ public class Reasoner {
         } else {
             return traversalEng.iterator(conjunction.traversal()).map(conceptMgr::conceptMap).filter(
                     ans -> !iterate(conjunction.negations()).flatMap(n -> iterator(n.disjunction(), ans)).hasNext()
-            ).map(conceptMap -> conceptMap.filter(filter));//.distinct();
+            ).map(conceptMap -> conceptMap.filter(filter)).distinct();
         }
     }
 

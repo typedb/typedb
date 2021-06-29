@@ -51,6 +51,6 @@ public abstract class IID {
     @Override
     public final int hashCode() {
         return bytes.hashCode();
-    };
+    }
 
 }

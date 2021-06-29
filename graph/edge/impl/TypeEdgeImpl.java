@@ -53,7 +53,6 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         private final TypeVertex to;
         private final AtomicBoolean committed;
         private final AtomicBoolean deleted;
-        private final ByteArray outIIDBytes;
         private TypeVertex overridden;
         private int hash;
 
@@ -69,7 +68,6 @@ public abstract class TypeEdgeImpl implements TypeEdge {
             assert this.graph == to.graph();
             this.from = from;
             this.to = to;
-            this.outIIDBytes = outIID().bytes();
             committed = new AtomicBoolean(false);
             deleted = new AtomicBoolean(false);
         }
@@ -196,7 +194,6 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         private final VertexIID.Type fromIID;
         private final VertexIID.Type toIID;
         private final AtomicBoolean deleted;
-        private final ByteArray persistedBytes;
         private TypeVertex from;
         private TypeVertex to;
         private VertexIID.Type overriddenIID;
@@ -233,7 +230,6 @@ public abstract class TypeEdgeImpl implements TypeEdge {
                 outIID = EdgeIID.Type.of(iid.end(), iid.encoding().out(), iid.start());
             }
 
-            persistedBytes = iid.bytes();
             deleted = new AtomicBoolean(false);
 
             if (iid.isOutwards()) {

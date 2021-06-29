@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.graph.edge;
 
-import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.iid.EdgeIID;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
