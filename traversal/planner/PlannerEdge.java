@@ -1124,8 +1124,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                         Set<TypeVertex> attTypes = null;
                         Map<TypeVertex, Set<TypeVertex>> attributeTypesToOwners = new HashMap<>();
 
-                        if (isSelfClosure() || to().props().hasIID()) {
-                            setObjectiveCoefficient(1);
+                        if (isSelfClosure()) {
                             return;
                         }
                         if (!from.props().types().isEmpty()) {
@@ -1158,7 +1157,11 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                             else if (from().props().hasEqualityPredicate()) div = attributeTypesToOwners.size();
                             else div = graphMgr.data().stats().thingVertexCount(owner);
                             if (div > 0) {
-                                cost += graphMgr.data().stats().hasEdgeSum(attributeTypesToOwners.get(owner), owner) / div;
+                                long totalHasEdges;
+                                if (to().props().hasIID()) totalHasEdges = 1;
+                                else if (to().props().hasEqualityPredicate()) totalHasEdges = attributeTypesToOwners.get(owner).size();
+                                else totalHasEdges = graphMgr.data().stats().hasEdgeSum(attributeTypesToOwners.get(owner), owner);
+                                cost +=  totalHasEdges/ div;
                             }
                         }
                         assert !attributeTypesToOwners.isEmpty();
