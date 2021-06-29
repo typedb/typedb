@@ -24,6 +24,7 @@ java_test(
         "VariableRolesTest.java",
     ],
     test_class = "com.vaticle.typedb.core.test.behaviour.resolution.tests.variable_roles.VariableRolesTest",
+    size = "large",
     deps = [
         # External dependencies from Maven
         "@maven//:io_cucumber_cucumber_junit",
