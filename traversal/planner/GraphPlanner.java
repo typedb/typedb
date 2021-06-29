@@ -85,6 +85,7 @@ public class GraphPlanner implements Planner {
     private volatile boolean isUpToDate;
     private volatile long totalDuration;
     private volatile long snapshot;
+    private volatile boolean hasObjective;
 
     volatile double totalCostLastRecorded;
     double totalCostNext;
@@ -109,6 +110,7 @@ public class GraphPlanner implements Planner {
         branchingFactor = 0.01;
         costExponentUnit = 0.1;
         snapshot = -1L;
+        hasObjective = false;
     }
 
     static GraphPlanner create(Structure structure) {
@@ -255,11 +257,12 @@ public class GraphPlanner implements Planner {
 
     private void updateObjective(GraphManager graph) {
         if (snapshot < graph.data().stats().snapshot()) {
-            snapshot = graph.data().stats().snapshot();
             totalCostNext = 0.1;
             setBranchingFactor(graph);
             setCostExponentUnit(graph);
             computeTotalCostNext(graph);
+            snapshot = graph.data().stats().snapshot();
+            hasObjective = true;
 
             assert !Double.isNaN(totalCostNext) && !Double.isNaN(totalCostLastRecorded) && totalCostLastRecorded > 0;
             if (totalCostNext / totalCostLastRecorded >= OBJECTIVE_PLANNER_COST_MAX_CHANGE) setOutOfDate();
@@ -270,6 +273,7 @@ public class GraphPlanner implements Planner {
                 setInitialValues();
             }
         }
+        assert hasObjective : String.format("Failed to set objective function. Planner snapshot: %d; statistics snapshot: %d", snapshot, graph.data().stats().snapshot());
         if (LOG.isTraceEnabled()) LOG.trace(solver.exportModelAsLpFormat());
     }
 
@@ -377,6 +381,7 @@ public class GraphPlanner implements Planner {
 
     private void throwPlanningError() {
         LOG.error(toString());
+        LOG.error("Optimisation status: {}", resultStatus);
         LOG.error(solver.exportModelAsLpFormat());
         throw TypeDBException.of(UNEXPECTED_PLANNING_ERROR);
     }
