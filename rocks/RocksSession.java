@@ -43,8 +43,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public abstract class RocksSession implements TypeDB.Session {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RocksSession.class);
-
     private final RocksDatabase database;
     private final UUID uuid;
     private final Context.Session context;

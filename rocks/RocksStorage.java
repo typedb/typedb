@@ -117,6 +117,10 @@ public abstract class RocksStorage implements Storage {
         else return storageTransaction.getIterator(readOptions);
     }
 
+    protected Logger logger() {
+        return LOG;
+    }
+
     void recycle(org.rocksdb.RocksIterator rocksIterator) {
         recycled.add(rocksIterator);
     }
@@ -128,7 +132,7 @@ public abstract class RocksStorage implements Storage {
     @Override
     public TypeDBException exception(ErrorMessage error) {
         TypeDBException e = TypeDBException.of(error);
-        LOG.debug(e.getMessage(), e);
+        logger().debug(e.getMessage(), e);
         return e;
     }
 
@@ -137,7 +141,7 @@ public abstract class RocksStorage implements Storage {
         TypeDBException e;
         if (exception instanceof TypeDBException) e = (TypeDBException) exception;
         else e = TypeDBException.of(exception);
-        LOG.debug(e.getMessage(), e);
+        logger().debug(e.getMessage(), e);
         return e;
     }
 
