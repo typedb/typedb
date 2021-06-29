@@ -251,9 +251,14 @@ my-typedb::data::read> match $x isa person;
 
 ## Download and Run TypeDB
 
-To run TypeDB (which you can download from the [Download Centre](https://vaticle.com/download) or [GitHub Releases](https://github.com/vaticle/typedb/releases)), you need to have Java 11 or higher (OpenJDK or Oracle Java) installed.
+You can download TypeDB from the [Download Centre](https://vaticle.com/download) or [GitHub Releases](https://github.com/vaticle/typedb/releases). Make sure have Java 11 or higher (OpenJDK or Oracle Java) installed. Visit the [installation documentation](https://docs.vaticle.com/docs/running-typedb/install-and-run) to get started.
 
-You can visit the [Setup Guide](https://docs.vaticle.com/docs/running-typedb/install-and-run) to help your installation.
+## Developer Resources
+
+- Documentation: https://docs.vaticle.com
+- Discussion Forum: https://forum.vaticle.com
+- Discord Chat Server: https://vaticle.com/discord
+- Community Projects: https://github.com/typedb-osi
 
 ## Compiling TypeDB from Source
 
