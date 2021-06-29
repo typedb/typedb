@@ -37,6 +37,7 @@ import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.graph.TraversalEdge;
 import com.vaticle.typedb.core.traversal.iterator.GraphIterator;
 import com.vaticle.typedb.core.traversal.planner.PlannerEdge;
+import com.vaticle.typedb.core.traversal.predicate.Predicate;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.util.HashSet;
@@ -747,7 +748,6 @@ public abstract class ProcedureEdge<
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isThing();
                         FunctionalIterator<? extends AttributeVertex<?>> iter;
-                        com.vaticle.typedb.core.traversal.predicate.Predicate.Value<?> eq = null;
                         ThingVertex owner = fromVertex.asThing();
                         if (to.props().hasIID()) {
                             assert to.id().isVariable();
@@ -762,8 +762,9 @@ public abstract class ProcedureEdge<
                                 return empty();
                             }
                         } else if (!to.props().types().isEmpty()) {
-                            eq = iterate(to.props().predicates()).filter(p -> p.operator().equals(EQ)).firstOrNull();
-                            if (eq != null) {
+                            if (to.props().hasEqualityPredicate()) {
+                                com.vaticle.typedb.core.traversal.predicate.Predicate.Value<?>  eq =
+                                        iterate(to.props().predicates()).filter(p -> p.operator().equals(EQ)).firstOrNull();
                                 iter = to.iteratorOfAttributesWithTypes(graphMgr, params, eq)
                                         .filter(a -> owner.outs().edge(HAS, a) != null);
                             } else {
@@ -805,12 +806,17 @@ public abstract class ProcedureEdge<
                         if (to.props().hasIID()) {
                             iter = backwardBranchToIIDFiltered(graphMgr, att, HAS, params.getIID(to.id().asVariable()), to.props().types());
                         } else if (!to.props().types().isEmpty()) {
-                            iter = iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).noNulls()
-                                    .flatMap(t -> att.ins().edge(HAS, PrefixIID.of(t.encoding().instance()), t.iid()).from());
+                            if (to.props().hasEqualityPredicate()) {
+                                com.vaticle.typedb.core.traversal.predicate.Predicate.Value<?> eq =
+                                        iterate(to.props().predicates()).filter(p -> p.operator().equals(EQ)).firstOrNull();
+                                iter = to.iteratorOfAttributesWithTypes(graphMgr, params, eq).filter(a -> att.ins().edge(HAS, a) != null);
+                            } else {
+                                iter = iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).noNulls()
+                                        .flatMap(t -> att.ins().edge(HAS, PrefixIID.of(t.encoding().instance()), t.iid()).from());
+                            }
                         } else {
                             iter = att.ins().edge(HAS).from();
                         }
-
                         if (to.props().predicates().isEmpty()) return iter;
                         else return to.filterPredicates(filterAttributes(iter), params);
                     }

@@ -152,7 +152,7 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
             }
 
             public void predicate(Predicate.Value<?> predicate) {
-                if (predicate.operator().isEquality())
+                if (predicate.operator().isEquality()) hasEqualityPredicate = true;
                 predicates.add(predicate);
             }
 
