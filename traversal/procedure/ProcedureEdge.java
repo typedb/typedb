@@ -120,21 +120,37 @@ public abstract class ProcedureEdge<
         return order() > to().branchEdge().order();
     }
 
-    public boolean onlyStartsFromAttribute() { return false; }
+    public boolean onlyStartsFromAttribute() {
+        return false;
+    }
 
-    public boolean onlyStartsFromRelation() { return false; }
+    public boolean onlyStartsFromRelation() {
+        return false;
+    }
 
-    public boolean onlyEndsAtRelation() { return false; }
+    public boolean onlyEndsAtRelation() {
+        return false;
+    }
 
-    public boolean onlyStartsFromAttributeType() { return false; }
+    public boolean onlyStartsFromAttributeType() {
+        return false;
+    }
 
-    public boolean onlyStartsFromRelationType() { return false; }
+    public boolean onlyStartsFromRelationType() {
+        return false;
+    }
 
-    public boolean onlyStartsFromRoleType() { return false; }
+    public boolean onlyStartsFromRoleType() {
+        return false;
+    }
 
-    public boolean onlyStartsFromThingType() { return false; }
+    public boolean onlyStartsFromThingType() {
+        return false;
+    }
 
-    public boolean isRolePlayer() { return false; }
+    public boolean isRolePlayer() {
+        return false;
+    }
 
     public Native.Thing.RolePlayer asRolePlayer() {
         throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Native.Thing.RolePlayer.class));
@@ -189,7 +205,9 @@ public abstract class ProcedureEdge<
         }
 
         @Override
-        public boolean onlyStartsFromAttribute() { return true; }
+        public boolean onlyStartsFromAttribute() {
+            return true;
+        }
 
         @Override
         public FunctionalIterator<? extends Vertex<?, ?>> branch(
@@ -468,7 +486,9 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean onlyStartsFromThingType() { return true; }
+                    public boolean onlyStartsFromThingType() {
+                        return true;
+                    }
 
                     @Override
                     public FunctionalIterator<? extends Vertex<?, ?>> branch(
@@ -493,7 +513,7 @@ public abstract class ProcedureEdge<
                     private FunctionalIterator<TypeVertex> overriddens(TypeVertex owner) {
                         if (isKey) return owner.outs().edge(OWNS_KEY).overridden().noNulls();
                         else return link(owner.outs().edge(OWNS).overridden().noNulls(),
-                                         owner.outs().edge(OWNS_KEY).overridden().noNulls());
+                                owner.outs().edge(OWNS_KEY).overridden().noNulls());
                     }
 
                     private FunctionalIterator<TypeVertex> declaredOwnersOfAttType(TypeVertex attType) {
@@ -509,7 +529,9 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean onlyStartsFromAttributeType() { return true; }
+                    public boolean onlyStartsFromAttributeType() {
+                        return true;
+                    }
 
                     @Override
                     public FunctionalIterator<? extends Vertex<?, ?>> branch(
@@ -553,7 +575,9 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean onlyStartsFromThingType() { return true; }
+                    public boolean onlyStartsFromThingType() {
+                        return true;
+                    }
 
                     @Override
                     public FunctionalIterator<? extends Vertex<?, ?>> branch(
@@ -582,7 +606,9 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean onlyStartsFromRoleType() { return true; }
+                    public boolean onlyStartsFromRoleType() {
+                        return true;
+                    }
 
                     @Override
                     public FunctionalIterator<? extends Vertex<?, ?>> branch(
@@ -626,7 +652,9 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean onlyStartsFromRelationType() { return true; }
+                    public boolean onlyStartsFromRelationType() {
+                        return true;
+                    }
 
                     @Override
                     public FunctionalIterator<? extends Vertex<?, ?>> branch(
@@ -655,7 +683,9 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean onlyStartsFromRoleType() { return true; }
+                    public boolean onlyStartsFromRoleType() {
+                        return true;
+                    }
 
                     @Override
                     public FunctionalIterator<? extends Vertex<?, ?>> branch(
@@ -747,6 +777,7 @@ public abstract class ProcedureEdge<
                     public FunctionalIterator<? extends Vertex<?, ?>> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isThing();
+                        com.vaticle.typedb.core.traversal.predicate.Predicate.Value<?> eq;
                         FunctionalIterator<? extends AttributeVertex<?>> iter;
                         ThingVertex owner = fromVertex.asThing();
                         if (to.props().hasIID()) {
@@ -763,8 +794,7 @@ public abstract class ProcedureEdge<
                             }
                         } else if (!to.props().types().isEmpty()) {
                             if (to.props().hasEqualityPredicate()) {
-                                com.vaticle.typedb.core.traversal.predicate.Predicate.Value<?>  eq =
-                                        iterate(to.props().predicates()).filter(p -> p.operator().equals(EQ)).firstOrNull();
+                                eq = iterate(to.props().predicates()).filter(p -> p.operator().equals(EQ)).firstOrNull();
                                 iter = to.iteratorOfAttributesWithTypes(graphMgr, params, eq)
                                         .filter(a -> owner.outs().edge(HAS, a) != null);
                             } else {
@@ -794,7 +824,9 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean onlyStartsFromAttribute() { return true; }
+                    public boolean onlyStartsFromAttribute() {
+                        return true;
+                    }
 
                     @Override
                     public FunctionalIterator<? extends Vertex<?, ?>> branch(
@@ -806,9 +838,8 @@ public abstract class ProcedureEdge<
                         if (to.props().hasIID()) {
                             iter = backwardBranchToIIDFiltered(graphMgr, att, HAS, params.getIID(to.id().asVariable()), to.props().types());
                         } else if (!to.props().types().isEmpty()) {
-                            if (to.props().hasEqualityPredicate()) {
-                                com.vaticle.typedb.core.traversal.predicate.Predicate.Value<?> eq =
-                                        iterate(to.props().predicates()).filter(p -> p.operator().equals(EQ)).firstOrNull();
+                            com.vaticle.typedb.core.traversal.predicate.Predicate.Value<?> eq = iterate(to.props().predicates()).filter(p -> p.operator().equals(EQ)).firstOrNull();
+                            if (eq != null) {
                                 iter = to.iteratorOfAttributesWithTypes(graphMgr, params, eq).filter(a -> att.ins().edge(HAS, a) != null);
                             } else {
                                 iter = iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).noNulls()
@@ -906,7 +937,9 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean onlyStartsFromRelation() { return true; }
+                    public boolean onlyStartsFromRelation() {
+                        return true;
+                    }
 
                     @Override
                     public FunctionalIterator<? extends Vertex<?, ?>> branch(
@@ -1005,10 +1038,14 @@ public abstract class ProcedureEdge<
                 }
 
                 @Override
-                public boolean isRolePlayer() { return true; }
+                public boolean isRolePlayer() {
+                    return true;
+                }
 
                 @Override
-                public RolePlayer asRolePlayer() { return this; }
+                public RolePlayer asRolePlayer() {
+                    return this;
+                }
 
                 public Identifier.Variable scope() {
                     if (direction().isForward()) return from.id().asVariable();
@@ -1027,7 +1064,9 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean onlyStartsFromRelation() { return true; }
+                    public boolean onlyStartsFromRelation() {
+                        return true;
+                    }
 
                     @Override
                     public FunctionalIterator<ThingEdge> branchEdge(GraphManager graphMgr, Vertex<?, ?> fromVertex,

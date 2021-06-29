@@ -1125,6 +1125,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                         Map<TypeVertex, Set<TypeVertex>> attributeTypesToOwners = new HashMap<>();
 
                         if (isSelfClosure()) {
+                            setObjectiveCoefficient(1);
                             return;
                         }
                         if (!from.props().types().isEmpty()) {
