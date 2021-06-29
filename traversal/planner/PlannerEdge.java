@@ -1064,7 +1064,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                         Set<TypeVertex> attTypes = null;
                         Map<TypeVertex, Set<TypeVertex>> ownerToAttributeTypes = new HashMap<>();
 
-                        if (isSelfClosure() || to().props().hasIID()) {
+                        if (isSelfClosure()) {
                             setObjectiveCoefficient(1);
                             return;
                         }
@@ -1098,7 +1098,11 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                         for (TypeVertex owner : ownerToAttributeTypes.keySet()) {
                             double div = graphMgr.data().stats().thingVertexCount(owner);
                             if (div > 0) {
-                                cost += graphMgr.data().stats().hasEdgeSum(owner, ownerToAttributeTypes.get(owner)) / div;
+                                long totalHasEdges;
+                                if (to().props().hasIID()) totalHasEdges = 1;
+                                else if (to().props().hasEqualityPredicate()) totalHasEdges = ownerToAttributeTypes.get(owner).size();
+                                else totalHasEdges = graphMgr.data().stats().hasEdgeSum(owner, ownerToAttributeTypes.get(owner));
+                                cost +=  totalHasEdges / div;
                             }
                         }
                         assert !ownerToAttributeTypes.isEmpty();
@@ -1149,7 +1153,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
                         double cost = 0.0;
                         for (TypeVertex owner : attributeTypesToOwners.keySet()) {
-                            double div = graphMgr.data().stats().thingVertexCount(owner);
+                            double div;
+                            if (from().props().hasIID()) div = 1;
+                            else if (from().props().hasEqualityPredicate()) div = attributeTypesToOwners.size();
+                            else div = graphMgr.data().stats().thingVertexCount(owner);
                             if (div > 0) {
                                 cost += graphMgr.data().stats().hasEdgeSum(attributeTypesToOwners.get(owner), owner) / div;
                             }
