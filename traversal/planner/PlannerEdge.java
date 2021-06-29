@@ -1151,16 +1151,13 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                         }
 
                         double cost = 0.0;
-                        for (TypeVertex owner : attributeTypesToOwners.keySet()) {
-                            double div;
-                            if (from().props().hasIID()) div = 1;
-                            else if (from().props().hasEqualityPredicate()) div = attributeTypesToOwners.size();
-                            else div = graphMgr.data().stats().thingVertexCount(owner);
+                        for (TypeVertex attribute : attributeTypesToOwners.keySet()) {
+                            double div = graphMgr.data().stats().thingVertexCount(attribute);
                             if (div > 0) {
                                 long totalHasEdges;
                                 if (to().props().hasIID()) totalHasEdges = 1;
-                                else if (to().props().hasEqualityPredicate()) totalHasEdges = attributeTypesToOwners.get(owner).size();
-                                else totalHasEdges = graphMgr.data().stats().hasEdgeSum(attributeTypesToOwners.get(owner), owner);
+                                else if (to().props().hasEqualityPredicate()) totalHasEdges = attributeTypesToOwners.get(attribute).size();
+                                else totalHasEdges = graphMgr.data().stats().hasEdgeSum(attributeTypesToOwners.get(attribute), attribute);
                                 cost +=  totalHasEdges/ div;
                             }
                         }
