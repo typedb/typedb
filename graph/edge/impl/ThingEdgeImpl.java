@@ -65,7 +65,6 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         private final ThingVertex.Write from;
         private final ThingVertex.Write to;
         private final ThingVertex.Write optimised;
-        private final ByteArray outIIDBytes;
         private final int hash;
 
         /**
@@ -95,7 +94,6 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             this.from = from;
             this.to = to;
             this.optimised = optimised;
-            this.outIIDBytes = outIID().bytes();
             this.hash = hash(Buffered.class, encoding, from, to);
             committed = new AtomicBoolean(false);
         }
