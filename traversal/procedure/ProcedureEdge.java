@@ -777,7 +777,7 @@ public abstract class ProcedureEdge<
                     public FunctionalIterator<? extends Vertex<?, ?>> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isThing();
-                        com.vaticle.typedb.core.traversal.predicate.Predicate.Value<?> eq;
+                        com.vaticle.typedb.core.traversal.predicate.Predicate.Value<?> eq = null;
                         FunctionalIterator<? extends AttributeVertex<?>> iter;
                         ThingVertex owner = fromVertex.asThing();
                         if (to.props().hasIID()) {
@@ -793,8 +793,8 @@ public abstract class ProcedureEdge<
                                 return empty();
                             }
                         } else if (!to.props().types().isEmpty()) {
-                            if (to.props().hasEqualityPredicate()) {
-                                eq = iterate(to.props().predicates()).filter(p -> p.operator().equals(EQ)).firstOrNull();
+                            eq = iterate(to.props().predicates()).filter(p -> p.operator().equals(EQ)).firstOrNull();
+                            if (eq != null) {
                                 iter = to.iteratorOfAttributesWithTypes(graphMgr, params, eq)
                                         .filter(a -> owner.outs().edge(HAS, a) != null);
                             } else {
