@@ -131,34 +131,36 @@ public class Materialiser {
         return conjunctionAnswers;
     }
 
-    FunctionalIterator<Materialisation> materialisationsForConjunction(ConceptMap answer, Conjunction conjunction) {
-        return iterate(Concludable.create(conjunction)).flatMap(concludable -> {
-            ConceptMap concludableAnswer = answer.filter(filterRetrievableVars(concludable.pattern().identifiers()));
-            FunctionalIterator<Materialisation> materialisations = empty();
-            if (concludable.isIsa()) {
-                Concept concept = concludableAnswer.get(concludable.asIsa().isa().owner().id());
-                Set<Materialisation> attrMats = conceptMaterialisations.get(concept);
-                if (concept.asThing().isInferred() && attrMats != null) materialisations.link(iterate(attrMats));
-            } else if (concludable.isHas()) {
-                Thing owner = concludableAnswer.get(concludable.asHas().owner().id()).asThing();
-                Attribute attribute = concludableAnswer.get(concludable.asHas().attribute().id()).asAttribute();
+    FunctionalIterator<Materialisation> materialisationsForConcludable(ConceptMap answer, Concludable concludable) {
+        ConceptMap concludableAnswer = answer.filter(filterRetrievableVars(concludable.pattern().identifiers()));
+        FunctionalIterator<Materialisation> materialisations = empty();
+        if (concludable.isIsa()) {
+            Concept concept = concludableAnswer.get(concludable.asIsa().isa().owner().id());
+            assert conceptMaterialisations.containsKey(concept);
+            materialisations.link(iterate(conceptMaterialisations.get(concept)));
+        } else if (concludable.isHas()) {
+            Thing owner = concludableAnswer.get(concludable.asHas().owner().id()).asThing();
+            Attribute attribute = concludableAnswer.get(concludable.asHas().attribute().id()).asAttribute();
+            if (attribute.isInferred()) {
+                assert conceptMaterialisations.containsKey(attribute);
                 Set<Materialisation> attrMats = conceptMaterialisations.get(attribute);
-                if (attribute.isInferred() && attrMats != null) materialisations.link(iterate(attrMats));
-                Set<Materialisation> hasMats = hasMaterialisations.get(new Pair<>(owner, attribute));
-                if (owner.hasInferred(attribute) && hasMats != null) materialisations.link(iterate(hasMats));
-            } else if (concludable.isAttribute()) {
-                Attribute attribute = concludableAnswer.get(concludable.asAttribute().attribute().id()).asAttribute();
-                Set<Materialisation> attrMats = conceptMaterialisations.get(attribute);
-                if (attribute.isInferred() && attrMats != null) materialisations.link(iterate(attrMats));
-            } else if (concludable.isRelation()) {
-                Relation rel = concludableAnswer.get(concludable.asRelation().relation().owner().id()).asRelation();
-                Set<Materialisation> relMats = conceptMaterialisations.get(rel);
-                if (rel.isInferred() && relMats != null) materialisations.link(iterate(relMats));
-            } else {
-                if (!concludable.isNegated()) throw TypeDBException.of(ILLEGAL_STATE);
+                materialisations.link(iterate(attrMats));
             }
-            return materialisations;
-        });
+            Pair<Thing, Attribute> has = new Pair<>(owner, attribute);
+            assert hasMaterialisations.containsKey(has);
+            materialisations.link(iterate(hasMaterialisations.get(has)));
+        } else if (concludable.isAttribute()) {
+            Attribute attribute = concludableAnswer.get(concludable.asAttribute().attribute().id()).asAttribute();
+            assert conceptMaterialisations.containsKey(attribute);
+            materialisations.link(iterate(conceptMaterialisations.get(attribute)));
+        } else if (concludable.isRelation()) {
+            Relation rel = concludableAnswer.get(concludable.asRelation().relation().owner().id()).asRelation();
+            assert conceptMaterialisations.containsKey(rel);
+            materialisations.link(iterate(conceptMaterialisations.get(rel)));
+        } else {
+            if (!concludable.isNegated()) throw TypeDBException.of(ILLEGAL_STATE);
+        }
+        return materialisations;
     }
 
     Optional<Materialisation> materialisationForCondition(Rule rule, ConceptMap conditionAnswer) {

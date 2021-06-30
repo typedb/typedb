@@ -8,6 +8,8 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
+import com.vaticle.typedb.core.logic.resolvable.Concludable;
+import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.rocks.RocksSession;
@@ -21,6 +23,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 class CompletenessChecker {
 
@@ -45,48 +48,70 @@ class CompletenessChecker {
     }
 
     private void checkConjunction(Conjunction inferred, ConceptMap answer) {
-        materialiser.materialisationsForConjunction(answer, inferred).forEachRemaining(materialisation -> {
-            Pair<Conjunction, ConceptMap> check = new Pair<>(materialisation.rule().when(),
-                                                             materialisation.conditionAnswer());
-            // TODO: This check represents a deficiency. We should know how each fact was inferred such that we don't
-            //  end up in infinite recursion over the reference materialised facts
-            if (checked.contains(check)) return;
-            else checked.add(check);
-            checkConjunction(materialisation.rule().when(), materialisation.conditionAnswer());
-            checkConclusion(materialisation.rule().conclusion(), materialisation.conclusionAnswer());
+        iterate(Concludable.create(inferred)).forEachRemaining(concludable -> {
+            if (concludable.isInferredAnswer(answer)) {
+                materialiser.materialisationsForConcludable(answer, concludable).forEachRemaining(materialisation -> {
+                    Pair<Conjunction, ConceptMap> check = new Pair<>(materialisation.rule().when(),
+                                                                     materialisation.conditionAnswer());
+                    // Materialisations record all possible paths that could be taken to infer a fact, so can contain
+                    // cycles. When we detect we have explored the same state before, stop.
+                    if (checked.contains(check)) return;
+                    else checked.add(check);
+                    checkConjunction(materialisation.rule().when(), materialisation.conditionAnswer());
+                    verifyConclusionReasoning(materialisation.rule().conclusion(), materialisation.conclusionAnswer());
+                });
+                verifyConcludableReasoning(concludable, answer);
+            }
         });
     }
 
-    private void checkConclusion(Rule.Conclusion conclusion, ConceptMap conclusionAnswer) {
-        ConceptMap conclusionBounds = removeGeneratingBound(conclusion, conclusionAnswer);
-        validateNonInferred(conclusionBounds);
-        Conjunction conclusionWithIIDs = constrainByIIDs(conclusion, conclusionBounds);
-        validateInference(conclusion, conclusionWithIIDs);
+    private void verifyConcludableReasoning(Concludable concludable, ConceptMap concludableAnswer) {
+        ConceptMap concludableBounds = removeInferredBound(concludable, concludableAnswer);
+        validateNonInferred(concludableBounds, concludable.pattern());
+        Conjunction concludableWithIIDs = constrainByIIDs(concludable.pattern(), concludableBounds);
+        validateNumConcludableAnswers(concludableWithIIDs, concludable);
     }
 
-    private void validateInference(Rule.Conclusion conclusion, Conjunction conclusionWithIIDs) {
-        // Validate that this conclusion can be reached using the production reasoner
-        Disjunction concludableQuery = new Disjunction(Collections.singletonList(conclusionWithIIDs));
-        try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.READ,
-                                                       new Options.Transaction().infer(true))) {
-            int numAnswers = tx.reasoner().executeReasoner(
-                    concludableQuery,
-                    conclusion.retrievableIds(),
-                    new Context.Query(tx.context(), new Options.Query())
-            ).toList().size();
-            if (numAnswers == 0) {
-                throw new CompletenessException(String.format("Completeness testing found an answer which is expected" +
-                                                                      " but is not present.\nExpected exactly one " +
-                                                                      "answer for the query:\n%s",
-                                                              concludableQuery.toString()));
-            } else if (numAnswers > 1) {
-                throw TypeDBException.of(ILLEGAL_STATE);
-            }
+    private void verifyConclusionReasoning(Rule.Conclusion conclusion, ConceptMap conclusionAnswer) {
+        ConceptMap conclusionBounds = removeInferredBound(conclusion, conclusionAnswer);
+        validateNonInferred(conclusionBounds, conclusion.conjunction());
+        Conjunction conclusionWithIIDs = constrainByIIDs(conclusion.conjunction(), conclusionBounds);
+        validateNumConclusionAnswers(conclusionWithIIDs, conclusion);
+    }
+
+    private void validateNumConclusionAnswers(Conjunction IIDBoundConjunction, Rule.Conclusion conclusion) {
+        int numAnswers = numReasonedAnswers(IIDBoundConjunction, conclusion.retrievableIds());
+        if (numAnswers == 0) {
+            throw new CompletenessException(String.format("Completeness testing found a missing answer.\nExpected " +
+                                                                  "exactly one answer for the rule conclusion (bound " +
+                                                                  "with IIDs):\n%s\n for rule \"%s\"",
+                                                          IIDBoundConjunction.toString(), conclusion.rule().getLabel()));
+        } else if (numAnswers > 1) {
+            throw TypeDBException.of(ILLEGAL_STATE);
         }
     }
 
-    private static Conjunction constrainByIIDs(Rule.Conclusion conclusion, ConceptMap conclusionBounds) {
-        Conjunction constrainedByIIDs = conclusion.conjunction().clone();
+    private void validateNumConcludableAnswers(Conjunction IIDBoundConjunction, Concludable concludable) {
+        if (numReasonedAnswers(IIDBoundConjunction, concludable.retrieves()) == 0) {
+            throw new CompletenessException(String.format("Completeness testing found a missing answer.\nExpected " +
+                                                                  "one or more answers for the concludable (bound " +
+                                                                  "with IIDs):\n%s\noriginal:\n%s",
+                                                          IIDBoundConjunction.toString(),
+                                                          concludable.pattern().toString()));
+        }
+    }
+
+    private int numReasonedAnswers(Conjunction IIDBoundConjunction, Set<Identifier.Variable.Retrievable> filter) {
+        try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.READ,
+                                                       new Options.Transaction().infer(true))) {
+            return tx.reasoner().executeReasoner(
+                    new Disjunction(Collections.singletonList(IIDBoundConjunction)),
+                    filter, new Context.Query(tx.context(), new Options.Query())).toList().size();
+        }
+    }
+
+    private static Conjunction constrainByIIDs(Conjunction conjunction, ConceptMap conclusionBounds) {
+        Conjunction constrainedByIIDs = conjunction.clone();
         conclusionBounds.concepts().forEach((identifier, concept) -> {
             if (concept.isThing()) {
                 assert constrainedByIIDs.variable(identifier).isThing();
@@ -97,18 +122,28 @@ class CompletenessChecker {
         return constrainedByIIDs;
     }
 
-    private static ConceptMap removeGeneratingBound(Rule.Conclusion conclusion, ConceptMap conclusionBounds) {
+    private static ConceptMap removeInferredBound(Rule.Conclusion conclusion, ConceptMap conclusionBounds) {
         // Remove the bound for the variable that the conclusion may generate
         Set<Identifier.Variable.Retrievable> nonGenerating = new HashSet<>(conclusion.retrievableIds());
         if (conclusion.generating().isPresent()) nonGenerating.remove(conclusion.generating().get().id());
         return conclusionBounds.filter(nonGenerating);
     }
 
-    private static void validateNonInferred(ConceptMap conclusionAnswer) {
-        for (Concept concept : conclusionAnswer.concepts().values()) {
+    private static ConceptMap removeInferredBound(Resolvable<?> concludable, ConceptMap concludableBounds) {
+        // Remove the bound for the variable that the conclusion may generate
+        Set<Identifier.Variable.Retrievable> nonGenerating = new HashSet<>(concludable.retrieves());
+        if (concludable.generating().isPresent()) nonGenerating.remove(concludable.generating().get().id());
+        return concludableBounds.filter(nonGenerating);
+    }
+
+    private static void validateNonInferred(ConceptMap answer, Conjunction conjunction) {
+        for (Concept concept : answer.concepts().values()) {
             if (concept.isThing() && concept.asThing().isInferred()) {
-                throw new UnsupportedOperationException("Completeness testing does not yet support non-generated " +
-                                                                "inferred concepts in rule conclusions.");
+                throw new UnsupportedOperationException(
+                        String.format("Completeness testing does not yet support more than one inferred concept in a " +
+                                              "query tested against the reasoner. It becomes too computationally " +
+                                              "expensive to verify the history of all inferences. Encountered when " +
+                                              "querying:\n%s", conjunction));
             }
         }
     }
