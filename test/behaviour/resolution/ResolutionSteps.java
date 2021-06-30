@@ -22,74 +22,181 @@ import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.rocks.RocksDatabase;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
+import com.vaticle.typedb.core.rocks.RocksTypeDB;
 import com.vaticle.typedb.core.test.behaviour.resolution.correctness.CorrectnessChecker;
-import com.vaticle.typedb.core.test.behaviour.typeql.TypeQLSteps;
 import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.common.exception.TypeQLException;
+import com.vaticle.typeql.lang.query.TypeQLMatch;
+import io.cucumber.java.After;
+import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
-import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.sessions;
-import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.sessionsToTransactions;
+import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.resetDirectory;
+import static com.vaticle.typedb.core.test.behaviour.resolution.correctness.CorrectnessChecker.initialise;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 
 public class ResolutionSteps {
 
-    private CorrectnessChecker correctnessChecker;
+    public static RocksTypeDB typedb;
+    public static Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("typedb");
+    public static Path logsDir = dataDir.resolve("logs");
+    public static Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logsDir);
+    public static RocksSession session;
+    public static RocksTransaction inferenceTx;
+    public static String DATABASE = "typedb";
+    private static CorrectnessChecker correctnessChecker;
+    private static TypeQLMatch typeQLQuery;
+    private static List<ConceptMap> answers;
 
-    static RocksSession session() {
-        return sessions.get(0);
+    @Before
+    public synchronized void before() throws IOException {
+        assertNull(typedb);
+        resetDirectory();
+        System.out.println("Connecting to TypeDB ...");
+        typedb = RocksTypeDB.open(options);
+        typedb.databases().create(DATABASE);
     }
 
-    static RocksTransaction tx() {
-        return sessionsToTransactions.get(sessions.get(0)).get(0);
+    @After
+    public synchronized void after() {
+        if (inferenceTx != null) inferenceTx.close();
+        inferenceTx = null;
+        if (session != null) session.close();
+        session = null;
+        if (correctnessChecker != null) correctnessChecker.close();
+        correctnessChecker = null;
+        typedb.databases().all().forEach(RocksDatabase::delete);
+        typedb.close();
+        assertFalse(typedb.isOpen());
+        typedb = null;
     }
 
-    @Given("correctness checker is initialised")
-    public void correctness_checker_is_initialised() {
-        correctnessChecker = CorrectnessChecker.initialise(session());
+    static RocksSession dataSession() {
+        if (session == null) session = typedb.session(DATABASE, Arguments.Session.Type.DATA);
+        return session;
     }
 
-    @Then("answers are consistent across {int} executions")
-    public static void answers_are_consistent_across_n_executions_in_reasoned_database(int executionCount) {
+    static RocksTransaction inferenceTx() {
+        if (inferenceTx == null) inferenceTx = dataSession().transaction(Arguments.Transaction.Type.READ,
+                                                                         new Options.Transaction().infer(true));
+        return inferenceTx;
+    }
+
+    @Given("schema")
+    public void schema(String defineQueryStatements) {
+        try (RocksSession session = typedb.session(DATABASE, Arguments.Session.Type.SCHEMA)) {
+            try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                tx.query().define(TypeQL.parseQuery(String.join("\n", defineQueryStatements)).asDefine());
+                tx.commit();
+            }
+        }
+    }
+
+    @Given("data")
+    public void data(String insertQueryStatements) {
+        data_without_correctness_verification(insertQueryStatements);
+        correctnessChecker = initialise(dataSession());
+    }
+
+    @Given("data without correctness verification")
+    public void data_without_correctness_verification(String insertQueryStatements) {
+        try (RocksSession session = typedb.session(DATABASE, Arguments.Session.Type.DATA)) {
+            try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                tx.query().insert(TypeQL.parseQuery(String.join("\n", insertQueryStatements)).asInsert());
+                tx.commit();
+            }
+        }
+    }
+
+    @Given("query")
+    public void query(String typeQLQueryStatements) {
+        try {
+            typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asMatch();
+            answers = inferenceTx().query().match(typeQLQuery).toList();
+        } catch (TypeQLException e) {
+            // NOTE: We manually close transaction here, because we want to align with all non-java clients,
+            // where parsing happens at server-side which closes transaction if they fail
+            inferenceTx().close();
+            throw e;
+        }
+    }
+
+    @Given("verify answer set is equivalent for query")
+    public void verify_answer_set_is_equivalent_for_query(String equivalentQuery) {
+        try {
+            assertNotNull("A typeql query must have been previously loaded in order to test answer equivalence.", typeQLQuery);
+            assertNotNull("There are no previous answers to test against; was the reference query ever executed?", answers);
+            Set<ConceptMap> newAnswers = inferenceTx().query().match(TypeQL.parseQuery(equivalentQuery).asMatch()).toSet();
+            assertEquals(set(answers), newAnswers);
+        } catch (TypeQLException e) {
+            // NOTE: We manually close transaction here, because we want to align with all non-java clients,
+            // where parsing happens at server-side which closes transaction if they fail
+            inferenceTx().close();
+            throw e;
+        }
+    }
+
+    @Then("verify answer size is: {number}")
+    public void verify_answer_size(int expectedAnswers) {
+        assertEquals(String.format("Expected [%d] answers, but got [%d]", expectedAnswers, answers.size()),
+                     expectedAnswers, answers.size());
+    }
+
+    @Then("verify answers are consistent across {int} executions")
+    public static void verify_answers_are_consistent_across_n_executions(int executionCount) {
         Set<ConceptMap> oldAnswers;
-        oldAnswers = tx().query().match(TypeQLSteps.typeQLQuery).toSet();
+        oldAnswers = inferenceTx().query().match(typeQLQuery).toSet();
         for (int i = 0; i < executionCount - 1; i++) {
-            try (TypeDB.Transaction transaction = session().transaction(Arguments.Transaction.Type.READ,
-                                                                                new Options.Transaction().infer(true))) {
-                Set<ConceptMap> answers = transaction.query().match(TypeQLSteps.typeQLQuery).toSet();
+            try (TypeDB.Transaction transaction = dataSession().transaction(Arguments.Transaction.Type.READ,
+                                                                            new Options.Transaction().infer(true))) {
+                Set<ConceptMap> answers = transaction.query().match(typeQLQuery).toSet();
                 assertEquals(oldAnswers, answers);
             }
         }
     }
 
-    @Then("answer set is equivalent for typeql query")
-    public static void equivalent_answer_set(String equivalentQuery) {
-        assertNotNull("A typeql query must have been previously loaded in order to test answer equivalence.", TypeQLSteps.typeQLQuery);
-        assertNotNull("There are no previous answers to test against; was the reference query ever executed?", TypeQLSteps.answers);
-        Set<ConceptMap> newAnswers = tx().query().match(TypeQL.parseQuery(equivalentQuery).asMatch()).toSet();
-        assertEquals(set(TypeQLSteps.answers), newAnswers);
+    @Then("verify answers are correct")
+    public void verify_answers_are_correct() {
+        correctnessChecker.checkSoundness(typeQLQuery);
+        correctnessChecker.checkCompleteness(typeQLQuery);
     }
 
-    @Then("check all answers and explanations are correct")
-    public void check_all_answers_and_explanations_are_correct() {
-        correctnessChecker.checkSoundness(TypeQLSteps.typeQLQuery);
-        correctnessChecker.checkCompleteness(TypeQLSteps.typeQLQuery);
+    @Then("verify answers are sound")
+    public void verify_answers_are_sound() {
+        correctnessChecker.checkSoundness(typeQLQuery);
     }
 
-    @Then("check all answers and explanations are sound")
-    public void check_all_answers_and_explanations_are_sound() {
-        correctnessChecker.checkSoundness(TypeQLSteps.typeQLQuery);
+    @Then("verify answers are complete")
+    public void verify_answers_are_complete() {
+        correctnessChecker.checkCompleteness(typeQLQuery);
     }
 
-    @Then("check all answers and explanations are complete")
-    public void check_all_answers_and_explanations_are_complete() {
-        correctnessChecker.checkCompleteness(TypeQLSteps.typeQLQuery);
+    private static void resetDirectory() throws IOException {
+        if (Files.exists(dataDir)) {
+            System.out.println("Database directory exists!");
+            Files.walk(dataDir).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+            System.out.println("Database directory deleted!");
+        }
+
+        Files.createDirectory(dataDir);
+        System.out.println("Database Directory created: " + dataDir.toString());
     }
 
 }

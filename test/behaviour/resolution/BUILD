@@ -39,6 +39,7 @@ host_compatible_java_library(
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql_lang_java//:typeql-lang",
+        "@vaticle_typeql_lang_java//common",
         "@vaticle_typeql_lang_java//query",
 
         # External dependencies from Maven
