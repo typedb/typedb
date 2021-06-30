@@ -88,18 +88,29 @@ public class ResolutionSteps {
     }
 
     static RocksSession dataSession() {
-        if (session == null) session = typedb.session(DATABASE, Arguments.Session.Type.DATA);
+        if (session == null || !session.isOpen()) session = typedb.session(DATABASE, Arguments.Session.Type.DATA);
         return session;
     }
 
     static RocksTransaction inferenceTx() {
-        if (inferenceTx == null) inferenceTx = dataSession().transaction(Arguments.Transaction.Type.READ,
-                                                                         new Options.Transaction().infer(true));
+        if (inferenceTx == null || inferenceTx.isOpen()) {
+            inferenceTx = dataSession().transaction(Arguments.Transaction.Type.READ,
+                                                    new Options.Transaction().infer(true));
+        }
         return inferenceTx;
+    }
+
+    private void refreshInferenceTx() {
+        if (inferenceTx != null) {
+            if (inferenceTx.isOpen()) inferenceTx.close();
+            inferenceTx = null;
+        }
     }
 
     @Given("schema")
     public void schema(String defineQueryStatements) {
+        if (correctnessChecker != null) correctnessChecker.close();
+        if (session != null) session.close();
         try (RocksSession session = typedb.session(DATABASE, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().define(TypeQL.parseQuery(String.join("\n", defineQueryStatements)).asDefine());
@@ -127,6 +138,7 @@ public class ResolutionSteps {
     @Given("query")
     public void query(String typeQLQueryStatements) {
         try {
+            refreshInferenceTx();
             typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asMatch();
             answers = inferenceTx().query().match(typeQLQuery).toList();
         } catch (TypeQLException e) {
