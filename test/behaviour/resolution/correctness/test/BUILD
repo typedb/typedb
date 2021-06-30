@@ -42,7 +42,6 @@ host_compatible_java_test(
         "@vaticle_typeql_lang_java//:typeql-lang",
         "@vaticle_typeql_lang_java//query",
         "@vaticle_typeql_lang_java//common",
-        "@vaticle_typeql_lang_java//pattern",
     ],
 )
 
@@ -68,7 +67,6 @@ host_compatible_java_test(
         "@vaticle_typeql_lang_java//:typeql-lang",
         "@vaticle_typeql_lang_java//query",
         "@vaticle_typeql_lang_java//common",
-        "@vaticle_typeql_lang_java//pattern",
     ],
 )
 

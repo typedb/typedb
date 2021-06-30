@@ -32,9 +32,6 @@ host_compatible_java_library(
     deps = [
         # Package dependencies
         "//common",
-        "//test/behaviour/typeql:steps",
-        "//test/behaviour/connection:steps",
-        "//test/behaviour/exception",
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",

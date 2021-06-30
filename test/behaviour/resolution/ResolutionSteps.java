@@ -45,7 +45,6 @@ import java.util.List;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
-import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.resetDirectory;
 import static com.vaticle.typedb.core.test.behaviour.resolution.correctness.CorrectnessChecker.initialise;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
