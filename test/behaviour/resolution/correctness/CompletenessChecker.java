@@ -29,7 +29,6 @@ import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
-import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.rocks.RocksSession;
@@ -143,13 +142,14 @@ class CompletenessChecker {
 
     static class BoundConjunction {
         private final Conjunction fullyBound;
-        private final Conjunction original;
+        private final Conjunction conjunction;
         private final ConceptMap bounds;
 
-        private BoundConjunction(Conjunction fullyBound, Conjunction original, ConceptMap bounds) {
+        private BoundConjunction(Conjunction fullyBound, Conjunction conjunction, ConceptMap bounds) {
             this.fullyBound = fullyBound;
-            this.original = original;
+            this.conjunction = conjunction;
             this.bounds = bounds;
+            assert this.conjunction.identifiers().containsAll(bounds.concepts().keySet());
         }
 
         static BoundConjunction create(Conjunction conjunction, ConceptMap bounds) {
@@ -165,7 +165,7 @@ class CompletenessChecker {
         }
 
         Set<BoundConcludable> boundConcludables() {
-            return iterate(Concludable.create(original)).map(concludable -> BoundConcludable.create(
+            return iterate(Concludable.create(conjunction)).map(concludable -> BoundConcludable.create(
                     concludable, bounds.filter(concludable.pattern().retrieves()))).toSet();
         }
     }
@@ -179,6 +179,7 @@ class CompletenessChecker {
             this.fullyBound = fullyBound;
             this.concludable = concludable;
             this.bounds = bounds;
+            assert this.concludable.pattern().identifiers().containsAll(bounds.concepts().keySet());
         }
 
         private static BoundConcludable create(Concludable original, ConceptMap bounds) {
@@ -232,6 +233,7 @@ class CompletenessChecker {
             this.fullyBound = fullyBound;
             this.conclusion = conclusion;
             this.bounds = bounds;
+            assert this.conclusion.conjunction().identifiers().containsAll(bounds.concepts().keySet());
         }
 
         public static BoundConclusion create(Rule.Conclusion conclusion, ConceptMap conclusionAnswer) {
