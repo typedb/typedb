@@ -32,7 +32,7 @@ public class CorrectnessChecker {
     }
 
     public static CorrectnessChecker initialise(RocksSession session) {
-        return new CorrectnessChecker(session, Materialiser.materialiseAll(session));
+        return new CorrectnessChecker(session, Materialiser.materialise(session));
     }
 
     public void checkCorrectness(TypeQLMatch inferenceQuery) {

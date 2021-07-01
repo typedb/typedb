@@ -67,8 +67,9 @@ class CompletenessChecker {
 
     private void checkConjunction(Conjunction inferred, ConceptMap answer) {
         iterate(Concludable.create(inferred)).forEachRemaining(concludable -> {
-            if (concludable.isInferredAnswer(answer)) {
-                materialiser.concludableMaterialisations(answer, concludable).forEachRemaining(materialisation -> {
+            ConceptMap conclAns = answer.filter(concludable.pattern().retrieves());
+            if (concludable.isInferredAnswer(conclAns)) {
+                materialiser.concludableMaterialisations(concludable, conclAns).forEachRemaining(materialisation -> {
                     Pair<Conjunction, ConceptMap> check = new Pair<>(materialisation.rule().when(),
                                                                      materialisation.conditionAnswer());
                     // Materialisations record all possible paths that could be taken to infer a fact, so can contain
@@ -78,7 +79,7 @@ class CompletenessChecker {
                     checkConjunction(materialisation.rule().when(), materialisation.conditionAnswer());
                     verifyConclusionReasoning(materialisation.rule().conclusion(), materialisation.conclusionAnswer());
                 });
-                verifyConcludableReasoning(concludable, answer);
+                verifyConcludableReasoning(concludable, conclAns);
             }
         });
     }

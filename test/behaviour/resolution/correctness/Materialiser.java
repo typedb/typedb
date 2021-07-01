@@ -29,7 +29,6 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.thing.Thing;
-import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
@@ -42,6 +41,7 @@ import com.vaticle.typeql.lang.query.TypeQLMatch;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -52,68 +52,41 @@ import static java.util.Collections.singletonList;
 
 public class Materialiser {
 
-    private final Map<Rule, RuleMaterialisationRecorder> ruleRecorders;
+    private final Map<com.vaticle.typedb.core.logic.Rule, Rule> rules;
     private final RocksTransaction tx;
     private final Materialisations materialisations;
 
     private Materialiser(RocksSession session) {
-        this.ruleRecorders = new HashMap<>();
+        this.rules = new HashMap<>();
         this.tx = session.transaction(Arguments.Transaction.Type.WRITE, new Options.Transaction().infer(false));
         this.materialisations = new Materialisations();
     }
 
-    public static Materialiser materialiseAll(RocksSession session) {
+    public static Materialiser materialise(RocksSession session) {
         Materialiser materialiser = new Materialiser(session);
-        materialiser.materialiseAll();
+        materialiser.materialise();
         return materialiser;
     }
 
-    private void materialiseAll() {
-        tx.logic().rules().forEachRemaining(rule -> this.ruleRecorders.put(rule, new RuleMaterialisationRecorder(rule)));
+    private void materialise() {
+        tx.logic().rules().forEachRemaining(rule -> this.rules.put(rule, new Rule(rule)));
         boolean reiterateRules = true;
         while (reiterateRules) {
             reiterateRules = false;
-            for (RuleMaterialisationRecorder ruleRecorder : this.ruleRecorders.values()) {
-                ruleRecorder.requiresReiteration = false;
-                materialiseFromRule(ruleRecorder);
-                reiterateRules = reiterateRules || ruleRecorder.requiresReiteration;
+            for (Rule rule : this.rules.values()) {
+                reiterateRules = reiterateRules || rule.materialise();
             }
         }
-    }
-
-    private void materialiseFromRule(RuleMaterialisationRecorder ruleRecorder) {
-        // Get all the places where the rule condition is satisfied and materialise for each
-        traverse(ruleRecorder.rule.when())
-                .forEachRemaining(whenConcepts -> ruleRecorder.rule.conclusion()
-                .materialise(whenConcepts, tx.traversal(), tx.concepts())
-                .map(thenConcepts -> new ConceptMap(filterRetrievableVars(thenConcepts)))
-                .filter(ruleRecorder::isInferredAnswer)
-                .forEachRemaining(ans -> ruleRecorder.record(whenConcepts, ans)));
-    }
-
-    private static Map<Variable.Retrievable, Concept> filterRetrievableVars(Map<Variable, Concept> concepts) {
-        Map<Variable.Retrievable, Concept> newMap = new HashMap<>();
-        concepts.forEach((var, concept) -> {
-            if (var.isName()) newMap.put(var.asName(), concept);
-            else if (var.isAnonymous()) newMap.put(var.asAnonymous(), concept);
-        });
-        return newMap;
     }
 
     private FunctionalIterator<ConceptMap> traverse(Conjunction conjunction) {
         return tx.reasoner().executeTraversal(
                 new Disjunction(singletonList(conjunction)),
                 new Context.Query(tx.context(), new Options.Query()),
-                filterRetrievableVars(conjunction.identifiers())
+                iterate(conjunction.identifiers())
+                        .filter(Identifier::isRetrievable)
+                        .map(Variable::asRetrievable).toSet()
         );
-    }
-
-    private static Set<Identifier.Variable.Retrievable> filterRetrievableVars(Set<Identifier.Variable> vars) {
-        return iterate(vars).filter(var -> var.isName() || var.isAnonymous()).map(var -> {
-            if (var.isName()) return var.asName();
-            if (var.isAnonymous()) return var.asAnonymous();
-            throw TypeDBException.of(ILLEGAL_STATE);
-        }).toSet();
     }
 
     void close() {
@@ -129,18 +102,77 @@ public class Materialiser {
         return conjunctionAnswers;
     }
 
-    FunctionalIterator<Materialisation> concludableMaterialisations(ConceptMap answer, Concludable concludable) {
-        return materialisations.forConcludable(answer, concludable);
+    FunctionalIterator<Materialisation> concludableMaterialisations(Concludable concludable, ConceptMap answer) {
+        return materialisations.forConcludable(concludable, answer);
     }
 
-    Optional<Materialisation> conditionMaterialisation(Rule rule, ConceptMap conditionAnswer) {
-        if (!ruleRecorders.containsKey(rule)) return Optional.empty();
-        if (!ruleRecorders.get(rule).materialisationsByCondition.containsKey(conditionAnswer)) return Optional.empty();
-        return materialisations.forCondition(ruleRecorders.get(rule), conditionAnswer);
+    Optional<Materialisation> conditionMaterialisation(com.vaticle.typedb.core.logic.Rule rule, ConceptMap conditionAnswer) {
+        if (!rules.containsKey(rule)) return Optional.empty();
+        if (!rules.get(rule).conditionAnsMaterialisations.containsKey(conditionAnswer)) return Optional.empty();
+        return materialisations.forCondition(rules.get(rule), conditionAnswer);
     }
 
+    private class Rule {
+        private final com.vaticle.typedb.core.logic.Rule rule;
+        private final Concludable thenConcludable;
+        private boolean requiresReiteration;
+        private final Map<ConceptMap, Materialisation> conditionAnsMaterialisations;
 
-    class Materialisations {
+        private Rule(com.vaticle.typedb.core.logic.Rule typeDBRule) {
+            this.rule = typeDBRule;
+            this.requiresReiteration = false;
+            this.conditionAnsMaterialisations = new HashMap<>();
+
+            Set<Concludable> concludables = Concludable.create(this.rule.then());
+            assert concludables.size() == 1;
+            // Use a concludable for the conclusion for the convenience of its isInferredAnswer method
+            this.thenConcludable = iterate(concludables).next();
+        }
+
+        private boolean materialise() {
+            // Get all the places where the rule condition is satisfied and materialise for each
+            requiresReiteration = false;
+            traverse(rule.when())
+                    .forEachRemaining(conditionAns -> rule.conclusion()
+                            .materialise(conditionAns, tx.traversal(), tx.concepts())
+                            .map(conclusionAns -> new ConceptMap(filterRetrievable(conclusionAns)))
+                            .filter(thenConcludable::isInferredAnswer)
+                            .forEachRemaining(ans -> record(conditionAns, ans)));
+            return requiresReiteration;
+        }
+
+        private void record(ConceptMap conditionAns, ConceptMap conclusionAns) {
+            if (!conditionAnsMaterialisations.containsKey(conditionAns)) {
+                Materialisation materialisation = new Materialisation(rule, conditionAns, conclusionAns);
+                requiresReiteration = true;
+                conditionAnsMaterialisations.put(conditionAns, materialisation);
+                if (rule.conclusion().isIsa()) {
+                    Concept owner = conclusionAns.get(rule.conclusion().asIsa().isa().owner().id());
+                    materialisations.recordConcept(owner, materialisation);
+                }
+                if (rule.conclusion().isHas()) {
+                    Thing owner = conclusionAns.get(rule.conclusion().asHas().has().owner().id()).asThing();
+                    Attribute attribute =
+                            conclusionAns.get(rule.conclusion().asHas().has().attribute().id()).asAttribute();
+                    Pair<Thing, Attribute> has = new Pair<>(owner, attribute);
+                    materialisations.recordHas(has, materialisation);
+                }
+            } else {
+                assert conditionAnsMaterialisations.get(conditionAns).conclusionAnswer().equals(conclusionAns);
+            }
+        }
+
+        private Map<Variable.Retrievable, Concept> filterRetrievable(Map<Variable, Concept> concepts) {
+            Map<Variable.Retrievable, Concept> newMap = new HashMap<>();
+            concepts.forEach((var, concept) -> {
+                if (var.isRetrievable()) newMap.put(var.asRetrievable(), concept);
+            });
+            return newMap;
+        }
+
+    }
+
+    private class Materialisations {
         private final Map<Concept, Set<Materialisation>> concept;
         private final Map<Pair<Thing, Attribute>, Set<Materialisation>> has;
 
@@ -149,8 +181,7 @@ public class Materialiser {
             concept = new HashMap<>();
         }
 
-        FunctionalIterator<Materialisation> forConcludable(ConceptMap answer, Concludable concludable) {
-            ConceptMap concludableAnswer = answer.filter(filterRetrievableVars(concludable.pattern().identifiers()));
+        FunctionalIterator<Materialisation> forConcludable(Concludable concludable, ConceptMap concludableAnswer) {
             FunctionalIterator<Materialisation> materialisations;
             if (concludable.isIsa()) {
                 Concept owner = concludableAnswer.get(concludable.asIsa().isa().owner().id());
@@ -185,9 +216,9 @@ public class Materialiser {
             return iterate(has.get(toFetch));
         }
 
-        Optional<Materialisation> forCondition(RuleMaterialisationRecorder ruleRecorder, ConceptMap conditionAnswer) {
-            if (!ruleRecorder.materialisationsByCondition.containsKey(conditionAnswer)) return Optional.empty();
-            return Optional.of(ruleRecorder.materialisationsByCondition.get(conditionAnswer));
+        Optional<Materialisation> forCondition(Rule ruleRecorder, ConceptMap conditionAnswer) {
+            if (!ruleRecorder.conditionAnsMaterialisations.containsKey(conditionAnswer)) return Optional.empty();
+            return Optional.of(ruleRecorder.conditionAnsMaterialisations.get(conditionAnswer));
         }
 
         public void recordConcept(Concept owner, Materialisation materialisation) {
@@ -204,11 +235,11 @@ public class Materialiser {
 
     static class Materialisation {
 
-        private final Rule rule;
+        private final com.vaticle.typedb.core.logic.Rule rule;
         private final ConceptMap conditionAnswer;
         private final ConceptMap conclusionAnswer;
 
-        Materialisation(Rule rule, ConceptMap conditionAnswer, ConceptMap conclusionAnswer) {
+        Materialisation(com.vaticle.typedb.core.logic.Rule rule, ConceptMap conditionAnswer, ConceptMap conclusionAnswer) {
             this.rule = rule;
             this.conditionAnswer = conditionAnswer;
             this.conclusionAnswer = conclusionAnswer;
@@ -222,54 +253,24 @@ public class Materialiser {
             return conclusionAnswer;
         }
 
-        Rule rule() {
+        com.vaticle.typedb.core.logic.Rule rule() {
             return rule;
         }
 
-    }
-
-    private class RuleMaterialisationRecorder {
-        private final Rule rule;
-        private final Concludable thenConcludable;
-        private boolean requiresReiteration;
-        private final Map<ConceptMap, Materialisation> materialisationsByCondition;
-
-        private RuleMaterialisationRecorder(Rule typeDBRule) {
-            this.rule = typeDBRule;
-            this.requiresReiteration = false;
-            this.materialisationsByCondition = new HashMap<>();
-
-            Set<Concludable> concludables = Concludable.create(this.rule.then());
-            assert concludables.size() == 1;
-            // Use a concludable for the conclusion for the convenience of its isInferredAnswer method
-            this.thenConcludable = iterate(concludables).next();
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Materialisation that = (Materialisation) o;
+            return rule.equals(that.rule) &&
+                    conditionAnswer.equals(that.conditionAnswer) &&
+                    conclusionAnswer.equals(that.conclusionAnswer);
         }
 
-        private boolean isInferredAnswer(ConceptMap thenConceptMap) {
-            return thenConcludable.isInferredAnswer(thenConceptMap);
+        @Override
+        public int hashCode() {
+            return Objects.hash(rule, conditionAnswer, conclusionAnswer);
         }
-
-        private void record(ConceptMap whenConceptMap, ConceptMap thenConceptMap) {
-            if (!materialisationsByCondition.containsKey(whenConceptMap)) {
-                Materialisation materialisation = new Materialisation(rule, whenConceptMap, thenConceptMap);
-                requiresReiteration = true;
-                materialisationsByCondition.put(whenConceptMap, materialisation);
-                if (rule.conclusion().isIsa()) {
-                    Concept owner = thenConceptMap.get(rule.conclusion().asIsa().isa().owner().id());
-                    materialisations.recordConcept(owner, materialisation);
-                }
-                if (rule.conclusion().isHas()) {
-                    Thing owner = thenConceptMap.get(rule.conclusion().asHas().has().owner().id()).asThing();
-                    Attribute attribute =
-                            thenConceptMap.get(rule.conclusion().asHas().has().attribute().id()).asAttribute();
-                    Pair<Thing, Attribute> has = new Pair<>(owner, attribute);
-                    materialisations.recordHas(has, materialisation);
-                }
-            } else {
-                assert materialisationsByCondition.get(whenConceptMap).conclusionAnswer().equals(thenConceptMap);
-            }
-        }
-
     }
 
 }
