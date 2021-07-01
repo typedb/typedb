@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.test.behaviour.resolution.correctness;
 
 import com.vaticle.typedb.common.collection.Pair;
-import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Context;
@@ -27,13 +26,13 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Attribute;
-import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
+import com.vaticle.typedb.core.test.behaviour.resolution.correctness.CompletenessChecker.BoundConcludable;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
@@ -45,7 +44,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static java.util.Collections.singletonList;
@@ -102,8 +100,8 @@ public class Materialiser {
         return conjunctionAnswers;
     }
 
-    FunctionalIterator<Materialisation> concludableMaterialisations(Concludable concludable, ConceptMap answer) {
-        return materialisations.forConcludable(concludable, answer);
+    FunctionalIterator<Materialisation> concludableMaterialisations(BoundConcludable boundConcludable) {
+        return materialisations.forConcludable(boundConcludable);
     }
 
     Optional<Materialisation> conditionMaterialisation(com.vaticle.typedb.core.logic.Rule rule, ConceptMap conditionAnswer) {
@@ -181,26 +179,15 @@ public class Materialiser {
             concept = new HashMap<>();
         }
 
-        FunctionalIterator<Materialisation> forConcludable(Concludable concludable, ConceptMap concludableAnswer) {
-            FunctionalIterator<Materialisation> materialisations;
-            if (concludable.isIsa()) {
-                Concept owner = concludableAnswer.get(concludable.asIsa().isa().owner().id());
-                materialisations = forConcept(owner);
-            } else if (concludable.isHas()) {
-                Thing owner = concludableAnswer.get(concludable.asHas().owner().id()).asThing();
-                Attribute attribute = concludableAnswer.get(concludable.asHas().attribute().id()).asAttribute();
-                materialisations = forHas(owner, attribute);
-                if (attribute.isInferred()) materialisations.link(forConcept(attribute));
-            } else if (concludable.isAttribute()) {
-                Attribute attribute = concludableAnswer.get(concludable.asAttribute().attribute().id()).asAttribute();
-                materialisations = forConcept(attribute);
-            } else if (concludable.isRelation()) {
-                Relation rel = concludableAnswer.get(concludable.asRelation().relation().owner().id()).asRelation();
-                materialisations = iterate(forConcept(rel));
-            } else if (concludable.isNegated()) {
-                materialisations = empty();
-            } else {
-                throw TypeDBException.of(ILLEGAL_STATE);
+        FunctionalIterator<Materialisation> forConcludable(BoundConcludable boundConcludable) {
+            FunctionalIterator<Materialisation> materialisations = empty();
+            Optional<Concept> inferredConcept = boundConcludable.inferredConcept();
+            if (inferredConcept.isPresent()) {
+                materialisations = materialisations.link(forConcept(inferredConcept.get()));
+            }
+            Optional<Pair<Thing, Attribute>> inferredHas = boundConcludable.inferredHas();
+            if (inferredHas.isPresent()) {
+                materialisations = materialisations.link(forHas(inferredHas.get().first(), inferredHas.get().second()));
             }
             return materialisations;
         }

@@ -75,7 +75,7 @@ class SoundnessChecker {
     }
 
     private void checkExplanationAgainstReference(Explanation explanation) {
-        ConceptMap recordedWhen = substituteInferredVarsForReferenceVars(explanation.conditionAnswer());
+        ConceptMap recordedWhen = mapInferredConcepts(explanation.conditionAnswer());
         Optional<ConceptMap> recordedThen = materialiser
                 .conditionMaterialisation(explanation.rule(), recordedWhen)
                 .map(Materialisation::conclusionAnswer);
@@ -101,7 +101,7 @@ class SoundnessChecker {
         }
     }
 
-    private ConceptMap substituteInferredVarsForReferenceVars(ConceptMap conditionAnswer) {
+    private ConceptMap mapInferredConcepts(ConceptMap conditionAnswer) {
         Map<Retrievable, Concept> substituted = new HashMap<>();
         conditionAnswer.concepts().forEach((var, concept) -> {
             substituted.put(var, inferredConceptMapping.getOrDefault(concept, concept));
