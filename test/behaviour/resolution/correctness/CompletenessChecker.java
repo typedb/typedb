@@ -68,7 +68,7 @@ class CompletenessChecker {
     private void checkConjunction(Conjunction inferred, ConceptMap answer) {
         iterate(Concludable.create(inferred)).forEachRemaining(concludable -> {
             if (concludable.isInferredAnswer(answer)) {
-                materialiser.materialisationsForConcludable(answer, concludable).forEachRemaining(materialisation -> {
+                materialiser.concludableMaterialisations(answer, concludable).forEachRemaining(materialisation -> {
                     Pair<Conjunction, ConceptMap> check = new Pair<>(materialisation.rule().when(),
                                                                      materialisation.conditionAnswer());
                     // Materialisations record all possible paths that could be taken to infer a fact, so can contain

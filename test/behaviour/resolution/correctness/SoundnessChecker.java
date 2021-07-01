@@ -77,7 +77,7 @@ class SoundnessChecker {
     private void checkExplanationAgainstReference(Explanation explanation) {
         ConceptMap recordedWhen = substituteInferredVarsForReferenceVars(explanation.conditionAnswer());
         Optional<ConceptMap> recordedThen = materialiser
-                .materialisationForCondition(explanation.rule(), recordedWhen)
+                .conditionMaterialisation(explanation.rule(), recordedWhen)
                 .map(Materialisation::conclusionAnswer);
         if (recordedThen.isPresent()) {
             // Update the inferred variables mapping between the two reasoners
