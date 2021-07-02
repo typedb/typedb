@@ -21,6 +21,8 @@ package com.vaticle.typedb.core.common.poller;
 import java.util.Optional;
 import java.util.function.Function;
 
+import static com.vaticle.typedb.common.collection.Collections.list;
+
 public abstract class AbstractPoller<T> implements Poller<T> {
 
     @Override
@@ -34,11 +36,8 @@ public abstract class AbstractPoller<T> implements Poller<T> {
     }
 
     @Override
-    public Poller<T> link(Poller<T> toLink) {
-        return new LinkedPoller<>(this, toLink);
+    public Poller<T> link(Poller<T> poller) {
+        return new LinkedPollers<>(list(this, poller));
     }
-
-    @Override
-    public abstract void recycle();
 
 }

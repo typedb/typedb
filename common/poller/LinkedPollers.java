@@ -18,26 +18,29 @@
 
 package com.vaticle.typedb.core.common.poller;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
-public class LinkedPoller<T> extends AbstractPoller<T> {
+public class LinkedPollers<T> extends AbstractPoller<T> {
 
-    private final Poller<T> source;
-    private final Poller<T> toLink;
+    private final List<Poller<T>> pollers;
 
-    public LinkedPoller(Poller<T> source, Poller<T> toLink) {
-        this.source = source;
-        this.toLink = toLink;
+    LinkedPollers(List<Poller<T>> pollers) {
+        this.pollers = new ArrayList<>(pollers);
     }
 
     @Override
     public Optional<T> poll() {
-        return source.poll().map(Optional::of).orElseGet(toLink::poll);
+        for (Poller<T> poller : pollers) {
+            Optional<T> next = poller.poll();
+            if (next.isPresent()) return next;
+        }
+        return Optional.empty();
     }
 
     @Override
     public void recycle() {
-        toLink.recycle();
-        source.recycle();
+        pollers.forEach(Poller::recycle);
     }
 }

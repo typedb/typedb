@@ -32,9 +32,11 @@ public class BasePoller<T> extends AbstractPoller<T> {
 
     @Override
     public Optional<T> poll() {
-        if (source.hasNext()) return Optional.of(source.next());
-        source.recycle(); // TODO: Can we call hasNext() after recycle()?
-        return Optional.empty();
+        if (source.hasNext()) {
+            return Optional.of(source.next());
+        } else {
+            return Optional.empty();
+        }
     }
 
     @Override

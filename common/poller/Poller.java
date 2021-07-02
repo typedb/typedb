@@ -27,7 +27,7 @@ public interface Poller<T> {
 
     <U> Poller<U> flatMap(Function<T, Poller<U>> flatMappingFn);
 
-    Poller<T> link(Poller<T> toLink);
+    Poller<T> link(Poller<T> poller);
 
     void recycle();
 
