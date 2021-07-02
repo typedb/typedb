@@ -46,7 +46,7 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "test-correctness-checker",
+    name = "test-correctness-verifier",
     size = "large",
     srcs = [
         "CorrectnessVerifierTest.java",

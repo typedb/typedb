@@ -63,59 +63,6 @@ public class CorrectnessVerifierTest {
         Util.resetDirectory(dataDir);
         this.typeDB = RocksTypeDB.open(options);
         this.typeDB.databases().create(database);
-    }
-
-    @After
-    public void tearDown() {
-        this.typeDB.close();
-    }
-
-    @Test
-    public void testCorrectnessPassesForEmployableExample() {
-        TypeQLMatch inferenceQuery = parseQuery("match $x has employable true;").asMatch();
-        loadEmployableExample(typeDB);
-        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            CorrectnessVerifier correctnessVerifier = CorrectnessVerifier.initialise(session);
-            correctnessVerifier.verifyCorrectness(inferenceQuery);
-            correctnessVerifier.close();
-        }
-    }
-
-    @Test
-    public void testSoundnessThrowsWhenRuleTriggersTooOftenEmployableExample() {
-        TypeQLMatch inferenceQuery = parseQuery("match $x has employable true;").asMatch();
-        loadEmployableExample(typeDB);
-
-        CorrectnessVerifier correctnessVerifier;
-        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            correctnessVerifier = CorrectnessVerifier.initialise(session);
-            try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                tx.query().insert(parseQuery("insert $p isa person;"));
-                tx.commit();
-            }
-            assertThrows(SoundnessException.class, () -> correctnessVerifier.verifySoundness(inferenceQuery));
-            assertNotThrows(() -> correctnessVerifier.verifyCompleteness(inferenceQuery));
-        }
-    }
-
-    @Test
-    public void testCompletenessThrowsWhenRuleIsNotTriggeredEmployableExample() {
-        TypeQLMatch inferenceQuery = parseQuery("match $x has employable true;").asMatch();
-        loadEmployableExample(typeDB);
-
-        CorrectnessVerifier correctnessVerifier;
-        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
-            correctnessVerifier = CorrectnessVerifier.initialise(session);
-            try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                tx.query().delete(parseQuery("match $p isa person; delete $p isa person;"));
-                tx.commit();
-            }
-            assertThrows(CompletenessException.class, () -> correctnessVerifier.verifyCompleteness(inferenceQuery));
-            assertNotThrows(() -> correctnessVerifier.verifySoundness(inferenceQuery));
-        }
-    }
-
-    static void loadEmployableExample(TypeDB typeDB) {
         try (TypeDB.Session session = typeDB.session(CorrectnessVerifierTest.database, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().define(define(list(
@@ -133,6 +80,51 @@ public class CorrectnessVerifierTest {
                 tx.query().insert(parseQuery("insert $p isa person;").asInsert());
                 tx.commit();
             }
+        }
+    }
+
+    @After
+    public void tearDown() {
+        this.typeDB.close();
+    }
+
+    @Test
+    public void testCorrectnessPassesForEmployableExample() {
+        TypeQLMatch inferenceQuery = parseQuery("match $x has employable true;").asMatch();
+        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+            CorrectnessVerifier correctnessVerifier = CorrectnessVerifier.initialise(session);
+            correctnessVerifier.verifyCorrectness(inferenceQuery);
+            correctnessVerifier.close();
+        }
+    }
+
+    @Test
+    public void testSoundnessThrowsWhenRuleTriggersTooOftenEmployableExample() {
+        TypeQLMatch inferenceQuery = parseQuery("match $x has employable true;").asMatch();
+        CorrectnessVerifier correctnessVerifier;
+        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+            correctnessVerifier = CorrectnessVerifier.initialise(session);
+            try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                tx.query().insert(parseQuery("insert $p isa person;"));
+                tx.commit();
+            }
+            assertThrows(SoundnessException.class, () -> correctnessVerifier.verifySoundness(inferenceQuery));
+            assertNotThrows(() -> correctnessVerifier.verifyCompleteness(inferenceQuery));
+        }
+    }
+
+    @Test
+    public void testCompletenessThrowsWhenRuleIsNotTriggeredEmployableExample() {
+        TypeQLMatch inferenceQuery = parseQuery("match $x has employable true;").asMatch();
+        CorrectnessVerifier correctnessVerifier;
+        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+            correctnessVerifier = CorrectnessVerifier.initialise(session);
+            try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                tx.query().delete(parseQuery("match $p isa person; delete $p isa person;"));
+                tx.commit();
+            }
+            assertThrows(CompletenessException.class, () -> correctnessVerifier.verifyCompleteness(inferenceQuery));
+            assertNotThrows(() -> correctnessVerifier.verifySoundness(inferenceQuery));
         }
     }
 
