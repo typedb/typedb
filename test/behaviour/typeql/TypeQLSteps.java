@@ -59,8 +59,7 @@ import static org.junit.Assert.assertTrue;
 
 public class TypeQLSteps {
 
-    public static TypeQLMatch typeQLQuery;
-    public static List<ConceptMap> answers;
+    private static List<ConceptMap> answers;
     private static Numeric numericAnswer;
     private static List<ConceptMapGroup> answerGroups;
     private static List<NumericGroup> numericAnswerGroups;
@@ -149,7 +148,7 @@ public class TypeQLSteps {
     @When("get answers of typeql match")
     public void typeql_match(String typeQLQueryStatements) {
         try {
-            typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asMatch();
+            TypeQLMatch typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asMatch();
             clearAnswers();
             answers = tx().query().match(typeQLQuery).toList();
         } catch (TypeQLException e) {

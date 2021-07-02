@@ -39,7 +39,6 @@ host_compatible_java_library(
     ],
     native_libraries_deps = [
         "//:typedb",
-        "//rocks:rocks",
     ],
 )
 
