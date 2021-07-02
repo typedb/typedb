@@ -41,14 +41,14 @@ public class FlatMappedPoller<T, U> extends AbstractPoller<U> {
             Optional<U> next = poller.poll();
             if (next.isPresent()) return next;
         }
-        Optional<T> fromSource = source.poll();
-        if (fromSource.isPresent()) {
+        Optional<T> fromSource;
+        while ((fromSource = source.poll()).isPresent()) {
             Poller<U> newPoller = flatMappingFn.apply(fromSource.get());
             flatMappedPollers.add(newPoller);
-            return newPoller.poll();
-        } else {
-            return Optional.empty();
+            Optional<U> next = newPoller.poll();
+            if (next.isPresent()) return next;
         }
+        return Optional.empty();
     }
 
     @Override
