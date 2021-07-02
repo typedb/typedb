@@ -32,7 +32,7 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
-import com.vaticle.typedb.core.test.behaviour.resolution.correctness.CompletenessChecker.BoundConcludable;
+import com.vaticle.typedb.core.test.behaviour.resolution.correctness.BoundPattern.BoundConcludable;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import com.vaticle.typeql.lang.query.TypeQLMatch;

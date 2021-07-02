@@ -25,8 +25,6 @@ import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.concept.thing.Attribute;
-import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.pattern.Conjunction;
@@ -39,7 +37,6 @@ import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -63,11 +60,11 @@ class CompletenessChecker {
 
     void checkQuery(TypeQLMatch inferenceQuery) {
         materialiser.query(inferenceQuery).forEach((conjunction, answers) -> {
-            answers.forEachRemaining(answer -> checkConjunction(BoundConjunction.create(conjunction, answer)));
+            answers.forEachRemaining(answer -> checkConjunction(BoundPattern.BoundConjunction.create(conjunction, answer)));
         });
     }
 
-    private void checkConjunction(BoundConjunction boundConjunction) {
+    private void checkConjunction(BoundPattern.BoundConjunction boundConjunction) {
         iterate(boundConjunction.boundConcludables()).forEachRemaining(boundConcludable -> {
             if (boundConcludable.isInferredAnswer()) {
                 materialiser.concludableMaterialisations(boundConcludable).forEachRemaining(materialisation -> {
@@ -77,39 +74,39 @@ class CompletenessChecker {
                     // cycles. When we detect we have explored the same state before, stop.
                     if (checked.contains(check)) return;
                     else checked.add(check);
-                    checkConjunction(BoundConjunction.create(materialisation.rule().when(), materialisation.conditionAnswer()));
-                    verifyConclusionReasoning(BoundConclusion.create(materialisation.rule().conclusion(), materialisation.conclusionAnswer()));
+                    checkConjunction(BoundPattern.BoundConjunction.create(materialisation.rule().when(), materialisation.conditionAnswer()));
+                    verifyConclusionReasoning(BoundPattern.BoundConclusion.create(materialisation.rule().conclusion(), materialisation.conclusionAnswer()));
                 });
                 verifyConcludableReasoning(boundConcludable);
             }
         });
     }
 
-    private void verifyConcludableReasoning(BoundConcludable boundConcludable) {
-        BoundConcludable boundNonInferred = boundConcludable.removeInferredBound();
-        validateNonInferred(boundNonInferred.fullyBound);
-        validateNumConcludableAnswers(boundNonInferred.fullyBound, boundConcludable.concludable);
+    private void verifyConcludableReasoning(BoundPattern.BoundConcludable boundConcludable) {
+        BoundPattern.BoundConcludable boundNonInferred = boundConcludable.removeInferredBound();
+        validateNonInferred(boundNonInferred.fullyBound());
+        validateNumConcludableAnswers(boundNonInferred.fullyBound(), boundConcludable.concludable());
     }
 
-    private void verifyConclusionReasoning(BoundConclusion boundConclusion) {
-        BoundConclusion boundNonInferred = boundConclusion.removeInferredBound();
-        validateNonInferred(boundNonInferred.fullyBound);
-        validateNumConclusionAnswers(boundNonInferred.fullyBound, boundConclusion.conclusion);
+    private void verifyConclusionReasoning(BoundPattern.BoundConclusion boundConclusion) {
+        BoundPattern.BoundConclusion boundNonInferred = boundConclusion.removeInferredBound();
+        validateNonInferred(boundNonInferred.fullyBound());
+        validateNumConclusionAnswers(boundNonInferred.fullyBound(), boundConclusion.conclusion());
     }
 
-    private void validateNonInferred(BoundConjunction boundConjunction) {
-        for (Concept concept : boundConjunction.bounds.concepts().values()) {
+    private static void validateNonInferred(BoundPattern.BoundConjunction boundConjunction) {
+        for (Concept concept : boundConjunction.bounds().concepts().values()) {
             if (concept.isThing() && concept.asThing().isInferred()) {
                 throw new UnsupportedOperationException(
                         String.format("Completeness testing does not yet support more than one inferred concept " +
                                               "in a query tested against the reasoner. It becomes too " +
                                               "computationally expensive to verify the history of all inferences." +
-                                              " Encountered when querying:\n%s", boundConjunction.fullyBound));
+                                              " Encountered when querying:\n%s", boundConjunction.fullyBound()));
             }
         }
     }
 
-    private void validateNumConcludableAnswers(BoundConjunction boundConjunction, Concludable concludable) {
+    private void validateNumConcludableAnswers(BoundPattern.BoundConjunction boundConjunction, Concludable concludable) {
         if (numReasonedAnswers(boundConjunction, concludable.retrieves()) == 0) {
             throw new CompletenessException(String.format("Completeness testing found a missing answer.\nExpected " +
                                                                   "one or more answers for the concludable (bound " +
@@ -119,7 +116,7 @@ class CompletenessChecker {
         }
     }
 
-    private void validateNumConclusionAnswers(BoundConjunction boundConjunction, Rule.Conclusion conclusion) {
+    private void validateNumConclusionAnswers(BoundPattern.BoundConjunction boundConjunction, Rule.Conclusion conclusion) {
         int numAnswers = numReasonedAnswers(boundConjunction, conclusion.retrievableIds());
         if (numAnswers == 0) {
             throw new CompletenessException(String.format("Completeness testing found a missing answer.\nExpected " +
@@ -131,120 +128,12 @@ class CompletenessChecker {
         }
     }
 
-    private int numReasonedAnswers(BoundConjunction boundConjunction, Set<Identifier.Variable.Retrievable> filter) {
+    private int numReasonedAnswers(BoundPattern.BoundConjunction boundConjunction, Set<Identifier.Variable.Retrievable> filter) {
         try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.READ,
                                                        new Options.Transaction().infer(true))) {
             return tx.reasoner().executeReasoner(
-                    new Disjunction(Collections.singletonList(boundConjunction.fullyBound)),
+                    new Disjunction(Collections.singletonList(boundConjunction.fullyBound())),
                     filter, new Context.Query(tx.context(), new Options.Query())).toList().size();
-        }
-    }
-
-    static class BoundConjunction {
-        private final Conjunction fullyBound;
-        private final Conjunction conjunction;
-        private final ConceptMap bounds;
-
-        private BoundConjunction(Conjunction fullyBound, Conjunction conjunction, ConceptMap bounds) {
-            this.fullyBound = fullyBound;
-            this.conjunction = conjunction;
-            this.bounds = bounds;
-            assert this.conjunction.identifiers().containsAll(bounds.concepts().keySet());
-        }
-
-        static BoundConjunction create(Conjunction conjunction, ConceptMap bounds) {
-            Conjunction constrainedByIIDs = conjunction.clone();
-            bounds.concepts().forEach((identifier, concept) -> {
-                if (concept.isThing()) {
-                    assert constrainedByIIDs.variable(identifier).isThing();
-                    // Make sure this isn't the generating variable, we want to leave that unconstrained.
-                    constrainedByIIDs.variable(identifier).asThing().iid(concept.asThing().getIID());
-                }
-            });
-            return new BoundConjunction(constrainedByIIDs, conjunction, bounds);
-        }
-
-        Set<BoundConcludable> boundConcludables() {
-            return iterate(Concludable.create(conjunction)).map(concludable -> BoundConcludable.create(
-                    concludable, bounds.filter(concludable.pattern().retrieves()))).toSet();
-        }
-    }
-
-    static class BoundConcludable {
-        private final BoundConjunction fullyBound;
-        final Concludable concludable;
-        final ConceptMap bounds;
-
-        private BoundConcludable(BoundConjunction fullyBound, Concludable concludable, ConceptMap bounds) {
-            this.fullyBound = fullyBound;
-            this.concludable = concludable;
-            this.bounds = bounds;
-            assert this.concludable.pattern().identifiers().containsAll(bounds.concepts().keySet());
-        }
-
-        private static BoundConcludable create(Concludable original, ConceptMap bounds) {
-            return new BoundConcludable(BoundConjunction.create(original.pattern(), bounds), original, bounds);
-        }
-
-        private boolean isInferredAnswer() {
-            return concludable.isInferredAnswer(bounds);
-        }
-
-        Optional<Concept> inferredConcept() {
-            if (concludable.isIsa() && isInferredAnswer()) {
-                return Optional.of(bounds.get(concludable.asIsa().isa().owner().id()));
-            } else if (concludable.isHas() && bounds.get(concludable.asHas().attribute().id()).asAttribute().isInferred()) {
-                return Optional.of(bounds.get(concludable.asHas().attribute().id()).asAttribute());
-            } else if (concludable.isAttribute() && isInferredAnswer()) {
-                return Optional.of(bounds.get(concludable.asAttribute().attribute().id()).asAttribute());
-            } else if (concludable.isRelation() && isInferredAnswer()) {
-                return Optional.of(bounds.get(concludable.asRelation().relation().owner().id()).asRelation());
-            } else if (concludable.isNegated()) {
-                return Optional.empty();
-            } else {
-                return Optional.empty();
-            }
-        }
-
-        Optional<Pair<Thing, Attribute>> inferredHas() {
-            if (concludable.isHas() && isInferredAnswer()) {
-                Thing owner = bounds.get(concludable.asHas().owner().id()).asThing();
-                Attribute attribute = bounds.get(concludable.asHas().attribute().id()).asAttribute();
-                return Optional.of(new Pair<>(owner, attribute));
-            }
-            return Optional.empty();
-        }
-
-        private BoundConcludable removeInferredBound() {
-            // Remove the bound for the variable that the conclusion may generate
-            Set<Identifier.Variable.Retrievable> nonGenerating = new HashSet<>(concludable.retrieves());
-            if (concludable.generating().isPresent()) nonGenerating.remove(concludable.generating().get().id());
-            return BoundConcludable.create(concludable, bounds.filter(nonGenerating));
-        }
-
-    }
-
-    static class BoundConclusion {
-        private final BoundConjunction fullyBound;
-        private final Rule.Conclusion conclusion;
-        private final ConceptMap bounds;
-
-        BoundConclusion(BoundConjunction fullyBound, Rule.Conclusion conclusion, ConceptMap bounds) {
-            this.fullyBound = fullyBound;
-            this.conclusion = conclusion;
-            this.bounds = bounds;
-            assert this.conclusion.conjunction().identifiers().containsAll(bounds.concepts().keySet());
-        }
-
-        public static BoundConclusion create(Rule.Conclusion conclusion, ConceptMap conclusionAnswer) {
-            return new BoundConclusion(BoundConjunction.create(conclusion.conjunction(), conclusionAnswer),
-                                       conclusion, conclusionAnswer);
-        }
-
-        public BoundConclusion removeInferredBound() {
-            Set<Identifier.Variable.Retrievable> nonGenerating = new HashSet<>(conclusion.retrievableIds());
-            if (conclusion.generating().isPresent()) nonGenerating.remove(conclusion.generating().get().id());
-            return BoundConclusion.create(conclusion, bounds.filter(nonGenerating));
         }
     }
 
