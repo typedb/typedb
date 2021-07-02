@@ -49,10 +49,10 @@ host_compatible_java_test(
     name = "test-correctness-checker",
     size = "large",
     srcs = [
-        "CorrectnessCheckerTest.java",
+        "CorrectnessVerifierTest.java",
     ],
     classpath_resources = ["//common/test:logback-test"],
-    test_class = "com.vaticle.typedb.core.test.behaviour.resolution.correctness.test.CorrectnessCheckerTest",
+    test_class = "com.vaticle.typedb.core.test.behaviour.resolution.correctness.test.CorrectnessVerifierTest",
     native_libraries_deps = [
         "//:typedb",
         "//rocks:rocks",

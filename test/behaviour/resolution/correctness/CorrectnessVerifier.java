@@ -21,31 +21,31 @@ package com.vaticle.typedb.core.test.behaviour.resolution.correctness;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 
-public class CorrectnessChecker {
+public class CorrectnessVerifier {
 
     private final Materialiser materialiser;
     private final RocksSession session;
 
-    public CorrectnessChecker(RocksSession session, Materialiser materialiser) {
+    public CorrectnessVerifier(RocksSession session, Materialiser materialiser) {
         this.session = session;
         this.materialiser = materialiser;
     }
 
-    public static CorrectnessChecker initialise(RocksSession session) {
-        return new CorrectnessChecker(session, Materialiser.materialise(session));
+    public static CorrectnessVerifier initialise(RocksSession session) {
+        return new CorrectnessVerifier(session, Materialiser.materialise(session));
     }
 
-    public void checkCorrectness(TypeQLMatch inferenceQuery) {
-        checkSoundness(inferenceQuery);
-        checkCompleteness(inferenceQuery);
+    public void verifyCorrectness(TypeQLMatch inferenceQuery) {
+        verifySoundness(inferenceQuery);
+        verifyCompleteness(inferenceQuery);
     }
 
-    public void checkSoundness(TypeQLMatch inferenceQuery) {
-        SoundnessChecker.create(materialiser, session).checkQuery(inferenceQuery);
+    public void verifySoundness(TypeQLMatch inferenceQuery) {
+        SoundnessVerifier.create(materialiser, session).verifyQuery(inferenceQuery);
     }
 
-    public void checkCompleteness(TypeQLMatch inferenceQuery) {
-        CompletenessChecker.create(materialiser, session).checkQuery(inferenceQuery);
+    public void verifyCompleteness(TypeQLMatch inferenceQuery) {
+        CompletenessVerifier.create(materialiser, session).verifyQuery(inferenceQuery);
     }
 
     public void close() {

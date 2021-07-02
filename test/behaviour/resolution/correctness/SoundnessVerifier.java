@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
-import com.vaticle.typedb.core.test.behaviour.resolution.correctness.CorrectnessChecker.SoundnessException;
+import com.vaticle.typedb.core.test.behaviour.resolution.correctness.CorrectnessVerifier.SoundnessException;
 import com.vaticle.typedb.core.test.behaviour.resolution.correctness.Materialiser.Materialisation;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
@@ -36,45 +36,45 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-class SoundnessChecker {
+class SoundnessVerifier {
 
     private final Materialiser materialiser;
     private final TypeDB.Session session;
     private final Map<Concept, Concept> inferredConceptMapping;
-    private final Set<Explanation> checked;
+    private final Set<Explanation> verified;
 
-    private SoundnessChecker(Materialiser materialiser, TypeDB.Session session) {
+    private SoundnessVerifier(Materialiser materialiser, TypeDB.Session session) {
         this.materialiser = materialiser;
         this.session = session;
         this.inferredConceptMapping = new HashMap<>();
-        this.checked = new HashSet<>();
+        this.verified = new HashSet<>();
     }
 
-    static SoundnessChecker create(Materialiser materialiser, TypeDB.Session session) {
-        return new SoundnessChecker(materialiser, session);
+    static SoundnessVerifier create(Materialiser materialiser, TypeDB.Session session) {
+        return new SoundnessVerifier(materialiser, session);
     }
 
-    void checkQuery(TypeQLMatch inferenceQuery) {
+    void verifyQuery(TypeQLMatch inferenceQuery) {
         try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ,
                                                   new Options.Transaction().infer(true).explain(true))) {
-            tx.query().match(inferenceQuery).forEachRemaining(ans -> checkAnswer(ans, tx));
+            tx.query().match(inferenceQuery).forEachRemaining(ans -> verifyAnswer(ans, tx));
         }
     }
 
-    private void checkAnswer(ConceptMap answer, Transaction tx) {
+    private void verifyAnswer(ConceptMap answer, Transaction tx) {
         answer.explainables().iterator().forEachRemaining(explainable -> {
             tx.query().explain(explainable.id()).forEachRemaining(explanation -> {
                 // This check is valid given that there is no mechanism for recursion termination given by the UX of
                 // explanations, so we do it ourselves
-                if (checked.contains(explanation)) return;
-                else checked.add(explanation);
-                checkAnswer(explanation.conditionAnswer(), tx);
-                checkExplanationAgainstReference(explanation);
+                if (verified.contains(explanation)) return;
+                else verified.add(explanation);
+                verifyAnswer(explanation.conditionAnswer(), tx);
+                verifyExplanation(explanation);
             });
         });
     }
 
-    private void checkExplanationAgainstReference(Explanation explanation) {
+    private void verifyExplanation(Explanation explanation) {
         ConceptMap recordedWhen = mapInferredConcepts(explanation.conditionAnswer());
         Optional<ConceptMap> recordedThen = materialiser
                 .conditionMaterialisation(explanation.rule(), recordedWhen)

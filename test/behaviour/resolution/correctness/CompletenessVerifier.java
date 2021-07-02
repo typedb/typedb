@@ -31,7 +31,7 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
-import com.vaticle.typedb.core.test.behaviour.resolution.correctness.CorrectnessChecker.CompletenessException;
+import com.vaticle.typedb.core.test.behaviour.resolution.correctness.CorrectnessVerifier.CompletenessException;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 
@@ -42,39 +42,39 @@ import java.util.Set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-class CompletenessChecker {
+class CompletenessVerifier {
 
     private final Materialiser materialiser;
     private final RocksSession session;
-    private final Set<Pair<Conjunction, ConceptMap>> checked;
+    private final Set<Pair<Conjunction, ConceptMap>> verified;
 
-    private CompletenessChecker(Materialiser materialiser, RocksSession session) {
+    private CompletenessVerifier(Materialiser materialiser, RocksSession session) {
         this.materialiser = materialiser;
         this.session = session;
-        this.checked = new HashSet<>();
+        this.verified = new HashSet<>();
     }
 
-    static CompletenessChecker create(Materialiser materialiser, RocksSession session) {
-        return new CompletenessChecker(materialiser, session);
+    static CompletenessVerifier create(Materialiser materialiser, RocksSession session) {
+        return new CompletenessVerifier(materialiser, session);
     }
 
-    void checkQuery(TypeQLMatch inferenceQuery) {
+    void verifyQuery(TypeQLMatch inferenceQuery) {
         materialiser.query(inferenceQuery).forEach((conjunction, answers) -> {
-            answers.forEachRemaining(answer -> checkConjunction(BoundPattern.BoundConjunction.create(conjunction, answer)));
+            answers.forEachRemaining(answer -> verifyConjunction(BoundPattern.BoundConjunction.create(conjunction, answer)));
         });
     }
 
-    private void checkConjunction(BoundPattern.BoundConjunction boundConjunction) {
+    private void verifyConjunction(BoundPattern.BoundConjunction boundConjunction) {
         iterate(boundConjunction.boundConcludables()).forEachRemaining(boundConcludable -> {
             if (boundConcludable.isInferredAnswer()) {
                 materialiser.concludableMaterialisations(boundConcludable).forEachRemaining(materialisation -> {
-                    Pair<Conjunction, ConceptMap> check = new Pair<>(materialisation.rule().when(),
+                    Pair<Conjunction, ConceptMap> toVerify = new Pair<>(materialisation.rule().when(),
                                                                      materialisation.conditionAnswer());
                     // Materialisations record all possible paths that could be taken to infer a fact, so can contain
                     // cycles. When we detect we have explored the same state before, stop.
-                    if (checked.contains(check)) return;
-                    else checked.add(check);
-                    checkConjunction(BoundPattern.BoundConjunction.create(materialisation.rule().when(), materialisation.conditionAnswer()));
+                    if (verified.contains(toVerify)) return;
+                    else verified.add(toVerify);
+                    verifyConjunction(BoundPattern.BoundConjunction.create(materialisation.rule().when(), materialisation.conditionAnswer()));
                     verifyConclusionReasoning(BoundPattern.BoundConclusion.create(materialisation.rule().conclusion(), materialisation.conclusionAnswer()));
                 });
                 verifyConcludableReasoning(boundConcludable);

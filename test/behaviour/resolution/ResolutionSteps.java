@@ -26,7 +26,7 @@ import com.vaticle.typedb.core.rocks.RocksDatabase;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.rocks.RocksTypeDB;
-import com.vaticle.typedb.core.test.behaviour.resolution.correctness.CorrectnessChecker;
+import com.vaticle.typedb.core.test.behaviour.resolution.correctness.CorrectnessVerifier;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.common.exception.TypeQLException;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
@@ -45,7 +45,7 @@ import java.util.List;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
-import static com.vaticle.typedb.core.test.behaviour.resolution.correctness.CorrectnessChecker.initialise;
+import static com.vaticle.typedb.core.test.behaviour.resolution.correctness.CorrectnessVerifier.initialise;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -60,7 +60,7 @@ public class ResolutionSteps {
     public static RocksSession session;
     public static RocksTransaction inferenceTx;
     public static String DATABASE = "typedb";
-    private static CorrectnessChecker correctnessChecker;
+    private static CorrectnessVerifier correctnessVerifier;
     private static TypeQLMatch typeQLQuery;
     private static List<ConceptMap> answers;
 
@@ -79,8 +79,8 @@ public class ResolutionSteps {
         inferenceTx = null;
         if (session != null) session.close();
         session = null;
-        if (correctnessChecker != null) correctnessChecker.close();
-        correctnessChecker = null;
+        if (correctnessVerifier != null) correctnessVerifier.close();
+        correctnessVerifier = null;
         typedb.databases().all().forEach(RocksDatabase::delete);
         typedb.close();
         assertFalse(typedb.isOpen());
@@ -109,7 +109,7 @@ public class ResolutionSteps {
 
     @Given("schema")
     public void schema(String defineQueryStatements) {
-        if (correctnessChecker != null) correctnessChecker.close();
+        if (correctnessVerifier != null) correctnessVerifier.close();
         if (session != null) session.close();
         try (RocksSession session = typedb.session(DATABASE, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -122,7 +122,7 @@ public class ResolutionSteps {
     @Given("data")
     public void data(String insertQueryStatements) {
         data_without_correctness_verification(insertQueryStatements);
-        correctnessChecker = initialise(dataSession());
+        correctnessVerifier = initialise(dataSession());
     }
 
     @Given("data without correctness verification")
@@ -185,18 +185,18 @@ public class ResolutionSteps {
 
     @Then("verify answers are correct")
     public void verify_answers_are_correct() {
-        correctnessChecker.checkSoundness(typeQLQuery);
-        correctnessChecker.checkCompleteness(typeQLQuery);
+        correctnessVerifier.verifySoundness(typeQLQuery);
+        correctnessVerifier.verifyCompleteness(typeQLQuery);
     }
 
     @Then("verify answers are sound")
     public void verify_answers_are_sound() {
-        correctnessChecker.checkSoundness(typeQLQuery);
+        correctnessVerifier.verifySoundness(typeQLQuery);
     }
 
     @Then("verify answers are complete")
     public void verify_answers_are_complete() {
-        correctnessChecker.checkCompleteness(typeQLQuery);
+        correctnessVerifier.verifyCompleteness(typeQLQuery);
     }
 
     private static void resetDirectory() throws IOException {
