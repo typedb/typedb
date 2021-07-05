@@ -91,9 +91,9 @@ public class BoundPattern {
             return unboundConcludable.isInferredAnswer(conjunction.bounds());
         }
 
-        Optional<Concept> inferredConcept() {
+        Optional<Thing> inferredConcept() {
             if (unboundConcludable.isIsa() && isInferredAnswer()) {
-                return Optional.of(conjunction.bounds().get(unboundConcludable.asIsa().isa().owner().id()));
+                return Optional.of(conjunction.bounds().get(unboundConcludable.asIsa().isa().owner().id()).asThing());
             } else if (unboundConcludable.isHas() &&
                     conjunction.bounds().get(unboundConcludable.asHas().attribute().id()).asAttribute().isInferred()) {
                 return Optional.of(conjunction.bounds().get(unboundConcludable.asHas().attribute().id()).asAttribute());

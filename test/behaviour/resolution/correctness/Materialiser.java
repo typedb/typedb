@@ -33,7 +33,6 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.test.behaviour.resolution.correctness.BoundPattern.BoundConcludable;
-import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 
@@ -100,7 +99,7 @@ public class Materialiser {
         return materialisations.forConcludable(boundConcludable);
     }
 
-    Optional<Materialisation> conditionMaterialisation(com.vaticle.typedb.core.logic.Rule rule, ConceptMap conditionAnswer) {
+    Optional<Materialisation> conditionMaterialisations(com.vaticle.typedb.core.logic.Rule rule, ConceptMap conditionAnswer) {
         if (!rules.containsKey(rule)) return Optional.empty();
         if (!rules.get(rule).conditionAnsMaterialisations.containsKey(conditionAnswer)) return Optional.empty();
         return materialisations.forCondition(rules.get(rule), conditionAnswer);
@@ -109,8 +108,8 @@ public class Materialiser {
     private class Rule {
         private final com.vaticle.typedb.core.logic.Rule rule;
         private final Concludable thenConcludable;
-        private boolean requiresReiteration;
         private final Map<ConceptMap, Materialisation> conditionAnsMaterialisations;
+        private boolean requiresReiteration;
 
         private Rule(com.vaticle.typedb.core.logic.Rule typeDBRule) {
             this.rule = typeDBRule;
@@ -141,8 +140,8 @@ public class Materialiser {
                 requiresReiteration = true;
                 conditionAnsMaterialisations.put(conditionAns, materialisation);
                 if (rule.conclusion().isIsa()) {
-                    Concept owner = conclusionAns.get(rule.conclusion().asIsa().isa().owner().id());
-                    materialisations.recordConcept(owner, materialisation);
+                    Thing owner = conclusionAns.get(rule.conclusion().asIsa().isa().owner().id()).asThing();
+                    materialisations.recordThing(owner, materialisation);
                 }
                 if (rule.conclusion().isHas()) {
                     Thing owner = conclusionAns.get(rule.conclusion().asHas().has().owner().id()).asThing();
@@ -167,7 +166,7 @@ public class Materialiser {
     }
 
     private class Materialisations {
-        private final Map<Concept, Set<Materialisation>> concept;
+        private final Map<Thing, Set<Materialisation>> concept;
         private final Map<Pair<Thing, Attribute>, Set<Materialisation>> has;
 
         Materialisations() {
@@ -177,9 +176,9 @@ public class Materialiser {
 
         FunctionalIterator<Materialisation> forConcludable(BoundConcludable boundConcludable) {
             FunctionalIterator<Materialisation> materialisations = empty();
-            Optional<Concept> inferredConcept = boundConcludable.inferredConcept();
+            Optional<Thing> inferredConcept = boundConcludable.inferredConcept();
             if (inferredConcept.isPresent()) {
-                materialisations = materialisations.link(forConcept(inferredConcept.get()));
+                materialisations = materialisations.link(forThing(inferredConcept.get()));
             }
             Optional<Pair<Thing, Attribute>> inferredHas = boundConcludable.inferredHas();
             if (inferredHas.isPresent()) {
@@ -188,7 +187,7 @@ public class Materialiser {
             return materialisations;
         }
 
-        private FunctionalIterator<Materialisation> forConcept(Concept toFetch) {
+        private FunctionalIterator<Materialisation> forThing(Thing toFetch) {
             assert concept.containsKey(toFetch);
             return iterate(concept.get(toFetch));
         }
@@ -204,7 +203,7 @@ public class Materialiser {
             return Optional.of(ruleRecorder.conditionAnsMaterialisations.get(conditionAnswer));
         }
 
-        public void recordConcept(Concept owner, Materialisation materialisation) {
+        public void recordThing(Thing owner, Materialisation materialisation) {
             concept.putIfAbsent(owner, new HashSet<>());
             concept.get(owner).add(materialisation);
         }

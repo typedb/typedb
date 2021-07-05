@@ -77,7 +77,7 @@ class SoundnessVerifier {
     private void verifyExplanation(Explanation explanation) {
         ConceptMap recordedWhen = mapInferredConcepts(explanation.conditionAnswer());
         Optional<ConceptMap> recordedThen = materialiser
-                .conditionMaterialisation(explanation.rule(), recordedWhen)
+                .conditionMaterialisations(explanation.rule(), recordedWhen)
                 .map(Materialisation::conclusionAnswer);
         if (recordedThen.isPresent()) {
             // Update the inferred variables mapping between the two reasoners
