@@ -84,14 +84,14 @@ class CompletenessVerifier {
 
     private void verifyConcludableReasoning(BoundPattern.BoundConcludable boundConcludable) {
         BoundPattern.BoundConcludable boundNonInferred = boundConcludable.removeInferredBound();
-        validateNonInferred(boundNonInferred.fullyBound());
-        validateNumConcludableAnswers(boundNonInferred.fullyBound(), boundConcludable.concludable());
+        validateNonInferred(boundNonInferred.pattern());
+        validateNumConcludableAnswers(boundNonInferred.pattern(), boundConcludable.concludable());
     }
 
     private void verifyConclusionReasoning(BoundPattern.BoundConclusion boundConclusion) {
         BoundPattern.BoundConclusion boundNonInferred = boundConclusion.removeInferredBound();
-        validateNonInferred(boundNonInferred.fullyBound());
-        validateNumConclusionAnswers(boundNonInferred.fullyBound(), boundConclusion.conclusion());
+        validateNonInferred(boundNonInferred.pattern());
+        validateNumConclusionAnswers(boundNonInferred.pattern(), boundConclusion.conclusion());
     }
 
     private static void validateNonInferred(BoundPattern.BoundConjunction boundConjunction) {
@@ -101,7 +101,7 @@ class CompletenessVerifier {
                         String.format("Completeness testing does not yet support more than one inferred concept " +
                                               "in a query tested against the reasoner. It becomes too " +
                                               "computationally expensive to verify the history of all inferences." +
-                                              " Encountered when querying:\n%s", boundConjunction.fullyBound()));
+                                              " Encountered when querying:\n%s", boundConjunction.conjunction()));
             }
         }
     }
@@ -132,7 +132,7 @@ class CompletenessVerifier {
         try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.READ,
                                                        new Options.Transaction().infer(true))) {
             return tx.reasoner().executeReasoner(
-                    new Disjunction(Collections.singletonList(boundConjunction.fullyBound())),
+                    new Disjunction(Collections.singletonList(boundConjunction.conjunction())),
                     filter, new Context.Query(tx.context(), new Options.Query())).toList().size();
         }
     }

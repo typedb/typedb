@@ -36,15 +36,15 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class BoundPattern {
     static class BoundConjunction {
-        private final Conjunction fullyBound;
         private final Conjunction conjunction;
+        private final Conjunction unboundConjunction;
         private final ConceptMap bounds;
 
-        private BoundConjunction(Conjunction fullyBound, Conjunction conjunction, ConceptMap bounds) {
-            this.fullyBound = fullyBound;
+        private BoundConjunction(Conjunction conjunction, Conjunction unboundConjunction, ConceptMap bounds) {
             this.conjunction = conjunction;
+            this.unboundConjunction = unboundConjunction;
             this.bounds = bounds;
-            assert this.conjunction.retrieves().containsAll(bounds.concepts().keySet());
+            assert this.unboundConjunction.retrieves().containsAll(bounds.concepts().keySet());
         }
 
         static BoundConjunction create(Conjunction conjunction, ConceptMap bounds) {
@@ -60,12 +60,12 @@ public class BoundPattern {
         }
 
         Set<BoundConcludable> boundConcludables() {
-            return iterate(Concludable.create(conjunction)).map(concludable -> BoundConcludable.create(
+            return iterate(Concludable.create(unboundConjunction)).map(concludable -> BoundConcludable.create(
                     concludable, bounds.filter(concludable.pattern().retrieves()))).toSet();
         }
 
-        public Conjunction fullyBound() {
-            return fullyBound;
+        public Conjunction conjunction() {
+            return conjunction;
         }
 
         public ConceptMap bounds() {
@@ -74,35 +74,36 @@ public class BoundPattern {
     }
 
     static class BoundConcludable {
-        private final BoundConjunction fullyBound;
-        final Concludable concludable;
-        final ConceptMap bounds;
+        private final BoundConjunction conjunction;
+        final Concludable unboundConcludable;
 
-        private BoundConcludable(BoundConjunction fullyBound, Concludable concludable, ConceptMap bounds) {
-            this.fullyBound = fullyBound;
-            this.concludable = concludable;
-            this.bounds = bounds;
-            assert this.concludable.pattern().retrieves().containsAll(bounds.concepts().keySet());
+        private BoundConcludable(BoundConjunction conjunction, Concludable unboundConcludable) {
+            this.conjunction = conjunction;
+            this.unboundConcludable = unboundConcludable;
+            assert this.unboundConcludable.pattern().retrieves().containsAll(conjunction.bounds().concepts().keySet());
         }
 
         private static BoundConcludable create(Concludable original, ConceptMap bounds) {
-            return new BoundConcludable(BoundConjunction.create(original.pattern(), bounds), original, bounds);
+            return new BoundConcludable(BoundConjunction.create(original.pattern(), bounds), original);
         }
 
         boolean isInferredAnswer() {
-            return concludable.isInferredAnswer(bounds);
+            return unboundConcludable.isInferredAnswer(conjunction.bounds());
         }
 
         Optional<Concept> inferredConcept() {
-            if (concludable.isIsa() && isInferredAnswer()) {
-                return Optional.of(bounds.get(concludable.asIsa().isa().owner().id()));
-            } else if (concludable.isHas() && bounds.get(concludable.asHas().attribute().id()).asAttribute().isInferred()) {
-                return Optional.of(bounds.get(concludable.asHas().attribute().id()).asAttribute());
-            } else if (concludable.isAttribute() && isInferredAnswer()) {
-                return Optional.of(bounds.get(concludable.asAttribute().attribute().id()).asAttribute());
-            } else if (concludable.isRelation() && isInferredAnswer()) {
-                return Optional.of(bounds.get(concludable.asRelation().relation().owner().id()).asRelation());
-            } else if (concludable.isNegated()) {
+            if (unboundConcludable.isIsa() && isInferredAnswer()) {
+                return Optional.of(conjunction.bounds().get(unboundConcludable.asIsa().isa().owner().id()));
+            } else if (unboundConcludable.isHas() &&
+                    conjunction.bounds().get(unboundConcludable.asHas().attribute().id()).asAttribute().isInferred()) {
+                return Optional.of(conjunction.bounds().get(unboundConcludable.asHas().attribute().id()).asAttribute());
+            } else if (unboundConcludable.isAttribute() && isInferredAnswer()) {
+                return Optional.of(
+                        conjunction.bounds().get(unboundConcludable.asAttribute().attribute().id()).asAttribute());
+            } else if (unboundConcludable.isRelation() && isInferredAnswer()) {
+                return Optional.of(
+                        conjunction.bounds().get(unboundConcludable.asRelation().relation().owner().id()).asRelation());
+            } else if (unboundConcludable.isNegated()) {
                 return Optional.empty();
             } else {
                 return Optional.empty();
@@ -110,9 +111,10 @@ public class BoundPattern {
         }
 
         Optional<Pair<Thing, Attribute>> inferredHas() {
-            if (concludable.isHas() && isInferredAnswer()) {
-                Thing owner = bounds.get(concludable.asHas().owner().id()).asThing();
-                Attribute attribute = bounds.get(concludable.asHas().attribute().id()).asAttribute();
+            if (unboundConcludable.isHas() && isInferredAnswer()) {
+                Thing owner = conjunction.bounds().get(unboundConcludable.asHas().owner().id()).asThing();
+                Attribute attribute = conjunction.bounds()
+                        .get(unboundConcludable.asHas().attribute().id()).asAttribute();
                 return Optional.of(new Pair<>(owner, attribute));
             }
             return Optional.empty();
@@ -120,45 +122,44 @@ public class BoundPattern {
 
         BoundConcludable removeInferredBound() {
             // Remove the bound for the variable that the conclusion may generate
-            Set<Identifier.Variable.Retrievable> nonGenerating = new HashSet<>(concludable.retrieves());
-            if (concludable.generating().isPresent()) nonGenerating.remove(concludable.generating().get().id());
-            return BoundConcludable.create(concludable, bounds.filter(nonGenerating));
+            Set<Identifier.Variable.Retrievable> nonGenerating = new HashSet<>(unboundConcludable.retrieves());
+            if (unboundConcludable.generating().isPresent()) {
+                nonGenerating.remove(unboundConcludable.generating().get().id());
+            }
+            return BoundConcludable.create(unboundConcludable, conjunction.bounds().filter(nonGenerating));
         }
 
-        public BoundConjunction fullyBound() {
-            return fullyBound;
+        public BoundConjunction pattern() {
+            return conjunction;
         }
 
         public Concludable concludable() {
-            return concludable;
+            return unboundConcludable;
         }
     }
 
     static class BoundConclusion {
-        private final BoundConjunction fullyBound;
+        private final BoundConjunction conjunction;
         private final Rule.Conclusion conclusion;
-        private final ConceptMap bounds;
 
-        BoundConclusion(BoundConjunction fullyBound, Rule.Conclusion conclusion, ConceptMap bounds) {
-            this.fullyBound = fullyBound;
+        BoundConclusion(BoundConjunction conjunction, Rule.Conclusion conclusion) {
+            this.conjunction = conjunction;
             this.conclusion = conclusion;
-            this.bounds = bounds;
-            assert this.conclusion.conjunction().retrieves().containsAll(bounds.concepts().keySet());
+            assert this.conclusion.conjunction().retrieves().containsAll(conjunction.bounds().concepts().keySet());
         }
 
         public static BoundConclusion create(Rule.Conclusion conclusion, ConceptMap conclusionAnswer) {
-            return new BoundConclusion(BoundConjunction.create(conclusion.conjunction(), conclusionAnswer),
-                                       conclusion, conclusionAnswer);
+            return new BoundConclusion(BoundConjunction.create(conclusion.conjunction(), conclusionAnswer), conclusion);
         }
 
         public BoundConclusion removeInferredBound() {
             Set<Identifier.Variable.Retrievable> nonGenerating = new HashSet<>(conclusion.retrievableIds());
             if (conclusion.generating().isPresent()) nonGenerating.remove(conclusion.generating().get().id());
-            return BoundConclusion.create(conclusion, bounds.filter(nonGenerating));
+            return BoundConclusion.create(conclusion, conjunction.bounds().filter(nonGenerating));
         }
 
-        public BoundConjunction fullyBound() {
-            return fullyBound;
+        public BoundConjunction pattern() {
+            return conjunction;
         }
 
         public Rule.Conclusion conclusion() {
