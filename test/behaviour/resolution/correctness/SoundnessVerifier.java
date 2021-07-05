@@ -41,13 +41,13 @@ class SoundnessVerifier {
     private final Materialiser materialiser;
     private final TypeDB.Session session;
     private final Map<Concept, Concept> inferredConceptMapping;
-    private final Set<Explanation> verified;
+    private final Set<Explanation> verifiedExplanations;
 
     private SoundnessVerifier(Materialiser materialiser, TypeDB.Session session) {
         this.materialiser = materialiser;
         this.session = session;
         this.inferredConceptMapping = new HashMap<>();
-        this.verified = new HashSet<>();
+        this.verifiedExplanations = new HashSet<>();
     }
 
     static SoundnessVerifier create(Materialiser materialiser, TypeDB.Session session) {
@@ -66,8 +66,8 @@ class SoundnessVerifier {
             tx.query().explain(explainable.id()).forEachRemaining(explanation -> {
                 // This check is valid given that there is no mechanism for recursion termination given by the UX of
                 // explanations, so we do it ourselves
-                if (verified.contains(explanation)) return;
-                else verified.add(explanation);
+                if (verifiedExplanations.contains(explanation)) return;
+                else verifiedExplanations.add(explanation);
                 verifyAnswer(explanation.conditionAnswer(), tx);
                 verifyExplanation(explanation);
             });
@@ -78,7 +78,7 @@ class SoundnessVerifier {
         ConceptMap recordedWhen = mapInferredConcepts(explanation.conditionAnswer());
         Optional<ConceptMap> recordedThen = materialiser
                 .conditionMaterialisations(explanation.rule(), recordedWhen)
-                .map(Materialisation::conclusionAnswer);
+                .map(materialisation -> materialisation.boundConclusion().pattern().bounds());
         if (recordedThen.isPresent()) {
             // Update the inferred variables mapping between the two reasoners
             assert recordedThen.get().concepts().keySet().equals(explanation.conclusionAnswer().concepts().keySet());

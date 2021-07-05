@@ -18,19 +18,18 @@
 
 package com.vaticle.typedb.core.test.behaviour.resolution.correctness;
 
-import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.Concept;
-import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
-import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
+import com.vaticle.typedb.core.test.behaviour.resolution.correctness.BoundPattern.BoundCondition;
+import com.vaticle.typedb.core.test.behaviour.resolution.correctness.BoundPattern.BoundConjunction;
 import com.vaticle.typedb.core.test.behaviour.resolution.correctness.CorrectnessVerifier.CompletenessException;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
@@ -46,12 +45,12 @@ class CompletenessVerifier {
 
     private final Materialiser materialiser;
     private final RocksSession session;
-    private final Set<Pair<Conjunction, ConceptMap>> verified;
+    private final Set<BoundCondition> verifiedConditions;
 
     private CompletenessVerifier(Materialiser materialiser, RocksSession session) {
         this.materialiser = materialiser;
         this.session = session;
-        this.verified = new HashSet<>();
+        this.verifiedConditions = new HashSet<>();
     }
 
     static CompletenessVerifier create(Materialiser materialiser, RocksSession session) {
@@ -60,22 +59,20 @@ class CompletenessVerifier {
 
     void verifyQuery(TypeQLMatch inferenceQuery) {
         materialiser.query(inferenceQuery).forEach((conjunction, answers) -> {
-            answers.forEachRemaining(answer -> verifyConjunction(BoundPattern.BoundConjunction.create(conjunction, answer)));
+            answers.forEachRemaining(answer -> verifyConjunction(BoundConjunction.create(conjunction, answer)));
         });
     }
 
-    private void verifyConjunction(BoundPattern.BoundConjunction boundConjunction) {
+    private void verifyConjunction(BoundConjunction boundConjunction) {
         iterate(boundConjunction.boundConcludables()).forEachRemaining(boundConcludable -> {
             if (boundConcludable.isInferredAnswer()) {
                 materialiser.concludableMaterialisations(boundConcludable).forEachRemaining(materialisation -> {
-                    Pair<Conjunction, ConceptMap> toVerify = new Pair<>(materialisation.rule().when(),
-                                                                     materialisation.conditionAnswer());
                     // Materialisations record all possible paths that could be taken to infer a fact, so can contain
                     // cycles. When we detect we have explored the same state before, stop.
-                    if (verified.contains(toVerify)) return;
-                    else verified.add(toVerify);
-                    verifyConjunction(BoundPattern.BoundConjunction.create(materialisation.rule().when(), materialisation.conditionAnswer()));
-                    verifyConclusionReasoning(BoundPattern.BoundConclusion.create(materialisation.rule().conclusion(), materialisation.conclusionAnswer()));
+                    if (verifiedConditions.contains(materialisation.boundCondition())) return;
+                    else verifiedConditions.add(materialisation.boundCondition());
+                    verifyConjunction(materialisation.boundCondition().conjunction());
+                    verifyConclusionReasoning(materialisation.boundConclusion());
                 });
                 verifyConcludableReasoning(boundConcludable);
             }
@@ -94,7 +91,7 @@ class CompletenessVerifier {
         validateNumConclusionAnswers(boundNonInferred.pattern(), boundConclusion.conclusion());
     }
 
-    private static void validateNonInferred(BoundPattern.BoundConjunction boundConjunction) {
+    private static void validateNonInferred(BoundConjunction boundConjunction) {
         for (Concept concept : boundConjunction.bounds().concepts().values()) {
             if (concept.isThing() && concept.asThing().isInferred()) {
                 throw new UnsupportedOperationException(
@@ -106,7 +103,7 @@ class CompletenessVerifier {
         }
     }
 
-    private void validateNumConcludableAnswers(BoundPattern.BoundConjunction boundConjunction, Concludable concludable) {
+    private void validateNumConcludableAnswers(BoundConjunction boundConjunction, Concludable concludable) {
         if (numReasonedAnswers(boundConjunction, concludable.retrieves()) == 0) {
             throw new CompletenessException(String.format("Completeness testing found a missing answer.\nExpected " +
                                                                   "one or more answers for the concludable (bound " +
@@ -116,7 +113,7 @@ class CompletenessVerifier {
         }
     }
 
-    private void validateNumConclusionAnswers(BoundPattern.BoundConjunction boundConjunction, Rule.Conclusion conclusion) {
+    private void validateNumConclusionAnswers(BoundConjunction boundConjunction, Rule.Conclusion conclusion) {
         int numAnswers = numReasonedAnswers(boundConjunction, conclusion.retrievableIds());
         if (numAnswers == 0) {
             throw new CompletenessException(String.format("Completeness testing found a missing answer.\nExpected " +
@@ -128,7 +125,7 @@ class CompletenessVerifier {
         }
     }
 
-    private int numReasonedAnswers(BoundPattern.BoundConjunction boundConjunction, Set<Identifier.Variable.Retrievable> filter) {
+    private int numReasonedAnswers(BoundConjunction boundConjunction, Set<Identifier.Variable.Retrievable> filter) {
         try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.READ,
                                                        new Options.Transaction().infer(true))) {
             return tx.reasoner().executeReasoner(

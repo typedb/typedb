@@ -33,6 +33,8 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.test.behaviour.resolution.correctness.BoundPattern.BoundConcludable;
+import com.vaticle.typedb.core.test.behaviour.resolution.correctness.BoundPattern.BoundConclusion;
+import com.vaticle.typedb.core.test.behaviour.resolution.correctness.BoundPattern.BoundCondition;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 
@@ -125,33 +127,25 @@ public class Materialiser {
         private boolean materialise() {
             // Get all the places where the rule condition is satisfied and materialise for each
             requiresReiteration = false;
-            traverse(rule.when())
-                    .forEachRemaining(conditionAns -> rule.conclusion()
-                            .materialise(conditionAns, tx.traversal(), tx.concepts())
-                            .map(conclusionAns -> new ConceptMap(filterRetrievable(conclusionAns)))
-                            .filter(thenConcludable::isInferredAnswer)
-                            .forEachRemaining(ans -> record(conditionAns, ans)));
+            traverse(rule.when()).forEachRemaining(conditionAns -> rule.conclusion()
+                    .materialise(conditionAns, tx.traversal(), tx.concepts())
+                    .map(conclusionAns -> new ConceptMap(filterRetrievable(conclusionAns)))
+                    .filter(thenConcludable::isInferredAnswer)
+                    .forEachRemaining(ans -> record(conditionAns, ans)));
             return requiresReiteration;
         }
 
         private void record(ConceptMap conditionAns, ConceptMap conclusionAns) {
+            Materialisation materialisation = Materialisation.create(rule, conditionAns, conclusionAns);
             if (!conditionAnsMaterialisations.containsKey(conditionAns)) {
-                Materialisation materialisation = new Materialisation(rule, conditionAns, conclusionAns);
                 requiresReiteration = true;
                 conditionAnsMaterialisations.put(conditionAns, materialisation);
-                if (rule.conclusion().isIsa()) {
-                    Thing owner = conclusionAns.get(rule.conclusion().asIsa().isa().owner().id()).asThing();
-                    materialisations.recordThing(owner, materialisation);
-                }
-                if (rule.conclusion().isHas()) {
-                    Thing owner = conclusionAns.get(rule.conclusion().asHas().has().owner().id()).asThing();
-                    Attribute attribute =
-                            conclusionAns.get(rule.conclusion().asHas().has().attribute().id()).asAttribute();
-                    Pair<Thing, Attribute> has = new Pair<>(owner, attribute);
-                    materialisations.recordHas(has, materialisation);
-                }
+                materialisation.boundConclusion().inferredThing().ifPresent(
+                        thing -> materialisations.recordThing(thing, materialisation));
+                materialisation.boundConclusion().inferredHas().ifPresent(
+                        has -> materialisations.recordHas(has, materialisation));
             } else {
-                assert conditionAnsMaterialisations.get(conditionAns).conclusionAnswer().equals(conclusionAns);
+                assert conditionAnsMaterialisations.get(conditionAns).equals(materialisation);
             }
         }
 
@@ -218,25 +212,28 @@ public class Materialiser {
     static class Materialisation {
 
         private final com.vaticle.typedb.core.logic.Rule rule;
-        private final ConceptMap conditionAnswer;
-        private final ConceptMap conclusionAnswer;
+        private final BoundCondition boundCondition;
+        private final BoundConclusion boundConclusion;
 
-        Materialisation(com.vaticle.typedb.core.logic.Rule rule, ConceptMap conditionAnswer, ConceptMap conclusionAnswer) {
+        private Materialisation(com.vaticle.typedb.core.logic.Rule rule, BoundCondition boundCondition,
+                        BoundConclusion boundConclusion) {
             this.rule = rule;
-            this.conditionAnswer = conditionAnswer;
-            this.conclusionAnswer = conclusionAnswer;
+            this.boundCondition = boundCondition;
+            this.boundConclusion = boundConclusion;
         }
 
-        ConceptMap conditionAnswer() {
-            return conditionAnswer;
+        static Materialisation create(com.vaticle.typedb.core.logic.Rule rule, ConceptMap conditionAnswer,
+                                      ConceptMap conclusionAnswer) {
+            return new Materialisation(rule, BoundCondition.create(rule.condition(), conditionAnswer),
+                                       BoundConclusion.create(rule.conclusion(), conclusionAnswer));
         }
 
-        ConceptMap conclusionAnswer() {
-            return conclusionAnswer;
+        BoundCondition boundCondition() {
+            return boundCondition;
         }
 
-        com.vaticle.typedb.core.logic.Rule rule() {
-            return rule;
+        BoundConclusion boundConclusion() {
+            return boundConclusion;
         }
 
         @Override
@@ -245,13 +242,13 @@ public class Materialiser {
             if (o == null || getClass() != o.getClass()) return false;
             Materialisation that = (Materialisation) o;
             return rule.equals(that.rule) &&
-                    conditionAnswer.equals(that.conditionAnswer) &&
-                    conclusionAnswer.equals(that.conclusionAnswer);
+                    boundCondition.equals(that.boundCondition) &&
+                    boundConclusion.equals(that.boundConclusion);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(rule, conditionAnswer, conclusionAnswer);
+            return Objects.hash(rule, boundCondition, boundConclusion);
         }
     }
 

@@ -243,6 +243,10 @@ public class Rule {
             return rule;
         }
 
+        public Conjunction conjunction() {
+            return rule().when();
+        }
+
         public Set<Concludable> concludablesTriggeringRules(ConceptManager conceptMgr, LogicManager logicMgr) {
             if (concludablesTriggeringRules == null) { // only acquire lock if required
                 synchronized (this) { // only compute concludables once

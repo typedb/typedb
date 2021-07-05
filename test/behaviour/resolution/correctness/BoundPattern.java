@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.test.behaviour.resolution.correctness;
 
 import com.vaticle.typedb.common.collection.Pair;
-import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.Thing;
@@ -29,6 +28,7 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -140,12 +140,12 @@ public class BoundPattern {
 
     static class BoundConclusion {
         private final BoundConjunction conjunction;
-        private final Rule.Conclusion conclusion;
+        private final Rule.Conclusion unboundConclusion;
 
-        BoundConclusion(BoundConjunction conjunction, Rule.Conclusion conclusion) {
+        private BoundConclusion(BoundConjunction conjunction, Rule.Conclusion unboundConclusion) {
             this.conjunction = conjunction;
-            this.conclusion = conclusion;
-            assert this.conclusion.conjunction().retrieves().containsAll(conjunction.bounds().concepts().keySet());
+            this.unboundConclusion = unboundConclusion;
+            assert this.unboundConclusion.conjunction().retrieves().containsAll(conjunction.bounds().concepts().keySet());
         }
 
         public static BoundConclusion create(Rule.Conclusion conclusion, ConceptMap conclusionAnswer) {
@@ -153,9 +153,9 @@ public class BoundPattern {
         }
 
         public BoundConclusion removeInferredBound() {
-            Set<Identifier.Variable.Retrievable> nonGenerating = new HashSet<>(conclusion.retrievableIds());
-            if (conclusion.generating().isPresent()) nonGenerating.remove(conclusion.generating().get().id());
-            return BoundConclusion.create(conclusion, conjunction.bounds().filter(nonGenerating));
+            Set<Identifier.Variable.Retrievable> nonGenerating = new HashSet<>(unboundConclusion.retrievableIds());
+            if (unboundConclusion.generating().isPresent()) nonGenerating.remove(unboundConclusion.generating().get().id());
+            return BoundConclusion.create(unboundConclusion, conjunction.bounds().filter(nonGenerating));
         }
 
         public BoundConjunction pattern() {
@@ -163,7 +163,71 @@ public class BoundPattern {
         }
 
         public Rule.Conclusion conclusion() {
-            return conclusion;
+            return unboundConclusion;
+        }
+
+        Optional<Thing> inferredThing() {
+            if (unboundConclusion.isIsa()) {
+                return Optional.of(conjunction.bounds().get(unboundConclusion.asIsa().isa().owner().id()).asThing());
+            } else {
+                return Optional.empty();
+            }
+        }
+
+        public Optional<Pair<Thing, Attribute>> inferredHas() {
+            if (unboundConclusion.isHas()) {
+                Thing owner = conjunction.bounds().get(unboundConclusion.asHas().has().owner().id()).asThing();
+                Attribute attribute =conjunction.bounds().get(unboundConclusion.asHas().has().attribute().id()).asAttribute();
+                return Optional.of(new Pair<>(owner, attribute));
+            } else {
+                return Optional.empty();
+            }
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            BoundConclusion that = (BoundConclusion) o;
+            return conjunction.equals(that.conjunction) &&
+                    unboundConclusion.equals(that.unboundConclusion);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(conjunction, unboundConclusion);
+        }
+    }
+
+    static class BoundCondition {
+        private final BoundConjunction conjunction;
+        private final Rule.Condition unboundCondition;
+
+        private BoundCondition(BoundConjunction conjunction, Rule.Condition unboundCondition) {
+            this.conjunction = conjunction;
+            this.unboundCondition = unboundCondition;
+        }
+
+        static BoundCondition create(Rule.Condition condition, ConceptMap conditionAnswer) {
+            return new BoundCondition(BoundConjunction.create(condition.conjunction(), conditionAnswer), condition);
+        }
+
+        BoundConjunction conjunction() {
+            return conjunction;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            BoundCondition that = (BoundCondition) o;
+            return conjunction.equals(that.conjunction) &&
+                    unboundCondition.equals(that.unboundCondition);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(conjunction, unboundCondition);
         }
     }
 }
