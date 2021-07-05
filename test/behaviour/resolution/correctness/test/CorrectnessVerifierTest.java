@@ -108,7 +108,7 @@ public class CorrectnessVerifierTest {
                 tx.query().insert(parseQuery("insert $p isa person;"));
                 tx.commit();
             }
-            assertThrows(SoundnessException.class, () -> correctnessVerifier.verifySoundness(inferenceQuery));
+            assertThrows(() -> correctnessVerifier.verifySoundness(inferenceQuery), SoundnessException.class);
             assertNotThrows(() -> correctnessVerifier.verifyCompleteness(inferenceQuery));
         }
     }
@@ -123,7 +123,7 @@ public class CorrectnessVerifierTest {
                 tx.query().delete(parseQuery("match $p isa person; delete $p isa person;"));
                 tx.commit();
             }
-            assertThrows(CompletenessException.class, () -> correctnessVerifier.verifyCompleteness(inferenceQuery));
+            assertThrows(() -> correctnessVerifier.verifyCompleteness(inferenceQuery), CompletenessException.class);
             assertNotThrows(() -> correctnessVerifier.verifySoundness(inferenceQuery));
         }
     }

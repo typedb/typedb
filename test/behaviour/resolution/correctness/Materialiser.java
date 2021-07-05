@@ -78,13 +78,9 @@ public class Materialiser {
     }
 
     private FunctionalIterator<ConceptMap> traverse(Conjunction conjunction) {
-        return tx.reasoner().executeTraversal(
-                new Disjunction(singletonList(conjunction)),
-                new Context.Query(tx.context(), new Options.Query()),
-                iterate(conjunction.identifiers())
-                        .filter(Identifier::isRetrievable)
-                        .map(Variable::asRetrievable).toSet()
-        );
+        return tx.reasoner().executeTraversal(new Disjunction(singletonList(conjunction)),
+                                              new Context.Query(tx.context(), new Options.Query()),
+                                              conjunction.retrieves());
     }
 
     void close() {

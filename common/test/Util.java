@@ -47,7 +47,7 @@ public class Util {
         }
     }
 
-    public static <T extends RuntimeException> void assertThrows(Class<T> exceptionType, Runnable function) {
+    public static <T extends RuntimeException> void assertThrows(Runnable function, Class<T> exceptionType) {
         try {
             function.run();
             fail();

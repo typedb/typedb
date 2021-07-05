@@ -78,8 +78,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
     private Concludable(Conjunction conjunction) {
         super(conjunction);
         this.applicableRules = null;
-        this.retrievableIds = iterate(pattern().identifiers()).filter(Identifier::isRetrievable)
-                .map(Identifier.Variable::asRetrievable).toSet();
+        this.retrievableIds = pattern().retrieves();
     }
 
     public static Set<Concludable> create(com.vaticle.typedb.core.pattern.Conjunction conjunction) {
@@ -117,7 +116,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
                                          .collect(Collectors.toList()));
     }
 
-    public abstract Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr);
+    abstract Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr);
 
     abstract FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr);
 

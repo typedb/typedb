@@ -44,7 +44,7 @@ public class BoundPattern {
             this.fullyBound = fullyBound;
             this.conjunction = conjunction;
             this.bounds = bounds;
-            assert this.conjunction.identifiers().containsAll(bounds.concepts().keySet());
+            assert this.conjunction.retrieves().containsAll(bounds.concepts().keySet());
         }
 
         static BoundConjunction create(Conjunction conjunction, ConceptMap bounds) {
@@ -82,7 +82,7 @@ public class BoundPattern {
             this.fullyBound = fullyBound;
             this.concludable = concludable;
             this.bounds = bounds;
-            assert this.concludable.pattern().identifiers().containsAll(bounds.concepts().keySet());
+            assert this.concludable.pattern().retrieves().containsAll(bounds.concepts().keySet());
         }
 
         private static BoundConcludable create(Concludable original, ConceptMap bounds) {
@@ -143,7 +143,7 @@ public class BoundPattern {
             this.fullyBound = fullyBound;
             this.conclusion = conclusion;
             this.bounds = bounds;
-            assert this.conclusion.conjunction().identifiers().containsAll(bounds.concepts().keySet());
+            assert this.conclusion.conjunction().retrieves().containsAll(bounds.concepts().keySet());
         }
 
         public static BoundConclusion create(Rule.Conclusion conclusion, ConceptMap conclusionAnswer) {
