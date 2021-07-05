@@ -58,7 +58,7 @@ public class ResolutionSteps {
     public static Path logsDir = dataDir.resolve("logs");
     public static Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logsDir);
     public static RocksSession session;
-    public static RocksTransaction inferenceTx;
+    public static RocksTransaction reasoningTx;
     public static String DATABASE = "typedb";
     private static CorrectnessVerifier correctnessVerifier;
     private static TypeQLMatch typeQLQuery;
@@ -75,8 +75,8 @@ public class ResolutionSteps {
 
     @After
     public synchronized void after() {
-        if (inferenceTx != null) inferenceTx.close();
-        inferenceTx = null;
+        if (reasoningTx != null) reasoningTx.close();
+        reasoningTx = null;
         if (session != null) session.close();
         session = null;
         if (correctnessVerifier != null) correctnessVerifier.close();
@@ -92,22 +92,22 @@ public class ResolutionSteps {
         return session;
     }
 
-    static RocksTransaction inferenceTx() {
-        if (inferenceTx == null || inferenceTx.isOpen()) {
-            inferenceTx = dataSession().transaction(Arguments.Transaction.Type.READ,
+    static RocksTransaction reasoningTx() {
+        if (reasoningTx == null || reasoningTx.isOpen()) {
+            reasoningTx = dataSession().transaction(Arguments.Transaction.Type.READ,
                                                     new Options.Transaction().infer(true));
         }
-        return inferenceTx;
+        return reasoningTx;
     }
 
-    private void refreshInferenceTx() {
-        if (inferenceTx != null) {
-            if (inferenceTx.isOpen()) inferenceTx.close();
-            inferenceTx = null;
+    private void clearReasoningTx() {
+        if (reasoningTx != null) {
+            if (reasoningTx.isOpen()) reasoningTx.close();
+            reasoningTx = null;
         }
     }
 
-    @Given("schema")
+    @Given("reasoning schema")
     public void schema(String defineQueryStatements) {
         if (correctnessVerifier != null) correctnessVerifier.close();
         if (session != null) session.close();
@@ -119,14 +119,8 @@ public class ResolutionSteps {
         }
     }
 
-    @Given("data")
+    @Given("reasoning data")
     public void data(String insertQueryStatements) {
-        data_without_correctness_verification(insertQueryStatements);
-        correctnessVerifier = initialise(dataSession());
-    }
-
-    @Given("data without correctness verification")
-    public void data_without_correctness_verification(String insertQueryStatements) {
         try (RocksSession session = typedb.session(DATABASE, Arguments.Session.Type.DATA)) {
             try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().insert(TypeQL.parseQuery(String.join("\n", insertQueryStatements)).asInsert());
@@ -135,16 +129,21 @@ public class ResolutionSteps {
         }
     }
 
-    @Given("query")
+    @Given("verifier is initialised")
+    public void verifier_is_initialised() {
+        correctnessVerifier = initialise(dataSession());
+    }
+
+    @Given("reasoning query")
     public void query(String typeQLQueryStatements) {
         try {
-            refreshInferenceTx();
+            clearReasoningTx();
             typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asMatch();
-            answers = inferenceTx().query().match(typeQLQuery).toList();
+            answers = reasoningTx().query().match(typeQLQuery).toList();
         } catch (TypeQLException e) {
             // NOTE: We manually close transaction here, because we want to align with all non-java clients,
             // where parsing happens at server-side which closes transaction if they fail
-            inferenceTx().close();
+            clearReasoningTx();
             throw e;
         }
     }
@@ -154,12 +153,12 @@ public class ResolutionSteps {
         try {
             assertNotNull("A typeql query must have been previously loaded in order to test answer equivalence.", typeQLQuery);
             assertNotNull("There are no previous answers to test against; was the reference query ever executed?", answers);
-            Set<ConceptMap> newAnswers = inferenceTx().query().match(TypeQL.parseQuery(equivalentQuery).asMatch()).toSet();
+            Set<ConceptMap> newAnswers = reasoningTx().query().match(TypeQL.parseQuery(equivalentQuery).asMatch()).toSet();
             assertEquals(set(answers), newAnswers);
         } catch (TypeQLException e) {
             // NOTE: We manually close transaction here, because we want to align with all non-java clients,
             // where parsing happens at server-side which closes transaction if they fail
-            inferenceTx().close();
+            clearReasoningTx();
             throw e;
         }
     }
@@ -172,8 +171,7 @@ public class ResolutionSteps {
 
     @Then("verify answers are consistent across {int} executions")
     public static void verify_answers_are_consistent_across_n_executions(int executionCount) {
-        Set<ConceptMap> oldAnswers;
-        oldAnswers = inferenceTx().query().match(typeQLQuery).toSet();
+        Set<ConceptMap> oldAnswers = reasoningTx().query().match(typeQLQuery).toSet();
         for (int i = 0; i < executionCount - 1; i++) {
             try (TypeDB.Transaction transaction = dataSession().transaction(Arguments.Transaction.Type.READ,
                                                                             new Options.Transaction().infer(true))) {
