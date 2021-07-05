@@ -66,6 +66,7 @@ public class GraphPlanner implements Planner {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphPlanner.class);
 
+    private static final double INIT_ZERO = 0.01;
     static final long DEFAULT_TIME_LIMIT_MILLIS = 100;
     static final long HIGHER_TIME_LIMIT_MILLIS = 200;
     static final double OBJECTIVE_COEFFICIENT_MAX_EXPONENT_DEFAULT = 3.0;
@@ -105,10 +106,10 @@ public class GraphPlanner implements Planner {
         resultStatus = MPSolver.ResultStatus.NOT_SOLVED;
         isUpToDate = false;
         totalDuration = 0L;
-        totalCostLastRecorded = 0.01;
-        totalCostNext = 0.01;
-        branchingFactor = 0.01;
-        costExponentUnit = 0.1;
+        totalCostLastRecorded = INIT_ZERO;
+        totalCostNext = INIT_ZERO;
+        branchingFactor = INIT_ZERO;
+        costExponentUnit = INIT_ZERO;
         snapshot = -1L;
         hasObjective = false;
     }
@@ -257,7 +258,7 @@ public class GraphPlanner implements Planner {
 
     private void updateObjective(GraphManager graph) {
         if (snapshot < graph.data().stats().snapshot()) {
-            totalCostNext = 0.1;
+            totalCostNext = INIT_ZERO;
             setBranchingFactor(graph);
             setCostExponentUnit(graph);
             computeTotalCostNext(graph);
