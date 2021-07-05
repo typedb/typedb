@@ -249,7 +249,7 @@ public class GraphPlanner implements Planner {
         String conPrefix = "planner_edge_con_";
         edges.forEach(PlannerEdge::initialiseConstraints);
         for (int i = 0; i < edges.size(); i++) {
-            MPConstraint conOneEdgeAtOrderI = solver.makeConstraint(1, 1, conPrefix + "one_edge_at_order_" + i + 1);
+            MPConstraint conOneEdgeAtOrderI = solver.makeConstraint(1, 1, conPrefix + "one_edge_at_order_" + i);
             for (PlannerEdge<?, ?> edge : edges) {
                 conOneEdgeAtOrderI.setCoefficient(edge.forward().varOrderAssignment[i], 1);
                 conOneEdgeAtOrderI.setCoefficient(edge.backward().varOrderAssignment[i], 1);
