@@ -59,6 +59,7 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.PLAYS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.RELATES;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
+import static com.vaticle.typedb.core.traversal.planner.GraphPlanner.INIT_ZERO;
 import static java.util.stream.Collectors.toSet;
 
 public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_TO extends PlannerVertex<?>>
@@ -257,6 +258,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
         protected void setObjectiveCoefficient(double cost) {
             assert !Double.isNaN(cost);
+            if (cost < INIT_ZERO) cost = INIT_ZERO;
             int expMultiplier = planner.edges().size() - 1;
             for (int i = 0; i < planner.edges().size(); i++) {
                 double exp = 1 + (expMultiplier-- * planner.costExponentUnit);
@@ -268,7 +270,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         }
 
         private void recordCost() {
-            if (costNext == 0) costNext = 0.01;
             costLastRecorded = costNext;
         }
 

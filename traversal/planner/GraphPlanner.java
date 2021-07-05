@@ -58,6 +58,7 @@ import static com.google.ortools.linearsolver.MPSolverParameters.IntegerParam.IN
 import static com.google.ortools.linearsolver.MPSolverParameters.IntegerParam.PRESOLVE;
 import static com.google.ortools.linearsolver.MPSolverParameters.PresolveValues.PRESOLVE_ON;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_PLANNING_ERROR;
+import static java.lang.Math.abs;
 import static java.time.Duration.between;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
@@ -66,13 +67,13 @@ public class GraphPlanner implements Planner {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphPlanner.class);
 
-    private static final double INIT_ZERO = 0.01;
     static final long DEFAULT_TIME_LIMIT_MILLIS = 100;
     static final long HIGHER_TIME_LIMIT_MILLIS = 200;
     static final double OBJECTIVE_COEFFICIENT_MAX_EXPONENT_DEFAULT = 3.0;
     static final double OBJECTIVE_PLANNER_COST_MAX_CHANGE = 0.2;
     static final double OBJECTIVE_VARIABLE_COST_MAX_CHANGE = 2.0;
     static final double OBJECTIVE_VARIABLE_TO_PLANNER_COST_MIN_CHANGE = 0.02;
+    static final double INIT_ZERO = 0.01;
 
     private final MPSolver solver;
     private final MPSolverParameters parameters;
@@ -266,7 +267,7 @@ public class GraphPlanner implements Planner {
             hasObjective = true;
 
             assert !Double.isNaN(totalCostNext) && !Double.isNaN(totalCostLastRecorded) && totalCostLastRecorded > 0;
-            if (totalCostNext / totalCostLastRecorded >= OBJECTIVE_PLANNER_COST_MAX_CHANGE) setOutOfDate();
+            if (abs((totalCostNext / totalCostLastRecorded) - 1) >= OBJECTIVE_PLANNER_COST_MAX_CHANGE) setOutOfDate();
             if (!isUpToDate) {
                 totalCostLastRecorded = totalCostNext;
                 vertices.values().forEach(PlannerVertex::recordCost);

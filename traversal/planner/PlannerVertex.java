@@ -33,6 +33,7 @@ import javax.annotation.Nullable;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.traversal.planner.GraphPlanner.INIT_ZERO;
 import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.EQ;
 
 public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Properties>
@@ -152,6 +153,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     protected void setObjectiveCoefficient(double cost) {
         assert !Double.isNaN(cost);
+        if (cost < INIT_ZERO) cost = INIT_ZERO;
         double exp = planner.edges().size() * planner.costExponentUnit;
         double coeff = cost * Math.pow(planner.branchingFactor, exp);
         planner.objective().setCoefficient(varIsStartingVertex, coeff);
@@ -160,7 +162,6 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     }
 
     void recordCost() {
-        if (costNext == 0) costNext = 0.01;
         costLastRecorded = costNext;
     }
 
