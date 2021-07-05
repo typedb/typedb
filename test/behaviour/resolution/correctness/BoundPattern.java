@@ -71,6 +71,21 @@ public class BoundPattern {
         public ConceptMap bounds() {
             return bounds;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            BoundConjunction that = (BoundConjunction) o;
+            return conjunction.equals(that.conjunction) &&
+                    unboundConjunction.equals(that.unboundConjunction) &&
+                    bounds.equals(that.bounds);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(conjunction, unboundConjunction, bounds);
+        }
     }
 
     static class BoundConcludable {
