@@ -121,7 +121,14 @@ class CompletenessVerifier {
                                                                   "with IIDs):\n%s\n for rule \"%s\"",
                                                           boundConjunction.toString(), conclusion.rule().getLabel()));
         } else if (numAnswers > 1) {
-            throw TypeDBException.of(ILLEGAL_STATE);
+            // TODO: We would like to differentiate between the valid case vs failure case. We can do so by analysing
+            //  whether the answers are relations with the exact same roleplayers. If not then this is permissable.
+            throw new CompletenessException(String.format(
+                    "Completeness testing found %d answers for query:\n%s\nThis implies that more than one inferred " +
+                            "fact was materialised by the rule %s.\nThe only valid cause is that there are two rules " +
+                            "where one infers the same as another but with fewer roleplayers. This otherwise suggests" +
+                            " an error in materialisation.", numAnswers, boundConjunction.toString(),
+                    conclusion.rule().getLabel()));
         }
     }
 
