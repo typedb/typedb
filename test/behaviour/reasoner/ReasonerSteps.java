@@ -51,7 +51,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 
-public class ResolutionSteps {
+public class ReasonerSteps {
 
     public static RocksTypeDB typedb;
     public static Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("typedb");

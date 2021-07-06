@@ -21,7 +21,7 @@ load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_libr
 host_compatible_java_library(
     name = "steps",
     srcs = [
-        "ResolutionSteps.java"
+        "ReasonerSteps.java"
     ],
     native_libraries_deps = [
         "//:typedb",
