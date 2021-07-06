@@ -25,7 +25,7 @@ package(default_visibility = [
     "//rocks:__pkg__",
     "//server:__pkg__",
     "//test/integration/reasoner:__pkg__",
-    "//test/behaviour/resolution:__subpackages__",
+    "//test/behaviour/reasoner:__subpackages__",
 ])
 
 native_java_libraries(

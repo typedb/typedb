@@ -15,43 +15,28 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//visibility:__subpackages__"])
+package(default_visibility = ["//test/behaviour:__subpackages__"])
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "test",
     srcs = [
-        "DebugTest.java",
+        "NegationTest.java",
     ],
-    test_class = "com.vaticle.typedb.core.test.behaviour.debug.DebugTest",
+    test_class = "com.vaticle.typedb.core.test.behaviour.reasoner.tests.negation.NegationTest",
     deps = [
-        # Internal dependencies
-
-        # Add your additional debugging dependencies here
-        # e.g. "//test/behaviour/connection/session:steps",
-
-        # External Maven Dependencies
-        "@maven//:io_cucumber_cucumber_java",
+        # External dependencies from Maven
         "@maven//:io_cucumber_cucumber_junit",
     ],
     runtime_deps = [
-        "//test/behaviour/config:parameters",
-        "//test/behaviour/concept/thing/entity:steps",
-        "//test/behaviour/concept/thing/attribute:steps",
-        "//test/behaviour/concept/thing/relation:steps",
-        "//test/behaviour/concept/type/attributetype:steps",
-        "//test/behaviour/concept/type/relationtype:steps",
-        "//test/behaviour/concept/type/thingtype:steps",
-        "//test/behaviour/connection/database:steps",
+        "//test/behaviour/connection:steps",
         "//test/behaviour/connection/session:steps",
-        "//test/behaviour/connection/transaction:steps",
-        "//test/behaviour/typeql:steps",
-        "//test/behaviour/reasoner:steps"
+        "//test/behaviour/config:parameters",
+        "//test/behaviour/reasoner:steps",
     ],
     data = [
-        ":debug.feature",
+        "@vaticle_typedb_behaviour//typeql/reasoner:negation.feature",
     ],
-    size = "medium",
     resources = [
         "//common/test:logback-test"
     ],
