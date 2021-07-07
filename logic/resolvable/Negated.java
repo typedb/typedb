@@ -37,8 +37,7 @@ public class Negated extends Resolvable<Disjunction> {
     public Negated(Negation negation) {
         super(negation.disjunction());
         this.identifiers = new HashSet<>();
-        pattern().conjunctions().forEach(c -> iterate(c.identifiers()).filter(Identifier::isRetrievable)
-                .forEachRemaining(id -> identifiers.add(id.asRetrievable())));
+        pattern().conjunctions().forEach(c -> iterate(c.retrieves()).forEachRemaining(identifiers::add));
     }
 
     @Override

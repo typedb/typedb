@@ -99,19 +99,18 @@ build:
     test-behaviour-reasoner:
       image: vaticle-ubuntu-20.04
       command: |
-        bazel test //test/behaviour/resolution/tests/attribute_attachment:test --test_output=streamed
-        bazel test //test/behaviour/resolution/tests/compound_queries:test --test_output=streamed
-        bazel test //test/behaviour/resolution/tests/relation_inference:test --test_output=streamed
-        bazel test //test/behaviour/resolution/tests/rule_interaction:test --test_output=streamed
-        bazel test //test/behaviour/resolution/tests/type_hierarchy:test --test_output=streamed
-        bazel test //test/behaviour/resolution/tests/value_predicate:test --test_output=streamed
-        bazel test //test/behaviour/resolution/tests/resolution_test_framework:test --test_output=streamed
-        bazel test //test/behaviour/resolution/tests/negation:test --test_output=streamed
-        bazel test //test/behaviour/resolution/tests/recursion:test --test_output=streamed
-        bazel test //test/behaviour/resolution/tests/schema_queries:test --test_output=streamed
-        bazel test //test/behaviour/resolution/tests/concept_inequality:test --test_output=streamed
+        bazel test //test/behaviour/reasoner/tests/attribute_attachment:test --test_output=streamed
+        bazel test //test/behaviour/reasoner/tests/compound_queries:test --test_output=streamed
+        bazel test //test/behaviour/reasoner/tests/relation_inference:test --test_output=streamed
+        bazel test //test/behaviour/reasoner/tests/rule_interaction:test --test_output=streamed
+        bazel test //test/behaviour/reasoner/tests/type_hierarchy:test --test_output=streamed
+        bazel test //test/behaviour/reasoner/tests/value_predicate:test --test_output=streamed
+        bazel test //test/behaviour/reasoner/tests/negation:test --test_output=streamed
+        bazel test //test/behaviour/reasoner/tests/recursion:test --test_output=streamed
+        bazel test //test/behaviour/reasoner/tests/schema_queries:test --test_output=streamed
+        bazel test //test/behaviour/reasoner/tests/concept_inequality:test --test_output=streamed
         # Flakey tests:
-        # bazel test //test/behaviour/resolution/tests/variable_roles:test --test_output=streamed
+        # bazel test //test/behaviour/reasoner/tests/variable_roles:test --test_output=streamed
     test-assembly-linux-targz:
       image: vaticle-ubuntu-20.04
       filter:

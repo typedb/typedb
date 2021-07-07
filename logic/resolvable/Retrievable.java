@@ -39,8 +39,7 @@ public class Retrievable extends Resolvable<Conjunction> {
 
     public Retrievable(Conjunction conjunction) {
         super(conjunction);
-        this.retrievableIds = iterate(pattern().identifiers()).filter(Identifier::isRetrievable)
-                .map(Identifier.Variable::asRetrievable).toSet();
+        this.retrievableIds = pattern().retrieves();
     }
 
     public static Set<Retrievable> extractFrom(Conjunction conjunction, Set<Concludable> toExclude) {

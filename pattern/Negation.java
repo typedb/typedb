@@ -24,6 +24,8 @@ import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typeql.lang.pattern.variable.Reference;
 
+import java.util.Objects;
+
 import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.traceOnThread;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNBOUNDED_NEGATION;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -66,5 +68,18 @@ public class Negation implements Pattern, Cloneable {
 
     public boolean isCoherent() {
         return disjunction.isCoherent();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Negation negation = (Negation) o;
+        return disjunction.equals(negation.disjunction);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(disjunction);
     }
 }

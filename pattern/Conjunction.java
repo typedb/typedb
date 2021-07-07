@@ -75,6 +75,7 @@ public class Conjunction implements Pattern, Cloneable {
 
     private boolean isCoherent;
     private boolean isBounded;
+    private Set<Identifier.Variable.Retrievable> retrieves;
 
     public Conjunction(Set<Variable> variables, Set<Negation> negations) {
         this.variableSet = unmodifiableSet(variables);
@@ -151,6 +152,15 @@ public class Conjunction implements Pattern, Cloneable {
 
     public Set<Identifier.Variable> identifiers() {
         return variableMap.keySet();
+    }
+
+    public Set<Identifier.Variable.Retrievable> retrieves() {
+        if (retrieves == null) {
+            retrieves = iterate(identifiers())
+                    .filter(Identifier::isRetrievable)
+                    .map(Identifier.Variable::asRetrievable).toSet();
+        }
+        return retrieves;
     }
 
     public Set<Negation> negations() {

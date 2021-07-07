@@ -78,8 +78,11 @@ public abstract class Concludable extends Resolvable<Conjunction> {
     private Concludable(Conjunction conjunction) {
         super(conjunction);
         this.applicableRules = null;
-        this.retrievableIds = iterate(pattern().identifiers()).filter(Identifier::isRetrievable)
-                .map(Identifier.Variable::asRetrievable).toSet();
+        this.retrievableIds = pattern().retrieves();
+    }
+
+    public static Set<Concludable> create(com.vaticle.typedb.core.pattern.Conjunction conjunction) {
+        return new Extractor(conjunction).concludables();
     }
 
     @Override
@@ -96,10 +99,6 @@ public abstract class Concludable extends Resolvable<Conjunction> {
     }
 
     public abstract Set<Constraint> concludableConstraints();
-
-    public static Set<Concludable> create(com.vaticle.typedb.core.pattern.Conjunction conjunction) {
-        return new Extractor(conjunction).concludables();
-    }
 
     public FunctionalIterator<Unifier> getUnifiers(Rule rule) {
         assert applicableRules != null;
@@ -419,7 +418,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+        public Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
             assert generating().isPresent();
             Variable generatedRelation = generating().get();
             Set<Label> relationTypes = generatedRelation.resolvedTypes();
@@ -566,7 +565,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+        public Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
             assert generating().isPresent();
             Variable generatedAttribute = generating().get();
             Set<Label> attributeTypes = generatedAttribute.resolvedTypes();
@@ -680,7 +679,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+        public Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
             assert generating().isPresent();
             Variable generated = generating().get();
             Set<Label> types = generated.resolvedTypes();
@@ -749,6 +748,10 @@ public abstract class Concludable extends Resolvable<Conjunction> {
             return new HashSet<>(equalsConstantConstraints(values));
         }
 
+        public ThingVariable attribute() {
+            return attribute;
+        }
+
         @Override
         FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
             if (conclusion.isValue()) return unify(conclusion.asValue());
@@ -786,7 +789,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+        public Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
             assert generating().isPresent();
             Variable generatedAttr = generating().get();
             Set<Label> attributeTypes = generatedAttr.resolvedTypes();
