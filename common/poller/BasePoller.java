@@ -18,26 +18,29 @@
 
 package com.vaticle.typedb.core.common.poller;
 
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+
 import java.util.Optional;
-import java.util.function.Function;
 
-import static com.vaticle.typedb.common.collection.Collections.list;
+public class BasePoller<T> extends AbstractPoller<T> {
 
-public abstract class AbstractPoller<T> implements Poller<T> {
+    private final FunctionalIterator<T> source;
+
+    public BasePoller(FunctionalIterator<T> iterator) {
+        source = iterator;
+    }
 
     @Override
     public Optional<T> poll() {
-        return Optional.empty();
+        if (source.hasNext()) {
+            return Optional.of(source.next());
+        } else {
+            return Optional.empty();
+        }
     }
 
     @Override
-    public <U> Poller<U> flatMap(Function<T, Poller<U>> flatMappingFn) {
-        return new FlatMappedPoller<>(this, flatMappingFn);
+    public void recycle() {
+        source.recycle();
     }
-
-    @Override
-    public Poller<T> link(Poller<T> poller) {
-        return new LinkedPollers<>(list(this, poller));
-    }
-
 }

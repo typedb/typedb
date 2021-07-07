@@ -20,9 +20,9 @@ package com.vaticle.typedb.core.reasoner.resolution.framework;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.poller.AbstractPoller;
 import com.vaticle.typedb.core.common.poller.Poller;
+import com.vaticle.typedb.core.common.poller.Pollers;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
@@ -41,6 +41,7 @@ import java.util.Set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.poller.Pollers.poll;
 
 public abstract class AnswerCache<ANSWER, SUBSUMES> {
 
@@ -48,7 +49,7 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
     private final Set<ANSWER> answersSet;
     protected boolean reiterateOnAnswerAdded;
     protected boolean requiresReiteration;
-    protected FunctionalIterator<ANSWER> answerSource;
+    protected Poller<ANSWER> answerSource;
     protected boolean complete;
     protected final Map<SUBSUMES, ? extends AnswerCache<?, SUBSUMES>> cacheRegister;
     protected final ConceptMap state;
@@ -56,7 +57,7 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
     protected AnswerCache(Map<SUBSUMES, ? extends AnswerCache<?, SUBSUMES>> cacheRegister, ConceptMap state) {
         this.cacheRegister = cacheRegister;
         this.state = state;
-        this.answerSource = Iterators.empty();
+        this.answerSource = Pollers.empty();
         this.answers = new ArrayList<>(); // TODO: Replace answer list and deduplication set with a bloom filter
         this.answersSet = new HashSet<>();
         this.reiterateOnAnswerAdded = false;
@@ -71,8 +72,7 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
 
     public void addSource(FunctionalIterator<ANSWER> newAnswers) {
         assert !isComplete();
-        if (answerSource.hasNext()) answerSource = answerSource.link(newAnswers);
-        else answerSource = newAnswers;
+        answerSource = answerSource.link(poll(newAnswers));
     }
 
     public Poller<ANSWER> reader(boolean isSubscriber) {
@@ -127,11 +127,11 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
     }
 
     protected Optional<ANSWER> searchUnexploredForAnswer() {
-        while (answerSource.hasNext()) {
-            ANSWER answer = answerSource.next();
-            if (addIfAbsent(answer)) {
+        Optional<ANSWER> answer;
+        while ((answer = answerSource.poll()).isPresent()) {
+            if (addIfAbsent(answer.get())) {
                 if (reiterateOnAnswerAdded) requiresReiteration = true;
-                return Optional.of(answer);
+                return answer;
             }
         }
         return Optional.empty();
@@ -162,6 +162,9 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
             if (nextAnswer.isPresent()) index++;
             return nextAnswer;
         }
+
+        @Override
+        public void recycle() {}
 
     }
 

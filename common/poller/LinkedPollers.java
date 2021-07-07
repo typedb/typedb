@@ -21,31 +21,19 @@ package com.vaticle.typedb.core.common.poller;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 
-public class FlatMappedPoller<T, U> extends AbstractPoller<U> {
+public class LinkedPollers<T> extends AbstractPoller<T> {
 
-    private final Poller<T> source;
-    private final Function<T, Poller<U>> flatMappingFn;
-    private final List<Poller<U>> flatMappedPollers;
+    private final List<Poller<T>> pollers;
 
-    FlatMappedPoller(Poller<T> poller, Function<T, Poller<U>> flatMappingFn) {
-        this.source = poller;
-        this.flatMappingFn = flatMappingFn;
-        this.flatMappedPollers = new ArrayList<>();
+    LinkedPollers(List<Poller<T>> pollers) {
+        this.pollers = new ArrayList<>(pollers);
     }
 
     @Override
-    public Optional<U> poll() {
-        for (Poller<U> poller : flatMappedPollers) {
-            Optional<U> next = poller.poll();
-            if (next.isPresent()) return next;
-        }
-        Optional<T> fromSource;
-        while ((fromSource = source.poll()).isPresent()) {
-            Poller<U> newPoller = flatMappingFn.apply(fromSource.get());
-            flatMappedPollers.add(newPoller);
-            Optional<U> next = newPoller.poll();
+    public Optional<T> poll() {
+        for (Poller<T> poller : pollers) {
+            Optional<T> next = poller.poll();
             if (next.isPresent()) return next;
         }
         return Optional.empty();
@@ -53,8 +41,6 @@ public class FlatMappedPoller<T, U> extends AbstractPoller<U> {
 
     @Override
     public void recycle() {
-        flatMappedPollers.forEach(Poller::recycle);
-        source.recycle();
+        pollers.forEach(Poller::recycle);
     }
-
 }

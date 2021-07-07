@@ -18,8 +18,6 @@
 
 package com.vaticle.typedb.core.common.poller;
 
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -27,6 +25,10 @@ public interface Poller<T> {
 
     Optional<T> poll();
 
-    <U> Poller<U> flatMap(Function<T, FunctionalIterator<U>> flatMappingFn);
+    <U> Poller<U> flatMap(Function<T, Poller<U>> flatMappingFn);
+
+    Poller<T> link(Poller<T> poller);
+
+    void recycle();
 
 }

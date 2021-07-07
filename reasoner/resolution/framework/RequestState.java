@@ -31,6 +31,7 @@ import java.util.Set;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.core.common.poller.Pollers.poll;
 
 public abstract class RequestState {
 
@@ -79,9 +80,9 @@ public abstract class RequestState {
             this.answerCache = answerCache;
             this.isSubscriber = isSubscriber;
             this.deduplicationSet = deduplicate ? new HashSet<>() : null;
-            this.cacheReader = answerCache.reader(isSubscriber)
-                    .flatMap(a -> toUpstream(a)
-                            .filter(partial -> !deduplicate || !deduplicationSet.contains(partial.conceptMap())));
+            this.cacheReader = answerCache.reader(isSubscriber).flatMap(
+                    a -> poll(toUpstream(a).filter(
+                            partial -> !deduplicate || !deduplicationSet.contains(partial.conceptMap()))));
         }
 
         @Override
