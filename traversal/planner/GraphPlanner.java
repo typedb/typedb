@@ -400,7 +400,12 @@ public class GraphPlanner implements Planner {
     private void createProcedure() {
         vertices.values().forEach(PlannerVertex::recordResults);
         edges.forEach(PlannerEdge::recordResults);
-        procedure = GraphProcedure.create(this);
+        GraphProcedure newProcedure = GraphProcedure.create(this);
+        if (procedure == null || !procedure.toString().equals(newProcedure.toString())) {
+            LOG.info("New procedure");
+            LOG.info(newProcedure.toString());
+        }
+        procedure = newProcedure;
     }
 
     @Override
