@@ -103,14 +103,5 @@ public interface FunctionalIterator<T> extends Iterator<T> {
 
         <U extends Comparable<? super U>> Sorted<U> mapSorted(Function<T, U> mappingFn, Function<U, T> reverseMappingFn);
 
-
-//        Sorted<T, K> offset(long offset);
-//
-//        Sorted<T, K> onConsumed(Runnable function);
-//
-//        Sorted<T, K> onError(Function<Exception, TypeDBException> exceptionFn);
-//
-//        Sorted<T, K> onFinalise(Runnable function);
-
     }
 }

@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.common.collection;
 
+import com.google.common.primitives.UnsignedBytes;
 import com.vaticle.typedb.common.collection.Bytes;
 import com.vaticle.typedb.core.common.collection.Bytes.ByteComparable;
 import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
@@ -35,7 +36,6 @@ import static com.vaticle.typedb.core.common.collection.Bytes.INTEGER_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.LONG_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.SHORT_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.SHORT_UNSIGNED_MAX_VALUE;
-import static com.vaticle.typedb.core.common.collection.Bytes.unsignedValue;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
@@ -286,13 +286,15 @@ public abstract class ByteArray implements ByteComparable<ByteArray> {
      */
     @Override
     public int compareTo(ByteArray that) {
-        int n = Math.min(length(), that.length());
-        for (int i = 1; i < n; i++) {
-            int a = unsignedValue(get(i));
-            int b = unsignedValue(that.get(i));
-            if (a != b) return a - b;
-        }
-        return Integer.compare(length(), that.length());
+        return UnsignedBytes.lexicographicalComparator().compare(getArray(), that.getArray());
+//
+//        int n = Math.min(length(), that.length());
+//        for (int i = 1; i < n; i++) {
+//            int a = unsignedValue(get(i));
+//            int b = unsignedValue(that.get(i));
+//            if (a != b) return a - b;
+//        }
+//        return Integer.compare(length(), that.length());
     }
 
     @Override

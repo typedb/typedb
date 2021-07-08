@@ -114,7 +114,7 @@ public final class RocksIterator<T extends Bytes.ByteComparable<T>> extends Abst
         assert state == State.INIT;
         this.internalRocksIterator = storage.getInternalRocksIterator();
         this.internalRocksIterator.seek(prefix.getArray());
-        state = State.EMPTY;
+        state = State.SEEKED_EMPTY;
     }
 
     private synchronized boolean checkValidNext() {

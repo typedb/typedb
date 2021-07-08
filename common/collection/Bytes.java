@@ -56,7 +56,4 @@ public class Bytes {
         return (byte) (value & 0xff);
     }
 
-    public static int unsignedValue(byte b) {
-        return b & 0xff;
-    }
 }

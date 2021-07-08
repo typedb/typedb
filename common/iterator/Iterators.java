@@ -45,7 +45,7 @@ public class Iterators {
     }
 
     public static <T extends Comparable<T>> FunctionalIterator.Sorted<T> emptySorted() {
-        return iterateSorted(new ConcurrentSkipListSet()); // TODO resolve generic warning
+        return iterateSorted(new ConcurrentSkipListSet());
     }
 
     public static <T> FunctionalIterator<T> single(T item) {
