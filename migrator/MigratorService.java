@@ -54,28 +54,30 @@ public class MigratorService extends MigratorGrpc.MigratorImplBase {
     @Override
     public void importData(MigratorProto.ImportData.Req request, StreamObserver<MigratorProto.Job.Res> responseObserver) {
         Path file = Paths.get(request.getFilename());
-        DataImporter importer = new DataImporter(typedb, request.getDatabase(), file, request.getRemapLabelsMap(), version);
-        runMigrator(importer, responseObserver);
+//        DataImporter importer = new DataImporter(typedb, request.getDatabase(), file, request.getRemapLabelsMap(), version);
+//        runMigrator(importer, responseObserver);
     }
 
     private void runMigrator(Migrator migrator, StreamObserver<MigratorProto.Job.Res> responseObserver) {
         try {
             CompletableFuture<Void> migratorJob = CompletableFuture.runAsync(migrator::run);
-            try {
-                while (!migratorJob.isDone()) {
-                    Thread.sleep(1000);
+            while (!migratorJob.isDone()) {
+                Thread.sleep(1000);
+                if (migrator instanceof DataExporter) {
                     responseObserver.onNext(MigratorProto.Job.Res.newBuilder().setProgress(migrator.getProgress()).build());
+                } else {
+
                 }
-                migratorJob.get();
-            } catch (InterruptedException e) {
-                throw TypeDBException.of(UNEXPECTED_INTERRUPTION);
-            } catch (ExecutionException e) {
-                throw e.getCause();
             }
+            migratorJob.get();
             responseObserver.onCompleted();
+        } catch (InterruptedException | ExecutionException e) {
+            throw TypeDBException.of(UNEXPECTED_INTERRUPTION);
         } catch (Throwable e) {
             LOG.error(e.getMessage(), e);
             responseObserver.onError(exception(e));
+        } finally {
+            migrator.close();
         }
     }
 

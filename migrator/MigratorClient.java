@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.migrator;
 
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.migrator.proto.DataProto;
 import com.vaticle.typedb.core.migrator.proto.MigratorGrpc;
 import com.vaticle.typedb.core.migrator.proto.MigratorProto;
 import io.grpc.ManagedChannel;
@@ -79,9 +80,18 @@ public class MigratorClient {
 
         @Override
         public void onNext(MigratorProto.Job.Res res) {
-            long current = res.getProgress().getCurrent();
-            long total = res.getProgress().getTotal();
-            progressPrinter.onProgress(current, total);
+            MigratorProto.Job.Progress progress = res.getProgress();
+            if (progress.hasExportProgress()) {
+                progressPrinter.onExportProgress(ProgressPrinter.ExportProgress.of(res.getProgress().getExportProgress()));
+            } else {
+                assert progress.hasImportProgress();
+                progressPrinter.onImportProgress(ProgressPrinter.ImportProgress.of(res.getProgress().getImportProgress()));
+            }
+
+
+//            long current = res.getProgress().getCurrent();
+//            long total = res.getProgress().getTotal();
+//            progressPrinter.onProgress(current, total);
         }
 
         @Override
@@ -122,11 +132,52 @@ public class MigratorClient {
         private final Timer timer = new Timer();
 
         private String status = STATUS_STARTING;
-        private long current = 0;
-        private long total = 0;
+
+        private ExportProgress exportProgress;
+        private ImportProgress importProgress;
 
         private int anim = 0;
         private int lines = 0;
+
+        static class ExportProgress {
+            int entity;
+            int attribute;
+            int relation;
+            int totalEntity;
+            int totalAttribute;
+            int totalRelation;
+
+            static ExportProgress of(MigratorProto.Job.ExportProgress exportProgress) {
+                return null;
+            }
+
+            @Override
+            public String toString() {
+                return null;
+            }
+        }
+
+        static class ImportProgress {
+            int entity;
+            int attribute;
+            int relation;
+            int ownerships;
+            int roles;
+            int totalEntity;
+            int totalAttribute;
+            int totalRelation;
+            int totalOwnerships;
+            int totalRoles;
+
+            static ImportProgress of(MigratorProto.Job.ImportProgress importProgress) {
+                return null;
+            }
+
+            @Override
+            public String toString() {
+                return null;
+            }
+        }
 
         public ProgressPrinter(String type) {
             this.type = type;
@@ -139,10 +190,14 @@ public class MigratorClient {
             timer.scheduleAtFixedRate(task, 0, 100);
         }
 
-        public void onProgress(long current, long total) {
+        public void onImportProgress(ImportProgress progress) {
             status = STATUS_IN_PROGRESS;
-            this.current = current;
-            this.total = total;
+            this.importProgress = progress;
+        }
+
+        public void onExportProgress(ExportProgress progress) {
+            status = STATUS_IN_PROGRESS;
+            this.exportProgress = progress;
         }
 
         public void onCompletion() {
@@ -156,17 +211,19 @@ public class MigratorClient {
             builder.append(String.format("$x isa %s,\n    has status \"%s\"", type, status));
 
             if (status.equals(STATUS_IN_PROGRESS)) {
-                String percent;
-                String count;
-                if (total > 0) {
-                    percent = String.format("%.1f%%", (double) current / (double) total * 100.0);
-                    count = String.format("%,d / %,d", current, total);
-                } else {
-                    percent = "?";
-                    count = String.format("%,d", current);
-                }
-                builder.append(String.format(",\n    has progress (%s),\n    has count (%s)",
-                                             percent, count));
+                if (exportProgress != null) builder.append(exportProgress.toString());
+                else if (importProgress != null) builder.append(importProgress.toString());
+//                String percent;
+//                String count;
+//                if (total > 0) {
+//                    percent = String.format("%.1f%%", (double) current / (double) total * 100.0);
+//                    count = String.format("%,d / %,d", current, total);
+//                } else {
+//                    percent = "?";
+//                    count = String.format("%,d", current);
+//                }
+//                builder.append(String.format(",\n    has progress (%s),\n    has count (%s)",
+//                                             percent, count));
             }
 
             builder.append(";");

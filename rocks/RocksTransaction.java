@@ -18,8 +18,11 @@
 
 package com.vaticle.typedb.core.rocks;
 
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.common.parameters.Options;
@@ -27,6 +30,7 @@ import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.ThingGraph;
 import com.vaticle.typedb.core.graph.TypeGraph;
+import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.logic.LogicCache;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.query.QueryManager;
@@ -43,6 +47,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.SESSION_DATA_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public abstract class RocksTransaction implements TypeDB.Transaction {
 
@@ -321,6 +326,12 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
         void closeStorage() {
             session.database().cacheUnborrow(cache);
             dataStorage.close();
+        }
+
+        public FunctionalIterator<Pair<ByteArray, ByteArray>> bufferedToPersistedThingIIDs() {
+            return iterate(graphMgr.data().bufferedToPersistedIIDs().entrySet())
+                    .filter(entry -> !entry.getKey().encoding().equals(Encoding.Vertex.Thing.ROLE))
+                    .map(entry -> new Pair<>(entry.getKey().bytes(), entry.getValue().bytes()));
         }
 
         /**

@@ -81,10 +81,6 @@ message Item {
         ValueObject value = 4;
     }
 
-    message Key {
-        string id = 1;
-    }
-
     message Relation {
         string id = 1;
         string label = 2;

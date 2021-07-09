@@ -44,4 +44,5 @@ public class Bytes {
         assert value >= 0 && value <= 255;
         return (byte) (value & 0xff);
     }
+
 }

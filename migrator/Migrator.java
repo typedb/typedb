@@ -25,4 +25,6 @@ public interface Migrator {
     void run();
 
     MigratorProto.Job.Progress getProgress();
+
+    void close();
 }

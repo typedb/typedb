@@ -45,6 +45,7 @@ native_java_libraries(
     deps = [
         # Internal dependencies
         "//common:common",
+        "//concurrent",
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
@@ -63,7 +64,8 @@ native_java_libraries(
     native_libraries_deps = [
         "//:typedb",
         "//concept:concept",
-        "//logic:logic"
+        "//logic:logic",
+        "//rocks:rocks",
     ],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-migrator:{pom_version}"],
     visibility = ["//visibility:public"],

@@ -67,7 +67,7 @@ public class MigratorTest {
     @Test
     public void test_import_export_data() throws IOException {
         Util.resetDirectory(dataDir);
-        try (TypeDB typedb = RocksTypeDB.open(options)) {
+        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
             typedb.databases().create(database);
             String schema = new String(Files.readAllBytes(schemaPath), UTF_8);
             runSchema(typedb, schema);

@@ -52,7 +52,31 @@ message Job {
     }
 
     message Progress {
-        uint64 total = 1;
-        uint64 current = 2;
+        oneof progress {
+            ExportProgress export_progress = 1;
+            ImportProgress import_progress = 2;
+        }
+    }
+
+    message ImportProgress {
+        uint64 attributes_current = 1;
+        uint64 attributes = 2;
+        uint64 entities_current = 3;
+        uint64 entities = 4;
+        uint64 relations_current = 5;
+        uint64 relations = 6;
+        uint64 ownerships_current = 7;
+        uint64 ownerships = 8;
+        uint64 roles_current = 9;
+        uint64 roles = 10;
+    }
+
+    message ExportProgress {
+        uint64 attributes_current = 1;
+        uint64 attributes = 2;
+        uint64 entities_current = 3;
+        uint64 entities = 4;
+        uint64 relations_current = 5;
+        uint64 relations = 6;
     }
 }

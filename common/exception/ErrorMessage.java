@@ -556,8 +556,12 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Migrator(3, "The specified file '%s' cannot be opened for write.");
         public static final Migrator TYPE_NOT_FOUND =
                 new Migrator(4, "The type '%s' (originally '%s') is not defined in the schema.");
+        public static final Migrator ROLE_TYPE_NOT_FOUND =
+                new Migrator(5, "The role type '%s' (originally '%s') is not defined for relation type '%s. Please confirm schema was migrated correctly.");
+        public static final Migrator PLAYER_NOT_FOUND =
+                new Migrator(6, "A player for relation type '%s' was expected but not found.");
         public static final Migrator INVALID_DATA =
-                new Migrator(5, "The data being imported is invalid.");
+                new Migrator(7, "The data being imported is invalid.");
 
         private static final String codePrefix = "MIG";
         private static final String messagePrefix = "Migrator failure";
