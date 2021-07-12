@@ -281,7 +281,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final ThingWrite THING_KEY_OVER =
                 new ThingWrite(5, "Attempted to assign a key of type '%s' onto a(n) '%s' that already has one.");
         public static final ThingWrite THING_KEY_TAKEN =
-                new ThingWrite(6, "Attempted to assign a key of type '%s' that had been taken by another '%s'.");
+                new ThingWrite(6, "Attempted to assign a key '%s' of type '%s' that had been taken by another '%s'.");
         public static final ThingWrite THING_KEY_MISSING =
                 new ThingWrite(7, "Attempted to commit a(n) '%s' that is missing key(s) of type(s): %s"); // don't put quotes around the last %s
         public static final ThingWrite THING_ROLE_UNPLAYED =

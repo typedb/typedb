@@ -76,7 +76,7 @@ public class DataImporter implements Migrator {
 
     private static final Logger LOG = LoggerFactory.getLogger(DataImporter.class);
     private static final Parser<DataProto.Item> ITEM_PARSER = DataProto.Item.parser();
-    private static final int BATCH_SIZE = 1000;
+    private static final int BATCH_SIZE = 20000;
     private final RocksSession session;
     private final Executor importExecutor;
     private final int parallelism;
@@ -109,6 +109,7 @@ public class DataImporter implements Migrator {
             return MigratorProto.Job.Progress.newBuilder()
                     .setImportProgress(
                             MigratorProto.Job.ImportProgress.newBuilder()
+                                    .setInitialising(false)
                                     .setAttributesCurrent(status.attributeCount.get())
                                     .setEntitiesCurrent(status.entityCount.get())
                                     .setRelationsCurrent(status.relationCount.get())
@@ -125,6 +126,7 @@ public class DataImporter implements Migrator {
             return MigratorProto.Job.Progress.newBuilder()
                     .setImportProgress(
                             MigratorProto.Job.ImportProgress.newBuilder()
+                                    .setInitialising(true)
                                     .setAttributesCurrent(status.attributeCount.get())
                                     .build()
                     ).build();
@@ -141,11 +143,8 @@ public class DataImporter implements Migrator {
         try {
             readHeader();
             new InitAndAttributes().run();
-            LOG.info("finished attrs");
             new EntitiesAndOwnerships().run();
-            LOG.info("finished entities and ownerships");
             new CompleteRelations().run();
-            LOG.info("finished complete relations");
             insertSkippedRelations();
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
@@ -162,17 +161,14 @@ public class DataImporter implements Migrator {
 
     private void readHeader() {
         try (InputStream inputStream = new BufferedInputStream(Files.newInputStream(filename))) {
-            DataProto.Item item;
-            while ((item = ITEM_PARSER.parseDelimitedFrom(inputStream)) != null) {
-                assert item.getItemCase().equals(HEADER);
-                DataProto.Item.Header header = item.getHeader();
-                LOG.info("Importing {} from TypeDB {} to {} in TypeDB {}",
-                        header.getOriginalDatabase(),
-                        header.getTypedbVersion(),
-                        session.database().name(),
-                        version);
-                return;
-            }
+            DataProto.Item item = ITEM_PARSER.parseDelimitedFrom(inputStream);
+            assert item.getItemCase().equals(HEADER);
+            DataProto.Item.Header header = item.getHeader();
+            LOG.info("Importing {} from TypeDB {} to {} in TypeDB {}",
+                    header.getOriginalDatabase(),
+                    header.getTypedbVersion(),
+                    session.database().name(),
+                    version);
         } catch (IOException e) {
             throw TypeDBException.of(e);
         }
@@ -205,6 +201,8 @@ public class DataImporter implements Migrator {
             });
             return queue;
         }
+
+        AtomicLong txs = new AtomicLong(0);
 
         abstract class Worker {
 
@@ -275,11 +273,15 @@ public class DataImporter implements Migrator {
             }
 
             private void commitBatch() {
+                long n;
+                if ((n = txs.incrementAndGet()) % 100 == 0) System.out.println("txn committed number: " + n);
                 transaction.commit();
-                ((RocksTransaction.Data) transaction).bufferedToPersistedThingIIDs().forEachRemaining(pair ->
-                        idMap.put(bufferedIIDsToOriginalIds.get(pair.first()), pair.second())
-                );
-                bufferedIIDsToOriginalIds.clear();
+                ((RocksTransaction.Data) transaction).bufferedToPersistedThingIIDs().forEachRemaining(pair -> {
+                    idMap.put(bufferedIIDsToOriginalIds.get(pair.first()), pair.second());
+                    bufferedIIDsToOriginalIds.remove(pair.first());
+                });
+                assert bufferedIIDsToOriginalIds.isEmpty();
+//                bufferedIIDsToOriginalIds.clear();
                 originalIdsToBufferedIIDs.clear();
             }
         }

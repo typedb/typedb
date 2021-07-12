@@ -21,6 +21,7 @@ import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.migrator.proto.MigratorGrpc;
 import com.vaticle.typedb.core.migrator.proto.MigratorProto;
+import com.vaticle.typedb.core.rocks.RocksTypeDB;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
@@ -37,10 +38,10 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNE
 public class MigratorService extends MigratorGrpc.MigratorImplBase {
 
     private static final Logger LOG = LoggerFactory.getLogger(MigratorService.class);
-    private final TypeDB typedb;
+    private final RocksTypeDB typedb;
     private final String version;
 
-    public MigratorService(TypeDB typedb, String version) {
+    public MigratorService(RocksTypeDB typedb, String version) {
         this.typedb = typedb;
         this.version = version;
     }
@@ -54,8 +55,8 @@ public class MigratorService extends MigratorGrpc.MigratorImplBase {
     @Override
     public void importData(MigratorProto.ImportData.Req request, StreamObserver<MigratorProto.Job.Res> responseObserver) {
         Path file = Paths.get(request.getFilename());
-//        DataImporter importer = new DataImporter(typedb, request.getDatabase(), file, request.getRemapLabelsMap(), version);
-//        runMigrator(importer, responseObserver);
+        DataImporter importer = new DataImporter(typedb, request.getDatabase(), file, request.getRemapLabelsMap(), version);
+        runMigrator(importer, responseObserver);
     }
 
     private void runMigrator(Migrator migrator, StreamObserver<MigratorProto.Job.Res> responseObserver) {
@@ -63,11 +64,7 @@ public class MigratorService extends MigratorGrpc.MigratorImplBase {
             CompletableFuture<Void> migratorJob = CompletableFuture.runAsync(migrator::run);
             while (!migratorJob.isDone()) {
                 Thread.sleep(1000);
-                if (migrator instanceof DataExporter) {
-                    responseObserver.onNext(MigratorProto.Job.Res.newBuilder().setProgress(migrator.getProgress()).build());
-                } else {
-
-                }
+                responseObserver.onNext(MigratorProto.Job.Res.newBuilder().setProgress(migrator.getProgress()).build());
             }
             migratorJob.get();
             responseObserver.onCompleted();

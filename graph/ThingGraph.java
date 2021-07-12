@@ -461,7 +461,7 @@ public class ThingGraph {
             v.iid(newIID);
         }); // thingsByIID no longer contains valid mapping from IID to TypeVertex
         thingsByIID.values().stream().filter(v -> !v.isInferred()).forEach(ThingVertex.Write::commit);
-        attributesByIID.valuesIterator().forEachRemaining(ThingVertex.Write::commit);
+        attributesByIID.valuesIterator().forEachRemaining(AttributeVertex.Write::commit);
         statistics.commit(bufferedToPersistedIIDs);
 
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Thing to be used again
