@@ -67,6 +67,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.FILE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.INVALID_DATA;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.PLAYER_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.ROLE_TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.migrator.proto.DataProto.Item.ItemCase.HEADER;
@@ -95,7 +96,7 @@ public class DataImporter implements Migrator {
         this.remapLabels = remapLabels;
         this.version = version;
         assert com.vaticle.typedb.core.concurrent.executor.Executors.isInitialised();
-        this.parallelism = 1; //com.vaticle.typedb.core.concurrent.executor.Executors.PARALLELISATION_FACTOR;
+        this.parallelism = com.vaticle.typedb.core.concurrent.executor.Executors.PARALLELISATION_FACTOR;
         this.importExecutor = Executors.newFixedThreadPool(parallelism);
         this.idMap = new ConcurrentHashMap<>();
         this.skippedNestedRelations = new ConcurrentSet<>();
@@ -140,8 +141,11 @@ public class DataImporter implements Migrator {
         try {
             readHeader();
             new InitAndAttributes().run();
+            LOG.info("finished attrs");
             new EntitiesAndOwnerships().run();
-            new Relations().run();
+            LOG.info("finished entities and ownerships");
+            new CompleteRelations().run();
+            LOG.info("finished complete relations");
             insertSkippedRelations();
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
@@ -373,7 +377,7 @@ public class DataImporter implements Migrator {
         }
     }
 
-    private class Relations extends Import {
+    private class CompleteRelations extends Import {
 
         @Override
         Worker createWorker(BlockingQueue<DataProto.Item> items) {
@@ -423,46 +427,46 @@ public class DataImporter implements Migrator {
                     }
                     return Optional.of(players);
                 }
-
-                private RoleType getRoleType(RelationType relationType, DataProto.Item.Relation.Role roleMsg) {
-                    String unscopedRoleLabel;
-                    String roleLabel = relabel(roleMsg.getLabel());
-                    if (roleLabel.contains(":")) unscopedRoleLabel = roleLabel.split(":")[1];
-                    else unscopedRoleLabel = roleLabel;
-                    RoleType roleType = relationType.getRelates(unscopedRoleLabel);
-                    if (roleType == null) {
-                        throw TypeDBException.of(ROLE_TYPE_NOT_FOUND, roleLabel, roleMsg.getLabel(), relationType.getLabel().name());
-                    } else return roleType;
-                }
             };
         }
     }
 
     private void insertSkippedRelations() {
-//        try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-//            skippedNestedRelations.forEach(relationMsg -> {
-//                RelationType relationType = transaction.concepts().getRelationType(relabel(relationMsg.getLabel()));
-//                if (relationType == null) {
-//                    throw TypeDBException.of(TYPE_NOT_FOUND, relabel(relationMsg.getLabel()), relationMsg.getLabel());
-//                }
-//                Relation relation = relationType.create();
-//                idMap.put(relationMsg.getId(), relation.getIID());
-//            });
-//
-//            skippedNestedRelations.forEach(relationMsg -> {
-//                RelationType relationType = transaction.concepts().getRelationType(relabel(relationMsg.getLabel()));
-//                Relation relation = transaction.concepts().getThing(idMap.get(relationMsg.getId())).asRelation();
-//                relationMsg.getRoleList().forEach(roleMsg -> {
-//                    RoleType roleType = getRoleType(relationType, roleMsg);
-//                    for (DataProto.Item.Relation.Role.Player playerMessage : roleMsg.getPlayerList()) {
-//                        Thing player = getThing(transaction, playerMessage.getId());
-//                        if (player == null) throw TypeDBException.of(PLAYER_NOT_FOUND, relationType.getLabel());
-//                        else relation.addPlayer(roleType, player);
-//                    }
-//                });
-//            });
-//            transaction.commit();
-//        }
+        try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
+            skippedNestedRelations.forEach(relationMsg -> {
+                RelationType relationType = transaction.concepts().getRelationType(relabel(relationMsg.getLabel()));
+                if (relationType == null) {
+                    throw TypeDBException.of(TYPE_NOT_FOUND, relabel(relationMsg.getLabel()), relationMsg.getLabel());
+                }
+                Relation relation = relationType.create();
+                idMap.put(relationMsg.getId(), relation.getIID());
+            });
+
+            skippedNestedRelations.forEach(relationMsg -> {
+                RelationType relationType = transaction.concepts().getRelationType(relabel(relationMsg.getLabel()));
+                Relation relation = transaction.concepts().getThing(idMap.get(relationMsg.getId())).asRelation();
+                relationMsg.getRoleList().forEach(roleMsg -> {
+                    RoleType roleType = getRoleType(relationType, roleMsg);
+                    for (DataProto.Item.Relation.Role.Player playerMessage : roleMsg.getPlayerList()) {
+                        Thing player = transaction.concepts().getThing(idMap.get(playerMessage.getId()));
+                        if (player == null) throw TypeDBException.of(PLAYER_NOT_FOUND, relationType.getLabel());
+                        else relation.addPlayer(roleType, player);
+                    }
+                });
+            });
+            transaction.commit();
+        }
+    }
+
+    private RoleType getRoleType(RelationType relationType, DataProto.Item.Relation.Role roleMsg) {
+        String unscopedRoleLabel;
+        String roleLabel = relabel(roleMsg.getLabel());
+        if (roleLabel.contains(":")) unscopedRoleLabel = roleLabel.split(":")[1];
+        else unscopedRoleLabel = roleLabel;
+        RoleType roleType = relationType.getRelates(unscopedRoleLabel);
+        if (roleType == null) {
+            throw TypeDBException.of(ROLE_TYPE_NOT_FOUND, roleLabel, roleMsg.getLabel(), relationType.getLabel().name());
+        } else return roleType;
     }
 
     private String relabel(String label) {
