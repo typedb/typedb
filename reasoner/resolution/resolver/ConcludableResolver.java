@@ -44,9 +44,11 @@ import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -255,7 +257,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
                     ConcludableAnswerCache answerCache = new ConcludableAnswerCache(cacheRegister, answerFromUpstream);
                     cacheRegister.put(answerFromUpstream, answerCache);
                     requestState = new Explain(fromUpstream, answerCache, iteration);
-                    registerRules(fromUpstream, requestState.asExploration());
+                    requestState.asExploration().downstreamManager().addDownstreams(ruleDownstreams(fromUpstream));
                 } else if (cacheRegister.get(answerFromUpstream).isConcludableAnswerCache()) {
                     ConcludableAnswerCache answerCache = cacheRegister.get(answerFromUpstream).asConcludableAnswerCache();
                     requestState = new FollowingExplain(fromUpstream, answerCache, iteration);
@@ -266,7 +268,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
                 ConcludableAnswerCache answerCache = new ConcludableAnswerCache(cacheRegister, answerFromUpstream);
                 cacheRegister.put(answerFromUpstream, answerCache);
                 requestState = new Explain(fromUpstream, answerCache, iteration);
-                registerRules(fromUpstream, requestState.asExploration());
+                requestState.asExploration().downstreamManager().addDownstreams(ruleDownstreams(fromUpstream));
             }
         } else if (fromUpstream.partialAnswer().asConcludable().isMatch()) {
             if (cacheRegister.containsKey(answerFromUpstream)) {
@@ -287,7 +289,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
                 }
                 boolean singleAnswerRequired = answerFromUpstream.concepts().keySet().containsAll(unboundVars);
                 requestState = new Match(fromUpstream, answerCache, iteration, singleAnswerRequired);
-                registerRules(fromUpstream, requestState.asExploration());
+                requestState.asExploration().downstreamManager().addDownstreams(ruleDownstreams(fromUpstream));
             }
         } else {
             throw TypeDBException.of(ILLEGAL_STATE);
@@ -295,21 +297,21 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         return requestState;
     }
 
-    private void registerRules(Request fromUpstream, Exploration exploration) {
+    private List<Request> ruleDownstreams(Request fromUpstream) {
         // loop termination: when receiving a new request, we check if we have seen it before from this root query
         // if we have, we do not allow rules to be registered as possible downstreams
+        List<Request> downstreams = new ArrayList<>();
         Partial.Concludable<?> partialAnswer = fromUpstream.partialAnswer().asConcludable();
         for (Map.Entry<Driver<ConclusionResolver>, Set<Unifier>> entry : applicableRules.entrySet()) {
             Driver<ConclusionResolver> conclusionResolver = entry.getKey();
             for (Unifier unifier : entry.getValue()) {
                 Optional<? extends Partial.Conclusion<?, ?>> unified = partialAnswer.toDownstream(
                         unifier, resolverRules.get(conclusionResolver));
-                if (unified.isPresent()) {
-                    Request toDownstream = Request.create(driver(), conclusionResolver, unified.get());
-                    exploration.downstreamManager().addDownstream(toDownstream);
-                }
+                unified.ifPresent(conclusion -> downstreams.add(
+                        Request.create(driver(), conclusionResolver, conclusion)));
             }
         }
+        return downstreams;
     }
 
     private static Set<Identifier.Variable.Retrievable> unboundVars(Conjunction conjunction) {
