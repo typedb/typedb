@@ -406,8 +406,8 @@ public class TypeGraph {
 
         public FunctionalIterator<RuleStructure> all() {
             Encoding.Prefix index = IndexIID.Rule.prefix();
-            FunctionalIterator<RuleStructure> persistedRules = storage.iterate(index.bytes(), Storage.SortedPair::new)
-                    .map(pair -> convert(StructureIID.Rule.of(pair.second())));
+            FunctionalIterator<RuleStructure> persistedRules = storage.iterate(index.bytes())
+                    .map(keyValue -> convert(StructureIID.Rule.of(keyValue.value())));
             return link(buffered(), persistedRules).distinct();
         }
 
@@ -597,13 +597,14 @@ public class TypeGraph {
 
                 private Set<RuleStructure> loadConcludesVertex(TypeVertex type) {
                     Rule scanPrefix = Rule.Prefix.concludedVertex(type.iid());
-                    return storage.iterate(scanPrefix.bytes(), (key, value) -> key).map(key -> StructureIID.Rule.of((key.view(scanPrefix.length()))))
+                    return storage.iterate(scanPrefix.bytes())
+                            .map(keyValue -> StructureIID.Rule.of((keyValue.key().view(scanPrefix.length()))))
                             .map(Rules.this::convert).toSet();
                 }
 
                 private Set<RuleStructure> loadConcludesEdgeTo(TypeVertex attrType) {
                     Rule scanPrefix = Rule.Prefix.concludedEdgeTo(attrType.iid());
-                    return storage.iterate(scanPrefix.bytes(), (key, value) -> key).map(key -> StructureIID.Rule.of(key.view(scanPrefix.length())))
+                    return storage.iterate(scanPrefix.bytes()).map(keyValue -> StructureIID.Rule.of(keyValue.key().view(scanPrefix.length())))
                             .map(Rules.this::convert).toSet();
                 }
 
@@ -734,7 +735,8 @@ public class TypeGraph {
 
                 private Set<RuleStructure> loadIndex(TypeVertex type) {
                     Rule scanPrefix = Rule.Prefix.contained(type.iid());
-                    return storage.iterate(scanPrefix.bytes(), (key, value) -> key).map(key -> StructureIID.Rule.of(key.view(scanPrefix.length())))
+                    return storage.iterate(scanPrefix.bytes())
+                            .map(keyValue -> StructureIID.Rule.of(keyValue.key().view(scanPrefix.length())))
                             .map(Rules.this::convert).toSet();
                 }
 

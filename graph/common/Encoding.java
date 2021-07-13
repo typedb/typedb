@@ -742,6 +742,8 @@ public class Encoding {
             }
         }
 
+        // create OPTIMISED and NONOPTIMISED subtypes
+
         enum Thing implements Edge {
             HAS(Infix.EDGE_HAS_OUT, Infix.EDGE_HAS_IN),
             PLAYING(Infix.EDGE_PLAYING_OUT, Infix.EDGE_PLAYING_IN),

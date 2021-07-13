@@ -21,13 +21,12 @@ package com.vaticle.typedb.core.graph.adjacency;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.edge.Edge;
 import com.vaticle.typedb.core.graph.edge.ThingEdge;
 import com.vaticle.typedb.core.graph.iid.EdgeIID;
 import com.vaticle.typedb.core.graph.iid.IID;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
+
 import java.util.Arrays;
-import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -43,11 +42,10 @@ public interface ThingAdjacency {
      * @param encoding the {@code Encoding} to filter the type of edges
      * @return an {@code IteratorBuilder} to retrieve vertices of a set of edges.
      */
-    ThingIteratorBuilder edge(Encoding.Edge.Thing encoding);
-
+    IteratorBuilder edge(Encoding.Edge.Thing encoding);
 
     /**
-     * Returns an {@code IteratorBuilder} to retrieve vertices of a set of edges.
+     * Returns an {@code ThingIteratorSortedBuilder} to retrieve vertices of a set of edges.
      *
      * This method allows us to traverse the graph, by going from one vertex to
      * another, that are connected by edges that match the provided {@code encoding}
@@ -57,20 +55,26 @@ public interface ThingAdjacency {
      * @param lookAhead information of the adjacent edge to filter the edges with
      * @return an {@code IteratorBuilder} to retrieve vertices of a set of edges.
      */
-    default ThingIteratorSortedBuilder edge(Encoding.Edge.Thing encoding, IID... lookAhead) {
+    default SortedIteratorBuilder edge(Encoding.Edge.Thing encoding, IID... lookAhead) {
         if (encoding == Encoding.Edge.Thing.HAS) return edgeHas(lookAhead);
         else if (encoding == Encoding.Edge.Thing.PLAYING) return edgeHas(lookAhead);
         else if (encoding == Encoding.Edge.Thing.RELATING) return edgeHas(lookAhead);
         else if (encoding == Encoding.Edge.Thing.ROLEPLAYER) {
-            if (lookAhead.length > 0) return edgeRolePlayer(lookAhead[0], Arrays.copyOfRange(lookAhead, 1, lookAhead.length));
+            if (lookAhead.length > 0)
+                return edgeRolePlayer(lookAhead[0], Arrays.copyOfRange(lookAhead, 1, lookAhead.length));
             else throw TypeDBException.of(ILLEGAL_OPERATION);
-        }
-        else throw TypeDBException.of(ILLEGAL_STATE);
+        } else throw TypeDBException.of(ILLEGAL_STATE);
     }
-    ThingIteratorSortedBuilder edgeHas(IID... lookAhead);
-    ThingIteratorSortedBuilder edgePlaying(IID... lookAhead);
-    ThingIteratorSortedBuilder edgeRelating(IID... lookAhead);
-    ThingIteratorSortedBuilder edgeRolePlayer(IID roleType, IID... lookAhead);
+
+    SortedIteratorBuilder edgeHas(IID... lookAhead);
+
+    SortedIteratorBuilder edgePlaying(IID... lookAhead);
+
+    SortedIteratorBuilder edgeRelating(IID... lookAhead);
+
+    FunctionalIterator<EdgeDirected> edgeRolePlayer();
+
+    FunctionalIterator.Sorted<EdgeDirected> edgeRolePlayer(IID roleType, IID... lookAhead);
 
     /**
      * Returns an edge of type {@code encoding} that connects to an {@code adjacent}
@@ -93,7 +97,7 @@ public interface ThingAdjacency {
      */
     ThingEdge edge(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised);
 
-    interface ThingIteratorBuilder {
+    interface IteratorBuilder {
 
         FunctionalIterator<ThingVertex> from();
 
@@ -102,7 +106,7 @@ public interface ThingAdjacency {
         FunctionalIterator<ThingEdge> get();
     }
 
-    interface ThingIteratorSortedBuilder {
+    interface SortedIteratorBuilder {
 
         FunctionalIterator<ThingVertex> from();
 
@@ -110,7 +114,6 @@ public interface ThingAdjacency {
 
         FunctionalIterator.Sorted<EdgeDirected> get();
     }
-
 
     interface Write extends ThingAdjacency {
 
@@ -180,18 +183,32 @@ public interface ThingAdjacency {
     abstract class EdgeDirected implements Comparable<EdgeDirected> {
 
         public final ThingEdge edge;
-        public final Function<ThingEdge, EdgeIID.Thing> keyFn;
-        public final EdgeIID.Thing key;
 
-        EdgeDirected(ThingEdge edge, Function<ThingEdge, EdgeIID.Thing> keyFn) {
+        EdgeDirected(ThingEdge edge) {
             this.edge = edge;
-            this.keyFn = keyFn;
-            this.key = keyFn.apply(edge);
         }
 
-        public static EdgeDirected in(ThingEdge edge) { return new In(edge); }
+        public abstract EdgeIID.Thing getKey();
 
-        public static EdgeDirected out(ThingEdge edge) { return new Out(edge);}
+        public static EdgeDirected in(ThingEdge edge) {
+            EdgeIID.Thing inIID = edge.inIID();
+            return new EdgeDirected(edge) {
+                @Override
+                public EdgeIID.Thing getKey() {
+                    return inIID;
+                }
+            };
+        }
+
+        public static EdgeDirected out(ThingEdge edge) {
+            EdgeIID.Thing outIID = edge.outIID();
+            return new EdgeDirected(edge) {
+                @Override
+                public EdgeIID.Thing getKey() {
+                    return outIID;
+                }
+            };
+        }
 
         public ThingEdge getEdge() {
             return edge;
@@ -199,7 +216,7 @@ public interface ThingAdjacency {
 
         @Override
         public int compareTo(EdgeDirected other) {
-            return key.compareTo(other.key);
+            return getKey().compareTo(other.getKey());
         }
 
         @Override
@@ -213,18 +230,6 @@ public interface ThingAdjacency {
         @Override
         public int hashCode() {
             return edge.hashCode();
-        }
-
-        public static class In extends EdgeDirected {
-            In(ThingEdge edge) {
-                super(edge, Edge::inIID);
-            }
-        }
-
-        public static class Out extends EdgeDirected {
-            Out(ThingEdge edge) {
-                super(edge, Edge::outIID);
-            }
         }
     }
 }

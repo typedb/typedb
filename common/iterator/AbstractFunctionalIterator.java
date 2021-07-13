@@ -57,13 +57,14 @@ public abstract class AbstractFunctionalIterator<T> implements FunctionalIterato
     }
 
     @Override
-    public <U> FunctionalIterator<U> flatMap(Function<T, FunctionalIterator<U>> flatMappingFn) {
-        return new FlatMappedIterator<>(this, flatMappingFn);
+    public <U> FunctionalIterator<U> flatMap(Function<T, FunctionalIterator<U>> mappingFn) {
+        return new FlatMappedIterator<>(this, mappingFn);
     }
 
     @Override
-    public <U extends Comparable<U>> FunctionalIterator.Sorted<U> flatMerge(Function<T, FunctionalIterator.Sorted<U>> flatMappingFn) {
-        return new FlatMergeSortedIterator<>(this, flatMappingFn);
+    public <U extends Comparable<U>> FunctionalIterator.Sorted<U> mergeMap(
+            Function<T, FunctionalIterator.Sorted<U>> mappingFn) {
+        return new MergeMappedIterator<>(this, mappingFn);
     }
 
     @Override
@@ -233,17 +234,19 @@ public abstract class AbstractFunctionalIterator<T> implements FunctionalIterato
     @Override
     public abstract void recycle();
 
-    public static abstract class Sorted<T extends Comparable<? super T>> extends AbstractFunctionalIterator<T> implements FunctionalIterator.Sorted<T> {
+    public static abstract class Sorted<T extends Comparable<? super T>>
+            extends AbstractFunctionalIterator<T> implements FunctionalIterator.Sorted<T> {
 
         @SafeVarargs
         @Override
         public final FunctionalIterator.Sorted<T> merge(FunctionalIterator.Sorted<T>... iterators) {
             List<FunctionalIterator.Sorted<T>> iters = list(list(iterators), this);
-            return new FlatMergeSortedIterator<>(iterate(iters), e -> e);
+            return new MergeMappedIterator<>(iterate(iters), e -> e);
         }
 
         @Override
-        public <U extends Comparable<? super U>> FunctionalIterator.Sorted<U> mapSorted(Function<T, U> mappingFn, Function<U, T> reverseMappingFn) {
+        public <U extends Comparable<? super U>> FunctionalIterator.Sorted<U> mapSorted(
+                Function<T, U> mappingFn, Function<U, T> reverseMappingFn) {
             return new MappedIterator.Sorted<>(this, mappingFn, reverseMappingFn);
         }
 

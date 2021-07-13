@@ -20,10 +20,10 @@ package com.vaticle.typedb.core.graph.adjacency.impl;
 
 import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.core.common.collection.ByteArray;
+import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.graph.adjacency.TypeAdjacency;
 import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.common.Storage;
 import com.vaticle.typedb.core.graph.edge.Edge;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.edge.impl.TypeEdgeImpl;
@@ -155,8 +155,8 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
             }
 
             ByteArray iid = join(owner.iid().bytes(), direction.isOut() ? encoding.out().bytes() : encoding.in().bytes());
-            FunctionalIterator<TypeEdge> storageIterator = owner.graph().storage()
-                    .iterate(iid, Storage.SortedPair::new).map(pair -> cache(newPersistedEdge(pair.first(), pair.second())));
+            FunctionalIterator<TypeEdge> storageIterator = owner.graph().storage().iterate(iid)
+                    .map(keyValue -> cache(newPersistedEdge(keyValue.key(), keyValue.value())));
             if (isReadOnly) storageIterator = storageIterator.onConsumed(() -> fetched.add(encoding));
             if ((bufferedEdges = edges.get(encoding)) == null) return storageIterator;
             else return link(bufferedEdges.iterator(), storageIterator).distinct();

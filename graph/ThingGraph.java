@@ -18,10 +18,9 @@
 
 package com.vaticle.typedb.core.graph;
 
-import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.collection.ByteArray;
-import com.vaticle.typedb.core.common.collection.Bytes;
+import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
@@ -223,9 +222,11 @@ public class ThingGraph {
 
     public FunctionalIterator.Sorted<ThingVertex> getReadable(TypeVertex typeVertex) {
         ByteArray.Base prefix = join(typeVertex.iid().bytes(), Encoding.Edge.ISA.in().bytes());
-        FunctionalIterator.Sorted<ThingVertex> storageIterator = storage.iterate(
-                prefix, (key, value) -> key
-        ).mapSorted(inEdge -> convertToReadable(EdgeIID.InwardsISA.of(inEdge).end()), vertex -> join(prefix, vertex.iid().bytes()));
+        FunctionalIterator.Sorted<ThingVertex> storageIterator = storage.iterate(prefix)
+                .mapSorted(
+                        keyValue -> convertToReadable(EdgeIID.InwardsISA.of(keyValue.key()).end()),
+                        vertex -> KeyValue.of(join(prefix, vertex.iid().bytes()), ByteArray.empty())
+                );
         if (!thingsByTypeIID.containsKey(typeVertex.iid())) return storageIterator;
         else {
             FunctionalIterator.Sorted<ThingVertex> buffered = iterateSorted(thingsByTypeIID.get(typeVertex.iid())).mapSorted(e -> e, ThingVertex::toWrite);
@@ -763,7 +764,8 @@ public class ThingGraph {
         }
 
         public boolean processCountJobs() {
-            FunctionalIterator<CountJob> countJobs = storage.iterate(StatisticsBytes.countJobKey(), CountJob::of);
+            FunctionalIterator<CountJob> countJobs = storage.iterate(StatisticsBytes.countJobKey())
+                    .map(keyValue -> CountJob.of(keyValue.key(), keyValue.value()));
             for (long processed = 0; processed < COUNT_JOB_BATCH_SIZE && countJobs.hasNext(); processed++) {
                 CountJob countJob = countJobs.next();
                 if (countJob instanceof CountJob.Attribute) {
@@ -773,7 +775,7 @@ public class ThingGraph {
                 } else {
                     assert false;
                 }
-                storage.deleteTracked(countJob.getBytes());
+                storage.deleteTracked(countJob.getKey());
             }
             storage.mergeUntracked(snapshotKey(), encodeLong(1));
             return countJobs.hasNext();
@@ -858,7 +860,7 @@ public class ThingGraph {
             return bytes != null ? bytes.decodeLong() : 0;
         }
 
-        public abstract static class CountJob implements Bytes.ByteComparable<CountJob> {
+        public abstract static class CountJob {
 
             private final Encoding.Statistics.JobOperation value;
             private final ByteArray key;
@@ -886,8 +888,7 @@ public class ThingGraph {
                 }
             }
 
-            @Override
-            public ByteArray getBytes() {
+            ByteArray getKey() {
                 return key;
             }
 

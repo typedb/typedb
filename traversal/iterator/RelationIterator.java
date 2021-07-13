@@ -198,7 +198,7 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
         if (comparison == 0) {
             return true;
         } else if (comparison < 0) {
-            relationIterator.seek(this.relation);
+            relationIterator.forward(this.relation);
             return verify(i);
         } else {
             propose(i, relationIterator.next());

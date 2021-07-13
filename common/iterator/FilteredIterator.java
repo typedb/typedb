@@ -59,14 +59,14 @@ class FilteredIterator<T> extends AbstractFunctionalIterator<T> {
         iterator.recycle();
     }
 
-    public static class Sorted<T extends Comparable<? super T>> extends AbstractFunctionalIterator.Sorted<T> {
+    static class Sorted<T extends Comparable<? super T>> extends AbstractFunctionalIterator.Sorted<T> {
 
         private final FunctionalIterator.Sorted<T> source;
         private final Predicate<T> predicate;
         private T next;
         private T last;
 
-        public Sorted(FunctionalIterator.Sorted<T> source, Predicate<T> predicate) {
+        Sorted(FunctionalIterator.Sorted<T> source, Predicate<T> predicate) {
             this.source = source;
             this.predicate = predicate;
         }
@@ -96,9 +96,9 @@ class FilteredIterator<T> extends AbstractFunctionalIterator<T> {
         }
 
         @Override
-        public void seek(T target) {
-            if (last != null && target.compareTo(last) < 0) throw TypeDBException.of(ILLEGAL_ARGUMENT); // cannot use backward seeks
-            this.source.seek(target);
+        public void forward(T target) {
+            if (last != null && target.compareTo(last) < 0) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+            this.source.forward(target);
             this.next = null;
         }
 

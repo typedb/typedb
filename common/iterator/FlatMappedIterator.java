@@ -25,14 +25,14 @@ class FlatMappedIterator<T, U> extends AbstractFunctionalIterator<U> {
 
     private final FunctionalIterator<T> sourceIterator;
     private FunctionalIterator<U> currentIterator;
-    private final Function<T, FunctionalIterator<U>> flatMappingFn;
+    private final Function<T, FunctionalIterator<U>> mappingFn;
     private State state;
 
     private enum State {INIT, ACTIVE, COMPLETED}
 
-    public FlatMappedIterator(FunctionalIterator<T> iterator, Function<T, FunctionalIterator<U>> flatMappingFn) {
+    FlatMappedIterator(FunctionalIterator<T> iterator, Function<T, FunctionalIterator<U>> mappingFn) {
         this.sourceIterator = iterator;
-        this.flatMappingFn = flatMappingFn;
+        this.mappingFn = mappingFn;
         this.state = State.INIT;
     }
 
@@ -50,7 +50,7 @@ class FlatMappedIterator<T, U> extends AbstractFunctionalIterator<U> {
 
     private boolean fetchAndCheck() {
         while (!currentIterator.hasNext() && sourceIterator.hasNext()) {
-            currentIterator = flatMappingFn.apply(sourceIterator.next());
+            currentIterator = mappingFn.apply(sourceIterator.next());
         }
         return currentIterator.hasNext();
     }
@@ -59,7 +59,7 @@ class FlatMappedIterator<T, U> extends AbstractFunctionalIterator<U> {
         if (!sourceIterator.hasNext()) {
             state = State.COMPLETED;
         } else {
-            currentIterator = flatMappingFn.apply(sourceIterator.next());
+            currentIterator = mappingFn.apply(sourceIterator.next());
             state = State.ACTIVE;
         }
     }

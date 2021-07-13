@@ -45,7 +45,7 @@ public class Iterators {
     }
 
     public static <T extends Comparable<T>> FunctionalIterator.Sorted<T> emptySorted() {
-        return iterateSorted(new ConcurrentSkipListSet());
+        return iterateSorted(new ConcurrentSkipListSet<T>());
     }
 
     public static <T> FunctionalIterator<T> single(T item) {
@@ -97,10 +97,6 @@ public class Iterators {
 
     public static <T> FunctionalIterator<T> tree(T root, Function<T, FunctionalIterator<T>> childrenFn) {
         return new TreeIterator<>(root, childrenFn);
-    }
-
-    public static <T> SynchronisedIterator<T> synchronised(FunctionalIterator<T> iterator) {
-        return new SynchronisedIterator<>(iterator);
     }
 
     public static <T> FunctionalIterator<List<T>> cartesian(List<FunctionalIterator<T>> iteratorProducers) {

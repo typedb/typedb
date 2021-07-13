@@ -38,7 +38,7 @@ public class RoleImpl {
     }
 
     void optimise() {
-        ThingVertex.Write relation = vertex.ins().edge(RELATING).from().next().toWrite();
+        ThingVertex.Write relation = vertex.ins().edge(RELATING).from().next().toWrite(); // TODO should be using `.first()` to cleanup resource
         ThingVertex.Write player = vertex.ins().edge(PLAYING).from().next().toWrite();
         relation.outs().put(ROLEPLAYER, player, vertex, vertex.isInferred());
     }

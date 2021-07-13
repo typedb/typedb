@@ -33,11 +33,11 @@ class DistinctIterator<T> extends AbstractFunctionalIterator<T> {
     private final Set<T> consumed;
     private T next;
 
-    public DistinctIterator(FunctionalIterator<T> iterator) {
+    DistinctIterator(FunctionalIterator<T> iterator) {
         this(iterator, new HashSet<>());
     }
 
-    public DistinctIterator(FunctionalIterator<T> iterator, Set<T> duplicates) {
+    DistinctIterator(FunctionalIterator<T> iterator, Set<T> duplicates) {
         this.iterator = iterator;
         this.consumed = duplicates;
         this.next = null;
@@ -66,12 +66,12 @@ class DistinctIterator<T> extends AbstractFunctionalIterator<T> {
         iterator.recycle();
     }
 
-    public static class Sorted<T extends Comparable<? super T>> extends AbstractFunctionalIterator.Sorted<T> {
+    static class Sorted<T extends Comparable<? super T>> extends AbstractFunctionalIterator.Sorted<T> {
 
         private final FunctionalIterator.Sorted<T> source;
         T last;
 
-        public Sorted(AbstractFunctionalIterator.Sorted<T> source) {
+        Sorted(AbstractFunctionalIterator.Sorted<T> source) {
             this.source = source;
             last = null;
         }
@@ -99,9 +99,9 @@ class DistinctIterator<T> extends AbstractFunctionalIterator<T> {
         }
 
         @Override
-        public void seek(T target) {
-            if (last != null && target.compareTo(last) < 0) throw TypeDBException.of(ILLEGAL_ARGUMENT); // cannot use backward seeks
-            this.source.seek(target);
+        public void forward(T target) {
+            if (last != null && target.compareTo(last) < 0) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+            this.source.forward(target);
         }
 
         @Override

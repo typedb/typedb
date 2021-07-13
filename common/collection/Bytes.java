@@ -20,17 +20,6 @@ package com.vaticle.typedb.core.common.collection;
 
 public class Bytes {
 
-    public interface ByteComparable<T extends ByteComparable<T>> extends Comparable<T> {
-
-        ByteArray getBytes();
-
-        @Override
-        default int compareTo(T o) {
-            return getBytes().compareTo(o.getBytes());
-        }
-
-    }
-
     public static final int SHORT_SIZE = 2;
     public static final int SHORT_UNSIGNED_MAX_VALUE = 65_535; // (2 ^ SHORT_SIZE x 8) - 1
     public static final int INTEGER_SIZE = 4;
@@ -55,5 +44,4 @@ public class Bytes {
         assert value >= 0 && value <= 255;
         return (byte) (value & 0xff);
     }
-
 }

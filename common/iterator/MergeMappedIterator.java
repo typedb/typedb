@@ -29,10 +29,10 @@ import java.util.function.Function;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
-public class FlatMergeSortedIterator<T, U extends Comparable<? super U>> extends AbstractFunctionalIterator.Sorted<U> {
+class MergeMappedIterator<T, U extends Comparable<? super U>> extends AbstractFunctionalIterator.Sorted<U> {
 
     private final FunctionalIterator<T> source;
-    private final Function<T, FunctionalIterator.Sorted<U>> flatMappingFn;
+    private final Function<T, FunctionalIterator.Sorted<U>> mappingFn;
     private final PriorityQueue<ComparableSortedIterator> queue;
     private final List<FunctionalIterator.Sorted<U>> notInQueue;
     private State state;
@@ -42,9 +42,9 @@ public class FlatMergeSortedIterator<T, U extends Comparable<? super U>> extends
         INIT, NOT_READY, FETCHED, COMPLETED;
     }
 
-    public FlatMergeSortedIterator(FunctionalIterator<T> source, Function<T, FunctionalIterator.Sorted<U>> flatMappingFn) {
+    MergeMappedIterator(FunctionalIterator<T> source, Function<T, FunctionalIterator.Sorted<U>> mappingFn) {
         this.source = source;
-        this.flatMappingFn = flatMappingFn;
+        this.mappingFn = mappingFn;
         this.queue = new PriorityQueue<>();
         this.state = State.INIT;
         this.notInQueue = new ArrayList<>();
@@ -97,7 +97,7 @@ public class FlatMergeSortedIterator<T, U extends Comparable<? super U>> extends
 
     private void initialise() {
         source.forEachRemaining(value -> {
-            FunctionalIterator.Sorted<U> sortedIterator = flatMappingFn.apply(value);
+            FunctionalIterator.Sorted<U> sortedIterator = mappingFn.apply(value);
             if (sortedIterator.hasNext()) queue.add(new ComparableSortedIterator(sortedIterator));
         });
         source.recycle();
@@ -125,12 +125,12 @@ public class FlatMergeSortedIterator<T, U extends Comparable<? super U>> extends
     }
 
     @Override
-    public void seek(U target) {
-        if (last != null && target.compareTo(last) < 0) throw TypeDBException.of(ILLEGAL_ARGUMENT); // cannot use backward seeks
-        notInQueue.forEach(iter -> iter.seek(target));
+    public void forward(U target) {
+        if (last != null && target.compareTo(last) < 0) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+        notInQueue.forEach(iter -> iter.forward(target));
         queue.forEach(queueNode -> {
             FunctionalIterator.Sorted<U> iter = queueNode.iter;
-            iter.seek(target);
+            iter.forward(target);
             notInQueue.add(iter);
         });
         queue.clear();

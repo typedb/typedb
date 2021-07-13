@@ -51,12 +51,8 @@ class MappedIterator<T, U> extends AbstractFunctionalIterator<U> {
         iterator.recycle();
     }
 
-    /*
-    UNSAFE
-    The user must guarantee the mapping function preserves the sort order that the the source provides,
-    in the new domain.
-     */
-    static class Sorted<T extends Comparable<? super T>, U extends Comparable<? super U>> extends AbstractFunctionalIterator.Sorted<U> {
+    static class Sorted<T extends Comparable<? super T>, U extends Comparable<? super U>>
+            extends AbstractFunctionalIterator.Sorted<U> {
 
         private final FunctionalIterator.Sorted<T> source;
         private final Function<T, U> mappingFn;
@@ -67,7 +63,12 @@ class MappedIterator<T, U> extends AbstractFunctionalIterator<U> {
 
         private enum State {EMPTY, FETCHED, COMPLETED};
 
-        public Sorted(FunctionalIterator.Sorted<T> source, Function<T, U> mappingFn, Function<U, T> reverseMappingFn) {
+        /**
+         * @param source - iterator to create mapped iterators from
+         * @param mappingFn - The forward mapping function must return a new iterator that is sorted with respect to U's comparator.
+         * @param reverseMappingFn - The reverse mapping function must be the inverse of the forward mapping function.
+         */
+        Sorted(FunctionalIterator.Sorted<T> source, Function<T, U> mappingFn, Function<U, T> reverseMappingFn) {
             this.source = source;
             this.mappingFn = mappingFn;
             this.reverseMappingFn = reverseMappingFn;
@@ -76,10 +77,10 @@ class MappedIterator<T, U> extends AbstractFunctionalIterator<U> {
         }
 
         @Override
-        public void seek(U target) {
-            if (last != null && target.compareTo(last) < 0) throw TypeDBException.of(ILLEGAL_ARGUMENT); // cannot use backward seeks
+        public void forward(U target) {
+            if (last != null && target.compareTo(last) < 0) throw TypeDBException.of(ILLEGAL_ARGUMENT);
             T reverseMapped = reverseMappingFn.apply(target);
-            source.seek(reverseMapped);
+            source.forward(reverseMapped);
             state = State.EMPTY;
         }
 
@@ -105,7 +106,9 @@ class MappedIterator<T, U> extends AbstractFunctionalIterator<U> {
 
         private boolean fetchAndCheck() {
             if (source.hasNext()) {
-                next = mappingFn.apply(source.next());
+                T value = source.next();
+                this.next = mappingFn.apply(value);
+                assert reverseMappingFn.apply(this.next).equals(value);
                 state = State.FETCHED;
             } else {
                 state = State.COMPLETED;

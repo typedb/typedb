@@ -31,7 +31,7 @@ class BaseIterator<T> extends AbstractFunctionalIterator<T> {
 
     private final Either<FunctionalIterator<T>, Iterator<T>> iterator;
 
-    public BaseIterator(Either<FunctionalIterator<T>, Iterator<T>> iterator) {
+    BaseIterator(Either<FunctionalIterator<T>, Iterator<T>> iterator) {
         this.iterator = iterator;
     }
 
@@ -57,7 +57,7 @@ class BaseIterator<T> extends AbstractFunctionalIterator<T> {
         private T next;
         private T last;
 
-        public Sorted(NavigableSet<T> source) {
+        Sorted(NavigableSet<T> source) {
             this.source = source;
             this.iterator = source.iterator();
             this.last = null;
@@ -84,8 +84,8 @@ class BaseIterator<T> extends AbstractFunctionalIterator<T> {
         }
 
         @Override
-        public void seek(T target) {
-            if (last != null && target.compareTo(last) < 0) throw TypeDBException.of(ILLEGAL_ARGUMENT); // cannot use backward seeks
+        public void forward(T target) {
+            if (last != null && target.compareTo(last) < 0) throw TypeDBException.of(ILLEGAL_ARGUMENT);
             this.iterator = source.tailSet(target).iterator();
             this.next = null;
         }

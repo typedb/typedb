@@ -31,7 +31,7 @@ class PermutationIterator<T> extends AbstractFunctionalIterator<List<T>> {
     final int[] directions;
     private State state;
 
-    public PermutationIterator(Collection<T> list) {
+    PermutationIterator(Collection<T> list) {
         this.list = new ArrayList<>(list);
         int n = list.size();
         visitCounters = new int[n];

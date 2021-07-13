@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.common.collection;
 
 import com.google.common.primitives.UnsignedBytes;
 import com.vaticle.typedb.common.collection.Bytes;
-import com.vaticle.typedb.core.common.collection.Bytes.ByteComparable;
 import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 
 import java.nio.ByteBuffer;
@@ -39,7 +38,7 @@ import static com.vaticle.typedb.core.common.collection.Bytes.SHORT_UNSIGNED_MAX
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
-public abstract class ByteArray implements ByteComparable<ByteArray> {
+public abstract class ByteArray implements Comparable<ByteArray> {
 
     final byte[] array;
     private int hash = 0;
@@ -56,14 +55,9 @@ public abstract class ByteArray implements ByteComparable<ByteArray> {
         return new ByteArray.Base(new byte[]{});
     }
 
-    @Override
-    public ByteArray getBytes() {
-        return this;
-    }
+    public abstract byte[] getBytes();
 
-    public abstract byte[] getArray();
-
-    public abstract byte[] cloneArray();
+    public abstract byte[] cloneBytes();
 
     public abstract boolean isEmpty();
 
@@ -117,7 +111,7 @@ public abstract class ByteArray implements ByteComparable<ByteArray> {
     public abstract boolean hasPrefix(ByteArray prefix);
 
     public String toHexString() {
-        return Bytes.bytesToHexString(getArray());
+        return Bytes.bytesToHexString(getBytes());
     }
 
     public static ByteArray fromHexString(String string) {
@@ -175,7 +169,7 @@ public abstract class ByteArray implements ByteComparable<ByteArray> {
 
     public short decodeSortedAsShort() {
         assert length() == SHORT_SIZE;
-        byte[] clone = cloneArray();
+        byte[] clone = cloneBytes();
         clone[0] = (byte) (clone[0] ^ 0x80);
         return ByteBuffer.wrap(clone).getShort();
     }
@@ -191,7 +185,7 @@ public abstract class ByteArray implements ByteComparable<ByteArray> {
 
     public long decodeSortedAsInteger() {
         assert length() == INTEGER_SIZE;
-        byte[] clone = cloneArray();
+        byte[] clone = cloneBytes();
         clone[0] = (byte) (clone[0] ^ 0x80);
         return ByteBuffer.wrap(clone).getInt();
     }
@@ -211,7 +205,7 @@ public abstract class ByteArray implements ByteComparable<ByteArray> {
 
     public long decodeSortedAsLong() {
         assert length() == LONG_SIZE;
-        byte[] clone = cloneArray();
+        byte[] clone = cloneBytes();
         clone[0] = (byte) (clone[0] ^ 0x80);
         return ByteBuffer.wrap(clone).getLong();
     }
@@ -246,7 +240,7 @@ public abstract class ByteArray implements ByteComparable<ByteArray> {
 
     public double decodeSortedAsDouble() {
         assert length() == DOUBLE_SIZE;
-        byte[] clone = cloneArray();
+        byte[] clone = cloneBytes();
         if ((clone[0] & 0x80) == 0x80) {
             clone[0] = (byte) (clone[0] ^ 0x80);
         } else {
@@ -279,22 +273,9 @@ public abstract class ByteArray implements ByteComparable<ByteArray> {
         return LocalDateTime.ofInstant(Instant.ofEpochMilli(decodeSortedAsLong()), timeZoneID);
     }
 
-    /**
-     * This comparison function implements the same byte-wise lexicographic comparator that RocksDB comparators use
-     * See similar implementations at: https://stackoverflow.com/questions/5108091/java-comparator-for-byte-array-lexicographic
-     * Note: if this is performance bottleneck we could move to Guava's Unsafe comparator in the link above
-     */
     @Override
     public int compareTo(ByteArray that) {
-        return UnsignedBytes.lexicographicalComparator().compare(getArray(), that.getArray());
-//
-//        int n = Math.min(length(), that.length());
-//        for (int i = 1; i < n; i++) {
-//            int a = unsignedValue(get(i));
-//            int b = unsignedValue(that.get(i));
-//            if (a != b) return a - b;
-//        }
-//        return Integer.compare(length(), that.length());
+        return UnsignedBytes.lexicographicalComparator().compare(getBytes(), that.getBytes());
     }
 
     @Override
@@ -323,7 +304,7 @@ public abstract class ByteArray implements ByteComparable<ByteArray> {
 
     @Override
     public String toString() {
-        return Arrays.toString(getArray());
+        return Arrays.toString(getBytes());
     }
 
     public static class Base extends ByteArray {
@@ -333,12 +314,12 @@ public abstract class ByteArray implements ByteComparable<ByteArray> {
         }
 
         @Override
-        public byte[] getArray() {
+        public byte[] getBytes() {
             return array;
         }
 
         @Override
-        public byte[] cloneArray() {
+        public byte[] cloneBytes() {
             return Arrays.copyOf(array, array.length);
         }
 
@@ -449,13 +430,13 @@ public abstract class ByteArray implements ByteComparable<ByteArray> {
         }
 
         @Override
-        public byte[] getArray() {
+        public byte[] getBytes() {
             if (arrayCache == null) arrayCache = Arrays.copyOfRange(array, start, start + length);
             return arrayCache;
         }
 
         @Override
-        public byte[] cloneArray() {
+        public byte[] cloneBytes() {
             return Arrays.copyOfRange(array, start, start + length);
         }
 

@@ -25,7 +25,7 @@ public interface Poller<T> {
 
     Optional<T> poll();
 
-    <U> Poller<U> flatMap(Function<T, Poller<U>> flatMappingFn);
+    <U> Poller<U> flatMap(Function<T, Poller<U>> mappingFn);
 
     Poller<T> link(Poller<T> poller);
 

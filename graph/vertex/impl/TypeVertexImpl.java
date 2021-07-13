@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.graph.vertex.impl;
 
 import com.vaticle.typedb.core.common.collection.ByteArray;
+import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.TypeGraph;
@@ -508,7 +509,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         private void deleteVertexFromStorage() {
             graph.storage().deleteUntracked(IndexIID.Type.Label.of(label, scope).bytes());
-            FunctionalIterator<ByteArray> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
+            FunctionalIterator<ByteArray> keys = graph.storage().iterate(iid.bytes()).map(KeyValue::key);
             while (keys.hasNext()) graph.storage().deleteUntracked(keys.next());
             graph.storage().deleteUntracked(StatisticsBytes.vertexCountKey(iid));
         }
