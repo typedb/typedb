@@ -140,10 +140,10 @@ public class Encoding {
     }
 
     /**
-     * The values in this class will be used as 'prefixes' within an IID in the
-     * of every object database, and must not overlap with each other.
+     * The values in this class will be used as 'prefixes' within an IID for every database object,
+     * and must not overlap with each other.
      *
-     * The size of a prefix is 1 unsigned byte; i.e. min-value = 0 and max-value = 255.
+     * A prefix is 1 unsigned byte, up to the value of 199. Values 200-255 are reserved for TypeDB Cluster.
      */
     public enum Prefix {
         // leave large open range for future indices
