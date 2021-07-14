@@ -99,17 +99,21 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public void setAbstract() {
-        validateIsNotDeleted();
-        if (getInstances().first().isPresent()) {
-            throw exception(TypeDBException.of(TYPE_HAS_INSTANCES_SET_ABSTRACT, getLabel()));
+        if (!isAbstract()) {
+            validateIsNotDeleted();
+            if (getInstances().first().isPresent()) {
+                throw exception(TypeDBException.of(TYPE_HAS_INSTANCES_SET_ABSTRACT, getLabel()));
+            }
+            vertex.isAbstract(true);
         }
-        vertex.isAbstract(true);
     }
 
     @Override
     public void unsetAbstract() {
-        validateIsNotDeleted();
-        vertex.isAbstract(false);
+        if (isAbstract()) {
+            validateIsNotDeleted();
+            vertex.isAbstract(false);
+        }
     }
 
     @Nullable
